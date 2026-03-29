@@ -1,99 +1,62 @@
-export interface PriorityQueue<T> {
-  enqueue(item: T, priority: number): void;
-  dequeue(): T | undefined;         // removes the highest‑priority item
-  peek(): T | undefined;            // look at the next item without removing
-  size(): number;
-  isEmpty(): boolean;
-}
-type HeapNode<T> = { value: T; priority: number };
+/**
+ * Quick‑sort a mutable array in‑place.
+ *
+ * @template T The element type to sort.
+ * @param array    The array to sort.
+ * @param compare  Optional comparator:
+ *                 -<0 if a < b
+ *                  0 if a == b
+ *                 >0 if a > b
+ *                  Defaults to the built‑in `<`/`>` for primitive types.
+ */
+function quickSort<T>(array: T[], compare?: (a: T, b: T) => number): void {
+  const cmp = compare ?? defaultCompare;
 
-export class BinaryHeap<T> implements PriorityQueue<T> {
-  /** Internal array that holds the heap nodes. */
-  private heap: HeapNode<T>[] = [];
+  // Public wrapper that starts the recursive routine.
+  sort(0, array.length - 1);
 
-  /** Returns the array length, i.e. number of elements in the queue. */
-  size() {
-    return this.heap.length;
+  /** Recursive partitioning */
+  function sort(left: number, right: number): void {
+    if (left >= right) return;          // one element or invalid range
+    const pivotIdx = partition(left, right);
+    sort(left, pivotIdx - 1);            // left partition
+    sort(pivotIdx + 1, right);           // right partition
   }
 
-  isEmpty() {
-    return this.heap.length === 0;
-  }
+  /**
+   * Partition the sub‑array [left … right] around a pivot.
+   * Returns the final pivot index so the caller can split.
+   */
+  function partition(left: number, right: number): number {
+    const pivotIndex = right;            // choose the last element as pivot
+    const pivotValue = array[pivotIndex];
+    let storeIndex = left;               // first place where a value < pivot will go
 
-  /** Put a new (value, priority) pair into the heap. */
-  enqueue(value: T, priority: number) {
-    const node: HeapNode<T> = { value, priority };
-    this.heap.push(node);               // add to the bottom
-    this.bubbleUp(this.heap.length - 1); // restore heap property
-  }
-
-  /** Remove and return the value with the lowest priority value. */
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-
-    const root = this.heap[0];
-    const last = this.heap.pop()!;          // guaranteed non‑empty
-
-    if (!this.isEmpty()) {
-      this.heap[0] = last;                  // move the last node to root
-      this.bubbleDown(0);                   // restore heap property
-    }
-
-    return root.value;
-  }
-
-  /** Peek at the next value that would be dequeued. */
-  peek(): T | undefined {
-    return this.isEmpty() ? undefined : this.heap[0].value;
-  }
-
-  /* ---------- internal helpers ---------- */
-
-  private bubbleUp(idx: number) {
-    const node = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1; // same as Math.floor((idx-1)/2)
-      const parent = this.heap[parentIdx];
-      if (node.priority >= parent.priority) break; // correct place found
-      this.heap[idx] = parent;                     // move parent down
-      idx = parentIdx;
-    }
-    this.heap[idx] = node; // place the new node
-  }
-
-  private bubbleDown(idx: number) {
-    const length = this.heap.length;
-    const node = this.heap[idx];
-
-    while (true) {
-      const leftIdx = idx * 2 + 1;
-      const rightIdx = leftIdx + 1;
-      let smallestIdx = idx;
-
-      if (leftIdx < length && this.heap[leftIdx].priority < this.heap[smallestIdx].priority) {
-        smallestIdx = leftIdx;
+    for (let i = left; i < right; i++) {
+      if (cmp(array[i], pivotValue) < 0) {
+        [array[i], array[storeIndex]] = [array[storeIndex], array[i]];
+        storeIndex++;
       }
-      if (rightIdx < length && this.heap[rightIdx].priority < this.heap[smallestIdx].priority) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx === idx) break; // node is smaller than both children
-
-      this.heap[idx] = this.heap[smallestIdx];
-      idx = smallestIdx;
     }
-
-    this.heap[idx] = node;
+    // Move pivot to its final place
+    [array[storeIndex], array[pivotIndex]] = [array[pivotIndex], array[storeIndex]];
+    return storeIndex;
   }
 }
-const pq = new BinaryHeap<string>();
 
-pq.enqueue('task A', 5);
-pq.enqueue('task B', 2);
-pq.enqueue('task C', 8);
-
-console.log(pq.peek());   // => 'task B' (priority 2)
-while (!pq.isEmpty()) {
-  console.log(pq.dequeue()); // prints B, A, C in priority order
+/** Default comparator for primitive types. */
+function defaultCompare(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
 }
-type Comparator<T> = (a: T, b: T) => number; // <0: a before b
+const nums = [3, 8, 4, 1, 9, 5];
+quickSort(nums);               // sorts in place
+console.log(nums);             // [1, 3, 4, 5, 8, 9]
+
+const words = ["banana", "apple", "pear"];
+quickSort(words);              // defaults to lexical order
+console.log(words);            // ["apple", "banana", "pear"]
+
+// Custom order: descending numbers
+quickSort(nums, (a, b) => b - a);
+console.log(nums);             // [9, 8, 5, 4, 3, 1]
