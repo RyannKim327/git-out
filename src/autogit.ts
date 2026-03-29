@@ -1,71 +1,34 @@
 /**
- * Returns true if `a` and `b` contain exactly the same letters,
- * disregarding order.
+ * Recursively binary‑searches a *sorted* array for `target`.
  *
- * @param a – first string
- * @param b – second string
- * @param options – optional flags
- *   - ignoreSpaces: treat spaces as insignificant
- *   - ignorePunctuation: strip punctuation marks
- *   - ignoreCase: treat uppercase and lowercase as the same
+ * @param arr   Sorted array of comparable values.
+ * @param target Value to locate.
+ * @returns      Index of `target` in `arr`, or -1 if absent.
  */
-export function areAnagrams(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+export function binarySearchRecursive<T extends number | string>(
+  arr: T[],
+  target: T
+): number {
+  // Helper that takes start/end indices.
+  function search(start: number, end: number): number {
+    if (start > end) return -1;              // Empty slice – no hit.
 
-  const sanitize = (s: string) => {
-    if (ignoreCase) s = s.toLowerCase();
-    if (ignoreSpaces) s = s.replace(/\s+/g, '');
-    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
-    return s;
-  };
+    const mid = Math.floor((start + end) / 2);
+    const midVal = arr[mid];
 
-  const sa = sanitize(a).split('').sort().join('');
-  const sb = sanitize(b).split('').sort().join('');
-
-  return sa === sb;
-}
-/**
- * Frequency‑count version – O(n) time, O(σ) space  
- * (σ = size of alphabet, constant for ASCII/Unicode)
- */
-export function areAnagramsFast(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
-
-  const count = (s: string) => {
-    const map = new Map<string, number>();
-    for (const ch of s) {
-      const key = ignoreCase ? ch.toLowerCase() : ch;
-      if (ignoreSpaces && key === ' ') continue;
-      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
+    if (midVal === target) return mid;       // Bingo!
+    if (midVal > target) {
+      // Target lives (potentially) in the left half.
+      return search(start, mid - 1);
     }
-    return map;
-  };
-
-  const aMap = count(a);
-  const bMap = count(b);
-
-  if (aMap.size !== bMap.size) return false; // quick early exit
-
-  for (const [char, aCount] of aMap.entries()) {
-    if (bMap.get(char) !== aCount) return false;
+    // Target is bigger – search the right half.
+    return search(mid + 1, end);
   }
 
-  return true;
+  return search(0, arr.length - 1);
 }
-// Basic usage
-areAnagrams('Listen', 'Silent'); // true
+const data = [3, 7, 12, 17, 25, 36, 42, 58, 71];
+const idx  = binarySearchRecursive(data, 25);
 
-// Ignoring case & spaces
-areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
-
-// Fast version with punctuation handling
-areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
+console.log(idx); // → 4
+console.log(binarySearchRecursive(data, 13)); // → -1
