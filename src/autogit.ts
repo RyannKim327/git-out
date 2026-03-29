@@ -1,68 +1,74 @@
-/**
- * Pre‑computes the shift table for a pattern.
- *   pattern: the pattern we’re searching for
- *   Returns: a Map from character → shift distance
- */
-function buildShiftTable(pattern: string): Map<string, number> {
-  const table = new Map<string, number>();
-  const m = pattern.length;
+// ---------------  Node definition --------------------
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
 
-  // All characters that appear in the pattern get an initial shift of m
-  for (const ch of pattern) {
-    table.set(ch, m);
+// ---------------  Main logic --------------------
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;  // empty or single element
+
+  // 1️⃣ Find middle
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+  while (fast && fast.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  // For each character except the last one, set its shift to (m - i - 1)
-  for (let i = 0; i < m - 1; ++i) {
-    table.set(pattern[i], m - i - 1);
+  // 2️⃣ Reverse second half
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow; // start at middle
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // now `prev` points to head of reversed second half
+
+  // 3️⃣ Compare halves
+  let p1 = head;
+  let p2 = prev;
+  while (p2) {           // only need to loop over the shorter half
+    if (p1!.val !== p2!.val) return false;
+    p1 = p1!.next;
+    p2 = p2!.next;
   }
 
-  return table;
-}
-/**
- * Implements Boyer‑Moore‑Horspool.
- * @param text   – the text to search
- * @param pattern – the pattern to find
- * @returns      – the index of the first match, or -1 if none
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0) return 0;          // Empty pattern
-  if (m > n) return -1;           // Pattern longer than text
-
-  const shiftTable = buildShiftTable(pattern);
-
-  let idx = 0;                    // Index of the leftmost character of the window
-  while (idx <= n - m) {
-    let j = m - 1;
-
-    // Compare pattern from right to left
-    while (j >= 0 && text[idx + j] === pattern[j]) {
-      j -= 1;
-    }
-
-    // If all characters matched
-    if (j < 0) {
-      return idx;                // Found at position idx
-    }
-
-    // Mismatch: figure out how far to shift
-    const mismatchedChar = text[idx + m - 1];
-    const shift = shiftTable.get(mismatchedChar) ?? m;
-    idx += shift;
+  // 4️⃣ (Optional) Put list back together
+  // Reverse again and re‑attach to original first half
+  curr = prev;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
   }
+  // `prev` is the head of the original second half again
 
-  return -1;                     // No match found
+  return true;
 }
-const txt = "ABAAABCDABCABABCAB";
-const pat = "ABCAB";
+export function isPalindromeFunctional<T>(head: ListNode<T> | null): boolean {
+  const vals: T[] = [];
+  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
+    if (vals[i] !== vals[j]) return false;
+  }
+  return true;
+}
+const build = (arr: number[]) => {
+  let dummy = new ListNode(0);
+  let curr = dummy;
+  for (const x of arr) {
+    curr.next = new ListNode(x);
+    curr = curr.next;
+  }
+  return dummy.next;
+};
 
-const pos = boyerMooreHorspool(txt, pat);
-if (pos >= 0) {
-  console.log(`"${pat}" found at index ${pos}`);
-} else {
-  console.log(`"${pat}" not found`);
-}
-"ABCAB" found at index 12
+console.log(isPalindrome(build([1,2,3,2,1]))); // true
+console.log(isPalindrome(build([1,2,3,4,5]))); // false
