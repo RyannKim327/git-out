@@ -1,72 +1,46 @@
-interface Node<T = any> {
+interface TreeNode<T = any> {
   value: T;
-  neighbors: Node<T>[];
-  // optional metadata for the search
-  depth?: number;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-function depthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  function dfs(node: Node<T>, depth: number): Node<T> | null {
-    if (depth > maxDepth) return null;          // over the ceiling
-    if (isGoal(node)) return node;             // goal found
+function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
+  if (!root.left && !root.right) return 1; // leaf
 
-    for (const neigh of node.neighbors) {
-      const result = dfs(neigh, depth + 1);
-      if (result) return result;               // propagate up
-    }
-    return null;                               // no goal along this path
-  }
-
-  return dfs(root, 0);
+  // otherwise count leaves in both sub‑trees
+  return countLeaves(root.left) + countLeaves(root.right);
 }
-function depthLimitedIterative<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let count = 0;
+  const stack: TreeNode<T>[] = [root];
 
   while (stack.length) {
-    const { node, depth } = stack.pop()!;
+    const node = stack.pop()!;
 
-    if (depth > maxDepth) continue;          // skip over‑depth nodes
-    if (isGoal(node)) return node;           // hit the target
-
-    // Push neighbors in reverse order if you want the left‑most first
-    for (let i = node.neighbors.length - 1; i >= 0; i--) {
-      stack.push({ node: node.neighbors[i], depth: depth + 1 });
+    if (!node.left && !node.right) {
+      count++;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
     }
   }
 
-  return null; // exhausted without finding goal
+  return count;
 }
-// Build a tiny graph
-const leaf = { value: 'leaf', neighbors: [] };
-const mid   = { value: 'mid',   neighbors: [leaf] };
-const root  = { value: 'root',  neighbors: [mid] };
-
-const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
-console.log(found?.value); // → "leaf"
-function breadthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    if (depth > maxDepth) continue;
-    if (isGoal(node)) return node;
-
-    for (const neigh of node.neighbors) {
-      queue.push({ node: neigh, depth: depth + 1 });
-    }
+const root: TreeNode<number> = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 }
+  },
+  right: {
+    value: 3,
+    right: { value: 6 }
   }
+};
 
-  return null;
-}
+console.log(countLeaves(root));          // → 3  (4, 5, 6)
+console.log(countLeavesIter(root));      // → 3
