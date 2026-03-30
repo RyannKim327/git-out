@@ -1,71 +1,102 @@
-// src/api/remote.ts
-import { NativeModules, NativeEventEmitter } from 'react-native';
+/** One directed edge in the graph */
+interface Edge {
+  from: number;   // source vertex id
+  to: number;     // target vertex id
+  weight: number; // edge weight
+}
 
-const { AndroidAsyncTask } = NativeModules;
+/** Graph represented only by its edge list */
+type Graph = Edge[];
 
-// -----------------------------------------------------------------
-// 1️⃣  The simple JS/TS side: an async fetch helper
-// -----------------------------------------------------------------
-export async function loadRemoteJson(url: string): Promise<any> {
-  try {
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
+/** Result of the shortest‑path computation */
+interface BellmanFordResult {
+  /** distance from source to every vertex (Infinity if unreachable) */
+  distances: number[];
+  /** predecessor of each vertex on the shortest path tree */
+  predecessors: (number | null)[];
+  /** true if a negative cycle was detected that is reachable from the source */
+  negativeCycleDetected: boolean;
+}
+/**
+ * Bellman‑Ford single‑source shortest‑path solver.
+ * @param edges  complete list of directed edges in the graph
+ * @param vertexCount total number of vertices, 0 … vertexCount‑1
+ * @param source id of the source vertex
+ * @returns distances, predecessors and a flag for a reachable negative cycle
+ */
+export function bellmanFord(
+  edges: Graph,
+  vertexCount: number,
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
+
+  const distances = Array(vertexCount).fill(INF);
+  const predecessors = Array<null | number>(vertexCount).fill(null);
+
+  distances[source] = 0;
+
+  /* Relax edges V‑1 times */
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let changed = false;
+    for (const e of edges) {
+      const { from, to, weight } = e;
+      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+        distances[to] = distances[from] + weight;
+        predecessors[to] = from;
+        changed = true;
+      }
     }
-    const payload = await response.json();
-    return payload;
-  } catch (err) {
-    console.error('loadRemoteJson error:', err);
-    throw err;
+    /* Early exit if no relaxation happened */
+    if (!changed) break;
   }
-}
 
-// -----------------------------------------------------------------
-// 2️⃣  The bridge to Android (AsyncTask)
-// -----------------------------------------------------------------
-// On Android, create a module that exposes `runAsyncTask`
-// which internally spawns an AsyncTask that returns a JSON string.
-
-export function runAndroidTask(
-  taskName: string,
-  args: Record<string, any>
-): Promise<any> {
-  // The native module returns a Promise that resolves with a string
-  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
-    try {
-      return JSON.parse(result);
-    } catch (err) {
-      console.warn('Failed to parse JSON from Android:', err);
-      throw err;
+  /* Check for negative‑weight cycles reachable from source */
+  let negativeCycleDetected = false;
+  for (const e of edges) {
+    const { from, to, weight } = e;
+    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+      negativeCycleDetected = true;
+      break;
     }
-  });
+  }
+
+  return { distances, predecessors, negativeCycleDetected };
 }
+/**
+ * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
+ * Returns `undefined` if the target is unreachable.
+ */
+export function reconstructPath(
+  target: number,
+  predecessors: (number | null)[]
+): number[] | undefined {
+  if (predecessors[target] === null) return undefined;
 
-// -----------------------------------------------------------------
-// 3️⃣  Example usage (e.g. inside a component)
-// -----------------------------------------------------------------
-/*
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
-import { loadRemoteJson, runAndroidTask } from './api/remote';
-
-export default function Demo() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Option A – vanilla fetch
-    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
-      .then(setData)
-      .catch(err => setError(err.message));
-
-    // Option B – delegate to Android AsyncTask
-    // runAndroidTask('fetchTodo', { id: 1 })
-    //   .then(setData)
-    //   .catch(err => setError(err.message));
-  }, []);
-
-  if (error) return <View><Text>❌ {error}</Text></View>;
-  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
+  const path: number[] = [];
+  for (let v = target; v !== null; v = predecessors[v]) {
+    path.push(v);
+  }
+  return path.reverse();
 }
-*/
+// A small graph with both positive and negative edges
+const graph: Graph = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 2, weight: -3 },
+  { from: 1, to: 3, weight: 2 },
+  { from: 2, to: 3, weight: 4 },
+];
+
+const vertexCount = 4;          // vertices 0 … 3
+const source = 0;
+const result = bellmanFord(graph, vertexCount, source);
+
+console.log('Distances:', result.distances);
+// [0, 1, 2, 3]
+
+console.log('Negative cycle detected?', result.negativeCycleDetected);
+// false
+
+const pathTo3 = reconstructPath(3, result.predecessors);
+console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
