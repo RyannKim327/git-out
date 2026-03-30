@@ -1,62 +1,84 @@
 /**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
+ * Burrows‑Wheeler Transform (forward) – O(n²)
+ * @param input original string
+ * @returns {lastColumn, primaryIndex}
  *
- * Complexity: O(m)
+ * `lastColumn` – the BWT output string (characters that appear as the
+ *                 last column of the sorted rotation matrix).
+ * `primaryIndex` – row number (0‑based) that contains the original
+ *                  string in the sorted matrix; needed for the inverse.
  */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
-
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+export function bwt(input: string): { lastColumn: string; primaryIndex: number } {
+  const n = input.length;
+  // Build the rotation array
+  const rotations: string[] = [];                    //  O(n)
+  for (let i = 0; i < n; i++) {
+    rotations.push(input.slice(i) + input.slice(0, i));
   }
-  return lps;
+
+  // Sort the rotations lexicographically
+  rotations.sort();                                 //  O(n log n) * O(n) Comparisons
+
+  // Pull the last character of each sorted row
+  let last = '';
+  let primary = -1;
+  for (let col = 0; col < n; col++) {
+    const row = rotations[col];
+    if (row === input) primary = col;               // original string position
+    last += row[n - 1];
+  }
+  return { lastColumn: last, primaryIndex: primary };
 }
 
 /**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
+ * Inverse Burrows‑Wheeler Transform – O(n²) worst‑case
+ * @param lastCol BWT string (last column)
+ * @param primaryIndex index of original string within sorted rotations
+ * @returns original string
  */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
+export function inverseBWT(lastCol: string, primaryIndex: number): string {
+  const n = lastCol.length;
+  // `first` column is just the sorted last column
+  const first = lastCol.split('').sort().join('');
 
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
-    }
+  // Build the LF‑mapping: for every position i in `last`
+  // find the row in `first` that corresponds to the same
+  // character and *occurrence* (i.e., the k‑th 'a' in last
+  // maps to the k‑th 'a' in first).
+  // We do that by counting occurrences.
+  const occ: Array<Map<string, number>> = new Array(n);
+  const count: Map<string, number> = new Map();
+  for (let i = 0; i < n; i++) {
+    const c = lastCol[i];
+    const cCount = (count.get(c) ?? 0) + 1;
+    count.set(c, cCount);
+    occ[i] = new Map(count);
   }
-  return -1; // no match
+
+  // Build `firstPos` – for each character, the 0‑based
+  // index of its first occurrence in the sorted `first` column
+  const firstPos: Map<string, number> = new Map();
+  let sum = 0;
+  for (const ch of [...new Set(first)].sort()) {
+    firstPos.set(ch, sum);
+    sum += first.split('').filter(c => c === ch).length;
+  }
+
+  // Reconstruct the original string char by char:
+  // starting from `primaryIndex`, each step moves to the preceding
+  // character (because of the LF mapping).
+  const result: string[] = [];
+  let pos = primaryIndex;
+  for (let k = 0; k < n; k++) {
+    const c = lastCol[pos];
+    result.unshift(c); // prepend, since we traverse backwards
+    const occIdx = occ[pos].get(c)!;              // occurrence rank
+    // LF mapping: next position in `lastCol`
+    pos = firstPos.get(c)! + occIdx - 1;
+  }
+  return result.join('');
 }
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
+const original = 'BANANA$';
+const { lastColumn, primaryIndex } = bwt(original);
+console.log('BWT:', lastColumn);          // → 'ANNB$AA'
+console.log('Inv:', inverseBWT(lastColumn, primaryIndex)); // → 'BANANA$'
