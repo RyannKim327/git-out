@@ -1,53 +1,27 @@
-/** Node definition for a singly linked list. */
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;
-}
-
-/** Helper to build a list from an array (for demo testing). */
-function buildList<T>(arr: T[]): ListNode<T> | undefined {
-  let head: ListNode<T> | undefined;
-  let tail: ListNode<T> | undefined;
-  for (const val of arr) {
-    const node: ListNode<T> = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
-    }
-  }
-  return head;
-}
-
 /**
- * Finds the **lower** middle of a singly linked list.
- * If the list is empty, returns undefined.
+ * Returns true if `n` is a prime number, false otherwise.
+ * Handles integer inputs, explicitly rejects non‑integers and numbers ≤ 1.
  */
-function getMiddle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined;
+function isPrime(n: number): boolean {
+  // 0, 1, negatives and non‑integers are not prime
+  if (!Number.isInteger(n) || n < 2) return false;
 
-  let slow = head;
-  let fast = head;
+  // 2 and 3 are prime
+  if (n === 2 || n === 3) return true;
 
-  // Advance fast by 2 and slow by 1.
-  // When fast reaches the end, slow is at the middle.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  // Eliminate even numbers and multiples of 3 early
+  if (n % 2 === 0 || n % 3 === 0) return false;
+
+  // Only test up to √n. Use step 6k±1 pattern to skip even numbers.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
 
-  return slow;
+  return true;
 }
-
-/** Demo */
-const list = buildList([10, 20, 30, 40, 50]);   // odd length
-console.log(getMiddle(list)?.value); // → 30
-
-const listEven = buildList([1, 2, 3, 4]);        // even length
-console.log(getMiddle(listEven)?.value); // → 2  (lower middle)
-
-// If you want the *upper* middle for even lists, just change the loop:
-//   while (fast.next) { ... }
-//   return slow.next!;   // after the loop, slow is just before the upper middle.
+console.log(isPrime(1));   // false
+console.log(isPrime(2));   // true
+console.log(isPrime(29));  // true
+console.log(isPrime(30));  // false
+console.log(isPrime(97));  // true
