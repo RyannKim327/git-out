@@ -1,102 +1,39 @@
-/** One directed edge in the graph */
-interface Edge {
-  from: number;   // source vertex id
-  to: number;     // target vertex id
-  weight: number; // edge weight
-}
+const a = [1, 2, 3, 4, 5];
+const b = [3, 4, 5, 6, 7];
 
-/** Graph represented only by its edge list */
-type Graph = Edge[];
+const intersection = a.filter(item => new Set(b).has(item));
+console.log(intersection); // [3, 4, 5]
+const a = [1, 2, 3, 4, 5, 5];
+const b = [3, 4, 5, 5, 6];
 
-/** Result of the shortest‑path computation */
-interface BellmanFordResult {
-  /** distance from source to every vertex (Infinity if unreachable) */
-  distances: number[];
-  /** predecessor of each vertex on the shortest path tree */
-  predecessors: (number | null)[];
-  /** true if a negative cycle was detected that is reachable from the source */
-  negativeCycleDetected: boolean;
-}
-/**
- * Bellman‑Ford single‑source shortest‑path solver.
- * @param edges  complete list of directed edges in the graph
- * @param vertexCount total number of vertices, 0 … vertexCount‑1
- * @param source id of the source vertex
- * @returns distances, predecessors and a flag for a reachable negative cycle
- */
-export function bellmanFord(
-  edges: Graph,
-  vertexCount: number,
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+const setA = new Set(a);
+const setB = new Set(b);
 
-  const distances = Array(vertexCount).fill(INF);
-  const predecessors = Array<null | number>(vertexCount).fill(null);
+const intersection = [...setA].filter(item => setB.has(item));
+console.log(intersection); // [3, 4, 5]
+function multisetIntersection<T>(arr1: T[], arr2: T[]): T[] {
+  const counter = new Map<T, number>();
 
-  distances[source] = 0;
-
-  /* Relax edges V‑1 times */
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const e of edges) {
-      const { from, to, weight } = e;
-      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
-      }
-    }
-    /* Early exit if no relaxation happened */
-    if (!changed) break;
+  // Count each element of arr1
+  for (const v of arr1) {
+    counter.set(v, (counter.get(v) ?? 0) + 1);
   }
 
-  /* Check for negative‑weight cycles reachable from source */
-  let negativeCycleDetected = false;
-  for (const e of edges) {
-    const { from, to, weight } = e;
-    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-      negativeCycleDetected = true;
-      break;
+  // For each element in arr2, if it exists in the counter use it
+  const result: T[] = [];
+  for (const v of arr2) {
+    const count = counter.get(v);
+    if (count && count > 0) {
+      result.push(v);
+      counter.set(v, count - 1);
     }
   }
-
-  return { distances, predecessors, negativeCycleDetected };
+  return result;
 }
-/**
- * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
- * Returns `undefined` if the target is unreachable.
- */
-export function reconstructPath(
-  target: number,
-  predecessors: (number | null)[]
-): number[] | undefined {
-  if (predecessors[target] === null) return undefined;
 
-  const path: number[] = [];
-  for (let v = target; v !== null; v = predecessors[v]) {
-    path.push(v);
-  }
-  return path.reverse();
-}
-// A small graph with both positive and negative edges
-const graph: Graph = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -3 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 4 },
-];
-
-const vertexCount = 4;          // vertices 0 … 3
-const source = 0;
-const result = bellmanFord(graph, vertexCount, source);
-
-console.log('Distances:', result.distances);
-// [0, 1, 2, 3]
-
-console.log('Negative cycle detected?', result.negativeCycleDetected);
-// false
-
-const pathTo3 = reconstructPath(3, result.predecessors);
-console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4]));
+// → [2, 2]
+const intersection = a.reduce((acc, item) => {
+  if (b.includes(item) && !acc.includes(item)) acc.push(item);
+  return acc;
+}, [] as number[]);
