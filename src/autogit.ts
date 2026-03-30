@@ -1,29 +1,26 @@
 /**
- * Returns the second largest number in an array.
- * If the array has fewer than 2 distinct numbers, returns `undefined`.
+ * Performs an in‑place insertion sort on an array of numeric values.
+ * @param data The array to sort – it will be mutated directly.
  */
-function secondLargest(nums: number[]): number | undefined {
-  let max = -Infinity;
-  let second = -Infinity;
+export function insertionSort<T extends number[]> (data: T): void {
+  // walk from the second element to the end
+  for (let i = 1; i < data.length; i++) {
+    const key = data[i];          // value we’re trying to insert
+    let j = i - 1;
 
-  for (const n of nums) {
-    if (n > max) {
-      second = max;   // old max becomes second
-      max = n;        // new max
-    } else if (n > second && n < max) {
-      // distinct value that’s between max and second
-      second = n;
+    /* Shift elements that are greater than `key` up by one
+       position until we find the spot for the key. */
+    while (j >= 0 && data[j] > key) {
+      data[j + 1] = data[j];
+      j--;
     }
-  }
 
-  return second === -Infinity ? undefined : second;
+    // put the key into its final place
+    data[j + 1] = key;
+  }
 }
-console.log(secondLargest([1, 3, 5, 7, 9]));   // 7
-console.log(secondLargest([4, 4, 4, 4]));      // undefined (no distinct second)
-console.log(secondLargest([10, 9, 9, 8]));     // 9 (if duplicates count)
-console.log(secondLargest([2]));               // undefined
-function secondLargestSorted(nums: number[]): number | undefined {
-  const sorted = [...nums].sort((a, b) => b - a); // descending
-  const uniq = [...new Set(sorted)];             // drop duplicates
-  return uniq[1];                                // second element if exists
-}
+import { insertionSort } from "./insertion-sort";
+
+const nums = [34, 8, 64, 51, 32, 24];
+insertionSort(nums);
+console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
