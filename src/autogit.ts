@@ -1,56 +1,35 @@
-// 1️⃣  Node definition
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+/**
+ * Bubble sort for an array of numbers.
+ * The function mutates the passed array and returns it so you can chain or immediately inspect it.
+ *
+ * @param arr – the array to sort
+ * @returns the sorted array (same reference as `arr`)
+ */
+export function bubbleSort(arr: number[]): number[] {
+  // The array’s length is used repeatedly, so cache it for speed.
+  const n = arr.length;
 
-// 2️⃣  Queue skeleton
-class LinkedQueue<T> {
-  private head: Node<T> | null = null; // front of the queue
-  private tail: Node<T> | null = null; // rear of the queue
-  private _size = 0;
+  // Outer loop – each pass pushes the next largest element to its final spot at the end.
+  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
+  for (let pass = 0; pass < n - 1; pass++) {
+    // Track whether any swap happened this pass. If none, the array is sorted.
+    let swapped = false;
 
-  // 3️⃣  Enqueue: add to the tail
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {             // queue is not empty
-      this.tail.next = newNode;
-    } else {                      // queue was empty ‑ new node is both head & tail
-      this.head = newNode;
+    // Inner loop – compare adjacent pairs and swap if out of order.
+    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
+    for (let i = 0; i < n - pass - 1; i++) {
+      if (arr[i] > arr[i + 1]) {
+        // Simple swap using destructuring.
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;
+      }
     }
-    this.tail = newNode;
-    this._size++;
+
+    // If no two elements were swapped, no more passes are required.
+    if (!swapped) break;
   }
 
-  // 4️⃣  Dequeue: remove from the head
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // nothing to pop
-
-    const removed = this.head.value;
-    this.head = this.head.next;       // advance head
-    if (!this.head) this.tail = null; // queue became empty
-
-    this._size--;
-    return removed;
-  }
-
-  // 5️⃣  Peek at the front without removing
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  // 6️⃣  Convenience helpers
-  size(): number   { return this._size; }
-  isEmpty(): boolean { return this._size === 0; }
+  return arr;
 }
-const q = new LinkedQueue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.dequeue()); // 30
-console.log(q.dequeue()); // undefined (empty)
-console.log(q.isEmpty()); // true
+const unsorted = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
