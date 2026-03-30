@@ -1,72 +1,71 @@
-interface Node<T = any> {
-  value: T;
-  neighbors: Node<T>[];
-  // optional metadata for the search
-  depth?: number;
-}
-function depthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  function dfs(node: Node<T>, depth: number): Node<T> | null {
-    if (depth > maxDepth) return null;          // over the ceiling
-    if (isGoal(node)) return node;             // goal found
+/**
+ * Returns true if `a` and `b` contain exactly the same letters,
+ * disregarding order.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional flags
+ *   - ignoreSpaces: treat spaces as insignificant
+ *   - ignorePunctuation: strip punctuation marks
+ *   - ignoreCase: treat uppercase and lowercase as the same
+ */
+export function areAnagrams(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-    for (const neigh of node.neighbors) {
-      const result = dfs(neigh, depth + 1);
-      if (result) return result;               // propagate up
+  const sanitize = (s: string) => {
+    if (ignoreCase) s = s.toLowerCase();
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
+    return s;
+  };
+
+  const sa = sanitize(a).split('').sort().join('');
+  const sb = sanitize(b).split('').sort().join('');
+
+  return sa === sb;
+}
+/**
+ * Frequency‑count version – O(n) time, O(σ) space  
+ * (σ = size of alphabet, constant for ASCII/Unicode)
+ */
+export function areAnagramsFast(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+
+  const count = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = ignoreCase ? ch.toLowerCase() : ch;
+      if (ignoreSpaces && key === ' ') continue;
+      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
     }
-    return null;                               // no goal along this path
+    return map;
+  };
+
+  const aMap = count(a);
+  const bMap = count(b);
+
+  if (aMap.size !== bMap.size) return false; // quick early exit
+
+  for (const [char, aCount] of aMap.entries()) {
+    if (bMap.get(char) !== aCount) return false;
   }
 
-  return dfs(root, 0);
+  return true;
 }
-function depthLimitedIterative<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+// Basic usage
+areAnagrams('Listen', 'Silent'); // true
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
+// Ignoring case & spaces
+areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
 
-    if (depth > maxDepth) continue;          // skip over‑depth nodes
-    if (isGoal(node)) return node;           // hit the target
-
-    // Push neighbors in reverse order if you want the left‑most first
-    for (let i = node.neighbors.length - 1; i >= 0; i--) {
-      stack.push({ node: node.neighbors[i], depth: depth + 1 });
-    }
-  }
-
-  return null; // exhausted without finding goal
-}
-// Build a tiny graph
-const leaf = { value: 'leaf', neighbors: [] };
-const mid   = { value: 'mid',   neighbors: [leaf] };
-const root  = { value: 'root',  neighbors: [mid] };
-
-const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
-console.log(found?.value); // → "leaf"
-function breadthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    if (depth > maxDepth) continue;
-    if (isGoal(node)) return node;
-
-    for (const neigh of node.neighbors) {
-      queue.push({ node: neigh, depth: depth + 1 });
-    }
-  }
-
-  return null;
-}
+// Fast version with punctuation handling
+areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
