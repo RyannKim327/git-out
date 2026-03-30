@@ -1,74 +1,72 @@
-/**
- * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
- * The table tells us how far to jump when a mismatch occurs.
- */
-function buildLPS(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let length = 0;            // length of the previous longest prefix suffix
-  let i = 1;                 // we start from the second character
+interface Node<T = any> {
+  value: T;
+  neighbors: Node<T>[];
+  // optional metadata for the search
+  depth?: number;
+}
+function depthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  function dfs(node: Node<T>, depth: number): Node<T> | null {
+    if (depth > maxDepth) return null;          // over the ceiling
+    if (isGoal(node)) return node;             // goal found
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        length = lps[length - 1];
-        // we don't increment i here; we try the new length
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+    for (const neigh of node.neighbors) {
+      const result = dfs(neigh, depth + 1);
+      if (result) return result;               // propagate up
+    }
+    return null;                               // no goal along this path
+  }
+
+  return dfs(root, 0);
+}
+function depthLimitedIterative<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+
+    if (depth > maxDepth) continue;          // skip over‑depth nodes
+    if (isGoal(node)) return node;           // hit the target
+
+    // Push neighbors in reverse order if you want the left‑most first
+    for (let i = node.neighbors.length - 1; i >= 0; i--) {
+      stack.push({ node: node.neighbors[i], depth: depth + 1 });
     }
   }
 
-  return lps;
+  return null; // exhausted without finding goal
 }
+// Build a tiny graph
+const leaf = { value: 'leaf', neighbors: [] };
+const mid   = { value: 'mid',   neighbors: [leaf] };
+const root  = { value: 'root',  neighbors: [mid] };
 
-/**
- * Returns an array of all start indices where `pattern` is found in `text`.
- * If the pattern has length 0, returns an empty array (no meaningful search).
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
+const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
+console.log(found?.value); // → "leaf"
+function breadthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
 
-  const lps   = buildLPS(pattern);
-  const indices: number[] = [];
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+    if (depth > maxDepth) continue;
+    if (isGoal(node)) return node;
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
-
-    if (j === pattern.length) {
-      // full match found
-      indices.push(i - j);
-      j = lps[j - 1]; // continue searching for next possible match
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
+    for (const neigh of node.neighbors) {
+      queue.push({ node: neigh, depth: depth + 1 });
     }
   }
 
-  return indices;
-}
-import { kmpSearch } from './kmp';
-
-const text = 'ABABDABACDABABCABAB';
-const pattern = 'ABCABAB';
-
-const positions = kmpSearch(text, pattern);
-console.log(positions);   // → [ 9 ]
-export function kmpIndexOf(text: string, pattern: string): number {
-  const matches = kmpSearch(text, pattern);
-  return matches.length > 0 ? matches[0] : -1;
+  return null;
 }
