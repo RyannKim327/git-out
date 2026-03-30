@@ -1,53 +1,71 @@
-/** Node definition for a singly linked list. */
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;
-}
+// src/api/remote.ts
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
-/** Helper to build a list from an array (for demo testing). */
-function buildList<T>(arr: T[]): ListNode<T> | undefined {
-  let head: ListNode<T> | undefined;
-  let tail: ListNode<T> | undefined;
-  for (const val of arr) {
-    const node: ListNode<T> = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
+const { AndroidAsyncTask } = NativeModules;
+
+// -----------------------------------------------------------------
+// 1️⃣  The simple JS/TS side: an async fetch helper
+// -----------------------------------------------------------------
+export async function loadRemoteJson(url: string): Promise<any> {
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
     }
+    const payload = await response.json();
+    return payload;
+  } catch (err) {
+    console.error('loadRemoteJson error:', err);
+    throw err;
   }
-  return head;
 }
 
-/**
- * Finds the **lower** middle of a singly linked list.
- * If the list is empty, returns undefined.
- */
-function getMiddle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  if (!head) return undefined;
+// -----------------------------------------------------------------
+// 2️⃣  The bridge to Android (AsyncTask)
+// -----------------------------------------------------------------
+// On Android, create a module that exposes `runAsyncTask`
+// which internally spawns an AsyncTask that returns a JSON string.
 
-  let slow = head;
-  let fast = head;
-
-  // Advance fast by 2 and slow by 1.
-  // When fast reaches the end, slow is at the middle.
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  return slow;
+export function runAndroidTask(
+  taskName: string,
+  args: Record<string, any>
+): Promise<any> {
+  // The native module returns a Promise that resolves with a string
+  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
+    try {
+      return JSON.parse(result);
+    } catch (err) {
+      console.warn('Failed to parse JSON from Android:', err);
+      throw err;
+    }
+  });
 }
 
-/** Demo */
-const list = buildList([10, 20, 30, 40, 50]);   // odd length
-console.log(getMiddle(list)?.value); // → 30
+// -----------------------------------------------------------------
+// 3️⃣  Example usage (e.g. inside a component)
+// -----------------------------------------------------------------
+/*
+import React, { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
+import { loadRemoteJson, runAndroidTask } from './api/remote';
 
-const listEven = buildList([1, 2, 3, 4]);        // even length
-console.log(getMiddle(listEven)?.value); // → 2  (lower middle)
+export default function Demo() {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
-// If you want the *upper* middle for even lists, just change the loop:
-//   while (fast.next) { ... }
-//   return slow.next!;   // after the loop, slow is just before the upper middle.
+  useEffect(() => {
+    // Option A – vanilla fetch
+    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
+      .then(setData)
+      .catch(err => setError(err.message));
+
+    // Option B – delegate to Android AsyncTask
+    // runAndroidTask('fetchTodo', { id: 1 })
+    //   .then(setData)
+    //   .catch(err => setError(err.message));
+  }, []);
+
+  if (error) return <View><Text>❌ {error}</Text></View>;
+  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
+}
+*/
