@@ -1,86 +1,68 @@
-// -----------------------------------------------------------------------------
-//  Simple DFS – TypeScript
-// -----------------------------------------------------------------------------
+// utils.ts
+export type SearchResult = { index: number; match: string } | null;
 
 /**
- * A graph represented as an adjacency list.
- * The keys are the node identifiers (string or number) and the values are
- * arrays of neighboring node identifiers.
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Depth‑first search.
+ * Rabin–Karp string search. Returns the first occurrence of `pattern`
+ * inside `text`, or null if no match is found.
  *
- * @param graph     – The adjacency list.
- * @param start     – The node to start from.
- * @param visitAll  – If true, the function visits all components of a
- *                    disconnected graph; otherwise it stops after exploring
- *                    the component that contains `start`.
- * @returns The visited nodes in the order they were first encountered.
+ * @param text     The string to search within – can be very long.
+ * @param pattern  The string we’re looking for. Must be non‑empty.
+ * @returns        The index of the first match or null.
  */
-function depthFirstSearch(
-  graph: Graph,
-  start: string,
-  visitAll: boolean = false
-): string[] {
-  const visited = new Set<string>();
-  const order: string[] = [];
-  const stack: string[] = [start];
+export function rabinKarpSearch(text: string, pattern: string): SearchResult {
+  if (!pattern) throw new Error('Pattern must not be empty');
+  const n = text.length;
+  const m = pattern.length;
+  if (m > n) return null;
 
-  while (stack.length) {
-    const node = stack.pop()!;           // <-- pop top of the stack
-    if (!visited.has(node)) {
-      visited.add(node);
-      order.push(node);
+  /* ---------- Parameters for hashing ---------- */
+  const prime = 101;                 // a small prime modulus
+  const base  = 256;                 // number of possible characters (ASCII)
 
-      // push neighbors in reverse to keep the natural traversal order
-      const neighbors = graph[node] ?? [];
-      for (let i = neighbors.length - 1; i >= 0; i--) {
-        const neighbour = neighbors[i];
-        if (!visited.has(neighbour)) stack.push(neighbour);
+  /* ---------- Pre‑compute base^(m‑1) % prime ----------
+   *  This value is used to drop the leading character from the
+   *  rolling hash.  For example, if the rolling hash is
+   *  h = (s[0]·base^(m‑1) + s[1]·base^(m‑2) + … + s[m‑1]) % prime,
+   *  after shifting the window by one we remove s[0]·base^(m‑1).
+   */
+  let highOrder = 1;
+  for (let i = 0; i < m - 1; i++) highOrder = (highOrder * base) % prime;
+
+  /* ---------- Compute hash of pattern & first window ----------
+   *  Use the same formula for both.  Will be used for direct
+   *  comparison when hash values coincide.
+   */
+  let patHash   = 0;
+  let windowHash = 0;
+  for (let i = 0; i < m; i++) {
+    patHash    = (patHash * base + pattern.charCodeAt(i)) % prime;
+    windowHash = (windowHash * base + text.charCodeAt(i)) % prime;
+  }
+
+  /* ---------- Slide the pattern over the text ---------- */
+  for (let i = 0; i <= n - m; i++) {
+    /* 1.  Hash match => candidate.  Verify by a literal comparison. */
+    if (patHash === windowHash) {
+      if (text.substr(i, m) === pattern) {
+        return { index: i, match: pattern };
       }
+    }
+
+    /* 2.  Roll the hash: drop the leftmost char, add the rightmost. */
+    if (i < n - m) {
+      // subtract leading contribution
+      windowHash = (windowHash - highOrder * text.charCodeAt(i)) % prime;
+      // make it positive if needed
+      if (windowHash < 0) windowHash += prime;
+      // multiply by base and add new char
+      windowHash = (windowHash * base + text.charCodeAt(i + m)) % prime;
     }
   }
 
-  if (visitAll) {
-    // explore every component that hasn't been visited yet
-    for (const node of Object.keys(graph)) {
-      if (!visited.has(node)) stack.push(node);
-      while (stack.length) {
-        const cur = stack.pop()!;
-        if (!visited.has(cur)) {
-          visited.add(cur);
-          order.push(cur);
-          const neighbors = graph[cur] ?? [];
-          for (let i = neighbors.length - 1; i >= 0; i--)
-            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
-        }
-      }
-    }
-  }
-
-  return order;
+  return null;
 }
+import { rabinKarpSearch } from './utils';
 
-// -----------------------------------------------------------------------------
-//  Example usage
-// -----------------------------------------------------------------------------
-
-const sampleGraph: Graph = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["F"],
-  D: [],
-  E: ["F"],
-  F: [],
-  G: ["H"],   // disconnected component
-  H: [],
-};
-
-console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
-
-console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
-
+console.log(rabinKarpSearch('abracadabra', 'cad'));   // { index: 4, match: 'cad' }
+console.log(rabinKarpSearch('hello world', 'world')); // { index: 6, match: 'world' }
+console.log(rabinKarpSearch('hello', 'bye'));        // null
