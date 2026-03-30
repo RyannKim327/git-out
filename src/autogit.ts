@@ -1,57 +1,74 @@
 /**
- * Generic binary search.
- *
- * @param arr   Sorted array.
- * @param key  Value you’re looking for.
- * @param cmp  Optional comparison callback.
- *
- * @returns The index of `key` if found, otherwise –1.
+ * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
+ * The table tells us how far to jump when a mismatch occurs.
  */
-export function binarySearch<T>(
-    arr: T[],
-    key: T,
-    cmp?: (a: T, b: T) => number
-): number {
-    if (arr.length === 0) return -1;
+function buildLPS(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let length = 0;            // length of the previous longest prefix suffix
+  let i = 1;                 // we start from the second character
 
-    // Default to natural ordering for primitives.
-    const compare = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        length = lps[length - 1];
+        // we don't increment i here; we try the new length
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
+  }
 
-    let low = 0;
-    let high = arr.length - 1;
+  return lps;
+}
 
-    while (low <= high) {
-        // Guard against overflow in large arrays.
-        const mid = low + ((high - low) >> 1);
-        const midVal = arr[mid];
+/**
+ * Returns an array of all start indices where `pattern` is found in `text`.
+ * If the pattern has length 0, returns an empty array (no meaningful search).
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];
 
-        const comparison = compare(midVal, key);
+  const lps   = buildLPS(pattern);
+  const indices: number[] = [];
 
-        if (comparison === 0) {
-            return mid;          // Found!
-        } else if (comparison < 0) {
-            low = mid + 1;
-        } else {
-            high = mid - 1;
-        }
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
     }
 
-    return -1;  // Not found
+    if (j === pattern.length) {
+      // full match found
+      indices.push(i - j);
+      j = lps[j - 1]; // continue searching for next possible match
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
+  }
+
+  return indices;
 }
-// 1️⃣ Integers (no cmp needed)
-const numbers = [3, 7, 12, 19, 27];
-const idx1 = binarySearch(numbers, 12); // 2
+import { kmpSearch } from './kmp';
 
-// 2️⃣ Strings
-const words = ['apple', 'banana', 'cherry', 'date'];
-const idx2 = binarySearch(words, 'cherry'); // 2
+const text = 'ABABDABACDABABCABAB';
+const pattern = 'ABCABAB';
 
-// 3️⃣ Objects – supply a compare
-type User = { id: number; name: string };
-const users: User[] = [
-    { id: 10, name: 'Zoe' },
-    { id: 20, name: 'Bob' },
-    { id: 30, name: 'Alice' },
-].sort((a, b) => a.id - b.id);
-
-const idx3 = binarySearch(users, { id: 20, name: '' }, (a, b) => a.id - b.id); // 1
+const positions = kmpSearch(text, pattern);
+console.log(positions);   // → [ 9 ]
+export function kmpIndexOf(text: string, pattern: string): number {
+  const matches = kmpSearch(text, pattern);
+  return matches.length > 0 ? matches[0] : -1;
+}
