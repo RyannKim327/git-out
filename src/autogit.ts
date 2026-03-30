@@ -1,46 +1,27 @@
-interface TreeNode<T = any> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-function countLeaves<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                     // empty tree
-  if (!root.left && !root.right) return 1; // leaf
+/**
+ * Returns true if `str` reads the same forwards and backwards.
+ *
+ * @param str – The string you want to test.
+ * @returns  boolean – palindrome status.
+ */
+export function isPalindrome(str: string): boolean {
+  // Remove all non‑alphanumeric characters and ignore case.
+  const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
-  // otherwise count leaves in both sub‑trees
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+  // Two‑pointer scan is faster than reversing a long string.
+  let left = 0;
+  let right = cleaned.length - 1;
 
-  let count = 0;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-
-    if (!node.left && !node.right) {
-      count++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
     }
+    left++;
+    right--;
   }
-
-  return count;
+  return true;
 }
-const root: TreeNode<number> = {
-  value: 1,
-  left: {
-    value: 2,
-    left: { value: 4 },
-    right: { value: 5 }
-  },
-  right: {
-    value: 3,
-    right: { value: 6 }
-  }
-};
-
-console.log(countLeaves(root));          // → 3  (4, 5, 6)
-console.log(countLeavesIter(root));      // → 3
+console.log(isPalindrome('racecar'));          // true
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('hello'));            // false
+console.log(isPalindrome(''));                 // true (empty string)
