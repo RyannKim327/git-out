@@ -1,50 +1,39 @@
-/**
- * Returns the longest common subsequence of two strings.
- *
- * @param a The first string.
- * @param b The second string.
- * @returns The LCS string.
- */
-export function lcs(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+const a = [1, 2, 3, 4, 5];
+const b = [3, 4, 5, 6, 7];
 
-  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
-  // We keep one extra row/column at index 0 for the empty prefix.
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+const intersection = a.filter(item => new Set(b).has(item));
+console.log(intersection); // [3, 4, 5]
+const a = [1, 2, 3, 4, 5, 5];
+const b = [3, 4, 5, 5, 6];
 
-  // Build the table bottom‑up.
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+const setA = new Set(a);
+const setB = new Set(b);
+
+const intersection = [...setA].filter(item => setB.has(item));
+console.log(intersection); // [3, 4, 5]
+function multisetIntersection<T>(arr1: T[], arr2: T[]): T[] {
+  const counter = new Map<T, number>();
+
+  // Count each element of arr1
+  for (const v of arr1) {
+    counter.set(v, (counter.get(v) ?? 0) + 1);
   }
 
-  // Reconstruct one LCS by walking back through the table.
-  let i = m, j = n;
-  const chars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // The character is part of the LCS.
-      chars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // Move up.
-    } else {
-      j--;          // Move left.
+  // For each element in arr2, if it exists in the counter use it
+  const result: T[] = [];
+  for (const v of arr2) {
+    const count = counter.get(v);
+    if (count && count > 0) {
+      result.push(v);
+      counter.set(v, count - 1);
     }
   }
-
-  // The chars array holds the LCS in reverse order.
-  return chars.reverse().join('');
+  return result;
 }
-const s1 = "AGGTAB";
-const s2 = "GXTXAYB";
 
-console.log(lcs(s1, s2)); // "GTAB"
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4]));
+// → [2, 2]
+const intersection = a.reduce((acc, item) => {
+  if (b.includes(item) && !acc.includes(item)) acc.push(item);
+  return acc;
+}, [] as number[]);
