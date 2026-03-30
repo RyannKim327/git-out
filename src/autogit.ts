@@ -1,62 +1,58 @@
 /**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
+ * Return the largest prime factor of a positive integer `n`.
+ * For `n <= 1` returns `null` (no prime factors).
  *
- * Complexity: O(m)
+ * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
  */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
+function largestPrimeFactor(n: number): number | null {
+  if (n <= 1) return null;          // 0 or 1 has no prime factors
 
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+  let remainder = n;
+  let largest = 2;
+
+  // Always strip out factors of 2 first – saves time later
+  while (remainder % 2 === 0) {
+    largest = 2;
+    remainder /= 2;
+  }
+
+  // Now test only odd divisors (3,5,7,…)
+  const limit = Math.sqrt(remainder);
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    while (remainder % divisor === 0) {
+      largest = divisor;
+      remainder /= divisor;
     }
   }
-  return lps;
+
+  // If anything left of 1, it’s prime and bigger than any we found
+  if (remainder > 1) largest = remainder;
+
+  return largest;
 }
+console.log(largestPrimeFactor(15));    // 5
+console.log(largestPrimeFactor(21));    // 7
+console.log(largestPrimeFactor(26));    // 13
+console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
+function largestPrimeFactorBig(n: bigint): bigint | null {
+  if (n <= 1n) return null;
+  let remainder = n;
+  let largest = 2n;
 
-/**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
-
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
-    }
+  while (remainder % 2n === 0n) {
+    largest = 2n;
+    remainder /= 2n;
   }
-  return -1; // no match
+
+  let divisor = 3n;
+  while (divisor * divisor <= remainder) {
+    while (remainder % divisor === 0n) {
+      largest = divisor;
+      remainder /= divisor;
+    }
+    divisor += 2n;
+  }
+
+  if (remainder > 1n) largest = remainder;
+  return largest;
 }
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
