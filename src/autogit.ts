@@ -1,35 +1,86 @@
+// -----------------------------------------------------------------------------
+//  Simple DFS – TypeScript
+// -----------------------------------------------------------------------------
+
 /**
- * Bubble sort for an array of numbers.
- * The function mutates the passed array and returns it so you can chain or immediately inspect it.
- *
- * @param arr – the array to sort
- * @returns the sorted array (same reference as `arr`)
+ * A graph represented as an adjacency list.
+ * The keys are the node identifiers (string or number) and the values are
+ * arrays of neighboring node identifiers.
  */
-export function bubbleSort(arr: number[]): number[] {
-  // The array’s length is used repeatedly, so cache it for speed.
-  const n = arr.length;
+type Graph = Record<string, string[]>;
 
-  // Outer loop – each pass pushes the next largest element to its final spot at the end.
-  // We can stop one element earlier on each pass because the last `pass` items are already sorted.
-  for (let pass = 0; pass < n - 1; pass++) {
-    // Track whether any swap happened this pass. If none, the array is sorted.
-    let swapped = false;
+/**
+ * Depth‑first search.
+ *
+ * @param graph     – The adjacency list.
+ * @param start     – The node to start from.
+ * @param visitAll  – If true, the function visits all components of a
+ *                    disconnected graph; otherwise it stops after exploring
+ *                    the component that contains `start`.
+ * @returns The visited nodes in the order they were first encountered.
+ */
+function depthFirstSearch(
+  graph: Graph,
+  start: string,
+  visitAll: boolean = false
+): string[] {
+  const visited = new Set<string>();
+  const order: string[] = [];
+  const stack: string[] = [start];
 
-    // Inner loop – compare adjacent pairs and swap if out of order.
-    // We only need to go up to `n - pass - 1` because the last `pass` elements are in place.
-    for (let i = 0; i < n - pass - 1; i++) {
-      if (arr[i] > arr[i + 1]) {
-        // Simple swap using destructuring.
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;
+  while (stack.length) {
+    const node = stack.pop()!;           // <-- pop top of the stack
+    if (!visited.has(node)) {
+      visited.add(node);
+      order.push(node);
+
+      // push neighbors in reverse to keep the natural traversal order
+      const neighbors = graph[node] ?? [];
+      for (let i = neighbors.length - 1; i >= 0; i--) {
+        const neighbour = neighbors[i];
+        if (!visited.has(neighbour)) stack.push(neighbour);
       }
     }
-
-    // If no two elements were swapped, no more passes are required.
-    if (!swapped) break;
   }
 
-  return arr;
+  if (visitAll) {
+    // explore every component that hasn't been visited yet
+    for (const node of Object.keys(graph)) {
+      if (!visited.has(node)) stack.push(node);
+      while (stack.length) {
+        const cur = stack.pop()!;
+        if (!visited.has(cur)) {
+          visited.add(cur);
+          order.push(cur);
+          const neighbors = graph[cur] ?? [];
+          for (let i = neighbors.length - 1; i >= 0; i--)
+            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
+        }
+      }
+    }
+  }
+
+  return order;
 }
-const unsorted = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(unsorted));        // [11, 12, 22, 25, 34, 64, 90]
+
+// -----------------------------------------------------------------------------
+//  Example usage
+// -----------------------------------------------------------------------------
+
+const sampleGraph: Graph = {
+  A: ["B", "C"],
+  B: ["D", "E"],
+  C: ["F"],
+  D: [],
+  E: ["F"],
+  F: [],
+  G: ["H"],   // disconnected component
+  H: [],
+};
+
+console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
+
+console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
+// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
+
