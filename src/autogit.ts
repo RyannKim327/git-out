@@ -1,86 +1,62 @@
-// -----------------------------------------------------------------------------
-//  Simple DFS – TypeScript
-// -----------------------------------------------------------------------------
-
 /**
- * A graph represented as an adjacency list.
- * The keys are the node identifiers (string or number) and the values are
- * arrays of neighboring node identifiers.
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Depth‑first search.
+ * Returns the index of `target` in a sorted array `arr` or -1 if not found.
  *
- * @param graph     – The adjacency list.
- * @param start     – The node to start from.
- * @param visitAll  – If true, the function visits all components of a
- *                    disconnected graph; otherwise it stops after exploring
- *                    the component that contains `start`.
- * @returns The visited nodes in the order they were first encountered.
+ * @param arr     Sorted array of numbers (ascending or descending)
+ * @param target  Value to search for
+ * @returns Index or -1
  */
-function depthFirstSearch(
-  graph: Graph,
-  start: string,
-  visitAll: boolean = false
-): string[] {
-  const visited = new Set<string>();
-  const order: string[] = [];
-  const stack: string[] = [start];
+export function interpolationSearch(arr: number[], target: number): number {
+  if (!arr.length) return -1;
 
-  while (stack.length) {
-    const node = stack.pop()!;           // <-- pop top of the stack
-    if (!visited.has(node)) {
-      visited.add(node);
-      order.push(node);
+  let lo = 0;
+  let hi = arr.length - 1;
 
-      // push neighbors in reverse to keep the natural traversal order
-      const neighbors = graph[node] ?? [];
-      for (let i = neighbors.length - 1; i >= 0; i--) {
-        const neighbour = neighbors[i];
-        if (!visited.has(neighbour)) stack.push(neighbour);
-      }
+  // Handle both ascending and descending arrays.
+  const isAscending = arr[hi] > arr[lo];
+
+  // If target is out of the array’s bounds, it can’t be there.
+  while (
+    (isAscending
+      ? target < arr[lo] || target > arr[hi]
+      : target > arr[lo] || target < arr[hi])
+  ) {
+    return -1;
+  }
+
+  while (lo <= hi) {
+    // Avoid division by zero when lo and hi point to the same value.
+    if (arr[lo] === arr[hi]) {
+      return arr[lo] === target ? lo : -1;
+    }
+
+    // Estimate the next probe position.
+    const pos =
+      lo +
+      Math.floor(
+        ((target - arr[lo]) * (hi - lo)) /
+          (arr[hi] - arr[lo])
+      );
+
+    // Guard against unexpected inequalities after casting to int.
+    if (pos < lo || pos > hi) return -1;
+
+    if (arr[pos] === target) return pos;
+
+    if (arr[pos] < target) {
+      lo = pos + 1;
+    } else {
+      hi = pos - 1;
     }
   }
 
-  if (visitAll) {
-    // explore every component that hasn't been visited yet
-    for (const node of Object.keys(graph)) {
-      if (!visited.has(node)) stack.push(node);
-      while (stack.length) {
-        const cur = stack.pop()!;
-        if (!visited.has(cur)) {
-          visited.add(cur);
-          order.push(cur);
-          const neighbors = graph[cur] ?? [];
-          for (let i = neighbors.length - 1; i >= 0; i--)
-            if (!visited.has(neighbors[i])) stack.push(neighbors[i]);
-        }
-      }
-    }
-  }
-
-  return order;
+  return -1;
 }
+// sorted ascending
+const asc = [1, 3, 5, 7, 9, 11, 13];
+console.log(interpolationSearch(asc, 7)); // 3
+console.log(interpolationSearch(asc, 2)); // -1
 
-// -----------------------------------------------------------------------------
-//  Example usage
-// -----------------------------------------------------------------------------
-
-const sampleGraph: Graph = {
-  A: ["B", "C"],
-  B: ["D", "E"],
-  C: ["F"],
-  D: [],
-  E: ["F"],
-  F: [],
-  G: ["H"],   // disconnected component
-  H: [],
-};
-
-console.log("DFS from 'A' (component‐only):", depthFirstSearch(sampleGraph, "A"));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C' ]
-
-console.log("DFS from 'A' (all components):", depthFirstSearch(sampleGraph, "A", true));
-// → [ 'A', 'B', 'D', 'E', 'F', 'C', 'G', 'H' ]
-
+// sorted descending
+const desc = [20, 15, 10, 5, 0];
+console.log(interpolationSearch(desc, 10)); // 2
+console.log(interpolationSearch(desc, -5)); // -1
