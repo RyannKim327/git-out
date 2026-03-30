@@ -1,72 +1,31 @@
-interface Node<T = any> {
-  value: T;
-  neighbors: Node<T>[];
-  // optional metadata for the search
-  depth?: number;
+// Returns n! for n >= 0.
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
 }
-function depthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  function dfs(node: Node<T>, depth: number): Node<T> | null {
-    if (depth > maxDepth) return null;          // over the ceiling
-    if (isGoal(node)) return node;             // goal found
-
-    for (const neigh of node.neighbors) {
-      const result = dfs(neigh, depth + 1);
-      if (result) return result;               // propagate up
-    }
-    return null;                               // no goal along this path
+function factorialIter(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return dfs(root, 0);
+  return result;
 }
-function depthLimitedIterative<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-
-    if (depth > maxDepth) continue;          // skip over‑depth nodes
-    if (isGoal(node)) return node;           // hit the target
-
-    // Push neighbors in reverse order if you want the left‑most first
-    for (let i = node.neighbors.length - 1; i >= 0; i--) {
-      stack.push({ node: node.neighbors[i], depth: depth + 1 });
-    }
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  let result = 1n;              // 1n is a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
   }
-
-  return null; // exhausted without finding goal
+  return result;
 }
-// Build a tiny graph
-const leaf = { value: 'leaf', neighbors: [] };
-const mid   = { value: 'mid',   neighbors: [leaf] };
-const root  = { value: 'root',  neighbors: [mid] };
+console.log(factorialBigInt(20)); // 2432902008176640000n
+const memo: Record<number, number> = { 0: 1, 1: 1 };
 
-const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
-console.log(found?.value); // → "leaf"
-function breadthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    if (depth > maxDepth) continue;
-    if (isGoal(node)) return node;
-
-    for (const neigh of node.neighbors) {
-      queue.push({ node: neigh, depth: depth + 1 });
-    }
-  }
-
-  return null;
+function memoisedFactorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  if (n in memo) return memo[n];
+  memo[n] = n * memoisedFactorial(n - 1);
+  return memo[n];
 }
