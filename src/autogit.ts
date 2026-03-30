@@ -1,69 +1,50 @@
 /**
- * Returns the majority element if it exists,
- * otherwise returns null.
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a The first string.
+ * @param b The second string.
+ * @returns The LCS string.
  */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
+  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
+  // We keep one extra row/column at index 0 for the empty prefix.
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
+  // Build the table bottom‑up.
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Reconstruct one LCS by walking back through the table.
+  let i = m, j = n;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // The character is part of the LCS.
+      chars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // Move up.
     } else {
-      count += num === candidate ? 1 : -1;
+      j--;          // Move left.
     }
   }
 
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  // The chars array holds the LCS in reverse order.
+  return chars.reverse().join('');
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
+const s1 = "AGGTAB";
+const s2 = "GXTXAYB";
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
-  }
-
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
-    }
-  }
-  return null;
-}
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
-
-  for (const num of sorted) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
-}
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+console.log(lcs(s1, s2)); // "GTAB"
