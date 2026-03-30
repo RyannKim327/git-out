@@ -1,37 +1,71 @@
-// Basic binary‑tree node
-class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+/**
+ * Returns true if `a` and `b` contain exactly the same letters,
+ * disregarding order.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional flags
+ *   - ignoreSpaces: treat spaces as insignificant
+ *   - ignorePunctuation: strip punctuation marks
+ *   - ignoreCase: treat uppercase and lowercase as the same
+ */
+export function areAnagrams(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+
+  const sanitize = (s: string) => {
+    if (ignoreCase) s = s.toLowerCase();
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
+    return s;
+  };
+
+  const sa = sanitize(a).split('').sort().join('');
+  const sb = sanitize(b).split('').sort().join('');
+
+  return sa === sb;
 }
+/**
+ * Frequency‑count version – O(n) time, O(σ) space  
+ * (σ = size of alphabet, constant for ASCII/Unicode)
+ */
+export function areAnagramsFast(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-// Main helper that returns the height of a node and updates maxDiameter
-function computeHeight<T>(node: TreeNode<T> | null, maxDiameter: { value: number }): number {
-  if (!node) return -1; // height of empty subtree is -1 so that a single node gives 0
+  const count = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = ignoreCase ? ch.toLowerCase() : ch;
+      if (ignoreSpaces && key === ' ') continue;
+      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
+  };
 
-  const leftHeight = computeHeight(node.left, maxDiameter);
-  const rightHeight = computeHeight(node.right, maxDiameter);
+  const aMap = count(a);
+  const bMap = count(b);
 
-  // Path that passes through this node
-  const diameterAtNode = leftHeight + rightHeight + 2; // +2 edges to connect left and right via current node
-  if (diameterAtNode > maxDiameter.value) {
-    maxDiameter.value = diameterAtNode;
+  if (aMap.size !== bMap.size) return false; // quick early exit
+
+  for (const [char, aCount] of aMap.entries()) {
+    if (bMap.get(char) !== aCount) return false;
   }
 
-  // Return height of this subtree
-  return Math.max(leftHeight, rightHeight) + 1;
+  return true;
 }
+// Basic usage
+areAnagrams('Listen', 'Silent'); // true
 
-// Public API
-export function treeDiameter<T>(root: TreeNode<T> | null): number {
-  const maxDiameter = { value: 0 };
-  computeHeight(root, maxDiameter);
-  return maxDiameter.value; // number of edges on the longest path
-}
-        1
-       / \
-      2   3
-     / \     
-    4   5    
+// Ignoring case & spaces
+areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
+
+// Fast version with punctuation handling
+areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
