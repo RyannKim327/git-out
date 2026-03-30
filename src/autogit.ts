@@ -1,72 +1,102 @@
-interface Node<T = any> {
-  value: T;
-  neighbors: Node<T>[];
-  // optional metadata for the search
-  depth?: number;
+/** One directed edge in the graph */
+interface Edge {
+  from: number;   // source vertex id
+  to: number;     // target vertex id
+  weight: number; // edge weight
 }
-function depthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  function dfs(node: Node<T>, depth: number): Node<T> | null {
-    if (depth > maxDepth) return null;          // over the ceiling
-    if (isGoal(node)) return node;             // goal found
 
-    for (const neigh of node.neighbors) {
-      const result = dfs(neigh, depth + 1);
-      if (result) return result;               // propagate up
+/** Graph represented only by its edge list */
+type Graph = Edge[];
+
+/** Result of the shortest‑path computation */
+interface BellmanFordResult {
+  /** distance from source to every vertex (Infinity if unreachable) */
+  distances: number[];
+  /** predecessor of each vertex on the shortest path tree */
+  predecessors: (number | null)[];
+  /** true if a negative cycle was detected that is reachable from the source */
+  negativeCycleDetected: boolean;
+}
+/**
+ * Bellman‑Ford single‑source shortest‑path solver.
+ * @param edges  complete list of directed edges in the graph
+ * @param vertexCount total number of vertices, 0 … vertexCount‑1
+ * @param source id of the source vertex
+ * @returns distances, predecessors and a flag for a reachable negative cycle
+ */
+export function bellmanFord(
+  edges: Graph,
+  vertexCount: number,
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
+
+  const distances = Array(vertexCount).fill(INF);
+  const predecessors = Array<null | number>(vertexCount).fill(null);
+
+  distances[source] = 0;
+
+  /* Relax edges V‑1 times */
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let changed = false;
+    for (const e of edges) {
+      const { from, to, weight } = e;
+      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+        distances[to] = distances[from] + weight;
+        predecessors[to] = from;
+        changed = true;
+      }
     }
-    return null;                               // no goal along this path
+    /* Early exit if no relaxation happened */
+    if (!changed) break;
   }
 
-  return dfs(root, 0);
-}
-function depthLimitedIterative<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-
-    if (depth > maxDepth) continue;          // skip over‑depth nodes
-    if (isGoal(node)) return node;           // hit the target
-
-    // Push neighbors in reverse order if you want the left‑most first
-    for (let i = node.neighbors.length - 1; i >= 0; i--) {
-      stack.push({ node: node.neighbors[i], depth: depth + 1 });
-    }
-  }
-
-  return null; // exhausted without finding goal
-}
-// Build a tiny graph
-const leaf = { value: 'leaf', neighbors: [] };
-const mid   = { value: 'mid',   neighbors: [leaf] };
-const root  = { value: 'root',  neighbors: [mid] };
-
-const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
-console.log(found?.value); // → "leaf"
-function breadthLimitedSearch<T>(
-  root: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  maxDepth: number
-): Node<T> | null {
-  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;
-
-    if (depth > maxDepth) continue;
-    if (isGoal(node)) return node;
-
-    for (const neigh of node.neighbors) {
-      queue.push({ node: neigh, depth: depth + 1 });
+  /* Check for negative‑weight cycles reachable from source */
+  let negativeCycleDetected = false;
+  for (const e of edges) {
+    const { from, to, weight } = e;
+    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+      negativeCycleDetected = true;
+      break;
     }
   }
 
-  return null;
+  return { distances, predecessors, negativeCycleDetected };
 }
+/**
+ * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
+ * Returns `undefined` if the target is unreachable.
+ */
+export function reconstructPath(
+  target: number,
+  predecessors: (number | null)[]
+): number[] | undefined {
+  if (predecessors[target] === null) return undefined;
+
+  const path: number[] = [];
+  for (let v = target; v !== null; v = predecessors[v]) {
+    path.push(v);
+  }
+  return path.reverse();
+}
+// A small graph with both positive and negative edges
+const graph: Graph = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 2, weight: -3 },
+  { from: 1, to: 3, weight: 2 },
+  { from: 2, to: 3, weight: 4 },
+];
+
+const vertexCount = 4;          // vertices 0 … 3
+const source = 0;
+const result = bellmanFord(graph, vertexCount, source);
+
+console.log('Distances:', result.distances);
+// [0, 1, 2, 3]
+
+console.log('Negative cycle detected?', result.negativeCycleDetected);
+// false
+
+const pathTo3 = reconstructPath(3, result.predecessors);
+console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
