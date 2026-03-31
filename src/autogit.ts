@@ -1,114 +1,81 @@
+// 0‑based directed graph
+export type Graph = number[][];   // graph[u] = list of vertices that u points to
 /**
- * A single node in a binary search tree.
+ * Returns an array of strongly connected components.
+ * Each component is an array of vertex indices, in the order they were popped.
  */
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+export function tarjanSCC(graph: Graph): number[][] {
+  const n = graph.length;
+  const indices = new Array<number>(n).fill(-1);   // -1 = unvisited
+  const lowlink = new Array<number>(n).fill(0);
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  const sccs: number[][] = [];
+  let nextIdx = 0;
 
-/**
- * Binary search tree that keeps values ordered by a comparator.
- * If you don’t pass a comparator it defaults to numeric or string <=> >.
- */
-class BinarySearchTree<T> {
-  root: TreeNode<T> | null = null;
-  private cmp: (a: T, b: T) => number;
+  function strongConnect(v: number) {
+    // 1️⃣  Discovery
+    indices[v] = lowlink[v] = nextIdx++;
+    stack.push(v);
+    onStack[v] = true;
 
-  constructor(comparator?: (a: T, b: T) => number) {
-    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
-
-  /* ------------------------------------------------------------------
-   * Insert
-   * ------------------------------------------------------------------ */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current = this.root;
-    while (true) {
-      const comp = this.cmp(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          break;
-        }
-        current = current.left;
-      } else {
-        // treat equal values as “go right” – change if you want otherwise
-        if (!current.right) {
-          current.right = newNode;
-          break;
-        }
-        current = current.right;
+    // 2️⃣  Explore neighbors
+    for (const w of graph[v]) {
+      if (indices[w] === -1) {
+        // w has not been visited – recurse
+        strongConnect(w);
+        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
+      } else if (onStack[w]) {
+        // w is on stack → back‑edge
+        lowlink[v] = Math.min(lowlink[v], indices[w]);
       }
     }
+
+    // 3️⃣  Root check
+    if (lowlink[v] === indices[v]) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop()!;
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
   }
 
-  /* ------------------------------------------------------------------
-   * Find
-   * ------------------------------------------------------------------ */
-  find(value: T): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = this.cmp(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
+  // kick off DFS from every unvisited vertex
+  for (let v = 0; v < n; v++) {
+    if (indices[v] === -1) {
+      strongConnect(v);
     }
-    return null;
   }
 
-  /* ------------------------------------------------------------------
-   * Traversals – each visitor receives the node value
-   * ------------------------------------------------------------------ */
-  inOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      visitor(node.value);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  preOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      visitor(node.value);
-      walk(node.left);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  postOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      walk(node.right);
-      visitor(node.value);
-    }
-    walk(this.root);
-  }
+  return sccs;
 }
+const graph: Graph = [
+  [1],          // 0 → 1
+  [2],          // 1 → 2
+  [0, 3],       // 2 → 0, 2 → 3
+  [4],          // 3 → 4
+  [5, 6],       // 4 → 5, 4 → 6
+  [3],          // 5 → 3
+  [4]           // 6 → 4
+];
 
-/* ------------------------------------------------------------------
- * Quick demo
- * ------------------------------------------------------------------ */
-const bst = new BinarySearchTree<number>();
+const sccs = tarjanSCC(graph);
+console.log(sccs);
+// Expected output (order of components may vary):
+// [
+//   [0, 1, 2],   // one SCC (0↔1↔2)
+//   [3],         // single node
+//   [4],         // single node
+//   [5],         // single node
+//   [6]          // single node
+// ]
+// A cycle of length 5
+const cycle: Graph = [ [1], [2], [3], [4], [0] ];
+console.assert(tarjanSCC(cycle).length === 1 &&
+               tarjanSCC(cycle)[0].length === 5, 'Cycle should be one SCC');
 
-[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
-
-console.log('In‑order traversal (sorted):');
-bst.inOrder(v => console.log(v));
-
-console.log('\nFind 60:', bst.find(60)?.value);
-console.log('Find 25:', bst.find(25)?.value); // null
