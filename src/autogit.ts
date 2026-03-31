@@ -1,46 +1,9 @@
-interface TreeNode<T = any> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+function removeAllSpaces(text: string): string {
+  // \s matches any whitespace (space, tab, newline, etc.)
+  return text.replace(/\s+/g, '');
 }
-function countLeaves<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                     // empty tree
-  if (!root.left && !root.right) return 1; // leaf
-
-  // otherwise count leaves in both sub‑trees
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let count = 0;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-
-    if (!node.left && !node.right) {
-      count++;
-    } else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return count;
-}
-const root: TreeNode<number> = {
-  value: 1,
-  left: {
-    value: 2,
-    left: { value: 4 },
-    right: { value: 5 }
-  },
-  right: {
-    value: 3,
-    right: { value: 6 }
-  }
-};
-
-console.log(countLeaves(root));          // → 3  (4, 5, 6)
-console.log(countLeavesIter(root));      // → 3
+const original = "  Hello,   world!   ";
+const withoutSpaces = removeAllSpaces(original);
+console.log(withoutSpaces); // => "Hello,world!"
+return text.replace(/ /g, '');
+return text.split(' ').join('');
