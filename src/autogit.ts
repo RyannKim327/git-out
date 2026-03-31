@@ -1,74 +1,82 @@
-// ---------------  Node definition --------------------
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+const decimal = 42;
+const binaryStr = decimal.toString(2); // "101010"
+console.log(binaryStr);
+function toFixedBinary(n: number, width: number): string {
+  const bin = n.toString(2);
+  return bin.padStart(width, '0');
 }
 
-// ---------------  Main logic --------------------
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;  // empty or single element
-
-  // 1️⃣ Find middle
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+console.log(toFixedBinary(5, 8)); // "00000101"
+function decimalToBinary(num: number): string {
+  if (num === 0) return '0';
+  let n = Math.abs(num);
+  let bits = '';
+  while (n > 0) {
+    bits = (n % 2).toString() + bits;
+    n = Math.floor(n / 2);
   }
-
-  // 2️⃣ Reverse second half
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow; // start at middle
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
+  // Two's complement for negatives (using 32‑bit for illustration)
+  if (num < 0) {
+    // Pad to 32 bits
+    bits = bits.padStart(32, '0');
+    // Invert bits
+    bits = bits.split('').map(c => (c === '0' ? '1' : '0')).join('');
+    // Add 1
+    let carry = 1;
+    bits = bits.split('').reverse().map((b, idx) => {
+      const sum = Number(b) + carry;
+      carry = Math.floor(sum / 2);
+      return (sum % 2).toString();
+    }).reverse().join('');
   }
-  // now `prev` points to head of reversed second half
-
-  // 3️⃣ Compare halves
-  let p1 = head;
-  let p2 = prev;
-  while (p2) {           // only need to loop over the shorter half
-    if (p1!.val !== p2!.val) return false;
-    p1 = p1!.next;
-    p2 = p2!.next;
-  }
-
-  // 4️⃣ (Optional) Put list back together
-  // Reverse again and re‑attach to original first half
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is the head of the original second half again
-
-  return true;
+  return bits;
 }
-export function isPalindromeFunctional<T>(head: ListNode<T> | null): boolean {
-  const vals: T[] = [];
-  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
-  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
-    if (vals[i] !== vals[j]) return false;
+
+console.log(decimalToBinary(101)); // "1100101"
+console.log(decimalToBinary(-3));  // "11111111111111111111111111111101" (32‑bit two's complement)
+function bigIntToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let negative = false;
+  if (n < 0n) {
+    negative = true;
+    n = -n;          // work with the absolute value
   }
-  return true;
+  let bits = '';
+  while (n > 0n) {
+    bits = (n & 1n).toString() + bits; // n & 1n gives lowest bit
+    n >>= 1n;                          // shift right
+  }
+  return negative ? '-' + bits : bits;
 }
-const build = (arr: number[]) => {
-  let dummy = new ListNode(0);
-  let curr = dummy;
-  for (const x of arr) {
-    curr.next = new ListNode(x);
-    curr = curr.next;
-  }
-  return dummy.next;
+
+const huge = BigInt('123456789012345678901234567890');
+console.log(bigIntToBinary(huge));
+// prints a long binary string
+export type BinaryOpts = {
+  width?: number;          // pad to this width
+  useBigInt?: boolean;     // switch to BigInt mode
+  signed?: boolean;        // two’s complement for negatives
 };
 
-console.log(isPalindrome(build([1,2,3,2,1]))); // true
-console.log(isPalindrome(build([1,2,3,4,5]))); // false
+export function toBinary(
+  num: number | bigint,
+  opts: BinaryOpts = {}
+): string {
+  const { width, useBigInt = false, signed = false } = opts;
+
+  let bin: string;
+
+  if (useBigInt) {
+    const big = typeof num === 'bigint' ? num : BigInt(num);
+    bin = signed ? bigIntToBinary(big) : big.toString(2);
+  } else {
+    bin = signed
+      ? decimalToBinary(Number(num))
+      : Number(num).toString(2);
+  }
+
+  return width ? bin.padStart(width, '0') : bin;
+}
+console.log(toBinary(42));                 // "101010"
+console.log(toBinary(42, { width: 8 }));   // "00101010"
+console.log(toBinary(-3, { useBigInt: true, signed: true })); // 32‑bit two's complement
