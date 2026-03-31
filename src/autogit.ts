@@ -1,74 +1,30 @@
-/**
- * Builds the LPS (Longest Proper Prefix which is also Suffix) table for `pattern`.
- * The table tells us how far to jump when a mismatch occurs.
- */
-function buildLPS(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let length = 0;            // length of the previous longest prefix suffix
-  let i = 1;                 // we start from the second character
+// src/cronJob.ts
+import * as cron from 'node-cron';
+import { exec } from 'child_process';
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        length = lps[length - 1];
-        // we don't increment i here; we try the new length
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-
-  return lps;
+// Simple helper that returns a random joke (you can replace it with anything)
+function getRandomJoke(): string {
+  const jokes = [
+    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
+    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
+    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
+  ];
+  return jokes[Math.floor(Math.random() * jokes.length)];
 }
 
-/**
- * Returns an array of all start indices where `pattern` is found in `text`.
- * If the pattern has length 0, returns an empty array (no meaningful search).
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
+// This job:
+cron.schedule('* * * * *', () => {          // Runs every minute
+  const joke = getRandomJoke();
+  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
 
-  const lps   = buildLPS(pattern);
-  const indices: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
+  // Example of how you might trigger a system command using Cron
+  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
+    if (err) {
+      console.warn(`Error while executing command: ${err.message}`);
+      return;
     }
+    console.log(`Command output: ${stdout.trim()}`);
+  });
+});
 
-    if (j === pattern.length) {
-      // full match found
-      indices.push(i - j);
-      j = lps[j - 1]; // continue searching for next possible match
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
-  }
-
-  return indices;
-}
-import { kmpSearch } from './kmp';
-
-const text = 'ABABDABACDABABCABAB';
-const pattern = 'ABCABAB';
-
-const positions = kmpSearch(text, pattern);
-console.log(positions);   // → [ 9 ]
-export function kmpIndexOf(text: string, pattern: string): number {
-  const matches = kmpSearch(text, pattern);
-  return matches.length > 0 ? matches[0] : -1;
-}
+console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
