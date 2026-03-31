@@ -1,15 +1,16 @@
-// Declare your array and annotate the type if you want extra safety
-let numbers: number[] = [12, 4, 75, 3, 9];
-
-// Sort in ascending order
-numbers.sort((a, b) => a - b);
-
-console.log(numbers); // [3, 4, 9, 12, 75]
-const sorted = [...numbers].sort((a, b) => a - b);
-numbers.sort((a, b) => b - a);
-export function sortNumbers(nums: number[], order: 'asc' | 'desc' = 'asc'): number[] {
-  const comparator = order === 'asc' ? (a: number, b: number) => a - b
-                                    : (a: number, b: number) => b - a;
-  // Return a new sorted array, leaving the input untouched
-  return [...nums].sort(comparator);
+/**
+ * Returns true if the array is sorted in non‑decreasing order.
+ * Works for any type that supports the <= operator.
+ */
+function isSortedAscending<T>(arr: T[]): boolean {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] > arr[i + 1]) {
+      return false;                // found a violation
+    }
+  }
+  return true;                     // no violations found
 }
+console.log(isSortedAscending([1, 2, 3, 4]));   // true
+console.log(isSortedAscending([1, 3, 2, 4]));   // false
+const isSortedAsc = (arr: number[]) =>
+  arr.every((v, i) => i === 0 || arr[i - 1] <= v);
