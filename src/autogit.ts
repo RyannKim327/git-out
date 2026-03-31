@@ -1,114 +1,58 @@
 /**
- * A single node in a binary search tree.
+ * Return the largest prime factor of a positive integer `n`.
+ * For `n <= 1` returns `null` (no prime factors).
+ *
+ * @param n – a number > 0 (use Number if you’re certain it fits in a double precision float)
  */
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+function largestPrimeFactor(n: number): number | null {
+  if (n <= 1) return null;          // 0 or 1 has no prime factors
 
-  constructor(value: T) {
-    this.value = value;
+  let remainder = n;
+  let largest = 2;
+
+  // Always strip out factors of 2 first – saves time later
+  while (remainder % 2 === 0) {
+    largest = 2;
+    remainder /= 2;
   }
+
+  // Now test only odd divisors (3,5,7,…)
+  const limit = Math.sqrt(remainder);
+  for (let divisor = 3; divisor <= limit; divisor += 2) {
+    while (remainder % divisor === 0) {
+      largest = divisor;
+      remainder /= divisor;
+    }
+  }
+
+  // If anything left of 1, it’s prime and bigger than any we found
+  if (remainder > 1) largest = remainder;
+
+  return largest;
 }
+console.log(largestPrimeFactor(15));    // 5
+console.log(largestPrimeFactor(21));    // 7
+console.log(largestPrimeFactor(26));    // 13
+console.log(largestPrimeFactor(120));   // 5   (120 = 2⁴·3·5)
+function largestPrimeFactorBig(n: bigint): bigint | null {
+  if (n <= 1n) return null;
+  let remainder = n;
+  let largest = 2n;
 
-/**
- * Binary search tree that keeps values ordered by a comparator.
- * If you don’t pass a comparator it defaults to numeric or string <=> >.
- */
-class BinarySearchTree<T> {
-  root: TreeNode<T> | null = null;
-  private cmp: (a: T, b: T) => number;
-
-  constructor(comparator?: (a: T, b: T) => number) {
-    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  while (remainder % 2n === 0n) {
+    largest = 2n;
+    remainder /= 2n;
   }
 
-  /* ------------------------------------------------------------------
-   * Insert
-   * ------------------------------------------------------------------ */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
+  let divisor = 3n;
+  while (divisor * divisor <= remainder) {
+    while (remainder % divisor === 0n) {
+      largest = divisor;
+      remainder /= divisor;
     }
-
-    let current = this.root;
-    while (true) {
-      const comp = this.cmp(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          break;
-        }
-        current = current.left;
-      } else {
-        // treat equal values as “go right” – change if you want otherwise
-        if (!current.right) {
-          current.right = newNode;
-          break;
-        }
-        current = current.right;
-      }
-    }
+    divisor += 2n;
   }
 
-  /* ------------------------------------------------------------------
-   * Find
-   * ------------------------------------------------------------------ */
-  find(value: T): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = this.cmp(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  /* ------------------------------------------------------------------
-   * Traversals – each visitor receives the node value
-   * ------------------------------------------------------------------ */
-  inOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      visitor(node.value);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  preOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      visitor(node.value);
-      walk(node.left);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  postOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      walk(node.right);
-      visitor(node.value);
-    }
-    walk(this.root);
-  }
+  if (remainder > 1n) largest = remainder;
+  return largest;
 }
-
-/* ------------------------------------------------------------------
- * Quick demo
- * ------------------------------------------------------------------ */
-const bst = new BinarySearchTree<number>();
-
-[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
-
-console.log('In‑order traversal (sorted):');
-bst.inOrder(v => console.log(v));
-
-console.log('\nFind 60:', bst.find(60)?.value);
-console.log('Find 25:', bst.find(25)?.value); // null
