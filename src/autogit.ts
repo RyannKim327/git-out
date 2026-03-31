@@ -1,54 +1,72 @@
-/**
- * Generic shell sort – works on any array whose elements can be compared by a
- * key that returns a value implementing `<` / `>`.
- *
- * @param arr   The array to sort (mutated in‑place)
- * @param key   (optional) a function that extracts the sort key from each element.
- *              For plain numbers you can leave this undefined.
- *
- * @returns The sorted array (same reference as the input).
- */
-export function shellSort<T>(arr: T[], key?: (x: T) => number | string): T[] {
-  const n = arr.length;
-  // Default key is identity for numbers, fallback to string comparison.
-  const keyFn = key ??
-    ((x: T) => {
-      const v = (x as unknown as number);
-      return typeof v === "number" ? v : String(v);
-    });
-
-  // Start with a gap that is roughly n/2, then reduce it by a factor of 1.3
-  // (Knuth's sequence: h = 3*h + 1)
-  let gap = 1;
-  while (gap < n / 3) gap = 3 * gap + 1; // largest h < n/3
-
-  while (gap >= 1) {
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (
-        j >= gap &&
-        (keyFn(temp) < keyFn(arr[j - gap]))
-      ) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    gap = Math.floor((gap - 1) / 3); // move to previous gap in Knuth sequence
-  }
-  return arr;
+interface Node<T = any> {
+  value: T;
+  neighbors: Node<T>[];
+  // optional metadata for the search
+  depth?: number;
 }
-import { shellSort } from "./shellSort";
+function depthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  function dfs(node: Node<T>, depth: number): Node<T> | null {
+    if (depth > maxDepth) return null;          // over the ceiling
+    if (isGoal(node)) return node;             // goal found
 
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(data);
-console.log(data); // [1, 2, 3, 8, 12, 23, 34, 54]
-const users = [
-  { name: "Ada", age: 45 },
-  { name: "Bob", age: 30 },
-  { name: "Cleo", age: 37 }
-];
+    for (const neigh of node.neighbors) {
+      const result = dfs(neigh, depth + 1);
+      if (result) return result;               // propagate up
+    }
+    return null;                               // no goal along this path
+  }
 
-shellSort(users, u => u.age);
-// users now sorted by age
+  return dfs(root, 0);
+}
+function depthLimitedIterative<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+
+    if (depth > maxDepth) continue;          // skip over‑depth nodes
+    if (isGoal(node)) return node;           // hit the target
+
+    // Push neighbors in reverse order if you want the left‑most first
+    for (let i = node.neighbors.length - 1; i >= 0; i--) {
+      stack.push({ node: node.neighbors[i], depth: depth + 1 });
+    }
+  }
+
+  return null; // exhausted without finding goal
+}
+// Build a tiny graph
+const leaf = { value: 'leaf', neighbors: [] };
+const mid   = { value: 'mid',   neighbors: [leaf] };
+const root  = { value: 'root',  neighbors: [mid] };
+
+const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
+console.log(found?.value); // → "leaf"
+function breadthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;
+
+    if (depth > maxDepth) continue;
+    if (isGoal(node)) return node;
+
+    for (const neigh of node.neighbors) {
+      queue.push({ node: neigh, depth: depth + 1 });
+    }
+  }
+
+  return null;
+}
