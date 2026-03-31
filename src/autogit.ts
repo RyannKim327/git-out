@@ -1,71 +1,53 @@
-/**
- * Returns true if `a` and `b` contain exactly the same letters,
- * disregarding order.
- *
- * @param a – first string
- * @param b – second string
- * @param options – optional flags
- *   - ignoreSpaces: treat spaces as insignificant
- *   - ignorePunctuation: strip punctuation marks
- *   - ignoreCase: treat uppercase and lowercase as the same
- */
-export function areAnagrams(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
-
-  const sanitize = (s: string) => {
-    if (ignoreCase) s = s.toLowerCase();
-    if (ignoreSpaces) s = s.replace(/\s+/g, '');
-    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
-    return s;
-  };
-
-  const sa = sanitize(a).split('').sort().join('');
-  const sb = sanitize(b).split('').sort().join('');
-
-  return sa === sb;
+/** Node definition for a singly linked list. */
+interface ListNode<T> {
+  value: T;
+  next?: ListNode<T>;
 }
-/**
- * Frequency‑count version – O(n) time, O(σ) space  
- * (σ = size of alphabet, constant for ASCII/Unicode)
- */
-export function areAnagramsFast(
-  a: string,
-  b: string,
-  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
-): boolean {
-  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-  const count = (s: string) => {
-    const map = new Map<string, number>();
-    for (const ch of s) {
-      const key = ignoreCase ? ch.toLowerCase() : ch;
-      if (ignoreSpaces && key === ' ') continue;
-      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
-      map.set(key, (map.get(key) ?? 0) + 1);
+/** Helper to build a list from an array (for demo testing). */
+function buildList<T>(arr: T[]): ListNode<T> | undefined {
+  let head: ListNode<T> | undefined;
+  let tail: ListNode<T> | undefined;
+  for (const val of arr) {
+    const node: ListNode<T> = { value: val };
+    if (!head) {
+      head = node;
+      tail = node;
+    } else {
+      tail!.next = node;
+      tail = node;
     }
-    return map;
-  };
+  }
+  return head;
+}
 
-  const aMap = count(a);
-  const bMap = count(b);
+/**
+ * Finds the **lower** middle of a singly linked list.
+ * If the list is empty, returns undefined.
+ */
+function getMiddle<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  if (!head) return undefined;
 
-  if (aMap.size !== bMap.size) return false; // quick early exit
+  let slow = head;
+  let fast = head;
 
-  for (const [char, aCount] of aMap.entries()) {
-    if (bMap.get(char) !== aCount) return false;
+  // Advance fast by 2 and slow by 1.
+  // When fast reaches the end, slow is at the middle.
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return true;
+  return slow;
 }
-// Basic usage
-areAnagrams('Listen', 'Silent'); // true
 
-// Ignoring case & spaces
-areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
+/** Demo */
+const list = buildList([10, 20, 30, 40, 50]);   // odd length
+console.log(getMiddle(list)?.value); // → 30
 
-// Fast version with punctuation handling
-areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
+const listEven = buildList([1, 2, 3, 4]);        // even length
+console.log(getMiddle(listEven)?.value); // → 2  (lower middle)
+
+// If you want the *upper* middle for even lists, just change the loop:
+//   while (fast.next) { ... }
+//   return slow.next!;   // after the loop, slow is just before the upper middle.
