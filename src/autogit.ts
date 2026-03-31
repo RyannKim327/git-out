@@ -1,128 +1,82 @@
-// ---------- TYPES ----------
-type Comparator<T> = (a: T, b: T) => number;
-
-interface Node<T> {
-  key: T;
-  left: Node<T> | null;
-  right: Node<T> | null;
+const decimal = 42;
+const binaryStr = decimal.toString(2); // "101010"
+console.log(binaryStr);
+function toFixedBinary(n: number, width: number): string {
+  const bin = n.toString(2);
+  return bin.padStart(width, '0');
 }
 
-// ---------- BST CLASS ----------
-class BinarySearchTree<T> {
-  // root can stay undefined at construction time
-  private root: Node<T> | null = null;
-
-  /**
-   * Allows you to plug in any way you want keys compared.
-   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
-   */
-  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
-
-  /** Insert new key into tree */
-  insert(key: T): void {
-    const node: Node<T> = { key, left: null, right: null };
-    if (!this.root) {
-      this.root = node;
-      return;
-    }
-
-    let curr = this.root;
-    while (true) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        if (curr.left) {
-          curr = curr.left;
-        } else {
-          curr.left = node;
-          break;
-        }
-      } else if (cmp > 0) {
-        if (curr.right) {
-          curr = curr.right;
-        } else {
-          curr.right = node;
-          break;
-        }
-      } else {
-        // key already exists – replace or ignore, here we ignore
-        break;
-      }
-    }
+console.log(toFixedBinary(5, 8)); // "00000101"
+function decimalToBinary(num: number): string {
+  if (num === 0) return '0';
+  let n = Math.abs(num);
+  let bits = '';
+  while (n > 0) {
+    bits = (n % 2).toString() + bits;
+    n = Math.floor(n / 2);
   }
-
-  /** Search for a key. Returns the node if found or null. */
-  search(key: T): Node<T> | null {
-    let curr = this.root;
-    while (curr) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        curr = curr.left;
-      } else if (cmp > 0) {
-        curr = curr.right;
-      } else {
-        return curr;
-      }
-    }
-    return null;
+  // Two's complement for negatives (using 32‑bit for illustration)
+  if (num < 0) {
+    // Pad to 32 bits
+    bits = bits.padStart(32, '0');
+    // Invert bits
+    bits = bits.split('').map(c => (c === '0' ? '1' : '0')).join('');
+    // Add 1
+    let carry = 1;
+    bits = bits.split('').reverse().map((b, idx) => {
+      const sum = Number(b) + carry;
+      carry = Math.floor(sum / 2);
+      return (sum % 2).toString();
+    }).reverse().join('');
   }
-
-  /** In‑order traversal – gives sorted keys. */
-  inorder(callback: (key: T) => void): void {
-    function walk(node: Node<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      callback(node.key);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  /** Delete a key. Simple implementation that preserves BST shape. */
-  delete(key: T): void {
-    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
-      if (!node) return null;
-
-      const cmp = this.cmp(key, node.key);
-      if (cmp < 0) {
-        node.left = deleteRec(node.left, key);
-      } else if (cmp > 0) {
-        node.right = deleteRec(node.right, key);
-      } else {
-        // node to delete found
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
-
-        // two children: find in‑order successor (smallest node on right)
-        let succ = node.right;
-        while (succ.left) succ = succ.left;
-        node.key = succ.key; // copy successor key
-        node.right = deleteRec(node.right, succ.key); // delete successor
-      }
-      return node;
-    };
-
-    this.root = deleteRec(this.root, key);
-  }
+  return bits;
 }
 
-// ---------- DEFAULT COMPARATOR ----------
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
+console.log(decimalToBinary(101)); // "1100101"
+console.log(decimalToBinary(-3));  // "11111111111111111111111111111101" (32‑bit two's complement)
+function bigIntToBinary(n: bigint): string {
+  if (n === 0n) return '0';
+  let negative = false;
+  if (n < 0n) {
+    negative = true;
+    n = -n;          // work with the absolute value
+  }
+  let bits = '';
+  while (n > 0n) {
+    bits = (n & 1n).toString() + bits; // n & 1n gives lowest bit
+    n >>= 1n;                          // shift right
+  }
+  return negative ? '-' + bits : bits;
 }
 
-// ---------- USAGE EXAMPLE ----------
-const bst = new BinarySearchTree<number>();
+const huge = BigInt('123456789012345678901234567890');
+console.log(bigIntToBinary(huge));
+// prints a long binary string
+export type BinaryOpts = {
+  width?: number;          // pad to this width
+  useBigInt?: boolean;     // switch to BigInt mode
+  signed?: boolean;        // two’s complement for negatives
+};
 
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+export function toBinary(
+  num: number | bigint,
+  opts: BinaryOpts = {}
+): string {
+  const { width, useBigInt = false, signed = false } = opts;
 
-console.log('Search 5:', bst.search(5) !== null);   // true
-console.log('Search 4:', bst.search(4) !== null);   // false
+  let bin: string;
 
-console.log('In‑order traversal:');
-bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
+  if (useBigInt) {
+    const big = typeof num === 'bigint' ? num : BigInt(num);
+    bin = signed ? bigIntToBinary(big) : big.toString(2);
+  } else {
+    bin = signed
+      ? decimalToBinary(Number(num))
+      : Number(num).toString(2);
+  }
 
-bst.delete(7);
-console.log('After deleting 7:');
-bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
+  return width ? bin.padStart(width, '0') : bin;
+}
+console.log(toBinary(42));                 // "101010"
+console.log(toBinary(42, { width: 8 }));   // "00101010"
+console.log(toBinary(-3, { useBigInt: true, signed: true })); // 32‑bit two's complement
