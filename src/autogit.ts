@@ -1,30 +1,68 @@
 /**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
+ * Pre‑computes the shift table for a pattern.
+ *   pattern: the pattern we’re searching for
+ *   Returns: a Map from character → shift distance
  */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
+function buildShiftTable(pattern: string): Map<string, number> {
+  const table = new Map<string, number>();
+  const m = pattern.length;
 
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
-    }
-    // values equal to max are ignored – we want distinct numbers
+  // All characters that appear in the pattern get an initial shift of m
+  for (const ch of pattern) {
+    table.set(ch, m);
   }
 
-  return second === -Infinity ? undefined : second;
-}
+  // For each character except the last one, set its shift to (m - i - 1)
+  for (let i = 0; i < m - 1; ++i) {
+    table.set(pattern[i], m - i - 1);
+  }
 
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
+  return table;
 }
+/**
+ * Implements Boyer‑Moore‑Horspool.
+ * @param text   – the text to search
+ * @param pattern – the pattern to find
+ * @returns      – the index of the first match, or -1 if none
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  const n = text.length;
+  const m = pattern.length;
+
+  if (m === 0) return 0;          // Empty pattern
+  if (m > n) return -1;           // Pattern longer than text
+
+  const shiftTable = buildShiftTable(pattern);
+
+  let idx = 0;                    // Index of the leftmost character of the window
+  while (idx <= n - m) {
+    let j = m - 1;
+
+    // Compare pattern from right to left
+    while (j >= 0 && text[idx + j] === pattern[j]) {
+      j -= 1;
+    }
+
+    // If all characters matched
+    if (j < 0) {
+      return idx;                // Found at position idx
+    }
+
+    // Mismatch: figure out how far to shift
+    const mismatchedChar = text[idx + m - 1];
+    const shift = shiftTable.get(mismatchedChar) ?? m;
+    idx += shift;
+  }
+
+  return -1;                     // No match found
+}
+const txt = "ABAAABCDABCABABCAB";
+const pat = "ABCAB";
+
+const pos = boyerMooreHorspool(txt, pat);
+if (pos >= 0) {
+  console.log(`"${pat}" found at index ${pos}`);
+} else {
+  console.log(`"${pat}" not found`);
+}
+"ABCAB" found at index 12
