@@ -1,11 +1,10 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
-
-// Example
-console.log(reverseString('hello')); // 'olleh'
-const reverse = (s: string): string => [...s].reverse().join('');
-
-console.log(reverse('typescript')); // 'tpircysrat'
-const chars = ['a', 'b', 'c', 'd'];
-chars.reverse(); // ['d', 'c', 'b', 'a']
+const a = "Hello, ";
+const b = "world!";
+const c = a + b;           // "Hello, world!"
+const a = "Hello, ";
+const b = "world!";
+const c = `${a}${b}`;      // "Hello, world!"
+const a = "Hello, ";
+const b = "world!";
+const c = a.concat(b);     // "Hello, world!"
+const c = a.concat(b, "!"); // "Hello, world!!"
