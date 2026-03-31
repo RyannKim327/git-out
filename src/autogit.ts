@@ -1,68 +1,72 @@
-// A minimal list node definition
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+interface Node<T = any> {
+  value: T;
+  neighbors: Node<T>[];
+  // optional metadata for the search
+  depth?: number;
 }
+function depthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  function dfs(node: Node<T>, depth: number): Node<T> | null {
+    if (depth > maxDepth) return null;          // over the ceiling
+    if (isGoal(node)) return node;             // goal found
 
-/**
- * Returns the intersection node, or null if none exists.
- *
- * Idea:
- * 1. Walk each list once to get its length.
- * 2. Advance the longer list by the length difference.
- * 3. Move both pointers together – the first time they’re equal
- *    (by reference) is the intersection.
- *
- * Time: O(n + m)   (one pass per list + one optional “skip” pass)
- * Space: O(1)      (no extra container)
- */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  // helper to measure length
-  function len(node: ListNode<T> | null): number {
-    let l = 0;
-    while (node !== null) {
-      l++;
-      node = node.next;
+    for (const neigh of node.neighbors) {
+      const result = dfs(neigh, depth + 1);
+      if (result) return result;               // propagate up
     }
-    return l;
+    return null;                               // no goal along this path
   }
 
-  let lenA = len(headA);
-  let lenB = len(headB);
-
-  // Advance the longer head so that the remaining steps are equal
-  let diff = Math.abs(lenA - lenB);
-  let longer = lenA > lenB ? headA : headB;
-  let shorter = lenA > lenB ? headB : headA;
-
-  while (diff--) {
-    if (longer !== null) longer = longer.next;
-  }
-
-  // Walk together until they meet
-  while (longer !== null && shorter !== null) {
-    if (longer === shorter) return longer; // same reference
-    longer = longer.next;
-    shorter = shorter.next;
-  }
-
-  return null; // never intersected
+  return dfs(root, 0);
 }
-const a1 = new ListNode(1);
-const a2 = new ListNode(2);
-const a3 = new ListNode(3);
-const a4 = new ListNode(4);
-const a5 = new ListNode(5);
-a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5;
+function depthLimitedIterative<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const stack: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
 
-const b1 = new ListNode(9);
-const b2 = new ListNode(8);
-b1.next = b2; b2.next = a3; // both lists point to `a3`
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
 
-const intersection = getIntersectionNode(a1, b1);
-console.log(intersection?.val); // 3
+    if (depth > maxDepth) continue;          // skip over‑depth nodes
+    if (isGoal(node)) return node;           // hit the target
+
+    // Push neighbors in reverse order if you want the left‑most first
+    for (let i = node.neighbors.length - 1; i >= 0; i--) {
+      stack.push({ node: node.neighbors[i], depth: depth + 1 });
+    }
+  }
+
+  return null; // exhausted without finding goal
+}
+// Build a tiny graph
+const leaf = { value: 'leaf', neighbors: [] };
+const mid   = { value: 'mid',   neighbors: [leaf] };
+const root  = { value: 'root',  neighbors: [mid] };
+
+const found = depthLimitedSearch(root, node => node.value === 'leaf', 3);
+console.log(found?.value); // → "leaf"
+function breadthLimitedSearch<T>(
+  root: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  maxDepth: number
+): Node<T> | null {
+  const queue: Array<{ node: Node<T>; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;
+
+    if (depth > maxDepth) continue;
+    if (isGoal(node)) return node;
+
+    for (const neigh of node.neighbors) {
+      queue.push({ node: neigh, depth: depth + 1 });
+    }
+  }
+
+  return null;
+}
