@@ -1,69 +1,74 @@
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElement(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // 1st pass – find a candidate
-  let candidate = arr[0];
-  let count = 0;
-
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += num === candidate ? 1 : -1;
-    }
-  }
-
-  // 2nd pass – confirm candidate (optional but safe)
-  count = 0;
-  for (const num of arr) {
-    if (num === candidate) count++;
-  }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+// ---------------  Node definition --------------------
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementMap(arr: number[]): number | null {
-  const freq = new Map<number, number>();
 
-  for (const num of arr) {
-    freq.set(num, (freq.get(num) ?? 0) + 1);
+// ---------------  Main logic --------------------
+export function isPalindrome<T>(head: ListNode<T> | null): boolean {
+  if (!head || !head.next) return true;  // empty or single element
+
+  // 1️⃣ Find middle
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+  while (fast && fast.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  const n = arr.length;
-  for (const [num, count] of freq.entries()) {
-    if (count > Math.floor(n / 2)) {
-      return num;
-    }
+  // 2️⃣ Reverse second half
+  let prev: ListNode<T> | null = null;
+  let curr: ListNode<T> | null = slow; // start at middle
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
   }
-  return null;
+  // now `prev` points to head of reversed second half
+
+  // 3️⃣ Compare halves
+  let p1 = head;
+  let p2 = prev;
+  while (p2) {           // only need to loop over the shorter half
+    if (p1!.val !== p2!.val) return false;
+    p1 = p1!.next;
+    p2 = p2!.next;
+  }
+
+  // 4️⃣ (Optional) Put list back together
+  // Reverse again and re‑attach to original first half
+  curr = prev;
+  prev = null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  // `prev` is the head of the original second half again
+
+  return true;
 }
-/**
- * Returns the majority element if it exists,
- * otherwise returns null.
- */
-function majorityElementSorted(arr: number[]): number | null {
-  if (arr.length === 0) return null;
-
-  // Make a copy so we don’t mutate the caller’s array
-  const sorted = [...arr].sort((a, b) => a - b);
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  let count = 0;
-
-  for (const num of sorted) {
-    if (num === candidate) count++;
+export function isPalindromeFunctional<T>(head: ListNode<T> | null): boolean {
+  const vals: T[] = [];
+  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
+  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
+    if (vals[i] !== vals[j]) return false;
   }
-
-  return count > Math.floor(arr.length / 2) ? candidate : null;
+  return true;
 }
-const testArray = [2, 2, 1, 1, 1, 2, 2];
-console.log(majorityElement(testArray));      // 2
-console.log(majorityElementMap(testArray));   // 2
-console.log(majorityElementSorted(testArray)); // 2
+const build = (arr: number[]) => {
+  let dummy = new ListNode(0);
+  let curr = dummy;
+  for (const x of arr) {
+    curr.next = new ListNode(x);
+    curr = curr.next;
+  }
+  return dummy.next;
+};
+
+console.log(isPalindrome(build([1,2,3,2,1]))); // true
+console.log(isPalindrome(build([1,2,3,4,5]))); // false
