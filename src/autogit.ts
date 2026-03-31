@@ -1,19 +1,71 @@
-function firstRepeated(str: string): string | null {
-  // Map will keep a count of each char we’ve seen
-  const seen = new Map<string, number>();
+/**
+ * Returns true if `a` and `b` contain exactly the same letters,
+ * disregarding order.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional flags
+ *   - ignoreSpaces: treat spaces as insignificant
+ *   - ignorePunctuation: strip punctuation marks
+ *   - ignoreCase: treat uppercase and lowercase as the same
+ */
+export function areAnagrams(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
 
-  for (const ch of str) {
-    const count = seen.get(ch) ?? 0;
-    if (count === 1) {
-      // This is the second time we’re seeing `ch`
-      return ch;
-    }
-    // Mark that we’ve seen this char once (or increment if it’s that later)
-    seen.set(ch, count + 1);
-  }
-  // No repeats
-  return null;
+  const sanitize = (s: string) => {
+    if (ignoreCase) s = s.toLowerCase();
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignorePunctuation) s = s.replace(/[^\w]/g, ''); // keep letters & digits
+    return s;
+  };
+
+  const sa = sanitize(a).split('').sort().join('');
+  const sb = sanitize(b).split('').sort().join('');
+
+  return sa === sb;
 }
-console.log(firstRepeated("hello")); // → "l"  (first ‘l’ repeats)
-console.log(firstRepeated("world")); // → null  (no repeats)
-console.log(firstRepeated("javascript")); // → "a"
+/**
+ * Frequency‑count version – O(n) time, O(σ) space  
+ * (σ = size of alphabet, constant for ASCII/Unicode)
+ */
+export function areAnagramsFast(
+  a: string,
+  b: string,
+  options: { ignoreSpaces?: boolean; ignorePunctuation?: boolean; ignoreCase?: boolean } = {}
+): boolean {
+  const { ignoreSpaces = false, ignorePunctuation = false, ignoreCase = false } = options;
+
+  const count = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = ignoreCase ? ch.toLowerCase() : ch;
+      if (ignoreSpaces && key === ' ') continue;
+      if (ignorePunctuation && !/[A-Za-z0-9]/.test(key)) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
+  };
+
+  const aMap = count(a);
+  const bMap = count(b);
+
+  if (aMap.size !== bMap.size) return false; // quick early exit
+
+  for (const [char, aCount] of aMap.entries()) {
+    if (bMap.get(char) !== aCount) return false;
+  }
+
+  return true;
+}
+// Basic usage
+areAnagrams('Listen', 'Silent'); // true
+
+// Ignoring case & spaces
+areAnagrams('Dormitory', 'Dirty room', { ignoreSpaces: true, ignoreCase: true }); // true
+
+// Fast version with punctuation handling
+areAnagramsFast("A!b@c#d", "c b a d", { ignorePunctuation: true, ignoreCase: true }); // true
