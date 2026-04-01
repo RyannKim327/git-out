@@ -1,30 +1,77 @@
-/**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-  let max = -Infinity;
-  let second = -Infinity;
+  get size() { return this._size; }
+  push(value: T) {
+    const node = new ListNode(value);
 
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
+    if (!this.head) {
+      this.head = this.tail = node;        // first element
+    } else {
+      this.tail!.next = node;              // trick the tail
+      this.tail = node;                    // and move it
     }
-    // values equal to max are ignored – we want distinct numbers
+    this._size++;
   }
+  unshift(value: T) {
+    const node = new ListNode(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node; // when list was empty
+    this._size++;
+  }
+  pop(): T | null {
+    if (!this.head) return null;
 
-  return second === -Infinity ? undefined : second;
-}
+    let removedValue: T | null = null;
 
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
-}
+    // If we only have one node
+    if (this.head === this.tail) {
+      removedValue = this.head.value;
+      this.head = this.tail = null;
+    } else {
+      let current = this.head;
+      while (current.next !== this.tail) {
+        current = current.next!;
+      }
+      removedValue = this.tail!.value;
+      current.next = null;
+      this.tail = current;
+    }
+
+    this._size--;
+    return removedValue;
+  }
+  find(predicate: (value: T) => boolean): T | null {
+    let current = this.head;
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
+    }
+    return null;
+  }
+  *[Symbol.iterator](): Generator<T, void, unknown> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
+    }
+  }
+const list = new LinkedList<number>();
+
+list.push(10);
+list.push(20);
+list.unshift(5);          // List is now: 5 → 10 → 20
+
+console.log([...list]);   // [5, 10, 20]
+console.log(list.size);   // 3
+
+console.log(list.pop());   // 20
+console.log([...list]);   // [5, 10]
