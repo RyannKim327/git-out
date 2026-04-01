@@ -1,62 +1,71 @@
-/**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
- *
- * Complexity: O(m)
- */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
+// src/api/remote.ts
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+const { AndroidAsyncTask } = NativeModules;
+
+// -----------------------------------------------------------------
+// 1️⃣  The simple JS/TS side: an async fetch helper
+// -----------------------------------------------------------------
+export async function loadRemoteJson(url: string): Promise<any> {
+  try {
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} – ${response.statusText}`);
     }
+    const payload = await response.json();
+    return payload;
+  } catch (err) {
+    console.error('loadRemoteJson error:', err);
+    throw err;
   }
-  return lps;
 }
 
-/**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
+// -----------------------------------------------------------------
+// 2️⃣  The bridge to Android (AsyncTask)
+// -----------------------------------------------------------------
+// On Android, create a module that exposes `runAsyncTask`
+// which internally spawns an AsyncTask that returns a JSON string.
 
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
+export function runAndroidTask(
+  taskName: string,
+  args: Record<string, any>
+): Promise<any> {
+  // The native module returns a Promise that resolves with a string
+  return AndroidAsyncTask.runAsyncTask(taskName, args).then((result: string) => {
+    try {
+      return JSON.parse(result);
+    } catch (err) {
+      console.warn('Failed to parse JSON from Android:', err);
+      throw err;
     }
-  }
-  return -1; // no match
+  });
 }
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
+
+// -----------------------------------------------------------------
+// 3️⃣  Example usage (e.g. inside a component)
+// -----------------------------------------------------------------
+/*
+import React, { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
+import { loadRemoteJson, runAndroidTask } from './api/remote';
+
+export default function Demo() {
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Option A – vanilla fetch
+    loadRemoteJson('https://jsonplaceholder.typicode.com/todos/1')
+      .then(setData)
+      .catch(err => setError(err.message));
+
+    // Option B – delegate to Android AsyncTask
+    // runAndroidTask('fetchTodo', { id: 1 })
+    //   .then(setData)
+    //   .catch(err => setError(err.message));
+  }, []);
+
+  if (error) return <View><Text>❌ {error}</Text></View>;
+  return data ? <Text>✅ {JSON.stringify(data)}</Text> : <Text>⏳ Loading…</Text>;
+}
+*/
