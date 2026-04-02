@@ -1,128 +1,77 @@
-// ---------- TYPES ----------
-type Comparator<T> = (a: T, b: T) => number;
-
-interface Node<T> {
-  key: T;
-  left: Node<T> | null;
-  right: Node<T> | null;
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-// ---------- BST CLASS ----------
-class BinarySearchTree<T> {
-  // root can stay undefined at construction time
-  private root: Node<T> | null = null;
+  get size() { return this._size; }
+  push(value: T) {
+    const node = new ListNode(value);
 
-  /**
-   * Allows you to plug in any way you want keys compared.
-   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
-   */
-  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
-
-  /** Insert new key into tree */
-  insert(key: T): void {
-    const node: Node<T> = { key, left: null, right: null };
-    if (!this.root) {
-      this.root = node;
-      return;
+    if (!this.head) {
+      this.head = this.tail = node;        // first element
+    } else {
+      this.tail!.next = node;              // trick the tail
+      this.tail = node;                    // and move it
     }
-
-    let curr = this.root;
-    while (true) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        if (curr.left) {
-          curr = curr.left;
-        } else {
-          curr.left = node;
-          break;
-        }
-      } else if (cmp > 0) {
-        if (curr.right) {
-          curr = curr.right;
-        } else {
-          curr.right = node;
-          break;
-        }
-      } else {
-        // key already exists – replace or ignore, here we ignore
-        break;
-      }
-    }
+    this._size++;
   }
+  unshift(value: T) {
+    const node = new ListNode(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node; // when list was empty
+    this._size++;
+  }
+  pop(): T | null {
+    if (!this.head) return null;
 
-  /** Search for a key. Returns the node if found or null. */
-  search(key: T): Node<T> | null {
-    let curr = this.root;
-    while (curr) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        curr = curr.left;
-      } else if (cmp > 0) {
-        curr = curr.right;
-      } else {
-        return curr;
+    let removedValue: T | null = null;
+
+    // If we only have one node
+    if (this.head === this.tail) {
+      removedValue = this.head.value;
+      this.head = this.tail = null;
+    } else {
+      let current = this.head;
+      while (current.next !== this.tail) {
+        current = current.next!;
       }
+      removedValue = this.tail!.value;
+      current.next = null;
+      this.tail = current;
+    }
+
+    this._size--;
+    return removedValue;
+  }
+  find(predicate: (value: T) => boolean): T | null {
+    let current = this.head;
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
     }
     return null;
   }
-
-  /** In‑order traversal – gives sorted keys. */
-  inorder(callback: (key: T) => void): void {
-    function walk(node: Node<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      callback(node.key);
-      walk(node.right);
+  *[Symbol.iterator](): Generator<T, void, unknown> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
     }
-    walk(this.root);
   }
+const list = new LinkedList<number>();
 
-  /** Delete a key. Simple implementation that preserves BST shape. */
-  delete(key: T): void {
-    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
-      if (!node) return null;
+list.push(10);
+list.push(20);
+list.unshift(5);          // List is now: 5 → 10 → 20
 
-      const cmp = this.cmp(key, node.key);
-      if (cmp < 0) {
-        node.left = deleteRec(node.left, key);
-      } else if (cmp > 0) {
-        node.right = deleteRec(node.right, key);
-      } else {
-        // node to delete found
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
+console.log([...list]);   // [5, 10, 20]
+console.log(list.size);   // 3
 
-        // two children: find in‑order successor (smallest node on right)
-        let succ = node.right;
-        while (succ.left) succ = succ.left;
-        node.key = succ.key; // copy successor key
-        node.right = deleteRec(node.right, succ.key); // delete successor
-      }
-      return node;
-    };
-
-    this.root = deleteRec(this.root, key);
-  }
-}
-
-// ---------- DEFAULT COMPARATOR ----------
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-
-// ---------- USAGE EXAMPLE ----------
-const bst = new BinarySearchTree<number>();
-
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
-
-console.log('Search 5:', bst.search(5) !== null);   // true
-console.log('Search 4:', bst.search(4) !== null);   // false
-
-console.log('In‑order traversal:');
-bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
-
-bst.delete(7);
-console.log('After deleting 7:');
-bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
+console.log(list.pop());   // 20
+console.log([...list]);   // [5, 10]
