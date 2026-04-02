@@ -1,74 +1,31 @@
-// ---------------  Node definition --------------------
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+// Returns n! for n >= 0.
+function factorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
 }
-
-// ---------------  Main logic --------------------
-export function isPalindrome<T>(head: ListNode<T> | null): boolean {
-  if (!head || !head.next) return true;  // empty or single element
-
-  // 1️⃣ Find middle
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+function factorialIter(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  // 2️⃣ Reverse second half
-  let prev: ListNode<T> | null = null;
-  let curr: ListNode<T> | null = slow; // start at middle
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // now `prev` points to head of reversed second half
-
-  // 3️⃣ Compare halves
-  let p1 = head;
-  let p2 = prev;
-  while (p2) {           // only need to loop over the shorter half
-    if (p1!.val !== p2!.val) return false;
-    p1 = p1!.next;
-    p2 = p2!.next;
-  }
-
-  // 4️⃣ (Optional) Put list back together
-  // Reverse again and re‑attach to original first half
-  curr = prev;
-  prev = null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  // `prev` is the head of the original second half again
-
-  return true;
+  return result;
 }
-export function isPalindromeFunctional<T>(head: ListNode<T> | null): boolean {
-  const vals: T[] = [];
-  for (let cur = head; cur; cur = cur.next) vals.push(cur.val);
-  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
-    if (vals[i] !== vals[j]) return false;
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  let result = 1n;              // 1n is a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
   }
-  return true;
+  return result;
 }
-const build = (arr: number[]) => {
-  let dummy = new ListNode(0);
-  let curr = dummy;
-  for (const x of arr) {
-    curr.next = new ListNode(x);
-    curr = curr.next;
-  }
-  return dummy.next;
-};
+console.log(factorialBigInt(20)); // 2432902008176640000n
+const memo: Record<number, number> = { 0: 1, 1: 1 };
 
-console.log(isPalindrome(build([1,2,3,2,1]))); // true
-console.log(isPalindrome(build([1,2,3,4,5]))); // false
+function memoisedFactorial(n: number): number {
+  if (n < 0) throw new Error('Negative numbers don’t have factorials!');
+  if (n in memo) return memo[n];
+  memo[n] = n * memoisedFactorial(n - 1);
+  return memo[n];
+}
