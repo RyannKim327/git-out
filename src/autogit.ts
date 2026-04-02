@@ -1,36 +1,46 @@
-function countOccurrences(str: string, word: string): number {
-  // \b = word boundary; 'gi' = case‑insensitive, global
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  return str.split(regex).length - 1;
+interface TreeNode<T = any> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-function countOccurrences2(str: string, word: string): number {
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
+function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
+  if (!root.left && !root.right) return 1; // leaf
+
+  // otherwise count leaves in both sub‑trees
+  return countLeaves(root.left) + countLeaves(root.right);
 }
-function countOccurrences3(str: string, word: string): number {
+function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
   let count = 0;
-  let pos = 0;
+  const stack: TreeNode<T>[] = [root];
 
-  while ((pos = str.toLowerCase().indexOf(word.toLowerCase(), pos)) !== -1) {
-    // Ensure whole‑word match using boundaries (optional)
-    const before = pos === 0 || /\W/.test(str[pos - 1]);
-    const after  = pos + word.length === str.length
-                 || /\W/.test(str[pos + word.length]);
+  while (stack.length) {
+    const node = stack.pop()!;
 
-    if (before && after) {
+    if (!node.left && !node.right) {
       count++;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
     }
-    pos += word.length;
   }
 
   return count;
 }
-const paragraph = `
-  TypeScript is great. TypeScript's type system helps catch bugs early.
-  A developer who uses typescript should ideally care about types.
-`;
+const root: TreeNode<number> = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 }
+  },
+  right: {
+    value: 3,
+    right: { value: 6 }
+  }
+};
 
-console.log(countOccurrences(paragraph, 'typescript'));   // → 4
-console.log(countOccurrences2(paragraph, 'typescript')); // → 4
-console.log(countOccurrences3(paragraph, 'typescript')); // → 4
+console.log(countLeaves(root));          // → 3  (4, 5, 6)
+console.log(countLeavesIter(root));      // → 3
