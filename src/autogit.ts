@@ -1,28 +1,49 @@
-/**
- * Return the maximum sum of any contiguous sub‑array.
+/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
  *
- * @param arr - array of numbers (can contain negatives)
- * @returns the maximum sub‑array sum
+ *  - `Node`   – a generic representation of a graph vertex.
+ *  - `getNeighbors` – a callback that returns the adjacent nodes.
+ *  - `goal` – a predicate that tells whether the node is satisfactory.
+ *  - `maxDepth` – how many edges away from the start we’ll consider.
+ *
+ *  The function yields an array of nodes in the order they were visited
+ *  (first‑in, first‑out).  The result can be empty when the goal isn’t
+ *  found before the depth limit.
  */
-export function maxSubarraySum(arr: number[]): number {
-  if (arr.length === 0) {
-    throw new Error('Array must contain at least one element');
+
+type Node = {
+  id: string | number;
+  // … other properties
+};
+
+export function breadthLimitedSearch(
+  start: Node,
+  maxDepth: number,
+  goal: (n: Node) => boolean,
+  getNeighbors: (n: Node) => Node[]
+): Node[] {
+  if (maxDepth < 0) return [];
+
+  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
+  const visited = new Set<Node>();
+  const result: Node[] = [];
+
+  while (frontier.length) {
+    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    result.push(node);
+    if (goal(node)) break;
+
+    // If we haven’t hit the depth ceiling, enqueue the next layer
+    if (depth < maxDepth) {
+      const neighbours = getNeighbors(node);
+      for (const neighbour of neighbours) {
+        if (!visited.has(neighbour)) {
+          frontier.push({ node: neighbour, depth: depth + 1 });
+        }
+      }
+    }
   }
-
-  // Initialise both values to the first element
-  let currentSum = arr[0];
-  let maxSum = arr[0];
-
-  // Scan the rest of the array once
-  for (let i = 1; i < arr.length; i++) {
-    // Either continue the current sub‑array or start fresh at arr[i]
-    currentSum = Math.max(arr[i], currentSum + arr[i]);
-
-    // Update the global maximum if we found a bigger one
-    maxSum = Math.max(maxSum, currentSum);
-  }
-
-  return maxSum;
+  return result;
 }
-console.log(maxSubarraySum([2, -3, 4, -1, 2, 1])); // 6  (sub‑array 4,-1,2,1)
-console.log(maxSubarraySum([-2, -3, -1, -4]));      // -1 (single element)
