@@ -1,31 +1,62 @@
-const original = [1, 2, 3, 4, 5];
+/**
+ * Quick‑sort a mutable array in‑place.
+ *
+ * @template T The element type to sort.
+ * @param array    The array to sort.
+ * @param compare  Optional comparator:
+ *                 -<0 if a < b
+ *                  0 if a == b
+ *                 >0 if a > b
+ *                  Defaults to the built‑in `<`/`>` for primitive types.
+ */
+function quickSort<T>(array: T[], compare?: (a: T, b: T) => number): void {
+  const cmp = compare ?? defaultCompare;
 
-// Suppose you want to drop all 3’s (or just the first one you hit)
-const removed = original.filter(v => v !== 3);
-console.log(removed); // [1, 2, 4, 5]
-const idx = original.indexOf(3);
-const removedFirst =
-  idx === -1 ? original : [...original.slice(0, idx), ...original.slice(idx + 1)];
-const arr = [1, 2, 3, 4, 5];
-const index = arr.indexOf(3);
-if (index !== -1) {
-  arr.splice(index, 1); // removes 1 element at that index
-}
-console.log(arr); // [1, 2, 4, 5]
-const original = ['a', 'b', 'c', 'd'];
-const removeAt = 2; // remove the element at position 2 ("c")
-const newArr = [...original.slice(0, removeAt), ...original.slice(removeAt + 1)];
-console.log(newArr); // ['a', 'b', 'd']
-const arr = ['a', 'b', 'c', 'd'];
-arr.splice(2, 1); // remove the element at index 2
-console.log(arr); // ['a', 'b', 'd']
-const items = ['red', 'green', 'blue', 'green'];
-const toRemove = 'green';
-const result = Array.from(new Set(items.filter(v => v !== toRemove)));
-function removeByValue<T>(arr: readonly T[], value: T): T[] {
-  return arr.filter(v => !Object.is(v, value));
+  // Public wrapper that starts the recursive routine.
+  sort(0, array.length - 1);
+
+  /** Recursive partitioning */
+  function sort(left: number, right: number): void {
+    if (left >= right) return;          // one element or invalid range
+    const pivotIdx = partition(left, right);
+    sort(left, pivotIdx - 1);            // left partition
+    sort(pivotIdx + 1, right);           // right partition
+  }
+
+  /**
+   * Partition the sub‑array [left … right] around a pivot.
+   * Returns the final pivot index so the caller can split.
+   */
+  function partition(left: number, right: number): number {
+    const pivotIndex = right;            // choose the last element as pivot
+    const pivotValue = array[pivotIndex];
+    let storeIndex = left;               // first place where a value < pivot will go
+
+    for (let i = left; i < right; i++) {
+      if (cmp(array[i], pivotValue) < 0) {
+        [array[i], array[storeIndex]] = [array[storeIndex], array[i]];
+        storeIndex++;
+      }
+    }
+    // Move pivot to its final place
+    [array[storeIndex], array[pivotIndex]] = [array[pivotIndex], array[storeIndex]];
+    return storeIndex;
+  }
 }
 
-// Usage
-const numbers = [1, 2, 3, 3, 4];
-const cleaned = removeByValue(numbers, 3); // [1, 2, 4]
+/** Default comparator for primitive types. */
+function defaultCompare(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+const nums = [3, 8, 4, 1, 9, 5];
+quickSort(nums);               // sorts in place
+console.log(nums);             // [1, 3, 4, 5, 8, 9]
+
+const words = ["banana", "apple", "pear"];
+quickSort(words);              // defaults to lexical order
+console.log(words);            // ["apple", "banana", "pear"]
+
+// Custom order: descending numbers
+quickSort(nums, (a, b) => b - a);
+console.log(nums);             // [9, 8, 5, 4, 3, 1]
