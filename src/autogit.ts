@@ -1,48 +1,102 @@
+/** One directed edge in the graph */
+interface Edge {
+  from: number;   // source vertex id
+  to: number;     // target vertex id
+  weight: number; // edge weight
+}
+
+/** Graph represented only by its edge list */
+type Graph = Edge[];
+
+/** Result of the shortest‑path computation */
+interface BellmanFordResult {
+  /** distance from source to every vertex (Infinity if unreachable) */
+  distances: number[];
+  /** predecessor of each vertex on the shortest path tree */
+  predecessors: (number | null)[];
+  /** true if a negative cycle was detected that is reachable from the source */
+  negativeCycleDetected: boolean;
+}
 /**
- * In‑place heap sort for an array of numbers.
- *
- * Complexity:  O(n log n) time, O(1) additional space
+ * Bellman‑Ford single‑source shortest‑path solver.
+ * @param edges  complete list of directed edges in the graph
+ * @param vertexCount total number of vertices, 0 … vertexCount‑1
+ * @param source id of the source vertex
+ * @returns distances, predecessors and a flag for a reachable negative cycle
  */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
+export function bellmanFord(
+  edges: Graph,
+  vertexCount: number,
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
 
-  // 1. Build a max‑heap
-  for (let i = (n - 2) >> 1; i >= 0; i--) {
-    heapify(arr, i, n);
+  const distances = Array(vertexCount).fill(INF);
+  const predecessors = Array<null | number>(vertexCount).fill(null);
+
+  distances[source] = 0;
+
+  /* Relax edges V‑1 times */
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let changed = false;
+    for (const e of edges) {
+      const { from, to, weight } = e;
+      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+        distances[to] = distances[from] + weight;
+        predecessors[to] = from;
+        changed = true;
+      }
+    }
+    /* Early exit if no relaxation happened */
+    if (!changed) break;
   }
 
-  // 2. Extract elements one by one
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);         // move current max to its final position
-    heapify(arr, 0, end);      // restore heap property on the reduced heap
+  /* Check for negative‑weight cycles reachable from source */
+  let negativeCycleDetected = false;
+  for (const e of edges) {
+    const { from, to, weight } = e;
+    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+      negativeCycleDetected = true;
+      break;
+    }
   }
+
+  return { distances, predecessors, negativeCycleDetected };
 }
+/**
+ * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
+ * Returns `undefined` if the target is unreachable.
+ */
+export function reconstructPath(
+  target: number,
+  predecessors: (number | null)[]
+): number[] | undefined {
+  if (predecessors[target] === null) return undefined;
 
-/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
-function heapify(arr: number[], rootIdx: number, size: number): void {
-  let largest = rootIdx;
-  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
-  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
-
-  if (left < size && arr[left] > arr[largest]) {
-    largest = left;
+  const path: number[] = [];
+  for (let v = target; v !== null; v = predecessors[v]) {
+    path.push(v);
   }
-  if (right < size && arr[right] > arr[largest]) {
-    largest = right;
-  }
-
-  if (largest !== rootIdx) {
-    swap(arr, rootIdx, largest);
-    heapify(arr, largest, size); // continue percolating down
-  }
+  return path.reverse();
 }
+// A small graph with both positive and negative edges
+const graph: Graph = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 2, weight: -3 },
+  { from: 1, to: 3, weight: 2 },
+  { from: 2, to: 3, weight: 4 },
+];
 
-/** Swap two elements in the array. */
-function swap(arr: number[], i: number, j: number): void {
-  const temp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = temp;
-}
-const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
-heapSort(data);
-console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
+const vertexCount = 4;          // vertices 0 … 3
+const source = 0;
+const result = bellmanFord(graph, vertexCount, source);
+
+console.log('Distances:', result.distances);
+// [0, 1, 2, 3]
+
+console.log('Negative cycle detected?', result.negativeCycleDetected);
+// false
+
+const pathTo3 = reconstructPath(3, result.predecessors);
+console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
