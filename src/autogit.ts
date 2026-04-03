@@ -1,48 +1,65 @@
 /**
- * In‑place heap sort for an array of numbers.
+ * Merge two sorted arrays into one sorted array.
  *
- * Complexity:  O(n log n) time, O(1) additional space
+ * @param left  the first sorted array
+ * @param right the second sorted array
+ * @param cmp   optional comparison function (a, b) => number
+ *              negative → a < b, 0 → a === b, positive → a > b
+ * @returns a new sorted array containing all elements from `left` and `right`
  */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
+function merge<T>(
+  left: T[],
+  right: T[],
+  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  const result: T[] = []
+  let i = 0
+  let j = 0
 
-  // 1. Build a max‑heap
-  for (let i = (n - 2) >> 1; i >= 0; i--) {
-    heapify(arr, i, n);
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j]) <= 0) {
+      result.push(left[i++])
+    } else {
+      result.push(right[j++])
+    }
   }
 
-  // 2. Extract elements one by one
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);         // move current max to its final position
-    heapify(arr, 0, end);      // restore heap property on the reduced heap
-  }
+  // Append any leftovers.
+  return result.concat(left.slice(i)).concat(right.slice(j))
 }
 
-/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
-function heapify(arr: number[], rootIdx: number, size: number): void {
-  let largest = rootIdx;
-  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
-  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
+/**
+ * Recursive Merge Sort implementation.
+ *
+ * @param array array to sort
+ * @param cmp   optional comparison function
+ * @returns a new sorted array, leaving the original unchanged
+ */
+export function mergeSort<T>(
+  array: T[],
+  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (array.length <= 1) return array.slice()
 
-  if (left < size && arr[left] > arr[largest]) {
-    largest = left;
-  }
-  if (right < size && arr[right] > arr[largest]) {
-    largest = right;
-  }
+  const mid = Math.floor(array.length / 2)
+  const left = mergeSort(array.slice(0, mid), cmp)
+  const right = mergeSort(array.slice(mid), cmp)
 
-  if (largest !== rootIdx) {
-    swap(arr, rootIdx, largest);
-    heapify(arr, largest, size); // continue percolating down
-  }
+  return merge(left, right, cmp)
+}
+const nums = [8, 3, 1, 7, 0, 10, 2]
+const sorted = mergeSort(nums)
+console.log(sorted) // [0, 1, 2, 3, 7, 8, 10]
+interface Person {
+  name: string
+  age: number
 }
 
-/** Swap two elements in the array. */
-function swap(arr: number[], i: number, j: number): void {
-  const temp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = temp;
-}
-const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
-heapSort(data);
-console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Cara', age: 27 },
+]
+
+const byAge = mergeSort(people, (a, b) => a.age - b.age)
+console.log(byAge)
