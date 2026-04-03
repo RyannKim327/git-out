@@ -1,17 +1,100 @@
-interface ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
-}
+/**
+ * Simple graph type
+ */
+type Node = string;                                  // or number, UUID, etc.
+type AdjList = Map<Node, Node[]>;                    // adjacency list
 
-function length<T>(head: ListNode<T> | null): number {
-    let count = 0;
-    for (let curr = head; curr !== null; curr = curr.next) {
-        count++;
+/**
+ * Bidirectional BFS – returns the length of the shortest path
+ * or null if no path exists.
+ *
+ * @param graph      adjacency list of the graph
+ * @param start      source node
+ * @param target     destination node
+ */
+export function biBfs(
+  graph: AdjList,
+  start: Node,
+  target: Node
+): number | null {
+  if (start === target) return 0;
+
+  // queues for each direction
+  const qStart = [start];
+  const qTarget = [target];
+
+  // distances from each end
+  const distStart = new Map<Node, number>();
+  const distTarget = new Map<Node, number>();
+  distStart.set(start, 0);
+  distTarget.set(target, 0);
+
+  while (qStart.length && qTarget.length) {
+    // Expand the frontier that is currently smaller
+    // (helps keep the branching factor balanced)
+    if (qStart.length <= qTarget.length) {
+      const step = expandFrontier(
+        qStart,
+        distStart,
+        distTarget,
+        graph
+      );
+      if (step !== null) return step;
+    } else {
+      const step = expandFrontier(
+        qTarget,
+        distTarget,
+        distStart,
+        graph
+      );
+      if (step !== null) return step;
     }
-    return count;
-}
-const node3: ListNode<number> = { value: 3, next: null };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+  }
 
-console.log(length(node1)); // 3
+  return null;   // no connection
+}
+
+/**
+ * Helper that walks one layer of BFS.
+ * Returns the total distance when the two explored sets touch.
+ */
+function expandFrontier(
+  queue: Node[],
+  distThis: Map<Node, number>,
+  distOther: Map<Node, number>,
+  graph: AdjList
+): number | null {
+  const layerSize = queue.length;
+
+  for (let i = 0; i < layerSize; ++i) {
+    const current = queue.shift() as Node;
+    const neighbours = graph.get(current) ?? [];
+
+    for (const neighbour of neighbours) {
+      // Already visited from this side – skip
+      if (distThis.has(neighbour)) continue;
+
+      // Visited from the other side → path found
+      if (distOther.has(neighbour)) {
+        return (
+          distThis.get(current)! + 1 +
+          distOther.get(neighbour)!
+        );
+      }
+
+      // Push next layer
+      distThis.set(neighbour, distThis.get(current)! + 1);
+      queue.push(neighbour);
+    }
+  }
+
+  return null;
+}
+// const graph: AdjList = new Map([
+//   ['A', ['B', 'C']],
+//   ['B', ['A', 'D']],
+//   ['C', ['A', 'D']],
+//   ['D', ['B', 'C', 'E']],
+//   ['E', ['D']]
+// ]);
+// console.log(biBfs(graph, 'A', 'E')); // 3
