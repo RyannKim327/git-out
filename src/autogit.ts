@@ -1,75 +1,114 @@
-// Compute lps array for pattern p
-function buildLPS(p: string): number[] {
-  const lps = new Array(p.length).fill(0);
-  let len = 0;            // length of the previous longest prefix suffix
-  let i = 1;
-
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back in the pattern, don’t slide the text cursor
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
 /**
- * KMP search – returns true if pattern occurs in text
- * @param text the body to scan
- * @param pattern the substring to find
+ * A single node in a binary search tree.
  */
-function kmpSearch(text: string, pattern: string): boolean {
-  if (pattern === "") return true;          // empty pattern matches everywhere
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-  const lps = buildLPS(pattern);
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  constructor(value: T) {
+    this.value = value;
+  }
+}
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) return true;   // full match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1];    // drop the matched prefix
+/**
+ * Binary search tree that keeps values ordered by a comparator.
+ * If you don’t pass a comparator it defaults to numeric or string <=> >.
+ */
+class BinarySearchTree<T> {
+  root: TreeNode<T> | null = null;
+  private cmp: (a: T, b: T) => number;
+
+  constructor(comparator?: (a: T, b: T) => number) {
+    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
+  /* ------------------------------------------------------------------
+   * Insert
+   * ------------------------------------------------------------------ */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
+
+    let current = this.root;
+    while (true) {
+      const comp = this.cmp(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          break;
+        }
+        current = current.left;
       } else {
-        i++;               // move on in the text
+        // treat equal values as “go right” – change if you want otherwise
+        if (!current.right) {
+          current.right = newNode;
+          break;
+        }
+        current = current.right;
       }
     }
   }
-  return false;
-}
-function kmpAllMatches(text: string, pattern: string): number[] {
-  if (pattern === "") return [];  // or [0,1,2,...] if you want
 
-  const lps = buildLPS(pattern);
-  const matches: number[] = [];
-  let i = 0, j = 0;
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        matches.push(i - j); // match ends at i-1, so start = i-j
-        j = lps[j - 1];      // continue searching
-      }
-    } else {
-      if (j !== 0) j = lps[j - 1];
-      else i++;
+  /* ------------------------------------------------------------------
+   * Find
+   * ------------------------------------------------------------------ */
+  find(value: T): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = this.cmp(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
     }
+    return null;
   }
-  return matches;
-}
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
 
-console.log(kmpSearch(haystack, needle));          // true
-console.log(kmpAllMatches(haystack, needle));      // [10]
+  /* ------------------------------------------------------------------
+   * Traversals – each visitor receives the node value
+   * ------------------------------------------------------------------ */
+  inOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      visitor(node.value);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  preOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      visitor(node.value);
+      walk(node.left);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  postOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      walk(node.right);
+      visitor(node.value);
+    }
+    walk(this.root);
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Quick demo
+ * ------------------------------------------------------------------ */
+const bst = new BinarySearchTree<number>();
+
+[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
+
+console.log('In‑order traversal (sorted):');
+bst.inOrder(v => console.log(v));
+
+console.log('\nFind 60:', bst.find(60)?.value);
+console.log('Find 25:', bst.find(25)?.value); // null
