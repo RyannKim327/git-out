@@ -1,39 +1,75 @@
-/**
- * Fetches a random dog picture and logs the URL.
- * Works in Node (with node-fetch polyfill) and in browsers.
- */
+// Compute lps array for pattern p
+function buildLPS(p: string): number[] {
+  const lps = new Array(p.length).fill(0);
+  let len = 0;            // length of the previous longest prefix suffix
+  let i = 1;
 
-const DOG_API = 'https://dog.ceo/api/breeds/image/random';
-
-interface DogApiResponse {
-  message: string;  // the image URL
-  status: string;   // should be 'success'
-}
-
-/**
- * Makes the HTTP request, parses the JSON, and logs the image URL.
- */
-async function showRandomDog(): Promise<void> {
-  try {
-    // `fetch` may need a polyfill in Node, e.g. `node-fetch`
-    const response = await fetch(DOG_API);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back in the pattern, don’t slide the text cursor
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
-
-    const data: DogApiResponse = await response.json();
-
-    if (data.status !== 'success') {
-      throw new Error(`API reported failure: ${data.status}`);
-    }
-
-    console.log('Random dog image URL:', data.message);
-  } catch (err) {
-    console.error('Failed to fetch dog image:', err);
   }
+  return lps;
 }
+/**
+ * KMP search – returns true if pattern occurs in text
+ * @param text the body to scan
+ * @param pattern the substring to find
+ */
+function kmpSearch(text: string, pattern: string): boolean {
+  if (pattern === "") return true;          // empty pattern matches everywhere
 
-showRandomDog();
-npm install node-fetch
-import fetch from 'node-fetch';
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) return true;   // full match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1];    // drop the matched prefix
+      } else {
+        i++;               // move on in the text
+      }
+    }
+  }
+  return false;
+}
+function kmpAllMatches(text: string, pattern: string): number[] {
+  if (pattern === "") return [];  // or [0,1,2,...] if you want
+
+  const lps = buildLPS(pattern);
+  const matches: number[] = [];
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        matches.push(i - j); // match ends at i-1, so start = i-j
+        j = lps[j - 1];      // continue searching
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return matches;
+}
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
+
+console.log(kmpSearch(haystack, needle));          // true
+console.log(kmpAllMatches(haystack, needle));      // [10]
