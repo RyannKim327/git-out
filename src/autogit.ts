@@ -1,68 +1,65 @@
-// A minimal list node definition
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+/**
+ * Merge two sorted arrays into one sorted array.
+ *
+ * @param left  the first sorted array
+ * @param right the second sorted array
+ * @param cmp   optional comparison function (a, b) => number
+ *              negative → a < b, 0 → a === b, positive → a > b
+ * @returns a new sorted array containing all elements from `left` and `right`
+ */
+function merge<T>(
+  left: T[],
+  right: T[],
+  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  const result: T[] = []
+  let i = 0
+  let j = 0
+
+  while (i < left.length && j < right.length) {
+    if (cmp(left[i], right[j]) <= 0) {
+      result.push(left[i++])
+    } else {
+      result.push(right[j++])
+    }
+  }
+
+  // Append any leftovers.
+  return result.concat(left.slice(i)).concat(right.slice(j))
 }
 
 /**
- * Returns the intersection node, or null if none exists.
+ * Recursive Merge Sort implementation.
  *
- * Idea:
- * 1. Walk each list once to get its length.
- * 2. Advance the longer list by the length difference.
- * 3. Move both pointers together – the first time they’re equal
- *    (by reference) is the intersection.
- *
- * Time: O(n + m)   (one pass per list + one optional “skip” pass)
- * Space: O(1)      (no extra container)
+ * @param array array to sort
+ * @param cmp   optional comparison function
+ * @returns a new sorted array, leaving the original unchanged
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  // helper to measure length
-  function len(node: ListNode<T> | null): number {
-    let l = 0;
-    while (node !== null) {
-      l++;
-      node = node.next;
-    }
-    return l;
-  }
+export function mergeSort<T>(
+  array: T[],
+  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (array.length <= 1) return array.slice()
 
-  let lenA = len(headA);
-  let lenB = len(headB);
+  const mid = Math.floor(array.length / 2)
+  const left = mergeSort(array.slice(0, mid), cmp)
+  const right = mergeSort(array.slice(mid), cmp)
 
-  // Advance the longer head so that the remaining steps are equal
-  let diff = Math.abs(lenA - lenB);
-  let longer = lenA > lenB ? headA : headB;
-  let shorter = lenA > lenB ? headB : headA;
-
-  while (diff--) {
-    if (longer !== null) longer = longer.next;
-  }
-
-  // Walk together until they meet
-  while (longer !== null && shorter !== null) {
-    if (longer === shorter) return longer; // same reference
-    longer = longer.next;
-    shorter = shorter.next;
-  }
-
-  return null; // never intersected
+  return merge(left, right, cmp)
 }
-const a1 = new ListNode(1);
-const a2 = new ListNode(2);
-const a3 = new ListNode(3);
-const a4 = new ListNode(4);
-const a5 = new ListNode(5);
-a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5;
+const nums = [8, 3, 1, 7, 0, 10, 2]
+const sorted = mergeSort(nums)
+console.log(sorted) // [0, 1, 2, 3, 7, 8, 10]
+interface Person {
+  name: string
+  age: number
+}
 
-const b1 = new ListNode(9);
-const b2 = new ListNode(8);
-b1.next = b2; b2.next = a3; // both lists point to `a3`
+const people: Person[] = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 24 },
+  { name: 'Cara', age: 27 },
+]
 
-const intersection = getIntersectionNode(a1, b1);
-console.log(intersection?.val); // 3
+const byAge = mergeSort(people, (a, b) => a.age - b.age)
+console.log(byAge)
