@@ -1,23 +1,16 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Returns true if the array is sorted in non‑decreasing order.
+ * Works for any type that supports the <= operator.
+ */
+function isSortedAscending<T>(arr: T[]): boolean {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] > arr[i + 1]) {
+      return false;                // found a violation
+    }
+  }
+  return true;                     // no violations found
 }
-
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
-
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
-}
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(maxDepth(root));  // 3
+console.log(isSortedAscending([1, 2, 3, 4]));   // true
+console.log(isSortedAscending([1, 3, 2, 4]));   // false
+const isSortedAsc = (arr: number[]) =>
+  arr.every((v, i) => i === 0 || arr[i - 1] <= v);
