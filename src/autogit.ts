@@ -1,45 +1,46 @@
 /**
- * Return true if `left` and `right` contain exactly the same character counts.
- *
- * @param left   – first string
- * @param right  – second string
- * @param options – tweak the comparison:
- *   - `caseSensitive`: default `false` – treats 'A' and 'a' as equal
- *   - `ignoreNonAlpha`: default `false` – strips out everything other than a‑z/A‑Z
+ * Return the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the one that appears first in `a` is returned.
  */
-function areAnagrams(
-  left: string,
-  right: string,
-  options?: { caseSensitive?: boolean; ignoreNonAlpha?: boolean }
-): boolean {
-  const { caseSensitive = false, ignoreNonAlpha = false } = options ?? {};
+export function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-  const normalize = (s: string) =>
-    s
-      .split('')
-      .filter((c) => (!ignoreNonAlpha || /[a-zA-Z]/.test(c)))   // drop non‑letters if asked
-      .map((c) => (caseSensitive ? c : c.toLowerCase()))        // case folding
-      .sort()
-      .join('');
+  // Work with the shorter string in the second dimension
+  const [s1, s2] = a.length < b.length ? [a, b] : [b, a];
+  const len1 = s1.length;
+  const len2 = s2.length;
 
-  return normalize(left) === normalize(right);
-}
-console.log(areAnagrams('listen', 'silent'));            // true
-console.log(areAnagrams('Tinsel', 'Listen'));            // true
-console.log(areAnagrams('hello', 'world'));              // false
-console.log(areAnagrams('William Shakespeare', 'I am a weakish speller', {
-  ignoreNonAlpha: true,
-}));                                                   // true
-function areAnagramsFast(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+  // dp[j] = longest suffix length ending at s1[i-1] and s2[j-1]
+  let dp = new Array(len2 + 1).fill(0);
+  let best = 0;
+  let bestEndIdxS1 = 0; // end position (exclusive) in the longer string
 
-  const count: Record<string, number> = {};
-
-  for (const char of a) count[char] = (count[char] ?? 0) + 1;
-  for (const char of b) {
-    if (!count[char]) return false; // missing or too many of this char
-    count[char]!--;
+  for (let i = 1; i <= len1; i++) {
+    let prev = 0; // dp[j-1] from the previous row
+    for (let j = 1; j <= len2; j++) {
+      const temp = dp[j]; // value before updating; will become prev in next loop
+      if (s1[i - 1] === s2[j - 1]) {
+        // extend current matching suffix
+        dp[j] = prev + 1;
+        if (dp[j] > best) {
+          best = dp[j];
+          // bestEndIdxS1 refers to the longer/first string
+          bestEndIdxS1 = i;
+        }
+      } else {
+        dp[j] = 0;
+      }
+      prev = temp;
+    }
   }
 
-  return true;
+  // Extract the substring from the longer string
+  if (best === 0) return '';
+  const startIdx = bestEndIdxS1 - best;
+  const longer = a.length >= b.length ? a : b;
+  return longer.slice(startIdx, bestEndIdxS1);
 }
+console.log(longestCommonSubstring('abcdef', 'zabfxe')); // -> "abf"
+console.log(longestCommonSubstring('aabcc', 'abc'));     // -> "abc"
+console.log(longestCommonSubstring('xyz', 'abc'));      // -> ""
