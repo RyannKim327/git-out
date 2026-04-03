@@ -1,102 +1,56 @@
-/** One directed edge in the graph */
-interface Edge {
-  from: number;   // source vertex id
-  to: number;     // target vertex id
-  weight: number; // edge weight
-}
-
-/** Graph represented only by its edge list */
-type Graph = Edge[];
-
-/** Result of the shortest‑path computation */
-interface BellmanFordResult {
-  /** distance from source to every vertex (Infinity if unreachable) */
-  distances: number[];
-  /** predecessor of each vertex on the shortest path tree */
-  predecessors: (number | null)[];
-  /** true if a negative cycle was detected that is reachable from the source */
-  negativeCycleDetected: boolean;
+/**
+ *  k is 1‑based: k = 1 → smallest, k = length → largest
+ */
+function kthSmallestBySort<T>(a: T[], k: number, cmp?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > a.length) return undefined;
+  const arr = a.slice();                     // don't touch the original
+  arr.sort((x, y) => (cmp ? cmp(x, y) : (x as any) < (y as any) ? -1 : (x as any) > (y as any) ? 1 : 0));
+  return arr[k - 1];
 }
 /**
- * Bellman‑Ford single‑source shortest‑path solver.
- * @param edges  complete list of directed edges in the graph
- * @param vertexCount total number of vertices, 0 … vertexCount‑1
- * @param source id of the source vertex
- * @returns distances, predecessors and a flag for a reachable negative cycle
+ * Find the k‑th smallest element (1‑based) in place.
+ *
+ * @param arr  the array to search
+ * @param k    1‑based index (1 = smallest)
+ * @param cmp  optional compare function, defaults to the standard `< => >`
+ * @returns    the k‑th smallest element, or `undefined` if k is out of bounds
  */
-export function bellmanFord(
-  edges: Graph,
-  vertexCount: number,
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+function kthSmallestQuickSelect<T>(
+  arr: T[],
+  k: number,
+  cmp?: (a: T, b: T) => number
+): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const compare = cmp ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+  let left = 0;
+  let right = arr.length - 1;
+  const target = k - 1;              // 0‑based
 
-  const distances = Array(vertexCount).fill(INF);
-  const predecessors = Array<null | number>(vertexCount).fill(null);
+  while (left <= right) {
+    // Pick a pivot (here the middle element)
+    const pivotIdx = Math.floor((left + right) / 2);
+    const pivotVal = arr[pivotIdx];
 
-  distances[source] = 0;
-
-  /* Relax edges V‑1 times */
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const e of edges) {
-      const { from, to, weight } = e;
-      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
+    // Partition: elements < pivot on the left, > pivot on the right
+    let i = left;
+    let j = right;
+    while (i <= j) {
+      while (compare(arr[i], pivotVal) < 0) i++;
+      while (compare(arr[j], pivotVal) > 0) j--;
+      if (i <= j) {
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        i++;
+        j--;
       }
     }
-    /* Early exit if no relaxation happened */
-    if (!changed) break;
-  }
 
-  /* Check for negative‑weight cycles reachable from source */
-  let negativeCycleDetected = false;
-  for (const e of edges) {
-    const { from, to, weight } = e;
-    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-      negativeCycleDetected = true;
-      break;
-    }
+    // Which side contains the target?
+    if (j < target) left = i;
+    else if (i > target) right = j;
+    else return arr[target];
   }
-
-  return { distances, predecessors, negativeCycleDetected };
 }
-/**
- * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
- * Returns `undefined` if the target is unreachable.
- */
-export function reconstructPath(
-  target: number,
-  predecessors: (number | null)[]
-): number[] | undefined {
-  if (predecessors[target] === null) return undefined;
+const arr = [7, 3, 5, 2, 9, 1, 4];
+const k = 3;           // find the 3rd smallest: answer should be 4
 
-  const path: number[] = [];
-  for (let v = target; v !== null; v = predecessors[v]) {
-    path.push(v);
-  }
-  return path.reverse();
-}
-// A small graph with both positive and negative edges
-const graph: Graph = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -3 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 4 },
-];
-
-const vertexCount = 4;          // vertices 0 … 3
-const source = 0;
-const result = bellmanFord(graph, vertexCount, source);
-
-console.log('Distances:', result.distances);
-// [0, 1, 2, 3]
-
-console.log('Negative cycle detected?', result.negativeCycleDetected);
-// false
-
-const pathTo3 = reconstructPath(3, result.predecessors);
-console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
+console.log(kthSmallestQuickSelect(arr, k)); // 4
