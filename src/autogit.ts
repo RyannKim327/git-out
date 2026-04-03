@@ -1,53 +1,65 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
+/**
+ * Build the shift table for the Boyer–Moore–Horspool algorithm.
+ * For each character in the pattern we set the shift distance to the
+ * pattern length minus the index - 1, unless the character is the
+ * pattern's last one (its shift remains 1).
+ */
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
+
+  // Initialize all shifts to the pattern length.
+  for (let i = 0; i < m; i++) {
+    const ch = pattern.charAt(i);
+    table[ch] = m;
+  }
+
+  // Adjust shifts for every character except the last one.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern.charAt(i)] = m - i - 1;
+  }
+
+  return table;
 }
 
-// Example
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-console.log(intersection(arr1, arr2)); // → [3, 4, 5]
-function intersectionByOrder<T>(a: T[], b: T[]): T[] {
-  const setA = new Set(a);
-  return b.filter(x => setA.has(x));
-}
-function multisetIntersection<T>(a: T[], b: T[]): T[] {
-  const counts = new Map<T, number>();
-  for (const item of a)
-    counts.set(item, (counts.get(item) ?? 0) + 1);
+/**
+ * Boyer–Moore–Horspool substring search.
+ * @param text   The string you want to search inside.
+ * @param pat    The pattern you are looking for.
+ * @returns      The index of the first occurrence, or -1 if not found.
+ */
+export function boyerMooreHorspool(text: string, pat: string): number {
+  const n = text.length;
+  const m = pat.length;
 
-  const result: T[] = [];
-  for (const item of b) {
-    const cnt = counts.get(item);
-    if (cnt && cnt > 0) {
-      result.push(item);
-      counts.set(item, cnt - 1);
+  if (m === 0) return 0;          // Empty pattern matches at 0
+  if (m > n) return -1;           // Pattern longer than text → impossible
+
+  const shift = buildShiftTable(pat);
+
+  let i = 0;                      // Current position in text
+
+  while (i <= n - m) {
+    let j = m - 1;                // Start comparing from the end of the pattern
+
+    // Walk backwards over matched characters
+    while (j >= 0 && pat.charAt(j) === text.charAt(i + j)) {
+      j--;
     }
+
+    if (j < 0) {
+      return i;                   // Match found
+    }
+
+    // If mismatch, shift by the table value of the mismatched character
+    const badChar = text.charAt(i + m - 1);
+    i += shift[badChar] ?? m;     // Default shift if character not in table
   }
-  return result;
+
+  return -1;                      // No match
 }
+const txt = "Here is a simple example: find the substring.";
+const pat = "substring";
 
-// Example
-// a: [1, 2, 2, 3], b: [2, 2, 4]
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
-function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
-  const map = new Map<any, T>();
-  for (const item of b) map.set(keyFn(item), item);
-
-  const result: T[] = [];
-  for (const item of a) {
-    const match = map.get(keyFn(item));
-    if (match) result.push(match); // or push(item) if you prefer
-  }
-  return result;
-}
-
-// Example
-interface Person { id: number; name: string }
-const peopleA = [{id:1},{id:2},{id:3}];
-const peopleB = [{id:2},{id:4}];
-console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
-export const arrayUtils = {
-  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
-  // … other helpers here
-};
+const idx = boyerMooreHorspool(txt, pat);
+console.log(idx);   // → 34
