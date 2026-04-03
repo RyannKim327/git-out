@@ -1,62 +1,62 @@
 /**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
+ * Quick‑sort a mutable array in‑place.
  *
- * Complexity: O(m)
+ * @template T The element type to sort.
+ * @param array    The array to sort.
+ * @param compare  Optional comparator:
+ *                 -<0 if a < b
+ *                  0 if a == b
+ *                 >0 if a > b
+ *                  Defaults to the built‑in `<`/`>` for primitive types.
  */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
+function quickSort<T>(array: T[], compare?: (a: T, b: T) => number): void {
+  const cmp = compare ?? defaultCompare;
 
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
+  // Public wrapper that starts the recursive routine.
+  sort(0, array.length - 1);
+
+  /** Recursive partitioning */
+  function sort(left: number, right: number): void {
+    if (left >= right) return;          // one element or invalid range
+    const pivotIdx = partition(left, right);
+    sort(left, pivotIdx - 1);            // left partition
+    sort(pivotIdx + 1, right);           // right partition
+  }
+
+  /**
+   * Partition the sub‑array [left … right] around a pivot.
+   * Returns the final pivot index so the caller can split.
+   */
+  function partition(left: number, right: number): number {
+    const pivotIndex = right;            // choose the last element as pivot
+    const pivotValue = array[pivotIndex];
+    let storeIndex = left;               // first place where a value < pivot will go
+
+    for (let i = left; i < right; i++) {
+      if (cmp(array[i], pivotValue) < 0) {
+        [array[i], array[storeIndex]] = [array[storeIndex], array[i]];
+        storeIndex++;
       }
     }
+    // Move pivot to its final place
+    [array[storeIndex], array[pivotIndex]] = [array[pivotIndex], array[storeIndex]];
+    return storeIndex;
   }
-  return lps;
 }
 
-/**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
-
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
-    }
-  }
-  return -1; // no match
+/** Default comparator for primitive types. */
+function defaultCompare(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
 }
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
+const nums = [3, 8, 4, 1, 9, 5];
+quickSort(nums);               // sorts in place
+console.log(nums);             // [1, 3, 4, 5, 8, 9]
+
+const words = ["banana", "apple", "pear"];
+quickSort(words);              // defaults to lexical order
+console.log(words);            // ["apple", "banana", "pear"]
+
+// Custom order: descending numbers
+quickSort(nums, (a, b) => b - a);
+console.log(nums);             // [9, 8, 5, 4, 3, 1]
