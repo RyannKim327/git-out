@@ -1,49 +1,39 @@
-/*  Depth‑first search (BFS) that stops after exploring a given number of levels.
- *
- *  - `Node`   – a generic representation of a graph vertex.
- *  - `getNeighbors` – a callback that returns the adjacent nodes.
- *  - `goal` – a predicate that tells whether the node is satisfactory.
- *  - `maxDepth` – how many edges away from the start we’ll consider.
- *
- *  The function yields an array of nodes in the order they were visited
- *  (first‑in, first‑out).  The result can be empty when the goal isn’t
- *  found before the depth limit.
+/**
+ * Fetches a random dog picture and logs the URL.
+ * Works in Node (with node-fetch polyfill) and in browsers.
  */
 
-type Node = {
-  id: string | number;
-  // … other properties
-};
+const DOG_API = 'https://dog.ceo/api/breeds/image/random';
 
-export function breadthLimitedSearch(
-  start: Node,
-  maxDepth: number,
-  goal: (n: Node) => boolean,
-  getNeighbors: (n: Node) => Node[]
-): Node[] {
-  if (maxDepth < 0) return [];
-
-  const frontier: Array<{ node: Node; depth: number }> = [{ node: start, depth: 0 }];
-  const visited = new Set<Node>();
-  const result: Node[] = [];
-
-  while (frontier.length) {
-    const { node, depth } = frontier.shift()!; // safe pop because we always pop a value
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    result.push(node);
-    if (goal(node)) break;
-
-    // If we haven’t hit the depth ceiling, enqueue the next layer
-    if (depth < maxDepth) {
-      const neighbours = getNeighbors(node);
-      for (const neighbour of neighbours) {
-        if (!visited.has(neighbour)) {
-          frontier.push({ node: neighbour, depth: depth + 1 });
-        }
-      }
-    }
-  }
-  return result;
+interface DogApiResponse {
+  message: string;  // the image URL
+  status: string;   // should be 'success'
 }
+
+/**
+ * Makes the HTTP request, parses the JSON, and logs the image URL.
+ */
+async function showRandomDog(): Promise<void> {
+  try {
+    // `fetch` may need a polyfill in Node, e.g. `node-fetch`
+    const response = await fetch(DOG_API);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+
+    const data: DogApiResponse = await response.json();
+
+    if (data.status !== 'success') {
+      throw new Error(`API reported failure: ${data.status}`);
+    }
+
+    console.log('Random dog image URL:', data.message);
+  } catch (err) {
+    console.error('Failed to fetch dog image:', err);
+  }
+}
+
+showRandomDog();
+npm install node-fetch
+import fetch from 'node-fetch';
