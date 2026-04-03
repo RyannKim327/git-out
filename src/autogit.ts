@@ -1,97 +1,38 @@
-class Queue<T> {
-  private items: T[] = [];
-  private start = 0;          // index of the front
-
-  push(item: T) {
-    this.items.push(item);
-  }
-
-  pop(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.items[this.start++];
-    // optional cleanup to keep array short
-    if (this.start > 100 && this.start * 2 > this.items.length) {
-      this.items = this.items.slice(this.start);
-      this.start = 0;
-    }
-    return item;
-  }
-
-  isEmpty() {
-    return this.start >= this.items.length;
-  }
-}
-type Node = string | number | symbol;  // whatever shape you need
-
 /**
- * Breadth-First Search
+ * Return the same sentence but with the words in reverse order.
  *
- * @param graph   adjacency list mapping each node to its neighbours
- * @param start   node from which to begin traversal
- * @param cb      optional callback executed for every visited node
- * @returns       an array of nodes in the order they were visited
+ * @param sentence - Any string you want to flip.
+ * @returns A new string with the word order reversed.
  */
-function bfs<Node>(
-  graph: Map<Node, Node[]>, 
-  start: Node,
-  cb?: (node: Node) => void
-): Node[] {
-  const visited = new Set<Node>();
-  const queue = new Queue<Node>();
-  const order: Node[] = [];
-
-  queue.push(start);
-  visited.add(start);
-
-  while (!queue.isEmpty()) {
-    const current = queue.pop()!;
-    order.push(current);
-
-    // run user code if supplied
-    cb?.(current);
-
-    const neighbours = graph.get(current) ?? [];
-    for (const neighbour of neighbours) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
-    }
-  }
-
-  return order;
+export function reverseWords(sentence: string): string {
+  return sentence
+    .trim()                      // Remove leading/trailing spaces
+    .split(/\s+/)                // Split on one or more whitespace characters
+    .reverse()                   // Reverse the word array
+    .join(' ');                  // Re‑join with a single space
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []]
-]);
 
-console.log(bfs(graph, 1)); // [1, 2, 3, 4, 5, 6]
-function bfsStop<T>(
-  graph: Map<T, T[]>,
-  start: T,
-  onVisit: (node: T) => boolean // true → stop
-) {
-  const visited = new Set<T>();
-  const queue = new Queue<T>();
+/* Example usage */
+const original = "The quick brown   fox jumps over the lazy dog";
+console.log(reverseWords(original));
+// → "dog lazy the over jumps fox brown quick The"
+export function reverseWordsWithSpacing(str: string): string {
+  const parts = str.match(/(\S+|\s+)/g) ?? []; // captures words and whitespace chunks
+  let words: string[] = [];
+  const wordTokens: string[] = [];
 
-  queue.push(start);
-  visited.add(start);
-
-  while (!queue.isEmpty()) {
-    const cur = queue.pop()!;
-    if (onVisit(cur)) return cur;   // finished
-
-    for (const nxt of graph.get(cur) ?? []) {
-      if (!visited.has(nxt)) {
-        visited.add(nxt);
-        queue.push(nxt);
-      }
+  // Extract words while preserving the positions of the separators
+  for (const part of parts) {
+    if (part.trim() === '') {
+      words.push(part); // this part is whitespace
+    } else {
+      wordTokens.push(part); // capture the word
     }
   }
-  return undefined;
+
+  // Reverse only the words, then reconstruct
+  const reversedWords = wordTokens.reverse();
+  let i = 0;
+  const result = parts.map(p => (p.trim() === '' ? p : reversedWords[i++])).join('');
+  return result;
 }
