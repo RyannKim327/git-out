@@ -1,54 +1,75 @@
-/**
- * Generic shell sort – works on any array whose elements can be compared by a
- * key that returns a value implementing `<` / `>`.
- *
- * @param arr   The array to sort (mutated in‑place)
- * @param key   (optional) a function that extracts the sort key from each element.
- *              For plain numbers you can leave this undefined.
- *
- * @returns The sorted array (same reference as the input).
- */
-export function shellSort<T>(arr: T[], key?: (x: T) => number | string): T[] {
-  const n = arr.length;
-  // Default key is identity for numbers, fallback to string comparison.
-  const keyFn = key ??
-    ((x: T) => {
-      const v = (x as unknown as number);
-      return typeof v === "number" ? v : String(v);
-    });
+// Compute lps array for pattern p
+function buildLPS(p: string): number[] {
+  const lps = new Array(p.length).fill(0);
+  let len = 0;            // length of the previous longest prefix suffix
+  let i = 1;
 
-  // Start with a gap that is roughly n/2, then reduce it by a factor of 1.3
-  // (Knuth's sequence: h = 3*h + 1)
-  let gap = 1;
-  while (gap < n / 3) gap = 3 * gap + 1; // largest h < n/3
-
-  while (gap >= 1) {
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (
-        j >= gap &&
-        (keyFn(temp) < keyFn(arr[j - gap]))
-      ) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back in the pattern, don’t slide the text cursor
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
       }
-      arr[j] = temp;
     }
-    gap = Math.floor((gap - 1) / 3); // move to previous gap in Knuth sequence
   }
-  return arr;
+  return lps;
 }
-import { shellSort } from "./shellSort";
+/**
+ * KMP search – returns true if pattern occurs in text
+ * @param text the body to scan
+ * @param pattern the substring to find
+ */
+function kmpSearch(text: string, pattern: string): boolean {
+  if (pattern === "") return true;          // empty pattern matches everywhere
 
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(data);
-console.log(data); // [1, 2, 3, 8, 12, 23, 34, 54]
-const users = [
-  { name: "Ada", age: 45 },
-  { name: "Bob", age: 30 },
-  { name: "Cleo", age: 37 }
-];
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-shellSort(users, u => u.age);
-// users now sorted by age
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) return true;   // full match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1];    // drop the matched prefix
+      } else {
+        i++;               // move on in the text
+      }
+    }
+  }
+  return false;
+}
+function kmpAllMatches(text: string, pattern: string): number[] {
+  if (pattern === "") return [];  // or [0,1,2,...] if you want
+
+  const lps = buildLPS(pattern);
+  const matches: number[] = [];
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        matches.push(i - j); // match ends at i-1, so start = i-j
+        j = lps[j - 1];      // continue searching
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return matches;
+}
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
+
+console.log(kmpSearch(haystack, needle));          // true
+console.log(kmpAllMatches(haystack, needle));      // [10]
