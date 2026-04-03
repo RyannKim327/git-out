@@ -1,99 +1,77 @@
-export interface PriorityQueue<T> {
-  enqueue(item: T, priority: number): void;
-  dequeue(): T | undefined;         // removes the highest‑priority item
-  peek(): T | undefined;            // look at the next item without removing
-  size(): number;
-  isEmpty(): boolean;
-}
-type HeapNode<T> = { value: T; priority: number };
+// stack.ts
+export class Stack<T> {
+  // The underlying storage.
+  private readonly items: T[] = [];
 
-export class BinaryHeap<T> implements PriorityQueue<T> {
-  /** Internal array that holds the heap nodes. */
-  private heap: HeapNode<T>[] = [];
-
-  /** Returns the array length, i.e. number of elements in the queue. */
-  size() {
-    return this.heap.length;
+  /** Add an item onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  isEmpty() {
-    return this.heap.length === 0;
+  /** Remove and return the item from the top of the stack. */
+  pop(): T | undefined {
+    return this.items.pop(); // undefined if the stack is empty
   }
 
-  /** Put a new (value, priority) pair into the heap. */
-  enqueue(value: T, priority: number) {
-    const node: HeapNode<T> = { value, priority };
-    this.heap.push(node);               // add to the bottom
-    this.bubbleUp(this.heap.length - 1); // restore heap property
-  }
-
-  /** Remove and return the value with the lowest priority value. */
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-
-    const root = this.heap[0];
-    const last = this.heap.pop()!;          // guaranteed non‑empty
-
-    if (!this.isEmpty()) {
-      this.heap[0] = last;                  // move the last node to root
-      this.bubbleDown(0);                   // restore heap property
-    }
-
-    return root.value;
-  }
-
-  /** Peek at the next value that would be dequeued. */
+  /** Peek at the top item without removing it. */
   peek(): T | undefined {
-    return this.isEmpty() ? undefined : this.heap[0].value;
+    return this.items[this.items.length - 1];
   }
 
-  /* ---------- internal helpers ---------- */
-
-  private bubbleUp(idx: number) {
-    const node = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1; // same as Math.floor((idx-1)/2)
-      const parent = this.heap[parentIdx];
-      if (node.priority >= parent.priority) break; // correct place found
-      this.heap[idx] = parent;                     // move parent down
-      idx = parentIdx;
-    }
-    this.heap[idx] = node; // place the new node
+  /** Check whether the stack contains no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
   }
 
-  private bubbleDown(idx: number) {
-    const length = this.heap.length;
-    const node = this.heap[idx];
+  /** Return the number of items in the stack. */
+  size(): number {
+    return this.items.length;
+  }
 
-    while (true) {
-      const leftIdx = idx * 2 + 1;
-      const rightIdx = leftIdx + 1;
-      let smallestIdx = idx;
-
-      if (leftIdx < length && this.heap[leftIdx].priority < this.heap[smallestIdx].priority) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx < length && this.heap[rightIdx].priority < this.heap[smallestIdx].priority) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx === idx) break; // node is smaller than both children
-
-      this.heap[idx] = this.heap[smallestIdx];
-      idx = smallestIdx;
-    }
-
-    this.heap[idx] = node;
+  /** Clears the stack so it’s empty. */
+  clear(): void {
+    this.items.length = 0;
   }
 }
-const pq = new BinaryHeap<string>();
+import { Stack } from './stack';
 
-pq.enqueue('task A', 5);
-pq.enqueue('task B', 2);
-pq.enqueue('task C', 8);
+const numStack = new Stack<number>();
 
-console.log(pq.peek());   // => 'task B' (priority 2)
-while (!pq.isEmpty()) {
-  console.log(pq.dequeue()); // prints B, A, C in priority order
+numStack.push(10);
+numStack.push(20);
+numStack.push(30);
+
+console.log(numStack.peek()); // 30
+console.log(numStack.pop());  // 30
+console.log(numStack.size()); // 2
+console.log(numStack.isEmpty()); // false
+
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class MaxStack<T extends number> {
+  private readonly stack: T[] = [];
+  private readonly maxStack: T[] = [];
+
+  push(item: T): void {
+    this.stack.push(item);
+    const currentMax = this.maxStack.length === 0
+      ? item
+      : Math.max(item, this.maxStack[this.maxStack.length - 1]);
+    this.maxStack.push(currentMax);
+  }
+
+  pop(): T | undefined {
+    this.maxStack.pop();
+    return this.stack.pop();
+  }
+
+  peek(): T | undefined {
+    return this.stack[this.stack.length - 1];
+  }
+
+  max(): T | undefined {
+    return this.maxStack[this.maxStack.length - 1];
+  }
+
+  // …plus isEmpty, size, clear, etc.
 }
-type Comparator<T> = (a: T, b: T) => number; // <0: a before b
