@@ -1,77 +1,50 @@
-// stack.ts
-export class Stack<T> {
-  // The underlying storage.
-  private readonly items: T[] = [];
+/**
+ * Returns the longest common subsequence of two strings.
+ *
+ * @param a The first string.
+ * @param b The second string.
+ * @returns The LCS string.
+ */
+export function lcs(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  /** Add an item onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
+  // dp[i][j] will hold the length of LCS of a[0..i-1] and b[0..j-1].
+  // We keep one extra row/column at index 0 for the empty prefix.
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // Build the table bottom‑up.
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  /** Remove and return the item from the top of the stack. */
-  pop(): T | undefined {
-    return this.items.pop(); // undefined if the stack is empty
+  // Reconstruct one LCS by walking back through the table.
+  let i = m, j = n;
+  const chars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // The character is part of the LCS.
+      chars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // Move up.
+    } else {
+      j--;          // Move left.
+    }
   }
 
-  /** Peek at the top item without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Check whether the stack contains no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Return the number of items in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clears the stack so it’s empty. */
-  clear(): void {
-    this.items.length = 0;
-  }
+  // The chars array holds the LCS in reverse order.
+  return chars.reverse().join('');
 }
-import { Stack } from './stack';
+const s1 = "AGGTAB";
+const s2 = "GXTXAYB";
 
-const numStack = new Stack<number>();
-
-numStack.push(10);
-numStack.push(20);
-numStack.push(30);
-
-console.log(numStack.peek()); // 30
-console.log(numStack.pop());  // 30
-console.log(numStack.size()); // 2
-console.log(numStack.isEmpty()); // false
-
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class MaxStack<T extends number> {
-  private readonly stack: T[] = [];
-  private readonly maxStack: T[] = [];
-
-  push(item: T): void {
-    this.stack.push(item);
-    const currentMax = this.maxStack.length === 0
-      ? item
-      : Math.max(item, this.maxStack[this.maxStack.length - 1]);
-    this.maxStack.push(currentMax);
-  }
-
-  pop(): T | undefined {
-    this.maxStack.pop();
-    return this.stack.pop();
-  }
-
-  peek(): T | undefined {
-    return this.stack[this.stack.length - 1];
-  }
-
-  max(): T | undefined {
-    return this.maxStack[this.maxStack.length - 1];
-  }
-
-  // …plus isEmpty, size, clear, etc.
-}
+console.log(lcs(s1, s2)); // "GTAB"
