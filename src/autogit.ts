@@ -1,23 +1,26 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Performs an in‑place insertion sort on an array of numeric values.
+ * @param data The array to sort – it will be mutated directly.
+ */
+export function insertionSort<T extends number[]> (data: T): void {
+  // walk from the second element to the end
+  for (let i = 1; i < data.length; i++) {
+    const key = data[i];          // value we’re trying to insert
+    let j = i - 1;
+
+    /* Shift elements that are greater than `key` up by one
+       position until we find the spot for the key. */
+    while (j >= 0 && data[j] > key) {
+      data[j + 1] = data[j];
+      j--;
+    }
+
+    // put the key into its final place
+    data[j + 1] = key;
+  }
 }
+import { insertionSort } from "./insertion-sort";
 
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
-
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
-}
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(maxDepth(root));  // 3
+const nums = [34, 8, 64, 51, 32, 24];
+insertionSort(nums);
+console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
