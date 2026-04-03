@@ -1,57 +1,23 @@
-/**
- * Binary search over a sorted array.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to find.
- * @param cmp      Optional custom comparison function.
- *                  Returns a negative number if a < b,
- *                  zero if a == b, and positive if a > b.
- * @returns Index of `target` in `arr`, or -1 if not found.
- */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  cmp?: (a: T, b: T) => number
-): number {
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Default comparison for numbers or strings
-  const compare = cmp ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = compare(arr[mid], target);
-
-    if (comparison === 0) return mid;          // found
-    if (comparison < 0) low = mid + 1;         // target is bigger
-    else high = mid - 1;                       // target is smaller
-  }
-
-  return -1; // not found
-}
-const numbers = [1, 3, 5, 7, 9, 11];
-
-console.log(binarySearch(numbers, 7));  // → 3
-console.log(binarySearch(numbers, 4));  // → -1
-interface Person {
-  name: string;
-  age: number;
+// 1️⃣  Node definition
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-const people: Person[] = [
-  {name: 'Alice', age: 28},
-  {name: 'Bob',   age: 34},
-  {name: 'Carol', age: 42}
-];
+// 2️⃣  Recursive depth counter
+function maxDepth<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;                      // base case – empty subtree
 
-function ageComparer(a: Person, b: Person): number {
-  return a.age - b.age;
+  // compute depth of each side, pick the larger one, then add 1 for the current node
+  const leftHeight  = maxDepth(root.left);
+  const rightHeight = maxDepth(root.right);
+  return Math.max(leftHeight, rightHeight) + 1;
 }
+const root: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
 
-const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
-console.log(idx); // -> 1
+console.log(maxDepth(root));  // 3
