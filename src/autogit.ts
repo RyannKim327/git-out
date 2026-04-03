@@ -1,56 +1,48 @@
 /**
- *  k is 1‑based: k = 1 → smallest, k = length → largest
- */
-function kthSmallestBySort<T>(a: T[], k: number, cmp?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > a.length) return undefined;
-  const arr = a.slice();                     // don't touch the original
-  arr.sort((x, y) => (cmp ? cmp(x, y) : (x as any) < (y as any) ? -1 : (x as any) > (y as any) ? 1 : 0));
-  return arr[k - 1];
-}
-/**
- * Find the k‑th smallest element (1‑based) in place.
+ * In‑place heap sort for an array of numbers.
  *
- * @param arr  the array to search
- * @param k    1‑based index (1 = smallest)
- * @param cmp  optional compare function, defaults to the standard `< => >`
- * @returns    the k‑th smallest element, or `undefined` if k is out of bounds
+ * Complexity:  O(n log n) time, O(1) additional space
  */
-function kthSmallestQuickSelect<T>(
-  arr: T[],
-  k: number,
-  cmp?: (a: T, b: T) => number
-): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const compare = cmp ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
-  let left = 0;
-  let right = arr.length - 1;
-  const target = k - 1;              // 0‑based
+export function heapSort(arr: number[]): void {
+  const n = arr.length;
 
-  while (left <= right) {
-    // Pick a pivot (here the middle element)
-    const pivotIdx = Math.floor((left + right) / 2);
-    const pivotVal = arr[pivotIdx];
+  // 1. Build a max‑heap
+  for (let i = (n - 2) >> 1; i >= 0; i--) {
+    heapify(arr, i, n);
+  }
 
-    // Partition: elements < pivot on the left, > pivot on the right
-    let i = left;
-    let j = right;
-    while (i <= j) {
-      while (compare(arr[i], pivotVal) < 0) i++;
-      while (compare(arr[j], pivotVal) > 0) j--;
-      if (i <= j) {
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-        i++;
-        j--;
-      }
-    }
-
-    // Which side contains the target?
-    if (j < target) left = i;
-    else if (i > target) right = j;
-    else return arr[target];
+  // 2. Extract elements one by one
+  for (let end = n - 1; end > 0; end--) {
+    swap(arr, 0, end);         // move current max to its final position
+    heapify(arr, 0, end);      // restore heap property on the reduced heap
   }
 }
-const arr = [7, 3, 5, 2, 9, 1, 4];
-const k = 3;           // find the 3rd smallest: answer should be 4
 
-console.log(kthSmallestQuickSelect(arr, k)); // 4
+/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
+function heapify(arr: number[], rootIdx: number, size: number): void {
+  let largest = rootIdx;
+  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
+  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
+
+  if (left < size && arr[left] > arr[largest]) {
+    largest = left;
+  }
+  if (right < size && arr[right] > arr[largest]) {
+    largest = right;
+  }
+
+  if (largest !== rootIdx) {
+    swap(arr, rootIdx, largest);
+    heapify(arr, largest, size); // continue percolating down
+  }
+}
+
+/** Swap two elements in the array. */
+function swap(arr: number[], i: number, j: number): void {
+  const temp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = temp;
+}
+const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
+heapSort(data);
+console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
