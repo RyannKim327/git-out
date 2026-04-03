@@ -1,15 +1,20 @@
 /**
- * Returns a random integer between min and max (inclusive).
- * @param min The lower bound (inclusive)
- * @param max The upper bound (inclusive)
+ * Returns the arithmetic mean of a non‑empty array of numbers.
+ * If the array is empty, NaN is returned.
  */
-function randInt(min: number, max: number): number {
-  // Clamp the bounds to whole numbers
-  const lower = Math.ceil(min);
-  const upper = Math.floor(max);
+function mean(values: number[]): number {
+  if (values.length === 0) {
+    return NaN;           // or you could throw an Error if you prefer
+  }
 
-  // Math.random() -> [0, 1)
-  // Multiply by the range width + 1 to get inclusive bounds
-  return lower + Math.floor(Math.random() * (upper - lower + 1));
+  const sum = values.reduce((acc, cur) => acc + cur, 0);
+  return sum / values.length;
 }
-console.log(randInt(1, 10)); // might output: 7
+const data = [12, 18, 30, 45];
+console.log(mean(data));   // → 26.25
+type Record = { id: number; value: number };
+
+function meanFromRecords(records: Record[]): number {
+  const values = records.map(r => r.value);
+  return mean(values);
+}
