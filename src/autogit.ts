@@ -1,99 +1,151 @@
-export interface PriorityQueue<T> {
-  enqueue(item: T, priority: number): void;
-  dequeue(): T | undefined;         // removes the highest‑priority item
-  peek(): T | undefined;            // look at the next item without removing
-  size(): number;
-  isEmpty(): boolean;
+// ──────────────────────────────────────────────────────────────
+//  TrieNode
+// ──────────────────────────────────────────────────────────────
+class TrieNode {
+  // how many words end exactly here
+  frequency = 0;
+  // children keyed by single characters
+  children = new Map<string, TrieNode>();
 }
-type HeapNode<T> = { value: T; priority: number };
 
-export class BinaryHeap<T> implements PriorityQueue<T> {
-  /** Internal array that holds the heap nodes. */
-  private heap: HeapNode<T>[] = [];
+// ──────────────────────────────────────────────────────────────
+//  Trie
+// ──────────────────────────────────────────────────────────────
+export class Trie {
+  private readonly root = new TrieNode();
 
-  /** Returns the array length, i.e. number of elements in the queue. */
-  size() {
-    return this.heap.length;
+  //--------------------------------------
+  // Insert a word, optionally incrementing frequency
+  // -------------------------------------
+  insert(word: string, qty = 1): void {
+    let node = this.root;
+    for (const ch of word) {
+      // lazily create missing branch
+      if (!node.children.has(ch))
+        node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
+    }
+    node.frequency += qty;
   }
 
-  isEmpty() {
-    return this.heap.length === 0;
+  //--------------------------------------
+  // Search for exact match – returns how many times the word was inserted
+  // -------------------------------------
+  search(word: string): number {
+    let node = this.root;
+    for (const ch of word) {
+      node = node.children.get(ch);
+      if (!node) return 0; // missing branch
+    }
+    return node.frequency;
   }
 
-  /** Put a new (value, priority) pair into the heap. */
-  enqueue(value: T, priority: number) {
-    const node: HeapNode<T> = { value, priority };
-    this.heap.push(node);               // add to the bottom
-    this.bubbleUp(this.heap.length - 1); // restore heap property
-  }
+  //--------------------------------------
+  // Delete a word (or reduce its count)
+  // -------------------------------------
+  delete(word: string, qty = 1): boolean {
+    const stack: TrieNode[] = []; // keep path for backtracking
+    let node = this.root;
 
-  /** Remove and return the value with the lowest priority value. */
-  dequeue(): T | undefined {
-    if (this.isEmpty()) return undefined;
-
-    const root = this.heap[0];
-    const last = this.heap.pop()!;          // guaranteed non‑empty
-
-    if (!this.isEmpty()) {
-      this.heap[0] = last;                  // move the last node to root
-      this.bubbleDown(0);                   // restore heap property
+    for (const ch of word) {
+      const next = node.children.get(ch);
+      if (!next) return false; // word never existed
+      stack.push(node);
+      node = next;
     }
 
-    return root.value;
-  }
+    if (node.frequency === 0) return false; // nothing to delete
+    node.frequency -= qty;
+    if (node.frequency < 0) node.frequency = 0; // guard
 
-  /** Peek at the next value that would be dequeued. */
-  peek(): T | undefined {
-    return this.isEmpty() ? undefined : this.heap[0].value;
-  }
-
-  /* ---------- internal helpers ---------- */
-
-  private bubbleUp(idx: number) {
-    const node = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1; // same as Math.floor((idx-1)/2)
-      const parent = this.heap[parentIdx];
-      if (node.priority >= parent.priority) break; // correct place found
-      this.heap[idx] = parent;                     // move parent down
-      idx = parentIdx;
+    // prune dead branches
+    let idx = stack.length - 1;
+    while (idx >= 0 && node.children.size === 0 && node.frequency === 0) {
+      const parent = stack[idx];
+      const ch = Array.from(parent.children.entries()).find(
+        ([, child]) => child === node
+      )![0];
+      parent.children.delete(ch);
+      node = parent;
+      idx--;
     }
-    this.heap[idx] = node; // place the new node
+    return true;
   }
 
-  private bubbleDown(idx: number) {
-    const length = this.heap.length;
-    const node = this.heap[idx];
+  //--------------------------------------
+  // Return all words that start with a prefix
+  // -------------------------------------
+  startsWith(prefix: string): string[] {
+    let node = this.root;
 
-    while (true) {
-      const leftIdx = idx * 2 + 1;
-      const rightIdx = leftIdx + 1;
-      let smallestIdx = idx;
+    for (const ch of prefix) {
+      node = node.children.get(ch);
+      if (!node) return []; // no match
+    }
 
-      if (leftIdx < length && this.heap[leftIdx].priority < this.heap[smallestIdx].priority) {
-        smallestIdx = leftIdx;
+    const results: string[] = [];
+    const dfs = (n: TrieNode, cur: string) => {
+      if (n.frequency > 0) results.push(cur);
+
+      for (const [ch, child] of n.children) {
+        dfs(child, cur + ch);
       }
-      if (rightIdx < length && this.heap[rightIdx].priority < this.heap[smallestIdx].priority) {
-        smallestIdx = rightIdx;
-      }
+    };
 
-      if (smallestIdx === idx) break; // node is smaller than both children
+    dfs(node, prefix);
+    return results;
+  }
 
-      this.heap[idx] = this.heap[smallestIdx];
-      idx = smallestIdx;
+  //--------------------------------------
+  // Return the top‑k words by frequency that match a prefix
+  // Useful for autocomplete suggestions
+  // -------------------------------------
+  topK(prefix: string, k = 5): { word: string; freq: number }[] {
+    let node = this.root;
+    for (const ch of prefix) {
+      node = node.children.get(ch);
+      if (!node) return [];
     }
 
-    this.heap[idx] = node;
+    const heap: Array<{ word: string; freq: number }> = [];
+
+    const dfs = (n: TrieNode, cur: string) => {
+      if (n.frequency > 0) {
+        heap.push({ word: cur, freq: n.frequency });
+        // keep only the largest k entries
+        heap.sort((a, b) => b.freq - a.freq);
+        if (heap.length > k) heap.pop();
+      }
+
+      for (const [ch, child] of n.children) {
+        dfs(child, cur + ch);
+      }
+    };
+
+    dfs(node, prefix);
+    return heap;
   }
 }
-const pq = new BinaryHeap<string>();
+import { Trie } from "./trie";
 
-pq.enqueue('task A', 5);
-pq.enqueue('task B', 2);
-pq.enqueue('task C', 8);
+const t = new Trie();
 
-console.log(pq.peek());   // => 'task B' (priority 2)
-while (!pq.isEmpty()) {
-  console.log(pq.dequeue()); // prints B, A, C in priority order
-}
-type Comparator<T> = (a: T, b: T) => number; // <0: a before b
+t.insert("apple");
+t.insert("app");
+t.insert("application", 3); // appears 3 times
+t.insert("bat");
+t.insert("batch");
+t.insert("baton");
+
+console.log(t.search("app"));          // 1
+console.log(t.search("application"));  // 3
+console.log(t.search("banana"));       // 0
+
+console.log(t.startsWith("app"));      // ["app", "apple", "application"]
+console.log(t.topK("app", 2));         // [{word:"application",freq:3},{word:"app",freq:1}]
+
+t.delete("application", 2);            // reduce count, still 1 left
+console.log(t.search("application"));  // 1
+
+t.delete("baton");                     // remove completely
+console.log(t.startsWith("bat"));      // ["bat", "batch"]
