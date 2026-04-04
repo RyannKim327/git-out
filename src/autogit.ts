@@ -1,30 +1,25 @@
 /**
- * Convert a decimal number to its binary representation.
+ * Returns the maximum sum of any contiguous sub‑array of `arr`.
+ * Works for arrays that contain only numbers.
  *
- * @param dec - A Number or a string that can be parsed to a Number.
- * @returns The binary string.
+ * @param arr - array of numbers (can be empty)
+ * @returns maximum sub‑array sum (for an empty array returns 0)
  */
-function toBinary(dec: number | string): string {
-  // If a string was passed, turn it into a number first.
-  const numericValue = Number(dec);
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) return 0;
 
-  // Do a sanity check – NaN results in an empty string.
-  if (isNaN(numericValue)) {
-    throw new Error('Input must be a valid number');
+  let maxEndingHere = arr[0];   // best sum ending at current index
+  let maxSoFar = arr[0];        // best sum found so far
+
+  for (let i = 1; i < arr.length; i++) {
+    // Either extend the previous sub‑array or start a new one at i
+    maxEndingHere = Math.max(arr[i], maxEndingHere + arr[i]);
+
+    // Update the best overall sum
+    maxSoFar = Math.max(maxSoFar, maxEndingHere);
   }
 
-  // Convert to binary.
-  return numericValue.toString(2);
+  return maxSoFar;
 }
-
-/* --- Usage examples --- */
-console.log(toBinary(10));          // "1010"
-console.log(toBinary('255'));       // "11111111"
-console.log(toBinary(1000));        // "1111101000"
-const digits = toBinary(42).split('').map(Number);
-// digits => [1, 0, 1, 0, 1, 0]
-function toBinaryBigInt(n: bigint): string {
-  return n.toString(2);
-}
-
-console.log(toBinaryBigInt(12345678901234567890n)); // big binary string
+const nums = [ -2, 1, -3, 4, -1, 2, 1, -5, 4 ];
+console.log(maxSubArraySum(nums));  // 6
