@@ -1,77 +1,48 @@
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+/**
+ * Calculates area when you know the base and the altitude
+ * @param base   the length of the base
+ * @param height the altitude perpendicular to the base
+ * @returns area of the triangle
+ */
+function areaBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
 
-  get size() { return this._size; }
-  push(value: T) {
-    const node = new ListNode(value);
-
-    if (!this.head) {
-      this.head = this.tail = node;        // first element
-    } else {
-      this.tail!.next = node;              // trick the tail
-      this.tail = node;                    // and move it
-    }
-    this._size++;
+// Example
+const area1 = areaBaseHeight(10, 5);   // 25
+/**
+ * Calculates area from the three sides using Heron's formula
+ * @param a side a
+ * @param b side b
+ * @param c side c
+ * @returns area of the triangle
+ * @throws Error if the sides cannot form a triangle
+ */
+function areaHeron(a: number, b: number, c: number): number {
+  // Validate triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not form a triangle.');
   }
-  unshift(value: T) {
-    const node = new ListNode(value, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node; // when list was empty
-    this._size++;
-  }
-  pop(): T | null {
-    if (!this.head) return null;
 
-    let removedValue: T | null = null;
+  const s = (a + b + c) / 2;                       // semi‑perimeter
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
 
-    // If we only have one node
-    if (this.head === this.tail) {
-      removedValue = this.head.value;
-      this.head = this.tail = null;
-    } else {
-      let current = this.head;
-      while (current.next !== this.tail) {
-        current = current.next!;
-      }
-      removedValue = this.tail!.value;
-      current.next = null;
-      this.tail = current;
-    }
+// Example
+const area2 = areaHeron(3, 4, 5);   // 6
+interface Point { x: number; y: number }
 
-    this._size--;
-    return removedValue;
-  }
-  find(predicate: (value: T) => boolean): T | null {
-    let current = this.head;
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-  *[Symbol.iterator](): Generator<T, void, unknown> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-const list = new LinkedList<number>();
+function areaFromCoords(p1: Point, p2: Point, p3: Point): number {
+  return Math.abs(
+    (p1.x * (p2.y - p3.y) +
+     p2.x * (p3.y - p1.y) +
+     p3.x * (p1.y - p2.y)) / 2
+  );
+}
 
-list.push(10);
-list.push(20);
-list.unshift(5);          // List is now: 5 → 10 → 20
-
-console.log([...list]);   // [5, 10, 20]
-console.log(list.size);   // 3
-
-console.log(list.pop());   // 20
-console.log([...list]);   // [5, 10]
+// Example
+const area3 = areaFromCoords(
+  { x: 0, y: 0 },
+  { x: 4, y: 0 },
+  { x: 0, y: 3 }
+);   // 6
