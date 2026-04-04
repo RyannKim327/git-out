@@ -1,27 +1,38 @@
 /**
- * Returns true if `str` reads the same forwards and backwards.
- *
- * @param str – The string you want to test.
- * @returns  boolean – palindrome status.
+ * Performs an interpolation search on a strictly‑increasing array of numbers.
+ * @param arr   The sorted array (ascending).  Values must be finite numbers.
+ * @param key   The value you’re looking for.
+ * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
  */
-export function isPalindrome(str: string): boolean {
-  // Remove all non‑alphanumeric characters and ignore case.
-  const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // Two‑pointer scan is faster than reversing a long string.
-  let left = 0;
-  let right = cleaned.length - 1;
+  let low = 0;
+  let high = arr.length - 1;
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
-    left++;
-    right--;
+  // If the target is outside the range, we can bail early.
+  if (key < arr[low] || key > arr[high]) return -1;
+
+  while (low <= high && arr[low] !== arr[high]) {
+    // Estimate the likely position: a weighted average.
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    // Safety: clamp to array bounds.
+    if (pos < low)   return -1;
+    if (pos > high)  return -1;
+
+    const val = arr[pos];
+
+    if (val === key) return pos;
+    if (val < key)   low = pos + 1;
+    else             high = pos - 1;
   }
-  return true;
+
+  // Final check if low might still hold the key.
+  return (arr[low] === key) ? low : -1;
 }
-console.log(isPalindrome('racecar'));          // true
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('hello'));            // false
-console.log(isPalindrome(''));                 // true (empty string)
+const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+const idx = interpolationSearch(nums, 18); // 5
+console.log(idx); // prints 5
