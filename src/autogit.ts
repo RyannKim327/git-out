@@ -1,67 +1,45 @@
 /**
- * Rabin‑Karp – find all occurrences of `pat` in `txt`.
+ * Return true if `left` and `right` contain exactly the same character counts.
  *
- * @param txt   The text to search in.
- * @param pat   The pattern to find.
- * @returns     An array of starting indices where `pat` occurs in `txt`.
+ * @param left   – first string
+ * @param right  – second string
+ * @param options – tweak the comparison:
+ *   - `caseSensitive`: default `false` – treats 'A' and 'a' as equal
+ *   - `ignoreNonAlpha`: default `false` – strips out everything other than a‑z/A‑Z
  */
-export function rabinKarp(txt: string, pat: string): number[] {
-  if (pat.length === 0 || txt.length < pat.length) return [];
+function areAnagrams(
+  left: string,
+  right: string,
+  options?: { caseSensitive?: boolean; ignoreNonAlpha?: boolean }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options ?? {};
 
-  const base = 256;       // Number of possible character values
-  const mod  = 101;       // A small prime – good for demo purposes
+  const normalize = (s: string) =>
+    s
+      .split('')
+      .filter((c) => (!ignoreNonAlpha || /[a-zA-Z]/.test(c)))   // drop non‑letters if asked
+      .map((c) => (caseSensitive ? c : c.toLowerCase()))        // case folding
+      .sort()
+      .join('');
 
-  const m = pat.length;
-  const n = txt.length;
-
-  // ---------- 1. Pre‑compute (base^(m-1)) % mod  ----------
-  let highestBase = 1;
-  for (let i = 1; i <= m - 1; i++) {
-    highestBase = (highestBase * base) % mod;
-  }
-
-  // ---------- 2. Compute hash of pattern and first window ----------
-  let patHash  = 0;
-  let windowHash = 0;
-  for (let i = 0; i < m; i++) {
-    patHash   = (patHash   * base + pat.charCodeAt(i)) % mod;
-    windowHash= (windowHash* base + txt.charCodeAt(i)) % mod;
-  }
-
-  const result: number[] = [];
-
-  // ---------- 3. Slide the window over the text ----------
-  for (let i = 0; i <= n - m; i++) {
-    // If the hash values match, perform a character‑by‑character check
-    if (patHash === windowHash) {
-      let match = true;
-      for (let j = 0; j < m; j++) {
-        if (txt.charCodeAt(i + j) !== pat.charCodeAt(j)) {
-          match = false;
-          break;
-        }
-      }
-      if (match) result.push(i);
-    }
-
-    // Compute hash for next window
-    if (i < n - m) {
-      // Remove leading char, add trailing char
-      windowHash =
-        ((windowHash - txt.charCodeAt(i) * highestBase) * base
-          + txt.charCodeAt(i + m)) % mod;
-
-      // Problem: windowHash can become negative – make it positive
-      if (windowHash < 0) windowHash += mod;
-    }
-  }
-
-  return result;
+  return normalize(left) === normalize(right);
 }
-import { rabinKarp } from "./rabinKarp";
+console.log(areAnagrams('listen', 'silent'));            // true
+console.log(areAnagrams('Tinsel', 'Listen'));            // true
+console.log(areAnagrams('hello', 'world'));              // false
+console.log(areAnagrams('William Shakespeare', 'I am a weakish speller', {
+  ignoreNonAlpha: true,
+}));                                                   // true
+function areAnagramsFast(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+  const count: Record<string, number> = {};
 
-const indices = rabinKarp(text, pattern);
-console.log(indices); // → [10]
+  for (const char of a) count[char] = (count[char] ?? 0) + 1;
+  for (const char of b) {
+    if (!count[char]) return false; // missing or too many of this char
+    count[char]!--;
+  }
+
+  return true;
+}
