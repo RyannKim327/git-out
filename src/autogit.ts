@@ -1,67 +1,62 @@
-type Node = {
-  id:          string;   // whatever uniquely identifies a node
-  children?:   Node[];   // adjacency list – change to whatever your graph uses
-};
+/**
+ * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
+ * LPS[i] stores the length of the longest proper prefix of P[0…i]
+ * that is also a suffix of P[0…i].
+ *
+ * Complexity: O(m)
+ */
+function buildLps(p: string): number[] {
+  const lps: number[] = new Array(p.length).fill(0);
+  let len = 0;            // current length of the previous longest prefix
+  let i = 1;
 
-interface StackItem {
-  node:  Node;
-  depth: number;
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back to the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
+  }
+  return lps;
 }
 
 /**
- * Iterative DFS that stops at a given depth limit.
- * Returns true if the target is found, otherwise false.
+ * Performs KMP search.
+ *
+ * Returns the starting index of the first match
+ * or -1 if the pattern does not occur in the text.
+ *
+ * Complexity: O(n + m)
  */
-function depthLimitedDFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const stack: StackItem[] = [{ node: root, depth: 0 }];
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
+  const lps = buildLps(pattern);
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;      // pop from the end
+  let i = 0; // index in text
+  let j = 0; // index in pattern
 
-    if (node.id === targetId) return true;     // hit
-
-    if (depth < maxDepth) {                   // still room to descend
-      const children = node.children ?? [];
-      // push children in reverse order if you want particular visit order
-      for (let i = children.length - 1; i >= 0; i--) {
-        stack.push({ node: children[i], depth: depth + 1 });
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1]; // use LPS to skip comparisons
+      } else {
+        i++;
       }
     }
   }
-  return false;
+  return -1; // no match
 }
-function depthLimitedBFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const queue: StackItem[] = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;  // shift from the front
-
-    if (node.id === targetId) return true;
-
-    if (depth < maxDepth) {
-      for (const child of node.children ?? []) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
-    }
-  }
-  return false;
-}
-const tree: Node = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
-    { id: 'b', children: [{ id: 'e' }] }
-  ]
-};
-
-console.log(depthLimitedDFS(tree, 'd', 2)); // true
-console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
-console.log(depthLimitedBFS(tree, 'e', 1)); // true
+console.log(kmpSearch('ababcabcab', 'abc')); // 3
+console.log(kmpSearch('aaaa', 'b'));        // -1
