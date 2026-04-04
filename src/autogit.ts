@@ -1,53 +1,30 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
-}
+/**
+ * Return the second largest distinct value in an array.
+ * @param arr – numeric array
+ * @returns The second largest number or `undefined` if it doesn’t exist
+ */
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;  // not enough elements
 
-// Example
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-console.log(intersection(arr1, arr2)); // → [3, 4, 5]
-function intersectionByOrder<T>(a: T[], b: T[]): T[] {
-  const setA = new Set(a);
-  return b.filter(x => setA.has(x));
-}
-function multisetIntersection<T>(a: T[], b: T[]): T[] {
-  const counts = new Map<T, number>();
-  for (const item of a)
-    counts.set(item, (counts.get(item) ?? 0) + 1);
+  let max = -Infinity;
+  let second = -Infinity;
 
-  const result: T[] = [];
-  for (const item of b) {
-    const cnt = counts.get(item);
-    if (cnt && cnt > 0) {
-      result.push(item);
-      counts.set(item, cnt - 1);
+  for (const x of arr) {
+    if (x > max) {
+      second = max;   // previous max becomes second
+      max = x;
+    } else if (x < max && x > second) {
+      second = x;     // distinct candidate for second
     }
+    // values equal to max are ignored – we want distinct numbers
   }
-  return result;
+
+  return second === -Infinity ? undefined : second;
 }
 
-// Example
-// a: [1, 2, 2, 3], b: [2, 2, 4]
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
-function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
-  const map = new Map<any, T>();
-  for (const item of b) map.set(keyFn(item), item);
-
-  const result: T[] = [];
-  for (const item of a) {
-    const match = map.get(keyFn(item));
-    if (match) result.push(match); // or push(item) if you prefer
-  }
-  return result;
+// Example:
+console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
+function secondLargestSorted(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)].sort((a, b) => b - a);
+  return unique[1];           // undefined if not enough distinct values
 }
-
-// Example
-interface Person { id: number; name: string }
-const peopleA = [{id:1},{id:2},{id:3}];
-const peopleB = [{id:2},{id:4}];
-console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
-export const arrayUtils = {
-  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
-  // … other helpers here
-};
