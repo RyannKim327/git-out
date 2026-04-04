@@ -1,20 +1,26 @@
 /**
- * Returns the arithmetic mean of a non‑empty array of numbers.
- * If the array is empty, NaN is returned.
+ * Performs an in‑place insertion sort on an array of numeric values.
+ * @param data The array to sort – it will be mutated directly.
  */
-function mean(values: number[]): number {
-  if (values.length === 0) {
-    return NaN;           // or you could throw an Error if you prefer
+export function insertionSort<T extends number[]> (data: T): void {
+  // walk from the second element to the end
+  for (let i = 1; i < data.length; i++) {
+    const key = data[i];          // value we’re trying to insert
+    let j = i - 1;
+
+    /* Shift elements that are greater than `key` up by one
+       position until we find the spot for the key. */
+    while (j >= 0 && data[j] > key) {
+      data[j + 1] = data[j];
+      j--;
+    }
+
+    // put the key into its final place
+    data[j + 1] = key;
   }
-
-  const sum = values.reduce((acc, cur) => acc + cur, 0);
-  return sum / values.length;
 }
-const data = [12, 18, 30, 45];
-console.log(mean(data));   // → 26.25
-type Record = { id: number; value: number };
+import { insertionSort } from "./insertion-sort";
 
-function meanFromRecords(records: Record[]): number {
-  const values = records.map(r => r.value);
-  return mean(values);
-}
+const nums = [34, 8, 64, 51, 32, 24];
+insertionSort(nums);
+console.log(nums);  // → [ 8, 24, 32, 34, 51, 64 ]
