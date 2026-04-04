@@ -1,88 +1,114 @@
-// RandomAsyncSample.tsx (React‑Native)
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, {useEffect, useState} from 'react';
-import {View, Text, Button, StyleSheet, Alert} from 'react-native';
+/**
+ * A single node in a binary search tree.
+ */
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-interface WeatherResponse {
-  location: string;
-  temp_c: number;
-  condition: string;
-  // add any other fields your API sends
+  constructor(value: T) {
+    this.value = value;
+  }
 }
 
-const fetchWeather = async (
-  location: string,
-): Promise<WeatherResponse> => {
-  const url = `https://api.example.com/weather?city=${encodeURIComponent(
-    location,
-  )}`;
+/**
+ * Binary search tree that keeps values ordered by a comparator.
+ * If you don’t pass a comparator it defaults to numeric or string <=> >.
+ */
+class BinarySearchTree<T> {
+  root: TreeNode<T> | null = null;
+  private cmp: (a: T, b: T) => number;
 
-  // Random twist – fake delay to emulate slower networks
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-      // Add auth headers etc. if needed
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  constructor(comparator?: (a: T, b: T) => number) {
+    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }
 
-  const data = (await response.json()) as WeatherResponse;
-  return data;
-};
-
-export const RandomAsyncSample: React.FC = () => {
-  const [weather, setWeather] = useState<WeatherResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const getWeather = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await fetchWeather('San Francisco');
-      setWeather(result);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
-      Alert.alert('Oops', err.message);
-    } finally {
-      setLoading(false);
+  /* ------------------------------------------------------------------
+   * Insert
+   * ------------------------------------------------------------------ */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+    if (!this.root) {
+      this.root = newNode;
+      return;
     }
-  };
 
-  useEffect(() => {
-    // Pull the data once when the component mounts
-    getWeather();
-  }, []);
+    let current = this.root;
+    while (true) {
+      const comp = this.cmp(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          break;
+        }
+        current = current.left;
+      } else {
+        // treat equal values as “go right” – change if you want otherwise
+        if (!current.right) {
+          current.right = newNode;
+          break;
+        }
+        current = current.right;
+      }
+    }
+  }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Async Weather Sample</Text>
+  /* ------------------------------------------------------------------
+   * Find
+   * ------------------------------------------------------------------ */
+  find(value: T): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = this.cmp(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
+    }
+    return null;
+  }
 
-      {loading && <Text>Loading…</Text>}
+  /* ------------------------------------------------------------------
+   * Traversals – each visitor receives the node value
+   * ------------------------------------------------------------------ */
+  inOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      visitor(node.value);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
 
-      {error && <Text style={styles.error}>Error: {error}</Text>}
+  preOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      visitor(node.value);
+      walk(node.left);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
 
-      {weather && (
-        <>
-          <Text>Location: {weather.location}</Text>
-          <Text>Temp: {weather.temp_c}°C</Text>
-          <Text>Condition: {weather.condition}</Text>
-        </>
-      )}
+  postOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      walk(node.right);
+      visitor(node.value);
+    }
+    walk(this.root);
+  }
+}
 
-      <Button title="Refresh" onPress={getWeather} disabled={loading} />
-    </View>
-  );
-};
+/* ------------------------------------------------------------------
+ * Quick demo
+ * ------------------------------------------------------------------ */
+const bst = new BinarySearchTree<number>();
 
-const styles = StyleSheet.create({
-  container: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16},
-  title: {fontSize: 20, marginBottom: 12},
-  error: {color: 'red', marginTop: 8},
-});
+[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
+
+console.log('In‑order traversal (sorted):');
+bst.inOrder(v => console.log(v));
+
+console.log('\nFind 60:', bst.find(60)?.value);
+console.log('Find 25:', bst.find(25)?.value); // null
