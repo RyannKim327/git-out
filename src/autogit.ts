@@ -1,47 +1,30 @@
 /**
- * Does `a` consist of exactly the same letters as `b`, in any order?
- * The comparison is case‑insensitive and ignores whitespace.
- *
- * @param a – first candidate
- * @param b – second candidate
- * @returns true if the strings are anagrams, otherwise false
+ * Return the second largest distinct value in an array.
+ * @param arr – numeric array
+ * @returns The second largest number or `undefined` if it doesn’t exist
  */
-export function isAnagram(a: string, b: string): boolean {
-  // Normalise the strings: lowercase, trim, remove spaces.
-  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
-  const strA = normalize(a);
-  const strB = normalize(b);
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;  // not enough elements
 
-  // Quick rejection: different length → impossible to be an anagram.
-  if (strA.length !== strB.length) return false;
+  let max = -Infinity;
+  let second = -Infinity;
 
-  // === Approach 1: sorting ===
-  // const sortedA = strA.split('').sort().join('');
-  // const sortedB = strB.split('').sort().join('');
-  // return sortedA === sortedB;
-
-  // === Approach 2: frequency counting ===
-  const freq: Record<string, number> = {};
-
-  // Count characters of the first string.
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  // Subtract counts using characters from the second string.
-  for (const ch of strB) {
-    if (!freq[ch]) {
-      // Either the character never appeared in `a`
-      // or its count has already been zeroed out.
-      return false;
+  for (const x of arr) {
+    if (x > max) {
+      second = max;   // previous max becomes second
+      max = x;
+    } else if (x < max && x > second) {
+      second = x;     // distinct candidate for second
     }
-    freq[ch]!--;          // `!` tells the compiler this is defined.
-    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
+    // values equal to max are ignored – we want distinct numbers
   }
 
-  // If all counts have cancelled out, the map should be empty.
-  return Object.keys(freq).length === 0;
+  return second === -Infinity ? undefined : second;
 }
-console.log(isAnagram('Listen', 'Silent'));   // true
-console.log(isAnagram('Triangle', 'Integral')); // true
-console.log(isAnagram('Apple', 'Pabble'));      // false
+
+// Example:
+console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
+function secondLargestSorted(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)].sort((a, b) => b - a);
+  return unique[1];           // undefined if not enough distinct values
+}
