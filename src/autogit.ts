@@ -1,24 +1,35 @@
+// A very lightweight node definition –
+export class ListNode {
+  constructor(public val: number, public next: ListNode | null = null) {}
+}
+
 /**
- * Returns the mean of a non‑empty list of numbers.
- * Throws if the array is empty or contains non‑numeric values.
- *
- * @param numbers – an array of numbers
- * @returns the arithmetic mean
+ * Returns the middle node of a linked list.
+ * If there are an even number of nodes, it returns the *first* of the two middle nodes.
+ * (Adjust `result` if you prefer the second middle node instead.)
  */
-function mean(numbers: readonly number[]): number {
-  if (numbers.length === 0) {
-    throw new Error('Cannot compute mean of an empty array.');
+export function findMiddle(head: ListNode | null): ListNode | null {
+  if (!head) return null;
+
+  let slow = head;          // moves one step at a time
+  let fast = head;          // moves two steps at a time
+
+  // Advance until fast reaches the end
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  const sum = numbers.reduce((acc, val) => {
-    if (typeof val !== 'number' || Number.isNaN(val)) {
-      throw new Error(`Invalid value detected: ${val}`);
-    }
-    return acc + val;
-  }, 0);
-
-  return sum / numbers.length;
+  return slow;   // `slow` rests right on the middle (or first middle)
 }
-const scores = [80, 92, 75, 88];
+// Helper to build a list quickly
+const build = (values: number[]) =>
+  values.reduceRight((next, v) => new ListNode(v, next), null as any);
 
-console.log(mean(scores)); // → 84.25
+// 1 → 2 → 3 → 4 → 5   → middle is 3
+const list1 = build([1, 2, 3, 4, 5]);
+console.log(findMiddle(list1)!.val); // 3
+
+// 1 → 2 → 3 → 4        → middle returned is 2
+const list2 = build([1, 2, 3, 4]);
+console.log(findMiddle(list2)!.val); // 2
