@@ -1,30 +1,17 @@
+const raw = '  Hello,\t\nWorld!  \u3000';
+
+const trimmed = raw.trim();                 // "Hello,\t\nWorld!  \u3000"
+const noWhitespace = raw.replace(/\s+/g, ''); // "Hello,World!"
+const collapsed = raw.replace(/\s+/g, ' ');   // "Hello, World!"
+
+console.log({ trimmed, noWhitespace, collapsed });
 /**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
+ * Strip all whitespace from a string, or optionally replace it with another string.
+ *
+ * @param input   The string to clean.
+ * @param replace What to put in place of each whitespace run (default: empty string).
+ * @returns The cleaned string.
  */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
-
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
-    }
-    // values equal to max are ignored – we want distinct numbers
-  }
-
-  return second === -Infinity ? undefined : second;
-}
-
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
+function cleanWhitespace(input: string, replace = ''): string {
+  return input.replace(/\s+/g, replace);
 }
