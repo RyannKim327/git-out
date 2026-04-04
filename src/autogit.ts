@@ -1,62 +1,53 @@
-/**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
- *
- * Complexity: O(m)
- */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
-
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
 }
 
-/**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
+// Example
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
+console.log(intersection(arr1, arr2)); // → [3, 4, 5]
+function intersectionByOrder<T>(a: T[], b: T[]): T[] {
+  const setA = new Set(a);
+  return b.filter(x => setA.has(x));
+}
+function multisetIntersection<T>(a: T[], b: T[]): T[] {
+  const counts = new Map<T, number>();
+  for (const item of a)
+    counts.set(item, (counts.get(item) ?? 0) + 1);
 
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
+  const result: T[] = [];
+  for (const item of b) {
+    const cnt = counts.get(item);
+    if (cnt && cnt > 0) {
+      result.push(item);
+      counts.set(item, cnt - 1);
     }
   }
-  return -1; // no match
+  return result;
 }
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
+
+// Example
+// a: [1, 2, 2, 3], b: [2, 2, 4]
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
+function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
+  const map = new Map<any, T>();
+  for (const item of b) map.set(keyFn(item), item);
+
+  const result: T[] = [];
+  for (const item of a) {
+    const match = map.get(keyFn(item));
+    if (match) result.push(match); // or push(item) if you prefer
+  }
+  return result;
+}
+
+// Example
+interface Person { id: number; name: string }
+const peopleA = [{id:1},{id:2},{id:3}];
+const peopleB = [{id:2},{id:4}];
+console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
+export const arrayUtils = {
+  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
+  // … other helpers here
+};
