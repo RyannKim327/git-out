@@ -1,151 +1,84 @@
-// ──────────────────────────────────────────────────────────────
-//  TrieNode
-// ──────────────────────────────────────────────────────────────
-class TrieNode {
-  // how many words end exactly here
-  frequency = 0;
-  // children keyed by single characters
-  children = new Map<string, TrieNode>();
+/**
+ * Burrows‑Wheeler Transform (forward) – O(n²)
+ * @param input original string
+ * @returns {lastColumn, primaryIndex}
+ *
+ * `lastColumn` – the BWT output string (characters that appear as the
+ *                 last column of the sorted rotation matrix).
+ * `primaryIndex` – row number (0‑based) that contains the original
+ *                  string in the sorted matrix; needed for the inverse.
+ */
+export function bwt(input: string): { lastColumn: string; primaryIndex: number } {
+  const n = input.length;
+  // Build the rotation array
+  const rotations: string[] = [];                    //  O(n)
+  for (let i = 0; i < n; i++) {
+    rotations.push(input.slice(i) + input.slice(0, i));
+  }
+
+  // Sort the rotations lexicographically
+  rotations.sort();                                 //  O(n log n) * O(n) Comparisons
+
+  // Pull the last character of each sorted row
+  let last = '';
+  let primary = -1;
+  for (let col = 0; col < n; col++) {
+    const row = rotations[col];
+    if (row === input) primary = col;               // original string position
+    last += row[n - 1];
+  }
+  return { lastColumn: last, primaryIndex: primary };
 }
 
-// ──────────────────────────────────────────────────────────────
-//  Trie
-// ──────────────────────────────────────────────────────────────
-export class Trie {
-  private readonly root = new TrieNode();
+/**
+ * Inverse Burrows‑Wheeler Transform – O(n²) worst‑case
+ * @param lastCol BWT string (last column)
+ * @param primaryIndex index of original string within sorted rotations
+ * @returns original string
+ */
+export function inverseBWT(lastCol: string, primaryIndex: number): string {
+  const n = lastCol.length;
+  // `first` column is just the sorted last column
+  const first = lastCol.split('').sort().join('');
 
-  //--------------------------------------
-  // Insert a word, optionally incrementing frequency
-  // -------------------------------------
-  insert(word: string, qty = 1): void {
-    let node = this.root;
-    for (const ch of word) {
-      // lazily create missing branch
-      if (!node.children.has(ch))
-        node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.frequency += qty;
+  // Build the LF‑mapping: for every position i in `last`
+  // find the row in `first` that corresponds to the same
+  // character and *occurrence* (i.e., the k‑th 'a' in last
+  // maps to the k‑th 'a' in first).
+  // We do that by counting occurrences.
+  const occ: Array<Map<string, number>> = new Array(n);
+  const count: Map<string, number> = new Map();
+  for (let i = 0; i < n; i++) {
+    const c = lastCol[i];
+    const cCount = (count.get(c) ?? 0) + 1;
+    count.set(c, cCount);
+    occ[i] = new Map(count);
   }
 
-  //--------------------------------------
-  // Search for exact match – returns how many times the word was inserted
-  // -------------------------------------
-  search(word: string): number {
-    let node = this.root;
-    for (const ch of word) {
-      node = node.children.get(ch);
-      if (!node) return 0; // missing branch
-    }
-    return node.frequency;
+  // Build `firstPos` – for each character, the 0‑based
+  // index of its first occurrence in the sorted `first` column
+  const firstPos: Map<string, number> = new Map();
+  let sum = 0;
+  for (const ch of [...new Set(first)].sort()) {
+    firstPos.set(ch, sum);
+    sum += first.split('').filter(c => c === ch).length;
   }
 
-  //--------------------------------------
-  // Delete a word (or reduce its count)
-  // -------------------------------------
-  delete(word: string, qty = 1): boolean {
-    const stack: TrieNode[] = []; // keep path for backtracking
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false; // word never existed
-      stack.push(node);
-      node = next;
-    }
-
-    if (node.frequency === 0) return false; // nothing to delete
-    node.frequency -= qty;
-    if (node.frequency < 0) node.frequency = 0; // guard
-
-    // prune dead branches
-    let idx = stack.length - 1;
-    while (idx >= 0 && node.children.size === 0 && node.frequency === 0) {
-      const parent = stack[idx];
-      const ch = Array.from(parent.children.entries()).find(
-        ([, child]) => child === node
-      )![0];
-      parent.children.delete(ch);
-      node = parent;
-      idx--;
-    }
-    return true;
+  // Reconstruct the original string char by char:
+  // starting from `primaryIndex`, each step moves to the preceding
+  // character (because of the LF mapping).
+  const result: string[] = [];
+  let pos = primaryIndex;
+  for (let k = 0; k < n; k++) {
+    const c = lastCol[pos];
+    result.unshift(c); // prepend, since we traverse backwards
+    const occIdx = occ[pos].get(c)!;              // occurrence rank
+    // LF mapping: next position in `lastCol`
+    pos = firstPos.get(c)! + occIdx - 1;
   }
-
-  //--------------------------------------
-  // Return all words that start with a prefix
-  // -------------------------------------
-  startsWith(prefix: string): string[] {
-    let node = this.root;
-
-    for (const ch of prefix) {
-      node = node.children.get(ch);
-      if (!node) return []; // no match
-    }
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, cur: string) => {
-      if (n.frequency > 0) results.push(cur);
-
-      for (const [ch, child] of n.children) {
-        dfs(child, cur + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return results;
-  }
-
-  //--------------------------------------
-  // Return the top‑k words by frequency that match a prefix
-  // Useful for autocomplete suggestions
-  // -------------------------------------
-  topK(prefix: string, k = 5): { word: string; freq: number }[] {
-    let node = this.root;
-    for (const ch of prefix) {
-      node = node.children.get(ch);
-      if (!node) return [];
-    }
-
-    const heap: Array<{ word: string; freq: number }> = [];
-
-    const dfs = (n: TrieNode, cur: string) => {
-      if (n.frequency > 0) {
-        heap.push({ word: cur, freq: n.frequency });
-        // keep only the largest k entries
-        heap.sort((a, b) => b.freq - a.freq);
-        if (heap.length > k) heap.pop();
-      }
-
-      for (const [ch, child] of n.children) {
-        dfs(child, cur + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return heap;
-  }
+  return result.join('');
 }
-import { Trie } from "./trie";
-
-const t = new Trie();
-
-t.insert("apple");
-t.insert("app");
-t.insert("application", 3); // appears 3 times
-t.insert("bat");
-t.insert("batch");
-t.insert("baton");
-
-console.log(t.search("app"));          // 1
-console.log(t.search("application"));  // 3
-console.log(t.search("banana"));       // 0
-
-console.log(t.startsWith("app"));      // ["app", "apple", "application"]
-console.log(t.topK("app", 2));         // [{word:"application",freq:3},{word:"app",freq:1}]
-
-t.delete("application", 2);            // reduce count, still 1 left
-console.log(t.search("application"));  // 1
-
-t.delete("baton");                     // remove completely
-console.log(t.startsWith("bat"));      // ["bat", "batch"]
+const original = 'BANANA$';
+const { lastColumn, primaryIndex } = bwt(original);
+console.log('BWT:', lastColumn);          // → 'ANNB$AA'
+console.log('Inv:', inverseBWT(lastColumn, primaryIndex)); // → 'BANANA$'
