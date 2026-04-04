@@ -1,72 +1,39 @@
 /**
- * Return the majority element of an array – the value that occurs
- * strictly more than half the time. If no such element exists the
- * function throws an Error.
- *
- * @param arr Array of comparable values (e.g. numbers, strings, etc.)
+ * Fetches a random dog picture and logs the URL.
+ * Works in Node (with node-fetch polyfill) and in browsers.
  */
-export function majorityElement<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new Error('Array is empty');
-  }
 
-  // Phase 1 – Find a candidate
-  let candidate = arr[0];
-  let count = 1;
+const DOG_API = 'https://dog.ceo/api/breeds/image/random';
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
-      }
+interface DogApiResponse {
+  message: string;  // the image URL
+  status: string;   // should be 'success'
+}
+
+/**
+ * Makes the HTTP request, parses the JSON, and logs the image URL.
+ */
+async function showRandomDog(): Promise<void> {
+  try {
+    // `fetch` may need a polyfill in Node, e.g. `node-fetch`
+    const response = await fetch(DOG_API);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
     }
-  }
 
-  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
+    const data: DogApiResponse = await response.json();
 
-  if (count > Math.floor(arr.length / 2)) {
-    return candidate;
-  }
+    if (data.status !== 'success') {
+      throw new Error(`API reported failure: ${data.status}`);
+    }
 
-  throw new Error('No majority element found');
+    console.log('Random dog image URL:', data.message);
+  } catch (err) {
+    console.error('Failed to fetch dog image:', err);
+  }
 }
-export function majorityElementWithMap<T>(arr: T[]): T {
-  const freq = new Map<T, number>();
 
-  // Count occurrences
-  for (const v of arr) {
-    freq.set(v, (freq.get(v) ?? 0) + 1);
-  }
-
-  // Find the element that tops the midway mark
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, count] of freq) {
-    if (count > threshold) return val;
-  }
-
-  throw new Error('No majority element found');
-}
-export function majorityElementSorted<T>(arr: T[]): T {
-  if (arr.length === 0) throw new Error('Array is empty');
-
-  const sorted = [...arr].sort();  // shallow copy + in‑place sort
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  
-  // Optional: verify the candidate
-  let count = 0;
-  for (const v of arr) if (v === candidate) count++;
-  if (count > Math.floor(arr.length / 2)) return candidate;
-
-  throw new Error('No majority element found');
-}
-console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
-console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
-console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
+showRandomDog();
+npm install node-fetch
+import fetch from 'node-fetch';
