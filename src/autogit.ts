@@ -1,50 +1,18 @@
-// A minimal, generic node
-export type ListNode<T> = {
-  value: T;
-  next: ListNode<T> | null;
-};
-export function reverseIter<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let current: ListNode<T> | null = head;
+/**
+ * Return true if `text` is a palindrome (ignoring case, spaces, punctuation and diacritics).
+ */
+function isPalindrome(text: string): boolean {
+  // 1️⃣  Clean the string:
+  const cleaned = text
+    .toLowerCase()          // case‑insensitive
+    .replace(/\s+/g, '')    // strip whitespace
+    .replace(/[^a-z0-9]/g, ''); // strip punctuation & accents
 
-  while (current !== null) {
-    const next = current.next; // remember where we’re going
-    current.next = prev;       // flip the link
-    prev = current;            // move prev forward
-    current = next;            // advance current
-  }
-  // prev is the new head
-  return prev;
+  // 2️⃣  Compare the string with its reverse:
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
-export function reverseRec<T>(
-  head: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (head === null) return prev;          // base case: end of list
-  const next = head.next;                  // keep track of next node
-  head.next = prev;                        // flip link
-  return reverseRec(next, head);           // recurse
-}
-// Build a tiny list: 1 → 2 → 3 → null
-const a: ListNode<number> = { value: 1, next: null };
-const b: ListNode<number> = { value: 2, next: a };
-const c: ListNode<number> = { value: 3, next: b };
 
-// Reverse it
-const reversed = reverseIter(c);
-
-// Print out the new list
-let node: ListNode<number> | null = reversed;
-while (node !== null) {
-  console.log(node.value); // 1, 2, 3
-  node = node.next;
-}
-class SinglyLinkedList<T> {
-  head: ListNode<T> | null = null;
-
-  // push, pop, etc.
-
-  reverse(): void {
-    this.head = reverseIter(this.head);
-  }
-}
+// handy demo
+console.log(isPalindrome('A man, a plan, a canal: Panama!')); // true
+console.log(isPalindrome('Hello, world!'));                    // false
