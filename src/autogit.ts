@@ -1,1 +1,10 @@
-// May error sa API
+const a = "Hello, ";
+const b = "world!";
+const c = a + b;           // "Hello, world!"
+const a = "Hello, ";
+const b = "world!";
+const c = `${a}${b}`;      // "Hello, world!"
+const a = "Hello, ";
+const b = "world!";
+const c = a.concat(b);     // "Hello, world!"
+const c = a.concat(b, "!"); // "Hello, world!!"
