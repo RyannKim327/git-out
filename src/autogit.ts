@@ -1,48 +1,88 @@
-/**
- * Calculates area when you know the base and the altitude
- * @param base   the length of the base
- * @param height the altitude perpendicular to the base
- * @returns area of the triangle
- */
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
+// RandomAsyncSample.tsx (React‑Native)
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, {useEffect, useState} from 'react';
+import {View, Text, Button, StyleSheet, Alert} from 'react-native';
+
+interface WeatherResponse {
+  location: string;
+  temp_c: number;
+  condition: string;
+  // add any other fields your API sends
 }
 
-// Example
-const area1 = areaBaseHeight(10, 5);   // 25
-/**
- * Calculates area from the three sides using Heron's formula
- * @param a side a
- * @param b side b
- * @param c side c
- * @returns area of the triangle
- * @throws Error if the sides cannot form a triangle
- */
-function areaHeron(a: number, b: number, c: number): number {
-  // Validate triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not form a triangle.');
+const fetchWeather = async (
+  location: string,
+): Promise<WeatherResponse> => {
+  const url = `https://api.example.com/weather?city=${encodeURIComponent(
+    location,
+  )}`;
+
+  // Random twist – fake delay to emulate slower networks
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      // Add auth headers etc. if needed
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
-  const s = (a + b + c) / 2;                       // semi‑perimeter
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
+  const data = (await response.json()) as WeatherResponse;
+  return data;
+};
 
-// Example
-const area2 = areaHeron(3, 4, 5);   // 6
-interface Point { x: number; y: number }
+export const RandomAsyncSample: React.FC = () => {
+  const [weather, setWeather] = useState<WeatherResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-function areaFromCoords(p1: Point, p2: Point, p3: Point): number {
-  return Math.abs(
-    (p1.x * (p2.y - p3.y) +
-     p2.x * (p3.y - p1.y) +
-     p3.x * (p1.y - p2.y)) / 2
+  const getWeather = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await fetchWeather('San Francisco');
+      setWeather(result);
+    } catch (err: any) {
+      setError(err.message || 'Unknown error');
+      Alert.alert('Oops', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Pull the data once when the component mounts
+    getWeather();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Async Weather Sample</Text>
+
+      {loading && <Text>Loading…</Text>}
+
+      {error && <Text style={styles.error}>Error: {error}</Text>}
+
+      {weather && (
+        <>
+          <Text>Location: {weather.location}</Text>
+          <Text>Temp: {weather.temp_c}°C</Text>
+          <Text>Condition: {weather.condition}</Text>
+        </>
+      )}
+
+      <Button title="Refresh" onPress={getWeather} disabled={loading} />
+    </View>
   );
-}
+};
 
-// Example
-const area3 = areaFromCoords(
-  { x: 0, y: 0 },
-  { x: 4, y: 0 },
-  { x: 0, y: 3 }
-);   // 6
+const styles = StyleSheet.create({
+  container: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16},
+  title: {fontSize: 20, marginBottom: 12},
+  error: {color: 'red', marginTop: 8},
+});
