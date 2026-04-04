@@ -1,102 +1,55 @@
-/** One directed edge in the graph */
-interface Edge {
-  from: number;   // source vertex id
-  to: number;     // target vertex id
-  weight: number; // edge weight
-}
-
-/** Graph represented only by its edge list */
-type Graph = Edge[];
-
-/** Result of the shortest‑path computation */
-interface BellmanFordResult {
-  /** distance from source to every vertex (Infinity if unreachable) */
-  distances: number[];
-  /** predecessor of each vertex on the shortest path tree */
-  predecessors: (number | null)[];
-  /** true if a negative cycle was detected that is reachable from the source */
-  negativeCycleDetected: boolean;
-}
 /**
- * Bellman‑Ford single‑source shortest‑path solver.
- * @param edges  complete list of directed edges in the graph
- * @param vertexCount total number of vertices, 0 … vertexCount‑1
- * @param source id of the source vertex
- * @returns distances, predecessors and a flag for a reachable negative cycle
+ * Return the median of two sorted arrays (integer values).
+ *
+ * @param a First sorted array (may be empty)
+ * @param b Second sorted array (may be empty)
+ * @returns median as a number
  */
-export function bellmanFord(
-  edges: Graph,
-  vertexCount: number,
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+function findMedianSortedArrays(a: number[], b: number[]): number {
+  // make sure a is the shorter array – helps keep log‑time on the shorter side
+  if (a.length > b.length) return findMedianSortedArrays(b, a);
 
-  const distances = Array(vertexCount).fill(INF);
-  const predecessors = Array<null | number>(vertexCount).fill(null);
+  const m = a.length;
+  const n = b.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  distances[source] = 0;
+  let low = 0;
+  let high = m;
 
-  /* Relax edges V‑1 times */
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const e of edges) {
-      const { from, to, weight } = e;
-      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
+  while (low <= high) {
+    // i is the cut in a, j in b
+    const i = Math.floor((low + high) / 2);
+    const j = halfLen - i;
+
+    const Aleft  = i === 0     ? -Infinity : a[i - 1];
+    const Aright = i === m     ? Infinity  : a[i];
+    const Bleft  = j === 0     ? -Infinity : b[j - 1];
+    const Bright = j === n     ? Infinity  : b[j];
+
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // perfect split found
+      if ((m + n) % 2 === 0) {
+        // even number of elements – average of the two middle values
+        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+      } else {
+        // odd – the max on the left side
+        return Math.max(Aleft, Bleft);
       }
-    }
-    /* Early exit if no relaxation happened */
-    if (!changed) break;
-  }
-
-  /* Check for negative‑weight cycles reachable from source */
-  let negativeCycleDetected = false;
-  for (const e of edges) {
-    const { from, to, weight } = e;
-    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-      negativeCycleDetected = true;
-      break;
+    } else if (Aleft > Bright) {
+      // i is too big – move left
+      high = i - 1;
+    } else {
+      // i is too small – move right
+      low = i + 1;
     }
   }
 
-  return { distances, predecessors, negativeCycleDetected };
+  // Should never reach here if input arrays are sorted
+  throw new Error('Input arrays are not valid');
 }
-/**
- * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
- * Returns `undefined` if the target is unreachable.
- */
-export function reconstructPath(
-  target: number,
-  predecessors: (number | null)[]
-): number[] | undefined {
-  if (predecessors[target] === null) return undefined;
 
-  const path: number[] = [];
-  for (let v = target; v !== null; v = predecessors[v]) {
-    path.push(v);
-  }
-  return path.reverse();
-}
-// A small graph with both positive and negative edges
-const graph: Graph = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -3 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 4 },
-];
-
-const vertexCount = 4;          // vertices 0 … 3
-const source = 0;
-const result = bellmanFord(graph, vertexCount, source);
-
-console.log('Distances:', result.distances);
-// [0, 1, 2, 3]
-
-console.log('Negative cycle detected?', result.negativeCycleDetected);
-// false
-
-const pathTo3 = reconstructPath(3, result.predecessors);
-console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
+/* ---------- usage ---------- */
+console.log(findMedianSortedArrays([1, 3], [2]));          // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));      // 2.5
+console.log(findMedianSortedArrays([], [1]));             // 1
+console.log(findMedianSortedArrays([5], [1, 2, 3, 4]));   // 3.5
