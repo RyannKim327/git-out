@@ -1,30 +1,45 @@
-// src/cronJob.ts
-import * as cron from 'node-cron';
-import { exec } from 'child_process';
+/**
+ * Return true if `left` and `right` contain exactly the same character counts.
+ *
+ * @param left   – first string
+ * @param right  – second string
+ * @param options – tweak the comparison:
+ *   - `caseSensitive`: default `false` – treats 'A' and 'a' as equal
+ *   - `ignoreNonAlpha`: default `false` – strips out everything other than a‑z/A‑Z
+ */
+function areAnagrams(
+  left: string,
+  right: string,
+  options?: { caseSensitive?: boolean; ignoreNonAlpha?: boolean }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options ?? {};
 
-// Simple helper that returns a random joke (you can replace it with anything)
-function getRandomJoke(): string {
-  const jokes = [
-    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
-    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
-    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
-  ];
-  return jokes[Math.floor(Math.random() * jokes.length)];
+  const normalize = (s: string) =>
+    s
+      .split('')
+      .filter((c) => (!ignoreNonAlpha || /[a-zA-Z]/.test(c)))   // drop non‑letters if asked
+      .map((c) => (caseSensitive ? c : c.toLowerCase()))        // case folding
+      .sort()
+      .join('');
+
+  return normalize(left) === normalize(right);
 }
+console.log(areAnagrams('listen', 'silent'));            // true
+console.log(areAnagrams('Tinsel', 'Listen'));            // true
+console.log(areAnagrams('hello', 'world'));              // false
+console.log(areAnagrams('William Shakespeare', 'I am a weakish speller', {
+  ignoreNonAlpha: true,
+}));                                                   // true
+function areAnagramsFast(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-// This job:
-cron.schedule('* * * * *', () => {          // Runs every minute
-  const joke = getRandomJoke();
-  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
+  const count: Record<string, number> = {};
 
-  // Example of how you might trigger a system command using Cron
-  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
-    if (err) {
-      console.warn(`Error while executing command: ${err.message}`);
-      return;
-    }
-    console.log(`Command output: ${stdout.trim()}`);
-  });
-});
+  for (const char of a) count[char] = (count[char] ?? 0) + 1;
+  for (const char of b) {
+    if (!count[char]) return false; // missing or too many of this char
+    count[char]!--;
+  }
 
-console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
+  return true;
+}
