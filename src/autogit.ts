@@ -1,81 +1,72 @@
 /**
- * Tarjan's algorithm (1990) – O(V + E) time.
+ * Return the majority element of an array – the value that occurs
+ * strictly more than half the time. If no such element exists the
+ * function throws an Error.
  *
- * Input
- * -----
- * `graph`   : 0‑based adjacency list.  graph[v] is an array of vertices
- *              that v points to.
- *
- * Output
- * ------
- * An array of SCCs.  Each SCC is an array of vertex indices.  The
- * components are returned in reverse topological order (the first
- * component in the list is one that has no outgoing edges to earlier
- * components).
+ * @param arr Array of comparable values (e.g. numbers, strings, etc.)
  */
+export function majorityElement<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new Error('Array is empty');
+  }
 
-export function tarjanSCC(graph: number[][]): number[][] {
-  const n = graph.length;
-  const indices = new Array<number>(n).fill(-1);   // order in which nodes were visited
-  const lowlink = new Array<number>(n).fill(-1);   // smallest index reachable from node
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
-  const sccs: number[][] = [];
+  // Phase 1 – Find a candidate
+  let candidate = arr[0];
+  let count = 1;
 
-  let currentIndex = 0;
-
-  const strongConnect = (v: number): void => {
-    // Set the depth index for v to the smallest unused index
-    indices[v] = currentIndex;
-    lowlink[v] = currentIndex;
-    currentIndex++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // Consider successors of v
-    for (const w of graph[v]) {
-      if (indices[w] === -1) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → v is in the same SCC as w
-        lowlink[v] = Math.min(lowlink[v], indices[w]);
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
       }
-    }
-
-    // If v is a root node, pop the stack and generate an SCC
-    if (lowlink[v] === indices[v]) {
-      const component: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop() as number;   // stack never empty here
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  };
-
-  // Run DFS from every node that hasn't been visited yet
-  for (let v = 0; v < n; v++) {
-    if (indices[v] === -1) {
-      strongConnect(v);
     }
   }
 
-  return sccs;
-}
-const graph = [
-  [1],          // 0 → 1
-  [2],          // 1 → 2
-  [0, 3],       // 2 → 0 (cycle 0‑1‑2) and → 3
-  [4],          // 3 → 4
-  [5],          // 4 → 5
-  [3],          // 5 → 3 (cycle 3‑4‑5)
-  []            // 6 isolated
-];
+  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
 
-const sccs = tarjanSCC(graph);
-console.log(sccs);
-// Possible output: [[6], [0, 1, 2], [3, 4, 5]]
+  if (count > Math.floor(arr.length / 2)) {
+    return candidate;
+  }
+
+  throw new Error('No majority element found');
+}
+export function majorityElementWithMap<T>(arr: T[]): T {
+  const freq = new Map<T, number>();
+
+  // Count occurrences
+  for (const v of arr) {
+    freq.set(v, (freq.get(v) ?? 0) + 1);
+  }
+
+  // Find the element that tops the midway mark
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, count] of freq) {
+    if (count > threshold) return val;
+  }
+
+  throw new Error('No majority element found');
+}
+export function majorityElementSorted<T>(arr: T[]): T {
+  if (arr.length === 0) throw new Error('Array is empty');
+
+  const sorted = [...arr].sort();  // shallow copy + in‑place sort
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  
+  // Optional: verify the candidate
+  let count = 0;
+  for (const v of arr) if (v === candidate) count++;
+  if (count > Math.floor(arr.length / 2)) return candidate;
+
+  throw new Error('No majority element found');
+}
+console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
+console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
+console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
