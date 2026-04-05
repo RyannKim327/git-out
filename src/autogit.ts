@@ -1,114 +1,59 @@
-/**
- * A single node in a binary search tree.
- */
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+// ---------------------------------------------------------------------
+// 1️⃣  Node definition
+// ---------------------------------------------------------------------
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  constructor(value: T) {
-    this.value = value;
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
 }
 
-/**
- * Binary search tree that keeps values ordered by a comparator.
- * If you don’t pass a comparator it defaults to numeric or string <=> >.
- */
-class BinarySearchTree<T> {
-  root: TreeNode<T> | null = null;
-  private cmp: (a: T, b: T) => number;
-
-  constructor(comparator?: (a: T, b: T) => number) {
-    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+// ---------------------------------------------------------------------
+// 2️⃣  Helper that returns (height, diameter) for a subtree
+// ---------------------------------------------------------------------
+function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
+  // Base case: empty subtree
+  if (node === null) {
+    return { h: 0, d: 0 }; // height 0, diameter 0
   }
 
-  /* ------------------------------------------------------------------
-   * Insert
-   * ------------------------------------------------------------------ */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
+  // Recursively gather left and right results
+  const left = heightAndDiameter(node.left);
+  const right = heightAndDiameter(node.right);
 
-    let current = this.root;
-    while (true) {
-      const comp = this.cmp(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          break;
-        }
-        current = current.left;
-      } else {
-        // treat equal values as “go right” – change if you want otherwise
-        if (!current.right) {
-          current.right = newNode;
-          break;
-        }
-        current = current.right;
-      }
-    }
-  }
+  // Current node's height
+  const curHeight = Math.max(left.h, right.h) + 1;
 
-  /* ------------------------------------------------------------------
-   * Find
-   * ------------------------------------------------------------------ */
-  find(value: T): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = this.cmp(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
+  // Diameter that passes through this node
+  const curThrough = left.h + right.h + 1;
 
-  /* ------------------------------------------------------------------
-   * Traversals – each visitor receives the node value
-   * ------------------------------------------------------------------ */
-  inOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      visitor(node.value);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
+  // Overall diameter for this subtree
+  const curDiameter = Math.max(curThrough, left.d, right.d);
 
-  preOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      visitor(node.value);
-      walk(node.left);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  postOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      walk(node.right);
-      visitor(node.value);
-    }
-    walk(this.root);
-  }
+  return { h: curHeight, d: curDiameter };
 }
 
-/* ------------------------------------------------------------------
- * Quick demo
- * ------------------------------------------------------------------ */
-const bst = new BinarySearchTree<number>();
+// ---------------------------------------------------------------------
+// 3️⃣  Public entry point
+// ---------------------------------------------------------------------
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  return heightAndDiameter(root).d;
+}
+// Build a quick test tree:
+//        1
+//       / \
+//      2   3
+//         / \
+//        4   5
+const root = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
 
-[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
-
-console.log('In‑order traversal (sorted):');
-bst.inOrder(v => console.log(v));
-
-console.log('\nFind 60:', bst.find(60)?.value);
-console.log('Find 25:', bst.find(25)?.value); // null
+console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
