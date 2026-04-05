@@ -1,48 +1,40 @@
 /**
- * Calculates area when you know the base and the altitude
- * @param base   the length of the base
- * @param height the altitude perpendicular to the base
- * @returns area of the triangle
+ * Return the longest common prefix among the strings.
+ *
+ * @param words - Array of strings (non‑empty works great, but you can pass an empty array and get `""` back)
+ * @returns the longest common prefix, or an empty string if there isn’t one
  */
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
-}
+export function longestCommonPrefix(words: string[]): string {
+  if (!words.length) return '';
 
-// Example
-const area1 = areaBaseHeight(10, 5);   // 25
-/**
- * Calculates area from the three sides using Heron's formula
- * @param a side a
- * @param b side b
- * @param c side c
- * @returns area of the triangle
- * @throws Error if the sides cannot form a triangle
- */
-function areaHeron(a: number, b: number, c: number): number {
-  // Validate triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not form a triangle.');
+  // Work with a copy to avoid mutating the caller’s array
+  const sorted = [...words].sort();
+
+  // The prefix can’t be longer than the shortest word, so we cap it early.
+  const [shortest] = sorted.reduce((prev, curr) => (curr.length < prev[0].length ? [curr, ...prev] : prev), [''] as [string, ...string[]]);
+
+  // Compare characters of the first and last words
+  let prefix = '';
+  for (let i = 0; i < shortest.length; i++) {
+    const char = sorted[0][i];
+    if (sorted[0][i] !== sorted[sorted.length - 1][i]) break;
+    prefix += char;
   }
 
-  const s = (a + b + c) / 2;                       // semi‑perimeter
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return prefix;
 }
-
-// Example
-const area2 = areaHeron(3, 4, 5);   // 6
-interface Point { x: number; y: number }
-
-function areaFromCoords(p1: Point, p2: Point, p3: Point): number {
-  return Math.abs(
-    (p1.x * (p2.y - p3.y) +
-     p2.x * (p3.y - p1.y) +
-     p3.x * (p1.y - p2.y)) / 2
-  );
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // "fl"
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));   // ""
+console.log(longestCommonPrefix(['interspecies', 'interstellar', 'interstate'])); // "inters"
+console.log(longestCommonPrefix([])); // ""
+export function lcpLinear(words: string[]): string {
+  if (!words.length) return '';
+  let prefix = words[0];
+  for (let i = 1; i < words.length; i++) {
+    while (!words[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return '';
+    }
+  }
+  return prefix;
 }
-
-// Example
-const area3 = areaFromCoords(
-  { x: 0, y: 0 },
-  { x: 4, y: 0 },
-  { x: 0, y: 3 }
-);   // 6
