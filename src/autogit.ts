@@ -1,65 +1,32 @@
-/**
- * Merge two sorted arrays into one sorted array.
- *
- * @param left  the first sorted array
- * @param right the second sorted array
- * @param cmp   optional comparison function (a, b) => number
- *              negative → a < b, 0 → a === b, positive → a > b
- * @returns a new sorted array containing all elements from `left` and `right`
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  const result: T[] = []
-  let i = 0
-  let j = 0
-
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j]) <= 0) {
-      result.push(left[i++])
-    } else {
-      result.push(right[j++])
-    }
+function factorialRec(n: number): number {
+  if (n < 0) throw new Error("negatives are not allowed");
+  return n <= 1 ? 1 : n * factorialRec(n - 1);
+}
+function factorialIter(n: number): number {
+  if (n < 0) throw new Error("negatives are not allowed");
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  // Append any leftovers.
-  return result.concat(left.slice(i)).concat(right.slice(j))
+  return result;
 }
-
-/**
- * Recursive Merge Sort implementation.
- *
- * @param array array to sort
- * @param cmp   optional comparison function
- * @returns a new sorted array, leaving the original unchanged
- */
-export function mergeSort<T>(
-  array: T[],
-  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array.slice()
-
-  const mid = Math.floor(array.length / 2)
-  const left = mergeSort(array.slice(0, mid), cmp)
-  const right = mergeSort(array.slice(mid), cmp)
-
-  return merge(left, right, cmp)
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("negatives are not allowed");
+  let result: bigint = 1n;
+  for (let i = 2; i <= n; i++) {
+    result *= BigInt(i);
+  }
+  return result;
 }
-const nums = [8, 3, 1, 7, 0, 10, 2]
-const sorted = mergeSort(nums)
-console.log(sorted) // [0, 1, 2, 3, 7, 8, 10]
-interface Person {
-  name: string
-  age: number
+const memo = new Map<number, bigint>();
+
+function factorialCached(n: number): bigint {
+  if (n < 0) throw new Error("negatives are not allowed");
+  if (memo.has(n)) return memo.get(n)!;
+
+  const result = n <= 1 ? 1n : BigInt(n) * factorialCached(n - 1);
+  memo.set(n, result);
+  return result;
 }
-
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Cara', age: 27 },
-]
-
-const byAge = mergeSort(people, (a, b) => a.age - b.age)
-console.log(byAge)
+console.log(factorialIter(5));      // 120
+console.log(factorialBigInt(50));   // 30414093201713378043612608166064768844377641568960512000000000000n
