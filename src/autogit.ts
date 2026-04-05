@@ -1,56 +1,85 @@
-/**
- *  k is 1‑based: k = 1 → smallest, k = length → largest
- */
-function kthSmallestBySort<T>(a: T[], k: number, cmp?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > a.length) return undefined;
-  const arr = a.slice();                     // don't touch the original
-  arr.sort((x, y) => (cmp ? cmp(x, y) : (x as any) < (y as any) ? -1 : (x as any) > (y as any) ? 1 : 0));
-  return arr[k - 1];
-}
-/**
- * Find the k‑th smallest element (1‑based) in place.
- *
- * @param arr  the array to search
- * @param k    1‑based index (1 = smallest)
- * @param cmp  optional compare function, defaults to the standard `< => >`
- * @returns    the k‑th smallest element, or `undefined` if k is out of bounds
- */
-function kthSmallestQuickSelect<T>(
-  arr: T[],
-  k: number,
-  cmp?: (a: T, b: T) => number
-): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const compare = cmp ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
-  let left = 0;
-  let right = arr.length - 1;
-  const target = k - 1;              // 0‑based
+/*  --------------------------------------------------
+    Depth‑First Search (DFS) – TypeScript
+    -------------------------------------------------- */
 
-  while (left <= right) {
-    // Pick a pivot (here the middle element)
-    const pivotIdx = Math.floor((left + right) / 2);
-    const pivotVal = arr[pivotIdx];
+/**
+ * A graph memoized as an adjacency list.
+ * T can be anything that can be used as a key (string, number, etc.).
+ */
+export type Graph<T> = Map<T, Iterable<T>>;
 
-    // Partition: elements < pivot on the left, > pivot on the right
-    let i = left;
-    let j = right;
-    while (i <= j) {
-      while (compare(arr[i], pivotVal) < 0) i++;
-      while (compare(arr[j], pivotVal) > 0) j--;
-      if (i <= j) {
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-        i++;
-        j--;
-      }
+/**
+ * Recursive DFS.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsRecursive<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const result: Array<T> = [];
+
+  function visit(node: T): void {
+    if (visited.has(node)) return;
+    visited.add(node);
+    result.push(node);
+
+    for (const neighbour of graph.get(node) ?? []) {
+      visit(neighbour);
     }
-
-    // Which side contains the target?
-    if (j < target) left = i;
-    else if (i > target) right = j;
-    else return arr[target];
   }
-}
-const arr = [7, 3, 5, 2, 9, 1, 4];
-const k = 3;           // find the 3rd smallest: answer should be 4
 
-console.log(kthSmallestQuickSelect(arr, k)); // 4
+  visit(start);
+  return result;
+}
+
+/**
+ * Iterative DFS using an explicit stack.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsIterative<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const stack: Array<T> = [start];
+  const result: Array<T> = [];
+
+  while (stack.length) {
+    const node = stack.pop()!; // non‑empty guarantee
+    if (visited.has(node)) continue;
+
+    visited.add(node);
+    result.push(node);
+
+    // push neighbours onto the stack; reverse order
+    // to mimic the recursive visiting order
+    const neighbours = Array.from(graph.get(node) ?? []);
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      const n = neighbours[i];
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+
+/*  --------------------------------------------------
+    Example Usage
+    -------------------------------------------------- */
+
+const graph: Graph<number> = new Map([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [6]],
+  [4, []],
+  [5, []],
+  [6, []],
+]);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1)); // [1, 2, 4, 5, 3, 6]
+console.log('Iterative DFS:', dfsIterative(graph, 1)); // [1, 3, 6, 2, 5, 4]
