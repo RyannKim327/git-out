@@ -1,77 +1,39 @@
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+function lcs(a: string, b: string): string {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const dp: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
 
-  get size() { return this._size; }
-  push(value: T) {
-    const node = new ListNode(value);
-
-    if (!this.head) {
-      this.head = this.tail = node;        // first element
-    } else {
-      this.tail!.next = node;              // trick the tail
-      this.tail = node;                    // and move it
-    }
-    this._size++;
-  }
-  unshift(value: T) {
-    const node = new ListNode(value, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node; // when list was empty
-    this._size++;
-  }
-  pop(): T | null {
-    if (!this.head) return null;
-
-    let removedValue: T | null = null;
-
-    // If we only have one node
-    if (this.head === this.tail) {
-      removedValue = this.head.value;
-      this.head = this.tail = null;
-    } else {
-      let current = this.head;
-      while (current.next !== this.tail) {
-        current = current.next!;
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
-      removedValue = this.tail!.value;
-      current.next = null;
-      this.tail = current;
-    }
-
-    this._size--;
-    return removedValue;
-  }
-  find(predicate: (value: T) => boolean): T | null {
-    let current = this.head;
-    while (current) {
-      if (predicate(current.value)) return current.value;
-      current = current.next;
-    }
-    return null;
-  }
-  *[Symbol.iterator](): Generator<T, void, unknown> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
     }
   }
-const list = new LinkedList<number>();
 
-list.push(10);
-list.push(20);
-list.unshift(5);          // List is now: 5 → 10 → 20
+  // Re‑construct the subsequence
+  let i = rows - 1, j = cols - 1;
+  const res: string[] = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      res.push(a[i - 1]);          // same character in both strings
+      i--; j--;                    // move diagonally
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;                          // move up
+    } else {
+      j--;                          // move left
+    }
+  }
+  return res.reverse().join('');
+}
+console.log(lcs("AGGTAB", "GXTXAYB")); // → "GTAB"
+// lcs.ts
+export function lcs(a: string, b: string): string {
+  // ...implementation as above...
+}
 
-console.log([...list]);   // [5, 10, 20]
-console.log(list.size);   // 3
-
-console.log(list.pop());   // 20
-console.log([...list]);   // [5, 10]
+// example usage
+import { lcs } from './lcs';
+console.log(lcs('abcbdab', 'bdcaba')); // prints bcdab
