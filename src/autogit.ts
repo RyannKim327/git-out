@@ -1,39 +1,17 @@
-/**
- * Fetches a random dog picture and logs the URL.
- * Works in Node (with node-fetch polyfill) and in browsers.
- */
-
-const DOG_API = 'https://dog.ceo/api/breeds/image/random';
-
-interface DogApiResponse {
-  message: string;  // the image URL
-  status: string;   // should be 'success'
+interface ListNode<T> {
+    value: T;
+    next: ListNode<T> | null;
 }
 
-/**
- * Makes the HTTP request, parses the JSON, and logs the image URL.
- */
-async function showRandomDog(): Promise<void> {
-  try {
-    // `fetch` may need a polyfill in Node, e.g. `node-fetch`
-    const response = await fetch(DOG_API);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
+function length<T>(head: ListNode<T> | null): number {
+    let count = 0;
+    for (let curr = head; curr !== null; curr = curr.next) {
+        count++;
     }
-
-    const data: DogApiResponse = await response.json();
-
-    if (data.status !== 'success') {
-      throw new Error(`API reported failure: ${data.status}`);
-    }
-
-    console.log('Random dog image URL:', data.message);
-  } catch (err) {
-    console.error('Failed to fetch dog image:', err);
-  }
+    return count;
 }
+const node3: ListNode<number> = { value: 3, next: null };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
 
-showRandomDog();
-npm install node-fetch
-import fetch from 'node-fetch';
+console.log(length(node1)); // 3
