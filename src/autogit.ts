@@ -1,72 +1,77 @@
-/**
- * Return the majority element of an array – the value that occurs
- * strictly more than half the time. If no such element exists the
- * function throws an Error.
- *
- * @param arr Array of comparable values (e.g. numbers, strings, etc.)
- */
-export function majorityElement<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new Error('Array is empty');
-  }
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-  // Phase 1 – Find a candidate
-  let candidate = arr[0];
-  let count = 1;
+  get size() { return this._size; }
+  push(value: T) {
+    const node = new ListNode(value);
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
+    if (!this.head) {
+      this.head = this.tail = node;        // first element
     } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
+      this.tail!.next = node;              // trick the tail
+      this.tail = node;                    // and move it
+    }
+    this._size++;
+  }
+  unshift(value: T) {
+    const node = new ListNode(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node; // when list was empty
+    this._size++;
+  }
+  pop(): T | null {
+    if (!this.head) return null;
+
+    let removedValue: T | null = null;
+
+    // If we only have one node
+    if (this.head === this.tail) {
+      removedValue = this.head.value;
+      this.head = this.tail = null;
+    } else {
+      let current = this.head;
+      while (current.next !== this.tail) {
+        current = current.next!;
       }
+      removedValue = this.tail!.value;
+      current.next = null;
+      this.tail = current;
+    }
+
+    this._size--;
+    return removedValue;
+  }
+  find(predicate: (value: T) => boolean): T | null {
+    let current = this.head;
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
+    }
+    return null;
+  }
+  *[Symbol.iterator](): Generator<T, void, unknown> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
     }
   }
+const list = new LinkedList<number>();
 
-  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
+list.push(10);
+list.push(20);
+list.unshift(5);          // List is now: 5 → 10 → 20
 
-  if (count > Math.floor(arr.length / 2)) {
-    return candidate;
-  }
+console.log([...list]);   // [5, 10, 20]
+console.log(list.size);   // 3
 
-  throw new Error('No majority element found');
-}
-export function majorityElementWithMap<T>(arr: T[]): T {
-  const freq = new Map<T, number>();
-
-  // Count occurrences
-  for (const v of arr) {
-    freq.set(v, (freq.get(v) ?? 0) + 1);
-  }
-
-  // Find the element that tops the midway mark
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, count] of freq) {
-    if (count > threshold) return val;
-  }
-
-  throw new Error('No majority element found');
-}
-export function majorityElementSorted<T>(arr: T[]): T {
-  if (arr.length === 0) throw new Error('Array is empty');
-
-  const sorted = [...arr].sort();  // shallow copy + in‑place sort
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  
-  // Optional: verify the candidate
-  let count = 0;
-  for (const v of arr) if (v === candidate) count++;
-  if (count > Math.floor(arr.length / 2)) return candidate;
-
-  throw new Error('No majority element found');
-}
-console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
-console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
-console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
+console.log(list.pop());   // 20
+console.log([...list]);   // [5, 10]
