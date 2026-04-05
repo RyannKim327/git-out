@@ -1,36 +1,114 @@
-function countOccurrences(str: string, word: string): number {
-  // \b = word boundary; 'gi' = case‑insensitive, global
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  return str.split(regex).length - 1;
-}
-function countOccurrences2(str: string, word: string): number {
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
-}
-function countOccurrences3(str: string, word: string): number {
-  let count = 0;
-  let pos = 0;
+/**
+ * A single node in a binary search tree.
+ */
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-  while ((pos = str.toLowerCase().indexOf(word.toLowerCase(), pos)) !== -1) {
-    // Ensure whole‑word match using boundaries (optional)
-    const before = pos === 0 || /\W/.test(str[pos - 1]);
-    const after  = pos + word.length === str.length
-                 || /\W/.test(str[pos + word.length]);
+  constructor(value: T) {
+    this.value = value;
+  }
+}
 
-    if (before && after) {
-      count++;
-    }
-    pos += word.length;
+/**
+ * Binary search tree that keeps values ordered by a comparator.
+ * If you don’t pass a comparator it defaults to numeric or string <=> >.
+ */
+class BinarySearchTree<T> {
+  root: TreeNode<T> | null = null;
+  private cmp: (a: T, b: T) => number;
+
+  constructor(comparator?: (a: T, b: T) => number) {
+    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }
 
-  return count;
-}
-const paragraph = `
-  TypeScript is great. TypeScript's type system helps catch bugs early.
-  A developer who uses typescript should ideally care about types.
-`;
+  /* ------------------------------------------------------------------
+   * Insert
+   * ------------------------------------------------------------------ */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
 
-console.log(countOccurrences(paragraph, 'typescript'));   // → 4
-console.log(countOccurrences2(paragraph, 'typescript')); // → 4
-console.log(countOccurrences3(paragraph, 'typescript')); // → 4
+    let current = this.root;
+    while (true) {
+      const comp = this.cmp(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          break;
+        }
+        current = current.left;
+      } else {
+        // treat equal values as “go right” – change if you want otherwise
+        if (!current.right) {
+          current.right = newNode;
+          break;
+        }
+        current = current.right;
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------
+   * Find
+   * ------------------------------------------------------------------ */
+  find(value: T): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = this.cmp(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
+    }
+    return null;
+  }
+
+  /* ------------------------------------------------------------------
+   * Traversals – each visitor receives the node value
+   * ------------------------------------------------------------------ */
+  inOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      visitor(node.value);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  preOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      visitor(node.value);
+      walk(node.left);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  postOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      walk(node.right);
+      visitor(node.value);
+    }
+    walk(this.root);
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Quick demo
+ * ------------------------------------------------------------------ */
+const bst = new BinarySearchTree<number>();
+
+[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
+
+console.log('In‑order traversal (sorted):');
+bst.inOrder(v => console.log(v));
+
+console.log('\nFind 60:', bst.find(60)?.value);
+console.log('Find 25:', bst.find(25)?.value); // null
