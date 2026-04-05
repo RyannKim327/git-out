@@ -1,30 +1,25 @@
 /**
- * Compute n! recursively.
+ * Returns the maximum sum of any contiguous sub‑array of `arr`.
+ * Works for arrays that contain only numbers.
  *
- * @param n – non‑negative integer (or BigInt)
- * @returns n! as the same numeric type that was passed in
+ * @param arr - array of numbers (can be empty)
+ * @returns maximum sub‑array sum (for an empty array returns 0)
  */
-function factorial(n: number): number;
-function factorial(n: BigInt): BigInt;
-function factorial(n: number | BigInt): number | BigInt {
-  // Validate the input
-  if (typeof n === "number") {
-    if (!Number.isInteger(n) || n < 0) {
-      throw new Error("n must be a non‑negative integer");
-    }
-    // Base case
-    if (n <= 1) return 1;
-    // Recursive step
-    return n * factorial(n - 1);
-  } else {
-    // BigInt path – same logic, but with BigInt operations
-    if (n < 0n) {
-      throw new Error("n must be a non‑negative integer");
-    }
-    if (n <= 1n) return 1n;
-    return n * factorial(n - 1n);
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) return 0;
+
+  let maxEndingHere = arr[0];   // best sum ending at current index
+  let maxSoFar = arr[0];        // best sum found so far
+
+  for (let i = 1; i < arr.length; i++) {
+    // Either extend the previous sub‑array or start a new one at i
+    maxEndingHere = Math.max(arr[i], maxEndingHere + arr[i]);
+
+    // Update the best overall sum
+    maxSoFar = Math.max(maxSoFar, maxEndingHere);
   }
+
+  return maxSoFar;
 }
-console.log(factorial(5));   // 120
-console.log(factorial(20));  // 2432902008176640000
-console.log(factorial(20n)); // 2432902008176640000n (BigInt)
+const nums = [ -2, 1, -3, 4, -1, 2, 1, -5, 4 ];
+console.log(maxSubArraySum(nums));  // 6
