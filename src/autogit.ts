@@ -1,30 +1,31 @@
-// src/cronJob.ts
-import * as cron from 'node-cron';
-import { exec } from 'child_process';
+const original = [1, 2, 3, 4, 5];
 
-// Simple helper that returns a random joke (you can replace it with anything)
-function getRandomJoke(): string {
-  const jokes = [
-    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
-    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
-    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
-  ];
-  return jokes[Math.floor(Math.random() * jokes.length)];
+// Suppose you want to drop all 3’s (or just the first one you hit)
+const removed = original.filter(v => v !== 3);
+console.log(removed); // [1, 2, 4, 5]
+const idx = original.indexOf(3);
+const removedFirst =
+  idx === -1 ? original : [...original.slice(0, idx), ...original.slice(idx + 1)];
+const arr = [1, 2, 3, 4, 5];
+const index = arr.indexOf(3);
+if (index !== -1) {
+  arr.splice(index, 1); // removes 1 element at that index
+}
+console.log(arr); // [1, 2, 4, 5]
+const original = ['a', 'b', 'c', 'd'];
+const removeAt = 2; // remove the element at position 2 ("c")
+const newArr = [...original.slice(0, removeAt), ...original.slice(removeAt + 1)];
+console.log(newArr); // ['a', 'b', 'd']
+const arr = ['a', 'b', 'c', 'd'];
+arr.splice(2, 1); // remove the element at index 2
+console.log(arr); // ['a', 'b', 'd']
+const items = ['red', 'green', 'blue', 'green'];
+const toRemove = 'green';
+const result = Array.from(new Set(items.filter(v => v !== toRemove)));
+function removeByValue<T>(arr: readonly T[], value: T): T[] {
+  return arr.filter(v => !Object.is(v, value));
 }
 
-// This job:
-cron.schedule('* * * * *', () => {          // Runs every minute
-  const joke = getRandomJoke();
-  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
-
-  // Example of how you might trigger a system command using Cron
-  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
-    if (err) {
-      console.warn(`Error while executing command: ${err.message}`);
-      return;
-    }
-    console.log(`Command output: ${stdout.trim()}`);
-  });
-});
-
-console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
+// Usage
+const numbers = [1, 2, 3, 3, 4];
+const cleaned = removeByValue(numbers, 3); // [1, 2, 4]
