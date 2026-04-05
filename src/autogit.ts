@@ -1,30 +1,16 @@
-// src/cronJob.ts
-import * as cron from 'node-cron';
-import { exec } from 'child_process';
-
-// Simple helper that returns a random joke (you can replace it with anything)
-function getRandomJoke(): string {
-  const jokes = [
-    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
-    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
-    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
-  ];
-  return jokes[Math.floor(Math.random() * jokes.length)];
-}
-
-// This job:
-cron.schedule('* * * * *', () => {          // Runs every minute
-  const joke = getRandomJoke();
-  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
-
-  // Example of how you might trigger a system command using Cron
-  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
-    if (err) {
-      console.warn(`Error while executing command: ${err.message}`);
-      return;
+/**
+ * Returns true if the array is sorted in non‑decreasing order.
+ * Works for any type that supports the <= operator.
+ */
+function isSortedAscending<T>(arr: T[]): boolean {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] > arr[i + 1]) {
+      return false;                // found a violation
     }
-    console.log(`Command output: ${stdout.trim()}`);
-  });
-});
-
-console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
+  }
+  return true;                     // no violations found
+}
+console.log(isSortedAscending([1, 2, 3, 4]));   // true
+console.log(isSortedAscending([1, 3, 2, 4]));   // false
+const isSortedAsc = (arr: number[]) =>
+  arr.every((v, i) => i === 0 || arr[i - 1] <= v);
