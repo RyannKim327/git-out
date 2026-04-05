@@ -1,17 +1,17 @@
-interface ListNode<T> {
-    value: T;
-    next: ListNode<T> | null;
-}
+const raw = '  Hello,\t\nWorld!  \u3000';
 
-function length<T>(head: ListNode<T> | null): number {
-    let count = 0;
-    for (let curr = head; curr !== null; curr = curr.next) {
-        count++;
-    }
-    return count;
-}
-const node3: ListNode<number> = { value: 3, next: null };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+const trimmed = raw.trim();                 // "Hello,\t\nWorld!  \u3000"
+const noWhitespace = raw.replace(/\s+/g, ''); // "Hello,World!"
+const collapsed = raw.replace(/\s+/g, ' ');   // "Hello, World!"
 
-console.log(length(node1)); // 3
+console.log({ trimmed, noWhitespace, collapsed });
+/**
+ * Strip all whitespace from a string, or optionally replace it with another string.
+ *
+ * @param input   The string to clean.
+ * @param replace What to put in place of each whitespace run (default: empty string).
+ * @returns The cleaned string.
+ */
+function cleanWhitespace(input: string, replace = ''): string {
+  return input.replace(/\s+/g, replace);
+}
