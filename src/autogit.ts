@@ -1,81 +1,75 @@
-/**
- * Singly‑linked‑list node that holds a generic value and a reference to the next node.
- * The `next` property is `null` for the last element in the list.
- */
-class Node<T> {
-  constructor(
-    public readonly value: T,
-    public next: Node<T> | null = null
-  ) {}
-}
+// Compute lps array for pattern p
+function buildLPS(p: string): number[] {
+  const lps = new Array(p.length).fill(0);
+  let len = 0;            // length of the previous longest prefix suffix
+  let i = 1;
 
-/**
- * Queue implemented with a linked list.
- * Supports enqueue, dequeue, peek, isEmpty and size in constant time.
- */
-export class LinkedListQueue<T> {
-  /** first node in the queue (front) */
-  private head: Node<T> | null = null;
-  /** last node in the queue (rear) */
-  private tail: Node<T> | null = null;
-  /** how many items are currently in the queue */
-  private elementCount: number = 0;
-
-  /** Adds an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the new node after current tail
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
     } else {
-      this.head = newNode;        // queue was empty – new node is also head
+      if (len !== 0) {
+        // fall back in the pattern, don’t slide the text cursor
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
-    this.tail = newNode;          // new node becomes the new tail
-    this.elementCount++;
   }
-
-  /** Removes and returns the item from the front of the queue. Throws if empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error("Queue underflow: trying to dequeue from an empty queue.");
-    }
-    const value = this.head.value;
-    this.head = this.head.next;   // advance head pointer
-
-    // If head became null, the queue is now empty; need to drop tail too.
-    if (!this.head) {
-      this.tail = null;
-    }
-    this.elementCount--;
-    return value;
-  }
-
-  /** Returns the item at the front without removing it, or undefined if empty. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** True when the queue holds no elements. */
-  isEmpty(): boolean {
-    return this.elementCount === 0;
-  }
-
-  /** How many items are currently enqueued. */
-  size(): number {
-    return this.elementCount;
-  }
+  return lps;
 }
-const q = new LinkedListQueue<number>();
+/**
+ * KMP search – returns true if pattern occurs in text
+ * @param text the body to scan
+ * @param pattern the substring to find
+ */
+function kmpSearch(text: string, pattern: string): boolean {
+  if (pattern === "") return true;          // empty pattern matches everywhere
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-console.log(q.size());   // ➜ 3
-console.log(q.peek());   // ➜ 10
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) return true;   // full match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1];    // drop the matched prefix
+      } else {
+        i++;               // move on in the text
+      }
+    }
+  }
+  return false;
+}
+function kmpAllMatches(text: string, pattern: string): number[] {
+  if (pattern === "") return [];  // or [0,1,2,...] if you want
 
-console.log(q.dequeue()); // ➜ 10
-console.log(q.dequeue()); // ➜ 20
+  const lps = buildLPS(pattern);
+  const matches: number[] = [];
+  let i = 0, j = 0;
 
-console.log(q.isEmpty()); // ➜ false
-console.log(q.dequeue()); // ➜ 30
-console.log(q.isEmpty()); // ➜ true
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        matches.push(i - j); // match ends at i-1, so start = i-j
+        j = lps[j - 1];      // continue searching
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return matches;
+}
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
+
+console.log(kmpSearch(haystack, needle));          // true
+console.log(kmpAllMatches(haystack, needle));      // [10]
