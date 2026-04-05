@@ -1,105 +1,65 @@
-// Boyer-Moore string search in TypeScript
-// --------------------------------------------------------
-
 /**
- * Build the bad‑character shift table.
- * Return an array of 256 integers (for each possible char code).
- * For Unicode > 0xFF we fallback to a Map.
+ * Build the shift table for the Boyer–Moore–Horspool algorithm.
+ * For each character in the pattern we set the shift distance to the
+ * pattern length minus the index - 1, unless the character is the
+ * pattern's last one (its shift remains 1).
  */
-function buildBadCharTable(pattern: string): { table: number[]; map: Map<number, number> } {
-  const table = new Array(256).fill(-1);
-  const map = new Map<number, number>();
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-  for (let i = 0; i < pattern.length; i++) {
-    const code = pattern.charCodeAt(i);
-    if (code < 256) table[code] = i;
-    else map.set(code, i);
+  // Initialize all shifts to the pattern length.
+  for (let i = 0; i < m; i++) {
+    const ch = pattern.charAt(i);
+    table[ch] = m;
   }
 
-  return { table, map };
-}
-
-/**
- * Build the good‑suffix shift array.
- * Returns an array `shift` where shift[i] tells how far to jump
- * when a mismatch occurs at pattern index i.
- */
-function buildGoodSuffixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const suffix = new Array(m).fill(-1);
-  const prefix = new Array(m).fill(false);
-  const shift = new Array(m).fill(m); // default shift = pattern length
-
-  // Phase 1: find suffixes
+  // Adjust shifts for every character except the last one.
   for (let i = 0; i < m - 1; i++) {
-    let j = i;
-    let k = 0; // length of matched suffix
-    while (j >= 0 && pattern[j] === pattern[m - 1 - k]) {
-      j--;
-      k++;
-      suffix[k] = j + 1;
-    }
-    if (j === -1) {
-      // suffix matched entire prefix
-      for (let l = k + 1; l <= m - 1; l++) {
-        if (shift[l] === m) shift[l] = m - k - 1;
-      }
-    }
+    table[pattern.charAt(i)] = m - i - 1;
   }
 
-  // Phase 2: compute shift values
-  for (let i = m - 1; i >= 0; i--) {
-    if (suffix[i] !== -1) {
-      shift[i] = m - suffix[i] - i;
-    }
-  }
-
-  return shift;
+  return table;
 }
 
 /**
- * Boyer‑Moore search: returns the first index of `pattern` in `text` or -1 if not found.
+ * Boyer–Moore–Horspool substring search.
+ * @param text   The string you want to search inside.
+ * @param pat    The pattern you are looking for.
+ * @returns      The index of the first occurrence, or -1 if not found.
  */
-export function boyerMooreSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-
-  const { table: badCharTable, map: badCharMap } = buildBadCharTable(pattern);
-  const goodSuffix = buildGoodSuffixTable(pattern);
-
+export function boyerMooreHorspool(text: string, pat: string): number {
   const n = text.length;
-  const m = pattern.length;
-  let s = 0; // shift of the pattern relative to text
+  const m = pat.length;
 
-  while (s <= n - m) {
-    let j = m - 1;
+  if (m === 0) return 0;          // Empty pattern matches at 0
+  if (m > n) return -1;           // Pattern longer than text → impossible
 
-    while (j >= 0 && pattern[j] === text[s + j]) {
+  const shift = buildShiftTable(pat);
+
+  let i = 0;                      // Current position in text
+
+  while (i <= n - m) {
+    let j = m - 1;                // Start comparing from the end of the pattern
+
+    // Walk backwards over matched characters
+    while (j >= 0 && pat.charAt(j) === text.charAt(i + j)) {
       j--;
     }
 
     if (j < 0) {
-      return s; // match found
+      return i;                   // Match found
     }
 
-    const badCharCode = text.charCodeAt(s + j);
-    const badCharIdx = badCharCode < 256 ? badCharTable[badCharCode] : badCharMap.get(badCharCode) ?? -1;
-    const badShift = j - badCharIdx;
-
-    const goodShift = goodSuffix[j];
-
-    // take the greater jump
-    s += Math.max(badShift, goodShift);
+    // If mismatch, shift by the table value of the mismatched character
+    const badChar = text.charAt(i + m - 1);
+    i += shift[badChar] ?? m;     // Default shift if character not in table
   }
 
-  return -1; // no match
+  return -1;                      // No match
 }
-import { boyerMooreSearch } from './boyer-moore';
+const txt = "Here is a simple example: find the substring.";
+const pat = "substring";
 
-const text = "the quick brown fox jumps over the lazy dog";
-const pattern = "fox";
-
-const idx = boyerMooreSearch(text, pattern);
-console.log(idx); // 16
-
-// not found
-console.log(boyerMooreSearch(text, "cat")); // -1
+const idx = boyerMooreHorspool(txt, pat);
+console.log(idx);   // → 34
