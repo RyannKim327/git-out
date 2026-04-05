@@ -1,90 +1,36 @@
-// ------------------------------------------------------------------
-// Breadth‑Limited Search (BLS)
-// ------------------------------------------------------------------
-
-/**
- * A node in the frontier.
- * `state`   – whatever you want to search over (string, number, object…)
- * `depth`   – how many steps we’ve taken from the start
- */
-type FrontierNode<T> = { state: T; depth: number };
-
-/**
- * Basic graph helper: adjacency list.
- * For arbitrary graphs you can swap this for a function that returns
- * the successors of a vertex.
- */
-type AdjList<T> = Map<T, T[]>;
-
-/**
- * Breadth‑limited search.
- *
- * @param start          - starting state
- * @param isGoal         - predicate that tells us whether a state is a goal
- * @param getNeighbors   - how to obtain successors of a state
- * @param maxDepth       - stop expanding nodes at this depth
- * @returns              - the first goal state found, or undefined
- */
-export function breadthLimitedSearch<T>(
-  start: T,
-  isGoal: (state: T) => boolean,
-  getNeighbors: (state: T) => T[],
-  maxDepth: number
-): T | undefined {
-  // Queue for BFS (FIFO)
-  const queue: FrontierNode<T>[] = [{ state: start, depth: 0 }];
-  const visited = new Set<T>();
-
-  while (queue.length) {
-    const { state, depth } = queue.shift()!;   // pop the oldest node
-
-    if (visited.has(state)) continue; // ignore duplicates
-    visited.add(state);
-
-    if (isGoal(state)) return state;          // found what we want
-
-    // Don't go deeper than the limit
-    if (depth === maxDepth) continue;
-
-    // Enqueue all unvisited successors
-    for (const next of getNeighbors(state)) {
-      if (!visited.has(next)) {
-        queue.push({ state: next, depth: depth + 1 });
-      }
-    }
-  }
-
-  // No goal reached within the depth bound
-  return undefined;
+function countOccurrences(str: string, word: string): number {
+  // \b = word boundary; 'gi' = case‑insensitive, global
+  const regex = new RegExp(`\\b${word}\\b`, 'gi');
+  return str.split(regex).length - 1;
 }
-// Example: find a word that is 3 letters away from "cat" in a tiny
-// word‑graph (adjacent words differ by one character).
+function countOccurrences2(str: string, word: string): number {
+  const regex = new RegExp(`\\b${word}\\b`, 'gi');
+  const matches = str.match(regex);
+  return matches ? matches.length : 0;
+}
+function countOccurrences3(str: string, word: string): number {
+  let count = 0;
+  let pos = 0;
 
-const words = ["cat", "bat", "bet", "bed", "ded", "dog", "dig"];
+  while ((pos = str.toLowerCase().indexOf(word.toLowerCase(), pos)) !== -1) {
+    // Ensure whole‑word match using boundaries (optional)
+    const before = pos === 0 || /\W/.test(str[pos - 1]);
+    const after  = pos + word.length === str.length
+                 || /\W/.test(str[pos + word.length]);
 
-// Build an adjacency list (one‑letter edits)
-const graph: AdjList<string> = new Map();
-words.forEach(w => {
-  const adj: string[] = [];
-  for (const other of words) {
-    if (w !== other && w.split("").some((c, i) => c !== other[i])) {
-      // True only if they differ by ONE character
-      if (w.split("").filter((c, i) => c !== other[i]).length <= 1) {
-        adj.push(other);
-      }
+    if (before && after) {
+      count++;
     }
+    pos += word.length;
   }
-  graph.set(w, adj);
-});
 
-const start = "cat";
-const goal = "dig";
+  return count;
+}
+const paragraph = `
+  TypeScript is great. TypeScript's type system helps catch bugs early.
+  A developer who uses typescript should ideally care about types.
+`;
 
-const found = breadthLimitedSearch(
-  start,
-  s => s === goal,
-  s => graph.get(s) ?? [],
-  3                       // depth limit
-);
-
-console.log(found); // prints "dig" or undefined if no path ≤ 3 steps
+console.log(countOccurrences(paragraph, 'typescript'));   // → 4
+console.log(countOccurrences2(paragraph, 'typescript')); // → 4
+console.log(countOccurrences3(paragraph, 'typescript')); // → 4
