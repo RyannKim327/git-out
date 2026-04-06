@@ -1,47 +1,97 @@
-/**
- * Does `a` consist of exactly the same letters as `b`, in any order?
- * The comparison is case‑insensitive and ignores whitespace.
- *
- * @param a – first candidate
- * @param b – second candidate
- * @returns true if the strings are anagrams, otherwise false
- */
-export function isAnagram(a: string, b: string): boolean {
-  // Normalise the strings: lowercase, trim, remove spaces.
-  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
-  const strA = normalize(a);
-  const strB = normalize(b);
+class Queue<T> {
+  private items: T[] = [];
+  private start = 0;          // index of the front
 
-  // Quick rejection: different length → impossible to be an anagram.
-  if (strA.length !== strB.length) return false;
-
-  // === Approach 1: sorting ===
-  // const sortedA = strA.split('').sort().join('');
-  // const sortedB = strB.split('').sort().join('');
-  // return sortedA === sortedB;
-
-  // === Approach 2: frequency counting ===
-  const freq: Record<string, number> = {};
-
-  // Count characters of the first string.
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+  push(item: T) {
+    this.items.push(item);
   }
 
-  // Subtract counts using characters from the second string.
-  for (const ch of strB) {
-    if (!freq[ch]) {
-      // Either the character never appeared in `a`
-      // or its count has already been zeroed out.
-      return false;
+  pop(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.items[this.start++];
+    // optional cleanup to keep array short
+    if (this.start > 100 && this.start * 2 > this.items.length) {
+      this.items = this.items.slice(this.start);
+      this.start = 0;
     }
-    freq[ch]!--;          // `!` tells the compiler this is defined.
-    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
+    return item;
   }
 
-  // If all counts have cancelled out, the map should be empty.
-  return Object.keys(freq).length === 0;
+  isEmpty() {
+    return this.start >= this.items.length;
+  }
 }
-console.log(isAnagram('Listen', 'Silent'));   // true
-console.log(isAnagram('Triangle', 'Integral')); // true
-console.log(isAnagram('Apple', 'Pabble'));      // false
+type Node = string | number | symbol;  // whatever shape you need
+
+/**
+ * Breadth-First Search
+ *
+ * @param graph   adjacency list mapping each node to its neighbours
+ * @param start   node from which to begin traversal
+ * @param cb      optional callback executed for every visited node
+ * @returns       an array of nodes in the order they were visited
+ */
+function bfs<Node>(
+  graph: Map<Node, Node[]>, 
+  start: Node,
+  cb?: (node: Node) => void
+): Node[] {
+  const visited = new Set<Node>();
+  const queue = new Queue<Node>();
+  const order: Node[] = [];
+
+  queue.push(start);
+  visited.add(start);
+
+  while (!queue.isEmpty()) {
+    const current = queue.pop()!;
+    order.push(current);
+
+    // run user code if supplied
+    cb?.(current);
+
+    const neighbours = graph.get(current) ?? [];
+    for (const neighbour of neighbours) {
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push(neighbour);
+      }
+    }
+  }
+
+  return order;
+}
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [6]],
+  [4, []],
+  [5, []],
+  [6, []]
+]);
+
+console.log(bfs(graph, 1)); // [1, 2, 3, 4, 5, 6]
+function bfsStop<T>(
+  graph: Map<T, T[]>,
+  start: T,
+  onVisit: (node: T) => boolean // true → stop
+) {
+  const visited = new Set<T>();
+  const queue = new Queue<T>();
+
+  queue.push(start);
+  visited.add(start);
+
+  while (!queue.isEmpty()) {
+    const cur = queue.pop()!;
+    if (onVisit(cur)) return cur;   // finished
+
+    for (const nxt of graph.get(cur) ?? []) {
+      if (!visited.has(nxt)) {
+        visited.add(nxt);
+        queue.push(nxt);
+      }
+    }
+  }
+  return undefined;
+}
