@@ -1,102 +1,107 @@
-export interface ListNode<T = number> {
-  value: T;
-  next?: ListNode<T>;
-}
-export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;          // empty list is a palindrome
-
-  const stack: T[] = [];
-  let cur = head;
-
-  // Stage 1 – push all values onto the stack
-  while (cur) {
-    stack.push(cur.value);
-    cur = cur.next;
-  }
-
-  // Stage 2 – iterate a second time, comparing against popped values
-  cur = head;
-  while (cur) {
-    const top = stack.pop() as T; // stack can't be empty here
-    if (cur.value !== top) return false;
-    cur = cur.next;
-  }
-
-  return true;
-}
-export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;
-
-  // 1️⃣ Find middle (slow will stop at mid‑point)
-  let slow = head;
-  let fast = head;
-  let prevSlow: ListNode<T> | undefined = undefined;
-
-  while (fast && fast.next) {
-    fast = fast.next.next;
-    prevSlow = slow;
-    slow = slow.next;
-  }
-
-  // 2️⃣ For odd length lists, skip the middle element
-  if (fast) {
-    slow = slow.next;
-  }
-
-  // 3️⃣ Reverse the second half starting at `slow`
-  let secondHalf = reverseLinkedList(slow);
-
-  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
-  let p1 = head;
-  let p2 = secondHalf;
-  while (p2) {           // second half can be shorter or equal
-    if (p1.value !== p2.value) {
-      // Optional: undo reversal here if you want to keep list unchanged
-      return false;
-    }
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore first half? (skip for brevity)
-  return true;
+// A node can be anything that uniquely identifies a state.
+interface Node {
+  /** A unique string – the node’s id. */
+  id: string;
+  // Whatever other data the node owns can live here.
+  value?: any;
 }
 
+// Edges are just a mapping from a node id to its adjacent node ids.
+type AdjacencyList = Record<string, string[]>;
+
+// A path is simply an array of nodes (or their ids). Keep it generic so you
+// can work with a tree, graph, maze, etc.
+type Path = Node[];
 /**
- * Reverse a linked list in place and return the new head.
+ * Depth‑limited search.
+ *
+ * @param node      the current node
+ * @param goalId    id of the goal node
+ * @param graph     adjacency list describing neighbours
+ * @param maxDepth  maximum depth you are allowed to go
+ * @param pathSoFar the nodes traversed so far
+ * @returns a Path to the goal, or null if the goal is deeper than maxDepth
  */
-function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  let prev: ListNode<T> | undefined = undefined;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
+function depthLimitedSearch(
+  node: Node,
+  goalId: string,
+  graph: AdjacencyList,
+  maxDepth: number,
+  pathSoFar: Path = []
+): Path | null {
+  // If the current depth is already beyond what we’re allowed, reject.
+  if (pathSoFar.length > maxDepth) return null;
+
+  // Add the current node to the path
+  const newPath = [...pathSoFar, node];
+
+  // Goal check
+  if (node.id === goalId) return newPath;
+
+  // Stop if this depth is the last allowed – do NOT keep recursing
+  if (newPath.length === maxDepth) return null;
+
+  // Fetch neighbours; guard against a missing entry
+  const neighbours = graph[node.id] ?? [];
+
+  for (const neighbourId of neighbours) {
+    // Avoid looping back on the same node in the current path
+    if (newPath.some(n => n.id === neighbourId)) continue;
+
+    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
+
+    const result = depthLimitedSearch(
+      neighbourNode,
+      goalId,
+      graph,
+      maxDepth,
+      newPath
+    );
+    if (result) return result; // found a valid path
   }
-  return prev;
-}
-function build(list: number[]): ListNode | undefined {
-  let head: ListNode | undefined;
-  let tail: ListNode | undefined;
 
-  for (const val of list) {
-    const node: ListNode = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
-    }
+  return null; // nothing found at this depth
+}
+/**
+ * Iterative‑deepening DFS that stops when it finds the goal or
+ * when a supplied depth limit is reached.
+ *
+ * @param startId    id of the start node
+ * @param goalId     id of the goal node
+ * @param graph      adjacency list
+ * @param maxDepth   the deepest depth you’re willing to explore
+ * @returns a Path to the goal or null if none exists within depth
+ */
+function iterativeDeepening(
+  startId: string,
+  goalId: string,
+  graph: AdjacencyList,
+  maxDepth: number
+): Path | null {
+  const startNode: Node = { id: startId }; // elaborate if needed
+
+  for (let depth = 0; depth <= maxDepth; depth++) {
+    const result = depthLimitedSearch(startNode, goalId, graph, depth);
+    if (result) return result;
   }
-  return head;
+  return null;
 }
+const graph: AdjacencyList = {
+  A: ['B', 'C'],
+  B: ['D', 'E'],
+  C: ['F'],
+  D: [],
+  E: ['G', 'H'],
+  F: ['I'],
+  G: [],
+  H: [],
+  I: [],
+};
 
-const evenPal = build([1, 2, 2, 1]);
-const oddPal = build([1, 3, 3, 1]);
-const nonPal = build([1, 2, 3]);
-
-console.log(isPalindromeStack(evenPal)); // true
-console.log(isPalindromeLinear(oddPal)); // true
-console.log(isPalindromeLinear(nonPal)); // false
+const path = iterativeDeepening('A', 'H', graph, 10);
+if (path) {
+  console.log('Found path:', path.map(n => n.id).join(' → '));
+} else {
+  console.log('No path found within the depth limit');
+}
+Found path: A → B → E → H
