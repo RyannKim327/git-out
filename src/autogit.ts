@@ -1,23 +1,47 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Does `a` consist of exactly the same letters as `b`, in any order?
+ * The comparison is case‑insensitive and ignores whitespace.
+ *
+ * @param a – first candidate
+ * @param b – second candidate
+ * @returns true if the strings are anagrams, otherwise false
+ */
+export function isAnagram(a: string, b: string): boolean {
+  // Normalise the strings: lowercase, trim, remove spaces.
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+  const strA = normalize(a);
+  const strB = normalize(b);
+
+  // Quick rejection: different length → impossible to be an anagram.
+  if (strA.length !== strB.length) return false;
+
+  // === Approach 1: sorting ===
+  // const sortedA = strA.split('').sort().join('');
+  // const sortedB = strB.split('').sort().join('');
+  // return sortedA === sortedB;
+
+  // === Approach 2: frequency counting ===
+  const freq: Record<string, number> = {};
+
+  // Count characters of the first string.
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
+  }
+
+  // Subtract counts using characters from the second string.
+  for (const ch of strB) {
+    if (!freq[ch]) {
+      // Either the character never appeared in `a`
+      // or its count has already been zeroed out.
+      return false;
+    }
+    freq[ch]!--;          // `!` tells the compiler this is defined.
+    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
+  }
+
+  // If all counts have cancelled out, the map should be empty.
+  return Object.keys(freq).length === 0;
 }
-
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
-
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
-}
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(maxDepth(root));  // 3
+console.log(isAnagram('Listen', 'Silent'));   // true
+console.log(isAnagram('Triangle', 'Integral')); // true
+console.log(isAnagram('Apple', 'Pabble'));      // false
