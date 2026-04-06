@@ -1,105 +1,128 @@
-// Boyer-Moore string search in TypeScript
-// --------------------------------------------------------
+// ---------- TYPES ----------
+type Comparator<T> = (a: T, b: T) => number;
 
-/**
- * Build the bad‑character shift table.
- * Return an array of 256 integers (for each possible char code).
- * For Unicode > 0xFF we fallback to a Map.
- */
-function buildBadCharTable(pattern: string): { table: number[]; map: Map<number, number> } {
-  const table = new Array(256).fill(-1);
-  const map = new Map<number, number>();
-
-  for (let i = 0; i < pattern.length; i++) {
-    const code = pattern.charCodeAt(i);
-    if (code < 256) table[code] = i;
-    else map.set(code, i);
-  }
-
-  return { table, map };
+interface Node<T> {
+  key: T;
+  left: Node<T> | null;
+  right: Node<T> | null;
 }
 
-/**
- * Build the good‑suffix shift array.
- * Returns an array `shift` where shift[i] tells how far to jump
- * when a mismatch occurs at pattern index i.
- */
-function buildGoodSuffixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const suffix = new Array(m).fill(-1);
-  const prefix = new Array(m).fill(false);
-  const shift = new Array(m).fill(m); // default shift = pattern length
+// ---------- BST CLASS ----------
+class BinarySearchTree<T> {
+  // root can stay undefined at construction time
+  private root: Node<T> | null = null;
 
-  // Phase 1: find suffixes
-  for (let i = 0; i < m - 1; i++) {
-    let j = i;
-    let k = 0; // length of matched suffix
-    while (j >= 0 && pattern[j] === pattern[m - 1 - k]) {
-      j--;
-      k++;
-      suffix[k] = j + 1;
+  /**
+   * Allows you to plug in any way you want keys compared.
+   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
+   */
+  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
+
+  /** Insert new key into tree */
+  insert(key: T): void {
+    const node: Node<T> = { key, left: null, right: null };
+    if (!this.root) {
+      this.root = node;
+      return;
     }
-    if (j === -1) {
-      // suffix matched entire prefix
-      for (let l = k + 1; l <= m - 1; l++) {
-        if (shift[l] === m) shift[l] = m - k - 1;
+
+    let curr = this.root;
+    while (true) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        if (curr.left) {
+          curr = curr.left;
+        } else {
+          curr.left = node;
+          break;
+        }
+      } else if (cmp > 0) {
+        if (curr.right) {
+          curr = curr.right;
+        } else {
+          curr.right = node;
+          break;
+        }
+      } else {
+        // key already exists – replace or ignore, here we ignore
+        break;
       }
     }
   }
 
-  // Phase 2: compute shift values
-  for (let i = m - 1; i >= 0; i--) {
-    if (suffix[i] !== -1) {
-      shift[i] = m - suffix[i] - i;
+  /** Search for a key. Returns the node if found or null. */
+  search(key: T): Node<T> | null {
+    let curr = this.root;
+    while (curr) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        curr = curr.left;
+      } else if (cmp > 0) {
+        curr = curr.right;
+      } else {
+        return curr;
+      }
     }
+    return null;
   }
 
-  return shift;
-}
-
-/**
- * Boyer‑Moore search: returns the first index of `pattern` in `text` or -1 if not found.
- */
-export function boyerMooreSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-
-  const { table: badCharTable, map: badCharMap } = buildBadCharTable(pattern);
-  const goodSuffix = buildGoodSuffixTable(pattern);
-
-  const n = text.length;
-  const m = pattern.length;
-  let s = 0; // shift of the pattern relative to text
-
-  while (s <= n - m) {
-    let j = m - 1;
-
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
+  /** In‑order traversal – gives sorted keys. */
+  inorder(callback: (key: T) => void): void {
+    function walk(node: Node<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      callback(node.key);
+      walk(node.right);
     }
-
-    if (j < 0) {
-      return s; // match found
-    }
-
-    const badCharCode = text.charCodeAt(s + j);
-    const badCharIdx = badCharCode < 256 ? badCharTable[badCharCode] : badCharMap.get(badCharCode) ?? -1;
-    const badShift = j - badCharIdx;
-
-    const goodShift = goodSuffix[j];
-
-    // take the greater jump
-    s += Math.max(badShift, goodShift);
+    walk(this.root);
   }
 
-  return -1; // no match
+  /** Delete a key. Simple implementation that preserves BST shape. */
+  delete(key: T): void {
+    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
+      if (!node) return null;
+
+      const cmp = this.cmp(key, node.key);
+      if (cmp < 0) {
+        node.left = deleteRec(node.left, key);
+      } else if (cmp > 0) {
+        node.right = deleteRec(node.right, key);
+      } else {
+        // node to delete found
+        if (!node.left) return node.right;
+        if (!node.right) return node.left;
+
+        // two children: find in‑order successor (smallest node on right)
+        let succ = node.right;
+        while (succ.left) succ = succ.left;
+        node.key = succ.key; // copy successor key
+        node.right = deleteRec(node.right, succ.key); // delete successor
+      }
+      return node;
+    };
+
+    this.root = deleteRec(this.root, key);
+  }
 }
-import { boyerMooreSearch } from './boyer-moore';
 
-const text = "the quick brown fox jumps over the lazy dog";
-const pattern = "fox";
+// ---------- DEFAULT COMPARATOR ----------
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
 
-const idx = boyerMooreSearch(text, pattern);
-console.log(idx); // 16
+// ---------- USAGE EXAMPLE ----------
+const bst = new BinarySearchTree<number>();
 
-// not found
-console.log(boyerMooreSearch(text, "cat")); // -1
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log('Search 5:', bst.search(5) !== null);   // true
+console.log('Search 4:', bst.search(4) !== null);   // false
+
+console.log('In‑order traversal:');
+bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
+
+bst.delete(7);
+console.log('After deleting 7:');
+bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
