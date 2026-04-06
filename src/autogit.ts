@@ -1,88 +1,105 @@
-// RandomAsyncSample.tsx (React‑Native)
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, {useEffect, useState} from 'react';
-import {View, Text, Button, StyleSheet, Alert} from 'react-native';
+// Boyer-Moore string search in TypeScript
+// --------------------------------------------------------
 
-interface WeatherResponse {
-  location: string;
-  temp_c: number;
-  condition: string;
-  // add any other fields your API sends
-}
+/**
+ * Build the bad‑character shift table.
+ * Return an array of 256 integers (for each possible char code).
+ * For Unicode > 0xFF we fallback to a Map.
+ */
+function buildBadCharTable(pattern: string): { table: number[]; map: Map<number, number> } {
+  const table = new Array(256).fill(-1);
+  const map = new Map<number, number>();
 
-const fetchWeather = async (
-  location: string,
-): Promise<WeatherResponse> => {
-  const url = `https://api.example.com/weather?city=${encodeURIComponent(
-    location,
-  )}`;
-
-  // Random twist – fake delay to emulate slower networks
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-      // Add auth headers etc. if needed
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  for (let i = 0; i < pattern.length; i++) {
+    const code = pattern.charCodeAt(i);
+    if (code < 256) table[code] = i;
+    else map.set(code, i);
   }
 
-  const data = (await response.json()) as WeatherResponse;
-  return data;
-};
+  return { table, map };
+}
 
-export const RandomAsyncSample: React.FC = () => {
-  const [weather, setWeather] = useState<WeatherResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * Build the good‑suffix shift array.
+ * Returns an array `shift` where shift[i] tells how far to jump
+ * when a mismatch occurs at pattern index i.
+ */
+function buildGoodSuffixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const suffix = new Array(m).fill(-1);
+  const prefix = new Array(m).fill(false);
+  const shift = new Array(m).fill(m); // default shift = pattern length
 
-  const getWeather = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await fetchWeather('San Francisco');
-      setWeather(result);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
-      Alert.alert('Oops', err.message);
-    } finally {
-      setLoading(false);
+  // Phase 1: find suffixes
+  for (let i = 0; i < m - 1; i++) {
+    let j = i;
+    let k = 0; // length of matched suffix
+    while (j >= 0 && pattern[j] === pattern[m - 1 - k]) {
+      j--;
+      k++;
+      suffix[k] = j + 1;
     }
-  };
+    if (j === -1) {
+      // suffix matched entire prefix
+      for (let l = k + 1; l <= m - 1; l++) {
+        if (shift[l] === m) shift[l] = m - k - 1;
+      }
+    }
+  }
 
-  useEffect(() => {
-    // Pull the data once when the component mounts
-    getWeather();
-  }, []);
+  // Phase 2: compute shift values
+  for (let i = m - 1; i >= 0; i--) {
+    if (suffix[i] !== -1) {
+      shift[i] = m - suffix[i] - i;
+    }
+  }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Async Weather Sample</Text>
+  return shift;
+}
 
-      {loading && <Text>Loading…</Text>}
+/**
+ * Boyer‑Moore search: returns the first index of `pattern` in `text` or -1 if not found.
+ */
+export function boyerMooreSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
 
-      {error && <Text style={styles.error}>Error: {error}</Text>}
+  const { table: badCharTable, map: badCharMap } = buildBadCharTable(pattern);
+  const goodSuffix = buildGoodSuffixTable(pattern);
 
-      {weather && (
-        <>
-          <Text>Location: {weather.location}</Text>
-          <Text>Temp: {weather.temp_c}°C</Text>
-          <Text>Condition: {weather.condition}</Text>
-        </>
-      )}
+  const n = text.length;
+  const m = pattern.length;
+  let s = 0; // shift of the pattern relative to text
 
-      <Button title="Refresh" onPress={getWeather} disabled={loading} />
-    </View>
-  );
-};
+  while (s <= n - m) {
+    let j = m - 1;
 
-const styles = StyleSheet.create({
-  container: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16},
-  title: {fontSize: 20, marginBottom: 12},
-  error: {color: 'red', marginTop: 8},
-});
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return s; // match found
+    }
+
+    const badCharCode = text.charCodeAt(s + j);
+    const badCharIdx = badCharCode < 256 ? badCharTable[badCharCode] : badCharMap.get(badCharCode) ?? -1;
+    const badShift = j - badCharIdx;
+
+    const goodShift = goodSuffix[j];
+
+    // take the greater jump
+    s += Math.max(badShift, goodShift);
+  }
+
+  return -1; // no match
+}
+import { boyerMooreSearch } from './boyer-moore';
+
+const text = "the quick brown fox jumps over the lazy dog";
+const pattern = "fox";
+
+const idx = boyerMooreSearch(text, pattern);
+console.log(idx); // 16
+
+// not found
+console.log(boyerMooreSearch(text, "cat")); // -1
