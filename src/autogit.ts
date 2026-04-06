@@ -1,54 +1,32 @@
-// A minimal, singly‑linked node definition
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-
-// Returns the node that is n‑th from the end (1‑based)
-// or null if the list is shorter than n.
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  // Guard against invalid n
-  if (n <= 0) return null;
-
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // Advance fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null; // n > length
-    fast = fast.next;
-  }
-
-  // Edge case: n equals the list length ⇒ return head
-  if (!fast) return head;
-
-  // Move both until fast reaches the tail
-  while (fast.next) {
-    fast = fast.next;
-    slow = slow!.next; // slow is guaranteed not null here
-  }
-
-  return slow;
-}
-// Helper to build a list from an array
-function buildList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head: ListNode<T> = { value: arr[0], next: null };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { value: arr[i], next: null };
-    current = current.next;
-  }
-  return head;
+function countChar(str: string, target: string): number {
+  // split on the target, then subtract 1 because split returns one more element than matches
+  return str.split(target).length - 1;
 }
 
 // Example
-const head = buildList([10, 20, 30, 40, 50]);
+console.log(countChar("hello world", "l")); // 3
+function countCharWithRegex(str: string, target: string): number {
+  const matches = str.match(new RegExp(target, 'g'));
+  return matches ? matches.length : 0;
+}
 
-console.log(nthFromEnd(head, 1)?.value); // 50 (last)
-console.log(nthFromEnd(head, 3)?.value); // 30
-console.log(nthFromEnd(head, 5)?.value); // 10 (first)
-console.log(nthFromEnd(head, 6));        // null (too big)
+// Example
+console.log(countCharWithRegex("hello world", "l")); // 3
+console.log(countCharWithRegex("hello world", "z")); // 0
+function countLoop(str: string, target: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
+  }
+  return count;
+}
+
+// Example
+console.log(countLoop('hello world', 'l')); // 3
+function countReduce(str: string, target: string): number {
+  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
+}
+// Equivalent to looping, but shows functional style
+import { count } from 'lodash';
+
+count('hello world', 'l'); // 3
