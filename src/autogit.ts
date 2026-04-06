@@ -1,27 +1,38 @@
 /**
- * Returns true if `n` is a prime number, false otherwise.
- * Handles integer inputs, explicitly rejects non‑integers and numbers ≤ 1.
+ * Performs an interpolation search on a strictly‑increasing array of numbers.
+ * @param arr   The sorted array (ascending).  Values must be finite numbers.
+ * @param key   The value you’re looking for.
+ * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
  */
-function isPrime(n: number): boolean {
-  // 0, 1, negatives and non‑integers are not prime
-  if (!Number.isInteger(n) || n < 2) return false;
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // 2 and 3 are prime
-  if (n === 2 || n === 3) return true;
+  let low = 0;
+  let high = arr.length - 1;
 
-  // Eliminate even numbers and multiples of 3 early
-  if (n % 2 === 0 || n % 3 === 0) return false;
+  // If the target is outside the range, we can bail early.
+  if (key < arr[low] || key > arr[high]) return -1;
 
-  // Only test up to √n. Use step 6k±1 pattern to skip even numbers.
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 5; i <= limit; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
+  while (low <= high && arr[low] !== arr[high]) {
+    // Estimate the likely position: a weighted average.
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    // Safety: clamp to array bounds.
+    if (pos < low)   return -1;
+    if (pos > high)  return -1;
+
+    const val = arr[pos];
+
+    if (val === key) return pos;
+    if (val < key)   low = pos + 1;
+    else             high = pos - 1;
   }
 
-  return true;
+  // Final check if low might still hold the key.
+  return (arr[low] === key) ? low : -1;
 }
-console.log(isPrime(1));   // false
-console.log(isPrime(2));   // true
-console.log(isPrime(29));  // true
-console.log(isPrime(30));  // false
-console.log(isPrime(97));  // true
+const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+const idx = interpolationSearch(nums, 18); // 5
+console.log(idx); // prints 5
