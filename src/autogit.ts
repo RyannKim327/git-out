@@ -1,30 +1,23 @@
-/**
- * Convert a decimal number to its binary representation.
- *
- * @param dec - A Number or a string that can be parsed to a Number.
- * @returns The binary string.
- */
-function toBinary(dec: number | string): string {
-  // If a string was passed, turn it into a number first.
-  const numericValue = Number(dec);
-
-  // Do a sanity check – NaN results in an empty string.
-  if (isNaN(numericValue)) {
-    throw new Error('Input must be a valid number');
-  }
-
-  // Convert to binary.
-  return numericValue.toString(2);
+// 1️⃣  Node definition
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-/* --- Usage examples --- */
-console.log(toBinary(10));          // "1010"
-console.log(toBinary('255'));       // "11111111"
-console.log(toBinary(1000));        // "1111101000"
-const digits = toBinary(42).split('').map(Number);
-// digits => [1, 0, 1, 0, 1, 0]
-function toBinaryBigInt(n: bigint): string {
-  return n.toString(2);
-}
+// 2️⃣  Recursive depth counter
+function maxDepth<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;                      // base case – empty subtree
 
-console.log(toBinaryBigInt(12345678901234567890n)); // big binary string
+  // compute depth of each side, pick the larger one, then add 1 for the current node
+  const leftHeight  = maxDepth(root.left);
+  const rightHeight = maxDepth(root.right);
+  return Math.max(leftHeight, rightHeight) + 1;
+}
+const root: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
+
+console.log(maxDepth(root));  // 3
