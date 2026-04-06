@@ -1,23 +1,27 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Returns true if `n` is a prime number, false otherwise.
+ * Handles integer inputs, explicitly rejects non‑integers and numbers ≤ 1.
+ */
+function isPrime(n: number): boolean {
+  // 0, 1, negatives and non‑integers are not prime
+  if (!Number.isInteger(n) || n < 2) return false;
+
+  // 2 and 3 are prime
+  if (n === 2 || n === 3) return true;
+
+  // Eliminate even numbers and multiples of 3 early
+  if (n % 2 === 0 || n % 3 === 0) return false;
+
+  // Only test up to √n. Use step 6k±1 pattern to skip even numbers.
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+  }
+
+  return true;
 }
-
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
-
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
-}
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(maxDepth(root));  // 3
+console.log(isPrime(1));   // false
+console.log(isPrime(2));   // true
+console.log(isPrime(29));  // true
+console.log(isPrime(30));  // false
+console.log(isPrime(97));  // true
