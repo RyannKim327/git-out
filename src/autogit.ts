@@ -1,18 +1,13 @@
-const arr = [1, 2, 3, 4, 5];
+const numbers: number[] = [12, 5, 78, 3, 42];
 
-// In‑place reversal
-arr.reverse();          // arr becomes [5, 4, 3, 2, 1]
+const maxValue = numbers.length
+  ? Math.max(...numbers)
+  : NaN;   // or throw, or return a sentinel value
 
-// If you need a new array instead of mutating the original
-const reversed = [...arr].reverse();   // [5, 4, 3, 2, 1]
-
-// Or do it manually (e.g., for learning or if you want a custom logic)
-function reverse<T>(src: T[]): T[] {
-  const out: T[] = [];
-  for (let i = src.length - 1; i >= 0; i--) {
-    out.push(src[i]);
-  }
-  return out;
+console.log(maxValue);   // 78
+function maxInArray<T>(arr: T[]): T | undefined {
+  if (!arr.length) return undefined; // or throw if you prefer
+  return arr.reduce((a, b) => (a > b ? a : b));
 }
 
-const manualReversed = reverse([10, 20, 30]); // [30, 20, 10]
+const max = maxInArray([12, 5, 78, 3, 42]); // 78
