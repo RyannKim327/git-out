@@ -1,31 +1,46 @@
-const original = [1, 2, 3, 4, 5];
-
-// Suppose you want to drop all 3’s (or just the first one you hit)
-const removed = original.filter(v => v !== 3);
-console.log(removed); // [1, 2, 4, 5]
-const idx = original.indexOf(3);
-const removedFirst =
-  idx === -1 ? original : [...original.slice(0, idx), ...original.slice(idx + 1)];
-const arr = [1, 2, 3, 4, 5];
-const index = arr.indexOf(3);
-if (index !== -1) {
-  arr.splice(index, 1); // removes 1 element at that index
+interface TreeNode<T = any> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-console.log(arr); // [1, 2, 4, 5]
-const original = ['a', 'b', 'c', 'd'];
-const removeAt = 2; // remove the element at position 2 ("c")
-const newArr = [...original.slice(0, removeAt), ...original.slice(removeAt + 1)];
-console.log(newArr); // ['a', 'b', 'd']
-const arr = ['a', 'b', 'c', 'd'];
-arr.splice(2, 1); // remove the element at index 2
-console.log(arr); // ['a', 'b', 'd']
-const items = ['red', 'green', 'blue', 'green'];
-const toRemove = 'green';
-const result = Array.from(new Set(items.filter(v => v !== toRemove)));
-function removeByValue<T>(arr: readonly T[], value: T): T[] {
-  return arr.filter(v => !Object.is(v, value));
-}
+function countLeaves<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                     // empty tree
+  if (!root.left && !root.right) return 1; // leaf
 
-// Usage
-const numbers = [1, 2, 3, 3, 4];
-const cleaned = removeByValue(numbers, 3); // [1, 2, 4]
+  // otherwise count leaves in both sub‑trees
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let count = 0;
+  const stack: TreeNode<T>[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+
+    if (!node.left && !node.right) {
+      count++;
+    } else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+
+  return count;
+}
+const root: TreeNode<number> = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 }
+  },
+  right: {
+    value: 3,
+    right: { value: 6 }
+  }
+};
+
+console.log(countLeaves(root));          // → 3  (4, 5, 6)
+console.log(countLeavesIter(root));      // → 3
