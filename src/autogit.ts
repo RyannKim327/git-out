@@ -1,62 +1,72 @@
 /**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
+ * Return the majority element of an array – the value that occurs
+ * strictly more than half the time. If no such element exists the
+ * function throws an Error.
  *
- * Complexity: O(m)
+ * @param arr Array of comparable values (e.g. numbers, strings, etc.)
  */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
+export function majorityElement<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new Error('Array is empty');
+  }
 
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
+  // Phase 1 – Find a candidate
+  let candidate = arr[0];
+  let count = 1;
+
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
     } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
       }
     }
   }
-  return lps;
-}
 
-/**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
-
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
-    }
+  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
   }
-  return -1; // no match
+
+  if (count > Math.floor(arr.length / 2)) {
+    return candidate;
+  }
+
+  throw new Error('No majority element found');
 }
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
+export function majorityElementWithMap<T>(arr: T[]): T {
+  const freq = new Map<T, number>();
+
+  // Count occurrences
+  for (const v of arr) {
+    freq.set(v, (freq.get(v) ?? 0) + 1);
+  }
+
+  // Find the element that tops the midway mark
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, count] of freq) {
+    if (count > threshold) return val;
+  }
+
+  throw new Error('No majority element found');
+}
+export function majorityElementSorted<T>(arr: T[]): T {
+  if (arr.length === 0) throw new Error('Array is empty');
+
+  const sorted = [...arr].sort();  // shallow copy + in‑place sort
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  
+  // Optional: verify the candidate
+  let count = 0;
+  for (const v of arr) if (v === candidate) count++;
+  if (count > Math.floor(arr.length / 2)) return candidate;
+
+  throw new Error('No majority element found');
+}
+console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
+console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
+console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
