@@ -1,32 +1,30 @@
-function countChar(str: string, target: string): number {
-  // split on the target, then subtract 1 because split returns one more element than matches
-  return str.split(target).length - 1;
-}
+/**
+ * Return the second largest distinct value in an array.
+ * @param arr – numeric array
+ * @returns The second largest number or `undefined` if it doesn’t exist
+ */
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;  // not enough elements
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countCharWithRegex(str: string, target: string): number {
-  const matches = str.match(new RegExp(target, 'g'));
-  return matches ? matches.length : 0;
-}
+  let max = -Infinity;
+  let second = -Infinity;
 
-// Example
-console.log(countCharWithRegex("hello world", "l")); // 3
-console.log(countCharWithRegex("hello world", "z")); // 0
-function countLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+  for (const x of arr) {
+    if (x > max) {
+      second = max;   // previous max becomes second
+      max = x;
+    } else if (x < max && x > second) {
+      second = x;     // distinct candidate for second
+    }
+    // values equal to max are ignored – we want distinct numbers
   }
-  return count;
+
+  return second === -Infinity ? undefined : second;
 }
 
-// Example
-console.log(countLoop('hello world', 'l')); // 3
-function countReduce(str: string, target: string): number {
-  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
+// Example:
+console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
+function secondLargestSorted(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)].sort((a, b) => b - a);
+  return unique[1];           // undefined if not enough distinct values
 }
-// Equivalent to looping, but shows functional style
-import { count } from 'lodash';
-
-count('hello world', 'l'); // 3
