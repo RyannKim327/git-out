@@ -1,72 +1,54 @@
-/**
- * Return the majority element of an array – the value that occurs
- * strictly more than half the time. If no such element exists the
- * function throws an Error.
- *
- * @param arr Array of comparable values (e.g. numbers, strings, etc.)
- */
-export function majorityElement<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new Error('Array is empty');
+// A minimal, singly‑linked node definition
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
+
+// Returns the node that is n‑th from the end (1‑based)
+// or null if the list is shorter than n.
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  // Guard against invalid n
+  if (n <= 0) return null;
+
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
+
+  // Advance fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // n > length
+    fast = fast.next;
   }
 
-  // Phase 1 – Find a candidate
-  let candidate = arr[0];
-  let count = 1;
+  // Edge case: n equals the list length ⇒ return head
+  if (!fast) return head;
 
+  // Move both until fast reaches the tail
+  while (fast.next) {
+    fast = fast.next;
+    slow = slow!.next; // slow is guaranteed not null here
+  }
+
+  return slow;
+}
+// Helper to build a list from an array
+function buildList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head: ListNode<T> = { value: arr[0], next: null };
+  let current = head;
   for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
-      }
-    }
+    current.next = { value: arr[i], next: null };
+    current = current.next;
   }
-
-  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  if (count > Math.floor(arr.length / 2)) {
-    return candidate;
-  }
-
-  throw new Error('No majority element found');
+  return head;
 }
-export function majorityElementWithMap<T>(arr: T[]): T {
-  const freq = new Map<T, number>();
 
-  // Count occurrences
-  for (const v of arr) {
-    freq.set(v, (freq.get(v) ?? 0) + 1);
-  }
+// Example
+const head = buildList([10, 20, 30, 40, 50]);
 
-  // Find the element that tops the midway mark
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, count] of freq) {
-    if (count > threshold) return val;
-  }
-
-  throw new Error('No majority element found');
-}
-export function majorityElementSorted<T>(arr: T[]): T {
-  if (arr.length === 0) throw new Error('Array is empty');
-
-  const sorted = [...arr].sort();  // shallow copy + in‑place sort
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  
-  // Optional: verify the candidate
-  let count = 0;
-  for (const v of arr) if (v === candidate) count++;
-  if (count > Math.floor(arr.length / 2)) return candidate;
-
-  throw new Error('No majority element found');
-}
-console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
-console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
-console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
+console.log(nthFromEnd(head, 1)?.value); // 50 (last)
+console.log(nthFromEnd(head, 3)?.value); // 30
+console.log(nthFromEnd(head, 5)?.value); // 10 (first)
+console.log(nthFromEnd(head, 6));        // null (too big)
