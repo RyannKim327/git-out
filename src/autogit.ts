@@ -1,30 +1,23 @@
-/**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
+function firstRepeatedChar(s: string): string | undefined {
+  // Use a set to record characters we've already seen.
+  const seen = new Set<string>();
 
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      // This is the first time we hit a duplicate.
+      return ch;
     }
-    // values equal to max are ignored – we want distinct numbers
+    seen.add(ch);
   }
 
-  return second === -Infinity ? undefined : second;
+  // No duplicates found.
+  return undefined;
 }
 
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
+// Example usage
+console.log(firstRepeatedChar("hello"));    // → "l"
+console.log(firstRepeatedChar("abcdef"));   // → undefined
+console.log(firstRepeatedChar("aabbcc"));   // → "a"
+function firstRepeatedCharImmutable(s: string): string | undefined {
+  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
 }
