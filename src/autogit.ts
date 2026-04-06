@@ -1,90 +1,38 @@
-// ------------------------------------------------------------------
-// Breadth‑Limited Search (BLS)
-// ------------------------------------------------------------------
-
 /**
- * A node in the frontier.
- * `state`   – whatever you want to search over (string, number, object…)
- * `depth`   – how many steps we’ve taken from the start
- */
-type FrontierNode<T> = { state: T; depth: number };
-
-/**
- * Basic graph helper: adjacency list.
- * For arbitrary graphs you can swap this for a function that returns
- * the successors of a vertex.
- */
-type AdjList<T> = Map<T, T[]>;
-
-/**
- * Breadth‑limited search.
+ * Return the same sentence but with the words in reverse order.
  *
- * @param start          - starting state
- * @param isGoal         - predicate that tells us whether a state is a goal
- * @param getNeighbors   - how to obtain successors of a state
- * @param maxDepth       - stop expanding nodes at this depth
- * @returns              - the first goal state found, or undefined
+ * @param sentence - Any string you want to flip.
+ * @returns A new string with the word order reversed.
  */
-export function breadthLimitedSearch<T>(
-  start: T,
-  isGoal: (state: T) => boolean,
-  getNeighbors: (state: T) => T[],
-  maxDepth: number
-): T | undefined {
-  // Queue for BFS (FIFO)
-  const queue: FrontierNode<T>[] = [{ state: start, depth: 0 }];
-  const visited = new Set<T>();
-
-  while (queue.length) {
-    const { state, depth } = queue.shift()!;   // pop the oldest node
-
-    if (visited.has(state)) continue; // ignore duplicates
-    visited.add(state);
-
-    if (isGoal(state)) return state;          // found what we want
-
-    // Don't go deeper than the limit
-    if (depth === maxDepth) continue;
-
-    // Enqueue all unvisited successors
-    for (const next of getNeighbors(state)) {
-      if (!visited.has(next)) {
-        queue.push({ state: next, depth: depth + 1 });
-      }
-    }
-  }
-
-  // No goal reached within the depth bound
-  return undefined;
+export function reverseWords(sentence: string): string {
+  return sentence
+    .trim()                      // Remove leading/trailing spaces
+    .split(/\s+/)                // Split on one or more whitespace characters
+    .reverse()                   // Reverse the word array
+    .join(' ');                  // Re‑join with a single space
 }
-// Example: find a word that is 3 letters away from "cat" in a tiny
-// word‑graph (adjacent words differ by one character).
 
-const words = ["cat", "bat", "bet", "bed", "ded", "dog", "dig"];
+/* Example usage */
+const original = "The quick brown   fox jumps over the lazy dog";
+console.log(reverseWords(original));
+// → "dog lazy the over jumps fox brown quick The"
+export function reverseWordsWithSpacing(str: string): string {
+  const parts = str.match(/(\S+|\s+)/g) ?? []; // captures words and whitespace chunks
+  let words: string[] = [];
+  const wordTokens: string[] = [];
 
-// Build an adjacency list (one‑letter edits)
-const graph: AdjList<string> = new Map();
-words.forEach(w => {
-  const adj: string[] = [];
-  for (const other of words) {
-    if (w !== other && w.split("").some((c, i) => c !== other[i])) {
-      // True only if they differ by ONE character
-      if (w.split("").filter((c, i) => c !== other[i]).length <= 1) {
-        adj.push(other);
-      }
+  // Extract words while preserving the positions of the separators
+  for (const part of parts) {
+    if (part.trim() === '') {
+      words.push(part); // this part is whitespace
+    } else {
+      wordTokens.push(part); // capture the word
     }
   }
-  graph.set(w, adj);
-});
 
-const start = "cat";
-const goal = "dig";
-
-const found = breadthLimitedSearch(
-  start,
-  s => s === goal,
-  s => graph.get(s) ?? [],
-  3                       // depth limit
-);
-
-console.log(found); // prints "dig" or undefined if no path ≤ 3 steps
+  // Reverse only the words, then reconstruct
+  const reversedWords = wordTokens.reverse();
+  let i = 0;
+  const result = parts.map(p => (p.trim() === '' ? p : reversedWords[i++])).join('');
+  return result;
+}
