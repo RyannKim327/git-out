@@ -1,81 +1,34 @@
-/**
- * Tarjan's algorithm (1990) – O(V + E) time.
- *
- * Input
- * -----
- * `graph`   : 0‑based adjacency list.  graph[v] is an array of vertices
- *              that v points to.
- *
- * Output
- * ------
- * An array of SCCs.  Each SCC is an array of vertex indices.  The
- * components are returned in reverse topological order (the first
- * component in the list is one that has no outgoing edges to earlier
- * components).
- */
-
-export function tarjanSCC(graph: number[][]): number[][] {
-  const n = graph.length;
-  const indices = new Array<number>(n).fill(-1);   // order in which nodes were visited
-  const lowlink = new Array<number>(n).fill(-1);   // smallest index reachable from node
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
-  const sccs: number[][] = [];
-
-  let currentIndex = 0;
-
-  const strongConnect = (v: number): void => {
-    // Set the depth index for v to the smallest unused index
-    indices[v] = currentIndex;
-    lowlink[v] = currentIndex;
-    currentIndex++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // Consider successors of v
-    for (const w of graph[v]) {
-      if (indices[w] === -1) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → v is in the same SCC as w
-        lowlink[v] = Math.min(lowlink[v], indices[w]);
-      }
-    }
-
-    // If v is a root node, pop the stack and generate an SCC
-    if (lowlink[v] === indices[v]) {
-      const component: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop() as number;   // stack never empty here
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  };
-
-  // Run DFS from every node that hasn't been visited yet
-  for (let v = 0; v < n; v++) {
-    if (indices[v] === -1) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
 }
-const graph = [
-  [1],          // 0 → 1
-  [2],          // 1 → 2
-  [0, 3],       // 2 → 0 (cycle 0‑1‑2) and → 3
-  [4],          // 3 → 4
-  [5],          // 4 → 5
-  [3],          // 5 → 3 (cycle 3‑4‑5)
-  []            // 6 isolated
-];
-
-const sccs = tarjanSCC(graph);
-console.log(sccs);
-// Possible output: [[6], [0, 1, 2], [3, 4, 5]]
+function reverseUnicodeString(str: string): string {
+  const chars: string[] = [];
+  for (const ch of str) {
+    chars.unshift(ch);            // add each code‑point to the front
+  }
+  return chars.join('');
+}
+function reverseStringLoop(str: string): string {
+  const buf = str.split('');
+  let i = 0;
+  let j = buf.length - 1;
+  while (i < j) {
+    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
+    ++i;
+    --j;
+  }
+  return buf.join('');
+}
+function reverseFunctional(str: string): string {
+  return [...str].reduceRight((acc, char) => acc + char, '');
+}
+function reverseStringFast(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
+  }
+  return result;
+}
+const raw = 'Hello, 🌍!';
+console.log(reverseString(raw));           // "!🌍 ,olleH"
+console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
