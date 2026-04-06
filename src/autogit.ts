@@ -1,30 +1,30 @@
 /**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
+ * Convert a decimal number to its binary representation.
+ *
+ * @param dec - A Number or a string that can be parsed to a Number.
+ * @returns The binary string.
  */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
+function toBinary(dec: number | string): string {
+  // If a string was passed, turn it into a number first.
+  const numericValue = Number(dec);
 
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
-    }
-    // values equal to max are ignored – we want distinct numbers
+  // Do a sanity check – NaN results in an empty string.
+  if (isNaN(numericValue)) {
+    throw new Error('Input must be a valid number');
   }
 
-  return second === -Infinity ? undefined : second;
+  // Convert to binary.
+  return numericValue.toString(2);
 }
 
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
+/* --- Usage examples --- */
+console.log(toBinary(10));          // "1010"
+console.log(toBinary('255'));       // "11111111"
+console.log(toBinary(1000));        // "1111101000"
+const digits = toBinary(42).split('').map(Number);
+// digits => [1, 0, 1, 0, 1, 0]
+function toBinaryBigInt(n: bigint): string {
+  return n.toString(2);
 }
+
+console.log(toBinaryBigInt(12345678901234567890n)); // big binary string
