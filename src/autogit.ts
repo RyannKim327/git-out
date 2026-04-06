@@ -1,128 +1,66 @@
-// ---------- TYPES ----------
-type Comparator<T> = (a: T, b: T) => number;
+/**
+ * Fibonacci Search
+ *
+ * @param arr  – sorted array (ascending)
+ * @param target – value that we want to locate
+ * @returns the index of target or −1 if it isn't present
+ */
+export function fibonacciSearch<T>(
+    arr: readonly T[],
+    target: T,
+    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+    const n = arr.length;
 
-interface Node<T> {
-  key: T;
-  left: Node<T> | null;
-  right: Node<T> | null;
-}
+    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
+    let fibMMm2 = 0; // (m‑2)’th Fibonacci
+    let fibMMm1 = 1; // (m‑1)’th Fibonacci
+    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
 
-// ---------- BST CLASS ----------
-class BinarySearchTree<T> {
-  // root can stay undefined at construction time
-  private root: Node<T> | null = null;
-
-  /**
-   * Allows you to plug in any way you want keys compared.
-   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
-   */
-  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
-
-  /** Insert new key into tree */
-  insert(key: T): void {
-    const node: Node<T> = { key, left: null, right: null };
-    if (!this.root) {
-      this.root = node;
-      return;
+    while (fibM < n) {
+        fibMMm2 = fibMMm1;
+        fibMMm1 = fibM;
+        fibM = fibMMm2 + fibMMm1;
     }
 
-    let curr = this.root;
-    while (true) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        if (curr.left) {
-          curr = curr.left;
-        } else {
-          curr.left = node;
-          break;
+    // ---- 2. Marks the eliminated range from front ----
+    let offset = -1;
+
+    // ---- 3. While there are elements to inspect ----
+    while (fibM > 1) {
+        // Calculate the index to check
+        const i = Math.min(offset + fibMMm2, n - 1);
+
+        const comp = cmp(arr[i], target);
+
+        // case 1: the target is greater than the value at index i
+        if (comp < 0) {
+            fibM = fibMMm1;
+            fibMMm1 = fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+            offset = i;
         }
-      } else if (cmp > 0) {
-        if (curr.right) {
-          curr = curr.right;
-        } else {
-          curr.right = node;
-          break;
+        // case 2: the target is less than the value at index i
+        else if (comp > 0) {
+            fibM = fibMMm2;
+            fibMMm1 = fibMMm1 - fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
         }
-      } else {
-        // key already exists – replace or ignore, here we ignore
-        break;
-      }
+        // case 3: element found
+        else {
+            return i;
+        }
     }
-  }
 
-  /** Search for a key. Returns the node if found or null. */
-  search(key: T): Node<T> | null {
-    let curr = this.root;
-    while (curr) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        curr = curr.left;
-      } else if (cmp > 0) {
-        curr = curr.right;
-      } else {
-        return curr;
-      }
+    // ---- 4. If the last remaining element is the target ----
+    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
+        return offset + 1;
     }
-    return null;
-  }
 
-  /** In‑order traversal – gives sorted keys. */
-  inorder(callback: (key: T) => void): void {
-    function walk(node: Node<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      callback(node.key);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  /** Delete a key. Simple implementation that preserves BST shape. */
-  delete(key: T): void {
-    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
-      if (!node) return null;
-
-      const cmp = this.cmp(key, node.key);
-      if (cmp < 0) {
-        node.left = deleteRec(node.left, key);
-      } else if (cmp > 0) {
-        node.right = deleteRec(node.right, key);
-      } else {
-        // node to delete found
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
-
-        // two children: find in‑order successor (smallest node on right)
-        let succ = node.right;
-        while (succ.left) succ = succ.left;
-        node.key = succ.key; // copy successor key
-        node.right = deleteRec(node.right, succ.key); // delete successor
-      }
-      return node;
-    };
-
-    this.root = deleteRec(this.root, key);
-  }
+    return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+const idx = fibonacciSearch(nums, 13);
 
-// ---------- DEFAULT COMPARATOR ----------
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-
-// ---------- USAGE EXAMPLE ----------
-const bst = new BinarySearchTree<number>();
-
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
-
-console.log('Search 5:', bst.search(5) !== null);   // true
-console.log('Search 4:', bst.search(4) !== null);   // false
-
-console.log('In‑order traversal:');
-bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
-
-bst.delete(7);
-console.log('After deleting 7:');
-bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
+console.log(idx); // → 6
+console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
