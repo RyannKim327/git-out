@@ -1,102 +1,90 @@
-/** One directed edge in the graph */
-interface Edge {
-  from: number;   // source vertex id
-  to: number;     // target vertex id
-  weight: number; // edge weight
-}
+// ------------------------------------------------------------------
+// Breadth‑Limited Search (BLS)
+// ------------------------------------------------------------------
 
-/** Graph represented only by its edge list */
-type Graph = Edge[];
-
-/** Result of the shortest‑path computation */
-interface BellmanFordResult {
-  /** distance from source to every vertex (Infinity if unreachable) */
-  distances: number[];
-  /** predecessor of each vertex on the shortest path tree */
-  predecessors: (number | null)[];
-  /** true if a negative cycle was detected that is reachable from the source */
-  negativeCycleDetected: boolean;
-}
 /**
- * Bellman‑Ford single‑source shortest‑path solver.
- * @param edges  complete list of directed edges in the graph
- * @param vertexCount total number of vertices, 0 … vertexCount‑1
- * @param source id of the source vertex
- * @returns distances, predecessors and a flag for a reachable negative cycle
+ * A node in the frontier.
+ * `state`   – whatever you want to search over (string, number, object…)
+ * `depth`   – how many steps we’ve taken from the start
  */
-export function bellmanFord(
-  edges: Graph,
-  vertexCount: number,
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+type FrontierNode<T> = { state: T; depth: number };
 
-  const distances = Array(vertexCount).fill(INF);
-  const predecessors = Array<null | number>(vertexCount).fill(null);
+/**
+ * Basic graph helper: adjacency list.
+ * For arbitrary graphs you can swap this for a function that returns
+ * the successors of a vertex.
+ */
+type AdjList<T> = Map<T, T[]>;
 
-  distances[source] = 0;
+/**
+ * Breadth‑limited search.
+ *
+ * @param start          - starting state
+ * @param isGoal         - predicate that tells us whether a state is a goal
+ * @param getNeighbors   - how to obtain successors of a state
+ * @param maxDepth       - stop expanding nodes at this depth
+ * @returns              - the first goal state found, or undefined
+ */
+export function breadthLimitedSearch<T>(
+  start: T,
+  isGoal: (state: T) => boolean,
+  getNeighbors: (state: T) => T[],
+  maxDepth: number
+): T | undefined {
+  // Queue for BFS (FIFO)
+  const queue: FrontierNode<T>[] = [{ state: start, depth: 0 }];
+  const visited = new Set<T>();
 
-  /* Relax edges V‑1 times */
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const e of edges) {
-      const { from, to, weight } = e;
-      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
+  while (queue.length) {
+    const { state, depth } = queue.shift()!;   // pop the oldest node
+
+    if (visited.has(state)) continue; // ignore duplicates
+    visited.add(state);
+
+    if (isGoal(state)) return state;          // found what we want
+
+    // Don't go deeper than the limit
+    if (depth === maxDepth) continue;
+
+    // Enqueue all unvisited successors
+    for (const next of getNeighbors(state)) {
+      if (!visited.has(next)) {
+        queue.push({ state: next, depth: depth + 1 });
       }
     }
-    /* Early exit if no relaxation happened */
-    if (!changed) break;
   }
 
-  /* Check for negative‑weight cycles reachable from source */
-  let negativeCycleDetected = false;
-  for (const e of edges) {
-    const { from, to, weight } = e;
-    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-      negativeCycleDetected = true;
-      break;
+  // No goal reached within the depth bound
+  return undefined;
+}
+// Example: find a word that is 3 letters away from "cat" in a tiny
+// word‑graph (adjacent words differ by one character).
+
+const words = ["cat", "bat", "bet", "bed", "ded", "dog", "dig"];
+
+// Build an adjacency list (one‑letter edits)
+const graph: AdjList<string> = new Map();
+words.forEach(w => {
+  const adj: string[] = [];
+  for (const other of words) {
+    if (w !== other && w.split("").some((c, i) => c !== other[i])) {
+      // True only if they differ by ONE character
+      if (w.split("").filter((c, i) => c !== other[i]).length <= 1) {
+        adj.push(other);
+      }
     }
   }
+  graph.set(w, adj);
+});
 
-  return { distances, predecessors, negativeCycleDetected };
-}
-/**
- * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
- * Returns `undefined` if the target is unreachable.
- */
-export function reconstructPath(
-  target: number,
-  predecessors: (number | null)[]
-): number[] | undefined {
-  if (predecessors[target] === null) return undefined;
+const start = "cat";
+const goal = "dig";
 
-  const path: number[] = [];
-  for (let v = target; v !== null; v = predecessors[v]) {
-    path.push(v);
-  }
-  return path.reverse();
-}
-// A small graph with both positive and negative edges
-const graph: Graph = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -3 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 4 },
-];
+const found = breadthLimitedSearch(
+  start,
+  s => s === goal,
+  s => graph.get(s) ?? [],
+  3                       // depth limit
+);
 
-const vertexCount = 4;          // vertices 0 … 3
-const source = 0;
-const result = bellmanFord(graph, vertexCount, source);
-
-console.log('Distances:', result.distances);
-// [0, 1, 2, 3]
-
-console.log('Negative cycle detected?', result.negativeCycleDetected);
-// false
-
-const pathTo3 = reconstructPath(3, result.predecessors);
-console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
+console.log(found); // prints "dig" or undefined if no path ≤ 3 steps
