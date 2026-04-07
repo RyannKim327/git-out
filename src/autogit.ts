@@ -1,24 +1,27 @@
 /**
- * Returns the mean of a non‑empty list of numbers.
- * Throws if the array is empty or contains non‑numeric values.
+ * Returns true if `str` reads the same forwards and backwards.
  *
- * @param numbers – an array of numbers
- * @returns the arithmetic mean
+ * @param str – The string you want to test.
+ * @returns  boolean – palindrome status.
  */
-function mean(numbers: readonly number[]): number {
-  if (numbers.length === 0) {
-    throw new Error('Cannot compute mean of an empty array.');
-  }
+export function isPalindrome(str: string): boolean {
+  // Remove all non‑alphanumeric characters and ignore case.
+  const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
-  const sum = numbers.reduce((acc, val) => {
-    if (typeof val !== 'number' || Number.isNaN(val)) {
-      throw new Error(`Invalid value detected: ${val}`);
+  // Two‑pointer scan is faster than reversing a long string.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
     }
-    return acc + val;
-  }, 0);
-
-  return sum / numbers.length;
+    left++;
+    right--;
+  }
+  return true;
 }
-const scores = [80, 92, 75, 88];
-
-console.log(mean(scores)); // → 84.25
+console.log(isPalindrome('racecar'));          // true
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('hello'));            // false
+console.log(isPalindrome(''));                 // true (empty string)
