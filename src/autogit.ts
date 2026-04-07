@@ -1,44 +1,35 @@
-const original = [1, 2, 3, 2, 4, 1];
-
-const withoutDups = Array.from(new Set(original)); // [1, 2, 3, 4]
-const arr = [
-  { id: 1, name: 'A' },
-  { id: 2, name: 'B' },
-  { id: 1, name: 'A' }, // duplicate by id
-];
-
-const seen = new Set<number>();
-const unique = arr.filter(item => {
-  const key = item.id;                 // pick what defines uniqueness
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-});
-// [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
-const arr = [
-  { id: 'x', data: 10 },
-  { id: 'y', data: 20 },
-  { id: 'x', data: 30 }, // later duplicate
-];
-
-const map = new Map<string, typeof arr[0]>();
-for (const item of arr) {
-  if (!map.has(item.id)) map.set(item.id, item);
-}
-const withoutDups = Array.from(map.values()); // keeps the first 'x'
-function uniq<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr));
-}
-const nums = uniq([4, 5, 4, 6, 5]); // [4, 5, 6]
-const arr = [1, 2, 3, 2, 4];
-
-const unique = arr.reduce<T[]>((acc, cur) => {
-  if (!acc.includes(cur)) acc.push(cur);
-  return acc;
-}, []); // [1, 2, 3, 4]
-function dedupe<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr));
+// A very lightweight node definition –
+export class ListNode {
+  constructor(public val: number, public next: ListNode | null = null) {}
 }
 
-console.log(dedupe([1, 2, 2, 3])); // 1 2 3
-console.log(dedupe(['a', 'b', 'a'])); // a b
+/**
+ * Returns the middle node of a linked list.
+ * If there are an even number of nodes, it returns the *first* of the two middle nodes.
+ * (Adjust `result` if you prefer the second middle node instead.)
+ */
+export function findMiddle(head: ListNode | null): ListNode | null {
+  if (!head) return null;
+
+  let slow = head;          // moves one step at a time
+  let fast = head;          // moves two steps at a time
+
+  // Advance until fast reaches the end
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  return slow;   // `slow` rests right on the middle (or first middle)
+}
+// Helper to build a list quickly
+const build = (values: number[]) =>
+  values.reduceRight((next, v) => new ListNode(v, next), null as any);
+
+// 1 → 2 → 3 → 4 → 5   → middle is 3
+const list1 = build([1, 2, 3, 4, 5]);
+console.log(findMiddle(list1)!.val); // 3
+
+// 1 → 2 → 3 → 4        → middle returned is 2
+const list2 = build([1, 2, 3, 4]);
+console.log(findMiddle(list2)!.val); // 2
