@@ -1,48 +1,30 @@
 /**
- * Bubble‑sort an array.
- *
- * @param arr          The array to sort (does not get mutated).
- * @param compareFn    Optional comparison function.  
- *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
- *                     If omitted, the default comparator uses the `<` and `>` operators that work
- *                     for numbers, strings and any type that can be compared that way.
- * @returns            A new array containing the elements of `arr` in ascending order.
+ * Return the second largest distinct value in an array.
+ * @param arr – numeric array
+ * @returns The second largest number or `undefined` if it doesn’t exist
  */
-export function bubbleSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  // Make a shallow copy; we don’t want to touch the caller’s array
-  const result = [...arr];
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;  // not enough elements
 
-  const compare = compareFn ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  let max = -Infinity;
+  let second = -Infinity;
 
-  const n = result.length;
-  if (n < 2) return result; // already sorted
-
-  let swapped: boolean;
-  // Standard bubble‑sort: keep looping while we keep swapping
-  do {
-    swapped = false;
-    for (let i = 0; i < n - 1; i++) {
-      if (compare(result[i], result[i + 1]) > 0) {
-        // swap
-        [result[i], result[i + 1]] = [result[i + 1], result[i]];
-        swapped = true;
-      }
+  for (const x of arr) {
+    if (x > max) {
+      second = max;   // previous max becomes second
+      max = x;
+    } else if (x < max && x > second) {
+      second = x;     // distinct candidate for second
     }
-  } while (swapped);
+    // values equal to max are ignored – we want distinct numbers
+  }
 
-  return result;
+  return second === -Infinity ? undefined : second;
 }
-const unsorted = [5, 3, 8, 4, 2];
-const sorted = bubbleSort(unsorted);
-console.log(sorted); // [2, 3, 4, 5, 8]
-console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
-const words = ["banana", "Apple", "cherry"];
-const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(sortedByCase); // ["Apple", "banana", "cherry"]
+
+// Example:
+console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
+function secondLargestSorted(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)].sort((a, b) => b - a);
+  return unique[1];           // undefined if not enough distinct values
+}
