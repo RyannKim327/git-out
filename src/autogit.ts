@@ -1,17 +1,23 @@
-const raw = '  Hello,\t\nWorld!  \u3000';
+function firstRepeatedChar(s: string): string | undefined {
+  // Use a set to record characters we've already seen.
+  const seen = new Set<string>();
 
-const trimmed = raw.trim();                 // "Hello,\t\nWorld!  \u3000"
-const noWhitespace = raw.replace(/\s+/g, ''); // "Hello,World!"
-const collapsed = raw.replace(/\s+/g, ' ');   // "Hello, World!"
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      // This is the first time we hit a duplicate.
+      return ch;
+    }
+    seen.add(ch);
+  }
 
-console.log({ trimmed, noWhitespace, collapsed });
-/**
- * Strip all whitespace from a string, or optionally replace it with another string.
- *
- * @param input   The string to clean.
- * @param replace What to put in place of each whitespace run (default: empty string).
- * @returns The cleaned string.
- */
-function cleanWhitespace(input: string, replace = ''): string {
-  return input.replace(/\s+/g, replace);
+  // No duplicates found.
+  return undefined;
+}
+
+// Example usage
+console.log(firstRepeatedChar("hello"));    // → "l"
+console.log(firstRepeatedChar("abcdef"));   // → undefined
+console.log(firstRepeatedChar("aabbcc"));   // → "a"
+function firstRepeatedCharImmutable(s: string): string | undefined {
+  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
 }
