@@ -1,44 +1,68 @@
-const original = [1, 2, 3, 2, 4, 1];
-
-const withoutDups = Array.from(new Set(original)); // [1, 2, 3, 4]
-const arr = [
-  { id: 1, name: 'A' },
-  { id: 2, name: 'B' },
-  { id: 1, name: 'A' }, // duplicate by id
-];
-
-const seen = new Set<number>();
-const unique = arr.filter(item => {
-  const key = item.id;                 // pick what defines uniqueness
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-});
-// [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
-const arr = [
-  { id: 'x', data: 10 },
-  { id: 'y', data: 20 },
-  { id: 'x', data: 30 }, // later duplicate
-];
-
-const map = new Map<string, typeof arr[0]>();
-for (const item of arr) {
-  if (!map.has(item.id)) map.set(item.id, item);
-}
-const withoutDups = Array.from(map.values()); // keeps the first 'x'
-function uniq<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr));
-}
-const nums = uniq([4, 5, 4, 6, 5]); // [4, 5, 6]
-const arr = [1, 2, 3, 2, 4];
-
-const unique = arr.reduce<T[]>((acc, cur) => {
-  if (!acc.includes(cur)) acc.push(cur);
-  return acc;
-}, []); // [1, 2, 3, 4]
-function dedupe<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr));
+// A minimal list node definition
+export class ListNode<T> {
+  constructor(
+    public val: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
-console.log(dedupe([1, 2, 2, 3])); // 1 2 3
-console.log(dedupe(['a', 'b', 'a'])); // a b
+/**
+ * Returns the intersection node, or null if none exists.
+ *
+ * Idea:
+ * 1. Walk each list once to get its length.
+ * 2. Advance the longer list by the length difference.
+ * 3. Move both pointers together – the first time they’re equal
+ *    (by reference) is the intersection.
+ *
+ * Time: O(n + m)   (one pass per list + one optional “skip” pass)
+ * Space: O(1)      (no extra container)
+ */
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  // helper to measure length
+  function len(node: ListNode<T> | null): number {
+    let l = 0;
+    while (node !== null) {
+      l++;
+      node = node.next;
+    }
+    return l;
+  }
+
+  let lenA = len(headA);
+  let lenB = len(headB);
+
+  // Advance the longer head so that the remaining steps are equal
+  let diff = Math.abs(lenA - lenB);
+  let longer = lenA > lenB ? headA : headB;
+  let shorter = lenA > lenB ? headB : headA;
+
+  while (diff--) {
+    if (longer !== null) longer = longer.next;
+  }
+
+  // Walk together until they meet
+  while (longer !== null && shorter !== null) {
+    if (longer === shorter) return longer; // same reference
+    longer = longer.next;
+    shorter = shorter.next;
+  }
+
+  return null; // never intersected
+}
+const a1 = new ListNode(1);
+const a2 = new ListNode(2);
+const a3 = new ListNode(3);
+const a4 = new ListNode(4);
+const a5 = new ListNode(5);
+a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5;
+
+const b1 = new ListNode(9);
+const b2 = new ListNode(8);
+b1.next = b2; b2.next = a3; // both lists point to `a3`
+
+const intersection = getIntersectionNode(a1, b1);
+console.log(intersection?.val); // 3
