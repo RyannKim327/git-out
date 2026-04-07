@@ -1,30 +1,62 @@
 /**
- * Compute n! recursively.
+ * Quick‑sort a mutable array in‑place.
  *
- * @param n – non‑negative integer (or BigInt)
- * @returns n! as the same numeric type that was passed in
+ * @template T The element type to sort.
+ * @param array    The array to sort.
+ * @param compare  Optional comparator:
+ *                 -<0 if a < b
+ *                  0 if a == b
+ *                 >0 if a > b
+ *                  Defaults to the built‑in `<`/`>` for primitive types.
  */
-function factorial(n: number): number;
-function factorial(n: BigInt): BigInt;
-function factorial(n: number | BigInt): number | BigInt {
-  // Validate the input
-  if (typeof n === "number") {
-    if (!Number.isInteger(n) || n < 0) {
-      throw new Error("n must be a non‑negative integer");
+function quickSort<T>(array: T[], compare?: (a: T, b: T) => number): void {
+  const cmp = compare ?? defaultCompare;
+
+  // Public wrapper that starts the recursive routine.
+  sort(0, array.length - 1);
+
+  /** Recursive partitioning */
+  function sort(left: number, right: number): void {
+    if (left >= right) return;          // one element or invalid range
+    const pivotIdx = partition(left, right);
+    sort(left, pivotIdx - 1);            // left partition
+    sort(pivotIdx + 1, right);           // right partition
+  }
+
+  /**
+   * Partition the sub‑array [left … right] around a pivot.
+   * Returns the final pivot index so the caller can split.
+   */
+  function partition(left: number, right: number): number {
+    const pivotIndex = right;            // choose the last element as pivot
+    const pivotValue = array[pivotIndex];
+    let storeIndex = left;               // first place where a value < pivot will go
+
+    for (let i = left; i < right; i++) {
+      if (cmp(array[i], pivotValue) < 0) {
+        [array[i], array[storeIndex]] = [array[storeIndex], array[i]];
+        storeIndex++;
+      }
     }
-    // Base case
-    if (n <= 1) return 1;
-    // Recursive step
-    return n * factorial(n - 1);
-  } else {
-    // BigInt path – same logic, but with BigInt operations
-    if (n < 0n) {
-      throw new Error("n must be a non‑negative integer");
-    }
-    if (n <= 1n) return 1n;
-    return n * factorial(n - 1n);
+    // Move pivot to its final place
+    [array[storeIndex], array[pivotIndex]] = [array[pivotIndex], array[storeIndex]];
+    return storeIndex;
   }
 }
-console.log(factorial(5));   // 120
-console.log(factorial(20));  // 2432902008176640000
-console.log(factorial(20n)); // 2432902008176640000n (BigInt)
+
+/** Default comparator for primitive types. */
+function defaultCompare(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  return a < b ? -1 : 1;
+}
+const nums = [3, 8, 4, 1, 9, 5];
+quickSort(nums);               // sorts in place
+console.log(nums);             // [1, 3, 4, 5, 8, 9]
+
+const words = ["banana", "apple", "pear"];
+quickSort(words);              // defaults to lexical order
+console.log(words);            // ["apple", "banana", "pear"]
+
+// Custom order: descending numbers
+quickSort(nums, (a, b) => b - a);
+console.log(nums);             // [9, 8, 5, 4, 3, 1]
