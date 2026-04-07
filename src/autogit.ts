@@ -1,48 +1,66 @@
 /**
- * Calculates area when you know the base and the altitude
- * @param base   the length of the base
- * @param height the altitude perpendicular to the base
- * @returns area of the triangle
+ * Fibonacci Search
+ *
+ * @param arr  – sorted array (ascending)
+ * @param target – value that we want to locate
+ * @returns the index of target or −1 if it isn't present
  */
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
+export function fibonacciSearch<T>(
+    arr: readonly T[],
+    target: T,
+    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+    const n = arr.length;
+
+    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
+    let fibMMm2 = 0; // (m‑2)’th Fibonacci
+    let fibMMm1 = 1; // (m‑1)’th Fibonacci
+    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
+
+    while (fibM < n) {
+        fibMMm2 = fibMMm1;
+        fibMMm1 = fibM;
+        fibM = fibMMm2 + fibMMm1;
+    }
+
+    // ---- 2. Marks the eliminated range from front ----
+    let offset = -1;
+
+    // ---- 3. While there are elements to inspect ----
+    while (fibM > 1) {
+        // Calculate the index to check
+        const i = Math.min(offset + fibMMm2, n - 1);
+
+        const comp = cmp(arr[i], target);
+
+        // case 1: the target is greater than the value at index i
+        if (comp < 0) {
+            fibM = fibMMm1;
+            fibMMm1 = fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+            offset = i;
+        }
+        // case 2: the target is less than the value at index i
+        else if (comp > 0) {
+            fibM = fibMMm2;
+            fibMMm1 = fibMMm1 - fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+        }
+        // case 3: element found
+        else {
+            return i;
+        }
+    }
+
+    // ---- 4. If the last remaining element is the target ----
+    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
+        return offset + 1;
+    }
+
+    return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+const idx = fibonacciSearch(nums, 13);
 
-// Example
-const area1 = areaBaseHeight(10, 5);   // 25
-/**
- * Calculates area from the three sides using Heron's formula
- * @param a side a
- * @param b side b
- * @param c side c
- * @returns area of the triangle
- * @throws Error if the sides cannot form a triangle
- */
-function areaHeron(a: number, b: number, c: number): number {
-  // Validate triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not form a triangle.');
-  }
-
-  const s = (a + b + c) / 2;                       // semi‑perimeter
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
-
-// Example
-const area2 = areaHeron(3, 4, 5);   // 6
-interface Point { x: number; y: number }
-
-function areaFromCoords(p1: Point, p2: Point, p3: Point): number {
-  return Math.abs(
-    (p1.x * (p2.y - p3.y) +
-     p2.x * (p3.y - p1.y) +
-     p3.x * (p1.y - p2.y)) / 2
-  );
-}
-
-// Example
-const area3 = areaFromCoords(
-  { x: 0, y: 0 },
-  { x: 4, y: 0 },
-  { x: 0, y: 3 }
-);   // 6
+console.log(idx); // → 6
+console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
