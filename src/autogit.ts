@@ -1,30 +1,23 @@
 /**
- * Compute n! recursively.
- *
- * @param n – non‑negative integer (or BigInt)
- * @returns n! as the same numeric type that was passed in
+ * Randomly sorts (shuffles) an array in place.
+ * Uses the Fisher‑Yates algorithm for a uniform shuffle.
  */
-function factorial(n: number): number;
-function factorial(n: BigInt): BigInt;
-function factorial(n: number | BigInt): number | BigInt {
-  // Validate the input
-  if (typeof n === "number") {
-    if (!Number.isInteger(n) || n < 0) {
-      throw new Error("n must be a non‑negative integer");
-    }
-    // Base case
-    if (n <= 1) return 1;
-    // Recursive step
-    return n * factorial(n - 1);
-  } else {
-    // BigInt path – same logic, but with BigInt operations
-    if (n < 0n) {
-      throw new Error("n must be a non‑negative integer");
-    }
-    if (n <= 1n) return 1n;
-    return n * factorial(n - 1n);
+function randomSort<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i (inclusive)
+    const j = Math.floor(Math.random() * (i + 1));
+    // Swap arr[i] and arr[j]
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
+  return arr;
 }
-console.log(factorial(5));   // 120
-console.log(factorial(20));  // 2432902008176640000
-console.log(factorial(20n)); // 2432902008176640000n (BigInt)
+
+// Example usage:
+const numbers = [1, 2, 3, 4, 5];
+console.log('Before:', numbers);
+console.log('After  :', randomSort([...numbers])); // clone to keep original unchanged
+function randomComparator<T>(a: T, b: T) {
+  return Math.random() - 0.5;   // not guaranteed to be a stable sort
+}
+const scrambled = [...numbers].sort(randomComparator);
+console.log(scrambled);
