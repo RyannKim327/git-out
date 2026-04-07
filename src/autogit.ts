@@ -1,25 +1,47 @@
 /**
- * Returns the first character that appears only once in `s`.
- * If every character repeats (or the string is empty), returns `null`.
+ * Does `a` consist of exactly the same letters as `b`, in any order?
+ * The comparison is case‑insensitive and ignores whitespace.
+ *
+ * @param a – first candidate
+ * @param b – second candidate
+ * @returns true if the strings are anagrams, otherwise false
  */
-function firstNonRepeating(s: string): string | null {
-  // 1. Scan the string once to build a frequency map
-  const freq = new Map<string, number>();
+export function isAnagram(a: string, b: string): boolean {
+  // Normalise the strings: lowercase, trim, remove spaces.
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+  const strA = normalize(a);
+  const strB = normalize(b);
 
-  for (const ch of s) {
-    // increment the count for this character
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  // Quick rejection: different length → impossible to be an anagram.
+  if (strA.length !== strB.length) return false;
+
+  // === Approach 1: sorting ===
+  // const sortedA = strA.split('').sort().join('');
+  // const sortedB = strB.split('').sort().join('');
+  // return sortedA === sortedB;
+
+  // === Approach 2: frequency counting ===
+  const freq: Record<string, number> = {};
+
+  // Count characters of the first string.
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  // 2. Scan again in original order and return the first with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
+  // Subtract counts using characters from the second string.
+  for (const ch of strB) {
+    if (!freq[ch]) {
+      // Either the character never appeared in `a`
+      // or its count has already been zeroed out.
+      return false;
     }
+    freq[ch]!--;          // `!` tells the compiler this is defined.
+    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
   }
 
-  return null;          // nothing found
+  // If all counts have cancelled out, the map should be empty.
+  return Object.keys(freq).length === 0;
 }
-console.log(firstNonRepeating("SWISS")); // 'W'
-console.log(firstNonRepeating("SWISS".toLowerCase())); // 'w'
-console.log(firstNonRepeating("aabbcc")); // null
+console.log(isAnagram('Listen', 'Silent'));   // true
+console.log(isAnagram('Triangle', 'Integral')); // true
+console.log(isAnagram('Apple', 'Pabble'));      // false
