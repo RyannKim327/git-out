@@ -1,62 +1,67 @@
 /**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
+ * Rabin‑Karp – find all occurrences of `pat` in `txt`.
  *
- * Complexity: O(m)
+ * @param txt   The text to search in.
+ * @param pat   The pattern to find.
+ * @returns     An array of starting indices where `pat` occurs in `txt`.
  */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
+export function rabinKarp(txt: string, pat: string): number[] {
+  if (pat.length === 0 || txt.length < pat.length) return [];
 
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
+  const base = 256;       // Number of possible character values
+  const mod  = 101;       // A small prime – good for demo purposes
+
+  const m = pat.length;
+  const n = txt.length;
+
+  // ---------- 1. Pre‑compute (base^(m-1)) % mod  ----------
+  let highestBase = 1;
+  for (let i = 1; i <= m - 1; i++) {
+    highestBase = (highestBase * base) % mod;
+  }
+
+  // ---------- 2. Compute hash of pattern and first window ----------
+  let patHash  = 0;
+  let windowHash = 0;
+  for (let i = 0; i < m; i++) {
+    patHash   = (patHash   * base + pat.charCodeAt(i)) % mod;
+    windowHash= (windowHash* base + txt.charCodeAt(i)) % mod;
+  }
+
+  const result: number[] = [];
+
+  // ---------- 3. Slide the window over the text ----------
+  for (let i = 0; i <= n - m; i++) {
+    // If the hash values match, perform a character‑by‑character check
+    if (patHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < m; j++) {
+        if (txt.charCodeAt(i + j) !== pat.charCodeAt(j)) {
+          match = false;
+          break;
+        }
       }
+      if (match) result.push(i);
+    }
+
+    // Compute hash for next window
+    if (i < n - m) {
+      // Remove leading char, add trailing char
+      windowHash =
+        ((windowHash - txt.charCodeAt(i) * highestBase) * base
+          + txt.charCodeAt(i + m)) % mod;
+
+      // Problem: windowHash can become negative – make it positive
+      if (windowHash < 0) windowHash += mod;
     }
   }
-  return lps;
+
+  return result;
 }
+import { rabinKarp } from "./rabinKarp";
 
-/**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
-    }
-  }
-  return -1; // no match
-}
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
+const indices = rabinKarp(text, pattern);
+console.log(indices); // → [10]
