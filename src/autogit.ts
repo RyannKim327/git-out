@@ -1,32 +1,44 @@
-function factorialRec(n: number): number {
-  if (n < 0) throw new Error("negatives are not allowed");
-  return n <= 1 ? 1 : n * factorialRec(n - 1);
-}
-function factorialIter(n: number): number {
-  if (n < 0) throw new Error("negatives are not allowed");
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("negatives are not allowed");
-  let result: bigint = 1n;
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
-  }
-  return result;
-}
-const memo = new Map<number, bigint>();
+const original = [1, 2, 3, 2, 4, 1];
 
-function factorialCached(n: number): bigint {
-  if (n < 0) throw new Error("negatives are not allowed");
-  if (memo.has(n)) return memo.get(n)!;
+const withoutDups = Array.from(new Set(original)); // [1, 2, 3, 4]
+const arr = [
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
+  { id: 1, name: 'A' }, // duplicate by id
+];
 
-  const result = n <= 1 ? 1n : BigInt(n) * factorialCached(n - 1);
-  memo.set(n, result);
-  return result;
+const seen = new Set<number>();
+const unique = arr.filter(item => {
+  const key = item.id;                 // pick what defines uniqueness
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+// [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
+const arr = [
+  { id: 'x', data: 10 },
+  { id: 'y', data: 20 },
+  { id: 'x', data: 30 }, // later duplicate
+];
+
+const map = new Map<string, typeof arr[0]>();
+for (const item of arr) {
+  if (!map.has(item.id)) map.set(item.id, item);
 }
-console.log(factorialIter(5));      // 120
-console.log(factorialBigInt(50));   // 30414093201713378043612608166064768844377641568960512000000000000n
+const withoutDups = Array.from(map.values()); // keeps the first 'x'
+function uniq<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+const nums = uniq([4, 5, 4, 6, 5]); // [4, 5, 6]
+const arr = [1, 2, 3, 2, 4];
+
+const unique = arr.reduce<T[]>((acc, cur) => {
+  if (!acc.includes(cur)) acc.push(cur);
+  return acc;
+}, []); // [1, 2, 3, 4]
+function dedupe<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+
+console.log(dedupe([1, 2, 2, 3])); // 1 2 3
+console.log(dedupe(['a', 'b', 'a'])); // a b
