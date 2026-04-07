@@ -1,39 +1,67 @@
-function lcs(a: string, b: string): string {
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  const dp: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+type Node = {
+  id:          string;   // whatever uniquely identifies a node
+  children?:   Node[];   // adjacency list – change to whatever your graph uses
+};
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+interface StackItem {
+  node:  Node;
+  depth: number;
+}
+
+/**
+ * Iterative DFS that stops at a given depth limit.
+ * Returns true if the target is found, otherwise false.
+ */
+function depthLimitedDFS(
+  root:   Node,
+  targetId: string,
+  maxDepth: number
+): boolean {
+  const stack: StackItem[] = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;      // pop from the end
+
+    if (node.id === targetId) return true;     // hit
+
+    if (depth < maxDepth) {                   // still room to descend
+      const children = node.children ?? [];
+      // push children in reverse order if you want particular visit order
+      for (let i = children.length - 1; i >= 0; i--) {
+        stack.push({ node: children[i], depth: depth + 1 });
       }
     }
   }
+  return false;
+}
+function depthLimitedBFS(
+  root:   Node,
+  targetId: string,
+  maxDepth: number
+): boolean {
+  const queue: StackItem[] = [{ node: root, depth: 0 }];
 
-  // Re‑construct the subsequence
-  let i = rows - 1, j = cols - 1;
-  const res: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      res.push(a[i - 1]);          // same character in both strings
-      i--; j--;                    // move diagonally
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                          // move up
-    } else {
-      j--;                          // move left
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;  // shift from the front
+
+    if (node.id === targetId) return true;
+
+    if (depth < maxDepth) {
+      for (const child of node.children ?? []) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
     }
   }
-  return res.reverse().join('');
+  return false;
 }
-console.log(lcs("AGGTAB", "GXTXAYB")); // → "GTAB"
-// lcs.ts
-export function lcs(a: string, b: string): string {
-  // ...implementation as above...
-}
+const tree: Node = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
+    { id: 'b', children: [{ id: 'e' }] }
+  ]
+};
 
-// example usage
-import { lcs } from './lcs';
-console.log(lcs('abcbdab', 'bdcaba')); // prints bcdab
+console.log(depthLimitedDFS(tree, 'd', 2)); // true
+console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
+console.log(depthLimitedBFS(tree, 'e', 1)); // true
