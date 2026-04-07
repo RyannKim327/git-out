@@ -1,62 +1,24 @@
 /**
- * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
- * LPS[i] stores the length of the longest proper prefix of P[0…i]
- * that is also a suffix of P[0…i].
+ * Returns the mean of a non‑empty list of numbers.
+ * Throws if the array is empty or contains non‑numeric values.
  *
- * Complexity: O(m)
+ * @param numbers – an array of numbers
+ * @returns the arithmetic mean
  */
-function buildLps(p: string): number[] {
-  const lps: number[] = new Array(p.length).fill(0);
-  let len = 0;            // current length of the previous longest prefix
-  let i = 1;
-
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the last known good prefix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+function mean(numbers: readonly number[]): number {
+  if (numbers.length === 0) {
+    throw new Error('Cannot compute mean of an empty array.');
   }
-  return lps;
-}
 
-/**
- * Performs KMP search.
- *
- * Returns the starting index of the first match
- * or -1 if the pattern does not occur in the text.
- *
- * Complexity: O(n + m)
- */
-export function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;
-  const lps = buildLps(pattern);
-
-  let i = 0; // index in text
-  let j = 0; // index in pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-      if (j === pattern.length) return i - j; // match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1]; // use LPS to skip comparisons
-      } else {
-        i++;
-      }
+  const sum = numbers.reduce((acc, val) => {
+    if (typeof val !== 'number' || Number.isNaN(val)) {
+      throw new Error(`Invalid value detected: ${val}`);
     }
-  }
-  return -1; // no match
+    return acc + val;
+  }, 0);
+
+  return sum / numbers.length;
 }
-console.log(kmpSearch('ababcabcab', 'abc')); // 3
-console.log(kmpSearch('aaaa', 'b'));        // -1
+const scores = [80, 92, 75, 88];
+
+console.log(mean(scores)); // → 84.25
