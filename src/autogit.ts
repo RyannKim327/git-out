@@ -1,55 +1,128 @@
-/**
- * Return the median of two sorted arrays (integer values).
- *
- * @param a First sorted array (may be empty)
- * @param b Second sorted array (may be empty)
- * @returns median as a number
- */
-function findMedianSortedArrays(a: number[], b: number[]): number {
-  // make sure a is the shorter array – helps keep log‑time on the shorter side
-  if (a.length > b.length) return findMedianSortedArrays(b, a);
+// ---------- TYPES ----------
+type Comparator<T> = (a: T, b: T) => number;
 
-  const m = a.length;
-  const n = b.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+interface Node<T> {
+  key: T;
+  left: Node<T> | null;
+  right: Node<T> | null;
+}
 
-  let low = 0;
-  let high = m;
+// ---------- BST CLASS ----------
+class BinarySearchTree<T> {
+  // root can stay undefined at construction time
+  private root: Node<T> | null = null;
 
-  while (low <= high) {
-    // i is the cut in a, j in b
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
+  /**
+   * Allows you to plug in any way you want keys compared.
+   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
+   */
+  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
 
-    const Aleft  = i === 0     ? -Infinity : a[i - 1];
-    const Aright = i === m     ? Infinity  : a[i];
-    const Bleft  = j === 0     ? -Infinity : b[j - 1];
-    const Bright = j === n     ? Infinity  : b[j];
+  /** Insert new key into tree */
+  insert(key: T): void {
+    const node: Node<T> = { key, left: null, right: null };
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
 
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // perfect split found
-      if ((m + n) % 2 === 0) {
-        // even number of elements – average of the two middle values
-        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+    let curr = this.root;
+    while (true) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        if (curr.left) {
+          curr = curr.left;
+        } else {
+          curr.left = node;
+          break;
+        }
+      } else if (cmp > 0) {
+        if (curr.right) {
+          curr = curr.right;
+        } else {
+          curr.right = node;
+          break;
+        }
       } else {
-        // odd – the max on the left side
-        return Math.max(Aleft, Bleft);
+        // key already exists – replace or ignore, here we ignore
+        break;
       }
-    } else if (Aleft > Bright) {
-      // i is too big – move left
-      high = i - 1;
-    } else {
-      // i is too small – move right
-      low = i + 1;
     }
   }
 
-  // Should never reach here if input arrays are sorted
-  throw new Error('Input arrays are not valid');
+  /** Search for a key. Returns the node if found or null. */
+  search(key: T): Node<T> | null {
+    let curr = this.root;
+    while (curr) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        curr = curr.left;
+      } else if (cmp > 0) {
+        curr = curr.right;
+      } else {
+        return curr;
+      }
+    }
+    return null;
+  }
+
+  /** In‑order traversal – gives sorted keys. */
+  inorder(callback: (key: T) => void): void {
+    function walk(node: Node<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      callback(node.key);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  /** Delete a key. Simple implementation that preserves BST shape. */
+  delete(key: T): void {
+    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
+      if (!node) return null;
+
+      const cmp = this.cmp(key, node.key);
+      if (cmp < 0) {
+        node.left = deleteRec(node.left, key);
+      } else if (cmp > 0) {
+        node.right = deleteRec(node.right, key);
+      } else {
+        // node to delete found
+        if (!node.left) return node.right;
+        if (!node.right) return node.left;
+
+        // two children: find in‑order successor (smallest node on right)
+        let succ = node.right;
+        while (succ.left) succ = succ.left;
+        node.key = succ.key; // copy successor key
+        node.right = deleteRec(node.right, succ.key); // delete successor
+      }
+      return node;
+    };
+
+    this.root = deleteRec(this.root, key);
+  }
 }
 
-/* ---------- usage ---------- */
-console.log(findMedianSortedArrays([1, 3], [2]));          // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));      // 2.5
-console.log(findMedianSortedArrays([], [1]));             // 1
-console.log(findMedianSortedArrays([5], [1, 2, 3, 4]));   // 3.5
+// ---------- DEFAULT COMPARATOR ----------
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+// ---------- USAGE EXAMPLE ----------
+const bst = new BinarySearchTree<number>();
+
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log('Search 5:', bst.search(5) !== null);   // true
+console.log('Search 4:', bst.search(4) !== null);   // false
+
+console.log('In‑order traversal:');
+bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
+
+bst.delete(7);
+console.log('After deleting 7:');
+bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
