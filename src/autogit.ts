@@ -1,65 +1,102 @@
-/**
- * Merge two sorted arrays into one sorted array.
- *
- * @param left  the first sorted array
- * @param right the second sorted array
- * @param cmp   optional comparison function (a, b) => number
- *              negative → a < b, 0 → a === b, positive → a > b
- * @returns a new sorted array containing all elements from `left` and `right`
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  const result: T[] = []
-  let i = 0
-  let j = 0
+/** One directed edge in the graph */
+interface Edge {
+  from: number;   // source vertex id
+  to: number;     // target vertex id
+  weight: number; // edge weight
+}
 
-  while (i < left.length && j < right.length) {
-    if (cmp(left[i], right[j]) <= 0) {
-      result.push(left[i++])
-    } else {
-      result.push(right[j++])
+/** Graph represented only by its edge list */
+type Graph = Edge[];
+
+/** Result of the shortest‑path computation */
+interface BellmanFordResult {
+  /** distance from source to every vertex (Infinity if unreachable) */
+  distances: number[];
+  /** predecessor of each vertex on the shortest path tree */
+  predecessors: (number | null)[];
+  /** true if a negative cycle was detected that is reachable from the source */
+  negativeCycleDetected: boolean;
+}
+/**
+ * Bellman‑Ford single‑source shortest‑path solver.
+ * @param edges  complete list of directed edges in the graph
+ * @param vertexCount total number of vertices, 0 … vertexCount‑1
+ * @param source id of the source vertex
+ * @returns distances, predecessors and a flag for a reachable negative cycle
+ */
+export function bellmanFord(
+  edges: Graph,
+  vertexCount: number,
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
+
+  const distances = Array(vertexCount).fill(INF);
+  const predecessors = Array<null | number>(vertexCount).fill(null);
+
+  distances[source] = 0;
+
+  /* Relax edges V‑1 times */
+  for (let i = 0; i < vertexCount - 1; i++) {
+    let changed = false;
+    for (const e of edges) {
+      const { from, to, weight } = e;
+      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+        distances[to] = distances[from] + weight;
+        predecessors[to] = from;
+        changed = true;
+      }
+    }
+    /* Early exit if no relaxation happened */
+    if (!changed) break;
+  }
+
+  /* Check for negative‑weight cycles reachable from source */
+  let negativeCycleDetected = false;
+  for (const e of edges) {
+    const { from, to, weight } = e;
+    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
+      negativeCycleDetected = true;
+      break;
     }
   }
 
-  // Append any leftovers.
-  return result.concat(left.slice(i)).concat(right.slice(j))
+  return { distances, predecessors, negativeCycleDetected };
 }
-
 /**
- * Recursive Merge Sort implementation.
- *
- * @param array array to sort
- * @param cmp   optional comparison function
- * @returns a new sorted array, leaving the original unchanged
+ * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
+ * Returns `undefined` if the target is unreachable.
  */
-export function mergeSort<T>(
-  array: T[],
-  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array.slice()
+export function reconstructPath(
+  target: number,
+  predecessors: (number | null)[]
+): number[] | undefined {
+  if (predecessors[target] === null) return undefined;
 
-  const mid = Math.floor(array.length / 2)
-  const left = mergeSort(array.slice(0, mid), cmp)
-  const right = mergeSort(array.slice(mid), cmp)
-
-  return merge(left, right, cmp)
+  const path: number[] = [];
+  for (let v = target; v !== null; v = predecessors[v]) {
+    path.push(v);
+  }
+  return path.reverse();
 }
-const nums = [8, 3, 1, 7, 0, 10, 2]
-const sorted = mergeSort(nums)
-console.log(sorted) // [0, 1, 2, 3, 7, 8, 10]
-interface Person {
-  name: string
-  age: number
-}
+// A small graph with both positive and negative edges
+const graph: Graph = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 2, weight: -3 },
+  { from: 1, to: 3, weight: 2 },
+  { from: 2, to: 3, weight: 4 },
+];
 
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 24 },
-  { name: 'Cara', age: 27 },
-]
+const vertexCount = 4;          // vertices 0 … 3
+const source = 0;
+const result = bellmanFord(graph, vertexCount, source);
 
-const byAge = mergeSort(people, (a, b) => a.age - b.age)
-console.log(byAge)
+console.log('Distances:', result.distances);
+// [0, 1, 2, 3]
+
+console.log('Negative cycle detected?', result.negativeCycleDetected);
+// false
+
+const pathTo3 = reconstructPath(3, result.predecessors);
+console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
