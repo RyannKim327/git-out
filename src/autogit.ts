@@ -1,30 +1,48 @@
-// src/cronJob.ts
-import * as cron from 'node-cron';
-import { exec } from 'child_process';
-
-// Simple helper that returns a random joke (you can replace it with anything)
-function getRandomJoke(): string {
-  const jokes = [
-    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
-    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
-    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
-  ];
-  return jokes[Math.floor(Math.random() * jokes.length)];
+/**
+ * Calculates area when you know the base and the altitude
+ * @param base   the length of the base
+ * @param height the altitude perpendicular to the base
+ * @returns area of the triangle
+ */
+function areaBaseHeight(base: number, height: number): number {
+  return (base * height) / 2;
 }
 
-// This job:
-cron.schedule('* * * * *', () => {          // Runs every minute
-  const joke = getRandomJoke();
-  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
+// Example
+const area1 = areaBaseHeight(10, 5);   // 25
+/**
+ * Calculates area from the three sides using Heron's formula
+ * @param a side a
+ * @param b side b
+ * @param c side c
+ * @returns area of the triangle
+ * @throws Error if the sides cannot form a triangle
+ */
+function areaHeron(a: number, b: number, c: number): number {
+  // Validate triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not form a triangle.');
+  }
 
-  // Example of how you might trigger a system command using Cron
-  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
-    if (err) {
-      console.warn(`Error while executing command: ${err.message}`);
-      return;
-    }
-    console.log(`Command output: ${stdout.trim()}`);
-  });
-});
+  const s = (a + b + c) / 2;                       // semi‑perimeter
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
 
-console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
+// Example
+const area2 = areaHeron(3, 4, 5);   // 6
+interface Point { x: number; y: number }
+
+function areaFromCoords(p1: Point, p2: Point, p3: Point): number {
+  return Math.abs(
+    (p1.x * (p2.y - p3.y) +
+     p2.x * (p3.y - p1.y) +
+     p3.x * (p1.y - p2.y)) / 2
+  );
+}
+
+// Example
+const area3 = areaFromCoords(
+  { x: 0, y: 0 },
+  { x: 4, y: 0 },
+  { x: 0, y: 3 }
+);   // 6
