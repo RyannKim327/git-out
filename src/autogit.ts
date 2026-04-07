@@ -1,151 +1,54 @@
-// ──────────────────────────────────────────────────────────────
-//  TrieNode
-// ──────────────────────────────────────────────────────────────
-class TrieNode {
-  // how many words end exactly here
-  frequency = 0;
-  // children keyed by single characters
-  children = new Map<string, TrieNode>();
+// A minimal, singly‑linked node definition
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
 
-// ──────────────────────────────────────────────────────────────
-//  Trie
-// ──────────────────────────────────────────────────────────────
-export class Trie {
-  private readonly root = new TrieNode();
+// Returns the node that is n‑th from the end (1‑based)
+// or null if the list is shorter than n.
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  // Guard against invalid n
+  if (n <= 0) return null;
 
-  //--------------------------------------
-  // Insert a word, optionally incrementing frequency
-  // -------------------------------------
-  insert(word: string, qty = 1): void {
-    let node = this.root;
-    for (const ch of word) {
-      // lazily create missing branch
-      if (!node.children.has(ch))
-        node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.frequency += qty;
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
+
+  // Advance fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // n > length
+    fast = fast.next;
   }
 
-  //--------------------------------------
-  // Search for exact match – returns how many times the word was inserted
-  // -------------------------------------
-  search(word: string): number {
-    let node = this.root;
-    for (const ch of word) {
-      node = node.children.get(ch);
-      if (!node) return 0; // missing branch
-    }
-    return node.frequency;
+  // Edge case: n equals the list length ⇒ return head
+  if (!fast) return head;
+
+  // Move both until fast reaches the tail
+  while (fast.next) {
+    fast = fast.next;
+    slow = slow!.next; // slow is guaranteed not null here
   }
 
-  //--------------------------------------
-  // Delete a word (or reduce its count)
-  // -------------------------------------
-  delete(word: string, qty = 1): boolean {
-    const stack: TrieNode[] = []; // keep path for backtracking
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false; // word never existed
-      stack.push(node);
-      node = next;
-    }
-
-    if (node.frequency === 0) return false; // nothing to delete
-    node.frequency -= qty;
-    if (node.frequency < 0) node.frequency = 0; // guard
-
-    // prune dead branches
-    let idx = stack.length - 1;
-    while (idx >= 0 && node.children.size === 0 && node.frequency === 0) {
-      const parent = stack[idx];
-      const ch = Array.from(parent.children.entries()).find(
-        ([, child]) => child === node
-      )![0];
-      parent.children.delete(ch);
-      node = parent;
-      idx--;
-    }
-    return true;
-  }
-
-  //--------------------------------------
-  // Return all words that start with a prefix
-  // -------------------------------------
-  startsWith(prefix: string): string[] {
-    let node = this.root;
-
-    for (const ch of prefix) {
-      node = node.children.get(ch);
-      if (!node) return []; // no match
-    }
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, cur: string) => {
-      if (n.frequency > 0) results.push(cur);
-
-      for (const [ch, child] of n.children) {
-        dfs(child, cur + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return results;
-  }
-
-  //--------------------------------------
-  // Return the top‑k words by frequency that match a prefix
-  // Useful for autocomplete suggestions
-  // -------------------------------------
-  topK(prefix: string, k = 5): { word: string; freq: number }[] {
-    let node = this.root;
-    for (const ch of prefix) {
-      node = node.children.get(ch);
-      if (!node) return [];
-    }
-
-    const heap: Array<{ word: string; freq: number }> = [];
-
-    const dfs = (n: TrieNode, cur: string) => {
-      if (n.frequency > 0) {
-        heap.push({ word: cur, freq: n.frequency });
-        // keep only the largest k entries
-        heap.sort((a, b) => b.freq - a.freq);
-        if (heap.length > k) heap.pop();
-      }
-
-      for (const [ch, child] of n.children) {
-        dfs(child, cur + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return heap;
-  }
+  return slow;
 }
-import { Trie } from "./trie";
+// Helper to build a list from an array
+function buildList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head: ListNode<T> = { value: arr[0], next: null };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { value: arr[i], next: null };
+    current = current.next;
+  }
+  return head;
+}
 
-const t = new Trie();
+// Example
+const head = buildList([10, 20, 30, 40, 50]);
 
-t.insert("apple");
-t.insert("app");
-t.insert("application", 3); // appears 3 times
-t.insert("bat");
-t.insert("batch");
-t.insert("baton");
-
-console.log(t.search("app"));          // 1
-console.log(t.search("application"));  // 3
-console.log(t.search("banana"));       // 0
-
-console.log(t.startsWith("app"));      // ["app", "apple", "application"]
-console.log(t.topK("app", 2));         // [{word:"application",freq:3},{word:"app",freq:1}]
-
-t.delete("application", 2);            // reduce count, still 1 left
-console.log(t.search("application"));  // 1
-
-t.delete("baton");                     // remove completely
-console.log(t.startsWith("bat"));      // ["bat", "batch"]
+console.log(nthFromEnd(head, 1)?.value); // 50 (last)
+console.log(nthFromEnd(head, 3)?.value); // 30
+console.log(nthFromEnd(head, 5)?.value); // 10 (first)
+console.log(nthFromEnd(head, 6));        // null (too big)
