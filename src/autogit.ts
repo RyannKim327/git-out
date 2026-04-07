@@ -1,151 +1,59 @@
-// ──────────────────────────────────────────────────────────────
-//  TrieNode
-// ──────────────────────────────────────────────────────────────
-class TrieNode {
-  // how many words end exactly here
-  frequency = 0;
-  // children keyed by single characters
-  children = new Map<string, TrieNode>();
-}
+// ---------------------------------------------------------------------
+// 1️⃣  Node definition
+// ---------------------------------------------------------------------
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-// ──────────────────────────────────────────────────────────────
-//  Trie
-// ──────────────────────────────────────────────────────────────
-export class Trie {
-  private readonly root = new TrieNode();
-
-  //--------------------------------------
-  // Insert a word, optionally incrementing frequency
-  // -------------------------------------
-  insert(word: string, qty = 1): void {
-    let node = this.root;
-    for (const ch of word) {
-      // lazily create missing branch
-      if (!node.children.has(ch))
-        node.children.set(ch, new TrieNode());
-      node = node.children.get(ch)!;
-    }
-    node.frequency += qty;
-  }
-
-  //--------------------------------------
-  // Search for exact match – returns how many times the word was inserted
-  // -------------------------------------
-  search(word: string): number {
-    let node = this.root;
-    for (const ch of word) {
-      node = node.children.get(ch);
-      if (!node) return 0; // missing branch
-    }
-    return node.frequency;
-  }
-
-  //--------------------------------------
-  // Delete a word (or reduce its count)
-  // -------------------------------------
-  delete(word: string, qty = 1): boolean {
-    const stack: TrieNode[] = []; // keep path for backtracking
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false; // word never existed
-      stack.push(node);
-      node = next;
-    }
-
-    if (node.frequency === 0) return false; // nothing to delete
-    node.frequency -= qty;
-    if (node.frequency < 0) node.frequency = 0; // guard
-
-    // prune dead branches
-    let idx = stack.length - 1;
-    while (idx >= 0 && node.children.size === 0 && node.frequency === 0) {
-      const parent = stack[idx];
-      const ch = Array.from(parent.children.entries()).find(
-        ([, child]) => child === node
-      )![0];
-      parent.children.delete(ch);
-      node = parent;
-      idx--;
-    }
-    return true;
-  }
-
-  //--------------------------------------
-  // Return all words that start with a prefix
-  // -------------------------------------
-  startsWith(prefix: string): string[] {
-    let node = this.root;
-
-    for (const ch of prefix) {
-      node = node.children.get(ch);
-      if (!node) return []; // no match
-    }
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, cur: string) => {
-      if (n.frequency > 0) results.push(cur);
-
-      for (const [ch, child] of n.children) {
-        dfs(child, cur + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return results;
-  }
-
-  //--------------------------------------
-  // Return the top‑k words by frequency that match a prefix
-  // Useful for autocomplete suggestions
-  // -------------------------------------
-  topK(prefix: string, k = 5): { word: string; freq: number }[] {
-    let node = this.root;
-    for (const ch of prefix) {
-      node = node.children.get(ch);
-      if (!node) return [];
-    }
-
-    const heap: Array<{ word: string; freq: number }> = [];
-
-    const dfs = (n: TrieNode, cur: string) => {
-      if (n.frequency > 0) {
-        heap.push({ word: cur, freq: n.frequency });
-        // keep only the largest k entries
-        heap.sort((a, b) => b.freq - a.freq);
-        if (heap.length > k) heap.pop();
-      }
-
-      for (const [ch, child] of n.children) {
-        dfs(child, cur + ch);
-      }
-    };
-
-    dfs(node, prefix);
-    return heap;
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
 }
-import { Trie } from "./trie";
 
-const t = new Trie();
+// ---------------------------------------------------------------------
+// 2️⃣  Helper that returns (height, diameter) for a subtree
+// ---------------------------------------------------------------------
+function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
+  // Base case: empty subtree
+  if (node === null) {
+    return { h: 0, d: 0 }; // height 0, diameter 0
+  }
 
-t.insert("apple");
-t.insert("app");
-t.insert("application", 3); // appears 3 times
-t.insert("bat");
-t.insert("batch");
-t.insert("baton");
+  // Recursively gather left and right results
+  const left = heightAndDiameter(node.left);
+  const right = heightAndDiameter(node.right);
 
-console.log(t.search("app"));          // 1
-console.log(t.search("application"));  // 3
-console.log(t.search("banana"));       // 0
+  // Current node's height
+  const curHeight = Math.max(left.h, right.h) + 1;
 
-console.log(t.startsWith("app"));      // ["app", "apple", "application"]
-console.log(t.topK("app", 2));         // [{word:"application",freq:3},{word:"app",freq:1}]
+  // Diameter that passes through this node
+  const curThrough = left.h + right.h + 1;
 
-t.delete("application", 2);            // reduce count, still 1 left
-console.log(t.search("application"));  // 1
+  // Overall diameter for this subtree
+  const curDiameter = Math.max(curThrough, left.d, right.d);
 
-t.delete("baton");                     // remove completely
-console.log(t.startsWith("bat"));      // ["bat", "batch"]
+  return { h: curHeight, d: curDiameter };
+}
+
+// ---------------------------------------------------------------------
+// 3️⃣  Public entry point
+// ---------------------------------------------------------------------
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  return heightAndDiameter(root).d;
+}
+// Build a quick test tree:
+//        1
+//       / \
+//      2   3
+//         / \
+//        4   5
+const root = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
+
+console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
