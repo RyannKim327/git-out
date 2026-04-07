@@ -1,53 +1,100 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
-}
+/**
+ * Simple graph type
+ */
+type Node = string;                                  // or number, UUID, etc.
+type AdjList = Map<Node, Node[]>;                    // adjacency list
 
-// Example
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-console.log(intersection(arr1, arr2)); // → [3, 4, 5]
-function intersectionByOrder<T>(a: T[], b: T[]): T[] {
-  const setA = new Set(a);
-  return b.filter(x => setA.has(x));
-}
-function multisetIntersection<T>(a: T[], b: T[]): T[] {
-  const counts = new Map<T, number>();
-  for (const item of a)
-    counts.set(item, (counts.get(item) ?? 0) + 1);
+/**
+ * Bidirectional BFS – returns the length of the shortest path
+ * or null if no path exists.
+ *
+ * @param graph      adjacency list of the graph
+ * @param start      source node
+ * @param target     destination node
+ */
+export function biBfs(
+  graph: AdjList,
+  start: Node,
+  target: Node
+): number | null {
+  if (start === target) return 0;
 
-  const result: T[] = [];
-  for (const item of b) {
-    const cnt = counts.get(item);
-    if (cnt && cnt > 0) {
-      result.push(item);
-      counts.set(item, cnt - 1);
+  // queues for each direction
+  const qStart = [start];
+  const qTarget = [target];
+
+  // distances from each end
+  const distStart = new Map<Node, number>();
+  const distTarget = new Map<Node, number>();
+  distStart.set(start, 0);
+  distTarget.set(target, 0);
+
+  while (qStart.length && qTarget.length) {
+    // Expand the frontier that is currently smaller
+    // (helps keep the branching factor balanced)
+    if (qStart.length <= qTarget.length) {
+      const step = expandFrontier(
+        qStart,
+        distStart,
+        distTarget,
+        graph
+      );
+      if (step !== null) return step;
+    } else {
+      const step = expandFrontier(
+        qTarget,
+        distTarget,
+        distStart,
+        graph
+      );
+      if (step !== null) return step;
     }
   }
-  return result;
+
+  return null;   // no connection
 }
 
-// Example
-// a: [1, 2, 2, 3], b: [2, 2, 4]
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
-function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
-  const map = new Map<any, T>();
-  for (const item of b) map.set(keyFn(item), item);
+/**
+ * Helper that walks one layer of BFS.
+ * Returns the total distance when the two explored sets touch.
+ */
+function expandFrontier(
+  queue: Node[],
+  distThis: Map<Node, number>,
+  distOther: Map<Node, number>,
+  graph: AdjList
+): number | null {
+  const layerSize = queue.length;
 
-  const result: T[] = [];
-  for (const item of a) {
-    const match = map.get(keyFn(item));
-    if (match) result.push(match); // or push(item) if you prefer
+  for (let i = 0; i < layerSize; ++i) {
+    const current = queue.shift() as Node;
+    const neighbours = graph.get(current) ?? [];
+
+    for (const neighbour of neighbours) {
+      // Already visited from this side – skip
+      if (distThis.has(neighbour)) continue;
+
+      // Visited from the other side → path found
+      if (distOther.has(neighbour)) {
+        return (
+          distThis.get(current)! + 1 +
+          distOther.get(neighbour)!
+        );
+      }
+
+      // Push next layer
+      distThis.set(neighbour, distThis.get(current)! + 1);
+      queue.push(neighbour);
+    }
   }
-  return result;
-}
 
-// Example
-interface Person { id: number; name: string }
-const peopleA = [{id:1},{id:2},{id:3}];
-const peopleB = [{id:2},{id:4}];
-console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
-export const arrayUtils = {
-  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
-  // … other helpers here
-};
+  return null;
+}
+// const graph: AdjList = new Map([
+//   ['A', ['B', 'C']],
+//   ['B', ['A', 'D']],
+//   ['C', ['A', 'D']],
+//   ['D', ['B', 'C', 'E']],
+//   ['E', ['D']]
+// ]);
+// console.log(biBfs(graph, 'A', 'E')); // 3
