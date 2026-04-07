@@ -1,68 +1,84 @@
-// A minimal list node definition
-export class ListNode<T> {
-  constructor(
-    public val: T,
-    public next: ListNode<T> | null = null
-  ) {}
+/**
+ * Burrows‑Wheeler Transform (forward) – O(n²)
+ * @param input original string
+ * @returns {lastColumn, primaryIndex}
+ *
+ * `lastColumn` – the BWT output string (characters that appear as the
+ *                 last column of the sorted rotation matrix).
+ * `primaryIndex` – row number (0‑based) that contains the original
+ *                  string in the sorted matrix; needed for the inverse.
+ */
+export function bwt(input: string): { lastColumn: string; primaryIndex: number } {
+  const n = input.length;
+  // Build the rotation array
+  const rotations: string[] = [];                    //  O(n)
+  for (let i = 0; i < n; i++) {
+    rotations.push(input.slice(i) + input.slice(0, i));
+  }
+
+  // Sort the rotations lexicographically
+  rotations.sort();                                 //  O(n log n) * O(n) Comparisons
+
+  // Pull the last character of each sorted row
+  let last = '';
+  let primary = -1;
+  for (let col = 0; col < n; col++) {
+    const row = rotations[col];
+    if (row === input) primary = col;               // original string position
+    last += row[n - 1];
+  }
+  return { lastColumn: last, primaryIndex: primary };
 }
 
 /**
- * Returns the intersection node, or null if none exists.
- *
- * Idea:
- * 1. Walk each list once to get its length.
- * 2. Advance the longer list by the length difference.
- * 3. Move both pointers together – the first time they’re equal
- *    (by reference) is the intersection.
- *
- * Time: O(n + m)   (one pass per list + one optional “skip” pass)
- * Space: O(1)      (no extra container)
+ * Inverse Burrows‑Wheeler Transform – O(n²) worst‑case
+ * @param lastCol BWT string (last column)
+ * @param primaryIndex index of original string within sorted rotations
+ * @returns original string
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  // helper to measure length
-  function len(node: ListNode<T> | null): number {
-    let l = 0;
-    while (node !== null) {
-      l++;
-      node = node.next;
-    }
-    return l;
+export function inverseBWT(lastCol: string, primaryIndex: number): string {
+  const n = lastCol.length;
+  // `first` column is just the sorted last column
+  const first = lastCol.split('').sort().join('');
+
+  // Build the LF‑mapping: for every position i in `last`
+  // find the row in `first` that corresponds to the same
+  // character and *occurrence* (i.e., the k‑th 'a' in last
+  // maps to the k‑th 'a' in first).
+  // We do that by counting occurrences.
+  const occ: Array<Map<string, number>> = new Array(n);
+  const count: Map<string, number> = new Map();
+  for (let i = 0; i < n; i++) {
+    const c = lastCol[i];
+    const cCount = (count.get(c) ?? 0) + 1;
+    count.set(c, cCount);
+    occ[i] = new Map(count);
   }
 
-  let lenA = len(headA);
-  let lenB = len(headB);
-
-  // Advance the longer head so that the remaining steps are equal
-  let diff = Math.abs(lenA - lenB);
-  let longer = lenA > lenB ? headA : headB;
-  let shorter = lenA > lenB ? headB : headA;
-
-  while (diff--) {
-    if (longer !== null) longer = longer.next;
+  // Build `firstPos` – for each character, the 0‑based
+  // index of its first occurrence in the sorted `first` column
+  const firstPos: Map<string, number> = new Map();
+  let sum = 0;
+  for (const ch of [...new Set(first)].sort()) {
+    firstPos.set(ch, sum);
+    sum += first.split('').filter(c => c === ch).length;
   }
 
-  // Walk together until they meet
-  while (longer !== null && shorter !== null) {
-    if (longer === shorter) return longer; // same reference
-    longer = longer.next;
-    shorter = shorter.next;
+  // Reconstruct the original string char by char:
+  // starting from `primaryIndex`, each step moves to the preceding
+  // character (because of the LF mapping).
+  const result: string[] = [];
+  let pos = primaryIndex;
+  for (let k = 0; k < n; k++) {
+    const c = lastCol[pos];
+    result.unshift(c); // prepend, since we traverse backwards
+    const occIdx = occ[pos].get(c)!;              // occurrence rank
+    // LF mapping: next position in `lastCol`
+    pos = firstPos.get(c)! + occIdx - 1;
   }
-
-  return null; // never intersected
+  return result.join('');
 }
-const a1 = new ListNode(1);
-const a2 = new ListNode(2);
-const a3 = new ListNode(3);
-const a4 = new ListNode(4);
-const a5 = new ListNode(5);
-a1.next = a2; a2.next = a3; a3.next = a4; a4.next = a5;
-
-const b1 = new ListNode(9);
-const b2 = new ListNode(8);
-b1.next = b2; b2.next = a3; // both lists point to `a3`
-
-const intersection = getIntersectionNode(a1, b1);
-console.log(intersection?.val); // 3
+const original = 'BANANA$';
+const { lastColumn, primaryIndex } = bwt(original);
+console.log('BWT:', lastColumn);          // → 'ANNB$AA'
+console.log('Inv:', inverseBWT(lastColumn, primaryIndex)); // → 'BANANA$'
