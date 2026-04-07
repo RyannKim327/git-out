@@ -1,100 +1,81 @@
 /**
- * Simple graph type
- */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
-
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
+ * Tarjan's algorithm (1990) – O(V + E) time.
  *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
+ * Input
+ * -----
+ * `graph`   : 0‑based adjacency list.  graph[v] is an array of vertices
+ *              that v points to.
+ *
+ * Output
+ * ------
+ * An array of SCCs.  Each SCC is an array of vertex indices.  The
+ * components are returned in reverse topological order (the first
+ * component in the list is one that has no outgoing edges to earlier
+ * components).
  */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
 
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
+export function tarjanSCC(graph: number[][]): number[][] {
+  const n = graph.length;
+  const indices = new Array<number>(n).fill(-1);   // order in which nodes were visited
+  const lowlink = new Array<number>(n).fill(-1);   // smallest index reachable from node
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
+  const sccs: number[][] = [];
 
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
+  let currentIndex = 0;
 
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
-  }
+  const strongConnect = (v: number): void => {
+    // Set the depth index for v to the smallest unused index
+    indices[v] = currentIndex;
+    lowlink[v] = currentIndex;
+    currentIndex++;
+    stack.push(v);
+    onStack[v] = true;
 
-  return null;   // no connection
-}
-
-/**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
- */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
-
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
-
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
-
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
+    // Consider successors of v
+    for (const w of graph[v]) {
+      if (indices[w] === -1) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → v is in the same SCC as w
+        lowlink[v] = Math.min(lowlink[v], indices[w]);
       }
+    }
 
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
+    // If v is a root node, pop the stack and generate an SCC
+    if (lowlink[v] === indices[v]) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop() as number;   // stack never empty here
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
+
+  // Run DFS from every node that hasn't been visited yet
+  for (let v = 0; v < n; v++) {
+    if (indices[v] === -1) {
+      strongConnect(v);
     }
   }
 
-  return null;
+  return sccs;
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+const graph = [
+  [1],          // 0 → 1
+  [2],          // 1 → 2
+  [0, 3],       // 2 → 0 (cycle 0‑1‑2) and → 3
+  [4],          // 3 → 4
+  [5],          // 4 → 5
+  [3],          // 5 → 3 (cycle 3‑4‑5)
+  []            // 6 isolated
+];
+
+const sccs = tarjanSCC(graph);
+console.log(sccs);
+// Possible output: [[6], [0, 1, 2], [3, 4, 5]]
