@@ -1,59 +1,85 @@
-// ---------------------------------------------------------------------
-// 1️⃣  Node definition
-// ---------------------------------------------------------------------
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+/*  --------------------------------------------------
+    Depth‑First Search (DFS) – TypeScript
+    -------------------------------------------------- */
 
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
+/**
+ * A graph memoized as an adjacency list.
+ * T can be anything that can be used as a key (string, number, etc.).
+ */
+export type Graph<T> = Map<T, Iterable<T>>;
+
+/**
+ * Recursive DFS.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsRecursive<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const result: Array<T> = [];
+
+  function visit(node: T): void {
+    if (visited.has(node)) return;
+    visited.add(node);
+    result.push(node);
+
+    for (const neighbour of graph.get(node) ?? []) {
+      visit(neighbour);
+    }
   }
+
+  visit(start);
+  return result;
 }
 
-// ---------------------------------------------------------------------
-// 2️⃣  Helper that returns (height, diameter) for a subtree
-// ---------------------------------------------------------------------
-function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
-  // Base case: empty subtree
-  if (node === null) {
-    return { h: 0, d: 0 }; // height 0, diameter 0
+/**
+ * Iterative DFS using an explicit stack.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsIterative<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const stack: Array<T> = [start];
+  const result: Array<T> = [];
+
+  while (stack.length) {
+    const node = stack.pop()!; // non‑empty guarantee
+    if (visited.has(node)) continue;
+
+    visited.add(node);
+    result.push(node);
+
+    // push neighbours onto the stack; reverse order
+    // to mimic the recursive visiting order
+    const neighbours = Array.from(graph.get(node) ?? []);
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      const n = neighbours[i];
+      if (!visited.has(n)) stack.push(n);
+    }
   }
 
-  // Recursively gather left and right results
-  const left = heightAndDiameter(node.left);
-  const right = heightAndDiameter(node.right);
-
-  // Current node's height
-  const curHeight = Math.max(left.h, right.h) + 1;
-
-  // Diameter that passes through this node
-  const curThrough = left.h + right.h + 1;
-
-  // Overall diameter for this subtree
-  const curDiameter = Math.max(curThrough, left.d, right.d);
-
-  return { h: curHeight, d: curDiameter };
+  return result;
 }
 
-// ---------------------------------------------------------------------
-// 3️⃣  Public entry point
-// ---------------------------------------------------------------------
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  return heightAndDiameter(root).d;
-}
-// Build a quick test tree:
-//        1
-//       / \
-//      2   3
-//         / \
-//        4   5
-const root = new TreeNode(
-  1,
-  new TreeNode(2),
-  new TreeNode(3, new TreeNode(4), new TreeNode(5))
-);
+/*  --------------------------------------------------
+    Example Usage
+    -------------------------------------------------- */
 
-console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
+const graph: Graph<number> = new Map([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [6]],
+  [4, []],
+  [5, []],
+  [6, []],
+]);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1)); // [1, 2, 4, 5, 3, 6]
+console.log('Iterative DFS:', dfsIterative(graph, 1)); // [1, 3, 6, 2, 5, 4]
