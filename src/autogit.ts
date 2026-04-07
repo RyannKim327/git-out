@@ -1,102 +1,62 @@
-export interface ListNode<T = number> {
-  value: T;
-  next?: ListNode<T>;
-}
-export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;          // empty list is a palindrome
+/**
+ * Builds the longest‑prefix‑suffix (LPS) array for the pattern.
+ * LPS[i] stores the length of the longest proper prefix of P[0…i]
+ * that is also a suffix of P[0…i].
+ *
+ * Complexity: O(m)
+ */
+function buildLps(p: string): number[] {
+  const lps: number[] = new Array(p.length).fill(0);
+  let len = 0;            // current length of the previous longest prefix
+  let i = 1;
 
-  const stack: T[] = [];
-  let cur = head;
-
-  // Stage 1 – push all values onto the stack
-  while (cur) {
-    stack.push(cur.value);
-    cur = cur.next;
-  }
-
-  // Stage 2 – iterate a second time, comparing against popped values
-  cur = head;
-  while (cur) {
-    const top = stack.pop() as T; // stack can't be empty here
-    if (cur.value !== top) return false;
-    cur = cur.next;
-  }
-
-  return true;
-}
-export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;
-
-  // 1️⃣ Find middle (slow will stop at mid‑point)
-  let slow = head;
-  let fast = head;
-  let prevSlow: ListNode<T> | undefined = undefined;
-
-  while (fast && fast.next) {
-    fast = fast.next.next;
-    prevSlow = slow;
-    slow = slow.next;
-  }
-
-  // 2️⃣ For odd length lists, skip the middle element
-  if (fast) {
-    slow = slow.next;
-  }
-
-  // 3️⃣ Reverse the second half starting at `slow`
-  let secondHalf = reverseLinkedList(slow);
-
-  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
-  let p1 = head;
-  let p2 = secondHalf;
-  while (p2) {           // second half can be shorter or equal
-    if (p1.value !== p2.value) {
-      // Optional: undo reversal here if you want to keep list unchanged
-      return false;
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back to the last known good prefix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
-    p1 = p1.next!;
-    p2 = p2.next!;
   }
-
-  // Optional: restore first half? (skip for brevity)
-  return true;
+  return lps;
 }
 
 /**
- * Reverse a linked list in place and return the new head.
+ * Performs KMP search.
+ *
+ * Returns the starting index of the first match
+ * or -1 if the pattern does not occur in the text.
+ *
+ * Complexity: O(n + m)
  */
-function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  let prev: ListNode<T> | undefined = undefined;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev;
-}
-function build(list: number[]): ListNode | undefined {
-  let head: ListNode | undefined;
-  let tail: ListNode | undefined;
+export function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
+  const lps = buildLps(pattern);
 
-  for (const val of list) {
-    const node: ListNode = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
+  let i = 0; // index in text
+  let j = 0; // index in pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+      if (j === pattern.length) return i - j; // match found
     } else {
-      tail!.next = node;
-      tail = node;
+      if (j !== 0) {
+        j = lps[j - 1]; // use LPS to skip comparisons
+      } else {
+        i++;
+      }
     }
   }
-  return head;
+  return -1; // no match
 }
-
-const evenPal = build([1, 2, 2, 1]);
-const oddPal = build([1, 3, 3, 1]);
-const nonPal = build([1, 2, 3]);
-
-console.log(isPalindromeStack(evenPal)); // true
-console.log(isPalindromeLinear(oddPal)); // true
-console.log(isPalindromeLinear(nonPal)); // false
+console.log(kmpSearch('ababcabcab', 'abc')); // 3
+console.log(kmpSearch('aaaa', 'b'));        // -1
