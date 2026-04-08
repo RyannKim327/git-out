@@ -1,75 +1,81 @@
-// Compute lps array for pattern p
-function buildLPS(p: string): number[] {
-  const lps = new Array(p.length).fill(0);
-  let len = 0;            // length of the previous longest prefix suffix
-  let i = 1;
-
-  while (i < p.length) {
-    if (p[i] === p[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back in the pattern, don’t slide the text cursor
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
 /**
- * KMP search – returns true if pattern occurs in text
- * @param text the body to scan
- * @param pattern the substring to find
+ * Tarjan's algorithm (1990) – O(V + E) time.
+ *
+ * Input
+ * -----
+ * `graph`   : 0‑based adjacency list.  graph[v] is an array of vertices
+ *              that v points to.
+ *
+ * Output
+ * ------
+ * An array of SCCs.  Each SCC is an array of vertex indices.  The
+ * components are returned in reverse topological order (the first
+ * component in the list is one that has no outgoing edges to earlier
+ * components).
  */
-function kmpSearch(text: string, pattern: string): boolean {
-  if (pattern === "") return true;          // empty pattern matches everywhere
 
-  const lps = buildLPS(pattern);
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+export function tarjanSCC(graph: number[][]): number[][] {
+  const n = graph.length;
+  const indices = new Array<number>(n).fill(-1);   // order in which nodes were visited
+  const lowlink = new Array<number>(n).fill(-1);   // smallest index reachable from node
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
+  const sccs: number[][] = [];
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) return true;   // full match found
-    } else {
-      if (j !== 0) {
-        j = lps[j - 1];    // drop the matched prefix
-      } else {
-        i++;               // move on in the text
+  let currentIndex = 0;
+
+  const strongConnect = (v: number): void => {
+    // Set the depth index for v to the smallest unused index
+    indices[v] = currentIndex;
+    lowlink[v] = currentIndex;
+    currentIndex++;
+    stack.push(v);
+    onStack[v] = true;
+
+    // Consider successors of v
+    for (const w of graph[v]) {
+      if (indices[w] === -1) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → v is in the same SCC as w
+        lowlink[v] = Math.min(lowlink[v], indices[w]);
       }
     }
-  }
-  return false;
-}
-function kmpAllMatches(text: string, pattern: string): number[] {
-  if (pattern === "") return [];  // or [0,1,2,...] if you want
 
-  const lps = buildLPS(pattern);
-  const matches: number[] = [];
-  let i = 0, j = 0;
+    // If v is a root node, pop the stack and generate an SCC
+    if (lowlink[v] === indices[v]) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop() as number;   // stack never empty here
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++; j++;
-      if (j === pattern.length) {
-        matches.push(i - j); // match ends at i-1, so start = i-j
-        j = lps[j - 1];      // continue searching
-      }
-    } else {
-      if (j !== 0) j = lps[j - 1];
-      else i++;
+  // Run DFS from every node that hasn't been visited yet
+  for (let v = 0; v < n; v++) {
+    if (indices[v] === -1) {
+      strongConnect(v);
     }
   }
-  return matches;
-}
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
 
-console.log(kmpSearch(haystack, needle));          // true
-console.log(kmpAllMatches(haystack, needle));      // [10]
+  return sccs;
+}
+const graph = [
+  [1],          // 0 → 1
+  [2],          // 1 → 2
+  [0, 3],       // 2 → 0 (cycle 0‑1‑2) and → 3
+  [4],          // 3 → 4
+  [5],          // 4 → 5
+  [3],          // 5 → 3 (cycle 3‑4‑5)
+  []            // 6 isolated
+];
+
+const sccs = tarjanSCC(graph);
+console.log(sccs);
+// Possible output: [[6], [0, 1, 2], [3, 4, 5]]
