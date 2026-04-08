@@ -1,66 +1,45 @@
 /**
- * Fibonacci Search
+ * Return true if `left` and `right` contain exactly the same character counts.
  *
- * @param arr  – sorted array (ascending)
- * @param target – value that we want to locate
- * @returns the index of target or −1 if it isn't present
+ * @param left   – first string
+ * @param right  – second string
+ * @param options – tweak the comparison:
+ *   - `caseSensitive`: default `false` – treats 'A' and 'a' as equal
+ *   - `ignoreNonAlpha`: default `false` – strips out everything other than a‑z/A‑Z
  */
-export function fibonacciSearch<T>(
-    arr: readonly T[],
-    target: T,
-    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-    const n = arr.length;
+function areAnagrams(
+  left: string,
+  right: string,
+  options?: { caseSensitive?: boolean; ignoreNonAlpha?: boolean }
+): boolean {
+  const { caseSensitive = false, ignoreNonAlpha = false } = options ?? {};
 
-    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
-    let fibMMm2 = 0; // (m‑2)’th Fibonacci
-    let fibMMm1 = 1; // (m‑1)’th Fibonacci
-    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
+  const normalize = (s: string) =>
+    s
+      .split('')
+      .filter((c) => (!ignoreNonAlpha || /[a-zA-Z]/.test(c)))   // drop non‑letters if asked
+      .map((c) => (caseSensitive ? c : c.toLowerCase()))        // case folding
+      .sort()
+      .join('');
 
-    while (fibM < n) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
-    }
-
-    // ---- 2. Marks the eliminated range from front ----
-    let offset = -1;
-
-    // ---- 3. While there are elements to inspect ----
-    while (fibM > 1) {
-        // Calculate the index to check
-        const i = Math.min(offset + fibMMm2, n - 1);
-
-        const comp = cmp(arr[i], target);
-
-        // case 1: the target is greater than the value at index i
-        if (comp < 0) {
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        }
-        // case 2: the target is less than the value at index i
-        else if (comp > 0) {
-            fibM = fibMMm2;
-            fibMMm1 = fibMMm1 - fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        }
-        // case 3: element found
-        else {
-            return i;
-        }
-    }
-
-    // ---- 4. If the last remaining element is the target ----
-    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
-        return offset + 1;
-    }
-
-    return -1; // not found
+  return normalize(left) === normalize(right);
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
-const idx = fibonacciSearch(nums, 13);
+console.log(areAnagrams('listen', 'silent'));            // true
+console.log(areAnagrams('Tinsel', 'Listen'));            // true
+console.log(areAnagrams('hello', 'world'));              // false
+console.log(areAnagrams('William Shakespeare', 'I am a weakish speller', {
+  ignoreNonAlpha: true,
+}));                                                   // true
+function areAnagramsFast(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-console.log(idx); // → 6
-console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
+  const count: Record<string, number> = {};
+
+  for (const char of a) count[char] = (count[char] ?? 0) + 1;
+  for (const char of b) {
+    if (!count[char]) return false; // missing or too many of this char
+    count[char]!--;
+  }
+
+  return true;
+}
