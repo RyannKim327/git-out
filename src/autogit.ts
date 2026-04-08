@@ -1,81 +1,77 @@
-/**
- * Tarjan's algorithm (1990) – O(V + E) time.
- *
- * Input
- * -----
- * `graph`   : 0‑based adjacency list.  graph[v] is an array of vertices
- *              that v points to.
- *
- * Output
- * ------
- * An array of SCCs.  Each SCC is an array of vertex indices.  The
- * components are returned in reverse topological order (the first
- * component in the list is one that has no outgoing edges to earlier
- * components).
- */
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-export function tarjanSCC(graph: number[][]): number[][] {
-  const n = graph.length;
-  const indices = new Array<number>(n).fill(-1);   // order in which nodes were visited
-  const lowlink = new Array<number>(n).fill(-1);   // smallest index reachable from node
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
-  const sccs: number[][] = [];
+  get size() { return this._size; }
+  push(value: T) {
+    const node = new ListNode(value);
 
-  let currentIndex = 0;
+    if (!this.head) {
+      this.head = this.tail = node;        // first element
+    } else {
+      this.tail!.next = node;              // trick the tail
+      this.tail = node;                    // and move it
+    }
+    this._size++;
+  }
+  unshift(value: T) {
+    const node = new ListNode(value, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node; // when list was empty
+    this._size++;
+  }
+  pop(): T | null {
+    if (!this.head) return null;
 
-  const strongConnect = (v: number): void => {
-    // Set the depth index for v to the smallest unused index
-    indices[v] = currentIndex;
-    lowlink[v] = currentIndex;
-    currentIndex++;
-    stack.push(v);
-    onStack[v] = true;
+    let removedValue: T | null = null;
 
-    // Consider successors of v
-    for (const w of graph[v]) {
-      if (indices[w] === -1) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → v is in the same SCC as w
-        lowlink[v] = Math.min(lowlink[v], indices[w]);
+    // If we only have one node
+    if (this.head === this.tail) {
+      removedValue = this.head.value;
+      this.head = this.tail = null;
+    } else {
+      let current = this.head;
+      while (current.next !== this.tail) {
+        current = current.next!;
       }
+      removedValue = this.tail!.value;
+      current.next = null;
+      this.tail = current;
     }
 
-    // If v is a root node, pop the stack and generate an SCC
-    if (lowlink[v] === indices[v]) {
-      const component: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop() as number;   // stack never empty here
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
+    this._size--;
+    return removedValue;
+  }
+  find(predicate: (value: T) => boolean): T | null {
+    let current = this.head;
+    while (current) {
+      if (predicate(current.value)) return current.value;
+      current = current.next;
     }
-  };
-
-  // Run DFS from every node that hasn't been visited yet
-  for (let v = 0; v < n; v++) {
-    if (indices[v] === -1) {
-      strongConnect(v);
+    return null;
+  }
+  *[Symbol.iterator](): Generator<T, void, unknown> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
     }
   }
+const list = new LinkedList<number>();
 
-  return sccs;
-}
-const graph = [
-  [1],          // 0 → 1
-  [2],          // 1 → 2
-  [0, 3],       // 2 → 0 (cycle 0‑1‑2) and → 3
-  [4],          // 3 → 4
-  [5],          // 4 → 5
-  [3],          // 5 → 3 (cycle 3‑4‑5)
-  []            // 6 isolated
-];
+list.push(10);
+list.push(20);
+list.unshift(5);          // List is now: 5 → 10 → 20
 
-const sccs = tarjanSCC(graph);
-console.log(sccs);
-// Possible output: [[6], [0, 1, 2], [3, 4, 5]]
+console.log([...list]);   // [5, 10, 20]
+console.log(list.size);   // 3
+
+console.log(list.pop());   // 20
+console.log([...list]);   // [5, 10]
