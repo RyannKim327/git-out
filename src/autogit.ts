@@ -1,97 +1,99 @@
-class Queue<T> {
-  private items: T[] = [];
-  private start = 0;          // index of the front
+export interface PriorityQueue<T> {
+  enqueue(item: T, priority: number): void;
+  dequeue(): T | undefined;         // removes the highest‑priority item
+  peek(): T | undefined;            // look at the next item without removing
+  size(): number;
+  isEmpty(): boolean;
+}
+type HeapNode<T> = { value: T; priority: number };
 
-  push(item: T) {
-    this.items.push(item);
-  }
+export class BinaryHeap<T> implements PriorityQueue<T> {
+  /** Internal array that holds the heap nodes. */
+  private heap: HeapNode<T>[] = [];
 
-  pop(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.items[this.start++];
-    // optional cleanup to keep array short
-    if (this.start > 100 && this.start * 2 > this.items.length) {
-      this.items = this.items.slice(this.start);
-      this.start = 0;
-    }
-    return item;
+  /** Returns the array length, i.e. number of elements in the queue. */
+  size() {
+    return this.heap.length;
   }
 
   isEmpty() {
-    return this.start >= this.items.length;
+    return this.heap.length === 0;
   }
-}
-type Node = string | number | symbol;  // whatever shape you need
 
-/**
- * Breadth-First Search
- *
- * @param graph   adjacency list mapping each node to its neighbours
- * @param start   node from which to begin traversal
- * @param cb      optional callback executed for every visited node
- * @returns       an array of nodes in the order they were visited
- */
-function bfs<Node>(
-  graph: Map<Node, Node[]>, 
-  start: Node,
-  cb?: (node: Node) => void
-): Node[] {
-  const visited = new Set<Node>();
-  const queue = new Queue<Node>();
-  const order: Node[] = [];
+  /** Put a new (value, priority) pair into the heap. */
+  enqueue(value: T, priority: number) {
+    const node: HeapNode<T> = { value, priority };
+    this.heap.push(node);               // add to the bottom
+    this.bubbleUp(this.heap.length - 1); // restore heap property
+  }
 
-  queue.push(start);
-  visited.add(start);
+  /** Remove and return the value with the lowest priority value. */
+  dequeue(): T | undefined {
+    if (this.isEmpty()) return undefined;
 
-  while (!queue.isEmpty()) {
-    const current = queue.pop()!;
-    order.push(current);
+    const root = this.heap[0];
+    const last = this.heap.pop()!;          // guaranteed non‑empty
 
-    // run user code if supplied
-    cb?.(current);
-
-    const neighbours = graph.get(current) ?? [];
-    for (const neighbour of neighbours) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
+    if (!this.isEmpty()) {
+      this.heap[0] = last;                  // move the last node to root
+      this.bubbleDown(0);                   // restore heap property
     }
+
+    return root.value;
   }
 
-  return order;
-}
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []]
-]);
+  /** Peek at the next value that would be dequeued. */
+  peek(): T | undefined {
+    return this.isEmpty() ? undefined : this.heap[0].value;
+  }
 
-console.log(bfs(graph, 1)); // [1, 2, 3, 4, 5, 6]
-function bfsStop<T>(
-  graph: Map<T, T[]>,
-  start: T,
-  onVisit: (node: T) => boolean // true → stop
-) {
-  const visited = new Set<T>();
-  const queue = new Queue<T>();
+  /* ---------- internal helpers ---------- */
 
-  queue.push(start);
-  visited.add(start);
-
-  while (!queue.isEmpty()) {
-    const cur = queue.pop()!;
-    if (onVisit(cur)) return cur;   // finished
-
-    for (const nxt of graph.get(cur) ?? []) {
-      if (!visited.has(nxt)) {
-        visited.add(nxt);
-        queue.push(nxt);
-      }
+  private bubbleUp(idx: number) {
+    const node = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1; // same as Math.floor((idx-1)/2)
+      const parent = this.heap[parentIdx];
+      if (node.priority >= parent.priority) break; // correct place found
+      this.heap[idx] = parent;                     // move parent down
+      idx = parentIdx;
     }
+    this.heap[idx] = node; // place the new node
   }
-  return undefined;
+
+  private bubbleDown(idx: number) {
+    const length = this.heap.length;
+    const node = this.heap[idx];
+
+    while (true) {
+      const leftIdx = idx * 2 + 1;
+      const rightIdx = leftIdx + 1;
+      let smallestIdx = idx;
+
+      if (leftIdx < length && this.heap[leftIdx].priority < this.heap[smallestIdx].priority) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx < length && this.heap[rightIdx].priority < this.heap[smallestIdx].priority) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx === idx) break; // node is smaller than both children
+
+      this.heap[idx] = this.heap[smallestIdx];
+      idx = smallestIdx;
+    }
+
+    this.heap[idx] = node;
+  }
 }
+const pq = new BinaryHeap<string>();
+
+pq.enqueue('task A', 5);
+pq.enqueue('task B', 2);
+pq.enqueue('task C', 8);
+
+console.log(pq.peek());   // => 'task B' (priority 2)
+while (!pq.isEmpty()) {
+  console.log(pq.dequeue()); // prints B, A, C in priority order
+}
+type Comparator<T> = (a: T, b: T) => number; // <0: a before b
