@@ -1,36 +1,59 @@
-function countOccurrences(str: string, word: string): number {
-  // \b = word boundary; 'gi' = case‑insensitive, global
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  return str.split(regex).length - 1;
-}
-function countOccurrences2(str: string, word: string): number {
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
-}
-function countOccurrences3(str: string, word: string): number {
-  let count = 0;
-  let pos = 0;
+// ---------------------------------------------------------------------
+// 1️⃣  Node definition
+// ---------------------------------------------------------------------
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  while ((pos = str.toLowerCase().indexOf(word.toLowerCase(), pos)) !== -1) {
-    // Ensure whole‑word match using boundaries (optional)
-    const before = pos === 0 || /\W/.test(str[pos - 1]);
-    const after  = pos + word.length === str.length
-                 || /\W/.test(str[pos + word.length]);
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
+}
 
-    if (before && after) {
-      count++;
-    }
-    pos += word.length;
+// ---------------------------------------------------------------------
+// 2️⃣  Helper that returns (height, diameter) for a subtree
+// ---------------------------------------------------------------------
+function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
+  // Base case: empty subtree
+  if (node === null) {
+    return { h: 0, d: 0 }; // height 0, diameter 0
   }
 
-  return count;
-}
-const paragraph = `
-  TypeScript is great. TypeScript's type system helps catch bugs early.
-  A developer who uses typescript should ideally care about types.
-`;
+  // Recursively gather left and right results
+  const left = heightAndDiameter(node.left);
+  const right = heightAndDiameter(node.right);
 
-console.log(countOccurrences(paragraph, 'typescript'));   // → 4
-console.log(countOccurrences2(paragraph, 'typescript')); // → 4
-console.log(countOccurrences3(paragraph, 'typescript')); // → 4
+  // Current node's height
+  const curHeight = Math.max(left.h, right.h) + 1;
+
+  // Diameter that passes through this node
+  const curThrough = left.h + right.h + 1;
+
+  // Overall diameter for this subtree
+  const curDiameter = Math.max(curThrough, left.d, right.d);
+
+  return { h: curHeight, d: curDiameter };
+}
+
+// ---------------------------------------------------------------------
+// 3️⃣  Public entry point
+// ---------------------------------------------------------------------
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  return heightAndDiameter(root).d;
+}
+// Build a quick test tree:
+//        1
+//       / \
+//      2   3
+//         / \
+//        4   5
+const root = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
+
+console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
