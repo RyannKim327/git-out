@@ -1,90 +1,128 @@
-// ------------------------------------------------------------------
-// Breadth‑Limited Search (BLS)
-// ------------------------------------------------------------------
+// ---------- TYPES ----------
+type Comparator<T> = (a: T, b: T) => number;
 
-/**
- * A node in the frontier.
- * `state`   – whatever you want to search over (string, number, object…)
- * `depth`   – how many steps we’ve taken from the start
- */
-type FrontierNode<T> = { state: T; depth: number };
-
-/**
- * Basic graph helper: adjacency list.
- * For arbitrary graphs you can swap this for a function that returns
- * the successors of a vertex.
- */
-type AdjList<T> = Map<T, T[]>;
-
-/**
- * Breadth‑limited search.
- *
- * @param start          - starting state
- * @param isGoal         - predicate that tells us whether a state is a goal
- * @param getNeighbors   - how to obtain successors of a state
- * @param maxDepth       - stop expanding nodes at this depth
- * @returns              - the first goal state found, or undefined
- */
-export function breadthLimitedSearch<T>(
-  start: T,
-  isGoal: (state: T) => boolean,
-  getNeighbors: (state: T) => T[],
-  maxDepth: number
-): T | undefined {
-  // Queue for BFS (FIFO)
-  const queue: FrontierNode<T>[] = [{ state: start, depth: 0 }];
-  const visited = new Set<T>();
-
-  while (queue.length) {
-    const { state, depth } = queue.shift()!;   // pop the oldest node
-
-    if (visited.has(state)) continue; // ignore duplicates
-    visited.add(state);
-
-    if (isGoal(state)) return state;          // found what we want
-
-    // Don't go deeper than the limit
-    if (depth === maxDepth) continue;
-
-    // Enqueue all unvisited successors
-    for (const next of getNeighbors(state)) {
-      if (!visited.has(next)) {
-        queue.push({ state: next, depth: depth + 1 });
-      }
-    }
-  }
-
-  // No goal reached within the depth bound
-  return undefined;
+interface Node<T> {
+  key: T;
+  left: Node<T> | null;
+  right: Node<T> | null;
 }
-// Example: find a word that is 3 letters away from "cat" in a tiny
-// word‑graph (adjacent words differ by one character).
 
-const words = ["cat", "bat", "bet", "bed", "ded", "dog", "dig"];
+// ---------- BST CLASS ----------
+class BinarySearchTree<T> {
+  // root can stay undefined at construction time
+  private root: Node<T> | null = null;
 
-// Build an adjacency list (one‑letter edits)
-const graph: AdjList<string> = new Map();
-words.forEach(w => {
-  const adj: string[] = [];
-  for (const other of words) {
-    if (w !== other && w.split("").some((c, i) => c !== other[i])) {
-      // True only if they differ by ONE character
-      if (w.split("").filter((c, i) => c !== other[i]).length <= 1) {
-        adj.push(other);
+  /**
+   * Allows you to plug in any way you want keys compared.
+   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
+   */
+  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
+
+  /** Insert new key into tree */
+  insert(key: T): void {
+    const node: Node<T> = { key, left: null, right: null };
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
+
+    let curr = this.root;
+    while (true) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        if (curr.left) {
+          curr = curr.left;
+        } else {
+          curr.left = node;
+          break;
+        }
+      } else if (cmp > 0) {
+        if (curr.right) {
+          curr = curr.right;
+        } else {
+          curr.right = node;
+          break;
+        }
+      } else {
+        // key already exists – replace or ignore, here we ignore
+        break;
       }
     }
   }
-  graph.set(w, adj);
-});
 
-const start = "cat";
-const goal = "dig";
+  /** Search for a key. Returns the node if found or null. */
+  search(key: T): Node<T> | null {
+    let curr = this.root;
+    while (curr) {
+      const cmp = this.cmp(key, curr.key);
+      if (cmp < 0) {
+        curr = curr.left;
+      } else if (cmp > 0) {
+        curr = curr.right;
+      } else {
+        return curr;
+      }
+    }
+    return null;
+  }
 
-const found = breadthLimitedSearch(
-  start,
-  s => s === goal,
-  s => graph.get(s) ?? [],
-  3                       // depth limit
-);
+  /** In‑order traversal – gives sorted keys. */
+  inorder(callback: (key: T) => void): void {
+    function walk(node: Node<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      callback(node.key);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
 
-console.log(found); // prints "dig" or undefined if no path ≤ 3 steps
+  /** Delete a key. Simple implementation that preserves BST shape. */
+  delete(key: T): void {
+    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
+      if (!node) return null;
+
+      const cmp = this.cmp(key, node.key);
+      if (cmp < 0) {
+        node.left = deleteRec(node.left, key);
+      } else if (cmp > 0) {
+        node.right = deleteRec(node.right, key);
+      } else {
+        // node to delete found
+        if (!node.left) return node.right;
+        if (!node.right) return node.left;
+
+        // two children: find in‑order successor (smallest node on right)
+        let succ = node.right;
+        while (succ.left) succ = succ.left;
+        node.key = succ.key; // copy successor key
+        node.right = deleteRec(node.right, succ.key); // delete successor
+      }
+      return node;
+    };
+
+    this.root = deleteRec(this.root, key);
+  }
+}
+
+// ---------- DEFAULT COMPARATOR ----------
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+// ---------- USAGE EXAMPLE ----------
+const bst = new BinarySearchTree<number>();
+
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log('Search 5:', bst.search(5) !== null);   // true
+console.log('Search 4:', bst.search(4) !== null);   // false
+
+console.log('In‑order traversal:');
+bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
+
+bst.delete(7);
+console.log('After deleting 7:');
+bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
