@@ -1,107 +1,75 @@
-// A node can be anything that uniquely identifies a state.
-interface Node {
-  /** A unique string – the node’s id. */
-  id: string;
-  // Whatever other data the node owns can live here.
-  value?: any;
-}
+// Compute lps array for pattern p
+function buildLPS(p: string): number[] {
+  const lps = new Array(p.length).fill(0);
+  let len = 0;            // length of the previous longest prefix suffix
+  let i = 1;
 
-// Edges are just a mapping from a node id to its adjacent node ids.
-type AdjacencyList = Record<string, string[]>;
-
-// A path is simply an array of nodes (or their ids). Keep it generic so you
-// can work with a tree, graph, maze, etc.
-type Path = Node[];
-/**
- * Depth‑limited search.
- *
- * @param node      the current node
- * @param goalId    id of the goal node
- * @param graph     adjacency list describing neighbours
- * @param maxDepth  maximum depth you are allowed to go
- * @param pathSoFar the nodes traversed so far
- * @returns a Path to the goal, or null if the goal is deeper than maxDepth
- */
-function depthLimitedSearch(
-  node: Node,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number,
-  pathSoFar: Path = []
-): Path | null {
-  // If the current depth is already beyond what we’re allowed, reject.
-  if (pathSoFar.length > maxDepth) return null;
-
-  // Add the current node to the path
-  const newPath = [...pathSoFar, node];
-
-  // Goal check
-  if (node.id === goalId) return newPath;
-
-  // Stop if this depth is the last allowed – do NOT keep recursing
-  if (newPath.length === maxDepth) return null;
-
-  // Fetch neighbours; guard against a missing entry
-  const neighbours = graph[node.id] ?? [];
-
-  for (const neighbourId of neighbours) {
-    // Avoid looping back on the same node in the current path
-    if (newPath.some(n => n.id === neighbourId)) continue;
-
-    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
-
-    const result = depthLimitedSearch(
-      neighbourNode,
-      goalId,
-      graph,
-      maxDepth,
-      newPath
-    );
-    if (result) return result; // found a valid path
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back in the pattern, don’t slide the text cursor
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-
-  return null; // nothing found at this depth
+  return lps;
 }
 /**
- * Iterative‑deepening DFS that stops when it finds the goal or
- * when a supplied depth limit is reached.
- *
- * @param startId    id of the start node
- * @param goalId     id of the goal node
- * @param graph      adjacency list
- * @param maxDepth   the deepest depth you’re willing to explore
- * @returns a Path to the goal or null if none exists within depth
+ * KMP search – returns true if pattern occurs in text
+ * @param text the body to scan
+ * @param pattern the substring to find
  */
-function iterativeDeepening(
-  startId: string,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number
-): Path | null {
-  const startNode: Node = { id: startId }; // elaborate if needed
+function kmpSearch(text: string, pattern: string): boolean {
+  if (pattern === "") return true;          // empty pattern matches everywhere
 
-  for (let depth = 0; depth <= maxDepth; depth++) {
-    const result = depthLimitedSearch(startNode, goalId, graph, depth);
-    if (result) return result;
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) return true;   // full match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1];    // drop the matched prefix
+      } else {
+        i++;               // move on in the text
+      }
+    }
   }
-  return null;
+  return false;
 }
-const graph: AdjacencyList = {
-  A: ['B', 'C'],
-  B: ['D', 'E'],
-  C: ['F'],
-  D: [],
-  E: ['G', 'H'],
-  F: ['I'],
-  G: [],
-  H: [],
-  I: [],
-};
+function kmpAllMatches(text: string, pattern: string): number[] {
+  if (pattern === "") return [];  // or [0,1,2,...] if you want
 
-const path = iterativeDeepening('A', 'H', graph, 10);
-if (path) {
-  console.log('Found path:', path.map(n => n.id).join(' → '));
-} else {
-  console.log('No path found within the depth limit');
+  const lps = buildLPS(pattern);
+  const matches: number[] = [];
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        matches.push(i - j); // match ends at i-1, so start = i-j
+        j = lps[j - 1];      // continue searching
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return matches;
 }
-Found path: A → B → E → H
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
+
+console.log(kmpSearch(haystack, needle));          // true
+console.log(kmpAllMatches(haystack, needle));      // [10]
