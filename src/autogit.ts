@@ -1,34 +1,22 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
+function removeVowels(str: string): string {
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
-function reverseUnicodeString(str: string): string {
-  const chars: string[] = [];
+const example = "Hello, World!";
+console.log(removeVowels(example)); // "Hll, Wrld!"
+function removeVowelsManual(str: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u']);
+  return Array.from(str)
+    .filter(ch => !vowels.has(ch.toLowerCase()))
+    .join('');
+}
+const VOWELS = new Set(['a', 'e', 'i', 'o', 'u'] as const);
+
+function removeVowelsFast(str: string): string {
+  const result: string[] = [];
   for (const ch of str) {
-    chars.unshift(ch);            // add each code‑point to the front
+    if (!VOWELS.has(ch.toLowerCase())) {
+      result.push(ch);
+    }
   }
-  return chars.join('');
+  return result.join('');
 }
-function reverseStringLoop(str: string): string {
-  const buf = str.split('');
-  let i = 0;
-  let j = buf.length - 1;
-  while (i < j) {
-    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
-    ++i;
-    --j;
-  }
-  return buf.join('');
-}
-function reverseFunctional(str: string): string {
-  return [...str].reduceRight((acc, char) => acc + char, '');
-}
-function reverseStringFast(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
-}
-const raw = 'Hello, 🌍!';
-console.log(reverseString(raw));           // "!🌍 ,olleH"
-console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
