@@ -1,32 +1,23 @@
-function countChar(str: string, target: string): number {
-  // split on the target, then subtract 1 because split returns one more element than matches
-  return str.split(target).length - 1;
-}
-
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countCharWithRegex(str: string, target: string): number {
-  const matches = str.match(new RegExp(target, 'g'));
-  return matches ? matches.length : 0;
-}
-
-// Example
-console.log(countCharWithRegex("hello world", "l")); // 3
-console.log(countCharWithRegex("hello world", "z")); // 0
-function countLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+/**
+ * Randomly sorts (shuffles) an array in place.
+ * Uses the Fisher‑Yates algorithm for a uniform shuffle.
+ */
+function randomSort<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i (inclusive)
+    const j = Math.floor(Math.random() * (i + 1));
+    // Swap arr[i] and arr[j]
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return count;
+  return arr;
 }
 
-// Example
-console.log(countLoop('hello world', 'l')); // 3
-function countReduce(str: string, target: string): number {
-  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
+// Example usage:
+const numbers = [1, 2, 3, 4, 5];
+console.log('Before:', numbers);
+console.log('After  :', randomSort([...numbers])); // clone to keep original unchanged
+function randomComparator<T>(a: T, b: T) {
+  return Math.random() - 0.5;   // not guaranteed to be a stable sort
 }
-// Equivalent to looping, but shows functional style
-import { count } from 'lodash';
-
-count('hello world', 'l'); // 3
+const scrambled = [...numbers].sort(randomComparator);
+console.log(scrambled);
