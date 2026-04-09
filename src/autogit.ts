@@ -1,54 +1,47 @@
 /**
- * Generic shell sort – works on any array whose elements can be compared by a
- * key that returns a value implementing `<` / `>`.
+ * Does `a` consist of exactly the same letters as `b`, in any order?
+ * The comparison is case‑insensitive and ignores whitespace.
  *
- * @param arr   The array to sort (mutated in‑place)
- * @param key   (optional) a function that extracts the sort key from each element.
- *              For plain numbers you can leave this undefined.
- *
- * @returns The sorted array (same reference as the input).
+ * @param a – first candidate
+ * @param b – second candidate
+ * @returns true if the strings are anagrams, otherwise false
  */
-export function shellSort<T>(arr: T[], key?: (x: T) => number | string): T[] {
-  const n = arr.length;
-  // Default key is identity for numbers, fallback to string comparison.
-  const keyFn = key ??
-    ((x: T) => {
-      const v = (x as unknown as number);
-      return typeof v === "number" ? v : String(v);
-    });
+export function isAnagram(a: string, b: string): boolean {
+  // Normalise the strings: lowercase, trim, remove spaces.
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+  const strA = normalize(a);
+  const strB = normalize(b);
 
-  // Start with a gap that is roughly n/2, then reduce it by a factor of 1.3
-  // (Knuth's sequence: h = 3*h + 1)
-  let gap = 1;
-  while (gap < n / 3) gap = 3 * gap + 1; // largest h < n/3
+  // Quick rejection: different length → impossible to be an anagram.
+  if (strA.length !== strB.length) return false;
 
-  while (gap >= 1) {
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (
-        j >= gap &&
-        (keyFn(temp) < keyFn(arr[j - gap]))
-      ) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    gap = Math.floor((gap - 1) / 3); // move to previous gap in Knuth sequence
+  // === Approach 1: sorting ===
+  // const sortedA = strA.split('').sort().join('');
+  // const sortedB = strB.split('').sort().join('');
+  // return sortedA === sortedB;
+
+  // === Approach 2: frequency counting ===
+  const freq: Record<string, number> = {};
+
+  // Count characters of the first string.
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
-  return arr;
+
+  // Subtract counts using characters from the second string.
+  for (const ch of strB) {
+    if (!freq[ch]) {
+      // Either the character never appeared in `a`
+      // or its count has already been zeroed out.
+      return false;
+    }
+    freq[ch]!--;          // `!` tells the compiler this is defined.
+    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
+  }
+
+  // If all counts have cancelled out, the map should be empty.
+  return Object.keys(freq).length === 0;
 }
-import { shellSort } from "./shellSort";
-
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(data);
-console.log(data); // [1, 2, 3, 8, 12, 23, 34, 54]
-const users = [
-  { name: "Ada", age: 45 },
-  { name: "Bob", age: 30 },
-  { name: "Cleo", age: 37 }
-];
-
-shellSort(users, u => u.age);
-// users now sorted by age
+console.log(isAnagram('Listen', 'Silent'));   // true
+console.log(isAnagram('Triangle', 'Integral')); // true
+console.log(isAnagram('Apple', 'Pabble'));      // false
