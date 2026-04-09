@@ -1,67 +1,30 @@
 /**
- * Rabin‑Karp – find all occurrences of `pat` in `txt`.
- *
- * @param txt   The text to search in.
- * @param pat   The pattern to find.
- * @returns     An array of starting indices where `pat` occurs in `txt`.
+ * Return the second largest distinct value in an array.
+ * @param arr – numeric array
+ * @returns The second largest number or `undefined` if it doesn’t exist
  */
-export function rabinKarp(txt: string, pat: string): number[] {
-  if (pat.length === 0 || txt.length < pat.length) return [];
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;  // not enough elements
 
-  const base = 256;       // Number of possible character values
-  const mod  = 101;       // A small prime – good for demo purposes
+  let max = -Infinity;
+  let second = -Infinity;
 
-  const m = pat.length;
-  const n = txt.length;
-
-  // ---------- 1. Pre‑compute (base^(m-1)) % mod  ----------
-  let highestBase = 1;
-  for (let i = 1; i <= m - 1; i++) {
-    highestBase = (highestBase * base) % mod;
-  }
-
-  // ---------- 2. Compute hash of pattern and first window ----------
-  let patHash  = 0;
-  let windowHash = 0;
-  for (let i = 0; i < m; i++) {
-    patHash   = (patHash   * base + pat.charCodeAt(i)) % mod;
-    windowHash= (windowHash* base + txt.charCodeAt(i)) % mod;
-  }
-
-  const result: number[] = [];
-
-  // ---------- 3. Slide the window over the text ----------
-  for (let i = 0; i <= n - m; i++) {
-    // If the hash values match, perform a character‑by‑character check
-    if (patHash === windowHash) {
-      let match = true;
-      for (let j = 0; j < m; j++) {
-        if (txt.charCodeAt(i + j) !== pat.charCodeAt(j)) {
-          match = false;
-          break;
-        }
-      }
-      if (match) result.push(i);
+  for (const x of arr) {
+    if (x > max) {
+      second = max;   // previous max becomes second
+      max = x;
+    } else if (x < max && x > second) {
+      second = x;     // distinct candidate for second
     }
-
-    // Compute hash for next window
-    if (i < n - m) {
-      // Remove leading char, add trailing char
-      windowHash =
-        ((windowHash - txt.charCodeAt(i) * highestBase) * base
-          + txt.charCodeAt(i + m)) % mod;
-
-      // Problem: windowHash can become negative – make it positive
-      if (windowHash < 0) windowHash += mod;
-    }
+    // values equal to max are ignored – we want distinct numbers
   }
 
-  return result;
+  return second === -Infinity ? undefined : second;
 }
-import { rabinKarp } from "./rabinKarp";
 
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
-
-const indices = rabinKarp(text, pattern);
-console.log(indices); // → [10]
+// Example:
+console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
+function secondLargestSorted(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)].sort((a, b) => b - a);
+  return unique[1];           // undefined if not enough distinct values
+}
