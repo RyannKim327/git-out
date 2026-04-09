@@ -1,54 +1,81 @@
 /**
- * Generic shell sort – works on any array whose elements can be compared by a
- * key that returns a value implementing `<` / `>`.
+ * Tarjan's algorithm (1990) – O(V + E) time.
  *
- * @param arr   The array to sort (mutated in‑place)
- * @param key   (optional) a function that extracts the sort key from each element.
- *              For plain numbers you can leave this undefined.
+ * Input
+ * -----
+ * `graph`   : 0‑based adjacency list.  graph[v] is an array of vertices
+ *              that v points to.
  *
- * @returns The sorted array (same reference as the input).
+ * Output
+ * ------
+ * An array of SCCs.  Each SCC is an array of vertex indices.  The
+ * components are returned in reverse topological order (the first
+ * component in the list is one that has no outgoing edges to earlier
+ * components).
  */
-export function shellSort<T>(arr: T[], key?: (x: T) => number | string): T[] {
-  const n = arr.length;
-  // Default key is identity for numbers, fallback to string comparison.
-  const keyFn = key ??
-    ((x: T) => {
-      const v = (x as unknown as number);
-      return typeof v === "number" ? v : String(v);
-    });
 
-  // Start with a gap that is roughly n/2, then reduce it by a factor of 1.3
-  // (Knuth's sequence: h = 3*h + 1)
-  let gap = 1;
-  while (gap < n / 3) gap = 3 * gap + 1; // largest h < n/3
+export function tarjanSCC(graph: number[][]): number[][] {
+  const n = graph.length;
+  const indices = new Array<number>(n).fill(-1);   // order in which nodes were visited
+  const lowlink = new Array<number>(n).fill(-1);   // smallest index reachable from node
+  const onStack = new Array<boolean>(n).fill(false);
+  const stack: number[] = [];
+  const sccs: number[][] = [];
 
-  while (gap >= 1) {
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (
-        j >= gap &&
-        (keyFn(temp) < keyFn(arr[j - gap]))
-      ) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+  let currentIndex = 0;
+
+  const strongConnect = (v: number): void => {
+    // Set the depth index for v to the smallest unused index
+    indices[v] = currentIndex;
+    lowlink[v] = currentIndex;
+    currentIndex++;
+    stack.push(v);
+    onStack[v] = true;
+
+    // Consider successors of v
+    for (const w of graph[v]) {
+      if (indices[w] === -1) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
+      } else if (onStack[w]) {
+        // Successor w is in stack → v is in the same SCC as w
+        lowlink[v] = Math.min(lowlink[v], indices[w]);
       }
-      arr[j] = temp;
     }
-    gap = Math.floor((gap - 1) / 3); // move to previous gap in Knuth sequence
-  }
-  return arr;
-}
-import { shellSort } from "./shellSort";
 
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(data);
-console.log(data); // [1, 2, 3, 8, 12, 23, 34, 54]
-const users = [
-  { name: "Ada", age: 45 },
-  { name: "Bob", age: 30 },
-  { name: "Cleo", age: 37 }
+    // If v is a root node, pop the stack and generate an SCC
+    if (lowlink[v] === indices[v]) {
+      const component: number[] = [];
+      let w: number;
+      do {
+        w = stack.pop() as number;   // stack never empty here
+        onStack[w] = false;
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
+  };
+
+  // Run DFS from every node that hasn't been visited yet
+  for (let v = 0; v < n; v++) {
+    if (indices[v] === -1) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
+}
+const graph = [
+  [1],          // 0 → 1
+  [2],          // 1 → 2
+  [0, 3],       // 2 → 0 (cycle 0‑1‑2) and → 3
+  [4],          // 3 → 4
+  [5],          // 4 → 5
+  [3],          // 5 → 3 (cycle 3‑4‑5)
+  []            // 6 isolated
 ];
 
-shellSort(users, u => u.age);
-// users now sorted by age
+const sccs = tarjanSCC(graph);
+console.log(sccs);
+// Possible output: [[6], [0, 1, 2], [3, 4, 5]]
