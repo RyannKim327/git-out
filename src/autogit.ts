@@ -1,73 +1,18 @@
-/**
- * In‑place selection sort.
- *
- * @param arr     – The array you want sorted.
- * @param compare – Optional: a function that returns
- *                  a negative number if a < b,
- *                  zero if a == b,
- *                  and a positive number if a > b.
- *                  If omitted, the default < > comparison is used.
- *
- * @returns The sorted array (the same reference that was passed in).
- */
-export function selectionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  const defaultCompare = (a: T, b: T) => {
-    // Works for numbers and strings out of the box.
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  };
+const numbers: number[] = [12, 4, 56, 3, 9];
 
-  const cmp = compare ?? defaultCompare;
+// The default sort is string comparison → "12" < "56" < ...!
+const sorted = numbers.slice().sort((a, b) => a - b);
 
-  for (let fillPos = 0; fillPos < len - 1; ++fillPos) {
-    // Assume the current position holds the minimum.
-    let minIdx = fillPos;
-
-    // Scan the unsorted portion for a new minimum
-    for (let searchIdx = fillPos + 1; searchIdx < len; ++searchIdx) {
-      if (cmp(arr[searchIdx], arr[minIdx]) < 0) {
-        minIdx = searchIdx;
-      }
-    }
-
-    // Skip the swap if the minimum is already in place
-    if (minIdx !== fillPos) {
-      [arr[fillPos], arr[minIdx]] = [arr[minIdx], arr[fillPos]];
-    }
-  }
-
-  return arr;
+console.log(sorted); // [3, 4, 9, 12, 56]
+function sortNums(arr: number[]): number[] {
+  return arr.slice().sort((a, b) => a - b);
 }
-// Numbers – default ascending sort
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums)); // [11, 12, 22, 25, 64]
 
-// Strings – simple ascending sort
-console.log(selectionSort(['pear', 'apple', 'orange']));
-// ['apple', 'orange', 'pear']
-
-// Custom order – descending
-const descending = (a: number, b: number) => b - a;
-console.log(selectionSort([1, 5, 3, 2], descending));
-// [5, 3, 2, 1]
-
-// Custom objects
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Ada',    age: 25 },
-  { name: 'Evan',   age: 32 },
-  { name: 'Liam',   age: 19 }
-];
-
-const ageAsc = (p: Person, q: Person) => p.age - q.age;
-console.log(selectionSort(people, ageAsc));
-// [
-//   { name: 'Liam', age: 19 },
-//   { name: 'Ada',  age: 25 },
-//   { name: 'Evan', age: 32 }
-// ]
+const unsorted = [27, 13, 42, 8];
+console.log(sortNums(unsorted)); // [8, 13, 27, 42]
+function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
+  return arr.slice().sort(cmpFn);
+}
+function sortNumbersASC(nums: number[]): number[] {
+  return nums.slice().sort((a, b) => a - b);
+}
