@@ -1,39 +1,19 @@
-/**
- * Fetches a random dog picture and logs the URL.
- * Works in Node (with node-fetch polyfill) and in browsers.
- */
+const text = "The quick brown fox jumps over the lazy dog";
 
-const DOG_API = 'https://dog.ceo/api/breeds/image/random';
-
-interface DogApiResponse {
-  message: string;  // the image URL
-  status: string;   // should be 'success'
+function contains(sub: string, str: string = text): boolean {
+  return str.includes(sub);
 }
 
-/**
- * Makes the HTTP request, parses the JSON, and logs the image URL.
- */
-async function showRandomDog(): Promise<void> {
-  try {
-    // `fetch` may need a polyfill in Node, e.g. `node-fetch`
-    const response = await fetch(DOG_API);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-
-    const data: DogApiResponse = await response.json();
-
-    if (data.status !== 'success') {
-      throw new Error(`API reported failure: ${data.status}`);
-    }
-
-    console.log('Random dog image URL:', data.message);
-  } catch (err) {
-    console.error('Failed to fetch dog image:', err);
-  }
+console.log(contains("brown"));          // true
+console.log(contains("cat"));            // false
+console.log(contains("Brown", text));    // false – includes is case‑sensitive
+function containsRegex(pattern: RegExp, str: string = text): boolean {
+  return pattern.test(str);
 }
 
-showRandomDog();
-npm install node-fetch
-import fetch from 'node-fetch';
+console.log(containsRegex(/BROWN/i));  // true – case‑insensitive match
+const hasSub = s.includes(sub);            // ✅
+const hasSubOld = s.indexOf(sub) !== -1;   // ✅
+const starts = s.startsWith(prefix);       // ✅
+const ends = s.endsWith(suffix);           // ✅
+const matches = /pattern/.test(s);         // ✅
