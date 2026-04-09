@@ -1,18 +1,16 @@
-const arr = [1, 2, 3, 4, 5];
-
-// In‑place reversal
-arr.reverse();          // arr becomes [5, 4, 3, 2, 1]
-
-// If you need a new array instead of mutating the original
-const reversed = [...arr].reverse();   // [5, 4, 3, 2, 1]
-
-// Or do it manually (e.g., for learning or if you want a custom logic)
-function reverse<T>(src: T[]): T[] {
-  const out: T[] = [];
-  for (let i = src.length - 1; i >= 0; i--) {
-    out.push(src[i]);
+/**
+ * Returns true if the array is sorted in non‑decreasing order.
+ * Works for any type that supports the <= operator.
+ */
+function isSortedAscending<T>(arr: T[]): boolean {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] > arr[i + 1]) {
+      return false;                // found a violation
+    }
   }
-  return out;
+  return true;                     // no violations found
 }
-
-const manualReversed = reverse([10, 20, 30]); // [30, 20, 10]
+console.log(isSortedAscending([1, 2, 3, 4]));   // true
+console.log(isSortedAscending([1, 3, 2, 4]));   // false
+const isSortedAsc = (arr: number[]) =>
+  arr.every((v, i) => i === 0 || arr[i - 1] <= v);
