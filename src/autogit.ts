@@ -1,30 +1,88 @@
-/**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
+// RandomAsyncSample.tsx (React‑Native)
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, {useEffect, useState} from 'react';
+import {View, Text, Button, StyleSheet, Alert} from 'react-native';
 
-  let max = -Infinity;
-  let second = -Infinity;
+interface WeatherResponse {
+  location: string;
+  temp_c: number;
+  condition: string;
+  // add any other fields your API sends
+}
 
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
-    }
-    // values equal to max are ignored – we want distinct numbers
+const fetchWeather = async (
+  location: string,
+): Promise<WeatherResponse> => {
+  const url = `https://api.example.com/weather?city=${encodeURIComponent(
+    location,
+  )}`;
+
+  // Random twist – fake delay to emulate slower networks
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      // Add auth headers etc. if needed
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
-  return second === -Infinity ? undefined : second;
-}
+  const data = (await response.json()) as WeatherResponse;
+  return data;
+};
 
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
-}
+export const RandomAsyncSample: React.FC = () => {
+  const [weather, setWeather] = useState<WeatherResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getWeather = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await fetchWeather('San Francisco');
+      setWeather(result);
+    } catch (err: any) {
+      setError(err.message || 'Unknown error');
+      Alert.alert('Oops', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Pull the data once when the component mounts
+    getWeather();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Async Weather Sample</Text>
+
+      {loading && <Text>Loading…</Text>}
+
+      {error && <Text style={styles.error}>Error: {error}</Text>}
+
+      {weather && (
+        <>
+          <Text>Location: {weather.location}</Text>
+          <Text>Temp: {weather.temp_c}°C</Text>
+          <Text>Condition: {weather.condition}</Text>
+        </>
+      )}
+
+      <Button title="Refresh" onPress={getWeather} disabled={loading} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16},
+  title: {fontSize: 20, marginBottom: 12},
+  error: {color: 'red', marginTop: 8},
+});
