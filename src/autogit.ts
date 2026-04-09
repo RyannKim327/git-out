@@ -1,40 +1,66 @@
 /**
- * Binary search – recursive version
+ * Fibonacci Search
  *
- * @param arr   Sorted array (ascending order)
- * @param target Value you’re looking for
- * @param low   Left boundary (inclusive) – do **not** pass this on the first call
- * @param high  Right boundary (inclusive) – do **not** pass this on the first call
- * @returns Index of target, or -1 if absent
+ * @param arr  – sorted array (ascending)
+ * @param target – value that we want to locate
+ * @returns the index of target or −1 if it isn't present
  */
-function binarySearch<T extends number | string>(
+export function fibonacciSearch<T>(
     arr: readonly T[],
     target: T,
-    low = 0,
-    high = arr.length - 1
+    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
 ): number {
-    // Base case: empty range → not found
-    if (low > high) return -1;
+    const n = arr.length;
 
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
+    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
+    let fibMMm2 = 0; // (m‑2)’th Fibonacci
+    let fibMMm1 = 1; // (m‑1)’th Fibonacci
+    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
 
-    if (midVal === target) {
-        return mid;                     // found
-    } else if (midVal < target) {
-        // search right half
-        return binarySearch(arr, target, mid + 1, high);
-    } else {
-        // left half
-        return binarySearch(arr, target, low, mid - 1);
+    while (fibM < n) {
+        fibMMm2 = fibMMm1;
+        fibMMm1 = fibM;
+        fibM = fibMMm2 + fibMMm1;
     }
+
+    // ---- 2. Marks the eliminated range from front ----
+    let offset = -1;
+
+    // ---- 3. While there are elements to inspect ----
+    while (fibM > 1) {
+        // Calculate the index to check
+        const i = Math.min(offset + fibMMm2, n - 1);
+
+        const comp = cmp(arr[i], target);
+
+        // case 1: the target is greater than the value at index i
+        if (comp < 0) {
+            fibM = fibMMm1;
+            fibMMm1 = fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+            offset = i;
+        }
+        // case 2: the target is less than the value at index i
+        else if (comp > 0) {
+            fibM = fibMMm2;
+            fibMMm1 = fibMMm1 - fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+        }
+        // case 3: element found
+        else {
+            return i;
+        }
+    }
+
+    // ---- 4. If the last remaining element is the target ----
+    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
+        return offset + 1;
+    }
+
+    return -1; // not found
 }
-const nums = [1, 4, 7, 12, 19, 31, 55];
-const idx  = binarySearch(nums, 19);
-console.log(idx);   // 4
-function binarySearchIter<T extends number | string>(
-    arr: readonly T[],
-    target: T
-): number {
-    return binarySearch(arr, target);
-}
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+const idx = fibonacciSearch(nums, 13);
+
+console.log(idx); // → 6
+console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
