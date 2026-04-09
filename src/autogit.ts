@@ -1,39 +1,30 @@
 /**
- * Fetches a random dog picture and logs the URL.
- * Works in Node (with node-fetch polyfill) and in browsers.
+ * Return the second largest distinct value in an array.
+ * @param arr – numeric array
+ * @returns The second largest number or `undefined` if it doesn’t exist
  */
+function secondLargest(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;  // not enough elements
 
-const DOG_API = 'https://dog.ceo/api/breeds/image/random';
+  let max = -Infinity;
+  let second = -Infinity;
 
-interface DogApiResponse {
-  message: string;  // the image URL
-  status: string;   // should be 'success'
-}
-
-/**
- * Makes the HTTP request, parses the JSON, and logs the image URL.
- */
-async function showRandomDog(): Promise<void> {
-  try {
-    // `fetch` may need a polyfill in Node, e.g. `node-fetch`
-    const response = await fetch(DOG_API);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
+  for (const x of arr) {
+    if (x > max) {
+      second = max;   // previous max becomes second
+      max = x;
+    } else if (x < max && x > second) {
+      second = x;     // distinct candidate for second
     }
-
-    const data: DogApiResponse = await response.json();
-
-    if (data.status !== 'success') {
-      throw new Error(`API reported failure: ${data.status}`);
-    }
-
-    console.log('Random dog image URL:', data.message);
-  } catch (err) {
-    console.error('Failed to fetch dog image:', err);
+    // values equal to max are ignored – we want distinct numbers
   }
+
+  return second === -Infinity ? undefined : second;
 }
 
-showRandomDog();
-npm install node-fetch
-import fetch from 'node-fetch';
+// Example:
+console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
+function secondLargestSorted(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)].sort((a, b) => b - a);
+  return unique[1];           // undefined if not enough distinct values
+}
