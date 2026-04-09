@@ -1,30 +1,40 @@
 /**
- * Compute n! recursively.
+ * Binary search – recursive version
  *
- * @param n – non‑negative integer (or BigInt)
- * @returns n! as the same numeric type that was passed in
+ * @param arr   Sorted array (ascending order)
+ * @param target Value you’re looking for
+ * @param low   Left boundary (inclusive) – do **not** pass this on the first call
+ * @param high  Right boundary (inclusive) – do **not** pass this on the first call
+ * @returns Index of target, or -1 if absent
  */
-function factorial(n: number): number;
-function factorial(n: BigInt): BigInt;
-function factorial(n: number | BigInt): number | BigInt {
-  // Validate the input
-  if (typeof n === "number") {
-    if (!Number.isInteger(n) || n < 0) {
-      throw new Error("n must be a non‑negative integer");
+function binarySearch<T extends number | string>(
+    arr: readonly T[],
+    target: T,
+    low = 0,
+    high = arr.length - 1
+): number {
+    // Base case: empty range → not found
+    if (low > high) return -1;
+
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
+
+    if (midVal === target) {
+        return mid;                     // found
+    } else if (midVal < target) {
+        // search right half
+        return binarySearch(arr, target, mid + 1, high);
+    } else {
+        // left half
+        return binarySearch(arr, target, low, mid - 1);
     }
-    // Base case
-    if (n <= 1) return 1;
-    // Recursive step
-    return n * factorial(n - 1);
-  } else {
-    // BigInt path – same logic, but with BigInt operations
-    if (n < 0n) {
-      throw new Error("n must be a non‑negative integer");
-    }
-    if (n <= 1n) return 1n;
-    return n * factorial(n - 1n);
-  }
 }
-console.log(factorial(5));   // 120
-console.log(factorial(20));  // 2432902008176640000
-console.log(factorial(20n)); // 2432902008176640000n (BigInt)
+const nums = [1, 4, 7, 12, 19, 31, 55];
+const idx  = binarySearch(nums, 19);
+console.log(idx);   // 4
+function binarySearchIter<T extends number | string>(
+    arr: readonly T[],
+    target: T
+): number {
+    return binarySearch(arr, target);
+}
