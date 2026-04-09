@@ -1,38 +1,66 @@
 /**
- * Performs an interpolation search on a strictly‑increasing array of numbers.
- * @param arr   The sorted array (ascending).  Values must be finite numbers.
- * @param key   The value you’re looking for.
- * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
+ * Fibonacci Search
+ *
+ * @param arr  – sorted array (ascending)
+ * @param target – value that we want to locate
+ * @returns the index of target or −1 if it isn't present
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+export function fibonacciSearch<T>(
+    arr: readonly T[],
+    target: T,
+    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+    const n = arr.length;
 
-  let low = 0;
-  let high = arr.length - 1;
+    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
+    let fibMMm2 = 0; // (m‑2)’th Fibonacci
+    let fibMMm1 = 1; // (m‑1)’th Fibonacci
+    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
 
-  // If the target is outside the range, we can bail early.
-  if (key < arr[low] || key > arr[high]) return -1;
+    while (fibM < n) {
+        fibMMm2 = fibMMm1;
+        fibMMm1 = fibM;
+        fibM = fibMMm2 + fibMMm1;
+    }
 
-  while (low <= high && arr[low] !== arr[high]) {
-    // Estimate the likely position: a weighted average.
-    const pos = low + Math.floor(
-      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-    );
+    // ---- 2. Marks the eliminated range from front ----
+    let offset = -1;
 
-    // Safety: clamp to array bounds.
-    if (pos < low)   return -1;
-    if (pos > high)  return -1;
+    // ---- 3. While there are elements to inspect ----
+    while (fibM > 1) {
+        // Calculate the index to check
+        const i = Math.min(offset + fibMMm2, n - 1);
 
-    const val = arr[pos];
+        const comp = cmp(arr[i], target);
 
-    if (val === key) return pos;
-    if (val < key)   low = pos + 1;
-    else             high = pos - 1;
-  }
+        // case 1: the target is greater than the value at index i
+        if (comp < 0) {
+            fibM = fibMMm1;
+            fibMMm1 = fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+            offset = i;
+        }
+        // case 2: the target is less than the value at index i
+        else if (comp > 0) {
+            fibM = fibMMm2;
+            fibMMm1 = fibMMm1 - fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+        }
+        // case 3: element found
+        else {
+            return i;
+        }
+    }
 
-  // Final check if low might still hold the key.
-  return (arr[low] === key) ? low : -1;
+    // ---- 4. If the last remaining element is the target ----
+    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
+        return offset + 1;
+    }
+
+    return -1; // not found
 }
-const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
-const idx = interpolationSearch(nums, 18); // 5
-console.log(idx); // prints 5
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+const idx = fibonacciSearch(nums, 13);
+
+console.log(idx); // → 6
+console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
