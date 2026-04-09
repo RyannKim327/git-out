@@ -1,36 +1,61 @@
-function countOccurrences(str: string, word: string): number {
-  // \b = word boundary; 'gi' = case‑insensitive, global
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  return str.split(regex).length - 1;
-}
-function countOccurrences2(str: string, word: string): number {
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
-}
-function countOccurrences3(str: string, word: string): number {
-  let count = 0;
-  let pos = 0;
+/**
+ * Return true if `text` is a palindrome.
+ *
+ * The function walks from both ends towards the middle, comparing matching
+ * characters.  It never creates an auxiliary string or array, so the
+ * extra space cost is O(1).
+ *
+ * Options:
+ *   - ignoreCase:   treat 'A' and 'a' as the same (default true)
+ *   - ignoreNonAlpha: strip out anything that isn’t a letter or digit (default true)
+ */
+function isPalindrome(
+  text: string,
+  ignoreCase = true,
+  ignoreNonAlpha = true
+): boolean {
+  let left = 0;
+  let right = text.length - 1;
 
-  while ((pos = str.toLowerCase().indexOf(word.toLowerCase(), pos)) !== -1) {
-    // Ensure whole‑word match using boundaries (optional)
-    const before = pos === 0 || /\W/.test(str[pos - 1]);
-    const after  = pos + word.length === str.length
-                 || /\W/.test(str[pos + word.length]);
-
-    if (before && after) {
-      count++;
+  while (left < right) {
+    // Skip unwanted characters on the left
+    while (
+      left < right &&
+      (ignoreNonAlpha ? !isAlphaNumeric(text[left]) : false)
+    ) {
+      left++;
     }
-    pos += word.length;
+
+    // Skip unwanted characters on the right
+    while (
+      left < right &&
+      (ignoreNonAlpha ? !isAlphaNumeric(text[right]) : false)
+    ) {
+      right--;
+    }
+
+    // Compare the two characters
+    const leftCh  = ignoreCase ? text[left].toLowerCase() : text[left];
+    const rightCh = ignoreCase ? text[right].toLowerCase() : text[right];
+
+    if (leftCh !== rightCh) return false;
+
+    left++;
+    right--;
   }
 
-  return count;
+  return true;
 }
-const paragraph = `
-  TypeScript is great. TypeScript's type system helps catch bugs early.
-  A developer who uses typescript should ideally care about types.
-`;
 
-console.log(countOccurrences(paragraph, 'typescript'));   // → 4
-console.log(countOccurrences2(paragraph, 'typescript')); // → 4
-console.log(countOccurrences3(paragraph, 'typescript')); // → 4
+function isAlphaNumeric(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  // '0'-'9' => 48-57, 'A'-'Z' => 65-90, 'a'-'z' => 97-122
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122)
+  );
+}
+console.log(isPalindrome("Was it a rat I saw?")); // true
+console.log(isPalindrome("No 'x' in Nixon"));     // true
+console.log(isPalindrome("Hello"));                // false
