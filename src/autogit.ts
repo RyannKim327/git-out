@@ -1,102 +1,54 @@
-/** One directed edge in the graph */
-interface Edge {
-  from: number;   // source vertex id
-  to: number;     // target vertex id
-  weight: number; // edge weight
+// A minimal, singly‑linked node definition
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
 
-/** Graph represented only by its edge list */
-type Graph = Edge[];
+// Returns the node that is n‑th from the end (1‑based)
+// or null if the list is shorter than n.
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  // Guard against invalid n
+  if (n <= 0) return null;
 
-/** Result of the shortest‑path computation */
-interface BellmanFordResult {
-  /** distance from source to every vertex (Infinity if unreachable) */
-  distances: number[];
-  /** predecessor of each vertex on the shortest path tree */
-  predecessors: (number | null)[];
-  /** true if a negative cycle was detected that is reachable from the source */
-  negativeCycleDetected: boolean;
-}
-/**
- * Bellman‑Ford single‑source shortest‑path solver.
- * @param edges  complete list of directed edges in the graph
- * @param vertexCount total number of vertices, 0 … vertexCount‑1
- * @param source id of the source vertex
- * @returns distances, predecessors and a flag for a reachable negative cycle
- */
-export function bellmanFord(
-  edges: Graph,
-  vertexCount: number,
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  const distances = Array(vertexCount).fill(INF);
-  const predecessors = Array<null | number>(vertexCount).fill(null);
-
-  distances[source] = 0;
-
-  /* Relax edges V‑1 times */
-  for (let i = 0; i < vertexCount - 1; i++) {
-    let changed = false;
-    for (const e of edges) {
-      const { from, to, weight } = e;
-      if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-        distances[to] = distances[from] + weight;
-        predecessors[to] = from;
-        changed = true;
-      }
-    }
-    /* Early exit if no relaxation happened */
-    if (!changed) break;
+  // Advance fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // n > length
+    fast = fast.next;
   }
 
-  /* Check for negative‑weight cycles reachable from source */
-  let negativeCycleDetected = false;
-  for (const e of edges) {
-    const { from, to, weight } = e;
-    if (distances[from] !== INF && distances[from] + weight < distances[to]) {
-      negativeCycleDetected = true;
-      break;
-    }
+  // Edge case: n equals the list length ⇒ return head
+  if (!fast) return head;
+
+  // Move both until fast reaches the tail
+  while (fast.next) {
+    fast = fast.next;
+    slow = slow!.next; // slow is guaranteed not null here
   }
 
-  return { distances, predecessors, negativeCycleDetected };
+  return slow;
 }
-/**
- * Retrieves the shortest path from source to `target` after a Bellman‑Ford run.
- * Returns `undefined` if the target is unreachable.
- */
-export function reconstructPath(
-  target: number,
-  predecessors: (number | null)[]
-): number[] | undefined {
-  if (predecessors[target] === null) return undefined;
-
-  const path: number[] = [];
-  for (let v = target; v !== null; v = predecessors[v]) {
-    path.push(v);
+// Helper to build a list from an array
+function buildList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head: ListNode<T> = { value: arr[0], next: null };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { value: arr[i], next: null };
+    current = current.next;
   }
-  return path.reverse();
+  return head;
 }
-// A small graph with both positive and negative edges
-const graph: Graph = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -3 },
-  { from: 1, to: 3, weight: 2 },
-  { from: 2, to: 3, weight: 4 },
-];
 
-const vertexCount = 4;          // vertices 0 … 3
-const source = 0;
-const result = bellmanFord(graph, vertexCount, source);
+// Example
+const head = buildList([10, 20, 30, 40, 50]);
 
-console.log('Distances:', result.distances);
-// [0, 1, 2, 3]
-
-console.log('Negative cycle detected?', result.negativeCycleDetected);
-// false
-
-const pathTo3 = reconstructPath(3, result.predecessors);
-console.log('Path 0 → 3:', pathTo3); // [0, 1, 3]
+console.log(nthFromEnd(head, 1)?.value); // 50 (last)
+console.log(nthFromEnd(head, 3)?.value); // 30
+console.log(nthFromEnd(head, 5)?.value); // 10 (first)
+console.log(nthFromEnd(head, 6));        // null (too big)
