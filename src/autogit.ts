@@ -1,61 +1,66 @@
 /**
- * Return true if `text` is a palindrome.
+ * Fibonacci Search
  *
- * The function walks from both ends towards the middle, comparing matching
- * characters.  It never creates an auxiliary string or array, so the
- * extra space cost is O(1).
- *
- * Options:
- *   - ignoreCase:   treat 'A' and 'a' as the same (default true)
- *   - ignoreNonAlpha: strip out anything that isn’t a letter or digit (default true)
+ * @param arr  – sorted array (ascending)
+ * @param target – value that we want to locate
+ * @returns the index of target or −1 if it isn't present
  */
-function isPalindrome(
-  text: string,
-  ignoreCase = true,
-  ignoreNonAlpha = true
-): boolean {
-  let left = 0;
-  let right = text.length - 1;
+export function fibonacciSearch<T>(
+    arr: readonly T[],
+    target: T,
+    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+    const n = arr.length;
 
-  while (left < right) {
-    // Skip unwanted characters on the left
-    while (
-      left < right &&
-      (ignoreNonAlpha ? !isAlphaNumeric(text[left]) : false)
-    ) {
-      left++;
+    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
+    let fibMMm2 = 0; // (m‑2)’th Fibonacci
+    let fibMMm1 = 1; // (m‑1)’th Fibonacci
+    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
+
+    while (fibM < n) {
+        fibMMm2 = fibMMm1;
+        fibMMm1 = fibM;
+        fibM = fibMMm2 + fibMMm1;
     }
 
-    // Skip unwanted characters on the right
-    while (
-      left < right &&
-      (ignoreNonAlpha ? !isAlphaNumeric(text[right]) : false)
-    ) {
-      right--;
+    // ---- 2. Marks the eliminated range from front ----
+    let offset = -1;
+
+    // ---- 3. While there are elements to inspect ----
+    while (fibM > 1) {
+        // Calculate the index to check
+        const i = Math.min(offset + fibMMm2, n - 1);
+
+        const comp = cmp(arr[i], target);
+
+        // case 1: the target is greater than the value at index i
+        if (comp < 0) {
+            fibM = fibMMm1;
+            fibMMm1 = fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+            offset = i;
+        }
+        // case 2: the target is less than the value at index i
+        else if (comp > 0) {
+            fibM = fibMMm2;
+            fibMMm1 = fibMMm1 - fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+        }
+        // case 3: element found
+        else {
+            return i;
+        }
     }
 
-    // Compare the two characters
-    const leftCh  = ignoreCase ? text[left].toLowerCase() : text[left];
-    const rightCh = ignoreCase ? text[right].toLowerCase() : text[right];
+    // ---- 4. If the last remaining element is the target ----
+    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
+        return offset + 1;
+    }
 
-    if (leftCh !== rightCh) return false;
-
-    left++;
-    right--;
-  }
-
-  return true;
+    return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+const idx = fibonacciSearch(nums, 13);
 
-function isAlphaNumeric(ch: string): boolean {
-  const code = ch.charCodeAt(0);
-  // '0'-'9' => 48-57, 'A'-'Z' => 65-90, 'a'-'z' => 97-122
-  return (
-    (code >= 48 && code <= 57) ||
-    (code >= 65 && code <= 90) ||
-    (code >= 97 && code <= 122)
-  );
-}
-console.log(isPalindrome("Was it a rat I saw?")); // true
-console.log(isPalindrome("No 'x' in Nixon"));     // true
-console.log(isPalindrome("Hello"));                // false
+console.log(idx); // → 6
+console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
