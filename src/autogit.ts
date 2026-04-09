@@ -1,47 +1,75 @@
-/**
- * Does `a` consist of exactly the same letters as `b`, in any order?
- * The comparison is case‑insensitive and ignores whitespace.
- *
- * @param a – first candidate
- * @param b – second candidate
- * @returns true if the strings are anagrams, otherwise false
- */
-export function isAnagram(a: string, b: string): boolean {
-  // Normalise the strings: lowercase, trim, remove spaces.
-  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
-  const strA = normalize(a);
-  const strB = normalize(b);
+// Compute lps array for pattern p
+function buildLPS(p: string): number[] {
+  const lps = new Array(p.length).fill(0);
+  let len = 0;            // length of the previous longest prefix suffix
+  let i = 1;
 
-  // Quick rejection: different length → impossible to be an anagram.
-  if (strA.length !== strB.length) return false;
-
-  // === Approach 1: sorting ===
-  // const sortedA = strA.split('').sort().join('');
-  // const sortedB = strB.split('').sort().join('');
-  // return sortedA === sortedB;
-
-  // === Approach 2: frequency counting ===
-  const freq: Record<string, number> = {};
-
-  // Count characters of the first string.
-  for (const ch of strA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  // Subtract counts using characters from the second string.
-  for (const ch of strB) {
-    if (!freq[ch]) {
-      // Either the character never appeared in `a`
-      // or its count has already been zeroed out.
-      return false;
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back in the pattern, don’t slide the text cursor
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
-    freq[ch]!--;          // `!` tells the compiler this is defined.
-    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
   }
-
-  // If all counts have cancelled out, the map should be empty.
-  return Object.keys(freq).length === 0;
+  return lps;
 }
-console.log(isAnagram('Listen', 'Silent'));   // true
-console.log(isAnagram('Triangle', 'Integral')); // true
-console.log(isAnagram('Apple', 'Pabble'));      // false
+/**
+ * KMP search – returns true if pattern occurs in text
+ * @param text the body to scan
+ * @param pattern the substring to find
+ */
+function kmpSearch(text: string, pattern: string): boolean {
+  if (pattern === "") return true;          // empty pattern matches everywhere
+
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) return true;   // full match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1];    // drop the matched prefix
+      } else {
+        i++;               // move on in the text
+      }
+    }
+  }
+  return false;
+}
+function kmpAllMatches(text: string, pattern: string): number[] {
+  if (pattern === "") return [];  // or [0,1,2,...] if you want
+
+  const lps = buildLPS(pattern);
+  const matches: number[] = [];
+  let i = 0, j = 0;
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        matches.push(i - j); // match ends at i-1, so start = i-j
+        j = lps[j - 1];      // continue searching
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return matches;
+}
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
+
+console.log(kmpSearch(haystack, needle));          // true
+console.log(kmpAllMatches(haystack, needle));      // [10]
