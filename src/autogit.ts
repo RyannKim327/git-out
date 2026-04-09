@@ -1,18 +1,39 @@
-const numbers: number[] = [12, 4, 56, 3, 9];
+/**
+ * Fetches a random dog picture and logs the URL.
+ * Works in Node (with node-fetch polyfill) and in browsers.
+ */
 
-// The default sort is string comparison → "12" < "56" < ...!
-const sorted = numbers.slice().sort((a, b) => a - b);
+const DOG_API = 'https://dog.ceo/api/breeds/image/random';
 
-console.log(sorted); // [3, 4, 9, 12, 56]
-function sortNums(arr: number[]): number[] {
-  return arr.slice().sort((a, b) => a - b);
+interface DogApiResponse {
+  message: string;  // the image URL
+  status: string;   // should be 'success'
 }
 
-const unsorted = [27, 13, 42, 8];
-console.log(sortNums(unsorted)); // [8, 13, 27, 42]
-function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
-  return arr.slice().sort(cmpFn);
+/**
+ * Makes the HTTP request, parses the JSON, and logs the image URL.
+ */
+async function showRandomDog(): Promise<void> {
+  try {
+    // `fetch` may need a polyfill in Node, e.g. `node-fetch`
+    const response = await fetch(DOG_API);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+
+    const data: DogApiResponse = await response.json();
+
+    if (data.status !== 'success') {
+      throw new Error(`API reported failure: ${data.status}`);
+    }
+
+    console.log('Random dog image URL:', data.message);
+  } catch (err) {
+    console.error('Failed to fetch dog image:', err);
+  }
 }
-function sortNumbersASC(nums: number[]): number[] {
-  return nums.slice().sort((a, b) => a - b);
-}
+
+showRandomDog();
+npm install node-fetch
+import fetch from 'node-fetch';
