@@ -1,46 +1,114 @@
 /**
- * Return the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the one that appears first in `a` is returned.
+ * A single node in a binary search tree.
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+class TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null = null;
+  right: TreeNode<T> | null = null;
 
-  // Work with the shorter string in the second dimension
-  const [s1, s2] = a.length < b.length ? [a, b] : [b, a];
-  const len1 = s1.length;
-  const len2 = s2.length;
+  constructor(value: T) {
+    this.value = value;
+  }
+}
 
-  // dp[j] = longest suffix length ending at s1[i-1] and s2[j-1]
-  let dp = new Array(len2 + 1).fill(0);
-  let best = 0;
-  let bestEndIdxS1 = 0; // end position (exclusive) in the longer string
+/**
+ * Binary search tree that keeps values ordered by a comparator.
+ * If you don’t pass a comparator it defaults to numeric or string <=> >.
+ */
+class BinarySearchTree<T> {
+  root: TreeNode<T> | null = null;
+  private cmp: (a: T, b: T) => number;
 
-  for (let i = 1; i <= len1; i++) {
-    let prev = 0; // dp[j-1] from the previous row
-    for (let j = 1; j <= len2; j++) {
-      const temp = dp[j]; // value before updating; will become prev in next loop
-      if (s1[i - 1] === s2[j - 1]) {
-        // extend current matching suffix
-        dp[j] = prev + 1;
-        if (dp[j] > best) {
-          best = dp[j];
-          // bestEndIdxS1 refers to the longer/first string
-          bestEndIdxS1 = i;
+  constructor(comparator?: (a: T, b: T) => number) {
+    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
+  /* ------------------------------------------------------------------
+   * Insert
+   * ------------------------------------------------------------------ */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
+
+    let current = this.root;
+    while (true) {
+      const comp = this.cmp(value, current.value);
+      if (comp < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          break;
         }
+        current = current.left;
       } else {
-        dp[j] = 0;
+        // treat equal values as “go right” – change if you want otherwise
+        if (!current.right) {
+          current.right = newNode;
+          break;
+        }
+        current = current.right;
       }
-      prev = temp;
     }
   }
 
-  // Extract the substring from the longer string
-  if (best === 0) return '';
-  const startIdx = bestEndIdxS1 - best;
-  const longer = a.length >= b.length ? a : b;
-  return longer.slice(startIdx, bestEndIdxS1);
+  /* ------------------------------------------------------------------
+   * Find
+   * ------------------------------------------------------------------ */
+  find(value: T): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const comp = this.cmp(value, current.value);
+      if (comp === 0) return current;
+      current = comp < 0 ? current.left : current.right;
+    }
+    return null;
+  }
+
+  /* ------------------------------------------------------------------
+   * Traversals – each visitor receives the node value
+   * ------------------------------------------------------------------ */
+  inOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      visitor(node.value);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  preOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      visitor(node.value);
+      walk(node.left);
+      walk(node.right);
+    }
+    walk(this.root);
+  }
+
+  postOrder(visitor: (value: T) => void) {
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      walk(node.right);
+      visitor(node.value);
+    }
+    walk(this.root);
+  }
 }
-console.log(longestCommonSubstring('abcdef', 'zabfxe')); // -> "abf"
-console.log(longestCommonSubstring('aabcc', 'abc'));     // -> "abc"
-console.log(longestCommonSubstring('xyz', 'abc'));      // -> ""
+
+/* ------------------------------------------------------------------
+ * Quick demo
+ * ------------------------------------------------------------------ */
+const bst = new BinarySearchTree<number>();
+
+[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
+
+console.log('In‑order traversal (sorted):');
+bst.inOrder(v => console.log(v));
+
+console.log('\nFind 60:', bst.find(60)?.value);
+console.log('Find 25:', bst.find(25)?.value); // null
