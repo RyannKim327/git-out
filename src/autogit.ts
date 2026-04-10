@@ -1,114 +1,54 @@
 /**
- * A single node in a binary search tree.
+ * Generic shell sort – works on any array whose elements can be compared by a
+ * key that returns a value implementing `<` / `>`.
+ *
+ * @param arr   The array to sort (mutated in‑place)
+ * @param key   (optional) a function that extracts the sort key from each element.
+ *              For plain numbers you can leave this undefined.
+ *
+ * @returns The sorted array (same reference as the input).
  */
-class TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null = null;
-  right: TreeNode<T> | null = null;
+export function shellSort<T>(arr: T[], key?: (x: T) => number | string): T[] {
+  const n = arr.length;
+  // Default key is identity for numbers, fallback to string comparison.
+  const keyFn = key ??
+    ((x: T) => {
+      const v = (x as unknown as number);
+      return typeof v === "number" ? v : String(v);
+    });
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  // Start with a gap that is roughly n/2, then reduce it by a factor of 1.3
+  // (Knuth's sequence: h = 3*h + 1)
+  let gap = 1;
+  while (gap < n / 3) gap = 3 * gap + 1; // largest h < n/3
 
-/**
- * Binary search tree that keeps values ordered by a comparator.
- * If you don’t pass a comparator it defaults to numeric or string <=> >.
- */
-class BinarySearchTree<T> {
-  root: TreeNode<T> | null = null;
-  private cmp: (a: T, b: T) => number;
-
-  constructor(comparator?: (a: T, b: T) => number) {
-    this.cmp = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
-
-  /* ------------------------------------------------------------------
-   * Insert
-   * ------------------------------------------------------------------ */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current = this.root;
-    while (true) {
-      const comp = this.cmp(value, current.value);
-      if (comp < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          break;
-        }
-        current = current.left;
-      } else {
-        // treat equal values as “go right” – change if you want otherwise
-        if (!current.right) {
-          current.right = newNode;
-          break;
-        }
-        current = current.right;
+  while (gap >= 1) {
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (
+        j >= gap &&
+        (keyFn(temp) < keyFn(arr[j - gap]))
+      ) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
+      arr[j] = temp;
     }
+    gap = Math.floor((gap - 1) / 3); // move to previous gap in Knuth sequence
   }
-
-  /* ------------------------------------------------------------------
-   * Find
-   * ------------------------------------------------------------------ */
-  find(value: T): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const comp = this.cmp(value, current.value);
-      if (comp === 0) return current;
-      current = comp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  /* ------------------------------------------------------------------
-   * Traversals – each visitor receives the node value
-   * ------------------------------------------------------------------ */
-  inOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      visitor(node.value);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  preOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      visitor(node.value);
-      walk(node.left);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  postOrder(visitor: (value: T) => void) {
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      walk(node.right);
-      visitor(node.value);
-    }
-    walk(this.root);
-  }
+  return arr;
 }
+import { shellSort } from "./shellSort";
 
-/* ------------------------------------------------------------------
- * Quick demo
- * ------------------------------------------------------------------ */
-const bst = new BinarySearchTree<number>();
+const data = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(data);
+console.log(data); // [1, 2, 3, 8, 12, 23, 34, 54]
+const users = [
+  { name: "Ada", age: 45 },
+  { name: "Bob", age: 30 },
+  { name: "Cleo", age: 37 }
+];
 
-[50, 30, 70, 20, 40, 60, 80].forEach(bst.insert);
-
-console.log('In‑order traversal (sorted):');
-bst.inOrder(v => console.log(v));
-
-console.log('\nFind 60:', bst.find(60)?.value);
-console.log('Find 25:', bst.find(25)?.value); // null
+shellSort(users, u => u.age);
+// users now sorted by age
