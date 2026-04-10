@@ -1,56 +1,55 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
+/**
+ * Return the median of two sorted arrays (integer values).
+ *
+ * @param a First sorted array (may be empty)
+ * @param b Second sorted array (may be empty)
+ * @returns median as a number
+ */
+function findMedianSortedArrays(a: number[], b: number[]): number {
+  // make sure a is the shorter array – helps keep log‑time on the shorter side
+  if (a.length > b.length) return findMedianSortedArrays(b, a);
 
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
+  const m = a.length;
+  const n = b.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    // i is the cut in a, j in b
+    const i = Math.floor((low + high) / 2);
+    const j = halfLen - i;
+
+    const Aleft  = i === 0     ? -Infinity : a[i - 1];
+    const Aright = i === m     ? Infinity  : a[i];
+    const Bleft  = j === 0     ? -Infinity : b[j - 1];
+    const Bright = j === n     ? Infinity  : b[j];
+
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // perfect split found
+      if ((m + n) % 2 === 0) {
+        // even number of elements – average of the two middle values
+        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+      } else {
+        // odd – the max on the left side
+        return Math.max(Aleft, Bleft);
+      }
+    } else if (Aleft > Bright) {
+      // i is too big – move left
+      high = i - 1;
+    } else {
+      // i is too small – move right
+      low = i + 1;
     }
+  }
 
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+  // Should never reach here if input arrays are sorted
+  throw new Error('Input arrays are not valid');
 }
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
-
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
-
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
-
-    return merge(left, right, compare);
-}
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
-
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
-
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
+/* ---------- usage ---------- */
+console.log(findMedianSortedArrays([1, 3], [2]));          // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));      // 2.5
+console.log(findMedianSortedArrays([], [1]));             // 1
+console.log(findMedianSortedArrays([5], [1, 2, 3, 4]));   // 3.5
