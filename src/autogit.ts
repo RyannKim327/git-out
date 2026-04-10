@@ -1,19 +1,27 @@
-const text = "The quick brown fox jumps over the lazy dog";
+/**
+ * Returns true if `str` reads the same forwards and backwards.
+ *
+ * @param str – The string you want to test.
+ * @returns  boolean – palindrome status.
+ */
+export function isPalindrome(str: string): boolean {
+  // Remove all non‑alphanumeric characters and ignore case.
+  const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
-function contains(sub: string, str: string = text): boolean {
-  return str.includes(sub);
+  // Two‑pointer scan is faster than reversing a long string.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
+    }
+    left++;
+    right--;
+  }
+  return true;
 }
-
-console.log(contains("brown"));          // true
-console.log(contains("cat"));            // false
-console.log(contains("Brown", text));    // false – includes is case‑sensitive
-function containsRegex(pattern: RegExp, str: string = text): boolean {
-  return pattern.test(str);
-}
-
-console.log(containsRegex(/BROWN/i));  // true – case‑insensitive match
-const hasSub = s.includes(sub);            // ✅
-const hasSubOld = s.indexOf(sub) !== -1;   // ✅
-const starts = s.startsWith(prefix);       // ✅
-const ends = s.endsWith(suffix);           // ✅
-const matches = /pattern/.test(s);         // ✅
+console.log(isPalindrome('racecar'));          // true
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('hello'));            // false
+console.log(isPalindrome(''));                 // true (empty string)
