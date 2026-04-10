@@ -1,55 +1,67 @@
-/**
- * Return the median of two sorted arrays (integer values).
- *
- * @param a First sorted array (may be empty)
- * @param b Second sorted array (may be empty)
- * @returns median as a number
- */
-function findMedianSortedArrays(a: number[], b: number[]): number {
-  // make sure a is the shorter array – helps keep log‑time on the shorter side
-  if (a.length > b.length) return findMedianSortedArrays(b, a);
+type Node = {
+  id:          string;   // whatever uniquely identifies a node
+  children?:   Node[];   // adjacency list – change to whatever your graph uses
+};
 
-  const m = a.length;
-  const n = b.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    // i is the cut in a, j in b
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
-
-    const Aleft  = i === 0     ? -Infinity : a[i - 1];
-    const Aright = i === m     ? Infinity  : a[i];
-    const Bleft  = j === 0     ? -Infinity : b[j - 1];
-    const Bright = j === n     ? Infinity  : b[j];
-
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // perfect split found
-      if ((m + n) % 2 === 0) {
-        // even number of elements – average of the two middle values
-        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-      } else {
-        // odd – the max on the left side
-        return Math.max(Aleft, Bleft);
-      }
-    } else if (Aleft > Bright) {
-      // i is too big – move left
-      high = i - 1;
-    } else {
-      // i is too small – move right
-      low = i + 1;
-    }
-  }
-
-  // Should never reach here if input arrays are sorted
-  throw new Error('Input arrays are not valid');
+interface StackItem {
+  node:  Node;
+  depth: number;
 }
 
-/* ---------- usage ---------- */
-console.log(findMedianSortedArrays([1, 3], [2]));          // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));      // 2.5
-console.log(findMedianSortedArrays([], [1]));             // 1
-console.log(findMedianSortedArrays([5], [1, 2, 3, 4]));   // 3.5
+/**
+ * Iterative DFS that stops at a given depth limit.
+ * Returns true if the target is found, otherwise false.
+ */
+function depthLimitedDFS(
+  root:   Node,
+  targetId: string,
+  maxDepth: number
+): boolean {
+  const stack: StackItem[] = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;      // pop from the end
+
+    if (node.id === targetId) return true;     // hit
+
+    if (depth < maxDepth) {                   // still room to descend
+      const children = node.children ?? [];
+      // push children in reverse order if you want particular visit order
+      for (let i = children.length - 1; i >= 0; i--) {
+        stack.push({ node: children[i], depth: depth + 1 });
+      }
+    }
+  }
+  return false;
+}
+function depthLimitedBFS(
+  root:   Node,
+  targetId: string,
+  maxDepth: number
+): boolean {
+  const queue: StackItem[] = [{ node: root, depth: 0 }];
+
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;  // shift from the front
+
+    if (node.id === targetId) return true;
+
+    if (depth < maxDepth) {
+      for (const child of node.children ?? []) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return false;
+}
+const tree: Node = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
+    { id: 'b', children: [{ id: 'e' }] }
+  ]
+};
+
+console.log(depthLimitedDFS(tree, 'd', 2)); // true
+console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
+console.log(depthLimitedBFS(tree, 'e', 1)); // true
