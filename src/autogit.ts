@@ -1,53 +1,56 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
+/**
+ *  k is 1‑based: k = 1 → smallest, k = length → largest
+ */
+function kthSmallestBySort<T>(a: T[], k: number, cmp?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > a.length) return undefined;
+  const arr = a.slice();                     // don't touch the original
+  arr.sort((x, y) => (cmp ? cmp(x, y) : (x as any) < (y as any) ? -1 : (x as any) > (y as any) ? 1 : 0));
+  return arr[k - 1];
 }
+/**
+ * Find the k‑th smallest element (1‑based) in place.
+ *
+ * @param arr  the array to search
+ * @param k    1‑based index (1 = smallest)
+ * @param cmp  optional compare function, defaults to the standard `< => >`
+ * @returns    the k‑th smallest element, or `undefined` if k is out of bounds
+ */
+function kthSmallestQuickSelect<T>(
+  arr: T[],
+  k: number,
+  cmp?: (a: T, b: T) => number
+): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const compare = cmp ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+  let left = 0;
+  let right = arr.length - 1;
+  const target = k - 1;              // 0‑based
 
-// Example
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-console.log(intersection(arr1, arr2)); // → [3, 4, 5]
-function intersectionByOrder<T>(a: T[], b: T[]): T[] {
-  const setA = new Set(a);
-  return b.filter(x => setA.has(x));
-}
-function multisetIntersection<T>(a: T[], b: T[]): T[] {
-  const counts = new Map<T, number>();
-  for (const item of a)
-    counts.set(item, (counts.get(item) ?? 0) + 1);
+  while (left <= right) {
+    // Pick a pivot (here the middle element)
+    const pivotIdx = Math.floor((left + right) / 2);
+    const pivotVal = arr[pivotIdx];
 
-  const result: T[] = [];
-  for (const item of b) {
-    const cnt = counts.get(item);
-    if (cnt && cnt > 0) {
-      result.push(item);
-      counts.set(item, cnt - 1);
+    // Partition: elements < pivot on the left, > pivot on the right
+    let i = left;
+    let j = right;
+    while (i <= j) {
+      while (compare(arr[i], pivotVal) < 0) i++;
+      while (compare(arr[j], pivotVal) > 0) j--;
+      if (i <= j) {
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        i++;
+        j--;
+      }
     }
+
+    // Which side contains the target?
+    if (j < target) left = i;
+    else if (i > target) right = j;
+    else return arr[target];
   }
-  return result;
 }
+const arr = [7, 3, 5, 2, 9, 1, 4];
+const k = 3;           // find the 3rd smallest: answer should be 4
 
-// Example
-// a: [1, 2, 2, 3], b: [2, 2, 4]
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
-function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
-  const map = new Map<any, T>();
-  for (const item of b) map.set(keyFn(item), item);
-
-  const result: T[] = [];
-  for (const item of a) {
-    const match = map.get(keyFn(item));
-    if (match) result.push(match); // or push(item) if you prefer
-  }
-  return result;
-}
-
-// Example
-interface Person { id: number; name: string }
-const peopleA = [{id:1},{id:2},{id:3}];
-const peopleB = [{id:2},{id:4}];
-console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
-export const arrayUtils = {
-  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
-  // … other helpers here
-};
+console.log(kthSmallestQuickSelect(arr, k)); // 4
