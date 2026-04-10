@@ -1,100 +1,41 @@
-/**
- * Simple graph type
- */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
-
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
- *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
- */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
-
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
-
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
-
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
-  }
-
-  return null;   // no connection
+// Basic node definition
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
 /**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
+ * Detect a cycle in a singly linked list.
+ * @param head The start node of the list (or null for an empty list).
+ * @returns true if a cycle exists, otherwise false.
  */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false;          // Empty list → no cycle
 
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
+  let slow = head;                  // One step per loop
+  let fast = head.next;             // Two steps per loop
 
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
+  while (fast && fast.next) {
+    if (slow === fast) return true; // Hopping together → cycle
 
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
-      }
-
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
-    }
+    slow = slow.next!;              // safe because slow can't be null here
+    fast = fast.next.next!;
   }
 
-  return null;
+  return false;                     // Reached end → no cycle
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+// acyclic list 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+console.log(hasCycle(a)); // false
+
+// cyclic list 1 → 2 → 3 → 1 …
+const d = new ListNode(1);
+const e = new ListNode(2);
+const f = new ListNode(3);
+d.next = e; e.next = f; f.next = d;
+console.log(hasCycle(d)); // true
