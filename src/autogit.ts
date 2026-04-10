@@ -1,28 +1,100 @@
 /**
- * How many times does `word` appear in `text`?
- *
- * @param text   The string to search.
- * @param word   The exact word you’re looking for (case‑insensitive).
- * @returns      Number of matches.
+ * Simple graph type
  */
-export function countWord(text: string, word: string): number {
-  if (!word) return 0;                      // avoid /()/ which matches every position
+type Node = string;                                  // or number, UUID, etc.
+type AdjList = Map<Node, Node[]>;                    // adjacency list
 
-  const re = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
+/**
+ * Bidirectional BFS – returns the length of the shortest path
+ * or null if no path exists.
+ *
+ * @param graph      adjacency list of the graph
+ * @param start      source node
+ * @param target     destination node
+ */
+export function biBfs(
+  graph: AdjList,
+  start: Node,
+  target: Node
+): number | null {
+  if (start === target) return 0;
+
+  // queues for each direction
+  const qStart = [start];
+  const qTarget = [target];
+
+  // distances from each end
+  const distStart = new Map<Node, number>();
+  const distTarget = new Map<Node, number>();
+  distStart.set(start, 0);
+  distTarget.set(target, 0);
+
+  while (qStart.length && qTarget.length) {
+    // Expand the frontier that is currently smaller
+    // (helps keep the branching factor balanced)
+    if (qStart.length <= qTarget.length) {
+      const step = expandFrontier(
+        qStart,
+        distStart,
+        distTarget,
+        graph
+      );
+      if (step !== null) return step;
+    } else {
+      const step = expandFrontier(
+        qTarget,
+        distTarget,
+        distStart,
+        graph
+      );
+      if (step !== null) return step;
+    }
+  }
+
+  return null;   // no connection
 }
 
-/** Escape characters that have special meaning in a regex. */
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Helper that walks one layer of BFS.
+ * Returns the total distance when the two explored sets touch.
+ */
+function expandFrontier(
+  queue: Node[],
+  distThis: Map<Node, number>,
+  distOther: Map<Node, number>,
+  graph: AdjList
+): number | null {
+  const layerSize = queue.length;
+
+  for (let i = 0; i < layerSize; ++i) {
+    const current = queue.shift() as Node;
+    const neighbours = graph.get(current) ?? [];
+
+    for (const neighbour of neighbours) {
+      // Already visited from this side – skip
+      if (distThis.has(neighbour)) continue;
+
+      // Visited from the other side → path found
+      if (distOther.has(neighbour)) {
+        return (
+          distThis.get(current)! + 1 +
+          distOther.get(neighbour)!
+        );
+      }
+
+      // Push next layer
+      distThis.set(neighbour, distThis.get(current)! + 1);
+      queue.push(neighbour);
+    }
+  }
+
+  return null;
 }
-const note = "The quick brown fox jumps over the lazy dog. The fox is quick.";
-console.log(countWord(note, "the"));   // 3 (The, the, The)
-console.log(countWord(note, "fox"));   // 2
-function countWordSimple(text: string, word: string): number {
-  const lw = word.toLowerCase();
-  return text
-    .split(/\s+/)
-    .filter(tok => tok.toLowerCase() === lw).length;
-}
+// const graph: AdjList = new Map([
+//   ['A', ['B', 'C']],
+//   ['B', ['A', 'D']],
+//   ['C', ['A', 'D']],
+//   ['D', ['B', 'C', 'E']],
+//   ['E', ['D']]
+// ]);
+// console.log(biBfs(graph, 'A', 'E')); // 3
