@@ -1,53 +1,53 @@
-// randomGreeting.ts
-//
-// 1️⃣  Read one line of text from stdin
-// 2️⃣  Pick a random greeting style
-// 3️⃣  Print a personalised message
-//
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
+}
 
-import { stdin, stdout } from 'process';
+// Example
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
+console.log(intersection(arr1, arr2)); // → [3, 4, 5]
+function intersectionByOrder<T>(a: T[], b: T[]): T[] {
+  const setA = new Set(a);
+  return b.filter(x => setA.has(x));
+}
+function multisetIntersection<T>(a: T[], b: T[]): T[] {
+  const counts = new Map<T, number>();
+  for (const item of a)
+    counts.set(item, (counts.get(item) ?? 0) + 1);
 
-// A tiny helper that turns a promise into a line‑by‑line async iterator
-async function* readLines(): AsyncGenerator<string> {
-  let buffer = '';
-  for await (const chunk of stdin) {
-    buffer += chunk.toString();
-    let *lines* = buffer.split('\n');
-    buffer = lines.pop() ?? '';      // keep the unfinished part
-    for (const line of lines) {
-      yield line.trim();           // remove trailing CR / whitespace
+  const result: T[] = [];
+  for (const item of b) {
+    const cnt = counts.get(item);
+    if (cnt && cnt > 0) {
+      result.push(item);
+      counts.set(item, cnt - 1);
     }
   }
-  if (buffer) yield buffer.trim();   // last partial line
+  return result;
 }
 
-async function main() {
-  // Ask for the user’s name
-  stdout.write('👋 What is your name? ');
-  const lines = readLines();
+// Example
+// a: [1, 2, 2, 3], b: [2, 2, 4]
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
+function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
+  const map = new Map<any, T>();
+  for (const item of b) map.set(keyFn(item), item);
 
-  // Wait for the first line entered by the user
-  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
-
-  // Some random greeting ideas
-  const greetings = [
-    `Hey ${name}, hope you’re having a stellar day!`,
-    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
-    `Greetings, ${name}! Keep calm and code on.`,
-    `${name}, you’re the reason we write code in TypeScript!`,
-    `Howdy ${name}! 🎉`
-  ];
-
-  // Pick one at random
-  const choice = greetings[Math.floor(Math.random() * greetings.length)];
-
-  stdout.write(`${choice}\n`);
+  const result: T[] = [];
+  for (const item of a) {
+    const match = map.get(keyFn(item));
+    if (match) result.push(match); // or push(item) if you prefer
+  }
+  return result;
 }
 
-main().catch(err => {
-  console.error('Something went wrong:', err);
-  process.exit(1);
-});
-$ node randomGreeting.js
-👋 What is your name? Alice
-Hey Alice, hope you’re having a stellar day!
+// Example
+interface Person { id: number; name: string }
+const peopleA = [{id:1},{id:2},{id:3}];
+const peopleB = [{id:2},{id:4}];
+console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
+export const arrayUtils = {
+  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
+  // … other helpers here
+};
