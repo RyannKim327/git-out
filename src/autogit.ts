@@ -1,107 +1,77 @@
-// A node can be anything that uniquely identifies a state.
-interface Node {
-  /** A unique string – the node’s id. */
-  id: string;
-  // Whatever other data the node owns can live here.
-  value?: any;
-}
+// stack.ts
+export class Stack<T> {
+  // The underlying storage.
+  private readonly items: T[] = [];
 
-// Edges are just a mapping from a node id to its adjacent node ids.
-type AdjacencyList = Record<string, string[]>;
-
-// A path is simply an array of nodes (or their ids). Keep it generic so you
-// can work with a tree, graph, maze, etc.
-type Path = Node[];
-/**
- * Depth‑limited search.
- *
- * @param node      the current node
- * @param goalId    id of the goal node
- * @param graph     adjacency list describing neighbours
- * @param maxDepth  maximum depth you are allowed to go
- * @param pathSoFar the nodes traversed so far
- * @returns a Path to the goal, or null if the goal is deeper than maxDepth
- */
-function depthLimitedSearch(
-  node: Node,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number,
-  pathSoFar: Path = []
-): Path | null {
-  // If the current depth is already beyond what we’re allowed, reject.
-  if (pathSoFar.length > maxDepth) return null;
-
-  // Add the current node to the path
-  const newPath = [...pathSoFar, node];
-
-  // Goal check
-  if (node.id === goalId) return newPath;
-
-  // Stop if this depth is the last allowed – do NOT keep recursing
-  if (newPath.length === maxDepth) return null;
-
-  // Fetch neighbours; guard against a missing entry
-  const neighbours = graph[node.id] ?? [];
-
-  for (const neighbourId of neighbours) {
-    // Avoid looping back on the same node in the current path
-    if (newPath.some(n => n.id === neighbourId)) continue;
-
-    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
-
-    const result = depthLimitedSearch(
-      neighbourNode,
-      goalId,
-      graph,
-      maxDepth,
-      newPath
-    );
-    if (result) return result; // found a valid path
+  /** Add an item onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  return null; // nothing found at this depth
-}
-/**
- * Iterative‑deepening DFS that stops when it finds the goal or
- * when a supplied depth limit is reached.
- *
- * @param startId    id of the start node
- * @param goalId     id of the goal node
- * @param graph      adjacency list
- * @param maxDepth   the deepest depth you’re willing to explore
- * @returns a Path to the goal or null if none exists within depth
- */
-function iterativeDeepening(
-  startId: string,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number
-): Path | null {
-  const startNode: Node = { id: startId }; // elaborate if needed
-
-  for (let depth = 0; depth <= maxDepth; depth++) {
-    const result = depthLimitedSearch(startNode, goalId, graph, depth);
-    if (result) return result;
+  /** Remove and return the item from the top of the stack. */
+  pop(): T | undefined {
+    return this.items.pop(); // undefined if the stack is empty
   }
-  return null;
-}
-const graph: AdjacencyList = {
-  A: ['B', 'C'],
-  B: ['D', 'E'],
-  C: ['F'],
-  D: [],
-  E: ['G', 'H'],
-  F: ['I'],
-  G: [],
-  H: [],
-  I: [],
-};
 
-const path = iterativeDeepening('A', 'H', graph, 10);
-if (path) {
-  console.log('Found path:', path.map(n => n.id).join(' → '));
-} else {
-  console.log('No path found within the depth limit');
+  /** Peek at the top item without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Check whether the stack contains no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Return the number of items in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clears the stack so it’s empty. */
+  clear(): void {
+    this.items.length = 0;
+  }
 }
-Found path: A → B → E → H
+import { Stack } from './stack';
+
+const numStack = new Stack<number>();
+
+numStack.push(10);
+numStack.push(20);
+numStack.push(30);
+
+console.log(numStack.peek()); // 30
+console.log(numStack.pop());  // 30
+console.log(numStack.size()); // 2
+console.log(numStack.isEmpty()); // false
+
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class MaxStack<T extends number> {
+  private readonly stack: T[] = [];
+  private readonly maxStack: T[] = [];
+
+  push(item: T): void {
+    this.stack.push(item);
+    const currentMax = this.maxStack.length === 0
+      ? item
+      : Math.max(item, this.maxStack[this.maxStack.length - 1]);
+    this.maxStack.push(currentMax);
+  }
+
+  pop(): T | undefined {
+    this.maxStack.pop();
+    return this.stack.pop();
+  }
+
+  peek(): T | undefined {
+    return this.stack[this.stack.length - 1];
+  }
+
+  max(): T | undefined {
+    return this.maxStack[this.maxStack.length - 1];
+  }
+
+  // …plus isEmpty, size, clear, etc.
+}
