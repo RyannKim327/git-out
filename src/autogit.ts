@@ -1,56 +1,151 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
-
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
-    }
-
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+// ──────────────────────────────────────────────────────────────
+//  TrieNode
+// ──────────────────────────────────────────────────────────────
+class TrieNode {
+  // how many words end exactly here
+  frequency = 0;
+  // children keyed by single characters
+  children = new Map<string, TrieNode>();
 }
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+// ──────────────────────────────────────────────────────────────
+//  Trie
+// ──────────────────────────────────────────────────────────────
+export class Trie {
+  private readonly root = new TrieNode();
 
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
+  //--------------------------------------
+  // Insert a word, optionally incrementing frequency
+  // -------------------------------------
+  insert(word: string, qty = 1): void {
+    let node = this.root;
+    for (const ch of word) {
+      // lazily create missing branch
+      if (!node.children.has(ch))
+        node.children.set(ch, new TrieNode());
+      node = node.children.get(ch)!;
+    }
+    node.frequency += qty;
+  }
+
+  //--------------------------------------
+  // Search for exact match – returns how many times the word was inserted
+  // -------------------------------------
+  search(word: string): number {
+    let node = this.root;
+    for (const ch of word) {
+      node = node.children.get(ch);
+      if (!node) return 0; // missing branch
+    }
+    return node.frequency;
+  }
+
+  //--------------------------------------
+  // Delete a word (or reduce its count)
+  // -------------------------------------
+  delete(word: string, qty = 1): boolean {
+    const stack: TrieNode[] = []; // keep path for backtracking
+    let node = this.root;
+
+    for (const ch of word) {
+      const next = node.children.get(ch);
+      if (!next) return false; // word never existed
+      stack.push(node);
+      node = next;
     }
 
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
+    if (node.frequency === 0) return false; // nothing to delete
+    node.frequency -= qty;
+    if (node.frequency < 0) node.frequency = 0; // guard
 
-    return merge(left, right, compare);
+    // prune dead branches
+    let idx = stack.length - 1;
+    while (idx >= 0 && node.children.size === 0 && node.frequency === 0) {
+      const parent = stack[idx];
+      const ch = Array.from(parent.children.entries()).find(
+        ([, child]) => child === node
+      )![0];
+      parent.children.delete(ch);
+      node = parent;
+      idx--;
+    }
+    return true;
+  }
+
+  //--------------------------------------
+  // Return all words that start with a prefix
+  // -------------------------------------
+  startsWith(prefix: string): string[] {
+    let node = this.root;
+
+    for (const ch of prefix) {
+      node = node.children.get(ch);
+      if (!node) return []; // no match
+    }
+
+    const results: string[] = [];
+    const dfs = (n: TrieNode, cur: string) => {
+      if (n.frequency > 0) results.push(cur);
+
+      for (const [ch, child] of n.children) {
+        dfs(child, cur + ch);
+      }
+    };
+
+    dfs(node, prefix);
+    return results;
+  }
+
+  //--------------------------------------
+  // Return the top‑k words by frequency that match a prefix
+  // Useful for autocomplete suggestions
+  // -------------------------------------
+  topK(prefix: string, k = 5): { word: string; freq: number }[] {
+    let node = this.root;
+    for (const ch of prefix) {
+      node = node.children.get(ch);
+      if (!node) return [];
+    }
+
+    const heap: Array<{ word: string; freq: number }> = [];
+
+    const dfs = (n: TrieNode, cur: string) => {
+      if (n.frequency > 0) {
+        heap.push({ word: cur, freq: n.frequency });
+        // keep only the largest k entries
+        heap.sort((a, b) => b.freq - a.freq);
+        if (heap.length > k) heap.pop();
+      }
+
+      for (const [ch, child] of n.children) {
+        dfs(child, cur + ch);
+      }
+    };
+
+    dfs(node, prefix);
+    return heap;
+  }
 }
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
+import { Trie } from "./trie";
 
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
+const t = new Trie();
 
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
+t.insert("apple");
+t.insert("app");
+t.insert("application", 3); // appears 3 times
+t.insert("bat");
+t.insert("batch");
+t.insert("baton");
+
+console.log(t.search("app"));          // 1
+console.log(t.search("application"));  // 3
+console.log(t.search("banana"));       // 0
+
+console.log(t.startsWith("app"));      // ["app", "apple", "application"]
+console.log(t.topK("app", 2));         // [{word:"application",freq:3},{word:"app",freq:1}]
+
+t.delete("application", 2);            // reduce count, still 1 left
+console.log(t.search("application"));  // 1
+
+t.delete("baton");                     // remove completely
+console.log(t.startsWith("bat"));      // ["bat", "batch"]
