@@ -1,77 +1,50 @@
-// stack.ts
-export class Stack<T> {
-  // The underlying storage.
-  private readonly items: T[] = [];
+/**
+ * Returns true if the supplied integer is a prime number.
+ *
+ * Special notes
+ * • 0 and 1 are *not* prime.
+ * • Negative numbers are treated as non‑prime because primes are defined for positive integers only.
+ * • The function uses the classic “divide up to sqrt(n)” trick – O(√n) which is fast enough for
+ *   almost every use‑case you’ll hit in day‑to‑day code. If you need primality for astronomically large
+ *   numbers you’ll need a more elaborate algorithm (Miller‑Rabin, etc.) – that’s a different story.
+ *
+ * @param n – the number you want to test
+ * @returns true if n is prime, false otherwise
+ */
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n)) return false;   // TypeScript’s runtime check
+  if (n <= 1) return false;                // 0 and 1 aren’t prime, negative numbers aren’t considered either
 
-  /** Add an item onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
+  // 2 and 3 are the only even and odd primes
+  if (n <= 3) return true;                 // 2 and 3
 
-  /** Remove and return the item from the top of the stack. */
-  pop(): T | undefined {
-    return this.items.pop(); // undefined if the stack is empty
-  }
+  // Even numbers > 2 are composite
+  if (n % 2 === 0) return false;
 
-  /** Peek at the top item without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
+  // We can skip even divisors – test only odd ones
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
-
-  /** Check whether the stack contains no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Return the number of items in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clears the stack so it’s empty. */
-  clear(): void {
-    this.items.length = 0;
-  }
+  return true;
 }
-import { Stack } from './stack';
+import { isPrime } from "./primes";
 
-const numStack = new Stack<number>();
+const numbers = [1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 25, 29, 31];
 
-numStack.push(10);
-numStack.push(20);
-numStack.push(30);
-
-console.log(numStack.peek()); // 30
-console.log(numStack.pop());  // 30
-console.log(numStack.size()); // 2
-console.log(numStack.isEmpty()); // false
-
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class MaxStack<T extends number> {
-  private readonly stack: T[] = [];
-  private readonly maxStack: T[] = [];
-
-  push(item: T): void {
-    this.stack.push(item);
-    const currentMax = this.maxStack.length === 0
-      ? item
-      : Math.max(item, this.maxStack[this.maxStack.length - 1]);
-    this.maxStack.push(currentMax);
-  }
-
-  pop(): T | undefined {
-    this.maxStack.pop();
-    return this.stack.pop();
-  }
-
-  peek(): T | undefined {
-    return this.stack[this.stack.length - 1];
-  }
-
-  max(): T | undefined {
-    return this.maxStack[this.maxStack.length - 1];
-  }
-
-  // …plus isEmpty, size, clear, etc.
-}
+numbers.forEach(n => {
+  console.log(`${n} is prime? ${isPrime(n)}`);
+});
+1 is prime? false
+2 is prime? true
+3 is prime? true
+4 is prime? false
+5 is prime? true
+16 is prime? false
+17 is prime? true
+19 is prime? true
+20 is prime? false
+23 is prime? true
+25 is prime? false
+29 is prime? true
+31 is prime? true
