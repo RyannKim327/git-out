@@ -1,30 +1,41 @@
-// src/cronJob.ts
-import * as cron from 'node-cron';
-import { exec } from 'child_process';
-
-// Simple helper that returns a random joke (you can replace it with anything)
-function getRandomJoke(): string {
-  const jokes = [
-    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
-    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
-    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
-  ];
-  return jokes[Math.floor(Math.random() * jokes.length)];
+// Basic node definition
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
-// This job:
-cron.schedule('* * * * *', () => {          // Runs every minute
-  const joke = getRandomJoke();
-  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
+/**
+ * Detect a cycle in a singly linked list.
+ * @param head The start node of the list (or null for an empty list).
+ * @returns true if a cycle exists, otherwise false.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false;          // Empty list → no cycle
 
-  // Example of how you might trigger a system command using Cron
-  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
-    if (err) {
-      console.warn(`Error while executing command: ${err.message}`);
-      return;
-    }
-    console.log(`Command output: ${stdout.trim()}`);
-  });
-});
+  let slow = head;                  // One step per loop
+  let fast = head.next;             // Two steps per loop
 
-console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
+  while (fast && fast.next) {
+    if (slow === fast) return true; // Hopping together → cycle
+
+    slow = slow.next!;              // safe because slow can't be null here
+    fast = fast.next.next!;
+  }
+
+  return false;                     // Reached end → no cycle
+}
+// acyclic list 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+console.log(hasCycle(a)); // false
+
+// cyclic list 1 → 2 → 3 → 1 …
+const d = new ListNode(1);
+const e = new ListNode(2);
+const f = new ListNode(3);
+d.next = e; e.next = f; f.next = d;
+console.log(hasCycle(d)); // true
