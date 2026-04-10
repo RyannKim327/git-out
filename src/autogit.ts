@@ -1,25 +1,85 @@
-function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
-  if (arr.length < 2) return true;           // One or no elements is always sorted
+/*  --------------------------------------------------
+    Depth‑First Search (DFS) – TypeScript
+    -------------------------------------------------- */
 
-  // Default comparison is the "<=" operator for primitives
-  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
+/**
+ * A graph memoized as an adjacency list.
+ * T can be anything that can be used as a key (string, number, etc.).
+ */
+export type Graph<T> = Map<T, Iterable<T>>;
 
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is less than the previous one, it’s not sorted
-    if (cmp(arr[i - 1], arr[i]) > 0) return false;
+/**
+ * Recursive DFS.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsRecursive<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const result: Array<T> = [];
+
+  function visit(node: T): void {
+    if (visited.has(node)) return;
+    visited.add(node);
+    result.push(node);
+
+    for (const neighbour of graph.get(node) ?? []) {
+      visit(neighbour);
+    }
   }
-  return true;
+
+  visit(start);
+  return result;
 }
-console.log(isSortedAsc([1, 2, 3, 4]));  // true
-console.log(isSortedAsc([1, 3, 2, 5]));  // false
-interface Person { age: number; name: string }
 
-const people = [
-  { age: 22, name: "Alice" },
-  { age: 29, name: "Bob" },
-  { age: 30, name: "Carol" }
-];
+/**
+ * Iterative DFS using an explicit stack.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsIterative<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const stack: Array<T> = [start];
+  const result: Array<T> = [];
 
-console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
-const isSortedAscShortcut = (arr: number[]): boolean =>
-  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+  while (stack.length) {
+    const node = stack.pop()!; // non‑empty guarantee
+    if (visited.has(node)) continue;
+
+    visited.add(node);
+    result.push(node);
+
+    // push neighbours onto the stack; reverse order
+    // to mimic the recursive visiting order
+    const neighbours = Array.from(graph.get(node) ?? []);
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      const n = neighbours[i];
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+
+/*  --------------------------------------------------
+    Example Usage
+    -------------------------------------------------- */
+
+const graph: Graph<number> = new Map([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [6]],
+  [4, []],
+  [5, []],
+  [6, []],
+]);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1)); // [1, 2, 4, 5, 3, 6]
+console.log('Iterative DFS:', dfsIterative(graph, 1)); // [1, 3, 6, 2, 5, 4]
