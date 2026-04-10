@@ -1,128 +1,56 @@
-// ---------- TYPES ----------
+// 1️⃣  Define a compare function signature
 type Comparator<T> = (a: T, b: T) => number;
 
-interface Node<T> {
-  key: T;
-  left: Node<T> | null;
-  right: Node<T> | null;
-}
+// 2️⃣  Merge helper – combines two sorted halves
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-// ---------- BST CLASS ----------
-class BinarySearchTree<T> {
-  // root can stay undefined at construction time
-  private root: Node<T> | null = null;
-
-  /**
-   * Allows you to plug in any way you want keys compared.
-   * If none is supplied, `>`, `<`, and `===` are used for primitive values.
-   */
-  constructor(private readonly cmp: Comparator<T> = defaultCompare) {}
-
-  /** Insert new key into tree */
-  insert(key: T): void {
-    const node: Node<T> = { key, left: null, right: null };
-    if (!this.root) {
-      this.root = node;
-      return;
-    }
-
-    let curr = this.root;
-    while (true) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        if (curr.left) {
-          curr = curr.left;
+    while (i < left.length && j < right.length) {
+        // If left[i] <= right[j] according to cmp, push left[i]
+        if (cmp(left[i], right[j]) <= 0) {
+            result.push(left[i++]);
         } else {
-          curr.left = node;
-          break;
+            result.push(right[j++]);
         }
-      } else if (cmp > 0) {
-        if (curr.right) {
-          curr = curr.right;
-        } else {
-          curr.right = node;
-          break;
-        }
-      } else {
-        // key already exists – replace or ignore, here we ignore
-        break;
-      }
     }
-  }
 
-  /** Search for a key. Returns the node if found or null. */
-  search(key: T): Node<T> | null {
-    let curr = this.root;
-    while (curr) {
-      const cmp = this.cmp(key, curr.key);
-      if (cmp < 0) {
-        curr = curr.left;
-      } else if (cmp > 0) {
-        curr = curr.right;
-      } else {
-        return curr;
-      }
-    }
-    return null;
-  }
-
-  /** In‑order traversal – gives sorted keys. */
-  inorder(callback: (key: T) => void): void {
-    function walk(node: Node<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      callback(node.key);
-      walk(node.right);
-    }
-    walk(this.root);
-  }
-
-  /** Delete a key. Simple implementation that preserves BST shape. */
-  delete(key: T): void {
-    const deleteRec = (node: Node<T> | null, key: T): Node<T> | null => {
-      if (!node) return null;
-
-      const cmp = this.cmp(key, node.key);
-      if (cmp < 0) {
-        node.left = deleteRec(node.left, key);
-      } else if (cmp > 0) {
-        node.right = deleteRec(node.right, key);
-      } else {
-        // node to delete found
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
-
-        // two children: find in‑order successor (smallest node on right)
-        let succ = node.right;
-        while (succ.left) succ = succ.left;
-        node.key = succ.key; // copy successor key
-        node.right = deleteRec(node.right, succ.key); // delete successor
-      }
-      return node;
-    };
-
-    this.root = deleteRec(this.root, key);
-  }
+    // Append any leftovers
+    return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
-// ---------- DEFAULT COMPARATOR ----------
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
+// 3️⃣  The recursive merge‑sort function
+export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
+    // Default comparator for primitive types
+    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+
+    // Base case: arrays of length 0 or 1 are already sorted
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const mid = Math.floor(arr.length / 2);
+    const left  = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    return merge(left, right, compare);
 }
+// Numbers
+const nums = [5, 2, 9, 1, 5, 6];
+const sortedNums = mergeSort(nums);
+// sortedNums === [1, 2, 5, 5, 6, 9]
 
-// ---------- USAGE EXAMPLE ----------
-const bst = new BinarySearchTree<number>();
+// Strings
+const words = ["banana", "apple", "cherry"];
+const sortedWords = mergeSort(words);
+// sortedWords === ["apple", "banana", "cherry"]
 
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
-
-console.log('Search 5:', bst.search(5) !== null);   // true
-console.log('Search 4:', bst.search(4) !== null);   // false
-
-console.log('In‑order traversal:');
-bst.inorder(k => console.log(k));   // 1 3 5 7 8 9 10
-
-bst.delete(7);
-console.log('After deleting 7:');
-bst.inorder(k => console.log(k));   // 1 3 5 8 9 10
+// Custom objects (by age)
+type Person = { name: string; age: number };
+const people: Person[] = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob",   age: 35 },
+];
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// sortedByAge => Alice, John, Bob
