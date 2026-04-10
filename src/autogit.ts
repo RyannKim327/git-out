@@ -1,41 +1,39 @@
-// Basic node definition
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
-
 /**
- * Detect a cycle in a singly linked list.
- * @param head The start node of the list (or null for an empty list).
- * @returns true if a cycle exists, otherwise false.
+ * Return true if `a` and `b` contain the same letters in any order.
+ *
+ * The function is case‑insensitive and skips any non‑alphanumeric
+ * characters (e.g. spaces, punctuation). If you want stricter rules,
+ * just comment out the cleanup lines.
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false;          // Empty list → no cycle
+function areAnagrams(a: string, b: string): boolean {
+  // 1️⃣ Normalise: lowercase, strip non‑alphanumerics
+  const clean = (s: string) =>
+    s.replace(/[^a-z0-9]/gi, "").toLowerCase();
 
-  let slow = head;                  // One step per loop
-  let fast = head.next;             // Two steps per loop
+  const cleanA = clean(a);
+  const cleanB = clean(b);
 
-  while (fast && fast.next) {
-    if (slow === fast) return true; // Hopping together → cycle
+  // 2️⃣ Quick length check – avoids extra work
+  if (cleanA.length !== cleanB.length) return false;
 
-    slow = slow.next!;              // safe because slow can't be null here
-    fast = fast.next.next!;
+  // 3️⃣ Count frequency of each character in `cleanA`
+  const freq: Record<string, number> = {};
+
+  for (const ch of cleanA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  return false;                     // Reached end → no cycle
-}
-// acyclic list 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-console.log(hasCycle(a)); // false
+  // 4️⃣ Decrement using characters from `cleanB`
+  for (const ch of cleanB) {
+    if (!freq[ch]) return false; // missing char or too many of it
+    freq[ch]!--;                  // (non‑null assertion OK here)
+  }
 
-// cyclic list 1 → 2 → 3 → 1 …
-const d = new ListNode(1);
-const e = new ListNode(2);
-const f = new ListNode(3);
-d.next = e; e.next = f; f.next = d;
-console.log(hasCycle(d)); // true
+  // 5️⃣ All frequencies should be zero now
+  return Object.values(freq).every(v => v === 0);
+}
+console.log(areAnagrams("listen", "silent"));          // true
+console.log(areAnagrams("Triangle", "Integral"));      // true
+console.log(areAnagrams("Hello!", "oellH"));           // true  (ignores punctuation)
+console.log(areAnagrams("Square", "Quears  "));        // true  (ignores spaces)
+console.log(areAnagrams("Hello", "world"));            // false
