@@ -1,19 +1,54 @@
-const text = "The quick brown fox jumps over the lazy dog";
-
-function contains(sub: string, str: string = text): boolean {
-  return str.includes(sub);
+// A minimal, singly‑linked node definition
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
 
-console.log(contains("brown"));          // true
-console.log(contains("cat"));            // false
-console.log(contains("Brown", text));    // false – includes is case‑sensitive
-function containsRegex(pattern: RegExp, str: string = text): boolean {
-  return pattern.test(str);
+// Returns the node that is n‑th from the end (1‑based)
+// or null if the list is shorter than n.
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  // Guard against invalid n
+  if (n <= 0) return null;
+
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
+
+  // Advance fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // n > length
+    fast = fast.next;
+  }
+
+  // Edge case: n equals the list length ⇒ return head
+  if (!fast) return head;
+
+  // Move both until fast reaches the tail
+  while (fast.next) {
+    fast = fast.next;
+    slow = slow!.next; // slow is guaranteed not null here
+  }
+
+  return slow;
+}
+// Helper to build a list from an array
+function buildList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head: ListNode<T> = { value: arr[0], next: null };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { value: arr[i], next: null };
+    current = current.next;
+  }
+  return head;
 }
 
-console.log(containsRegex(/BROWN/i));  // true – case‑insensitive match
-const hasSub = s.includes(sub);            // ✅
-const hasSubOld = s.indexOf(sub) !== -1;   // ✅
-const starts = s.startsWith(prefix);       // ✅
-const ends = s.endsWith(suffix);           // ✅
-const matches = /pattern/.test(s);         // ✅
+// Example
+const head = buildList([10, 20, 30, 40, 50]);
+
+console.log(nthFromEnd(head, 1)?.value); // 50 (last)
+console.log(nthFromEnd(head, 3)?.value); // 30
+console.log(nthFromEnd(head, 5)?.value); // 10 (first)
+console.log(nthFromEnd(head, 6));        // null (too big)
