@@ -1,57 +1,58 @@
 /**
- * Binary search over a sorted array.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to find.
- * @param cmp      Optional custom comparison function.
- *                  Returns a negative number if a < b,
- *                  zero if a == b, and positive if a > b.
- * @returns Index of `target` in `arr`, or -1 if not found.
+ * Returns the BWT of `s` as an object containing
+ *   - last: the encoded string (last column of the sorted matrix)
+ *   - index: the row number that holds the original string (0‑based)
  */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  cmp?: (a: T, b: T) => number
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+function burrowsWheelerEncode(s: string): { last: string; index: number } {
+  const n = s.length;
+  // Build every rotation: slice(s, i) + slice(s, 0, i)
+  const rotations = Array.from({ length: n }, (_, i) =>
+    s.slice(i) + s.slice(0, i)
+  );
 
-  // Default comparison for numbers or strings
-  const compare = cmp ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  // Sort rotations lexicographically
+  rotations.sort();
 
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = compare(arr[mid], target);
+  // Extract last column and find original string's row
+  let lastCol = "";
+  let origIndex = -1;
+  for (let r = 0; r < n; r++) {
+    const row = rotations[r];
+    lastCol += row[row.length - 1];
+    if (row === s) origIndex = r;
+  }
+  return { last: lastCol, index: origIndex };
+}
+const { last, index } = burrowsWheelerEncode("BANANA");
+// last  => "ANNBAA"
+// index => 3   // 0‑based, the fourth row is "BANANA"
+/**
+ * Inverse of the BWT.  Given the last column (`last`) and the original
+ * string's row index (`index`), reconstruct the original string.
+ */
+function burrowsWheelerDecode(last: string, index: number): string {
+  const n = last.length;
+  const first = [...last].sort();          // First column is sorted last
+  const table: string[] = Array(n).fill(""); // Working table of rows
 
-    if (comparison === 0) return mid;          // found
-    if (comparison < 0) low = mid + 1;         // target is bigger
-    else high = mid - 1;                       // target is smaller
+  // Repeatedly prepend last‑column chars to the table rows
+  for (let step = 0; step < n; step++) {
+    // Prepend each char of last to the corresponding row
+    for (let i = 0; i < n; i++) {
+      table[i] = last[i] + table[i];
+    }
+    // Re‑sort the table – now the first column matches `first`
+    table.sort();
   }
 
-  return -1; // not found
+  // The row at the original index is the decoded string
+  return table[index];
 }
-const numbers = [1, 3, 5, 7, 9, 11];
+const original = burrowsWheelerDecode("ANNBAA", 3);
+console.log(original); // "BANANA"
+const input = "MNEMONIC";
+const { last, index } = burrowsWheelerEncode(input);
+const restored = burrowsWheelerDecode(last, index);
 
-console.log(binarySearch(numbers, 7));  // → 3
-console.log(binarySearch(numbers, 4));  // → -1
-interface Person {
-  name: string;
-  age: number;
-}
-
-const people: Person[] = [
-  {name: 'Alice', age: 28},
-  {name: 'Bob',   age: 34},
-  {name: 'Carol', age: 42}
-];
-
-function ageComparer(a: Person, b: Person): number {
-  return a.age - b.age;
-}
-
-const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
-console.log(idx); // -> 1
+console.log(last, index);   // e.g., "NOIACEMM 4"
+console.log(restored === input); // true
