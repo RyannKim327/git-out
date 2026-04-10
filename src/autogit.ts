@@ -1,100 +1,46 @@
 /**
- * Simple graph type
+ * Return the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the one that appears first in `a` is returned.
  */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
+export function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
- *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
- */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
+  // Work with the shorter string in the second dimension
+  const [s1, s2] = a.length < b.length ? [a, b] : [b, a];
+  const len1 = s1.length;
+  const len2 = s2.length;
 
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
+  // dp[j] = longest suffix length ending at s1[i-1] and s2[j-1]
+  let dp = new Array(len2 + 1).fill(0);
+  let best = 0;
+  let bestEndIdxS1 = 0; // end position (exclusive) in the longer string
 
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
-
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
-  }
-
-  return null;   // no connection
-}
-
-/**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
- */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
-
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
-
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
-
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
+  for (let i = 1; i <= len1; i++) {
+    let prev = 0; // dp[j-1] from the previous row
+    for (let j = 1; j <= len2; j++) {
+      const temp = dp[j]; // value before updating; will become prev in next loop
+      if (s1[i - 1] === s2[j - 1]) {
+        // extend current matching suffix
+        dp[j] = prev + 1;
+        if (dp[j] > best) {
+          best = dp[j];
+          // bestEndIdxS1 refers to the longer/first string
+          bestEndIdxS1 = i;
+        }
+      } else {
+        dp[j] = 0;
       }
-
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
+      prev = temp;
     }
   }
 
-  return null;
+  // Extract the substring from the longer string
+  if (best === 0) return '';
+  const startIdx = bestEndIdxS1 - best;
+  const longer = a.length >= b.length ? a : b;
+  return longer.slice(startIdx, bestEndIdxS1);
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+console.log(longestCommonSubstring('abcdef', 'zabfxe')); // -> "abf"
+console.log(longestCommonSubstring('aabcc', 'abc'));     // -> "abc"
+console.log(longestCommonSubstring('xyz', 'abc'));      // -> ""
