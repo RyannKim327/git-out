@@ -1,48 +1,53 @@
-/**
- * Calculates area when you know the base and the altitude
- * @param base   the length of the base
- * @param height the altitude perpendicular to the base
- * @returns area of the triangle
- */
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
-}
+// randomGreeting.ts
+//
+// 1️⃣  Read one line of text from stdin
+// 2️⃣  Pick a random greeting style
+// 3️⃣  Print a personalised message
+//
 
-// Example
-const area1 = areaBaseHeight(10, 5);   // 25
-/**
- * Calculates area from the three sides using Heron's formula
- * @param a side a
- * @param b side b
- * @param c side c
- * @returns area of the triangle
- * @throws Error if the sides cannot form a triangle
- */
-function areaHeron(a: number, b: number, c: number): number {
-  // Validate triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not form a triangle.');
+import { stdin, stdout } from 'process';
+
+// A tiny helper that turns a promise into a line‑by‑line async iterator
+async function* readLines(): AsyncGenerator<string> {
+  let buffer = '';
+  for await (const chunk of stdin) {
+    buffer += chunk.toString();
+    let *lines* = buffer.split('\n');
+    buffer = lines.pop() ?? '';      // keep the unfinished part
+    for (const line of lines) {
+      yield line.trim();           // remove trailing CR / whitespace
+    }
   }
-
-  const s = (a + b + c) / 2;                       // semi‑perimeter
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  if (buffer) yield buffer.trim();   // last partial line
 }
 
-// Example
-const area2 = areaHeron(3, 4, 5);   // 6
-interface Point { x: number; y: number }
+async function main() {
+  // Ask for the user’s name
+  stdout.write('👋 What is your name? ');
+  const lines = readLines();
 
-function areaFromCoords(p1: Point, p2: Point, p3: Point): number {
-  return Math.abs(
-    (p1.x * (p2.y - p3.y) +
-     p2.x * (p3.y - p1.y) +
-     p3.x * (p1.y - p2.y)) / 2
-  );
+  // Wait for the first line entered by the user
+  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
+
+  // Some random greeting ideas
+  const greetings = [
+    `Hey ${name}, hope you’re having a stellar day!`,
+    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
+    `Greetings, ${name}! Keep calm and code on.`,
+    `${name}, you’re the reason we write code in TypeScript!`,
+    `Howdy ${name}! 🎉`
+  ];
+
+  // Pick one at random
+  const choice = greetings[Math.floor(Math.random() * greetings.length)];
+
+  stdout.write(`${choice}\n`);
 }
 
-// Example
-const area3 = areaFromCoords(
-  { x: 0, y: 0 },
-  { x: 4, y: 0 },
-  { x: 0, y: 3 }
-);   // 6
+main().catch(err => {
+  console.error('Something went wrong:', err);
+  process.exit(1);
+});
+$ node randomGreeting.js
+👋 What is your name? Alice
+Hey Alice, hope you’re having a stellar day!
