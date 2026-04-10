@@ -1,27 +1,45 @@
 /**
- * Returns true if `str` reads the same forwards and backwards.
+ * Return the longest common prefix of an array of strings.
+ * If the array is empty the result is the empty string.
  *
- * @param str – The string you want to test.
- * @returns  boolean – palindrome status.
+ * @param strs Array of strings
+ * @returns The longest common prefix
  */
-export function isPalindrome(str: string): boolean {
-  // Remove all non‑alphanumeric characters and ignore case.
-  const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  // Two‑pointer scan is faster than reversing a long string.
-  let left = 0;
-  let right = cleaned.length - 1;
+  // Start with the entire first string as a tentative prefix.
+  let prefix = strs[0];
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
+  // Iterate over the rest of the strings.
+  for (let i = 1; i < strs.length; i++) {
+    const s = strs[i];
+
+    // Shrink the prefix until it matches the current string
+    // (or becomes empty).
+    while (!s.startsWith(prefix)) {
+      // Drop the last character
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return ""; // No common prefix
     }
-    left++;
-    right--;
   }
-  return true;
+
+  return prefix;
 }
-console.log(isPalindrome('racecar'));          // true
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('hello'));            // false
-console.log(isPalindrome(''));                 // true (empty string)
+console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
+console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
+console.log(longestCommonPrefix([]));                         // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+export function lcpBySorting(strs: string[]): string {
+  if (strs.length === 0) return "";
+
+  const sorted = [...strs].sort(); // Lexicographical order
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const minLen = Math.min(first.length, last.length);
+
+  let i = 0;
+  while (i < minLen && first[i] === last[i]) i++;
+
+  return first.slice(0, i);
+}
