@@ -1,67 +1,48 @@
-type Node = {
-  id:          string;   // whatever uniquely identifies a node
-  children?:   Node[];   // adjacency list – change to whatever your graph uses
-};
-
-interface StackItem {
-  node:  Node;
-  depth: number;
-}
-
 /**
- * Iterative DFS that stops at a given depth limit.
- * Returns true if the target is found, otherwise false.
+ * Bubble‑sort an array.
+ *
+ * @param arr          The array to sort (does not get mutated).
+ * @param compareFn    Optional comparison function.  
+ *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
+ *                     If omitted, the default comparator uses the `<` and `>` operators that work
+ *                     for numbers, strings and any type that can be compared that way.
+ * @returns            A new array containing the elements of `arr` in ascending order.
  */
-function depthLimitedDFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const stack: StackItem[] = [{ node: root, depth: 0 }];
+export function bubbleSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): T[] {
+  // Make a shallow copy; we don’t want to touch the caller’s array
+  const result = [...arr];
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;      // pop from the end
+  const compare = compareFn ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-    if (node.id === targetId) return true;     // hit
+  const n = result.length;
+  if (n < 2) return result; // already sorted
 
-    if (depth < maxDepth) {                   // still room to descend
-      const children = node.children ?? [];
-      // push children in reverse order if you want particular visit order
-      for (let i = children.length - 1; i >= 0; i--) {
-        stack.push({ node: children[i], depth: depth + 1 });
+  let swapped: boolean;
+  // Standard bubble‑sort: keep looping while we keep swapping
+  do {
+    swapped = false;
+    for (let i = 0; i < n - 1; i++) {
+      if (compare(result[i], result[i + 1]) > 0) {
+        // swap
+        [result[i], result[i + 1]] = [result[i + 1], result[i]];
+        swapped = true;
       }
     }
-  }
-  return false;
+  } while (swapped);
+
+  return result;
 }
-function depthLimitedBFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const queue: StackItem[] = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;  // shift from the front
-
-    if (node.id === targetId) return true;
-
-    if (depth < maxDepth) {
-      for (const child of node.children ?? []) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
-    }
-  }
-  return false;
-}
-const tree: Node = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
-    { id: 'b', children: [{ id: 'e' }] }
-  ]
-};
-
-console.log(depthLimitedDFS(tree, 'd', 2)); // true
-console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
-console.log(depthLimitedBFS(tree, 'e', 1)); // true
+const unsorted = [5, 3, 8, 4, 2];
+const sorted = bubbleSort(unsorted);
+console.log(sorted); // [2, 3, 4, 5, 8]
+console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
+const words = ["banana", "Apple", "cherry"];
+const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(sortedByCase); // ["Apple", "banana", "cherry"]
