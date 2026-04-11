@@ -1,23 +1,18 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Return true if `text` is a palindrome (ignoring case, spaces, punctuation and diacritics).
+ */
+function isPalindrome(text: string): boolean {
+  // 1️⃣  Clean the string:
+  const cleaned = text
+    .toLowerCase()          // case‑insensitive
+    .replace(/\s+/g, '')    // strip whitespace
+    .replace(/[^a-z0-9]/g, ''); // strip punctuation & accents
+
+  // 2️⃣  Compare the string with its reverse:
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
 
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
-
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
-}
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(maxDepth(root));  // 3
+// handy demo
+console.log(isPalindrome('A man, a plan, a canal: Panama!')); // true
+console.log(isPalindrome('Hello, world!'));                    // false
