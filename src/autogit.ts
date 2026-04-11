@@ -1,39 +1,28 @@
-function lcs(a: string, b: string): string {
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  const dp: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+/**
+ * How many times does `word` appear in `text`?
+ *
+ * @param text   The string to search.
+ * @param word   The exact word you’re looking for (case‑insensitive).
+ * @returns      Number of matches.
+ */
+export function countWord(text: string, word: string): number {
+  if (!word) return 0;                      // avoid /()/ which matches every position
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Re‑construct the subsequence
-  let i = rows - 1, j = cols - 1;
-  const res: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      res.push(a[i - 1]);          // same character in both strings
-      i--; j--;                    // move diagonally
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                          // move up
-    } else {
-      j--;                          // move left
-    }
-  }
-  return res.reverse().join('');
-}
-console.log(lcs("AGGTAB", "GXTXAYB")); // → "GTAB"
-// lcs.ts
-export function lcs(a: string, b: string): string {
-  // ...implementation as above...
+  const re = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
 }
 
-// example usage
-import { lcs } from './lcs';
-console.log(lcs('abcbdab', 'bdcaba')); // prints bcdab
+/** Escape characters that have special meaning in a regex. */
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const note = "The quick brown fox jumps over the lazy dog. The fox is quick.";
+console.log(countWord(note, "the"));   // 3 (The, the, The)
+console.log(countWord(note, "fox"));   // 2
+function countWordSimple(text: string, word: string): number {
+  const lw = word.toLowerCase();
+  return text
+    .split(/\s+/)
+    .filter(tok => tok.toLowerCase() === lw).length;
+}
