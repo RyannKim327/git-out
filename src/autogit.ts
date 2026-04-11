@@ -1,66 +1,57 @@
 /**
- * Fibonacci Search
+ * Binary search over a sorted array.
  *
- * @param arr  – sorted array (ascending)
- * @param target – value that we want to locate
- * @returns the index of target or −1 if it isn't present
+ * @param arr      Sorted array to search.
+ * @param target   Value to find.
+ * @param cmp      Optional custom comparison function.
+ *                  Returns a negative number if a < b,
+ *                  zero if a == b, and positive if a > b.
+ * @returns Index of `target` in `arr`, or -1 if not found.
  */
-export function fibonacciSearch<T>(
-    arr: readonly T[],
-    target: T,
-    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  cmp?: (a: T, b: T) => number
 ): number {
-    const n = arr.length;
+  let low = 0;
+  let high = arr.length - 1;
 
-    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
-    let fibMMm2 = 0; // (m‑2)’th Fibonacci
-    let fibMMm1 = 1; // (m‑1)’th Fibonacci
-    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
+  // Default comparison for numbers or strings
+  const compare = cmp ?? ((a, b) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-    while (fibM < n) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
-    }
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const comparison = compare(arr[mid], target);
 
-    // ---- 2. Marks the eliminated range from front ----
-    let offset = -1;
+    if (comparison === 0) return mid;          // found
+    if (comparison < 0) low = mid + 1;         // target is bigger
+    else high = mid - 1;                       // target is smaller
+  }
 
-    // ---- 3. While there are elements to inspect ----
-    while (fibM > 1) {
-        // Calculate the index to check
-        const i = Math.min(offset + fibMMm2, n - 1);
-
-        const comp = cmp(arr[i], target);
-
-        // case 1: the target is greater than the value at index i
-        if (comp < 0) {
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        }
-        // case 2: the target is less than the value at index i
-        else if (comp > 0) {
-            fibM = fibMMm2;
-            fibMMm1 = fibMMm1 - fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        }
-        // case 3: element found
-        else {
-            return i;
-        }
-    }
-
-    // ---- 4. If the last remaining element is the target ----
-    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
-        return offset + 1;
-    }
-
-    return -1; // not found
+  return -1; // not found
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
-const idx = fibonacciSearch(nums, 13);
+const numbers = [1, 3, 5, 7, 9, 11];
 
-console.log(idx); // → 6
-console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
+console.log(binarySearch(numbers, 7));  // → 3
+console.log(binarySearch(numbers, 4));  // → -1
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  {name: 'Alice', age: 28},
+  {name: 'Bob',   age: 34},
+  {name: 'Carol', age: 42}
+];
+
+function ageComparer(a: Person, b: Person): number {
+  return a.age - b.age;
+}
+
+const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
+console.log(idx); // -> 1
