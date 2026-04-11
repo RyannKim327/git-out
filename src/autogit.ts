@@ -1,81 +1,65 @@
 /**
- * Tarjan's algorithm (1990) – O(V + E) time.
- *
- * Input
- * -----
- * `graph`   : 0‑based adjacency list.  graph[v] is an array of vertices
- *              that v points to.
- *
- * Output
- * ------
- * An array of SCCs.  Each SCC is an array of vertex indices.  The
- * components are returned in reverse topological order (the first
- * component in the list is one that has no outgoing edges to earlier
- * components).
+ * Build the shift table for the Boyer–Moore–Horspool algorithm.
+ * For each character in the pattern we set the shift distance to the
+ * pattern length minus the index - 1, unless the character is the
+ * pattern's last one (its shift remains 1).
  */
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-export function tarjanSCC(graph: number[][]): number[][] {
-  const n = graph.length;
-  const indices = new Array<number>(n).fill(-1);   // order in which nodes were visited
-  const lowlink = new Array<number>(n).fill(-1);   // smallest index reachable from node
-  const onStack = new Array<boolean>(n).fill(false);
-  const stack: number[] = [];
-  const sccs: number[][] = [];
-
-  let currentIndex = 0;
-
-  const strongConnect = (v: number): void => {
-    // Set the depth index for v to the smallest unused index
-    indices[v] = currentIndex;
-    lowlink[v] = currentIndex;
-    currentIndex++;
-    stack.push(v);
-    onStack[v] = true;
-
-    // Consider successors of v
-    for (const w of graph[v]) {
-      if (indices[w] === -1) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowlink[v] = Math.min(lowlink[v], lowlink[w]);
-      } else if (onStack[w]) {
-        // Successor w is in stack → v is in the same SCC as w
-        lowlink[v] = Math.min(lowlink[v], indices[w]);
-      }
-    }
-
-    // If v is a root node, pop the stack and generate an SCC
-    if (lowlink[v] === indices[v]) {
-      const component: number[] = [];
-      let w: number;
-      do {
-        w = stack.pop() as number;   // stack never empty here
-        onStack[w] = false;
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  };
-
-  // Run DFS from every node that hasn't been visited yet
-  for (let v = 0; v < n; v++) {
-    if (indices[v] === -1) {
-      strongConnect(v);
-    }
+  // Initialize all shifts to the pattern length.
+  for (let i = 0; i < m; i++) {
+    const ch = pattern.charAt(i);
+    table[ch] = m;
   }
 
-  return sccs;
-}
-const graph = [
-  [1],          // 0 → 1
-  [2],          // 1 → 2
-  [0, 3],       // 2 → 0 (cycle 0‑1‑2) and → 3
-  [4],          // 3 → 4
-  [5],          // 4 → 5
-  [3],          // 5 → 3 (cycle 3‑4‑5)
-  []            // 6 isolated
-];
+  // Adjust shifts for every character except the last one.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern.charAt(i)] = m - i - 1;
+  }
 
-const sccs = tarjanSCC(graph);
-console.log(sccs);
-// Possible output: [[6], [0, 1, 2], [3, 4, 5]]
+  return table;
+}
+
+/**
+ * Boyer–Moore–Horspool substring search.
+ * @param text   The string you want to search inside.
+ * @param pat    The pattern you are looking for.
+ * @returns      The index of the first occurrence, or -1 if not found.
+ */
+export function boyerMooreHorspool(text: string, pat: string): number {
+  const n = text.length;
+  const m = pat.length;
+
+  if (m === 0) return 0;          // Empty pattern matches at 0
+  if (m > n) return -1;           // Pattern longer than text → impossible
+
+  const shift = buildShiftTable(pat);
+
+  let i = 0;                      // Current position in text
+
+  while (i <= n - m) {
+    let j = m - 1;                // Start comparing from the end of the pattern
+
+    // Walk backwards over matched characters
+    while (j >= 0 && pat.charAt(j) === text.charAt(i + j)) {
+      j--;
+    }
+
+    if (j < 0) {
+      return i;                   // Match found
+    }
+
+    // If mismatch, shift by the table value of the mismatched character
+    const badChar = text.charAt(i + m - 1);
+    i += shift[badChar] ?? m;     // Default shift if character not in table
+  }
+
+  return -1;                      // No match
+}
+const txt = "Here is a simple example: find the substring.";
+const pat = "substring";
+
+const idx = boyerMooreHorspool(txt, pat);
+console.log(idx);   // → 34
