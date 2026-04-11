@@ -1,38 +1,18 @@
-/**
- * Return the same sentence but with the words in reverse order.
- *
- * @param sentence - Any string you want to flip.
- * @returns A new string with the word order reversed.
- */
-export function reverseWords(sentence: string): string {
-  return sentence
-    .trim()                      // Remove leading/trailing spaces
-    .split(/\s+/)                // Split on one or more whitespace characters
-    .reverse()                   // Reverse the word array
-    .join(' ');                  // Re‑join with a single space
+const numbers: number[] = [12, 4, 56, 3, 9];
+
+// The default sort is string comparison → "12" < "56" < ...!
+const sorted = numbers.slice().sort((a, b) => a - b);
+
+console.log(sorted); // [3, 4, 9, 12, 56]
+function sortNums(arr: number[]): number[] {
+  return arr.slice().sort((a, b) => a - b);
 }
 
-/* Example usage */
-const original = "The quick brown   fox jumps over the lazy dog";
-console.log(reverseWords(original));
-// → "dog lazy the over jumps fox brown quick The"
-export function reverseWordsWithSpacing(str: string): string {
-  const parts = str.match(/(\S+|\s+)/g) ?? []; // captures words and whitespace chunks
-  let words: string[] = [];
-  const wordTokens: string[] = [];
-
-  // Extract words while preserving the positions of the separators
-  for (const part of parts) {
-    if (part.trim() === '') {
-      words.push(part); // this part is whitespace
-    } else {
-      wordTokens.push(part); // capture the word
-    }
-  }
-
-  // Reverse only the words, then reconstruct
-  const reversedWords = wordTokens.reverse();
-  let i = 0;
-  const result = parts.map(p => (p.trim() === '' ? p : reversedWords[i++])).join('');
-  return result;
+const unsorted = [27, 13, 42, 8];
+console.log(sortNums(unsorted)); // [8, 13, 27, 42]
+function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
+  return arr.slice().sort(cmpFn);
+}
+function sortNumbersASC(nums: number[]): number[] {
+  return nums.slice().sort((a, b) => a - b);
 }
