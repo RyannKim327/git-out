@@ -1,67 +1,47 @@
-type Node = {
-  id:          string;   // whatever uniquely identifies a node
-  children?:   Node[];   // adjacency list – change to whatever your graph uses
-};
-
-interface StackItem {
-  node:  Node;
-  depth: number;
-}
-
 /**
- * Iterative DFS that stops at a given depth limit.
- * Returns true if the target is found, otherwise false.
+ * Does `a` consist of exactly the same letters as `b`, in any order?
+ * The comparison is case‑insensitive and ignores whitespace.
+ *
+ * @param a – first candidate
+ * @param b – second candidate
+ * @returns true if the strings are anagrams, otherwise false
  */
-function depthLimitedDFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const stack: StackItem[] = [{ node: root, depth: 0 }];
+export function isAnagram(a: string, b: string): boolean {
+  // Normalise the strings: lowercase, trim, remove spaces.
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+  const strA = normalize(a);
+  const strB = normalize(b);
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;      // pop from the end
+  // Quick rejection: different length → impossible to be an anagram.
+  if (strA.length !== strB.length) return false;
 
-    if (node.id === targetId) return true;     // hit
+  // === Approach 1: sorting ===
+  // const sortedA = strA.split('').sort().join('');
+  // const sortedB = strB.split('').sort().join('');
+  // return sortedA === sortedB;
 
-    if (depth < maxDepth) {                   // still room to descend
-      const children = node.children ?? [];
-      // push children in reverse order if you want particular visit order
-      for (let i = children.length - 1; i >= 0; i--) {
-        stack.push({ node: children[i], depth: depth + 1 });
-      }
-    }
+  // === Approach 2: frequency counting ===
+  const freq: Record<string, number> = {};
+
+  // Count characters of the first string.
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
-  return false;
-}
-function depthLimitedBFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const queue: StackItem[] = [{ node: root, depth: 0 }];
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;  // shift from the front
-
-    if (node.id === targetId) return true;
-
-    if (depth < maxDepth) {
-      for (const child of node.children ?? []) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
+  // Subtract counts using characters from the second string.
+  for (const ch of strB) {
+    if (!freq[ch]) {
+      // Either the character never appeared in `a`
+      // or its count has already been zeroed out.
+      return false;
     }
+    freq[ch]!--;          // `!` tells the compiler this is defined.
+    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
   }
-  return false;
-}
-const tree: Node = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
-    { id: 'b', children: [{ id: 'e' }] }
-  ]
-};
 
-console.log(depthLimitedDFS(tree, 'd', 2)); // true
-console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
-console.log(depthLimitedBFS(tree, 'e', 1)); // true
+  // If all counts have cancelled out, the map should be empty.
+  return Object.keys(freq).length === 0;
+}
+console.log(isAnagram('Listen', 'Silent'));   // true
+console.log(isAnagram('Triangle', 'Integral')); // true
+console.log(isAnagram('Apple', 'Pabble'));      // false
