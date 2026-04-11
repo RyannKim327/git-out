@@ -1,34 +1,48 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
+// random-joke.ts
+import axios from "axios";
+
+/**
+ * The shape of the JSON that the Joke API gives us.
+ */
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
-function reverseUnicodeString(str: string): string {
-  const chars: string[] = [];
-  for (const ch of str) {
-    chars.unshift(ch);            // add each code‑point to the front
+
+/**
+ * Fetch a single random joke.
+ */
+const fetchRandomJoke = async (): Promise<Joke> => {
+  // The API returns an array of jokes even though we only ask for one – happy accidents.
+  const url = "https://official-joke-api.appspot.com/jokes/random";
+  const response = await axios.get<Joke>(url);
+  return response.data;
+};
+
+/**
+ * Pretty‑print a joke to the console.
+ */
+const printJoke = (joke: Joke) => {
+  console.log(`💡 ${joke.type.toUpperCase()}`);
+  console.log(`   ${joke.setup}`);
+  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
+};
+
+/**
+ * Simple wrapper that ties everything together.
+ */
+const main = async () => {
+  try {
+    const joke = await fetchRandomJoke();
+    printJoke(joke);
+  } catch (err) {
+    // Axios errors contain a `response` field with the server reply.
+    // If you’re debugging, you can inspect `err.response?.data` for the text.
+    console.error("🔴 Something went wrong retrieving a joke:", err);
   }
-  return chars.join('');
-}
-function reverseStringLoop(str: string): string {
-  const buf = str.split('');
-  let i = 0;
-  let j = buf.length - 1;
-  while (i < j) {
-    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
-    ++i;
-    --j;
-  }
-  return buf.join('');
-}
-function reverseFunctional(str: string): string {
-  return [...str].reduceRight((acc, char) => acc + char, '');
-}
-function reverseStringFast(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
-}
-const raw = 'Hello, 🌍!';
-console.log(reverseString(raw));           // "!🌍 ,olleH"
-console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
+};
+
+// Run the little demo when the file is executed.
+main();
