@@ -1,30 +1,40 @@
-/**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
+class TreeNode {
+  constructor(
+    public val: number,
+    public left: TreeNode | null = null,
+    public right: TreeNode | null = null
+  ) {}
+}
+function sumTree(root: TreeNode | null): number {
+  if (!root) return 0;          // nothing to add
+  const leftSum = sumTree(root.left);
+  const rightSum = sumTree(root.right);
+  return root.val + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let sum = 0;
+  const stack: Array<TreeNode> = [root];
 
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
-    }
-    // values equal to max are ignored – we want distinct numbers
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
 
-  return second === -Infinity ? undefined : second;
+  return sum;
 }
+const root = new TreeNode(5,
+  new TreeNode(3,
+    new TreeNode(2),
+    new TreeNode(4)
+  ),
+  new TreeNode(8,
+    null,
+    new TreeNode(9)
+  )
+);
 
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
-}
+console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
+console.log(sumTreeIterative(root)); // 31
