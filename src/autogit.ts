@@ -1,28 +1,24 @@
 /**
- * How many times does `word` appear in `text`?
+ * Returns the mean of a non‑empty list of numbers.
+ * Throws if the array is empty or contains non‑numeric values.
  *
- * @param text   The string to search.
- * @param word   The exact word you’re looking for (case‑insensitive).
- * @returns      Number of matches.
+ * @param numbers – an array of numbers
+ * @returns the arithmetic mean
  */
-export function countWord(text: string, word: string): number {
-  if (!word) return 0;                      // avoid /()/ which matches every position
+function mean(numbers: readonly number[]): number {
+  if (numbers.length === 0) {
+    throw new Error('Cannot compute mean of an empty array.');
+  }
 
-  const re = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
-}
+  const sum = numbers.reduce((acc, val) => {
+    if (typeof val !== 'number' || Number.isNaN(val)) {
+      throw new Error(`Invalid value detected: ${val}`);
+    }
+    return acc + val;
+  }, 0);
 
-/** Escape characters that have special meaning in a regex. */
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return sum / numbers.length;
 }
-const note = "The quick brown fox jumps over the lazy dog. The fox is quick.";
-console.log(countWord(note, "the"));   // 3 (The, the, The)
-console.log(countWord(note, "fox"));   // 2
-function countWordSimple(text: string, word: string): number {
-  const lw = word.toLowerCase();
-  return text
-    .split(/\s+/)
-    .filter(tok => tok.toLowerCase() === lw).length;
-}
+const scores = [80, 92, 75, 88];
+
+console.log(mean(scores)); // → 84.25
