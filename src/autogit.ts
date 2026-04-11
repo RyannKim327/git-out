@@ -1,48 +1,39 @@
 /**
- * Bubble‑sort an array.
+ * Return true if `a` and `b` contain the same letters in any order.
  *
- * @param arr          The array to sort (does not get mutated).
- * @param compareFn    Optional comparison function.  
- *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
- *                     If omitted, the default comparator uses the `<` and `>` operators that work
- *                     for numbers, strings and any type that can be compared that way.
- * @returns            A new array containing the elements of `arr` in ascending order.
+ * The function is case‑insensitive and skips any non‑alphanumeric
+ * characters (e.g. spaces, punctuation). If you want stricter rules,
+ * just comment out the cleanup lines.
  */
-export function bubbleSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  // Make a shallow copy; we don’t want to touch the caller’s array
-  const result = [...arr];
+function areAnagrams(a: string, b: string): boolean {
+  // 1️⃣ Normalise: lowercase, strip non‑alphanumerics
+  const clean = (s: string) =>
+    s.replace(/[^a-z0-9]/gi, "").toLowerCase();
 
-  const compare = compareFn ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  const cleanA = clean(a);
+  const cleanB = clean(b);
 
-  const n = result.length;
-  if (n < 2) return result; // already sorted
+  // 2️⃣ Quick length check – avoids extra work
+  if (cleanA.length !== cleanB.length) return false;
 
-  let swapped: boolean;
-  // Standard bubble‑sort: keep looping while we keep swapping
-  do {
-    swapped = false;
-    for (let i = 0; i < n - 1; i++) {
-      if (compare(result[i], result[i + 1]) > 0) {
-        // swap
-        [result[i], result[i + 1]] = [result[i + 1], result[i]];
-        swapped = true;
-      }
-    }
-  } while (swapped);
+  // 3️⃣ Count frequency of each character in `cleanA`
+  const freq: Record<string, number> = {};
 
-  return result;
+  for (const ch of cleanA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
+  }
+
+  // 4️⃣ Decrement using characters from `cleanB`
+  for (const ch of cleanB) {
+    if (!freq[ch]) return false; // missing char or too many of it
+    freq[ch]!--;                  // (non‑null assertion OK here)
+  }
+
+  // 5️⃣ All frequencies should be zero now
+  return Object.values(freq).every(v => v === 0);
 }
-const unsorted = [5, 3, 8, 4, 2];
-const sorted = bubbleSort(unsorted);
-console.log(sorted); // [2, 3, 4, 5, 8]
-console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
-const words = ["banana", "Apple", "cherry"];
-const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(sortedByCase); // ["Apple", "banana", "cherry"]
+console.log(areAnagrams("listen", "silent"));          // true
+console.log(areAnagrams("Triangle", "Integral"));      // true
+console.log(areAnagrams("Hello!", "oellH"));           // true  (ignores punctuation)
+console.log(areAnagrams("Square", "Quears  "));        // true  (ignores spaces)
+console.log(areAnagrams("Hello", "world"));            // false
