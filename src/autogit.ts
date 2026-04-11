@@ -1,57 +1,34 @@
-/**
- * Binary search over a sorted array.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to find.
- * @param cmp      Optional custom comparison function.
- *                  Returns a negative number if a < b,
- *                  zero if a == b, and positive if a > b.
- * @returns Index of `target` in `arr`, or -1 if not found.
- */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  cmp?: (a: T, b: T) => number
-): number {
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Default comparison for numbers or strings
-  const compare = cmp ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = compare(arr[mid], target);
-
-    if (comparison === 0) return mid;          // found
-    if (comparison < 0) low = mid + 1;         // target is bigger
-    else high = mid - 1;                       // target is smaller
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
+}
+function reverseUnicodeString(str: string): string {
+  const chars: string[] = [];
+  for (const ch of str) {
+    chars.unshift(ch);            // add each code‑point to the front
   }
-
-  return -1; // not found
+  return chars.join('');
 }
-const numbers = [1, 3, 5, 7, 9, 11];
-
-console.log(binarySearch(numbers, 7));  // → 3
-console.log(binarySearch(numbers, 4));  // → -1
-interface Person {
-  name: string;
-  age: number;
+function reverseStringLoop(str: string): string {
+  const buf = str.split('');
+  let i = 0;
+  let j = buf.length - 1;
+  while (i < j) {
+    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
+    ++i;
+    --j;
+  }
+  return buf.join('');
 }
-
-const people: Person[] = [
-  {name: 'Alice', age: 28},
-  {name: 'Bob',   age: 34},
-  {name: 'Carol', age: 42}
-];
-
-function ageComparer(a: Person, b: Person): number {
-  return a.age - b.age;
+function reverseFunctional(str: string): string {
+  return [...str].reduceRight((acc, char) => acc + char, '');
 }
-
-const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
-console.log(idx); // -> 1
+function reverseStringFast(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
+  }
+  return result;
+}
+const raw = 'Hello, 🌍!';
+console.log(reverseString(raw));           // "!🌍 ,olleH"
+console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
