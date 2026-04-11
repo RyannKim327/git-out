@@ -1,18 +1,32 @@
-/**
- * Return true if `text` is a palindrome (ignoring case, spaces, punctuation and diacritics).
- */
-function isPalindrome(text: string): boolean {
-  // 1️⃣  Clean the string:
-  const cleaned = text
-    .toLowerCase()          // case‑insensitive
-    .replace(/\s+/g, '')    // strip whitespace
-    .replace(/[^a-z0-9]/g, ''); // strip punctuation & accents
-
-  // 2️⃣  Compare the string with its reverse:
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
+function factorialRec(n: number): number {
+  if (n < 0) throw new Error("negatives are not allowed");
+  return n <= 1 ? 1 : n * factorialRec(n - 1);
 }
+function factorialIter(n: number): number {
+  if (n < 0) throw new Error("negatives are not allowed");
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error("negatives are not allowed");
+  let result: bigint = 1n;
+  for (let i = 2; i <= n; i++) {
+    result *= BigInt(i);
+  }
+  return result;
+}
+const memo = new Map<number, bigint>();
 
-// handy demo
-console.log(isPalindrome('A man, a plan, a canal: Panama!')); // true
-console.log(isPalindrome('Hello, world!'));                    // false
+function factorialCached(n: number): bigint {
+  if (n < 0) throw new Error("negatives are not allowed");
+  if (memo.has(n)) return memo.get(n)!;
+
+  const result = n <= 1 ? 1n : BigInt(n) * factorialCached(n - 1);
+  memo.set(n, result);
+  return result;
+}
+console.log(factorialIter(5));      // 120
+console.log(factorialBigInt(50));   // 30414093201713378043612608166064768844377641568960512000000000000n
