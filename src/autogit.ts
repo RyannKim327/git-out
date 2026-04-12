@@ -1,85 +1,75 @@
-/*  --------------------------------------------------
-    Depth‑First Search (DFS) – TypeScript
-    -------------------------------------------------- */
+// Compute lps array for pattern p
+function buildLPS(p: string): number[] {
+  const lps = new Array(p.length).fill(0);
+  let len = 0;            // length of the previous longest prefix suffix
+  let i = 1;
 
-/**
- * A graph memoized as an adjacency list.
- * T can be anything that can be used as a key (string, number, etc.).
- */
-export type Graph<T> = Map<T, Iterable<T>>;
-
-/**
- * Recursive DFS.
- * @param graph      the graph
- * @param start      starting node
- * @returns          array of nodes in the order they were first visited
- */
-export function dfsRecursive<T>(
-  graph: Graph<T>,
-  start: T
-): Array<T> {
-  const visited = new Set<T>();
-  const result: Array<T> = [];
-
-  function visit(node: T): void {
-    if (visited.has(node)) return;
-    visited.add(node);
-    result.push(node);
-
-    for (const neighbour of graph.get(node) ?? []) {
-      visit(neighbour);
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back in the pattern, don’t slide the text cursor
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
   }
-
-  visit(start);
-  return result;
+  return lps;
 }
-
 /**
- * Iterative DFS using an explicit stack.
- * @param graph      the graph
- * @param start      starting node
- * @returns          array of nodes in the order they were first visited
+ * KMP search – returns true if pattern occurs in text
+ * @param text the body to scan
+ * @param pattern the substring to find
  */
-export function dfsIterative<T>(
-  graph: Graph<T>,
-  start: T
-): Array<T> {
-  const visited = new Set<T>();
-  const stack: Array<T> = [start];
-  const result: Array<T> = [];
+function kmpSearch(text: string, pattern: string): boolean {
+  if (pattern === "") return true;          // empty pattern matches everywhere
 
-  while (stack.length) {
-    const node = stack.pop()!; // non‑empty guarantee
-    if (visited.has(node)) continue;
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-    visited.add(node);
-    result.push(node);
-
-    // push neighbours onto the stack; reverse order
-    // to mimic the recursive visiting order
-    const neighbours = Array.from(graph.get(node) ?? []);
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      const n = neighbours[i];
-      if (!visited.has(n)) stack.push(n);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) return true;   // full match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1];    // drop the matched prefix
+      } else {
+        i++;               // move on in the text
+      }
     }
   }
-
-  return result;
+  return false;
 }
+function kmpAllMatches(text: string, pattern: string): number[] {
+  if (pattern === "") return [];  // or [0,1,2,...] if you want
 
-/*  --------------------------------------------------
-    Example Usage
-    -------------------------------------------------- */
+  const lps = buildLPS(pattern);
+  const matches: number[] = [];
+  let i = 0, j = 0;
 
-const graph: Graph<number> = new Map([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []],
-]);
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        matches.push(i - j); // match ends at i-1, so start = i-j
+        j = lps[j - 1];      // continue searching
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return matches;
+}
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
 
-console.log('Recursive DFS:', dfsRecursive(graph, 1)); // [1, 2, 4, 5, 3, 6]
-console.log('Iterative DFS:', dfsIterative(graph, 1)); // [1, 3, 6, 2, 5, 4]
+console.log(kmpSearch(haystack, needle));          // true
+console.log(kmpAllMatches(haystack, needle));      // [10]
