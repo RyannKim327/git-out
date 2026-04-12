@@ -1,100 +1,48 @@
 /**
- * Simple graph type
- */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
-
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
+ * In‑place heap sort for an array of numbers.
  *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
+ * Complexity:  O(n log n) time, O(1) additional space
  */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
+export function heapSort(arr: number[]): void {
+  const n = arr.length;
 
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
-
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
-
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
+  // 1. Build a max‑heap
+  for (let i = (n - 2) >> 1; i >= 0; i--) {
+    heapify(arr, i, n);
   }
 
-  return null;   // no connection
+  // 2. Extract elements one by one
+  for (let end = n - 1; end > 0; end--) {
+    swap(arr, 0, end);         // move current max to its final position
+    heapify(arr, 0, end);      // restore heap property on the reduced heap
+  }
 }
 
-/**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
- */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
+/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
+function heapify(arr: number[], rootIdx: number, size: number): void {
+  let largest = rootIdx;
+  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
+  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
 
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
-
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
-
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
-      }
-
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
-    }
+  if (left < size && arr[left] > arr[largest]) {
+    largest = left;
+  }
+  if (right < size && arr[right] > arr[largest]) {
+    largest = right;
   }
 
-  return null;
+  if (largest !== rootIdx) {
+    swap(arr, rootIdx, largest);
+    heapify(arr, largest, size); // continue percolating down
+  }
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+
+/** Swap two elements in the array. */
+function swap(arr: number[], i: number, j: number): void {
+  const temp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = temp;
+}
+const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
+heapSort(data);
+console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
