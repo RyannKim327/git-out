@@ -1,23 +1,25 @@
-function firstRepeatedChar(s: string): string | undefined {
-  // Use a set to record characters we've already seen.
-  const seen = new Set<string>();
+/**
+ * Returns the first character that appears only once in `s`.
+ * If every character repeats (or the string is empty), returns `null`.
+ */
+function firstNonRepeating(s: string): string | null {
+  // 1. Scan the string once to build a frequency map
+  const freq = new Map<string, number>();
 
   for (const ch of s) {
-    if (seen.has(ch)) {
-      // This is the first time we hit a duplicate.
-      return ch;
-    }
-    seen.add(ch);
+    // increment the count for this character
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // No duplicates found.
-  return undefined;
-}
+  // 2. Scan again in original order and return the first with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
+    }
+  }
 
-// Example usage
-console.log(firstRepeatedChar("hello"));    // → "l"
-console.log(firstRepeatedChar("abcdef"));   // → undefined
-console.log(firstRepeatedChar("aabbcc"));   // → "a"
-function firstRepeatedCharImmutable(s: string): string | undefined {
-  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
+  return null;          // nothing found
 }
+console.log(firstNonRepeating("SWISS")); // 'W'
+console.log(firstNonRepeating("SWISS".toLowerCase())); // 'w'
+console.log(firstNonRepeating("aabbcc")); // null
