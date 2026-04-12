@@ -1,97 +1,56 @@
-class Queue<T> {
-  private items: T[] = [];
-  private start = 0;          // index of the front
+// 1️⃣  Define a compare function signature
+type Comparator<T> = (a: T, b: T) => number;
 
-  push(item: T) {
-    this.items.push(item);
-  }
+// 2️⃣  Merge helper – combines two sorted halves
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  pop(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.items[this.start++];
-    // optional cleanup to keep array short
-    if (this.start > 100 && this.start * 2 > this.items.length) {
-      this.items = this.items.slice(this.start);
-      this.start = 0;
+    while (i < left.length && j < right.length) {
+        // If left[i] <= right[j] according to cmp, push left[i]
+        if (cmp(left[i], right[j]) <= 0) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
     }
-    return item;
-  }
 
-  isEmpty() {
-    return this.start >= this.items.length;
-  }
+    // Append any leftovers
+    return result.concat(left.slice(i)).concat(right.slice(j));
 }
-type Node = string | number | symbol;  // whatever shape you need
 
-/**
- * Breadth-First Search
- *
- * @param graph   adjacency list mapping each node to its neighbours
- * @param start   node from which to begin traversal
- * @param cb      optional callback executed for every visited node
- * @returns       an array of nodes in the order they were visited
- */
-function bfs<Node>(
-  graph: Map<Node, Node[]>, 
-  start: Node,
-  cb?: (node: Node) => void
-): Node[] {
-  const visited = new Set<Node>();
-  const queue = new Queue<Node>();
-  const order: Node[] = [];
+// 3️⃣  The recursive merge‑sort function
+export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
+    // Default comparator for primitive types
+    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
 
-  queue.push(start);
-  visited.add(start);
-
-  while (!queue.isEmpty()) {
-    const current = queue.pop()!;
-    order.push(current);
-
-    // run user code if supplied
-    cb?.(current);
-
-    const neighbours = graph.get(current) ?? [];
-    for (const neighbour of neighbours) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
+    // Base case: arrays of length 0 or 1 are already sorted
+    if (arr.length <= 1) {
+        return arr;
     }
-  }
 
-  return order;
+    const mid = Math.floor(arr.length / 2);
+    const left  = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    return merge(left, right, compare);
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []]
-]);
+// Numbers
+const nums = [5, 2, 9, 1, 5, 6];
+const sortedNums = mergeSort(nums);
+// sortedNums === [1, 2, 5, 5, 6, 9]
 
-console.log(bfs(graph, 1)); // [1, 2, 3, 4, 5, 6]
-function bfsStop<T>(
-  graph: Map<T, T[]>,
-  start: T,
-  onVisit: (node: T) => boolean // true → stop
-) {
-  const visited = new Set<T>();
-  const queue = new Queue<T>();
+// Strings
+const words = ["banana", "apple", "cherry"];
+const sortedWords = mergeSort(words);
+// sortedWords === ["apple", "banana", "cherry"]
 
-  queue.push(start);
-  visited.add(start);
-
-  while (!queue.isEmpty()) {
-    const cur = queue.pop()!;
-    if (onVisit(cur)) return cur;   // finished
-
-    for (const nxt of graph.get(cur) ?? []) {
-      if (!visited.has(nxt)) {
-        visited.add(nxt);
-        queue.push(nxt);
-      }
-    }
-  }
-  return undefined;
-}
+// Custom objects (by age)
+type Person = { name: string; age: number };
+const people: Person[] = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob",   age: 35 },
+];
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// sortedByAge => Alice, John, Bob
