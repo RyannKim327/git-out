@@ -1,66 +1,50 @@
 /**
- * Fibonacci Search
+ * Returns true if the supplied integer is a prime number.
  *
- * @param arr  – sorted array (ascending)
- * @param target – value that we want to locate
- * @returns the index of target or −1 if it isn't present
+ * Special notes
+ * • 0 and 1 are *not* prime.
+ * • Negative numbers are treated as non‑prime because primes are defined for positive integers only.
+ * • The function uses the classic “divide up to sqrt(n)” trick – O(√n) which is fast enough for
+ *   almost every use‑case you’ll hit in day‑to‑day code. If you need primality for astronomically large
+ *   numbers you’ll need a more elaborate algorithm (Miller‑Rabin, etc.) – that’s a different story.
+ *
+ * @param n – the number you want to test
+ * @returns true if n is prime, false otherwise
  */
-export function fibonacciSearch<T>(
-    arr: readonly T[],
-    target: T,
-    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-    const n = arr.length;
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n)) return false;   // TypeScript’s runtime check
+  if (n <= 1) return false;                // 0 and 1 aren’t prime, negative numbers aren’t considered either
 
-    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
-    let fibMMm2 = 0; // (m‑2)’th Fibonacci
-    let fibMMm1 = 1; // (m‑1)’th Fibonacci
-    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
+  // 2 and 3 are the only even and odd primes
+  if (n <= 3) return true;                 // 2 and 3
 
-    while (fibM < n) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
-    }
+  // Even numbers > 2 are composite
+  if (n % 2 === 0) return false;
 
-    // ---- 2. Marks the eliminated range from front ----
-    let offset = -1;
-
-    // ---- 3. While there are elements to inspect ----
-    while (fibM > 1) {
-        // Calculate the index to check
-        const i = Math.min(offset + fibMMm2, n - 1);
-
-        const comp = cmp(arr[i], target);
-
-        // case 1: the target is greater than the value at index i
-        if (comp < 0) {
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        }
-        // case 2: the target is less than the value at index i
-        else if (comp > 0) {
-            fibM = fibMMm2;
-            fibMMm1 = fibMMm1 - fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        }
-        // case 3: element found
-        else {
-            return i;
-        }
-    }
-
-    // ---- 4. If the last remaining element is the target ----
-    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
-        return offset + 1;
-    }
-
-    return -1; // not found
+  // We can skip even divisors – test only odd ones
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
+  }
+  return true;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
-const idx = fibonacciSearch(nums, 13);
+import { isPrime } from "./primes";
 
-console.log(idx); // → 6
-console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
+const numbers = [1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 25, 29, 31];
+
+numbers.forEach(n => {
+  console.log(`${n} is prime? ${isPrime(n)}`);
+});
+1 is prime? false
+2 is prime? true
+3 is prime? true
+4 is prime? false
+5 is prime? true
+16 is prime? false
+17 is prime? true
+19 is prime? true
+20 is prime? false
+23 is prime? true
+25 is prime? false
+29 is prime? true
+31 is prime? true
