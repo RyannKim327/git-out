@@ -1,39 +1,56 @@
-/**
- * Return true if `a` and `b` contain the same letters in any order.
- *
- * The function is case‑insensitive and skips any non‑alphanumeric
- * characters (e.g. spaces, punctuation). If you want stricter rules,
- * just comment out the cleanup lines.
- */
-function areAnagrams(a: string, b: string): boolean {
-  // 1️⃣ Normalise: lowercase, strip non‑alphanumerics
-  const clean = (s: string) =>
-    s.replace(/[^a-z0-9]/gi, "").toLowerCase();
+// 1️⃣  Define a compare function signature
+type Comparator<T> = (a: T, b: T) => number;
 
-  const cleanA = clean(a);
-  const cleanB = clean(b);
+// 2️⃣  Merge helper – combines two sorted halves
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  // 2️⃣ Quick length check – avoids extra work
-  if (cleanA.length !== cleanB.length) return false;
+    while (i < left.length && j < right.length) {
+        // If left[i] <= right[j] according to cmp, push left[i]
+        if (cmp(left[i], right[j]) <= 0) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
+    }
 
-  // 3️⃣ Count frequency of each character in `cleanA`
-  const freq: Record<string, number> = {};
-
-  for (const ch of cleanA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  // 4️⃣ Decrement using characters from `cleanB`
-  for (const ch of cleanB) {
-    if (!freq[ch]) return false; // missing char or too many of it
-    freq[ch]!--;                  // (non‑null assertion OK here)
-  }
-
-  // 5️⃣ All frequencies should be zero now
-  return Object.values(freq).every(v => v === 0);
+    // Append any leftovers
+    return result.concat(left.slice(i)).concat(right.slice(j));
 }
-console.log(areAnagrams("listen", "silent"));          // true
-console.log(areAnagrams("Triangle", "Integral"));      // true
-console.log(areAnagrams("Hello!", "oellH"));           // true  (ignores punctuation)
-console.log(areAnagrams("Square", "Quears  "));        // true  (ignores spaces)
-console.log(areAnagrams("Hello", "world"));            // false
+
+// 3️⃣  The recursive merge‑sort function
+export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
+    // Default comparator for primitive types
+    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+
+    // Base case: arrays of length 0 or 1 are already sorted
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const mid = Math.floor(arr.length / 2);
+    const left  = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    return merge(left, right, compare);
+}
+// Numbers
+const nums = [5, 2, 9, 1, 5, 6];
+const sortedNums = mergeSort(nums);
+// sortedNums === [1, 2, 5, 5, 6, 9]
+
+// Strings
+const words = ["banana", "apple", "cherry"];
+const sortedWords = mergeSort(words);
+// sortedWords === ["apple", "banana", "cherry"]
+
+// Custom objects (by age)
+type Person = { name: string; age: number };
+const people: Person[] = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob",   age: 35 },
+];
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// sortedByAge => Alice, John, Bob
