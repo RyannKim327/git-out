@@ -1,30 +1,73 @@
-// src/cronJob.ts
-import * as cron from 'node-cron';
-import { exec } from 'child_process';
+/**
+ * In‑place selection sort.
+ *
+ * @param arr     – The array you want sorted.
+ * @param compare – Optional: a function that returns
+ *                  a negative number if a < b,
+ *                  zero if a == b,
+ *                  and a positive number if a > b.
+ *                  If omitted, the default < > comparison is used.
+ *
+ * @returns The sorted array (the same reference that was passed in).
+ */
+export function selectionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  const len = arr.length;
+  const defaultCompare = (a: T, b: T) => {
+    // Works for numbers and strings out of the box.
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  };
 
-// Simple helper that returns a random joke (you can replace it with anything)
-function getRandomJoke(): string {
-  const jokes = [
-    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
-    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
-    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
-  ];
-  return jokes[Math.floor(Math.random() * jokes.length)];
-}
+  const cmp = compare ?? defaultCompare;
 
-// This job:
-cron.schedule('* * * * *', () => {          // Runs every minute
-  const joke = getRandomJoke();
-  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
+  for (let fillPos = 0; fillPos < len - 1; ++fillPos) {
+    // Assume the current position holds the minimum.
+    let minIdx = fillPos;
 
-  // Example of how you might trigger a system command using Cron
-  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
-    if (err) {
-      console.warn(`Error while executing command: ${err.message}`);
-      return;
+    // Scan the unsorted portion for a new minimum
+    for (let searchIdx = fillPos + 1; searchIdx < len; ++searchIdx) {
+      if (cmp(arr[searchIdx], arr[minIdx]) < 0) {
+        minIdx = searchIdx;
+      }
     }
-    console.log(`Command output: ${stdout.trim()}`);
-  });
-});
 
-console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
+    // Skip the swap if the minimum is already in place
+    if (minIdx !== fillPos) {
+      [arr[fillPos], arr[minIdx]] = [arr[minIdx], arr[fillPos]];
+    }
+  }
+
+  return arr;
+}
+// Numbers – default ascending sort
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums)); // [11, 12, 22, 25, 64]
+
+// Strings – simple ascending sort
+console.log(selectionSort(['pear', 'apple', 'orange']));
+// ['apple', 'orange', 'pear']
+
+// Custom order – descending
+const descending = (a: number, b: number) => b - a;
+console.log(selectionSort([1, 5, 3, 2], descending));
+// [5, 3, 2, 1]
+
+// Custom objects
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Ada',    age: 25 },
+  { name: 'Evan',   age: 32 },
+  { name: 'Liam',   age: 19 }
+];
+
+const ageAsc = (p: Person, q: Person) => p.age - q.age;
+console.log(selectionSort(people, ageAsc));
+// [
+//   { name: 'Liam', age: 19 },
+//   { name: 'Ada',  age: 25 },
+//   { name: 'Evan', age: 32 }
+// ]
