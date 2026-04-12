@@ -1,57 +1,48 @@
 /**
- * Binary search over a sorted array.
+ * In‑place heap sort for an array of numbers.
  *
- * @param arr      Sorted array to search.
- * @param target   Value to find.
- * @param cmp      Optional custom comparison function.
- *                  Returns a negative number if a < b,
- *                  zero if a == b, and positive if a > b.
- * @returns Index of `target` in `arr`, or -1 if not found.
+ * Complexity:  O(n log n) time, O(1) additional space
  */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  cmp?: (a: T, b: T) => number
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+export function heapSort(arr: number[]): void {
+  const n = arr.length;
 
-  // Default comparison for numbers or strings
-  const compare = cmp ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = compare(arr[mid], target);
-
-    if (comparison === 0) return mid;          // found
-    if (comparison < 0) low = mid + 1;         // target is bigger
-    else high = mid - 1;                       // target is smaller
+  // 1. Build a max‑heap
+  for (let i = (n - 2) >> 1; i >= 0; i--) {
+    heapify(arr, i, n);
   }
 
-  return -1; // not found
-}
-const numbers = [1, 3, 5, 7, 9, 11];
-
-console.log(binarySearch(numbers, 7));  // → 3
-console.log(binarySearch(numbers, 4));  // → -1
-interface Person {
-  name: string;
-  age: number;
+  // 2. Extract elements one by one
+  for (let end = n - 1; end > 0; end--) {
+    swap(arr, 0, end);         // move current max to its final position
+    heapify(arr, 0, end);      // restore heap property on the reduced heap
+  }
 }
 
-const people: Person[] = [
-  {name: 'Alice', age: 28},
-  {name: 'Bob',   age: 34},
-  {name: 'Carol', age: 42}
-];
+/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
+function heapify(arr: number[], rootIdx: number, size: number): void {
+  let largest = rootIdx;
+  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
+  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
 
-function ageComparer(a: Person, b: Person): number {
-  return a.age - b.age;
+  if (left < size && arr[left] > arr[largest]) {
+    largest = left;
+  }
+  if (right < size && arr[right] > arr[largest]) {
+    largest = right;
+  }
+
+  if (largest !== rootIdx) {
+    swap(arr, rootIdx, largest);
+    heapify(arr, largest, size); // continue percolating down
+  }
 }
 
-const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
-console.log(idx); // -> 1
+/** Swap two elements in the array. */
+function swap(arr: number[], i: number, j: number): void {
+  const temp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = temp;
+}
+const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
+heapSort(data);
+console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
