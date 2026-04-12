@@ -1,72 +1,48 @@
 /**
- * Return the majority element of an array – the value that occurs
- * strictly more than half the time. If no such element exists the
- * function throws an Error.
+ * Bubble‑sort an array.
  *
- * @param arr Array of comparable values (e.g. numbers, strings, etc.)
+ * @param arr          The array to sort (does not get mutated).
+ * @param compareFn    Optional comparison function.  
+ *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
+ *                     If omitted, the default comparator uses the `<` and `>` operators that work
+ *                     for numbers, strings and any type that can be compared that way.
+ * @returns            A new array containing the elements of `arr` in ascending order.
  */
-export function majorityElement<T>(arr: T[]): T {
-  if (arr.length === 0) {
-    throw new Error('Array is empty');
-  }
+export function bubbleSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): T[] {
+  // Make a shallow copy; we don’t want to touch the caller’s array
+  const result = [...arr];
 
-  // Phase 1 – Find a candidate
-  let candidate = arr[0];
-  let count = 1;
+  const compare = compareFn ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = arr[i];
-        count = 1;
+  const n = result.length;
+  if (n < 2) return result; // already sorted
+
+  let swapped: boolean;
+  // Standard bubble‑sort: keep looping while we keep swapping
+  do {
+    swapped = false;
+    for (let i = 0; i < n - 1; i++) {
+      if (compare(result[i], result[i + 1]) > 0) {
+        // swap
+        [result[i], result[i + 1]] = [result[i + 1], result[i]];
+        swapped = true;
       }
     }
-  }
+  } while (swapped);
 
-  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
-  count = 0;
-  for (const v of arr) {
-    if (v === candidate) count++;
-  }
-
-  if (count > Math.floor(arr.length / 2)) {
-    return candidate;
-  }
-
-  throw new Error('No majority element found');
+  return result;
 }
-export function majorityElementWithMap<T>(arr: T[]): T {
-  const freq = new Map<T, number>();
-
-  // Count occurrences
-  for (const v of arr) {
-    freq.set(v, (freq.get(v) ?? 0) + 1);
-  }
-
-  // Find the element that tops the midway mark
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, count] of freq) {
-    if (count > threshold) return val;
-  }
-
-  throw new Error('No majority element found');
-}
-export function majorityElementSorted<T>(arr: T[]): T {
-  if (arr.length === 0) throw new Error('Array is empty');
-
-  const sorted = [...arr].sort();  // shallow copy + in‑place sort
-  const candidate = sorted[Math.floor(sorted.length / 2)];
-  
-  // Optional: verify the candidate
-  let count = 0;
-  for (const v of arr) if (v === candidate) count++;
-  if (count > Math.floor(arr.length / 2)) return candidate;
-
-  throw new Error('No majority element found');
-}
-console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
-console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
-console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
+const unsorted = [5, 3, 8, 4, 2];
+const sorted = bubbleSort(unsorted);
+console.log(sorted); // [2, 3, 4, 5, 8]
+console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
+const words = ["banana", "Apple", "cherry"];
+const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(sortedByCase); // ["Apple", "banana", "cherry"]
