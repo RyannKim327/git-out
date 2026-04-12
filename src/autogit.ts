@@ -1,48 +1,38 @@
 /**
- * Bubble‑sort an array.
- *
- * @param arr          The array to sort (does not get mutated).
- * @param compareFn    Optional comparison function.  
- *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
- *                     If omitted, the default comparator uses the `<` and `>` operators that work
- *                     for numbers, strings and any type that can be compared that way.
- * @returns            A new array containing the elements of `arr` in ascending order.
+ * Performs an interpolation search on a strictly‑increasing array of numbers.
+ * @param arr   The sorted array (ascending).  Values must be finite numbers.
+ * @param key   The value you’re looking for.
+ * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
  */
-export function bubbleSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  // Make a shallow copy; we don’t want to touch the caller’s array
-  const result = [...arr];
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  const compare = compareFn ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  let low = 0;
+  let high = arr.length - 1;
 
-  const n = result.length;
-  if (n < 2) return result; // already sorted
+  // If the target is outside the range, we can bail early.
+  if (key < arr[low] || key > arr[high]) return -1;
 
-  let swapped: boolean;
-  // Standard bubble‑sort: keep looping while we keep swapping
-  do {
-    swapped = false;
-    for (let i = 0; i < n - 1; i++) {
-      if (compare(result[i], result[i + 1]) > 0) {
-        // swap
-        [result[i], result[i + 1]] = [result[i + 1], result[i]];
-        swapped = true;
-      }
-    }
-  } while (swapped);
+  while (low <= high && arr[low] !== arr[high]) {
+    // Estimate the likely position: a weighted average.
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
 
-  return result;
+    // Safety: clamp to array bounds.
+    if (pos < low)   return -1;
+    if (pos > high)  return -1;
+
+    const val = arr[pos];
+
+    if (val === key) return pos;
+    if (val < key)   low = pos + 1;
+    else             high = pos - 1;
+  }
+
+  // Final check if low might still hold the key.
+  return (arr[low] === key) ? low : -1;
 }
-const unsorted = [5, 3, 8, 4, 2];
-const sorted = bubbleSort(unsorted);
-console.log(sorted); // [2, 3, 4, 5, 8]
-console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
-const words = ["banana", "Apple", "cherry"];
-const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(sortedByCase); // ["Apple", "banana", "cherry"]
+const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+const idx = interpolationSearch(nums, 18); // 5
+console.log(idx); // prints 5
