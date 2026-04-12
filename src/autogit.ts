@@ -1,28 +1,48 @@
+// random-joke.ts
+import axios from "axios";
+
 /**
- * Sorts an array of numbers (or any type that can be compared) in place.
- * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
+ * The shape of the JSON that the Joke API gives us.
  */
-export function insertionSort<T>(arr: T[]): void {
-  // Nothing to do for empty or single‑element arrays
-  if (arr.length < 2) return;
-
-  // Iterate over the array starting at index 1 because the sub‑array
-  // arr[0..i‑1] is already considered sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Shift elements that are greater than the key one position to the right.
-    // This makes space for the key to sit in its correct sorted spot.
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Place the key after the element just smaller than it
-    arr[j + 1] = key;
-  }
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
-const nums = [5, 2, 9, 1, 5, 6];
-insertionSort(nums);
-console.log(nums); // [1, 2, 5, 5, 6, 9]
+
+/**
+ * Fetch a single random joke.
+ */
+const fetchRandomJoke = async (): Promise<Joke> => {
+  // The API returns an array of jokes even though we only ask for one – happy accidents.
+  const url = "https://official-joke-api.appspot.com/jokes/random";
+  const response = await axios.get<Joke>(url);
+  return response.data;
+};
+
+/**
+ * Pretty‑print a joke to the console.
+ */
+const printJoke = (joke: Joke) => {
+  console.log(`💡 ${joke.type.toUpperCase()}`);
+  console.log(`   ${joke.setup}`);
+  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
+};
+
+/**
+ * Simple wrapper that ties everything together.
+ */
+const main = async () => {
+  try {
+    const joke = await fetchRandomJoke();
+    printJoke(joke);
+  } catch (err) {
+    // Axios errors contain a `response` field with the server reply.
+    // If you’re debugging, you can inspect `err.response?.data` for the text.
+    console.error("🔴 Something went wrong retrieving a joke:", err);
+  }
+};
+
+// Run the little demo when the file is executed.
+main();
