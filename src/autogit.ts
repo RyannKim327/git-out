@@ -1,81 +1,97 @@
-/**
- * Singly‑linked‑list node that holds a generic value and a reference to the next node.
- * The `next` property is `null` for the last element in the list.
- */
-class Node<T> {
-  constructor(
-    public readonly value: T,
-    public next: Node<T> | null = null
-  ) {}
-}
+class Queue<T> {
+  private items: T[] = [];
+  private start = 0;          // index of the front
 
-/**
- * Queue implemented with a linked list.
- * Supports enqueue, dequeue, peek, isEmpty and size in constant time.
- */
-export class LinkedListQueue<T> {
-  /** first node in the queue (front) */
-  private head: Node<T> | null = null;
-  /** last node in the queue (rear) */
-  private tail: Node<T> | null = null;
-  /** how many items are currently in the queue */
-  private elementCount: number = 0;
+  push(item: T) {
+    this.items.push(item);
+  }
 
-  /** Adds an item to the back of the queue */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-    if (this.tail) {
-      this.tail.next = newNode;   // link the new node after current tail
-    } else {
-      this.head = newNode;        // queue was empty – new node is also head
+  pop(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const item = this.items[this.start++];
+    // optional cleanup to keep array short
+    if (this.start > 100 && this.start * 2 > this.items.length) {
+      this.items = this.items.slice(this.start);
+      this.start = 0;
     }
-    this.tail = newNode;          // new node becomes the new tail
-    this.elementCount++;
+    return item;
   }
 
-  /** Removes and returns the item from the front of the queue. Throws if empty. */
-  dequeue(): T {
-    if (!this.head) {
-      throw new Error("Queue underflow: trying to dequeue from an empty queue.");
-    }
-    const value = this.head.value;
-    this.head = this.head.next;   // advance head pointer
-
-    // If head became null, the queue is now empty; need to drop tail too.
-    if (!this.head) {
-      this.tail = null;
-    }
-    this.elementCount--;
-    return value;
-  }
-
-  /** Returns the item at the front without removing it, or undefined if empty. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** True when the queue holds no elements. */
-  isEmpty(): boolean {
-    return this.elementCount === 0;
-  }
-
-  /** How many items are currently enqueued. */
-  size(): number {
-    return this.elementCount;
+  isEmpty() {
+    return this.start >= this.items.length;
   }
 }
-const q = new LinkedListQueue<number>();
+type Node = string | number | symbol;  // whatever shape you need
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+/**
+ * Breadth-First Search
+ *
+ * @param graph   adjacency list mapping each node to its neighbours
+ * @param start   node from which to begin traversal
+ * @param cb      optional callback executed for every visited node
+ * @returns       an array of nodes in the order they were visited
+ */
+function bfs<Node>(
+  graph: Map<Node, Node[]>, 
+  start: Node,
+  cb?: (node: Node) => void
+): Node[] {
+  const visited = new Set<Node>();
+  const queue = new Queue<Node>();
+  const order: Node[] = [];
 
-console.log(q.size());   // ➜ 3
-console.log(q.peek());   // ➜ 10
+  queue.push(start);
+  visited.add(start);
 
-console.log(q.dequeue()); // ➜ 10
-console.log(q.dequeue()); // ➜ 20
+  while (!queue.isEmpty()) {
+    const current = queue.pop()!;
+    order.push(current);
 
-console.log(q.isEmpty()); // ➜ false
-console.log(q.dequeue()); // ➜ 30
-console.log(q.isEmpty()); // ➜ true
+    // run user code if supplied
+    cb?.(current);
+
+    const neighbours = graph.get(current) ?? [];
+    for (const neighbour of neighbours) {
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push(neighbour);
+      }
+    }
+  }
+
+  return order;
+}
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [6]],
+  [4, []],
+  [5, []],
+  [6, []]
+]);
+
+console.log(bfs(graph, 1)); // [1, 2, 3, 4, 5, 6]
+function bfsStop<T>(
+  graph: Map<T, T[]>,
+  start: T,
+  onVisit: (node: T) => boolean // true → stop
+) {
+  const visited = new Set<T>();
+  const queue = new Queue<T>();
+
+  queue.push(start);
+  visited.add(start);
+
+  while (!queue.isEmpty()) {
+    const cur = queue.pop()!;
+    if (onVisit(cur)) return cur;   // finished
+
+    for (const nxt of graph.get(cur) ?? []) {
+      if (!visited.has(nxt)) {
+        visited.add(nxt);
+        queue.push(nxt);
+      }
+    }
+  }
+  return undefined;
+}
