@@ -1,73 +1,40 @@
 /**
- * In‑place selection sort.
+ * Binary search – recursive version
  *
- * @param arr     – The array you want sorted.
- * @param compare – Optional: a function that returns
- *                  a negative number if a < b,
- *                  zero if a == b,
- *                  and a positive number if a > b.
- *                  If omitted, the default < > comparison is used.
- *
- * @returns The sorted array (the same reference that was passed in).
+ * @param arr   Sorted array (ascending order)
+ * @param target Value you’re looking for
+ * @param low   Left boundary (inclusive) – do **not** pass this on the first call
+ * @param high  Right boundary (inclusive) – do **not** pass this on the first call
+ * @returns Index of target, or -1 if absent
  */
-export function selectionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  const defaultCompare = (a: T, b: T) => {
-    // Works for numbers and strings out of the box.
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  };
+function binarySearch<T extends number | string>(
+    arr: readonly T[],
+    target: T,
+    low = 0,
+    high = arr.length - 1
+): number {
+    // Base case: empty range → not found
+    if (low > high) return -1;
 
-  const cmp = compare ?? defaultCompare;
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  for (let fillPos = 0; fillPos < len - 1; ++fillPos) {
-    // Assume the current position holds the minimum.
-    let minIdx = fillPos;
-
-    // Scan the unsorted portion for a new minimum
-    for (let searchIdx = fillPos + 1; searchIdx < len; ++searchIdx) {
-      if (cmp(arr[searchIdx], arr[minIdx]) < 0) {
-        minIdx = searchIdx;
-      }
+    if (midVal === target) {
+        return mid;                     // found
+    } else if (midVal < target) {
+        // search right half
+        return binarySearch(arr, target, mid + 1, high);
+    } else {
+        // left half
+        return binarySearch(arr, target, low, mid - 1);
     }
-
-    // Skip the swap if the minimum is already in place
-    if (minIdx !== fillPos) {
-      [arr[fillPos], arr[minIdx]] = [arr[minIdx], arr[fillPos]];
-    }
-  }
-
-  return arr;
 }
-// Numbers – default ascending sort
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums)); // [11, 12, 22, 25, 64]
-
-// Strings – simple ascending sort
-console.log(selectionSort(['pear', 'apple', 'orange']));
-// ['apple', 'orange', 'pear']
-
-// Custom order – descending
-const descending = (a: number, b: number) => b - a;
-console.log(selectionSort([1, 5, 3, 2], descending));
-// [5, 3, 2, 1]
-
-// Custom objects
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Ada',    age: 25 },
-  { name: 'Evan',   age: 32 },
-  { name: 'Liam',   age: 19 }
-];
-
-const ageAsc = (p: Person, q: Person) => p.age - q.age;
-console.log(selectionSort(people, ageAsc));
-// [
-//   { name: 'Liam', age: 19 },
-//   { name: 'Ada',  age: 25 },
-//   { name: 'Evan', age: 32 }
-// ]
+const nums = [1, 4, 7, 12, 19, 31, 55];
+const idx  = binarySearch(nums, 19);
+console.log(idx);   // 4
+function binarySearchIter<T extends number | string>(
+    arr: readonly T[],
+    target: T
+): number {
+    return binarySearch(arr, target);
+}
