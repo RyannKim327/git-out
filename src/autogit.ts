@@ -1,30 +1,54 @@
-/**
- * Return the second largest distinct value in an array.
- * @param arr – numeric array
- * @returns The second largest number or `undefined` if it doesn’t exist
- */
-function secondLargest(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;  // not enough elements
+// A minimal, singly‑linked node definition
+export interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
+}
 
-  let max = -Infinity;
-  let second = -Infinity;
+// Returns the node that is n‑th from the end (1‑based)
+// or null if the list is shorter than n.
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  // Guard against invalid n
+  if (n <= 0) return null;
 
-  for (const x of arr) {
-    if (x > max) {
-      second = max;   // previous max becomes second
-      max = x;
-    } else if (x < max && x > second) {
-      second = x;     // distinct candidate for second
-    }
-    // values equal to max are ignored – we want distinct numbers
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
+
+  // Advance fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // n > length
+    fast = fast.next;
   }
 
-  return second === -Infinity ? undefined : second;
+  // Edge case: n equals the list length ⇒ return head
+  if (!fast) return head;
+
+  // Move both until fast reaches the tail
+  while (fast.next) {
+    fast = fast.next;
+    slow = slow!.next; // slow is guaranteed not null here
+  }
+
+  return slow;
+}
+// Helper to build a list from an array
+function buildList<T>(arr: T[]): ListNode<T> | null {
+  if (arr.length === 0) return null;
+  const head: ListNode<T> = { value: arr[0], next: null };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { value: arr[i], next: null };
+    current = current.next;
+  }
+  return head;
 }
 
-// Example:
-console.log(secondLargest([5, 1, 5, 7, 3])); // → 5
-function secondLargestSorted(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)].sort((a, b) => b - a);
-  return unique[1];           // undefined if not enough distinct values
-}
+// Example
+const head = buildList([10, 20, 30, 40, 50]);
+
+console.log(nthFromEnd(head, 1)?.value); // 50 (last)
+console.log(nthFromEnd(head, 3)?.value); // 30
+console.log(nthFromEnd(head, 5)?.value); // 10 (first)
+console.log(nthFromEnd(head, 6));        // null (too big)
