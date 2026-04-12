@@ -1,66 +1,73 @@
 /**
- * Fibonacci Search
+ * Returns the largest prime factor of a positive integer.
+ * For values ≤ 1, it returns undefined (no prime factors).
  *
- * @param arr  – sorted array (ascending)
- * @param target – value that we want to locate
- * @returns the index of target or −1 if it isn't present
+ * Supports both number (IEEE‑754 double) and BigInt inputs.
  */
-export function fibonacciSearch<T>(
-    arr: readonly T[],
-    target: T,
-    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-    const n = arr.length;
+function largestPrimeFactor(input: number | bigint): number | bigint | undefined {
+  // Normalise to BigInt for arbitrary‑size support
+  let n = typeof input === "bigint" ? input : BigInt(input);
 
-    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
-    let fibMMm2 = 0; // (m‑2)’th Fibonacci
-    let fibMMm1 = 1; // (m‑1)’th Fibonacci
-    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
+  if (n <= 1n) return undefined; // 0, 1, or negative values have no prime factors
 
-    while (fibM < n) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
+  let lastFactor: bigint = 1n;
+
+  // Handle factor 2 separately to allow skipping even numbers later
+  while (n % 2n === 0n) {
+    lastFactor = 2n;
+    n /= 2n;
+  }
+
+  // Now n is odd – we only need to test odd divisors
+  let divisor = 3n;
+  const limit = sqrtBigInt(n); // helper that returns floor(sqrt(n))
+
+  while (divisor <= limit && n !== 1n) {
+    while (n % divisor === 0n) {
+      lastFactor = divisor;
+      n /= divisor;
     }
+    divisor += 2n;          // next odd candidate
+  }
 
-    // ---- 2. Marks the eliminated range from front ----
-    let offset = -1;
+  // If anything remains, it's a prime larger than any we tested
+  if (n > 1n) lastFactor = n;
 
-    // ---- 3. While there are elements to inspect ----
-    while (fibM > 1) {
-        // Calculate the index to check
-        const i = Math.min(offset + fibMMm2, n - 1);
-
-        const comp = cmp(arr[i], target);
-
-        // case 1: the target is greater than the value at index i
-        if (comp < 0) {
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        }
-        // case 2: the target is less than the value at index i
-        else if (comp > 0) {
-            fibM = fibMMm2;
-            fibMMm1 = fibMMm1 - fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        }
-        // case 3: element found
-        else {
-            return i;
-        }
-    }
-
-    // ---- 4. If the last remaining element is the target ----
-    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
-        return offset + 1;
-    }
-
-    return -1; // not found
+  // Return a number when possible for convenience
+  return lastFactor > Number.MAX_SAFE_INTEGER
+    ? lastFactor
+    : Number(lastFactor);
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
-const idx = fibonacciSearch(nums, 13);
 
-console.log(idx); // → 6
-console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
+/* ---------- Helpers ---------- */
+
+/**
+ * Integer square root of a BigInt (floor).
+ * Uses binary search – good enough for moderate sizes.
+ */
+function sqrtBigInt(value: bigint): bigint {
+  if (value < 0n) throw new Error("square root of negative");
+  if (value < 2n) return value;
+
+  let low = 1n;
+  let high = value >> 1n; // n/2 is an upper bound
+
+  while (low <= high) {
+    const mid = (low + high) >> 1n;
+    const midSq = mid * mid;
+
+    if (midSq === value) return mid;
+    if (midSq < value) low = mid + 1n;
+    else high = mid - 1n;
+  }
+
+  return high; // floor(sqrt(value))
+}
+
+/* ---------- Usage examples ---------- */
+
+console.log(largestPrimeFactor(13195));   // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
+console.log(largestPrimeFactor(997**3)); // 997
+console.log(largestPrimeFactor(15n));     // 5
+console.log(largestPrimeFactor(1));       // undefined
