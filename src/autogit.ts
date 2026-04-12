@@ -1,40 +1,85 @@
-class TreeNode {
-  constructor(
-    public val: number,
-    public left: TreeNode | null = null,
-    public right: TreeNode | null = null
-  ) {}
-}
-function sumTree(root: TreeNode | null): number {
-  if (!root) return 0;          // nothing to add
-  const leftSum = sumTree(root.left);
-  const rightSum = sumTree(root.right);
-  return root.val + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let sum = 0;
-  const stack: Array<TreeNode> = [root];
+/*  --------------------------------------------------
+    Depth‑First Search (DFS) – TypeScript
+    -------------------------------------------------- */
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+/**
+ * A graph memoized as an adjacency list.
+ * T can be anything that can be used as a key (string, number, etc.).
+ */
+export type Graph<T> = Map<T, Iterable<T>>;
+
+/**
+ * Recursive DFS.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsRecursive<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const result: Array<T> = [];
+
+  function visit(node: T): void {
+    if (visited.has(node)) return;
+    visited.add(node);
+    result.push(node);
+
+    for (const neighbour of graph.get(node) ?? []) {
+      visit(neighbour);
+    }
   }
 
-  return sum;
+  visit(start);
+  return result;
 }
-const root = new TreeNode(5,
-  new TreeNode(3,
-    new TreeNode(2),
-    new TreeNode(4)
-  ),
-  new TreeNode(8,
-    null,
-    new TreeNode(9)
-  )
-);
 
-console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
-console.log(sumTreeIterative(root)); // 31
+/**
+ * Iterative DFS using an explicit stack.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsIterative<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const stack: Array<T> = [start];
+  const result: Array<T> = [];
+
+  while (stack.length) {
+    const node = stack.pop()!; // non‑empty guarantee
+    if (visited.has(node)) continue;
+
+    visited.add(node);
+    result.push(node);
+
+    // push neighbours onto the stack; reverse order
+    // to mimic the recursive visiting order
+    const neighbours = Array.from(graph.get(node) ?? []);
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      const n = neighbours[i];
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
+}
+
+/*  --------------------------------------------------
+    Example Usage
+    -------------------------------------------------- */
+
+const graph: Graph<number> = new Map([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [6]],
+  [4, []],
+  [5, []],
+  [6, []],
+]);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1)); // [1, 2, 4, 5, 3, 6]
+console.log('Iterative DFS:', dfsIterative(graph, 1)); // [1, 3, 6, 2, 5, 4]
