@@ -1,9 +1,13 @@
-const original = "HeLLo WoRLd";
-const lower = original.toLowerCase();
+const numbers: number[] = [12, 5, 78, 3, 42];
 
-console.log(lower); // "hello world"
-function toLowerCaseSafe(value: string | undefined | null): string {
-  return value?.toLowerCase() ?? "";
+const maxValue = numbers.length
+  ? Math.max(...numbers)
+  : NaN;   // or throw, or return a sentinel value
+
+console.log(maxValue);   // 78
+function maxInArray<T>(arr: T[]): T | undefined {
+  if (!arr.length) return undefined; // or throw if you prefer
+  return arr.reduce((a, b) => (a > b ? a : b));
 }
-const turkish = "İstanbul";
-console.log(turkish.toLocaleLowerCase('tr-TR')); // "istanbul"
+
+const max = maxInArray([12, 5, 78, 3, 42]); // 78
