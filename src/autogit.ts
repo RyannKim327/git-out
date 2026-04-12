@@ -1,57 +1,88 @@
-/**
- * Binary search over a sorted array.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to find.
- * @param cmp      Optional custom comparison function.
- *                  Returns a negative number if a < b,
- *                  zero if a == b, and positive if a > b.
- * @returns Index of `target` in `arr`, or -1 if not found.
- */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  cmp?: (a: T, b: T) => number
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+// RandomAsyncSample.tsx (React‑Native)
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, {useEffect, useState} from 'react';
+import {View, Text, Button, StyleSheet, Alert} from 'react-native';
 
-  // Default comparison for numbers or strings
-  const compare = cmp ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
+interface WeatherResponse {
+  location: string;
+  temp_c: number;
+  condition: string;
+  // add any other fields your API sends
+}
+
+const fetchWeather = async (
+  location: string,
+): Promise<WeatherResponse> => {
+  const url = `https://api.example.com/weather?city=${encodeURIComponent(
+    location,
+  )}`;
+
+  // Random twist – fake delay to emulate slower networks
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      // Add auth headers etc. if needed
+    },
   });
 
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = compare(arr[mid], target);
-
-    if (comparison === 0) return mid;          // found
-    if (comparison < 0) low = mid + 1;         // target is bigger
-    else high = mid - 1;                       // target is smaller
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
-  return -1; // not found
-}
-const numbers = [1, 3, 5, 7, 9, 11];
+  const data = (await response.json()) as WeatherResponse;
+  return data;
+};
 
-console.log(binarySearch(numbers, 7));  // → 3
-console.log(binarySearch(numbers, 4));  // → -1
-interface Person {
-  name: string;
-  age: number;
-}
+export const RandomAsyncSample: React.FC = () => {
+  const [weather, setWeather] = useState<WeatherResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const people: Person[] = [
-  {name: 'Alice', age: 28},
-  {name: 'Bob',   age: 34},
-  {name: 'Carol', age: 42}
-];
+  const getWeather = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await fetchWeather('San Francisco');
+      setWeather(result);
+    } catch (err: any) {
+      setError(err.message || 'Unknown error');
+      Alert.alert('Oops', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-function ageComparer(a: Person, b: Person): number {
-  return a.age - b.age;
-}
+  useEffect(() => {
+    // Pull the data once when the component mounts
+    getWeather();
+  }, []);
 
-const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
-console.log(idx); // -> 1
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Async Weather Sample</Text>
+
+      {loading && <Text>Loading…</Text>}
+
+      {error && <Text style={styles.error}>Error: {error}</Text>}
+
+      {weather && (
+        <>
+          <Text>Location: {weather.location}</Text>
+          <Text>Temp: {weather.temp_c}°C</Text>
+          <Text>Condition: {weather.condition}</Text>
+        </>
+      )}
+
+      <Button title="Refresh" onPress={getWeather} disabled={loading} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16},
+  title: {fontSize: 20, marginBottom: 12},
+  error: {color: 'red', marginTop: 8},
+});
