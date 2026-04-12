@@ -1,56 +1,73 @@
 /**
- *  k is 1‑based: k = 1 → smallest, k = length → largest
- */
-function kthSmallestBySort<T>(a: T[], k: number, cmp?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > a.length) return undefined;
-  const arr = a.slice();                     // don't touch the original
-  arr.sort((x, y) => (cmp ? cmp(x, y) : (x as any) < (y as any) ? -1 : (x as any) > (y as any) ? 1 : 0));
-  return arr[k - 1];
-}
-/**
- * Find the k‑th smallest element (1‑based) in place.
+ * In‑place selection sort.
  *
- * @param arr  the array to search
- * @param k    1‑based index (1 = smallest)
- * @param cmp  optional compare function, defaults to the standard `< => >`
- * @returns    the k‑th smallest element, or `undefined` if k is out of bounds
+ * @param arr     – The array you want sorted.
+ * @param compare – Optional: a function that returns
+ *                  a negative number if a < b,
+ *                  zero if a == b,
+ *                  and a positive number if a > b.
+ *                  If omitted, the default < > comparison is used.
+ *
+ * @returns The sorted array (the same reference that was passed in).
  */
-function kthSmallestQuickSelect<T>(
+export function selectionSort<T>(
   arr: T[],
-  k: number,
-  cmp?: (a: T, b: T) => number
-): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const compare = cmp ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
-  let left = 0;
-  let right = arr.length - 1;
-  const target = k - 1;              // 0‑based
+  compare?: (a: T, b: T) => number
+): T[] {
+  const len = arr.length;
+  const defaultCompare = (a: T, b: T) => {
+    // Works for numbers and strings out of the box.
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  };
 
-  while (left <= right) {
-    // Pick a pivot (here the middle element)
-    const pivotIdx = Math.floor((left + right) / 2);
-    const pivotVal = arr[pivotIdx];
+  const cmp = compare ?? defaultCompare;
 
-    // Partition: elements < pivot on the left, > pivot on the right
-    let i = left;
-    let j = right;
-    while (i <= j) {
-      while (compare(arr[i], pivotVal) < 0) i++;
-      while (compare(arr[j], pivotVal) > 0) j--;
-      if (i <= j) {
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-        i++;
-        j--;
+  for (let fillPos = 0; fillPos < len - 1; ++fillPos) {
+    // Assume the current position holds the minimum.
+    let minIdx = fillPos;
+
+    // Scan the unsorted portion for a new minimum
+    for (let searchIdx = fillPos + 1; searchIdx < len; ++searchIdx) {
+      if (cmp(arr[searchIdx], arr[minIdx]) < 0) {
+        minIdx = searchIdx;
       }
     }
 
-    // Which side contains the target?
-    if (j < target) left = i;
-    else if (i > target) right = j;
-    else return arr[target];
+    // Skip the swap if the minimum is already in place
+    if (minIdx !== fillPos) {
+      [arr[fillPos], arr[minIdx]] = [arr[minIdx], arr[fillPos]];
+    }
   }
-}
-const arr = [7, 3, 5, 2, 9, 1, 4];
-const k = 3;           // find the 3rd smallest: answer should be 4
 
-console.log(kthSmallestQuickSelect(arr, k)); // 4
+  return arr;
+}
+// Numbers – default ascending sort
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums)); // [11, 12, 22, 25, 64]
+
+// Strings – simple ascending sort
+console.log(selectionSort(['pear', 'apple', 'orange']));
+// ['apple', 'orange', 'pear']
+
+// Custom order – descending
+const descending = (a: number, b: number) => b - a;
+console.log(selectionSort([1, 5, 3, 2], descending));
+// [5, 3, 2, 1]
+
+// Custom objects
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Ada',    age: 25 },
+  { name: 'Evan',   age: 32 },
+  { name: 'Liam',   age: 19 }
+];
+
+const ageAsc = (p: Person, q: Person) => p.age - q.age;
+console.log(selectionSort(people, ageAsc));
+// [
+//   { name: 'Liam', age: 19 },
+//   { name: 'Ada',  age: 25 },
+//   { name: 'Evan', age: 32 }
+// ]
