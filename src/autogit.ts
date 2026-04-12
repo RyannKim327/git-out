@@ -1,56 +1,75 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
+// Compute lps array for pattern p
+function buildLPS(p: string): number[] {
+  const lps = new Array(p.length).fill(0);
+  let len = 0;            // length of the previous longest prefix suffix
+  let i = 1;
 
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
+  while (i < p.length) {
+    if (p[i] === p[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back in the pattern, don’t slide the text cursor
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
     }
-
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+  }
+  return lps;
 }
+/**
+ * KMP search – returns true if pattern occurs in text
+ * @param text the body to scan
+ * @param pattern the substring to find
+ */
+function kmpSearch(text: string, pattern: string): boolean {
+  if (pattern === "") return true;          // empty pattern matches everywhere
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+  const lps = buildLPS(pattern);
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) return true;   // full match found
+    } else {
+      if (j !== 0) {
+        j = lps[j - 1];    // drop the matched prefix
+      } else {
+        i++;               // move on in the text
+      }
     }
-
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
-
-    return merge(left, right, compare);
+  }
+  return false;
 }
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
+function kmpAllMatches(text: string, pattern: string): number[] {
+  if (pattern === "") return [];  // or [0,1,2,...] if you want
 
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
+  const lps = buildLPS(pattern);
+  const matches: number[] = [];
+  let i = 0, j = 0;
 
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++; j++;
+      if (j === pattern.length) {
+        matches.push(i - j); // match ends at i-1, so start = i-j
+        j = lps[j - 1];      // continue searching
+      }
+    } else {
+      if (j !== 0) j = lps[j - 1];
+      else i++;
+    }
+  }
+  return matches;
+}
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
+
+console.log(kmpSearch(haystack, needle));          // true
+console.log(kmpAllMatches(haystack, needle));      // [10]
