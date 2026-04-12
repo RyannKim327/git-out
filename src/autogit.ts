@@ -1,77 +1,40 @@
-// stack.ts
-export class Stack<T> {
-  // The underlying storage.
-  private readonly items: T[] = [];
-
-  /** Add an item onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  /** Remove and return the item from the top of the stack. */
-  pop(): T | undefined {
-    return this.items.pop(); // undefined if the stack is empty
-  }
-
-  /** Peek at the top item without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Check whether the stack contains no items. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Return the number of items in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clears the stack so it’s empty. */
-  clear(): void {
-    this.items.length = 0;
-  }
+class TreeNode {
+  constructor(
+    public val: number,
+    public left: TreeNode | null = null,
+    public right: TreeNode | null = null
+  ) {}
 }
-import { Stack } from './stack';
-
-const numStack = new Stack<number>();
-
-numStack.push(10);
-numStack.push(20);
-numStack.push(30);
-
-console.log(numStack.peek()); // 30
-console.log(numStack.pop());  // 30
-console.log(numStack.size()); // 2
-console.log(numStack.isEmpty()); // false
-
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class MaxStack<T extends number> {
-  private readonly stack: T[] = [];
-  private readonly maxStack: T[] = [];
-
-  push(item: T): void {
-    this.stack.push(item);
-    const currentMax = this.maxStack.length === 0
-      ? item
-      : Math.max(item, this.maxStack[this.maxStack.length - 1]);
-    this.maxStack.push(currentMax);
-  }
-
-  pop(): T | undefined {
-    this.maxStack.pop();
-    return this.stack.pop();
-  }
-
-  peek(): T | undefined {
-    return this.stack[this.stack.length - 1];
-  }
-
-  max(): T | undefined {
-    return this.maxStack[this.maxStack.length - 1];
-  }
-
-  // …plus isEmpty, size, clear, etc.
+function sumTree(root: TreeNode | null): number {
+  if (!root) return 0;          // nothing to add
+  const leftSum = sumTree(root.left);
+  const rightSum = sumTree(root.right);
+  return root.val + leftSum + rightSum;
 }
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let sum = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+
+  return sum;
+}
+const root = new TreeNode(5,
+  new TreeNode(3,
+    new TreeNode(2),
+    new TreeNode(4)
+  ),
+  new TreeNode(8,
+    null,
+    new TreeNode(9)
+  )
+);
+
+console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
+console.log(sumTreeIterative(root)); // 31
