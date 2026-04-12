@@ -1,41 +1,44 @@
-// Basic node definition
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+const original = [1, 2, 3, 2, 4, 1];
+
+const withoutDups = Array.from(new Set(original)); // [1, 2, 3, 4]
+const arr = [
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
+  { id: 1, name: 'A' }, // duplicate by id
+];
+
+const seen = new Set<number>();
+const unique = arr.filter(item => {
+  const key = item.id;                 // pick what defines uniqueness
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+// [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
+const arr = [
+  { id: 'x', data: 10 },
+  { id: 'y', data: 20 },
+  { id: 'x', data: 30 }, // later duplicate
+];
+
+const map = new Map<string, typeof arr[0]>();
+for (const item of arr) {
+  if (!map.has(item.id)) map.set(item.id, item);
+}
+const withoutDups = Array.from(map.values()); // keeps the first 'x'
+function uniq<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+const nums = uniq([4, 5, 4, 6, 5]); // [4, 5, 6]
+const arr = [1, 2, 3, 2, 4];
+
+const unique = arr.reduce<T[]>((acc, cur) => {
+  if (!acc.includes(cur)) acc.push(cur);
+  return acc;
+}, []); // [1, 2, 3, 4]
+function dedupe<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
 }
 
-/**
- * Detect a cycle in a singly linked list.
- * @param head The start node of the list (or null for an empty list).
- * @returns true if a cycle exists, otherwise false.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false;          // Empty list → no cycle
-
-  let slow = head;                  // One step per loop
-  let fast = head.next;             // Two steps per loop
-
-  while (fast && fast.next) {
-    if (slow === fast) return true; // Hopping together → cycle
-
-    slow = slow.next!;              // safe because slow can't be null here
-    fast = fast.next.next!;
-  }
-
-  return false;                     // Reached end → no cycle
-}
-// acyclic list 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-console.log(hasCycle(a)); // false
-
-// cyclic list 1 → 2 → 3 → 1 …
-const d = new ListNode(1);
-const e = new ListNode(2);
-const f = new ListNode(3);
-d.next = e; e.next = f; f.next = d;
-console.log(hasCycle(d)); // true
+console.log(dedupe([1, 2, 2, 3])); // 1 2 3
+console.log(dedupe(['a', 'b', 'a'])); // a b
