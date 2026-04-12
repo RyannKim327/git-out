@@ -1,48 +1,30 @@
-/**
- * In‑place heap sort for an array of numbers.
- *
- * Complexity:  O(n log n) time, O(1) additional space
- */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
+// src/cronJob.ts
+import * as cron from 'node-cron';
+import { exec } from 'child_process';
 
-  // 1. Build a max‑heap
-  for (let i = (n - 2) >> 1; i >= 0; i--) {
-    heapify(arr, i, n);
-  }
-
-  // 2. Extract elements one by one
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);         // move current max to its final position
-    heapify(arr, 0, end);      // restore heap property on the reduced heap
-  }
+// Simple helper that returns a random joke (you can replace it with anything)
+function getRandomJoke(): string {
+  const jokes = [
+    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
+    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
+    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
+  ];
+  return jokes[Math.floor(Math.random() * jokes.length)];
 }
 
-/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
-function heapify(arr: number[], rootIdx: number, size: number): void {
-  let largest = rootIdx;
-  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
-  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
+// This job:
+cron.schedule('* * * * *', () => {          // Runs every minute
+  const joke = getRandomJoke();
+  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
 
-  if (left < size && arr[left] > arr[largest]) {
-    largest = left;
-  }
-  if (right < size && arr[right] > arr[largest]) {
-    largest = right;
-  }
+  // Example of how you might trigger a system command using Cron
+  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
+    if (err) {
+      console.warn(`Error while executing command: ${err.message}`);
+      return;
+    }
+    console.log(`Command output: ${stdout.trim()}`);
+  });
+});
 
-  if (largest !== rootIdx) {
-    swap(arr, rootIdx, largest);
-    heapify(arr, largest, size); // continue percolating down
-  }
-}
-
-/** Swap two elements in the array. */
-function swap(arr: number[], i: number, j: number): void {
-  const temp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = temp;
-}
-const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
-heapSort(data);
-console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
+console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
