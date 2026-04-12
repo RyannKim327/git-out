@@ -1,85 +1,28 @@
-/*  --------------------------------------------------
-    Depth‑First Search (DFS) – TypeScript
-    -------------------------------------------------- */
-
 /**
- * A graph memoized as an adjacency list.
- * T can be anything that can be used as a key (string, number, etc.).
+ * Sorts an array of numbers (or any type that can be compared) in place.
+ * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
  */
-export type Graph<T> = Map<T, Iterable<T>>;
+export function insertionSort<T>(arr: T[]): void {
+  // Nothing to do for empty or single‑element arrays
+  if (arr.length < 2) return;
 
-/**
- * Recursive DFS.
- * @param graph      the graph
- * @param start      starting node
- * @returns          array of nodes in the order they were first visited
- */
-export function dfsRecursive<T>(
-  graph: Graph<T>,
-  start: T
-): Array<T> {
-  const visited = new Set<T>();
-  const result: Array<T> = [];
+  // Iterate over the array starting at index 1 because the sub‑array
+  // arr[0..i‑1] is already considered sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  function visit(node: T): void {
-    if (visited.has(node)) return;
-    visited.add(node);
-    result.push(node);
-
-    for (const neighbour of graph.get(node) ?? []) {
-      visit(neighbour);
+    // Shift elements that are greater than the key one position to the right.
+    // This makes space for the key to sit in its correct sorted spot.
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
     }
+
+    // Place the key after the element just smaller than it
+    arr[j + 1] = key;
   }
-
-  visit(start);
-  return result;
 }
-
-/**
- * Iterative DFS using an explicit stack.
- * @param graph      the graph
- * @param start      starting node
- * @returns          array of nodes in the order they were first visited
- */
-export function dfsIterative<T>(
-  graph: Graph<T>,
-  start: T
-): Array<T> {
-  const visited = new Set<T>();
-  const stack: Array<T> = [start];
-  const result: Array<T> = [];
-
-  while (stack.length) {
-    const node = stack.pop()!; // non‑empty guarantee
-    if (visited.has(node)) continue;
-
-    visited.add(node);
-    result.push(node);
-
-    // push neighbours onto the stack; reverse order
-    // to mimic the recursive visiting order
-    const neighbours = Array.from(graph.get(node) ?? []);
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      const n = neighbours[i];
-      if (!visited.has(n)) stack.push(n);
-    }
-  }
-
-  return result;
-}
-
-/*  --------------------------------------------------
-    Example Usage
-    -------------------------------------------------- */
-
-const graph: Graph<number> = new Map([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []],
-]);
-
-console.log('Recursive DFS:', dfsRecursive(graph, 1)); // [1, 2, 4, 5, 3, 6]
-console.log('Iterative DFS:', dfsIterative(graph, 1)); // [1, 3, 6, 2, 5, 4]
+const nums = [5, 2, 9, 1, 5, 6];
+insertionSort(nums);
+console.log(nums); // [1, 2, 5, 5, 6, 9]
