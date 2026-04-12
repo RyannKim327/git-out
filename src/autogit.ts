@@ -1,48 +1,77 @@
-/**
- * In‑place heap sort for an array of numbers.
- *
- * Complexity:  O(n log n) time, O(1) additional space
- */
-export function heapSort(arr: number[]): void {
-  const n = arr.length;
+// stack.ts
+export class Stack<T> {
+  // The underlying storage.
+  private readonly items: T[] = [];
 
-  // 1. Build a max‑heap
-  for (let i = (n - 2) >> 1; i >= 0; i--) {
-    heapify(arr, i, n);
+  /** Add an item onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  // 2. Extract elements one by one
-  for (let end = n - 1; end > 0; end--) {
-    swap(arr, 0, end);         // move current max to its final position
-    heapify(arr, 0, end);      // restore heap property on the reduced heap
-  }
-}
-
-/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
-function heapify(arr: number[], rootIdx: number, size: number): void {
-  let largest = rootIdx;
-  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
-  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
-
-  if (left < size && arr[left] > arr[largest]) {
-    largest = left;
-  }
-  if (right < size && arr[right] > arr[largest]) {
-    largest = right;
+  /** Remove and return the item from the top of the stack. */
+  pop(): T | undefined {
+    return this.items.pop(); // undefined if the stack is empty
   }
 
-  if (largest !== rootIdx) {
-    swap(arr, rootIdx, largest);
-    heapify(arr, largest, size); // continue percolating down
+  /** Peek at the top item without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Check whether the stack contains no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Return the number of items in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clears the stack so it’s empty. */
+  clear(): void {
+    this.items.length = 0;
   }
 }
+import { Stack } from './stack';
 
-/** Swap two elements in the array. */
-function swap(arr: number[], i: number, j: number): void {
-  const temp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = temp;
+const numStack = new Stack<number>();
+
+numStack.push(10);
+numStack.push(20);
+numStack.push(30);
+
+console.log(numStack.peek()); // 30
+console.log(numStack.pop());  // 30
+console.log(numStack.size()); // 2
+console.log(numStack.isEmpty()); // false
+
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class MaxStack<T extends number> {
+  private readonly stack: T[] = [];
+  private readonly maxStack: T[] = [];
+
+  push(item: T): void {
+    this.stack.push(item);
+    const currentMax = this.maxStack.length === 0
+      ? item
+      : Math.max(item, this.maxStack[this.maxStack.length - 1]);
+    this.maxStack.push(currentMax);
+  }
+
+  pop(): T | undefined {
+    this.maxStack.pop();
+    return this.stack.pop();
+  }
+
+  peek(): T | undefined {
+    return this.stack[this.stack.length - 1];
+  }
+
+  max(): T | undefined {
+    return this.maxStack[this.maxStack.length - 1];
+  }
+
+  // …plus isEmpty, size, clear, etc.
 }
-const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
-heapSort(data);
-console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
