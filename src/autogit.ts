@@ -1,57 +1,28 @@
-const EMAIL_REGEX = new RegExp(
-  // local part   : a letter or digit, followed by 0–63 chars that can be
-  //                 letters, digits, or one of  . _ - + % #
-  // domain part  : 1+ labels separated by dots.  Each label may contain
-  //                 letters, digits, hyphens (not at the ends).
-  //                 The final label (TLD) must be at least two letters.
-  //             This purposely *does not* allow quoted local parts,
-  //             nor IP‑literal addresses (e.g. [127.0.0.1]).
-  //             It covers the vast majority of addresses you’ll see.
-  /^(?=.{1,254}$)(?:[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$/i
-);
 /**
- * Returns true if the string looks like a real e‑mail address.
- *
- * @param address The value to test.
- * @returns Boolean indicating validity.
+ * Sorts an array of numbers (or any type that can be compared) in place.
+ * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
  */
-export function isValidEmail(address: string): boolean {
-  return EMAIL_REGEX.test(address);
+export function insertionSort<T>(arr: T[]): void {
+  // Nothing to do for empty or single‑element arrays
+  if (arr.length < 2) return;
+
+  // Iterate over the array starting at index 1 because the sub‑array
+  // arr[0..i‑1] is already considered sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // Shift elements that are greater than the key one position to the right.
+    // This makes space for the key to sit in its correct sorted spot.
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place the key after the element just smaller than it
+    arr[j + 1] = key;
+  }
 }
-import { useState } from "react";
-import { isValidEmail } from "./validators";
-
-export function EmailForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState(false);
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(!isValidEmail(email));
-  };
-
-  return (
-    <form onSubmit={onSubmit}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ borderColor: error ? "red" : undefined }}
-      />
-      {error && <p>That doesn’t look like a valid e‑mail.</p>}
-      <button type="submit">Send</button>
-    </form>
-  );
-}
-const testEmails = [
-  "hello@example.com",
-  "user+tag@domain.co.uk",
-  "firstname.lastname@sub.domain.org",
-  `"just a quote"@example.com",  // invalid here
-  "invalid@",
-  "@no-local.com",
-  "space in local@domain.com",
-  "very.long@domain.verylongtldnameforeverthisdoesnotmakeanysensebecausewhothereisit.com"
-];
-
-testEmails.forEach(e => console.log(`${e} → ${isValidEmail(e)}`));
+const nums = [5, 2, 9, 1, 5, 6];
+insertionSort(nums);
+console.log(nums); // [1, 2, 5, 5, 6, 9]
