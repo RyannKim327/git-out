@@ -1,32 +1,39 @@
-// Node for a singly‑linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
 /**
- * Returns the first node that appears in both lists,
- * or null if they don’t intersect.
+ * Return true if `a` and `b` contain the same letters in any order.
+ *
+ * The function is case‑insensitive and skips any non‑alphanumeric
+ * characters (e.g. spaces, punctuation). If you want stricter rules,
+ * just comment out the cleanup lines.
  */
-function findIntersection<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
+function areAnagrams(a: string, b: string): boolean {
+  // 1️⃣ Normalise: lowercase, strip non‑alphanumerics
+  const clean = (s: string) =>
+    s.replace(/[^a-z0-9]/gi, "").toLowerCase();
 
-  // Step 1: remember every node of list A
-  for (let curr = headA; curr; curr = curr.next) {
-    seen.add(curr);
+  const cleanA = clean(a);
+  const cleanB = clean(b);
+
+  // 2️⃣ Quick length check – avoids extra work
+  if (cleanA.length !== cleanB.length) return false;
+
+  // 3️⃣ Count frequency of each character in `cleanA`
+  const freq: Record<string, number> = {};
+
+  for (const ch of cleanA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  // Step 2: walk list B until we hit a node already seen
-  for (let curr = headB; curr; curr = curr.next) {
-    if (seen.has(curr)) return curr; // intersection found
+  // 4️⃣ Decrement using characters from `cleanB`
+  for (const ch of cleanB) {
+    if (!freq[ch]) return false; // missing char or too many of it
+    freq[ch]!--;                  // (non‑null assertion OK here)
   }
-  return null; // no intersection
+
+  // 5️⃣ All frequencies should be zero now
+  return Object.values(freq).every(v => v === 0);
 }
-const shared = new ListNode(8, new ListNode(9));
-
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
-
-console.log(findIntersection(a1, b1)?.val); // 8
+console.log(areAnagrams("listen", "silent"));          // true
+console.log(areAnagrams("Triangle", "Integral"));      // true
+console.log(areAnagrams("Hello!", "oellH"));           // true  (ignores punctuation)
+console.log(areAnagrams("Square", "Quears  "));        // true  (ignores spaces)
+console.log(areAnagrams("Hello", "world"));            // false
