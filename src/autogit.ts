@@ -1,102 +1,105 @@
-export interface ListNode<T = number> {
-  value: T;
-  next?: ListNode<T>;
-}
-export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;          // empty list is a palindrome
+// Boyer-Moore string search in TypeScript
+// --------------------------------------------------------
 
-  const stack: T[] = [];
-  let cur = head;
+/**
+ * Build the bad‑character shift table.
+ * Return an array of 256 integers (for each possible char code).
+ * For Unicode > 0xFF we fallback to a Map.
+ */
+function buildBadCharTable(pattern: string): { table: number[]; map: Map<number, number> } {
+  const table = new Array(256).fill(-1);
+  const map = new Map<number, number>();
 
-  // Stage 1 – push all values onto the stack
-  while (cur) {
-    stack.push(cur.value);
-    cur = cur.next;
+  for (let i = 0; i < pattern.length; i++) {
+    const code = pattern.charCodeAt(i);
+    if (code < 256) table[code] = i;
+    else map.set(code, i);
   }
 
-  // Stage 2 – iterate a second time, comparing against popped values
-  cur = head;
-  while (cur) {
-    const top = stack.pop() as T; // stack can't be empty here
-    if (cur.value !== top) return false;
-    cur = cur.next;
-  }
-
-  return true;
-}
-export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;
-
-  // 1️⃣ Find middle (slow will stop at mid‑point)
-  let slow = head;
-  let fast = head;
-  let prevSlow: ListNode<T> | undefined = undefined;
-
-  while (fast && fast.next) {
-    fast = fast.next.next;
-    prevSlow = slow;
-    slow = slow.next;
-  }
-
-  // 2️⃣ For odd length lists, skip the middle element
-  if (fast) {
-    slow = slow.next;
-  }
-
-  // 3️⃣ Reverse the second half starting at `slow`
-  let secondHalf = reverseLinkedList(slow);
-
-  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
-  let p1 = head;
-  let p2 = secondHalf;
-  while (p2) {           // second half can be shorter or equal
-    if (p1.value !== p2.value) {
-      // Optional: undo reversal here if you want to keep list unchanged
-      return false;
-    }
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore first half? (skip for brevity)
-  return true;
+  return { table, map };
 }
 
 /**
- * Reverse a linked list in place and return the new head.
+ * Build the good‑suffix shift array.
+ * Returns an array `shift` where shift[i] tells how far to jump
+ * when a mismatch occurs at pattern index i.
  */
-function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  let prev: ListNode<T> | undefined = undefined;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev;
-}
-function build(list: number[]): ListNode | undefined {
-  let head: ListNode | undefined;
-  let tail: ListNode | undefined;
+function buildGoodSuffixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const suffix = new Array(m).fill(-1);
+  const prefix = new Array(m).fill(false);
+  const shift = new Array(m).fill(m); // default shift = pattern length
 
-  for (const val of list) {
-    const node: ListNode = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
+  // Phase 1: find suffixes
+  for (let i = 0; i < m - 1; i++) {
+    let j = i;
+    let k = 0; // length of matched suffix
+    while (j >= 0 && pattern[j] === pattern[m - 1 - k]) {
+      j--;
+      k++;
+      suffix[k] = j + 1;
+    }
+    if (j === -1) {
+      // suffix matched entire prefix
+      for (let l = k + 1; l <= m - 1; l++) {
+        if (shift[l] === m) shift[l] = m - k - 1;
+      }
     }
   }
-  return head;
+
+  // Phase 2: compute shift values
+  for (let i = m - 1; i >= 0; i--) {
+    if (suffix[i] !== -1) {
+      shift[i] = m - suffix[i] - i;
+    }
+  }
+
+  return shift;
 }
 
-const evenPal = build([1, 2, 2, 1]);
-const oddPal = build([1, 3, 3, 1]);
-const nonPal = build([1, 2, 3]);
+/**
+ * Boyer‑Moore search: returns the first index of `pattern` in `text` or -1 if not found.
+ */
+export function boyerMooreSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
 
-console.log(isPalindromeStack(evenPal)); // true
-console.log(isPalindromeLinear(oddPal)); // true
-console.log(isPalindromeLinear(nonPal)); // false
+  const { table: badCharTable, map: badCharMap } = buildBadCharTable(pattern);
+  const goodSuffix = buildGoodSuffixTable(pattern);
+
+  const n = text.length;
+  const m = pattern.length;
+  let s = 0; // shift of the pattern relative to text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return s; // match found
+    }
+
+    const badCharCode = text.charCodeAt(s + j);
+    const badCharIdx = badCharCode < 256 ? badCharTable[badCharCode] : badCharMap.get(badCharCode) ?? -1;
+    const badShift = j - badCharIdx;
+
+    const goodShift = goodSuffix[j];
+
+    // take the greater jump
+    s += Math.max(badShift, goodShift);
+  }
+
+  return -1; // no match
+}
+import { boyerMooreSearch } from './boyer-moore';
+
+const text = "the quick brown fox jumps over the lazy dog";
+const pattern = "fox";
+
+const idx = boyerMooreSearch(text, pattern);
+console.log(idx); // 16
+
+// not found
+console.log(boyerMooreSearch(text, "cat")); // -1
