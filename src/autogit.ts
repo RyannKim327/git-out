@@ -1,57 +1,53 @@
-/**
- * Binary search over a sorted array.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to find.
- * @param cmp      Optional custom comparison function.
- *                  Returns a negative number if a < b,
- *                  zero if a == b, and positive if a > b.
- * @returns Index of `target` in `arr`, or -1 if not found.
- */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  cmp?: (a: T, b: T) => number
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+// randomGreeting.ts
+//
+// 1️⃣  Read one line of text from stdin
+// 2️⃣  Pick a random greeting style
+// 3️⃣  Print a personalised message
+//
 
-  // Default comparison for numbers or strings
-  const compare = cmp ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+import { stdin, stdout } from 'process';
 
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = compare(arr[mid], target);
-
-    if (comparison === 0) return mid;          // found
-    if (comparison < 0) low = mid + 1;         // target is bigger
-    else high = mid - 1;                       // target is smaller
+// A tiny helper that turns a promise into a line‑by‑line async iterator
+async function* readLines(): AsyncGenerator<string> {
+  let buffer = '';
+  for await (const chunk of stdin) {
+    buffer += chunk.toString();
+    let *lines* = buffer.split('\n');
+    buffer = lines.pop() ?? '';      // keep the unfinished part
+    for (const line of lines) {
+      yield line.trim();           // remove trailing CR / whitespace
+    }
   }
-
-  return -1; // not found
-}
-const numbers = [1, 3, 5, 7, 9, 11];
-
-console.log(binarySearch(numbers, 7));  // → 3
-console.log(binarySearch(numbers, 4));  // → -1
-interface Person {
-  name: string;
-  age: number;
+  if (buffer) yield buffer.trim();   // last partial line
 }
 
-const people: Person[] = [
-  {name: 'Alice', age: 28},
-  {name: 'Bob',   age: 34},
-  {name: 'Carol', age: 42}
-];
+async function main() {
+  // Ask for the user’s name
+  stdout.write('👋 What is your name? ');
+  const lines = readLines();
 
-function ageComparer(a: Person, b: Person): number {
-  return a.age - b.age;
+  // Wait for the first line entered by the user
+  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
+
+  // Some random greeting ideas
+  const greetings = [
+    `Hey ${name}, hope you’re having a stellar day!`,
+    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
+    `Greetings, ${name}! Keep calm and code on.`,
+    `${name}, you’re the reason we write code in TypeScript!`,
+    `Howdy ${name}! 🎉`
+  ];
+
+  // Pick one at random
+  const choice = greetings[Math.floor(Math.random() * greetings.length)];
+
+  stdout.write(`${choice}\n`);
 }
 
-const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
-console.log(idx); // -> 1
+main().catch(err => {
+  console.error('Something went wrong:', err);
+  process.exit(1);
+});
+$ node randomGreeting.js
+👋 What is your name? Alice
+Hey Alice, hope you’re having a stellar day!
