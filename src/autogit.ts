@@ -1,57 +1,38 @@
-const EMAIL_REGEX = new RegExp(
-  // local part   : a letter or digit, followed by 0–63 chars that can be
-  //                 letters, digits, or one of  . _ - + % #
-  // domain part  : 1+ labels separated by dots.  Each label may contain
-  //                 letters, digits, hyphens (not at the ends).
-  //                 The final label (TLD) must be at least two letters.
-  //             This purposely *does not* allow quoted local parts,
-  //             nor IP‑literal addresses (e.g. [127.0.0.1]).
-  //             It covers the vast majority of addresses you’ll see.
-  /^(?=.{1,254}$)(?:[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$/i
-);
 /**
- * Returns true if the string looks like a real e‑mail address.
- *
- * @param address The value to test.
- * @returns Boolean indicating validity.
+ * Performs an interpolation search on a strictly‑increasing array of numbers.
+ * @param arr   The sorted array (ascending).  Values must be finite numbers.
+ * @param key   The value you’re looking for.
+ * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
  */
-export function isValidEmail(address: string): boolean {
-  return EMAIL_REGEX.test(address);
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
+
+  let low = 0;
+  let high = arr.length - 1;
+
+  // If the target is outside the range, we can bail early.
+  if (key < arr[low] || key > arr[high]) return -1;
+
+  while (low <= high && arr[low] !== arr[high]) {
+    // Estimate the likely position: a weighted average.
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    // Safety: clamp to array bounds.
+    if (pos < low)   return -1;
+    if (pos > high)  return -1;
+
+    const val = arr[pos];
+
+    if (val === key) return pos;
+    if (val < key)   low = pos + 1;
+    else             high = pos - 1;
+  }
+
+  // Final check if low might still hold the key.
+  return (arr[low] === key) ? low : -1;
 }
-import { useState } from "react";
-import { isValidEmail } from "./validators";
-
-export function EmailForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState(false);
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(!isValidEmail(email));
-  };
-
-  return (
-    <form onSubmit={onSubmit}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ borderColor: error ? "red" : undefined }}
-      />
-      {error && <p>That doesn’t look like a valid e‑mail.</p>}
-      <button type="submit">Send</button>
-    </form>
-  );
-}
-const testEmails = [
-  "hello@example.com",
-  "user+tag@domain.co.uk",
-  "firstname.lastname@sub.domain.org",
-  `"just a quote"@example.com",  // invalid here
-  "invalid@",
-  "@no-local.com",
-  "space in local@domain.com",
-  "very.long@domain.verylongtldnameforeverthisdoesnotmakeanysensebecausewhothereisit.com"
-];
-
-testEmails.forEach(e => console.log(`${e} → ${isValidEmail(e)}`));
+const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+const idx = interpolationSearch(nums, 18); // 5
+console.log(idx); // prints 5
