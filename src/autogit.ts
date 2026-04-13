@@ -1,107 +1,90 @@
-// A node can be anything that uniquely identifies a state.
-interface Node {
-  /** A unique string – the node’s id. */
-  id: string;
-  // Whatever other data the node owns can live here.
-  value?: any;
-}
+// ------------------------------------------------------------------
+// Breadth‑Limited Search (BLS)
+// ------------------------------------------------------------------
 
-// Edges are just a mapping from a node id to its adjacent node ids.
-type AdjacencyList = Record<string, string[]>;
-
-// A path is simply an array of nodes (or their ids). Keep it generic so you
-// can work with a tree, graph, maze, etc.
-type Path = Node[];
 /**
- * Depth‑limited search.
- *
- * @param node      the current node
- * @param goalId    id of the goal node
- * @param graph     adjacency list describing neighbours
- * @param maxDepth  maximum depth you are allowed to go
- * @param pathSoFar the nodes traversed so far
- * @returns a Path to the goal, or null if the goal is deeper than maxDepth
+ * A node in the frontier.
+ * `state`   – whatever you want to search over (string, number, object…)
+ * `depth`   – how many steps we’ve taken from the start
  */
-function depthLimitedSearch(
-  node: Node,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number,
-  pathSoFar: Path = []
-): Path | null {
-  // If the current depth is already beyond what we’re allowed, reject.
-  if (pathSoFar.length > maxDepth) return null;
+type FrontierNode<T> = { state: T; depth: number };
 
-  // Add the current node to the path
-  const newPath = [...pathSoFar, node];
-
-  // Goal check
-  if (node.id === goalId) return newPath;
-
-  // Stop if this depth is the last allowed – do NOT keep recursing
-  if (newPath.length === maxDepth) return null;
-
-  // Fetch neighbours; guard against a missing entry
-  const neighbours = graph[node.id] ?? [];
-
-  for (const neighbourId of neighbours) {
-    // Avoid looping back on the same node in the current path
-    if (newPath.some(n => n.id === neighbourId)) continue;
-
-    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
-
-    const result = depthLimitedSearch(
-      neighbourNode,
-      goalId,
-      graph,
-      maxDepth,
-      newPath
-    );
-    if (result) return result; // found a valid path
-  }
-
-  return null; // nothing found at this depth
-}
 /**
- * Iterative‑deepening DFS that stops when it finds the goal or
- * when a supplied depth limit is reached.
- *
- * @param startId    id of the start node
- * @param goalId     id of the goal node
- * @param graph      adjacency list
- * @param maxDepth   the deepest depth you’re willing to explore
- * @returns a Path to the goal or null if none exists within depth
+ * Basic graph helper: adjacency list.
+ * For arbitrary graphs you can swap this for a function that returns
+ * the successors of a vertex.
  */
-function iterativeDeepening(
-  startId: string,
-  goalId: string,
-  graph: AdjacencyList,
+type AdjList<T> = Map<T, T[]>;
+
+/**
+ * Breadth‑limited search.
+ *
+ * @param start          - starting state
+ * @param isGoal         - predicate that tells us whether a state is a goal
+ * @param getNeighbors   - how to obtain successors of a state
+ * @param maxDepth       - stop expanding nodes at this depth
+ * @returns              - the first goal state found, or undefined
+ */
+export function breadthLimitedSearch<T>(
+  start: T,
+  isGoal: (state: T) => boolean,
+  getNeighbors: (state: T) => T[],
   maxDepth: number
-): Path | null {
-  const startNode: Node = { id: startId }; // elaborate if needed
+): T | undefined {
+  // Queue for BFS (FIFO)
+  const queue: FrontierNode<T>[] = [{ state: start, depth: 0 }];
+  const visited = new Set<T>();
 
-  for (let depth = 0; depth <= maxDepth; depth++) {
-    const result = depthLimitedSearch(startNode, goalId, graph, depth);
-    if (result) return result;
+  while (queue.length) {
+    const { state, depth } = queue.shift()!;   // pop the oldest node
+
+    if (visited.has(state)) continue; // ignore duplicates
+    visited.add(state);
+
+    if (isGoal(state)) return state;          // found what we want
+
+    // Don't go deeper than the limit
+    if (depth === maxDepth) continue;
+
+    // Enqueue all unvisited successors
+    for (const next of getNeighbors(state)) {
+      if (!visited.has(next)) {
+        queue.push({ state: next, depth: depth + 1 });
+      }
+    }
   }
-  return null;
-}
-const graph: AdjacencyList = {
-  A: ['B', 'C'],
-  B: ['D', 'E'],
-  C: ['F'],
-  D: [],
-  E: ['G', 'H'],
-  F: ['I'],
-  G: [],
-  H: [],
-  I: [],
-};
 
-const path = iterativeDeepening('A', 'H', graph, 10);
-if (path) {
-  console.log('Found path:', path.map(n => n.id).join(' → '));
-} else {
-  console.log('No path found within the depth limit');
+  // No goal reached within the depth bound
+  return undefined;
 }
-Found path: A → B → E → H
+// Example: find a word that is 3 letters away from "cat" in a tiny
+// word‑graph (adjacent words differ by one character).
+
+const words = ["cat", "bat", "bet", "bed", "ded", "dog", "dig"];
+
+// Build an adjacency list (one‑letter edits)
+const graph: AdjList<string> = new Map();
+words.forEach(w => {
+  const adj: string[] = [];
+  for (const other of words) {
+    if (w !== other && w.split("").some((c, i) => c !== other[i])) {
+      // True only if they differ by ONE character
+      if (w.split("").filter((c, i) => c !== other[i]).length <= 1) {
+        adj.push(other);
+      }
+    }
+  }
+  graph.set(w, adj);
+});
+
+const start = "cat";
+const goal = "dig";
+
+const found = breadthLimitedSearch(
+  start,
+  s => s === goal,
+  s => graph.get(s) ?? [],
+  3                       // depth limit
+);
+
+console.log(found); // prints "dig" or undefined if no path ≤ 3 steps
