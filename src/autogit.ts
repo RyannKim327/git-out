@@ -1,35 +1,32 @@
-// A very lightweight node definition –
-export class ListNode {
-  constructor(public val: number, public next: ListNode | null = null) {}
+// Node for a singly‑linked list
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
 /**
- * Returns the middle node of a linked list.
- * If there are an even number of nodes, it returns the *first* of the two middle nodes.
- * (Adjust `result` if you prefer the second middle node instead.)
+ * Returns the first node that appears in both lists,
+ * or null if they don’t intersect.
  */
-export function findMiddle(head: ListNode | null): ListNode | null {
-  if (!head) return null;
+function findIntersection<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
 
-  let slow = head;          // moves one step at a time
-  let fast = head;          // moves two steps at a time
-
-  // Advance until fast reaches the end
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  // Step 1: remember every node of list A
+  for (let curr = headA; curr; curr = curr.next) {
+    seen.add(curr);
   }
 
-  return slow;   // `slow` rests right on the middle (or first middle)
+  // Step 2: walk list B until we hit a node already seen
+  for (let curr = headB; curr; curr = curr.next) {
+    if (seen.has(curr)) return curr; // intersection found
+  }
+  return null; // no intersection
 }
-// Helper to build a list quickly
-const build = (values: number[]) =>
-  values.reduceRight((next, v) => new ListNode(v, next), null as any);
+const shared = new ListNode(8, new ListNode(9));
 
-// 1 → 2 → 3 → 4 → 5   → middle is 3
-const list1 = build([1, 2, 3, 4, 5]);
-console.log(findMiddle(list1)!.val); // 3
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
 
-// 1 → 2 → 3 → 4        → middle returned is 2
-const list2 = build([1, 2, 3, 4]);
-console.log(findMiddle(list2)!.val); // 2
+console.log(findIntersection(a1, b1)?.val); // 8
