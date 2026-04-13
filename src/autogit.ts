@@ -1,32 +1,56 @@
-// Node for a singly‑linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// 1️⃣  Define a compare function signature
+type Comparator<T> = (a: T, b: T) => number;
+
+// 2️⃣  Merge helper – combines two sorted halves
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+    const result: T[] = [];
+    let i = 0, j = 0;
+
+    while (i < left.length && j < right.length) {
+        // If left[i] <= right[j] according to cmp, push left[i]
+        if (cmp(left[i], right[j]) <= 0) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
+    }
+
+    // Append any leftovers
+    return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
-/**
- * Returns the first node that appears in both lists,
- * or null if they don’t intersect.
- */
-function findIntersection<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
+// 3️⃣  The recursive merge‑sort function
+export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
+    // Default comparator for primitive types
+    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
 
-  // Step 1: remember every node of list A
-  for (let curr = headA; curr; curr = curr.next) {
-    seen.add(curr);
-  }
+    // Base case: arrays of length 0 or 1 are already sorted
+    if (arr.length <= 1) {
+        return arr;
+    }
 
-  // Step 2: walk list B until we hit a node already seen
-  for (let curr = headB; curr; curr = curr.next) {
-    if (seen.has(curr)) return curr; // intersection found
-  }
-  return null; // no intersection
+    const mid = Math.floor(arr.length / 2);
+    const left  = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    return merge(left, right, compare);
 }
-const shared = new ListNode(8, new ListNode(9));
+// Numbers
+const nums = [5, 2, 9, 1, 5, 6];
+const sortedNums = mergeSort(nums);
+// sortedNums === [1, 2, 5, 5, 6, 9]
 
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
+// Strings
+const words = ["banana", "apple", "cherry"];
+const sortedWords = mergeSort(words);
+// sortedWords === ["apple", "banana", "cherry"]
 
-console.log(findIntersection(a1, b1)?.val); // 8
+// Custom objects (by age)
+type Person = { name: string; age: number };
+const people: Person[] = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob",   age: 35 },
+];
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// sortedByAge => Alice, John, Bob
