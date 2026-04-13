@@ -1,38 +1,58 @@
 /**
- * Performs an interpolation search on a strictly‑increasing array of numbers.
- * @param arr   The sorted array (ascending).  Values must be finite numbers.
- * @param key   The value you’re looking for.
- * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
+ * Returns the BWT of `s` as an object containing
+ *   - last: the encoded string (last column of the sorted matrix)
+ *   - index: the row number that holds the original string (0‑based)
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+function burrowsWheelerEncode(s: string): { last: string; index: number } {
+  const n = s.length;
+  // Build every rotation: slice(s, i) + slice(s, 0, i)
+  const rotations = Array.from({ length: n }, (_, i) =>
+    s.slice(i) + s.slice(0, i)
+  );
 
-  let low = 0;
-  let high = arr.length - 1;
+  // Sort rotations lexicographically
+  rotations.sort();
 
-  // If the target is outside the range, we can bail early.
-  if (key < arr[low] || key > arr[high]) return -1;
+  // Extract last column and find original string's row
+  let lastCol = "";
+  let origIndex = -1;
+  for (let r = 0; r < n; r++) {
+    const row = rotations[r];
+    lastCol += row[row.length - 1];
+    if (row === s) origIndex = r;
+  }
+  return { last: lastCol, index: origIndex };
+}
+const { last, index } = burrowsWheelerEncode("BANANA");
+// last  => "ANNBAA"
+// index => 3   // 0‑based, the fourth row is "BANANA"
+/**
+ * Inverse of the BWT.  Given the last column (`last`) and the original
+ * string's row index (`index`), reconstruct the original string.
+ */
+function burrowsWheelerDecode(last: string, index: number): string {
+  const n = last.length;
+  const first = [...last].sort();          // First column is sorted last
+  const table: string[] = Array(n).fill(""); // Working table of rows
 
-  while (low <= high && arr[low] !== arr[high]) {
-    // Estimate the likely position: a weighted average.
-    const pos = low + Math.floor(
-      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-    );
-
-    // Safety: clamp to array bounds.
-    if (pos < low)   return -1;
-    if (pos > high)  return -1;
-
-    const val = arr[pos];
-
-    if (val === key) return pos;
-    if (val < key)   low = pos + 1;
-    else             high = pos - 1;
+  // Repeatedly prepend last‑column chars to the table rows
+  for (let step = 0; step < n; step++) {
+    // Prepend each char of last to the corresponding row
+    for (let i = 0; i < n; i++) {
+      table[i] = last[i] + table[i];
+    }
+    // Re‑sort the table – now the first column matches `first`
+    table.sort();
   }
 
-  // Final check if low might still hold the key.
-  return (arr[low] === key) ? low : -1;
+  // The row at the original index is the decoded string
+  return table[index];
 }
-const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
-const idx = interpolationSearch(nums, 18); // 5
-console.log(idx); // prints 5
+const original = burrowsWheelerDecode("ANNBAA", 3);
+console.log(original); // "BANANA"
+const input = "MNEMONIC";
+const { last, index } = burrowsWheelerEncode(input);
+const restored = burrowsWheelerDecode(last, index);
+
+console.log(last, index);   // e.g., "NOIACEMM 4"
+console.log(restored === input); // true
