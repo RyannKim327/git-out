@@ -1,32 +1,25 @@
-// Node for a singly‑linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
+  if (arr.length < 2) return true;           // One or no elements is always sorted
 
-/**
- * Returns the first node that appears in both lists,
- * or null if they don’t intersect.
- */
-function findIntersection<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
+  // Default comparison is the "<=" operator for primitives
+  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
 
-  // Step 1: remember every node of list A
-  for (let curr = headA; curr; curr = curr.next) {
-    seen.add(curr);
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is less than the previous one, it’s not sorted
+    if (cmp(arr[i - 1], arr[i]) > 0) return false;
   }
-
-  // Step 2: walk list B until we hit a node already seen
-  for (let curr = headB; curr; curr = curr.next) {
-    if (seen.has(curr)) return curr; // intersection found
-  }
-  return null; // no intersection
+  return true;
 }
-const shared = new ListNode(8, new ListNode(9));
+console.log(isSortedAsc([1, 2, 3, 4]));  // true
+console.log(isSortedAsc([1, 3, 2, 5]));  // false
+interface Person { age: number; name: string }
 
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
+const people = [
+  { age: 22, name: "Alice" },
+  { age: 29, name: "Bob" },
+  { age: 30, name: "Carol" }
+];
 
-console.log(findIntersection(a1, b1)?.val); // 8
+console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
+const isSortedAscShortcut = (arr: number[]): boolean =>
+  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
