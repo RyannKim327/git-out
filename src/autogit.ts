@@ -1,52 +1,102 @@
+export interface ListNode<T = number> {
+  value: T;
+  next?: ListNode<T>;
+}
+export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
+  if (!head) return true;          // empty list is a palindrome
+
+  const stack: T[] = [];
+  let cur = head;
+
+  // Stage 1 – push all values onto the stack
+  while (cur) {
+    stack.push(cur.value);
+    cur = cur.next;
+  }
+
+  // Stage 2 – iterate a second time, comparing against popped values
+  cur = head;
+  while (cur) {
+    const top = stack.pop() as T; // stack can't be empty here
+    if (cur.value !== top) return false;
+    cur = cur.next;
+  }
+
+  return true;
+}
+export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
+  if (!head) return true;
+
+  // 1️⃣ Find middle (slow will stop at mid‑point)
+  let slow = head;
+  let fast = head;
+  let prevSlow: ListNode<T> | undefined = undefined;
+
+  while (fast && fast.next) {
+    fast = fast.next.next;
+    prevSlow = slow;
+    slow = slow.next;
+  }
+
+  // 2️⃣ For odd length lists, skip the middle element
+  if (fast) {
+    slow = slow.next;
+  }
+
+  // 3️⃣ Reverse the second half starting at `slow`
+  let secondHalf = reverseLinkedList(slow);
+
+  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
+  let p1 = head;
+  let p2 = secondHalf;
+  while (p2) {           // second half can be shorter or equal
+    if (p1.value !== p2.value) {
+      // Optional: undo reversal here if you want to keep list unchanged
+      return false;
+    }
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+
+  // Optional: restore first half? (skip for brevity)
+  return true;
+}
+
 /**
- * Counting sort for an array of integers.
- *
- * @param arr – array of numbers (integers) to sort
- * @returns a new array containing the same numbers in ascending order
+ * Reverse a linked list in place and return the new head.
  */
-export function countingSort(arr: number[]): number[] {
-  // nothing to sort
-  if (arr.length <= 1) return [...arr];
-
-  // 1. locate the min/max so we know how big the count array must be
-  let min = arr[0];
-  let max = arr[0];
-
-  for (let i = 1; i < arr.length; i++) {
-    const v = arr[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
+function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  let prev: ListNode<T> | undefined = undefined;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
   }
+  return prev;
+}
+function build(list: number[]): ListNode | undefined {
+  let head: ListNode | undefined;
+  let tail: ListNode | undefined;
 
-  // 2. build the frequency table
-  // offset shifts the negative values to positive indices
-  const offset = -min;                     // e.g. min = -3 → offset = 3
-  const size   = max - min + 1;            // number of distinct keys
-  const count  = new Array<number>(size).fill(0);
-
-  for (const v of arr) {
-    count[v + offset]++;
-  }
-
-  // 3. reconstruct the sorted array
-  const out: number[] = new Array(arr.length);
-  let writeIdx = 0;
-
-  for (let i = 0; i < size; i++) {
-    const qty = count[i];
-    if (qty === 0) continue;
-
-    const value = i - offset;   // bring back to original key
-    for (let j = 0; j < qty; j++) {
-      out[writeIdx++] = value;
+  for (const val of list) {
+    const node: ListNode = { value: val };
+    if (!head) {
+      head = node;
+      tail = node;
+    } else {
+      tail!.next = node;
+      tail = node;
     }
   }
-
-  return out;
+  return head;
 }
-import { countingSort } from './countingSort';
 
-const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
-const sorted   = countingSort(unsorted);
+const evenPal = build([1, 2, 2, 1]);
+const oddPal = build([1, 3, 3, 1]);
+const nonPal = build([1, 2, 3]);
 
-console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
+console.log(isPalindromeStack(evenPal)); // true
+console.log(isPalindromeLinear(oddPal)); // true
+console.log(isPalindromeLinear(nonPal)); // false
