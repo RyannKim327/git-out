@@ -1,23 +1,23 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Randomly sorts (shuffles) an array in place.
+ * Uses the Fisher‑Yates algorithm for a uniform shuffle.
+ */
+function randomSort<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i (inclusive)
+    const j = Math.floor(Math.random() * (i + 1));
+    // Swap arr[i] and arr[j]
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
-
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
+// Example usage:
+const numbers = [1, 2, 3, 4, 5];
+console.log('Before:', numbers);
+console.log('After  :', randomSort([...numbers])); // clone to keep original unchanged
+function randomComparator<T>(a: T, b: T) {
+  return Math.random() - 0.5;   // not guaranteed to be a stable sort
 }
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(maxDepth(root));  // 3
+const scrambled = [...numbers].sort(randomComparator);
+console.log(scrambled);
