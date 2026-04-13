@@ -1,38 +1,25 @@
-/**
- * Return the same sentence but with the words in reverse order.
- *
- * @param sentence - Any string you want to flip.
- * @returns A new string with the word order reversed.
- */
-export function reverseWords(sentence: string): string {
-  return sentence
-    .trim()                      // Remove leading/trailing spaces
-    .split(/\s+/)                // Split on one or more whitespace characters
-    .reverse()                   // Reverse the word array
-    .join(' ');                  // Re‑join with a single space
-}
+function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
+  if (arr.length < 2) return true;           // One or no elements is always sorted
 
-/* Example usage */
-const original = "The quick brown   fox jumps over the lazy dog";
-console.log(reverseWords(original));
-// → "dog lazy the over jumps fox brown quick The"
-export function reverseWordsWithSpacing(str: string): string {
-  const parts = str.match(/(\S+|\s+)/g) ?? []; // captures words and whitespace chunks
-  let words: string[] = [];
-  const wordTokens: string[] = [];
+  // Default comparison is the "<=" operator for primitives
+  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
 
-  // Extract words while preserving the positions of the separators
-  for (const part of parts) {
-    if (part.trim() === '') {
-      words.push(part); // this part is whitespace
-    } else {
-      wordTokens.push(part); // capture the word
-    }
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is less than the previous one, it’s not sorted
+    if (cmp(arr[i - 1], arr[i]) > 0) return false;
   }
-
-  // Reverse only the words, then reconstruct
-  const reversedWords = wordTokens.reverse();
-  let i = 0;
-  const result = parts.map(p => (p.trim() === '' ? p : reversedWords[i++])).join('');
-  return result;
+  return true;
 }
+console.log(isSortedAsc([1, 2, 3, 4]));  // true
+console.log(isSortedAsc([1, 3, 2, 5]));  // false
+interface Person { age: number; name: string }
+
+const people = [
+  { age: 22, name: "Alice" },
+  { age: 29, name: "Bob" },
+  { age: 30, name: "Carol" }
+];
+
+console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
+const isSortedAscShortcut = (arr: number[]): boolean =>
+  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
