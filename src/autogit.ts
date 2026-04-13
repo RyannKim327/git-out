@@ -1,56 +1,107 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
-
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
-    }
-
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+// A node can be anything that uniquely identifies a state.
+interface Node {
+  /** A unique string – the node’s id. */
+  id: string;
+  // Whatever other data the node owns can live here.
+  value?: any;
 }
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+// Edges are just a mapping from a node id to its adjacent node ids.
+type AdjacencyList = Record<string, string[]>;
 
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
+// A path is simply an array of nodes (or their ids). Keep it generic so you
+// can work with a tree, graph, maze, etc.
+type Path = Node[];
+/**
+ * Depth‑limited search.
+ *
+ * @param node      the current node
+ * @param goalId    id of the goal node
+ * @param graph     adjacency list describing neighbours
+ * @param maxDepth  maximum depth you are allowed to go
+ * @param pathSoFar the nodes traversed so far
+ * @returns a Path to the goal, or null if the goal is deeper than maxDepth
+ */
+function depthLimitedSearch(
+  node: Node,
+  goalId: string,
+  graph: AdjacencyList,
+  maxDepth: number,
+  pathSoFar: Path = []
+): Path | null {
+  // If the current depth is already beyond what we’re allowed, reject.
+  if (pathSoFar.length > maxDepth) return null;
 
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
+  // Add the current node to the path
+  const newPath = [...pathSoFar, node];
 
-    return merge(left, right, compare);
+  // Goal check
+  if (node.id === goalId) return newPath;
+
+  // Stop if this depth is the last allowed – do NOT keep recursing
+  if (newPath.length === maxDepth) return null;
+
+  // Fetch neighbours; guard against a missing entry
+  const neighbours = graph[node.id] ?? [];
+
+  for (const neighbourId of neighbours) {
+    // Avoid looping back on the same node in the current path
+    if (newPath.some(n => n.id === neighbourId)) continue;
+
+    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
+
+    const result = depthLimitedSearch(
+      neighbourNode,
+      goalId,
+      graph,
+      maxDepth,
+      newPath
+    );
+    if (result) return result; // found a valid path
+  }
+
+  return null; // nothing found at this depth
 }
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
+/**
+ * Iterative‑deepening DFS that stops when it finds the goal or
+ * when a supplied depth limit is reached.
+ *
+ * @param startId    id of the start node
+ * @param goalId     id of the goal node
+ * @param graph      adjacency list
+ * @param maxDepth   the deepest depth you’re willing to explore
+ * @returns a Path to the goal or null if none exists within depth
+ */
+function iterativeDeepening(
+  startId: string,
+  goalId: string,
+  graph: AdjacencyList,
+  maxDepth: number
+): Path | null {
+  const startNode: Node = { id: startId }; // elaborate if needed
 
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
+  for (let depth = 0; depth <= maxDepth; depth++) {
+    const result = depthLimitedSearch(startNode, goalId, graph, depth);
+    if (result) return result;
+  }
+  return null;
+}
+const graph: AdjacencyList = {
+  A: ['B', 'C'],
+  B: ['D', 'E'],
+  C: ['F'],
+  D: [],
+  E: ['G', 'H'],
+  F: ['I'],
+  G: [],
+  H: [],
+  I: [],
+};
 
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
+const path = iterativeDeepening('A', 'H', graph, 10);
+if (path) {
+  console.log('Found path:', path.map(n => n.id).join(' → '));
+} else {
+  console.log('No path found within the depth limit');
+}
+Found path: A → B → E → H
