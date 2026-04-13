@@ -1,38 +1,45 @@
 /**
- * Return the same sentence but with the words in reverse order.
+ * Return the longest common prefix of an array of strings.
+ * If the array is empty the result is the empty string.
  *
- * @param sentence - Any string you want to flip.
- * @returns A new string with the word order reversed.
+ * @param strs Array of strings
+ * @returns The longest common prefix
  */
-export function reverseWords(sentence: string): string {
-  return sentence
-    .trim()                      // Remove leading/trailing spaces
-    .split(/\s+/)                // Split on one or more whitespace characters
-    .reverse()                   // Reverse the word array
-    .join(' ');                  // Re‑join with a single space
-}
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-/* Example usage */
-const original = "The quick brown   fox jumps over the lazy dog";
-console.log(reverseWords(original));
-// → "dog lazy the over jumps fox brown quick The"
-export function reverseWordsWithSpacing(str: string): string {
-  const parts = str.match(/(\S+|\s+)/g) ?? []; // captures words and whitespace chunks
-  let words: string[] = [];
-  const wordTokens: string[] = [];
+  // Start with the entire first string as a tentative prefix.
+  let prefix = strs[0];
 
-  // Extract words while preserving the positions of the separators
-  for (const part of parts) {
-    if (part.trim() === '') {
-      words.push(part); // this part is whitespace
-    } else {
-      wordTokens.push(part); // capture the word
+  // Iterate over the rest of the strings.
+  for (let i = 1; i < strs.length; i++) {
+    const s = strs[i];
+
+    // Shrink the prefix until it matches the current string
+    // (or becomes empty).
+    while (!s.startsWith(prefix)) {
+      // Drop the last character
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return ""; // No common prefix
     }
   }
 
-  // Reverse only the words, then reconstruct
-  const reversedWords = wordTokens.reverse();
+  return prefix;
+}
+console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
+console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
+console.log(longestCommonPrefix([]));                         // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+export function lcpBySorting(strs: string[]): string {
+  if (strs.length === 0) return "";
+
+  const sorted = [...strs].sort(); // Lexicographical order
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const minLen = Math.min(first.length, last.length);
+
   let i = 0;
-  const result = parts.map(p => (p.trim() === '' ? p : reversedWords[i++])).join('');
-  return result;
+  while (i < minLen && first[i] === last[i]) i++;
+
+  return first.slice(0, i);
 }
