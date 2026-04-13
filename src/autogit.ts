@@ -1,19 +1,10 @@
-const text = "The quick brown fox jumps over the lazy dog";
-
-function contains(sub: string, str: string = text): boolean {
-  return str.includes(sub);
+const str = "123";
+const num = Number(str);   // 123 as a number
+const num = +str;          // 123
+const num = parseInt(str, 10);   // 123
+const big = BigInt(str);   // e.g., "9007199254740991" → 9007199254740991n
+function toInteger(value: string): number | null {
+  const n = Number(value);
+  if (Number.isNaN(n)) return null; // or throw
+  return n;
 }
-
-console.log(contains("brown"));          // true
-console.log(contains("cat"));            // false
-console.log(contains("Brown", text));    // false – includes is case‑sensitive
-function containsRegex(pattern: RegExp, str: string = text): boolean {
-  return pattern.test(str);
-}
-
-console.log(containsRegex(/BROWN/i));  // true – case‑insensitive match
-const hasSub = s.includes(sub);            // ✅
-const hasSubOld = s.indexOf(sub) !== -1;   // ✅
-const starts = s.startsWith(prefix);       // ✅
-const ends = s.endsWith(suffix);           // ✅
-const matches = /pattern/.test(s);         // ✅
