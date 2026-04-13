@@ -1,25 +1,45 @@
-function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
-  if (arr.length < 2) return true;           // One or no elements is always sorted
+/**
+ * Return the longest common prefix of an array of strings.
+ * If the array is empty the result is the empty string.
+ *
+ * @param strs Array of strings
+ * @returns The longest common prefix
+ */
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  // Default comparison is the "<=" operator for primitives
-  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
+  // Start with the entire first string as a tentative prefix.
+  let prefix = strs[0];
 
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is less than the previous one, it’s not sorted
-    if (cmp(arr[i - 1], arr[i]) > 0) return false;
+  // Iterate over the rest of the strings.
+  for (let i = 1; i < strs.length; i++) {
+    const s = strs[i];
+
+    // Shrink the prefix until it matches the current string
+    // (or becomes empty).
+    while (!s.startsWith(prefix)) {
+      // Drop the last character
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return ""; // No common prefix
+    }
   }
-  return true;
+
+  return prefix;
 }
-console.log(isSortedAsc([1, 2, 3, 4]));  // true
-console.log(isSortedAsc([1, 3, 2, 5]));  // false
-interface Person { age: number; name: string }
+console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
+console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
+console.log(longestCommonPrefix([]));                         // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+export function lcpBySorting(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-const people = [
-  { age: 22, name: "Alice" },
-  { age: 29, name: "Bob" },
-  { age: 30, name: "Carol" }
-];
+  const sorted = [...strs].sort(); // Lexicographical order
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const minLen = Math.min(first.length, last.length);
 
-console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
-const isSortedAscShortcut = (arr: number[]): boolean =>
-  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+  let i = 0;
+  while (i < minLen && first[i] === last[i]) i++;
+
+  return first.slice(0, i);
+}
