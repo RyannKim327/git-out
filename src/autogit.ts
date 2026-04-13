@@ -1,23 +1,32 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+// Node for a singly‑linked list
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
+/**
+ * Returns the first node that appears in both lists,
+ * or null if they don’t intersect.
+ */
+function findIntersection<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
 
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
+  // Step 1: remember every node of list A
+  for (let curr = headA; curr; curr = curr.next) {
+    seen.add(curr);
+  }
+
+  // Step 2: walk list B until we hit a node already seen
+  for (let curr = headB; curr; curr = curr.next) {
+    if (seen.has(curr)) return curr; // intersection found
+  }
+  return null; // no intersection
 }
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
+const shared = new ListNode(8, new ListNode(9));
 
-console.log(maxDepth(root));  // 3
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
+
+console.log(findIntersection(a1, b1)?.val); // 8
