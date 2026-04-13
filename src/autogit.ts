@@ -1,102 +1,54 @@
-export interface ListNode<T = number> {
-  value: T;
-  next?: ListNode<T>;
-}
-export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;          // empty list is a palindrome
-
-  const stack: T[] = [];
-  let cur = head;
-
-  // Stage 1 – push all values onto the stack
-  while (cur) {
-    stack.push(cur.value);
-    cur = cur.next;
-  }
-
-  // Stage 2 – iterate a second time, comparing against popped values
-  cur = head;
-  while (cur) {
-    const top = stack.pop() as T; // stack can't be empty here
-    if (cur.value !== top) return false;
-    cur = cur.next;
-  }
-
-  return true;
-}
-export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;
-
-  // 1️⃣ Find middle (slow will stop at mid‑point)
-  let slow = head;
-  let fast = head;
-  let prevSlow: ListNode<T> | undefined = undefined;
-
-  while (fast && fast.next) {
-    fast = fast.next.next;
-    prevSlow = slow;
-    slow = slow.next;
-  }
-
-  // 2️⃣ For odd length lists, skip the middle element
-  if (fast) {
-    slow = slow.next;
-  }
-
-  // 3️⃣ Reverse the second half starting at `slow`
-  let secondHalf = reverseLinkedList(slow);
-
-  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
-  let p1 = head;
-  let p2 = secondHalf;
-  while (p2) {           // second half can be shorter or equal
-    if (p1.value !== p2.value) {
-      // Optional: undo reversal here if you want to keep list unchanged
-      return false;
-    }
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore first half? (skip for brevity)
-  return true;
-}
-
 /**
- * Reverse a linked list in place and return the new head.
+ * Generic shell sort – works on any array whose elements can be compared by a
+ * key that returns a value implementing `<` / `>`.
+ *
+ * @param arr   The array to sort (mutated in‑place)
+ * @param key   (optional) a function that extracts the sort key from each element.
+ *              For plain numbers you can leave this undefined.
+ *
+ * @returns The sorted array (same reference as the input).
  */
-function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  let prev: ListNode<T> | undefined = undefined;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev;
-}
-function build(list: number[]): ListNode | undefined {
-  let head: ListNode | undefined;
-  let tail: ListNode | undefined;
+export function shellSort<T>(arr: T[], key?: (x: T) => number | string): T[] {
+  const n = arr.length;
+  // Default key is identity for numbers, fallback to string comparison.
+  const keyFn = key ??
+    ((x: T) => {
+      const v = (x as unknown as number);
+      return typeof v === "number" ? v : String(v);
+    });
 
-  for (const val of list) {
-    const node: ListNode = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
+  // Start with a gap that is roughly n/2, then reduce it by a factor of 1.3
+  // (Knuth's sequence: h = 3*h + 1)
+  let gap = 1;
+  while (gap < n / 3) gap = 3 * gap + 1; // largest h < n/3
+
+  while (gap >= 1) {
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (
+        j >= gap &&
+        (keyFn(temp) < keyFn(arr[j - gap]))
+      ) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
+    gap = Math.floor((gap - 1) / 3); // move to previous gap in Knuth sequence
   }
-  return head;
+  return arr;
 }
+import { shellSort } from "./shellSort";
 
-const evenPal = build([1, 2, 2, 1]);
-const oddPal = build([1, 3, 3, 1]);
-const nonPal = build([1, 2, 3]);
+const data = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(data);
+console.log(data); // [1, 2, 3, 8, 12, 23, 34, 54]
+const users = [
+  { name: "Ada", age: 45 },
+  { name: "Bob", age: 30 },
+  { name: "Cleo", age: 37 }
+];
 
-console.log(isPalindromeStack(evenPal)); // true
-console.log(isPalindromeLinear(oddPal)); // true
-console.log(isPalindromeLinear(nonPal)); // false
+shellSort(users, u => u.age);
+// users now sorted by age
