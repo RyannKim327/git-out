@@ -1,90 +1,72 @@
-// ------------------------------------------------------------------
-// Breadth‑Limited Search (BLS)
-// ------------------------------------------------------------------
-
 /**
- * A node in the frontier.
- * `state`   – whatever you want to search over (string, number, object…)
- * `depth`   – how many steps we’ve taken from the start
- */
-type FrontierNode<T> = { state: T; depth: number };
-
-/**
- * Basic graph helper: adjacency list.
- * For arbitrary graphs you can swap this for a function that returns
- * the successors of a vertex.
- */
-type AdjList<T> = Map<T, T[]>;
-
-/**
- * Breadth‑limited search.
+ * Return the majority element of an array – the value that occurs
+ * strictly more than half the time. If no such element exists the
+ * function throws an Error.
  *
- * @param start          - starting state
- * @param isGoal         - predicate that tells us whether a state is a goal
- * @param getNeighbors   - how to obtain successors of a state
- * @param maxDepth       - stop expanding nodes at this depth
- * @returns              - the first goal state found, or undefined
+ * @param arr Array of comparable values (e.g. numbers, strings, etc.)
  */
-export function breadthLimitedSearch<T>(
-  start: T,
-  isGoal: (state: T) => boolean,
-  getNeighbors: (state: T) => T[],
-  maxDepth: number
-): T | undefined {
-  // Queue for BFS (FIFO)
-  const queue: FrontierNode<T>[] = [{ state: start, depth: 0 }];
-  const visited = new Set<T>();
+export function majorityElement<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new Error('Array is empty');
+  }
 
-  while (queue.length) {
-    const { state, depth } = queue.shift()!;   // pop the oldest node
+  // Phase 1 – Find a candidate
+  let candidate = arr[0];
+  let count = 1;
 
-    if (visited.has(state)) continue; // ignore duplicates
-    visited.add(state);
-
-    if (isGoal(state)) return state;          // found what we want
-
-    // Don't go deeper than the limit
-    if (depth === maxDepth) continue;
-
-    // Enqueue all unvisited successors
-    for (const next of getNeighbors(state)) {
-      if (!visited.has(next)) {
-        queue.push({ state: next, depth: depth + 1 });
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
       }
     }
   }
 
-  // No goal reached within the depth bound
-  return undefined;
+  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  if (count > Math.floor(arr.length / 2)) {
+    return candidate;
+  }
+
+  throw new Error('No majority element found');
 }
-// Example: find a word that is 3 letters away from "cat" in a tiny
-// word‑graph (adjacent words differ by one character).
+export function majorityElementWithMap<T>(arr: T[]): T {
+  const freq = new Map<T, number>();
 
-const words = ["cat", "bat", "bet", "bed", "ded", "dog", "dig"];
-
-// Build an adjacency list (one‑letter edits)
-const graph: AdjList<string> = new Map();
-words.forEach(w => {
-  const adj: string[] = [];
-  for (const other of words) {
-    if (w !== other && w.split("").some((c, i) => c !== other[i])) {
-      // True only if they differ by ONE character
-      if (w.split("").filter((c, i) => c !== other[i]).length <= 1) {
-        adj.push(other);
-      }
-    }
+  // Count occurrences
+  for (const v of arr) {
+    freq.set(v, (freq.get(v) ?? 0) + 1);
   }
-  graph.set(w, adj);
-});
 
-const start = "cat";
-const goal = "dig";
+  // Find the element that tops the midway mark
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, count] of freq) {
+    if (count > threshold) return val;
+  }
 
-const found = breadthLimitedSearch(
-  start,
-  s => s === goal,
-  s => graph.get(s) ?? [],
-  3                       // depth limit
-);
+  throw new Error('No majority element found');
+}
+export function majorityElementSorted<T>(arr: T[]): T {
+  if (arr.length === 0) throw new Error('Array is empty');
 
-console.log(found); // prints "dig" or undefined if no path ≤ 3 steps
+  const sorted = [...arr].sort();  // shallow copy + in‑place sort
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  
+  // Optional: verify the candidate
+  let count = 0;
+  for (const v of arr) if (v === candidate) count++;
+  if (count > Math.floor(arr.length / 2)) return candidate;
+
+  throw new Error('No majority element found');
+}
+console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
+console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
+console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
