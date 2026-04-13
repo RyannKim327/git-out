@@ -1,58 +1,77 @@
-/**
- * Returns the BWT of `s` as an object containing
- *   - last: the encoded string (last column of the sorted matrix)
- *   - index: the row number that holds the original string (0‑based)
- */
-function burrowsWheelerEncode(s: string): { last: string; index: number } {
-  const n = s.length;
-  // Build every rotation: slice(s, i) + slice(s, 0, i)
-  const rotations = Array.from({ length: n }, (_, i) =>
-    s.slice(i) + s.slice(0, i)
-  );
+// stack.ts
+export class Stack<T> {
+  // The underlying storage.
+  private readonly items: T[] = [];
 
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Extract last column and find original string's row
-  let lastCol = "";
-  let origIndex = -1;
-  for (let r = 0; r < n; r++) {
-    const row = rotations[r];
-    lastCol += row[row.length - 1];
-    if (row === s) origIndex = r;
-  }
-  return { last: lastCol, index: origIndex };
-}
-const { last, index } = burrowsWheelerEncode("BANANA");
-// last  => "ANNBAA"
-// index => 3   // 0‑based, the fourth row is "BANANA"
-/**
- * Inverse of the BWT.  Given the last column (`last`) and the original
- * string's row index (`index`), reconstruct the original string.
- */
-function burrowsWheelerDecode(last: string, index: number): string {
-  const n = last.length;
-  const first = [...last].sort();          // First column is sorted last
-  const table: string[] = Array(n).fill(""); // Working table of rows
-
-  // Repeatedly prepend last‑column chars to the table rows
-  for (let step = 0; step < n; step++) {
-    // Prepend each char of last to the corresponding row
-    for (let i = 0; i < n; i++) {
-      table[i] = last[i] + table[i];
-    }
-    // Re‑sort the table – now the first column matches `first`
-    table.sort();
+  /** Add an item onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  // The row at the original index is the decoded string
-  return table[index];
-}
-const original = burrowsWheelerDecode("ANNBAA", 3);
-console.log(original); // "BANANA"
-const input = "MNEMONIC";
-const { last, index } = burrowsWheelerEncode(input);
-const restored = burrowsWheelerDecode(last, index);
+  /** Remove and return the item from the top of the stack. */
+  pop(): T | undefined {
+    return this.items.pop(); // undefined if the stack is empty
+  }
 
-console.log(last, index);   // e.g., "NOIACEMM 4"
-console.log(restored === input); // true
+  /** Peek at the top item without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Check whether the stack contains no items. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Return the number of items in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clears the stack so it’s empty. */
+  clear(): void {
+    this.items.length = 0;
+  }
+}
+import { Stack } from './stack';
+
+const numStack = new Stack<number>();
+
+numStack.push(10);
+numStack.push(20);
+numStack.push(30);
+
+console.log(numStack.peek()); // 30
+console.log(numStack.pop());  // 30
+console.log(numStack.size()); // 2
+console.log(numStack.isEmpty()); // false
+
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class MaxStack<T extends number> {
+  private readonly stack: T[] = [];
+  private readonly maxStack: T[] = [];
+
+  push(item: T): void {
+    this.stack.push(item);
+    const currentMax = this.maxStack.length === 0
+      ? item
+      : Math.max(item, this.maxStack[this.maxStack.length - 1]);
+    this.maxStack.push(currentMax);
+  }
+
+  pop(): T | undefined {
+    this.maxStack.pop();
+    return this.stack.pop();
+  }
+
+  peek(): T | undefined {
+    return this.stack[this.stack.length - 1];
+  }
+
+  max(): T | undefined {
+    return this.maxStack[this.maxStack.length - 1];
+  }
+
+  // …plus isEmpty, size, clear, etc.
+}
