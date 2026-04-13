@@ -1,102 +1,47 @@
-export interface ListNode<T = number> {
-  value: T;
-  next?: ListNode<T>;
-}
-export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;          // empty list is a palindrome
+/**
+ * Does `a` consist of exactly the same letters as `b`, in any order?
+ * The comparison is case‑insensitive and ignores whitespace.
+ *
+ * @param a – first candidate
+ * @param b – second candidate
+ * @returns true if the strings are anagrams, otherwise false
+ */
+export function isAnagram(a: string, b: string): boolean {
+  // Normalise the strings: lowercase, trim, remove spaces.
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '');
+  const strA = normalize(a);
+  const strB = normalize(b);
 
-  const stack: T[] = [];
-  let cur = head;
+  // Quick rejection: different length → impossible to be an anagram.
+  if (strA.length !== strB.length) return false;
 
-  // Stage 1 – push all values onto the stack
-  while (cur) {
-    stack.push(cur.value);
-    cur = cur.next;
+  // === Approach 1: sorting ===
+  // const sortedA = strA.split('').sort().join('');
+  // const sortedB = strB.split('').sort().join('');
+  // return sortedA === sortedB;
+
+  // === Approach 2: frequency counting ===
+  const freq: Record<string, number> = {};
+
+  // Count characters of the first string.
+  for (const ch of strA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  // Stage 2 – iterate a second time, comparing against popped values
-  cur = head;
-  while (cur) {
-    const top = stack.pop() as T; // stack can't be empty here
-    if (cur.value !== top) return false;
-    cur = cur.next;
-  }
-
-  return true;
-}
-export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;
-
-  // 1️⃣ Find middle (slow will stop at mid‑point)
-  let slow = head;
-  let fast = head;
-  let prevSlow: ListNode<T> | undefined = undefined;
-
-  while (fast && fast.next) {
-    fast = fast.next.next;
-    prevSlow = slow;
-    slow = slow.next;
-  }
-
-  // 2️⃣ For odd length lists, skip the middle element
-  if (fast) {
-    slow = slow.next;
-  }
-
-  // 3️⃣ Reverse the second half starting at `slow`
-  let secondHalf = reverseLinkedList(slow);
-
-  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
-  let p1 = head;
-  let p2 = secondHalf;
-  while (p2) {           // second half can be shorter or equal
-    if (p1.value !== p2.value) {
-      // Optional: undo reversal here if you want to keep list unchanged
+  // Subtract counts using characters from the second string.
+  for (const ch of strB) {
+    if (!freq[ch]) {
+      // Either the character never appeared in `a`
+      // or its count has already been zeroed out.
       return false;
     }
-    p1 = p1.next!;
-    p2 = p2.next!;
+    freq[ch]!--;          // `!` tells the compiler this is defined.
+    if (freq[ch] === 0) delete freq[ch]; // keep the map small.
   }
 
-  // Optional: restore first half? (skip for brevity)
-  return true;
+  // If all counts have cancelled out, the map should be empty.
+  return Object.keys(freq).length === 0;
 }
-
-/**
- * Reverse a linked list in place and return the new head.
- */
-function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  let prev: ListNode<T> | undefined = undefined;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev;
-}
-function build(list: number[]): ListNode | undefined {
-  let head: ListNode | undefined;
-  let tail: ListNode | undefined;
-
-  for (const val of list) {
-    const node: ListNode = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
-    }
-  }
-  return head;
-}
-
-const evenPal = build([1, 2, 2, 1]);
-const oddPal = build([1, 3, 3, 1]);
-const nonPal = build([1, 2, 3]);
-
-console.log(isPalindromeStack(evenPal)); // true
-console.log(isPalindromeLinear(oddPal)); // true
-console.log(isPalindromeLinear(nonPal)); // false
+console.log(isAnagram('Listen', 'Silent'));   // true
+console.log(isAnagram('Triangle', 'Integral')); // true
+console.log(isAnagram('Apple', 'Pabble'));      // false
