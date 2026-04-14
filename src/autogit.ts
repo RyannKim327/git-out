@@ -1,23 +1,25 @@
-// 1️⃣  Node definition
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Returns the maximum sum of any contiguous sub‑array of `arr`.
+ * Works for arrays that contain only numbers.
+ *
+ * @param arr - array of numbers (can be empty)
+ * @returns maximum sub‑array sum (for an empty array returns 0)
+ */
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) return 0;
+
+  let maxEndingHere = arr[0];   // best sum ending at current index
+  let maxSoFar = arr[0];        // best sum found so far
+
+  for (let i = 1; i < arr.length; i++) {
+    // Either extend the previous sub‑array or start a new one at i
+    maxEndingHere = Math.max(arr[i], maxEndingHere + arr[i]);
+
+    // Update the best overall sum
+    maxSoFar = Math.max(maxSoFar, maxEndingHere);
+  }
+
+  return maxSoFar;
 }
-
-// 2️⃣  Recursive depth counter
-function maxDepth<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;                      // base case – empty subtree
-
-  // compute depth of each side, pick the larger one, then add 1 for the current node
-  const leftHeight  = maxDepth(root.left);
-  const rightHeight = maxDepth(root.right);
-  return Math.max(leftHeight, rightHeight) + 1;
-}
-const root: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(maxDepth(root));  // 3
+const nums = [ -2, 1, -3, 4, -1, 2, 1, -5, 4 ];
+console.log(maxSubArraySum(nums));  // 6
