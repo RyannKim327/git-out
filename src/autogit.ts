@@ -1,100 +1,78 @@
-/**
- * Simple graph type
- */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
-
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
+/* exampleApi.ts
  *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
+ * Demonstrates a tiny, typed fetch of a JSON Placeholder user
+ * using Axios – the most common promise‑based HTTP library.
+ *
+ * Prereqs:
+ *   npm install axios
+ *   (optionally) npm i -D ts-node @types/node @types/axios
  */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
 
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
+import axios from 'axios';
 
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
-
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
-  }
-
-  return null;   // no connection
+/**
+ * Represent a user from JSON Placeholder.
+ */
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: {
+      lat: string;
+      lng: string;
+    };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
 }
 
 /**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
+ * GET /users/:id – returns a single user.
+ * @param id - numeric user id (1‑10 for the public API)
+ * @returns a Promise that resolves to a User.
  */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
+async function getUser(id: number): Promise<User> {
+  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
 
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
+  // Axios automatically parses JSON so we get a typed response:
+  const { data } = await axios.get<User>(url);
 
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
-
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
-      }
-
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
-    }
-  }
-
-  return null;
+  return data;
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+
+/**
+ * Main entry point: fetch and pretty‑print a user.
+ */
+async function main() {
+  try {
+    const user = await getUser(3); // pick any id 1‑10
+    console.log('User fetched 👇');
+    console.dir(user, { depth: null, colors: true });
+  } catch (err) {
+    console.error('Error fetching user:', err);
+  }
+}
+
+// Invoke main if this script is run directly
+if (require.main === module) {
+  main();
+}
+# install deps
+npm install axios
+# run via ts-node
+npx ts-node exampleApi.ts
+
+# or compile to JS first
+npx tsc exampleApi.ts
+node exampleApi.js
