@@ -1,40 +1,28 @@
-class TreeNode {
-  constructor(
-    public val: number,
-    public left: TreeNode | null = null,
-    public right: TreeNode | null = null
-  ) {}
-}
-function sumTree(root: TreeNode | null): number {
-  if (!root) return 0;          // nothing to add
-  const leftSum = sumTree(root.left);
-  const rightSum = sumTree(root.right);
-  return root.val + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let sum = 0;
-  const stack: Array<TreeNode> = [root];
+/**
+ * Sorts an array of numbers (or any type that can be compared) in place.
+ * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
+ */
+export function insertionSort<T>(arr: T[]): void {
+  // Nothing to do for empty or single‑element arrays
+  if (arr.length < 2) return;
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+  // Iterate over the array starting at index 1 because the sub‑array
+  // arr[0..i‑1] is already considered sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // Shift elements that are greater than the key one position to the right.
+    // This makes space for the key to sit in its correct sorted spot.
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place the key after the element just smaller than it
+    arr[j + 1] = key;
   }
-
-  return sum;
 }
-const root = new TreeNode(5,
-  new TreeNode(3,
-    new TreeNode(2),
-    new TreeNode(4)
-  ),
-  new TreeNode(8,
-    null,
-    new TreeNode(9)
-  )
-);
-
-console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
-console.log(sumTreeIterative(root)); // 31
+const nums = [5, 2, 9, 1, 5, 6];
+insertionSort(nums);
+console.log(nums); // [1, 2, 5, 5, 6, 9]
