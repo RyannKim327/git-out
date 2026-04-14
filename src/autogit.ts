@@ -1,35 +1,25 @@
-// A very lightweight node definition –
-export class ListNode {
-  constructor(public val: number, public next: ListNode | null = null) {}
-}
+function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
+  if (arr.length < 2) return true;           // One or no elements is always sorted
 
-/**
- * Returns the middle node of a linked list.
- * If there are an even number of nodes, it returns the *first* of the two middle nodes.
- * (Adjust `result` if you prefer the second middle node instead.)
- */
-export function findMiddle(head: ListNode | null): ListNode | null {
-  if (!head) return null;
+  // Default comparison is the "<=" operator for primitives
+  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
 
-  let slow = head;          // moves one step at a time
-  let fast = head;          // moves two steps at a time
-
-  // Advance until fast reaches the end
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is less than the previous one, it’s not sorted
+    if (cmp(arr[i - 1], arr[i]) > 0) return false;
   }
-
-  return slow;   // `slow` rests right on the middle (or first middle)
+  return true;
 }
-// Helper to build a list quickly
-const build = (values: number[]) =>
-  values.reduceRight((next, v) => new ListNode(v, next), null as any);
+console.log(isSortedAsc([1, 2, 3, 4]));  // true
+console.log(isSortedAsc([1, 3, 2, 5]));  // false
+interface Person { age: number; name: string }
 
-// 1 → 2 → 3 → 4 → 5   → middle is 3
-const list1 = build([1, 2, 3, 4, 5]);
-console.log(findMiddle(list1)!.val); // 3
+const people = [
+  { age: 22, name: "Alice" },
+  { age: 29, name: "Bob" },
+  { age: 30, name: "Carol" }
+];
 
-// 1 → 2 → 3 → 4        → middle returned is 2
-const list2 = build([1, 2, 3, 4]);
-console.log(findMiddle(list2)!.val); // 2
+console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
+const isSortedAscShortcut = (arr: number[]): boolean =>
+  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
