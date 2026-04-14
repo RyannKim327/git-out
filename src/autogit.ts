@@ -1,32 +1,38 @@
-function factorialRec(n: number): number {
-  if (n < 0) throw new Error("negatives are not allowed");
-  return n <= 1 ? 1 : n * factorialRec(n - 1);
-}
-function factorialIter(n: number): number {
-  if (n < 0) throw new Error("negatives are not allowed");
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error("negatives are not allowed");
-  let result: bigint = 1n;
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
-  }
-  return result;
-}
-const memo = new Map<number, bigint>();
+/**
+ * Performs an interpolation search on a strictly‑increasing array of numbers.
+ * @param arr   The sorted array (ascending).  Values must be finite numbers.
+ * @param key   The value you’re looking for.
+ * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-function factorialCached(n: number): bigint {
-  if (n < 0) throw new Error("negatives are not allowed");
-  if (memo.has(n)) return memo.get(n)!;
+  let low = 0;
+  let high = arr.length - 1;
 
-  const result = n <= 1 ? 1n : BigInt(n) * factorialCached(n - 1);
-  memo.set(n, result);
-  return result;
+  // If the target is outside the range, we can bail early.
+  if (key < arr[low] || key > arr[high]) return -1;
+
+  while (low <= high && arr[low] !== arr[high]) {
+    // Estimate the likely position: a weighted average.
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    // Safety: clamp to array bounds.
+    if (pos < low)   return -1;
+    if (pos > high)  return -1;
+
+    const val = arr[pos];
+
+    if (val === key) return pos;
+    if (val < key)   low = pos + 1;
+    else             high = pos - 1;
+  }
+
+  // Final check if low might still hold the key.
+  return (arr[low] === key) ? low : -1;
 }
-console.log(factorialIter(5));      // 120
-console.log(factorialBigInt(50));   // 30414093201713378043612608166064768844377641568960512000000000000n
+const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+const idx = interpolationSearch(nums, 18); // 5
+console.log(idx); // prints 5
