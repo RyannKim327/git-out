@@ -1,67 +1,18 @@
-type Node = {
-  id:          string;   // whatever uniquely identifies a node
-  children?:   Node[];   // adjacency list – change to whatever your graph uses
-};
+const arr = [1, 2, 3, 4, 5];
 
-interface StackItem {
-  node:  Node;
-  depth: number;
-}
+// In‑place reversal
+arr.reverse();          // arr becomes [5, 4, 3, 2, 1]
 
-/**
- * Iterative DFS that stops at a given depth limit.
- * Returns true if the target is found, otherwise false.
- */
-function depthLimitedDFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const stack: StackItem[] = [{ node: root, depth: 0 }];
+// If you need a new array instead of mutating the original
+const reversed = [...arr].reverse();   // [5, 4, 3, 2, 1]
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;      // pop from the end
-
-    if (node.id === targetId) return true;     // hit
-
-    if (depth < maxDepth) {                   // still room to descend
-      const children = node.children ?? [];
-      // push children in reverse order if you want particular visit order
-      for (let i = children.length - 1; i >= 0; i--) {
-        stack.push({ node: children[i], depth: depth + 1 });
-      }
-    }
+// Or do it manually (e.g., for learning or if you want a custom logic)
+function reverse<T>(src: T[]): T[] {
+  const out: T[] = [];
+  for (let i = src.length - 1; i >= 0; i--) {
+    out.push(src[i]);
   }
-  return false;
+  return out;
 }
-function depthLimitedBFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const queue: StackItem[] = [{ node: root, depth: 0 }];
 
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;  // shift from the front
-
-    if (node.id === targetId) return true;
-
-    if (depth < maxDepth) {
-      for (const child of node.children ?? []) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
-    }
-  }
-  return false;
-}
-const tree: Node = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
-    { id: 'b', children: [{ id: 'e' }] }
-  ]
-};
-
-console.log(depthLimitedDFS(tree, 'd', 2)); // true
-console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
-console.log(depthLimitedBFS(tree, 'e', 1)); // true
+const manualReversed = reverse([10, 20, 30]); // [30, 20, 10]
