@@ -1,23 +1,41 @@
-function firstRepeatedChar(s: string): string | undefined {
-  // Use a set to record characters we've already seen.
-  const seen = new Set<string>();
+// Basic node definition
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
+}
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      // This is the first time we hit a duplicate.
-      return ch;
-    }
-    seen.add(ch);
+/**
+ * Detect a cycle in a singly linked list.
+ * @param head The start node of the list (or null for an empty list).
+ * @returns true if a cycle exists, otherwise false.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false;          // Empty list → no cycle
+
+  let slow = head;                  // One step per loop
+  let fast = head.next;             // Two steps per loop
+
+  while (fast && fast.next) {
+    if (slow === fast) return true; // Hopping together → cycle
+
+    slow = slow.next!;              // safe because slow can't be null here
+    fast = fast.next.next!;
   }
 
-  // No duplicates found.
-  return undefined;
+  return false;                     // Reached end → no cycle
 }
+// acyclic list 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+console.log(hasCycle(a)); // false
 
-// Example usage
-console.log(firstRepeatedChar("hello"));    // → "l"
-console.log(firstRepeatedChar("abcdef"));   // → undefined
-console.log(firstRepeatedChar("aabbcc"));   // → "a"
-function firstRepeatedCharImmutable(s: string): string | undefined {
-  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
-}
+// cyclic list 1 → 2 → 3 → 1 …
+const d = new ListNode(1);
+const e = new ListNode(2);
+const f = new ListNode(3);
+d.next = e; e.next = f; f.next = d;
+console.log(hasCycle(d)); // true
