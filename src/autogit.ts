@@ -1,48 +1,31 @@
-// random-joke.ts
-import axios from "axios";
+const original = [1, 2, 3, 4, 5];
 
-/**
- * The shape of the JSON that the Joke API gives us.
- */
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
+// Suppose you want to drop all 3’s (or just the first one you hit)
+const removed = original.filter(v => v !== 3);
+console.log(removed); // [1, 2, 4, 5]
+const idx = original.indexOf(3);
+const removedFirst =
+  idx === -1 ? original : [...original.slice(0, idx), ...original.slice(idx + 1)];
+const arr = [1, 2, 3, 4, 5];
+const index = arr.indexOf(3);
+if (index !== -1) {
+  arr.splice(index, 1); // removes 1 element at that index
+}
+console.log(arr); // [1, 2, 4, 5]
+const original = ['a', 'b', 'c', 'd'];
+const removeAt = 2; // remove the element at position 2 ("c")
+const newArr = [...original.slice(0, removeAt), ...original.slice(removeAt + 1)];
+console.log(newArr); // ['a', 'b', 'd']
+const arr = ['a', 'b', 'c', 'd'];
+arr.splice(2, 1); // remove the element at index 2
+console.log(arr); // ['a', 'b', 'd']
+const items = ['red', 'green', 'blue', 'green'];
+const toRemove = 'green';
+const result = Array.from(new Set(items.filter(v => v !== toRemove)));
+function removeByValue<T>(arr: readonly T[], value: T): T[] {
+  return arr.filter(v => !Object.is(v, value));
 }
 
-/**
- * Fetch a single random joke.
- */
-const fetchRandomJoke = async (): Promise<Joke> => {
-  // The API returns an array of jokes even though we only ask for one – happy accidents.
-  const url = "https://official-joke-api.appspot.com/jokes/random";
-  const response = await axios.get<Joke>(url);
-  return response.data;
-};
-
-/**
- * Pretty‑print a joke to the console.
- */
-const printJoke = (joke: Joke) => {
-  console.log(`💡 ${joke.type.toUpperCase()}`);
-  console.log(`   ${joke.setup}`);
-  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
-};
-
-/**
- * Simple wrapper that ties everything together.
- */
-const main = async () => {
-  try {
-    const joke = await fetchRandomJoke();
-    printJoke(joke);
-  } catch (err) {
-    // Axios errors contain a `response` field with the server reply.
-    // If you’re debugging, you can inspect `err.response?.data` for the text.
-    console.error("🔴 Something went wrong retrieving a joke:", err);
-  }
-};
-
-// Run the little demo when the file is executed.
-main();
+// Usage
+const numbers = [1, 2, 3, 3, 4];
+const cleaned = removeByValue(numbers, 3); // [1, 2, 4]
