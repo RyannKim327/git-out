@@ -1,38 +1,32 @@
-/**
- * Return the same sentence but with the words in reverse order.
- *
- * @param sentence - Any string you want to flip.
- * @returns A new string with the word order reversed.
- */
-export function reverseWords(sentence: string): string {
-  return sentence
-    .trim()                      // Remove leading/trailing spaces
-    .split(/\s+/)                // Split on one or more whitespace characters
-    .reverse()                   // Reverse the word array
-    .join(' ');                  // Re‑join with a single space
+// Node for a singly‑linked list
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-/* Example usage */
-const original = "The quick brown   fox jumps over the lazy dog";
-console.log(reverseWords(original));
-// → "dog lazy the over jumps fox brown quick The"
-export function reverseWordsWithSpacing(str: string): string {
-  const parts = str.match(/(\S+|\s+)/g) ?? []; // captures words and whitespace chunks
-  let words: string[] = [];
-  const wordTokens: string[] = [];
+/**
+ * Returns the first node that appears in both lists,
+ * or null if they don’t intersect.
+ */
+function findIntersection<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
 
-  // Extract words while preserving the positions of the separators
-  for (const part of parts) {
-    if (part.trim() === '') {
-      words.push(part); // this part is whitespace
-    } else {
-      wordTokens.push(part); // capture the word
-    }
+  // Step 1: remember every node of list A
+  for (let curr = headA; curr; curr = curr.next) {
+    seen.add(curr);
   }
 
-  // Reverse only the words, then reconstruct
-  const reversedWords = wordTokens.reverse();
-  let i = 0;
-  const result = parts.map(p => (p.trim() === '' ? p : reversedWords[i++])).join('');
-  return result;
+  // Step 2: walk list B until we hit a node already seen
+  for (let curr = headB; curr; curr = curr.next) {
+    if (seen.has(curr)) return curr; // intersection found
+  }
+  return null; // no intersection
 }
+const shared = new ListNode(8, new ListNode(9));
+
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
+
+console.log(findIntersection(a1, b1)?.val); // 8
