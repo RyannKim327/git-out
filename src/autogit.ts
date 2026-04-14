@@ -1,25 +1,30 @@
-function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
-  if (arr.length < 2) return true;           // One or no elements is always sorted
+// src/cronJob.ts
+import * as cron from 'node-cron';
+import { exec } from 'child_process';
 
-  // Default comparison is the "<=" operator for primitives
-  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
-
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is less than the previous one, it’s not sorted
-    if (cmp(arr[i - 1], arr[i]) > 0) return false;
-  }
-  return true;
+// Simple helper that returns a random joke (you can replace it with anything)
+function getRandomJoke(): string {
+  const jokes = [
+    'Why did the type-checker break up with the compiler? Too many scary `unknowns`.',
+    'I asked my code to stop being a bug. It said “I don’t want to be a feature in a future release.”',
+    'Python gave Java a pep talk and said: “You can do anything you set your mind to – what about you?”',
+  ];
+  return jokes[Math.floor(Math.random() * jokes.length)];
 }
-console.log(isSortedAsc([1, 2, 3, 4]));  // true
-console.log(isSortedAsc([1, 3, 2, 5]));  // false
-interface Person { age: number; name: string }
 
-const people = [
-  { age: 22, name: "Alice" },
-  { age: 29, name: "Bob" },
-  { age: 30, name: "Carol" }
-];
+// This job:
+cron.schedule('* * * * *', () => {          // Runs every minute
+  const joke = getRandomJoke();
+  console.log(`[${new Date().toISOString()}] - Joke: ${joke}`);
 
-console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
-const isSortedAscShortcut = (arr: number[]): boolean =>
-  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+  // Example of how you might trigger a system command using Cron
+  exec('echo "Cron job ran successfully"', (err, stdout, stderr) => {
+    if (err) {
+      console.warn(`Error while executing command: ${err.message}`);
+      return;
+    }
+    console.log(`Command output: ${stdout.trim()}`);
+  });
+});
+
+console.log('🚀 Cron job scheduler started. Press Ctrl+C to exit.');
