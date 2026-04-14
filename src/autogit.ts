@@ -1,100 +1,39 @@
 /**
- * Simple graph type
- */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
-
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
+ * Return true if `a` and `b` contain the same letters in any order.
  *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
+ * The function is case‑insensitive and skips any non‑alphanumeric
+ * characters (e.g. spaces, punctuation). If you want stricter rules,
+ * just comment out the cleanup lines.
  */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
+function areAnagrams(a: string, b: string): boolean {
+  // 1️⃣ Normalise: lowercase, strip non‑alphanumerics
+  const clean = (s: string) =>
+    s.replace(/[^a-z0-9]/gi, "").toLowerCase();
 
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
+  const cleanA = clean(a);
+  const cleanB = clean(b);
 
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
+  // 2️⃣ Quick length check – avoids extra work
+  if (cleanA.length !== cleanB.length) return false;
 
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
+  // 3️⃣ Count frequency of each character in `cleanA`
+  const freq: Record<string, number> = {};
+
+  for (const ch of cleanA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  return null;   // no connection
-}
-
-/**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
- */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
-
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
-
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
-
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
-      }
-
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
-    }
+  // 4️⃣ Decrement using characters from `cleanB`
+  for (const ch of cleanB) {
+    if (!freq[ch]) return false; // missing char or too many of it
+    freq[ch]!--;                  // (non‑null assertion OK here)
   }
 
-  return null;
+  // 5️⃣ All frequencies should be zero now
+  return Object.values(freq).every(v => v === 0);
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+console.log(areAnagrams("listen", "silent"));          // true
+console.log(areAnagrams("Triangle", "Integral"));      // true
+console.log(areAnagrams("Hello!", "oellH"));           // true  (ignores punctuation)
+console.log(areAnagrams("Square", "Quears  "));        // true  (ignores spaces)
+console.log(areAnagrams("Hello", "world"));            // false
