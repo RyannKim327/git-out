@@ -1,20 +1,38 @@
 /**
- * Returns an integer between `min` and `max` (both inclusive).
- *
- * @param min - The smallest value you want (inclusive)
- * @param max - The largest value you want (inclusive)
+ * Performs an interpolation search on a strictly‑increasing array of numbers.
+ * @param arr   The sorted array (ascending).  Values must be finite numbers.
+ * @param key   The value you’re looking for.
+ * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
  */
-export function randomInt(min: number, max: number): number {
-  // Guard against accidental inverted bounds
-  if (min > max) [min, max] = [max, min];
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // `Math.random()` gives us a value in the half‑open interval [0, 1).
-  // Multiply to widen the range, add 1 to make the bound inclusive,
-  // then floor to truncate to an integer.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+  let low = 0;
+  let high = arr.length - 1;
+
+  // If the target is outside the range, we can bail early.
+  if (key < arr[low] || key > arr[high]) return -1;
+
+  while (low <= high && arr[low] !== arr[high]) {
+    // Estimate the likely position: a weighted average.
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    // Safety: clamp to array bounds.
+    if (pos < low)   return -1;
+    if (pos > high)  return -1;
+
+    const val = arr[pos];
+
+    if (val === key) return pos;
+    if (val < key)   low = pos + 1;
+    else             high = pos - 1;
+  }
+
+  // Final check if low might still hold the key.
+  return (arr[low] === key) ? low : -1;
 }
-const roll = randomInt(1, 6);   // a fair d6 roll
-console.log(roll);              // 1–6, every call varies
-export function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
+const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+const idx = interpolationSearch(nums, 18); // 5
+console.log(idx); // prints 5
