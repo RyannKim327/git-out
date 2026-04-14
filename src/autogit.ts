@@ -1,35 +1,48 @@
-// A very lightweight node definition –
-export class ListNode {
-  constructor(public val: number, public next: ListNode | null = null) {}
-}
-
 /**
- * Returns the middle node of a linked list.
- * If there are an even number of nodes, it returns the *first* of the two middle nodes.
- * (Adjust `result` if you prefer the second middle node instead.)
+ * In‑place heap sort for an array of numbers.
+ *
+ * Complexity:  O(n log n) time, O(1) additional space
  */
-export function findMiddle(head: ListNode | null): ListNode | null {
-  if (!head) return null;
+export function heapSort(arr: number[]): void {
+  const n = arr.length;
 
-  let slow = head;          // moves one step at a time
-  let fast = head;          // moves two steps at a time
-
-  // Advance until fast reaches the end
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  // 1. Build a max‑heap
+  for (let i = (n - 2) >> 1; i >= 0; i--) {
+    heapify(arr, i, n);
   }
 
-  return slow;   // `slow` rests right on the middle (or first middle)
+  // 2. Extract elements one by one
+  for (let end = n - 1; end > 0; end--) {
+    swap(arr, 0, end);         // move current max to its final position
+    heapify(arr, 0, end);      // restore heap property on the reduced heap
+  }
 }
-// Helper to build a list quickly
-const build = (values: number[]) =>
-  values.reduceRight((next, v) => new ListNode(v, next), null as any);
 
-// 1 → 2 → 3 → 4 → 5   → middle is 3
-const list1 = build([1, 2, 3, 4, 5]);
-console.log(findMiddle(list1)!.val); // 3
+/** Ensure the subtree rooted at 'rootIdx' is a max‑heap up to 'size'. */
+function heapify(arr: number[], rootIdx: number, size: number): void {
+  let largest = rootIdx;
+  const left = (rootIdx << 1) + 1;   // 2 * rootIdx + 1
+  const right = (rootIdx << 1) + 2;  // 2 * rootIdx + 2
 
-// 1 → 2 → 3 → 4        → middle returned is 2
-const list2 = build([1, 2, 3, 4]);
-console.log(findMiddle(list2)!.val); // 2
+  if (left < size && arr[left] > arr[largest]) {
+    largest = left;
+  }
+  if (right < size && arr[right] > arr[largest]) {
+    largest = right;
+  }
+
+  if (largest !== rootIdx) {
+    swap(arr, rootIdx, largest);
+    heapify(arr, largest, size); // continue percolating down
+  }
+}
+
+/** Swap two elements in the array. */
+function swap(arr: number[], i: number, j: number): void {
+  const temp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = temp;
+}
+const data = [3, 1, 4, 1, 5, 9, 2, 6, 5];
+heapSort(data);
+console.log(data); // [1, 1, 2, 3, 4, 5, 5, 6, 9]
