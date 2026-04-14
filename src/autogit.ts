@@ -1,52 +1,56 @@
-// 1.  Define a node type ----------------------------------------------------
-type TreeNode<T = number> = {
-  val: T
-  left?: TreeNode<T>
-  right?: TreeNode<T>
-}
+// 1️⃣  Define a compare function signature
+type Comparator<T> = (a: T, b: T) => number;
 
-// 2.  Recursive leaf‑counter -----------------------------------------------
-function countLeaves<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0                            // empty subtree
-  if (!root.left && !root.right) return 1        // leaf reached
-  // otherwise sum the counts from both sides
-  return countLeaves(root.left) + countLeaves(root.right)
-}
+// 2️⃣  Merge helper – combines two sorted halves
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-// 3.  Iterative version (works the same but uses an explicit stack) --------
-function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0
-
-  let count = 0
-  const stack: Array<TreeNode<T>> = [root]
-
-  while (stack.length) {
-    const node = stack.pop()!
-    const { left, right } = node
-
-    if (!left && !right) {
-      count++
-    } else {
-      if (right) stack.push(right)
-      if (left) stack.push(left)
+    while (i < left.length && j < right.length) {
+        // If left[i] <= right[j] according to cmp, push left[i]
+        if (cmp(left[i], right[j]) <= 0) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
     }
-  }
-  return count
+
+    // Append any leftovers
+    return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
-// 4.  Quick demo -------------------------------------------------------------
-const tree: TreeNode<number> = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4 },
-    right: { val: 5 }
-  },
-  right: {
-    val: 3,
-    right: { val: 6 }
-  }
-}
+// 3️⃣  The recursive merge‑sort function
+export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
+    // Default comparator for primitive types
+    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
 
-console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
-console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
+    // Base case: arrays of length 0 or 1 are already sorted
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const mid = Math.floor(arr.length / 2);
+    const left  = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    return merge(left, right, compare);
+}
+// Numbers
+const nums = [5, 2, 9, 1, 5, 6];
+const sortedNums = mergeSort(nums);
+// sortedNums === [1, 2, 5, 5, 6, 9]
+
+// Strings
+const words = ["banana", "apple", "cherry"];
+const sortedWords = mergeSort(words);
+// sortedWords === ["apple", "banana", "cherry"]
+
+// Custom objects (by age)
+type Person = { name: string; age: number };
+const people: Person[] = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob",   age: 35 },
+];
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// sortedByAge => Alice, John, Bob
