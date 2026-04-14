@@ -1,78 +1,35 @@
-/* exampleApi.ts
- *
- * Demonstrates a tiny, typed fetch of a JSON Placeholder user
- * using Axios – the most common promise‑based HTTP library.
- *
- * Prereqs:
- *   npm install axios
- *   (optionally) npm i -D ts-node @types/node @types/axios
- */
-
-import axios from 'axios';
-
-/**
- * Represent a user from JSON Placeholder.
- */
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: {
-      lat: string;
-      lng: string;
-    };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
+// A very lightweight node definition –
+export class ListNode {
+  constructor(public val: number, public next: ListNode | null = null) {}
 }
 
 /**
- * GET /users/:id – returns a single user.
- * @param id - numeric user id (1‑10 for the public API)
- * @returns a Promise that resolves to a User.
+ * Returns the middle node of a linked list.
+ * If there are an even number of nodes, it returns the *first* of the two middle nodes.
+ * (Adjust `result` if you prefer the second middle node instead.)
  */
-async function getUser(id: number): Promise<User> {
-  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
+export function findMiddle(head: ListNode | null): ListNode | null {
+  if (!head) return null;
 
-  // Axios automatically parses JSON so we get a typed response:
-  const { data } = await axios.get<User>(url);
+  let slow = head;          // moves one step at a time
+  let fast = head;          // moves two steps at a time
 
-  return data;
-}
-
-/**
- * Main entry point: fetch and pretty‑print a user.
- */
-async function main() {
-  try {
-    const user = await getUser(3); // pick any id 1‑10
-    console.log('User fetched 👇');
-    console.dir(user, { depth: null, colors: true });
-  } catch (err) {
-    console.error('Error fetching user:', err);
+  // Advance until fast reaches the end
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
-}
 
-// Invoke main if this script is run directly
-if (require.main === module) {
-  main();
+  return slow;   // `slow` rests right on the middle (or first middle)
 }
-# install deps
-npm install axios
-# run via ts-node
-npx ts-node exampleApi.ts
+// Helper to build a list quickly
+const build = (values: number[]) =>
+  values.reduceRight((next, v) => new ListNode(v, next), null as any);
 
-# or compile to JS first
-npx tsc exampleApi.ts
-node exampleApi.js
+// 1 → 2 → 3 → 4 → 5   → middle is 3
+const list1 = build([1, 2, 3, 4, 5]);
+console.log(findMiddle(list1)!.val); // 3
+
+// 1 → 2 → 3 → 4        → middle returned is 2
+const list2 = build([1, 2, 3, 4]);
+console.log(findMiddle(list2)!.val); // 2
