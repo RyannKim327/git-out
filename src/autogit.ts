@@ -1,38 +1,44 @@
-/**
- * Performs an interpolation search on a strictly‑increasing array of numbers.
- * @param arr   The sorted array (ascending).  Values must be finite numbers.
- * @param key   The value you’re looking for.
- * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
- */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+const original = [1, 2, 3, 2, 4, 1];
 
-  let low = 0;
-  let high = arr.length - 1;
+const withoutDups = Array.from(new Set(original)); // [1, 2, 3, 4]
+const arr = [
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
+  { id: 1, name: 'A' }, // duplicate by id
+];
 
-  // If the target is outside the range, we can bail early.
-  if (key < arr[low] || key > arr[high]) return -1;
+const seen = new Set<number>();
+const unique = arr.filter(item => {
+  const key = item.id;                 // pick what defines uniqueness
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+// [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
+const arr = [
+  { id: 'x', data: 10 },
+  { id: 'y', data: 20 },
+  { id: 'x', data: 30 }, // later duplicate
+];
 
-  while (low <= high && arr[low] !== arr[high]) {
-    // Estimate the likely position: a weighted average.
-    const pos = low + Math.floor(
-      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-    );
-
-    // Safety: clamp to array bounds.
-    if (pos < low)   return -1;
-    if (pos > high)  return -1;
-
-    const val = arr[pos];
-
-    if (val === key) return pos;
-    if (val < key)   low = pos + 1;
-    else             high = pos - 1;
-  }
-
-  // Final check if low might still hold the key.
-  return (arr[low] === key) ? low : -1;
+const map = new Map<string, typeof arr[0]>();
+for (const item of arr) {
+  if (!map.has(item.id)) map.set(item.id, item);
 }
-const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
-const idx = interpolationSearch(nums, 18); // 5
-console.log(idx); // prints 5
+const withoutDups = Array.from(map.values()); // keeps the first 'x'
+function uniq<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+const nums = uniq([4, 5, 4, 6, 5]); // [4, 5, 6]
+const arr = [1, 2, 3, 2, 4];
+
+const unique = arr.reduce<T[]>((acc, cur) => {
+  if (!acc.includes(cur)) acc.push(cur);
+  return acc;
+}, []); // [1, 2, 3, 4]
+function dedupe<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+
+console.log(dedupe([1, 2, 2, 3])); // 1 2 3
+console.log(dedupe(['a', 'b', 'a'])); // a b
