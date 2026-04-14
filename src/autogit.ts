@@ -1,25 +1,24 @@
-function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
-  if (arr.length < 2) return true;           // One or no elements is always sorted
+const numbers: number[] = [3, 7, -2, 9, 5];
 
-  // Default comparison is the "<=" operator for primitives
-  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
+const max = Math.max(...numbers);
+console.log(max); // 9
+const max = numbers.length ? Math.max(...numbers) : undefined;
+const max = numbers.reduce((a, b) => (a > b ? a : b));
+console.log(max); // 9
+const {max, index} = numbers.reduce(
+  (acc, val, idx) =>
+    val > acc.max
+      ? {max: val, index: idx}
+      : acc,
+  {max: Number.NEGATIVE_INFINITY, index: -1}
+);
 
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is less than the previous one, it’s not sorted
-    if (cmp(arr[i - 1], arr[i]) > 0) return false;
-  }
-  return true;
+console.log(max, index); // 9 3
+function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
 }
-console.log(isSortedAsc([1, 2, 3, 4]));  // true
-console.log(isSortedAsc([1, 3, 2, 5]));  // false
-interface Person { age: number; name: string }
 
-const people = [
-  { age: 22, name: "Alice" },
-  { age: 29, name: "Bob" },
-  { age: 30, name: "Carol" }
-];
-
-console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
-const isSortedAscShortcut = (arr: number[]): boolean =>
-  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+// Example usage
+const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
+const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
