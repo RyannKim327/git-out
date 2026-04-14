@@ -1,24 +1,23 @@
-const numbers: number[] = [3, 7, -2, 9, 5];
-
-const max = Math.max(...numbers);
-console.log(max); // 9
-const max = numbers.length ? Math.max(...numbers) : undefined;
-const max = numbers.reduce((a, b) => (a > b ? a : b));
-console.log(max); // 9
-const {max, index} = numbers.reduce(
-  (acc, val, idx) =>
-    val > acc.max
-      ? {max: val, index: idx}
-      : acc,
-  {max: Number.NEGATIVE_INFINITY, index: -1}
-);
-
-console.log(max, index); // 9 3
-function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
+// 1️⃣  Node definition
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-// Example usage
-const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
-const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
+// 2️⃣  Recursive depth counter
+function maxDepth<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;                      // base case – empty subtree
+
+  // compute depth of each side, pick the larger one, then add 1 for the current node
+  const leftHeight  = maxDepth(root.left);
+  const rightHeight = maxDepth(root.right);
+  return Math.max(leftHeight, rightHeight) + 1;
+}
+const root: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
+
+console.log(maxDepth(root));  // 3
