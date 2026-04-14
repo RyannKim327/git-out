@@ -1,73 +1,48 @@
+// random-joke.ts
+import axios from "axios";
+
 /**
- * In‑place selection sort.
- *
- * @param arr     – The array you want sorted.
- * @param compare – Optional: a function that returns
- *                  a negative number if a < b,
- *                  zero if a == b,
- *                  and a positive number if a > b.
- *                  If omitted, the default < > comparison is used.
- *
- * @returns The sorted array (the same reference that was passed in).
+ * The shape of the JSON that the Joke API gives us.
  */
-export function selectionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  const defaultCompare = (a: T, b: T) => {
-    // Works for numbers and strings out of the box.
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  };
-
-  const cmp = compare ?? defaultCompare;
-
-  for (let fillPos = 0; fillPos < len - 1; ++fillPos) {
-    // Assume the current position holds the minimum.
-    let minIdx = fillPos;
-
-    // Scan the unsorted portion for a new minimum
-    for (let searchIdx = fillPos + 1; searchIdx < len; ++searchIdx) {
-      if (cmp(arr[searchIdx], arr[minIdx]) < 0) {
-        minIdx = searchIdx;
-      }
-    }
-
-    // Skip the swap if the minimum is already in place
-    if (minIdx !== fillPos) {
-      [arr[fillPos], arr[minIdx]] = [arr[minIdx], arr[fillPos]];
-    }
-  }
-
-  return arr;
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
-// Numbers – default ascending sort
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums)); // [11, 12, 22, 25, 64]
 
-// Strings – simple ascending sort
-console.log(selectionSort(['pear', 'apple', 'orange']));
-// ['apple', 'orange', 'pear']
+/**
+ * Fetch a single random joke.
+ */
+const fetchRandomJoke = async (): Promise<Joke> => {
+  // The API returns an array of jokes even though we only ask for one – happy accidents.
+  const url = "https://official-joke-api.appspot.com/jokes/random";
+  const response = await axios.get<Joke>(url);
+  return response.data;
+};
 
-// Custom order – descending
-const descending = (a: number, b: number) => b - a;
-console.log(selectionSort([1, 5, 3, 2], descending));
-// [5, 3, 2, 1]
+/**
+ * Pretty‑print a joke to the console.
+ */
+const printJoke = (joke: Joke) => {
+  console.log(`💡 ${joke.type.toUpperCase()}`);
+  console.log(`   ${joke.setup}`);
+  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
+};
 
-// Custom objects
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Ada',    age: 25 },
-  { name: 'Evan',   age: 32 },
-  { name: 'Liam',   age: 19 }
-];
+/**
+ * Simple wrapper that ties everything together.
+ */
+const main = async () => {
+  try {
+    const joke = await fetchRandomJoke();
+    printJoke(joke);
+  } catch (err) {
+    // Axios errors contain a `response` field with the server reply.
+    // If you’re debugging, you can inspect `err.response?.data` for the text.
+    console.error("🔴 Something went wrong retrieving a joke:", err);
+  }
+};
 
-const ageAsc = (p: Person, q: Person) => p.age - q.age;
-console.log(selectionSort(people, ageAsc));
-// [
-//   { name: 'Liam', age: 19 },
-//   { name: 'Ada',  age: 25 },
-//   { name: 'Evan', age: 32 }
-// ]
+// Run the little demo when the file is executed.
+main();
