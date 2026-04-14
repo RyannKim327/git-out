@@ -1,97 +1,52 @@
-class Queue<T> {
-  private items: T[] = [];
-  private start = 0;          // index of the front
-
-  push(item: T) {
-    this.items.push(item);
-  }
-
-  pop(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const item = this.items[this.start++];
-    // optional cleanup to keep array short
-    if (this.start > 100 && this.start * 2 > this.items.length) {
-      this.items = this.items.slice(this.start);
-      this.start = 0;
-    }
-    return item;
-  }
-
-  isEmpty() {
-    return this.start >= this.items.length;
-  }
+// 1.  Define a node type ----------------------------------------------------
+type TreeNode<T = number> = {
+  val: T
+  left?: TreeNode<T>
+  right?: TreeNode<T>
 }
-type Node = string | number | symbol;  // whatever shape you need
 
-/**
- * Breadth-First Search
- *
- * @param graph   adjacency list mapping each node to its neighbours
- * @param start   node from which to begin traversal
- * @param cb      optional callback executed for every visited node
- * @returns       an array of nodes in the order they were visited
- */
-function bfs<Node>(
-  graph: Map<Node, Node[]>, 
-  start: Node,
-  cb?: (node: Node) => void
-): Node[] {
-  const visited = new Set<Node>();
-  const queue = new Queue<Node>();
-  const order: Node[] = [];
+// 2.  Recursive leaf‑counter -----------------------------------------------
+function countLeaves<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0                            // empty subtree
+  if (!root.left && !root.right) return 1        // leaf reached
+  // otherwise sum the counts from both sides
+  return countLeaves(root.left) + countLeaves(root.right)
+}
 
-  queue.push(start);
-  visited.add(start);
+// 3.  Iterative version (works the same but uses an explicit stack) --------
+function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0
 
-  while (!queue.isEmpty()) {
-    const current = queue.pop()!;
-    order.push(current);
+  let count = 0
+  const stack: Array<TreeNode<T>> = [root]
 
-    // run user code if supplied
-    cb?.(current);
+  while (stack.length) {
+    const node = stack.pop()!
+    const { left, right } = node
 
-    const neighbours = graph.get(current) ?? [];
-    for (const neighbour of neighbours) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
+    if (!left && !right) {
+      count++
+    } else {
+      if (right) stack.push(right)
+      if (left) stack.push(left)
     }
   }
-
-  return order;
+  return count
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [6]],
-  [4, []],
-  [5, []],
-  [6, []]
-]);
 
-console.log(bfs(graph, 1)); // [1, 2, 3, 4, 5, 6]
-function bfsStop<T>(
-  graph: Map<T, T[]>,
-  start: T,
-  onVisit: (node: T) => boolean // true → stop
-) {
-  const visited = new Set<T>();
-  const queue = new Queue<T>();
-
-  queue.push(start);
-  visited.add(start);
-
-  while (!queue.isEmpty()) {
-    const cur = queue.pop()!;
-    if (onVisit(cur)) return cur;   // finished
-
-    for (const nxt of graph.get(cur) ?? []) {
-      if (!visited.has(nxt)) {
-        visited.add(nxt);
-        queue.push(nxt);
-      }
-    }
+// 4.  Quick demo -------------------------------------------------------------
+const tree: TreeNode<number> = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4 },
+    right: { val: 5 }
+  },
+  right: {
+    val: 3,
+    right: { val: 6 }
   }
-  return undefined;
 }
+
+console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
+console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
