@@ -1,25 +1,38 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array of `arr`.
- * Works for arrays that contain only numbers.
+ * Return the same sentence but with the words in reverse order.
  *
- * @param arr - array of numbers (can be empty)
- * @returns maximum sub‑array sum (for an empty array returns 0)
+ * @param sentence - Any string you want to flip.
+ * @returns A new string with the word order reversed.
  */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) return 0;
+export function reverseWords(sentence: string): string {
+  return sentence
+    .trim()                      // Remove leading/trailing spaces
+    .split(/\s+/)                // Split on one or more whitespace characters
+    .reverse()                   // Reverse the word array
+    .join(' ');                  // Re‑join with a single space
+}
 
-  let maxEndingHere = arr[0];   // best sum ending at current index
-  let maxSoFar = arr[0];        // best sum found so far
+/* Example usage */
+const original = "The quick brown   fox jumps over the lazy dog";
+console.log(reverseWords(original));
+// → "dog lazy the over jumps fox brown quick The"
+export function reverseWordsWithSpacing(str: string): string {
+  const parts = str.match(/(\S+|\s+)/g) ?? []; // captures words and whitespace chunks
+  let words: string[] = [];
+  const wordTokens: string[] = [];
 
-  for (let i = 1; i < arr.length; i++) {
-    // Either extend the previous sub‑array or start a new one at i
-    maxEndingHere = Math.max(arr[i], maxEndingHere + arr[i]);
-
-    // Update the best overall sum
-    maxSoFar = Math.max(maxSoFar, maxEndingHere);
+  // Extract words while preserving the positions of the separators
+  for (const part of parts) {
+    if (part.trim() === '') {
+      words.push(part); // this part is whitespace
+    } else {
+      wordTokens.push(part); // capture the word
+    }
   }
 
-  return maxSoFar;
+  // Reverse only the words, then reconstruct
+  const reversedWords = wordTokens.reverse();
+  let i = 0;
+  const result = parts.map(p => (p.trim() === '' ? p : reversedWords[i++])).join('');
+  return result;
 }
-const nums = [ -2, 1, -3, 4, -1, 2, 1, -5, 4 ];
-console.log(maxSubArraySum(nums));  // 6
