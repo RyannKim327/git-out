@@ -1,73 +1,72 @@
+// ---------------------------------------------------------------------------
+//  cron‑example.ts
+// ---------------------------------------------------------------------------
+
+// 1️⃣  Install the dependencies first (run once):
+//     npm install node-cron
+//
+// 2️⃣  If you’re compiling TypeScript with tsc, add the type definitions:
+//     npm install --save-dev @types/node-cron
+//
+// 3️⃣  Run this file with ts-node for instant feedback:
+//     npx ts-node cron‑example.ts
+//
+// ---------------------------------------------------------------------------
+
+import cron, { CronJob } from 'node-cron';
+
 /**
- * Returns the largest prime factor of a positive integer.
- * For values ≤ 1, it returns undefined (no prime factors).
+ * A tiny helper to show that the job really ran.
+ * You could replace this with whatever real work you need.
+ */
+const performScheduledWork = (): void => {
+  const now = new Date().toISOString();
+  console.log(`[${now}] The scheduled task has executed.`);
+};
+
+/**
+ * Create a CronJob that triggers every minute.
  *
- * Supports both number (IEEE‑754 double) and BigInt inputs.
+ * The cron expression '* * * * *' means:
+ *   ┌───────────── minute (0 - 59)
+ *   │ ┌───────────── hour (0 - 23)
+ *   │ │ ┌───────────── day of month (1 - 31)
+ *   │ │ │ ┌───────────── month (1 - 12)
+ *   │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+ *   │ │ │ │ │
+ *   │ │ │ │ │
+ *   * * * * *
+ *
+ * Feel free to tweak the expression to your own schedule.
  */
-function largestPrimeFactor(input: number | bigint): number | bigint | undefined {
-  // Normalise to BigInt for arbitrary‑size support
-  let n = typeof input === "bigint" ? input : BigInt(input);
-
-  if (n <= 1n) return undefined; // 0, 1, or negative values have no prime factors
-
-  let lastFactor: bigint = 1n;
-
-  // Handle factor 2 separately to allow skipping even numbers later
-  while (n % 2n === 0n) {
-    lastFactor = 2n;
-    n /= 2n;
-  }
-
-  // Now n is odd – we only need to test odd divisors
-  let divisor = 3n;
-  const limit = sqrtBigInt(n); // helper that returns floor(sqrt(n))
-
-  while (divisor <= limit && n !== 1n) {
-    while (n % divisor === 0n) {
-      lastFactor = divisor;
-      n /= divisor;
+const scheduledJob: CronJob = cron.schedule(
+  '* * * * *',
+  () => {
+    try {
+      performScheduledWork();
+    } catch (e) {
+      console.error('Unexpected error in cron job:', e);
     }
-    divisor += 2n;          // next odd candidate
+  },
+  {
+    scheduled: true,   // start automatically
+    timezone: 'UTC',   // use UTC by default; change if you need a different zone
   }
+);
 
-  // If anything remains, it's a prime larger than any we tested
-  if (n > 1n) lastFactor = n;
+// Optional: if you want to stop the job after, say, 5 executions
+let counter = 0;
+scheduledJob.setTimeZone('UTC'); // ensures time zone consistency
 
-  // Return a number when possible for convenience
-  return lastFactor > Number.MAX_SAFE_INTEGER
-    ? lastFactor
-    : Number(lastFactor);
-}
+scheduledJob.on('scheduled', () => {
+  console.log('Cron job started.');
+});
 
-/* ---------- Helpers ---------- */
+scheduledJob.start(); // Explicitly start, even though scheduled:true
 
-/**
- * Integer square root of a BigInt (floor).
- * Uses binary search – good enough for moderate sizes.
- */
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) throw new Error("square root of negative");
-  if (value < 2n) return value;
-
-  let low = 1n;
-  let high = value >> 1n; // n/2 is an upper bound
-
-  while (low <= high) {
-    const mid = (low + high) >> 1n;
-    const midSq = mid * mid;
-
-    if (midSq === value) return mid;
-    if (midSq < value) low = mid + 1n;
-    else high = mid - 1n;
-  }
-
-  return high; // floor(sqrt(value))
-}
-
-/* ---------- Usage examples ---------- */
-
-console.log(largestPrimeFactor(13195));   // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
-console.log(largestPrimeFactor(997**3)); // 997
-console.log(largestPrimeFactor(15n));     // 5
-console.log(largestPrimeFactor(1));       // undefined
+// Clean exit after a short run (e.g., 5 minutes)
+setTimeout(() => {
+  console.log('Stopping cron job and exiting.');
+  scheduledJob.stop();
+  process.exit(0);
+}, 5 * 60 * 1000);
