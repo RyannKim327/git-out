@@ -1,39 +1,20 @@
-function lcs(a: string, b: string): string {
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  const dp: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+/**
+ * Returns an integer between `min` and `max` (both inclusive).
+ *
+ * @param min - The smallest value you want (inclusive)
+ * @param max - The largest value you want (inclusive)
+ */
+export function randomInt(min: number, max: number): number {
+  // Guard against accidental inverted bounds
+  if (min > max) [min, max] = [max, min];
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Re‑construct the subsequence
-  let i = rows - 1, j = cols - 1;
-  const res: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      res.push(a[i - 1]);          // same character in both strings
-      i--; j--;                    // move diagonally
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                          // move up
-    } else {
-      j--;                          // move left
-    }
-  }
-  return res.reverse().join('');
+  // `Math.random()` gives us a value in the half‑open interval [0, 1).
+  // Multiply to widen the range, add 1 to make the bound inclusive,
+  // then floor to truncate to an integer.
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-console.log(lcs("AGGTAB", "GXTXAYB")); // → "GTAB"
-// lcs.ts
-export function lcs(a: string, b: string): string {
-  // ...implementation as above...
+const roll = randomInt(1, 6);   // a fair d6 roll
+console.log(roll);              // 1–6, every call varies
+export function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
 }
-
-// example usage
-import { lcs } from './lcs';
-console.log(lcs('abcbdab', 'bdcaba')); // prints bcdab
