@@ -1,14 +1,23 @@
-// 1️⃣ Using a regex (global, matches all spaces)
-const withoutSpaces1 = str.replace(/ /g, '');
+// 1️⃣  Node definition
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
 
-// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
-const withoutSpaces2 = str.replace(/\s+/g, '');
+// 2️⃣  Recursive depth counter
+function maxDepth<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;                      // base case – empty subtree
 
-// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
-const withoutSpaces3 = str.split(' ').join('');
+  // compute depth of each side, pick the larger one, then add 1 for the current node
+  const leftHeight  = maxDepth(root.left);
+  const rightHeight = maxDepth(root.right);
+  return Math.max(leftHeight, rightHeight) + 1;
+}
+const root: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
 
-// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
-const withoutSpaces4 = str.replaceAll(' ', '');
-
-// 5️⃣ For a functional style (works even in older versions)
-const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
+console.log(maxDepth(root));  // 3
