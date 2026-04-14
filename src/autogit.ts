@@ -1,50 +1,61 @@
-/**
- * Returns true if the supplied integer is a prime number.
- *
- * Special notes
- * • 0 and 1 are *not* prime.
- * • Negative numbers are treated as non‑prime because primes are defined for positive integers only.
- * • The function uses the classic “divide up to sqrt(n)” trick – O(√n) which is fast enough for
- *   almost every use‑case you’ll hit in day‑to‑day code. If you need primality for astronomically large
- *   numbers you’ll need a more elaborate algorithm (Miller‑Rabin, etc.) – that’s a different story.
- *
- * @param n – the number you want to test
- * @returns true if n is prime, false otherwise
- */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n)) return false;   // TypeScript’s runtime check
-  if (n <= 1) return false;                // 0 and 1 aren’t prime, negative numbers aren’t considered either
-
-  // 2 and 3 are the only even and odd primes
-  if (n <= 3) return true;                 // 2 and 3
-
-  // Even numbers > 2 are composite
-  if (n % 2 === 0) return false;
-
-  // We can skip even divisors – test only odd ones
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
-  }
-  return true;
+// 1️⃣  Basic ListNode definition
+export interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-import { isPrime } from "./primes";
+/**
+ * Reverses a singly-linked list.
+ * @param head  Head of the original list (or null for an empty list)
+ * @returns     Head of the new, reversed list
+ */
+export function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let current: ListNode<T> | null = head;
 
-const numbers = [1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 25, 29, 31];
+  while (current) {
+    const nextTemp: ListNode<T> | null = current.next; // save next
+    current.next = prev;                                // reverse link
+    prev = current;                                     // move prev forward
+    current = nextTemp;                                 // advance current
+  }
 
-numbers.forEach(n => {
-  console.log(`${n} is prime? ${isPrime(n)}`);
-});
-1 is prime? false
-2 is prime? true
-3 is prime? true
-4 is prime? false
-5 is prime? true
-16 is prime? false
-17 is prime? true
-19 is prime? true
-20 is prime? false
-23 is prime? true
-25 is prime? false
-29 is prime? true
-31 is prime? true
+  return prev; // new head
+}
+/**
+ * Recursively reverses a list.
+ * Works fine for reasonable list lengths; big lists risk a stack overflow.
+ */
+export function reverseListRec<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: empty list or tail of the original list
+  if (!head || !head.next) return head;
+
+  // Recursively reverse the rest of the list
+  const newHead = reverseListRec(head.next);
+
+  // At this point, head.next is the last node of the reversed part
+  head.next.next = head; // point tail back to current
+  head.next = null;     // terminate current node
+
+  return newHead; // propagate new head back up
+}
+// Helper to build a list from an array
+const build = <T>(arr: T[]): ListNode<T> | null => {
+  let dummy: ListNode<T> = { val: null as any, next: null };
+  let tail = dummy;
+  for (const v of arr) {
+    tail.next = { val: v, next: null };
+    tail = tail.next;
+  }
+  return dummy.next;
+};
+
+// Helper to turn a list into an array (for easy inspection)
+const toArray = <T>(head: ListNode<T> | null): T[] => {
+  const res: T[] = [];
+  for (let cur = head; cur; cur = cur.next) res.push(cur.val);
+  return res;
+};
+
+const list = build([1, 2, 3, 4, 5]);
+const reversed = reverseList(list);
+console.log(toArray(reversed)); // [5, 4, 3, 2, 1]
