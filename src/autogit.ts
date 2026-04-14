@@ -1,40 +1,23 @@
-/**
- * Binary search – recursive version
- *
- * @param arr   Sorted array (ascending order)
- * @param target Value you’re looking for
- * @param low   Left boundary (inclusive) – do **not** pass this on the first call
- * @param high  Right boundary (inclusive) – do **not** pass this on the first call
- * @returns Index of target, or -1 if absent
- */
-function binarySearch<T extends number | string>(
-    arr: readonly T[],
-    target: T,
-    low = 0,
-    high = arr.length - 1
-): number {
-    // Base case: empty range → not found
-    if (low > high) return -1;
+function firstRepeatedChar(s: string): string | undefined {
+  // Use a set to record characters we've already seen.
+  const seen = new Set<string>();
 
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
-
-    if (midVal === target) {
-        return mid;                     // found
-    } else if (midVal < target) {
-        // search right half
-        return binarySearch(arr, target, mid + 1, high);
-    } else {
-        // left half
-        return binarySearch(arr, target, low, mid - 1);
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      // This is the first time we hit a duplicate.
+      return ch;
     }
+    seen.add(ch);
+  }
+
+  // No duplicates found.
+  return undefined;
 }
-const nums = [1, 4, 7, 12, 19, 31, 55];
-const idx  = binarySearch(nums, 19);
-console.log(idx);   // 4
-function binarySearchIter<T extends number | string>(
-    arr: readonly T[],
-    target: T
-): number {
-    return binarySearch(arr, target);
+
+// Example usage
+console.log(firstRepeatedChar("hello"));    // → "l"
+console.log(firstRepeatedChar("abcdef"));   // → undefined
+console.log(firstRepeatedChar("aabbcc"));   // → "a"
+function firstRepeatedCharImmutable(s: string): string | undefined {
+  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
 }
