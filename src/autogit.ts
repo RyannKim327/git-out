@@ -1,57 +1,23 @@
 /**
- * Binary search over a sorted array.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to find.
- * @param cmp      Optional custom comparison function.
- *                  Returns a negative number if a < b,
- *                  zero if a == b, and positive if a > b.
- * @returns Index of `target` in `arr`, or -1 if not found.
+ * Randomly sorts (shuffles) an array in place.
+ * Uses the Fisher‑Yates algorithm for a uniform shuffle.
  */
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  cmp?: (a: T, b: T) => number
-): number {
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Default comparison for numbers or strings
-  const compare = cmp ?? ((a, b) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const comparison = compare(arr[mid], target);
-
-    if (comparison === 0) return mid;          // found
-    if (comparison < 0) low = mid + 1;         // target is bigger
-    else high = mid - 1;                       // target is smaller
+function randomSort<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i (inclusive)
+    const j = Math.floor(Math.random() * (i + 1));
+    // Swap arr[i] and arr[j]
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-
-  return -1; // not found
-}
-const numbers = [1, 3, 5, 7, 9, 11];
-
-console.log(binarySearch(numbers, 7));  // → 3
-console.log(binarySearch(numbers, 4));  // → -1
-interface Person {
-  name: string;
-  age: number;
+  return arr;
 }
 
-const people: Person[] = [
-  {name: 'Alice', age: 28},
-  {name: 'Bob',   age: 34},
-  {name: 'Carol', age: 42}
-];
-
-function ageComparer(a: Person, b: Person): number {
-  return a.age - b.age;
+// Example usage:
+const numbers = [1, 2, 3, 4, 5];
+console.log('Before:', numbers);
+console.log('After  :', randomSort([...numbers])); // clone to keep original unchanged
+function randomComparator<T>(a: T, b: T) {
+  return Math.random() - 0.5;   // not guaranteed to be a stable sort
 }
-
-const idx = binarySearch(people, {name: '', age: 34}, (p, q) => ageComparer(p, q));
-console.log(idx); // -> 1
+const scrambled = [...numbers].sort(randomComparator);
+console.log(scrambled);
