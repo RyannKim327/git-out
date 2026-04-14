@@ -1,78 +1,53 @@
-/* exampleApi.ts
- *
- * Demonstrates a tiny, typed fetch of a JSON Placeholder user
- * using Axios – the most common promise‑based HTTP library.
- *
- * Prereqs:
- *   npm install axios
- *   (optionally) npm i -D ts-node @types/node @types/axios
- */
+// randomGreeting.ts
+//
+// 1️⃣  Read one line of text from stdin
+// 2️⃣  Pick a random greeting style
+// 3️⃣  Print a personalised message
+//
 
-import axios from 'axios';
+import { stdin, stdout } from 'process';
 
-/**
- * Represent a user from JSON Placeholder.
- */
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: {
-      lat: string;
-      lng: string;
-    };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
-
-/**
- * GET /users/:id – returns a single user.
- * @param id - numeric user id (1‑10 for the public API)
- * @returns a Promise that resolves to a User.
- */
-async function getUser(id: number): Promise<User> {
-  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
-
-  // Axios automatically parses JSON so we get a typed response:
-  const { data } = await axios.get<User>(url);
-
-  return data;
-}
-
-/**
- * Main entry point: fetch and pretty‑print a user.
- */
-async function main() {
-  try {
-    const user = await getUser(3); // pick any id 1‑10
-    console.log('User fetched 👇');
-    console.dir(user, { depth: null, colors: true });
-  } catch (err) {
-    console.error('Error fetching user:', err);
+// A tiny helper that turns a promise into a line‑by‑line async iterator
+async function* readLines(): AsyncGenerator<string> {
+  let buffer = '';
+  for await (const chunk of stdin) {
+    buffer += chunk.toString();
+    let *lines* = buffer.split('\n');
+    buffer = lines.pop() ?? '';      // keep the unfinished part
+    for (const line of lines) {
+      yield line.trim();           // remove trailing CR / whitespace
+    }
   }
+  if (buffer) yield buffer.trim();   // last partial line
 }
 
-// Invoke main if this script is run directly
-if (require.main === module) {
-  main();
-}
-# install deps
-npm install axios
-# run via ts-node
-npx ts-node exampleApi.ts
+async function main() {
+  // Ask for the user’s name
+  stdout.write('👋 What is your name? ');
+  const lines = readLines();
 
-# or compile to JS first
-npx tsc exampleApi.ts
-node exampleApi.js
+  // Wait for the first line entered by the user
+  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
+
+  // Some random greeting ideas
+  const greetings = [
+    `Hey ${name}, hope you’re having a stellar day!`,
+    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
+    `Greetings, ${name}! Keep calm and code on.`,
+    `${name}, you’re the reason we write code in TypeScript!`,
+    `Howdy ${name}! 🎉`
+  ];
+
+  // Pick one at random
+  const choice = greetings[Math.floor(Math.random() * greetings.length)];
+
+  stdout.write(`${choice}\n`);
+}
+
+main().catch(err => {
+  console.error('Something went wrong:', err);
+  process.exit(1);
+});
+$ node randomGreeting.js
+👋 What is your name? Alice
+Hey Alice, hope you’re having a stellar day!
