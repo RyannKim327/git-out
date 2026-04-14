@@ -1,18 +1,78 @@
-const arr = [1, 2, 3, 4, 5];
+/* exampleApi.ts
+ *
+ * Demonstrates a tiny, typed fetch of a JSON Placeholder user
+ * using Axios – the most common promise‑based HTTP library.
+ *
+ * Prereqs:
+ *   npm install axios
+ *   (optionally) npm i -D ts-node @types/node @types/axios
+ */
 
-// In‑place reversal
-arr.reverse();          // arr becomes [5, 4, 3, 2, 1]
+import axios from 'axios';
 
-// If you need a new array instead of mutating the original
-const reversed = [...arr].reverse();   // [5, 4, 3, 2, 1]
-
-// Or do it manually (e.g., for learning or if you want a custom logic)
-function reverse<T>(src: T[]): T[] {
-  const out: T[] = [];
-  for (let i = src.length - 1; i >= 0; i--) {
-    out.push(src[i]);
-  }
-  return out;
+/**
+ * Represent a user from JSON Placeholder.
+ */
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: {
+      lat: string;
+      lng: string;
+    };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
 }
 
-const manualReversed = reverse([10, 20, 30]); // [30, 20, 10]
+/**
+ * GET /users/:id – returns a single user.
+ * @param id - numeric user id (1‑10 for the public API)
+ * @returns a Promise that resolves to a User.
+ */
+async function getUser(id: number): Promise<User> {
+  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
+
+  // Axios automatically parses JSON so we get a typed response:
+  const { data } = await axios.get<User>(url);
+
+  return data;
+}
+
+/**
+ * Main entry point: fetch and pretty‑print a user.
+ */
+async function main() {
+  try {
+    const user = await getUser(3); // pick any id 1‑10
+    console.log('User fetched 👇');
+    console.dir(user, { depth: null, colors: true });
+  } catch (err) {
+    console.error('Error fetching user:', err);
+  }
+}
+
+// Invoke main if this script is run directly
+if (require.main === module) {
+  main();
+}
+# install deps
+npm install axios
+# run via ts-node
+npx ts-node exampleApi.ts
+
+# or compile to JS first
+npx tsc exampleApi.ts
+node exampleApi.js
