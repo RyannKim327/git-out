@@ -1,88 +1,30 @@
-// RandomAsyncSample.tsx (React‑Native)
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, {useEffect, useState} from 'react';
-import {View, Text, Button, StyleSheet, Alert} from 'react-native';
+/**
+ * Convert a decimal number to its binary representation.
+ *
+ * @param dec - A Number or a string that can be parsed to a Number.
+ * @returns The binary string.
+ */
+function toBinary(dec: number | string): string {
+  // If a string was passed, turn it into a number first.
+  const numericValue = Number(dec);
 
-interface WeatherResponse {
-  location: string;
-  temp_c: number;
-  condition: string;
-  // add any other fields your API sends
-}
-
-const fetchWeather = async (
-  location: string,
-): Promise<WeatherResponse> => {
-  const url = `https://api.example.com/weather?city=${encodeURIComponent(
-    location,
-  )}`;
-
-  // Random twist – fake delay to emulate slower networks
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Accept': 'application/json',
-      // Add auth headers etc. if needed
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  // Do a sanity check – NaN results in an empty string.
+  if (isNaN(numericValue)) {
+    throw new Error('Input must be a valid number');
   }
 
-  const data = (await response.json()) as WeatherResponse;
-  return data;
-};
+  // Convert to binary.
+  return numericValue.toString(2);
+}
 
-export const RandomAsyncSample: React.FC = () => {
-  const [weather, setWeather] = useState<WeatherResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/* --- Usage examples --- */
+console.log(toBinary(10));          // "1010"
+console.log(toBinary('255'));       // "11111111"
+console.log(toBinary(1000));        // "1111101000"
+const digits = toBinary(42).split('').map(Number);
+// digits => [1, 0, 1, 0, 1, 0]
+function toBinaryBigInt(n: bigint): string {
+  return n.toString(2);
+}
 
-  const getWeather = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await fetchWeather('San Francisco');
-      setWeather(result);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
-      Alert.alert('Oops', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Pull the data once when the component mounts
-    getWeather();
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Async Weather Sample</Text>
-
-      {loading && <Text>Loading…</Text>}
-
-      {error && <Text style={styles.error}>Error: {error}</Text>}
-
-      {weather && (
-        <>
-          <Text>Location: {weather.location}</Text>
-          <Text>Temp: {weather.temp_c}°C</Text>
-          <Text>Condition: {weather.condition}</Text>
-        </>
-      )}
-
-      <Button title="Refresh" onPress={getWeather} disabled={loading} />
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16},
-  title: {fontSize: 20, marginBottom: 12},
-  error: {color: 'red', marginTop: 8},
-});
+console.log(toBinaryBigInt(12345678901234567890n)); // big binary string
