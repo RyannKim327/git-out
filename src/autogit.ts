@@ -1,9 +1,34 @@
-// 1. The classic `+` operator
-const a = "hello";
-const b = "world";
-const combined1 = a + " " + b; // "hello world"
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-// 2. Template literals (ES6+)
-const combined2 = `${a} ${b}`; // "hello world"
-const parts = [a, "awesome", b];
-const combined3 = parts.join(" "); // "hello awesome world"
+  let largest = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
+}
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
+
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
