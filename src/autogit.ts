@@ -1,41 +1,25 @@
 /**
- * Checks whether a string is a palindrome.
- *
- * Options:
- *   - ignoreCase: treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
- *
- * @param input The string to test
- * @param opts  Optional settings
- * @returns true if `input` is a palindrome under the chosen rules
+ * Returns the first character that appears only once in `s`.
+ * If every character repeats (or the string is empty), returns `null`.
  */
-export function isPalindrome(
-  input: string,
-  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+function firstNonRepeating(s: string): string | null {
+  // 1. Scan the string once to build a frequency map
+  const freq = new Map<string, number>();
 
-  let str = input;
-
-  // 1. Collapse the string if requested
-  if (ignoreNonAlnum) {
-    // Keep only ASCII letters and digits. For Unicode you might want
-    // a regex like `/\p{L}\p{N}/gu` instead.
-    str = str.replace(/[^A-Za-z0-9]/g, "");
+  for (const ch of s) {
+    // increment the count for this character
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // 2. Normalize case if requested
-  if (ignoreCase) {
-    str = str.toLowerCase();
+  // 2. Scan again in original order and return the first with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
+    }
   }
 
-  // 3. Compare the string to its reverse
-  const reversed = str.split("").reverse().join("");
-  return str === reversed;
+  return null;          // nothing found
 }
-console.log(isPalindrome("racecar"));                    // true
-console.log(isPalindrome("RaceCar"));                    // true
-console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("No lemon, no melon"));          // true
-console.log(isPalindrome("hello"));                       // false
+console.log(firstNonRepeating("SWISS")); // 'W'
+console.log(firstNonRepeating("SWISS".toLowerCase())); // 'w'
+console.log(firstNonRepeating("aabbcc")); // null
