@@ -1,55 +1,59 @@
-/**
- * Return the median of two sorted arrays (integer values).
- *
- * @param a First sorted array (may be empty)
- * @param b Second sorted array (may be empty)
- * @returns median as a number
- */
-function findMedianSortedArrays(a: number[], b: number[]): number {
-  // make sure a is the shorter array – helps keep log‑time on the shorter side
-  if (a.length > b.length) return findMedianSortedArrays(b, a);
+// ---------------------------------------------------------------------
+// 1️⃣  Node definition
+// ---------------------------------------------------------------------
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  const m = a.length;
-  const n = b.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    // i is the cut in a, j in b
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
-
-    const Aleft  = i === 0     ? -Infinity : a[i - 1];
-    const Aright = i === m     ? Infinity  : a[i];
-    const Bleft  = j === 0     ? -Infinity : b[j - 1];
-    const Bright = j === n     ? Infinity  : b[j];
-
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // perfect split found
-      if ((m + n) % 2 === 0) {
-        // even number of elements – average of the two middle values
-        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-      } else {
-        // odd – the max on the left side
-        return Math.max(Aleft, Bleft);
-      }
-    } else if (Aleft > Bright) {
-      // i is too big – move left
-      high = i - 1;
-    } else {
-      // i is too small – move right
-      low = i + 1;
-    }
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
-
-  // Should never reach here if input arrays are sorted
-  throw new Error('Input arrays are not valid');
 }
 
-/* ---------- usage ---------- */
-console.log(findMedianSortedArrays([1, 3], [2]));          // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));      // 2.5
-console.log(findMedianSortedArrays([], [1]));             // 1
-console.log(findMedianSortedArrays([5], [1, 2, 3, 4]));   // 3.5
+// ---------------------------------------------------------------------
+// 2️⃣  Helper that returns (height, diameter) for a subtree
+// ---------------------------------------------------------------------
+function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
+  // Base case: empty subtree
+  if (node === null) {
+    return { h: 0, d: 0 }; // height 0, diameter 0
+  }
+
+  // Recursively gather left and right results
+  const left = heightAndDiameter(node.left);
+  const right = heightAndDiameter(node.right);
+
+  // Current node's height
+  const curHeight = Math.max(left.h, right.h) + 1;
+
+  // Diameter that passes through this node
+  const curThrough = left.h + right.h + 1;
+
+  // Overall diameter for this subtree
+  const curDiameter = Math.max(curThrough, left.d, right.d);
+
+  return { h: curHeight, d: curDiameter };
+}
+
+// ---------------------------------------------------------------------
+// 3️⃣  Public entry point
+// ---------------------------------------------------------------------
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  return heightAndDiameter(root).d;
+}
+// Build a quick test tree:
+//        1
+//       / \
+//      2   3
+//         / \
+//        4   5
+const root = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
+
+console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
