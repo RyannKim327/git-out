@@ -1,78 +1,34 @@
-/* exampleApi.ts
- *
- * Demonstrates a tiny, typed fetch of a JSON Placeholder user
- * using Axios – the most common promise‑based HTTP library.
- *
- * Prereqs:
- *   npm install axios
- *   (optionally) npm i -D ts-node @types/node @types/axios
- */
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-import axios from 'axios';
+  let largest = -Infinity;
+  let second = -Infinity;
 
-/**
- * Represent a user from JSON Placeholder.
- */
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: {
-      lat: string;
-      lng: string;
-    };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
-
-/**
- * GET /users/:id – returns a single user.
- * @param id - numeric user id (1‑10 for the public API)
- * @returns a Promise that resolves to a User.
- */
-async function getUser(id: number): Promise<User> {
-  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
-
-  // Axios automatically parses JSON so we get a typed response:
-  const { data } = await axios.get<User>(url);
-
-  return data;
-}
-
-/**
- * Main entry point: fetch and pretty‑print a user.
- */
-async function main() {
-  try {
-    const user = await getUser(3); // pick any id 1‑10
-    console.log('User fetched 👇');
-    console.dir(user, { depth: null, colors: true });
-  } catch (err) {
-    console.error('Error fetching user:', err);
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
   }
-}
 
-// Invoke main if this script is run directly
-if (require.main === module) {
-  main();
+  return second === -Infinity ? undefined : second;
 }
-# install deps
-npm install axios
-# run via ts-node
-npx ts-node exampleApi.ts
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
 
-# or compile to JS first
-npx tsc exampleApi.ts
-node exampleApi.js
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
