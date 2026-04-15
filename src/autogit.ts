@@ -1,54 +1,32 @@
-// A minimal, singly‑linked node definition
-export interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+// Node for a singly‑linked list
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-// Returns the node that is n‑th from the end (1‑based)
-// or null if the list is shorter than n.
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
+/**
+ * Returns the first node that appears in both lists,
+ * or null if they don’t intersect.
+ */
+function findIntersection<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
 ): ListNode<T> | null {
-  // Guard against invalid n
-  if (n <= 0) return null;
+  const seen = new Set<ListNode<T>>();
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // Advance fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null; // n > length
-    fast = fast.next;
+  // Step 1: remember every node of list A
+  for (let curr = headA; curr; curr = curr.next) {
+    seen.add(curr);
   }
 
-  // Edge case: n equals the list length ⇒ return head
-  if (!fast) return head;
-
-  // Move both until fast reaches the tail
-  while (fast.next) {
-    fast = fast.next;
-    slow = slow!.next; // slow is guaranteed not null here
+  // Step 2: walk list B until we hit a node already seen
+  for (let curr = headB; curr; curr = curr.next) {
+    if (seen.has(curr)) return curr; // intersection found
   }
-
-  return slow;
+  return null; // no intersection
 }
-// Helper to build a list from an array
-function buildList<T>(arr: T[]): ListNode<T> | null {
-  if (arr.length === 0) return null;
-  const head: ListNode<T> = { value: arr[0], next: null };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { value: arr[i], next: null };
-    current = current.next;
-  }
-  return head;
-}
+const shared = new ListNode(8, new ListNode(9));
 
-// Example
-const head = buildList([10, 20, 30, 40, 50]);
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
 
-console.log(nthFromEnd(head, 1)?.value); // 50 (last)
-console.log(nthFromEnd(head, 3)?.value); // 30
-console.log(nthFromEnd(head, 5)?.value); // 10 (first)
-console.log(nthFromEnd(head, 6));        // null (too big)
+console.log(findIntersection(a1, b1)?.val); // 8
