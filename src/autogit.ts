@@ -1,34 +1,32 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
+function countChar(str: string, target: string): number {
+  // split on the target, then subtract 1 because split returns one more element than matches
+  return str.split(target).length - 1;
 }
-function reverseUnicodeString(str: string): string {
-  const chars: string[] = [];
-  for (const ch of str) {
-    chars.unshift(ch);            // add each code‑point to the front
+
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countCharWithRegex(str: string, target: string): number {
+  const matches = str.match(new RegExp(target, 'g'));
+  return matches ? matches.length : 0;
+}
+
+// Example
+console.log(countCharWithRegex("hello world", "l")); // 3
+console.log(countCharWithRegex("hello world", "z")); // 0
+function countLoop(str: string, target: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
   }
-  return chars.join('');
+  return count;
 }
-function reverseStringLoop(str: string): string {
-  const buf = str.split('');
-  let i = 0;
-  let j = buf.length - 1;
-  while (i < j) {
-    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
-    ++i;
-    --j;
-  }
-  return buf.join('');
+
+// Example
+console.log(countLoop('hello world', 'l')); // 3
+function countReduce(str: string, target: string): number {
+  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
 }
-function reverseFunctional(str: string): string {
-  return [...str].reduceRight((acc, char) => acc + char, '');
-}
-function reverseStringFast(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
-}
-const raw = 'Hello, 🌍!';
-console.log(reverseString(raw));           // "!🌍 ,olleH"
-console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
+// Equivalent to looping, but shows functional style
+import { count } from 'lodash';
+
+count('hello world', 'l'); // 3
