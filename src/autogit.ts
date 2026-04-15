@@ -1,48 +1,85 @@
-/**
- * Calculates area when you know the base and the altitude
- * @param base   the length of the base
- * @param height the altitude perpendicular to the base
- * @returns area of the triangle
- */
-function areaBaseHeight(base: number, height: number): number {
-  return (base * height) / 2;
-}
+/*  --------------------------------------------------
+    Depth‑First Search (DFS) – TypeScript
+    -------------------------------------------------- */
 
-// Example
-const area1 = areaBaseHeight(10, 5);   // 25
 /**
- * Calculates area from the three sides using Heron's formula
- * @param a side a
- * @param b side b
- * @param c side c
- * @returns area of the triangle
- * @throws Error if the sides cannot form a triangle
+ * A graph memoized as an adjacency list.
+ * T can be anything that can be used as a key (string, number, etc.).
  */
-function areaHeron(a: number, b: number, c: number): number {
-  // Validate triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not form a triangle.');
+export type Graph<T> = Map<T, Iterable<T>>;
+
+/**
+ * Recursive DFS.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsRecursive<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const result: Array<T> = [];
+
+  function visit(node: T): void {
+    if (visited.has(node)) return;
+    visited.add(node);
+    result.push(node);
+
+    for (const neighbour of graph.get(node) ?? []) {
+      visit(neighbour);
+    }
   }
 
-  const s = (a + b + c) / 2;                       // semi‑perimeter
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  visit(start);
+  return result;
 }
 
-// Example
-const area2 = areaHeron(3, 4, 5);   // 6
-interface Point { x: number; y: number }
+/**
+ * Iterative DFS using an explicit stack.
+ * @param graph      the graph
+ * @param start      starting node
+ * @returns          array of nodes in the order they were first visited
+ */
+export function dfsIterative<T>(
+  graph: Graph<T>,
+  start: T
+): Array<T> {
+  const visited = new Set<T>();
+  const stack: Array<T> = [start];
+  const result: Array<T> = [];
 
-function areaFromCoords(p1: Point, p2: Point, p3: Point): number {
-  return Math.abs(
-    (p1.x * (p2.y - p3.y) +
-     p2.x * (p3.y - p1.y) +
-     p3.x * (p1.y - p2.y)) / 2
-  );
+  while (stack.length) {
+    const node = stack.pop()!; // non‑empty guarantee
+    if (visited.has(node)) continue;
+
+    visited.add(node);
+    result.push(node);
+
+    // push neighbours onto the stack; reverse order
+    // to mimic the recursive visiting order
+    const neighbours = Array.from(graph.get(node) ?? []);
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      const n = neighbours[i];
+      if (!visited.has(n)) stack.push(n);
+    }
+  }
+
+  return result;
 }
 
-// Example
-const area3 = areaFromCoords(
-  { x: 0, y: 0 },
-  { x: 4, y: 0 },
-  { x: 0, y: 3 }
-);   // 6
+/*  --------------------------------------------------
+    Example Usage
+    -------------------------------------------------- */
+
+const graph: Graph<number> = new Map([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [6]],
+  [4, []],
+  [5, []],
+  [6, []],
+]);
+
+console.log('Recursive DFS:', dfsRecursive(graph, 1)); // [1, 2, 4, 5, 3, 6]
+console.log('Iterative DFS:', dfsIterative(graph, 1)); // [1, 3, 6, 2, 5, 4]
