@@ -1,100 +1,65 @@
 /**
- * Simple graph type
+ * Build the shift table for the Boyer–Moore–Horspool algorithm.
+ * For each character in the pattern we set the shift distance to the
+ * pattern length minus the index - 1, unless the character is the
+ * pattern's last one (its shift remains 1).
  */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
- *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
- */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
-
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
-
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
-
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
+  // Initialize all shifts to the pattern length.
+  for (let i = 0; i < m; i++) {
+    const ch = pattern.charAt(i);
+    table[ch] = m;
   }
 
-  return null;   // no connection
+  // Adjust shifts for every character except the last one.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern.charAt(i)] = m - i - 1;
+  }
+
+  return table;
 }
 
 /**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
+ * Boyer–Moore–Horspool substring search.
+ * @param text   The string you want to search inside.
+ * @param pat    The pattern you are looking for.
+ * @returns      The index of the first occurrence, or -1 if not found.
  */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
+export function boyerMooreHorspool(text: string, pat: string): number {
+  const n = text.length;
+  const m = pat.length;
 
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
+  if (m === 0) return 0;          // Empty pattern matches at 0
+  if (m > n) return -1;           // Pattern longer than text → impossible
 
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
+  const shift = buildShiftTable(pat);
 
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
-      }
+  let i = 0;                      // Current position in text
 
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
+  while (i <= n - m) {
+    let j = m - 1;                // Start comparing from the end of the pattern
+
+    // Walk backwards over matched characters
+    while (j >= 0 && pat.charAt(j) === text.charAt(i + j)) {
+      j--;
     }
+
+    if (j < 0) {
+      return i;                   // Match found
+    }
+
+    // If mismatch, shift by the table value of the mismatched character
+    const badChar = text.charAt(i + m - 1);
+    i += shift[badChar] ?? m;     // Default shift if character not in table
   }
 
-  return null;
+  return -1;                      // No match
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+const txt = "Here is a simple example: find the substring.";
+const pat = "substring";
+
+const idx = boyerMooreHorspool(txt, pat);
+console.log(idx);   // → 34
