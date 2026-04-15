@@ -1,59 +1,66 @@
-// ---------------------------------------------------------------------
-// 1️⃣  Node definition
-// ---------------------------------------------------------------------
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+/**
+ * Fibonacci Search
+ *
+ * @param arr  – sorted array (ascending)
+ * @param target – value that we want to locate
+ * @returns the index of target or −1 if it isn't present
+ */
+export function fibonacciSearch<T>(
+    arr: readonly T[],
+    target: T,
+    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+    const n = arr.length;
 
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
-  }
+    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
+    let fibMMm2 = 0; // (m‑2)’th Fibonacci
+    let fibMMm1 = 1; // (m‑1)’th Fibonacci
+    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
+
+    while (fibM < n) {
+        fibMMm2 = fibMMm1;
+        fibMMm1 = fibM;
+        fibM = fibMMm2 + fibMMm1;
+    }
+
+    // ---- 2. Marks the eliminated range from front ----
+    let offset = -1;
+
+    // ---- 3. While there are elements to inspect ----
+    while (fibM > 1) {
+        // Calculate the index to check
+        const i = Math.min(offset + fibMMm2, n - 1);
+
+        const comp = cmp(arr[i], target);
+
+        // case 1: the target is greater than the value at index i
+        if (comp < 0) {
+            fibM = fibMMm1;
+            fibMMm1 = fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+            offset = i;
+        }
+        // case 2: the target is less than the value at index i
+        else if (comp > 0) {
+            fibM = fibMMm2;
+            fibMMm1 = fibMMm1 - fibMMm2;
+            fibMMm2 = fibM - fibMMm1;
+        }
+        // case 3: element found
+        else {
+            return i;
+        }
+    }
+
+    // ---- 4. If the last remaining element is the target ----
+    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
+        return offset + 1;
+    }
+
+    return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+const idx = fibonacciSearch(nums, 13);
 
-// ---------------------------------------------------------------------
-// 2️⃣  Helper that returns (height, diameter) for a subtree
-// ---------------------------------------------------------------------
-function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
-  // Base case: empty subtree
-  if (node === null) {
-    return { h: 0, d: 0 }; // height 0, diameter 0
-  }
-
-  // Recursively gather left and right results
-  const left = heightAndDiameter(node.left);
-  const right = heightAndDiameter(node.right);
-
-  // Current node's height
-  const curHeight = Math.max(left.h, right.h) + 1;
-
-  // Diameter that passes through this node
-  const curThrough = left.h + right.h + 1;
-
-  // Overall diameter for this subtree
-  const curDiameter = Math.max(curThrough, left.d, right.d);
-
-  return { h: curHeight, d: curDiameter };
-}
-
-// ---------------------------------------------------------------------
-// 3️⃣  Public entry point
-// ---------------------------------------------------------------------
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  return heightAndDiameter(root).d;
-}
-// Build a quick test tree:
-//        1
-//       / \
-//      2   3
-//         / \
-//        4   5
-const root = new TreeNode(
-  1,
-  new TreeNode(2),
-  new TreeNode(3, new TreeNode(4), new TreeNode(5))
-);
-
-console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
+console.log(idx); // → 6
+console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
