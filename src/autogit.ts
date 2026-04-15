@@ -1,80 +1,53 @@
-/**
- * Sorts an array of numbers in ascending order using selection sort.
- * The array is sorted in place.
- *
- * @param arr – the number array to sort
- * @returns the same array reference, now sorted
- */
-export function selectionSortNumbers(arr: number[]): number[] {
-  const n = arr.length;
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
+}
 
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the first unsorted element is the minimum
-    let minIndex = i;
+// Example
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
+console.log(intersection(arr1, arr2)); // → [3, 4, 5]
+function intersectionByOrder<T>(a: T[], b: T[]): T[] {
+  const setA = new Set(a);
+  return b.filter(x => setA.has(x));
+}
+function multisetIntersection<T>(a: T[], b: T[]): T[] {
+  const counts = new Map<T, number>();
+  for (const item of a)
+    counts.set(item, (counts.get(item) ?? 0) + 1);
 
-    // Find the actual minimum among the remaining unsorted portion
-    for (let j = i + 1; j < n; j++) {
-      if (arr[j] < arr[minIndex]) {
-        minIndex = j;
-      }
-    }
-
-    // If a smaller element was found, swap it into place
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+  const result: T[] = [];
+  for (const item of b) {
+    const cnt = counts.get(item);
+    if (cnt && cnt > 0) {
+      result.push(item);
+      counts.set(item, cnt - 1);
     }
   }
-
-  return arr;
+  return result;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
-/**
- * Sorts an array in place using selection sort and a custom comparator.
- *
- * @param arr         The array to sort.
- * @param compareFn   Comparator that defines the sort order.
- * @returns The sorted array (same reference as @param arr).
- */
-export function selectionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  const n = arr.length;
 
-  for (let i = 0; i < n - 1; i++) {
-    let minIndex = i;
+// Example
+// a: [1, 2, 2, 3], b: [2, 2, 4]
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
+function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
+  const map = new Map<any, T>();
+  for (const item of b) map.set(keyFn(item), item);
 
-    for (let j = i + 1; j < n; j++) {
-      if (compareFn(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
-    }
-
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
+  const result: T[] = [];
+  for (const item of a) {
+    const match = map.get(keyFn(item));
+    if (match) result.push(match); // or push(item) if you prefer
   }
-
-  return arr;
-}
-interface Person {
-  name: string;
-  age: number;
+  return result;
 }
 
-const people: Person[] = [
-  { name: 'Alice', age: 29 },
-  { name: 'Bob', age: 23 },
-  { name: 'Charlie', age: 35 }
-];
-
-// Sort by age (ascending)
-selectionSort(people, (a, b) => a.age - b.age);
-
-console.log(people);
-// → [
-//      { name: 'Bob', age: 23 },
-//      { name: 'Alice', age: 29 },
-//      { name: 'Charlie', age: 35 }
-//    ]
+// Example
+interface Person { id: number; name: string }
+const peopleA = [{id:1},{id:2},{id:3}];
+const peopleB = [{id:2},{id:4}];
+console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
+export const arrayUtils = {
+  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
+  // … other helpers here
+};
