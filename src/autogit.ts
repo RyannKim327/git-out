@@ -1,35 +1,80 @@
-// A very lightweight node definition –
-export class ListNode {
-  constructor(public val: number, public next: ListNode | null = null) {}
-}
-
 /**
- * Returns the middle node of a linked list.
- * If there are an even number of nodes, it returns the *first* of the two middle nodes.
- * (Adjust `result` if you prefer the second middle node instead.)
+ * Sorts an array of numbers in ascending order using selection sort.
+ * The array is sorted in place.
+ *
+ * @param arr – the number array to sort
+ * @returns the same array reference, now sorted
  */
-export function findMiddle(head: ListNode | null): ListNode | null {
-  if (!head) return null;
+export function selectionSortNumbers(arr: number[]): number[] {
+  const n = arr.length;
 
-  let slow = head;          // moves one step at a time
-  let fast = head;          // moves two steps at a time
+  for (let i = 0; i < n - 1; i++) {
+    // Assume the first unsorted element is the minimum
+    let minIndex = i;
 
-  // Advance until fast reaches the end
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+    // Find the actual minimum among the remaining unsorted portion
+    for (let j = i + 1; j < n; j++) {
+      if (arr[j] < arr[minIndex]) {
+        minIndex = j;
+      }
+    }
+
+    // If a smaller element was found, swap it into place
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
   }
 
-  return slow;   // `slow` rests right on the middle (or first middle)
+  return arr;
 }
-// Helper to build a list quickly
-const build = (values: number[]) =>
-  values.reduceRight((next, v) => new ListNode(v, next), null as any);
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
+/**
+ * Sorts an array in place using selection sort and a custom comparator.
+ *
+ * @param arr         The array to sort.
+ * @param compareFn   Comparator that defines the sort order.
+ * @returns The sorted array (same reference as @param arr).
+ */
+export function selectionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  const n = arr.length;
 
-// 1 → 2 → 3 → 4 → 5   → middle is 3
-const list1 = build([1, 2, 3, 4, 5]);
-console.log(findMiddle(list1)!.val); // 3
+  for (let i = 0; i < n - 1; i++) {
+    let minIndex = i;
 
-// 1 → 2 → 3 → 4        → middle returned is 2
-const list2 = build([1, 2, 3, 4]);
-console.log(findMiddle(list2)!.val); // 2
+    for (let j = i + 1; j < n; j++) {
+      if (compareFn(arr[j], arr[minIndex]) < 0) {
+        minIndex = j;
+      }
+    }
+
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
+  }
+
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: 'Alice', age: 29 },
+  { name: 'Bob', age: 23 },
+  { name: 'Charlie', age: 35 }
+];
+
+// Sort by age (ascending)
+selectionSort(people, (a, b) => a.age - b.age);
+
+console.log(people);
+// → [
+//      { name: 'Bob', age: 23 },
+//      { name: 'Alice', age: 29 },
+//      { name: 'Charlie', age: 35 }
+//    ]
