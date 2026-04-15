@@ -1,23 +1,20 @@
 /**
- * Randomly sorts (shuffles) an array in place.
- * Uses the Fisher‑Yates algorithm for a uniform shuffle.
+ * Returns an integer between `min` and `max` (both inclusive).
+ *
+ * @param min - The smallest value you want (inclusive)
+ * @param max - The largest value you want (inclusive)
  */
-function randomSort<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a random index from 0 to i (inclusive)
-    const j = Math.floor(Math.random() * (i + 1));
-    // Swap arr[i] and arr[j]
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
+export function randomInt(min: number, max: number): number {
+  // Guard against accidental inverted bounds
+  if (min > max) [min, max] = [max, min];
 
-// Example usage:
-const numbers = [1, 2, 3, 4, 5];
-console.log('Before:', numbers);
-console.log('After  :', randomSort([...numbers])); // clone to keep original unchanged
-function randomComparator<T>(a: T, b: T) {
-  return Math.random() - 0.5;   // not guaranteed to be a stable sort
+  // `Math.random()` gives us a value in the half‑open interval [0, 1).
+  // Multiply to widen the range, add 1 to make the bound inclusive,
+  // then floor to truncate to an integer.
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-const scrambled = [...numbers].sort(randomComparator);
-console.log(scrambled);
+const roll = randomInt(1, 6);   // a fair d6 roll
+console.log(roll);              // 1–6, every call varies
+export function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
