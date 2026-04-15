@@ -1,56 +1,72 @@
 /**
- *  k is 1‑based: k = 1 → smallest, k = length → largest
- */
-function kthSmallestBySort<T>(a: T[], k: number, cmp?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > a.length) return undefined;
-  const arr = a.slice();                     // don't touch the original
-  arr.sort((x, y) => (cmp ? cmp(x, y) : (x as any) < (y as any) ? -1 : (x as any) > (y as any) ? 1 : 0));
-  return arr[k - 1];
-}
-/**
- * Find the k‑th smallest element (1‑based) in place.
+ * Return the majority element of an array – the value that occurs
+ * strictly more than half the time. If no such element exists the
+ * function throws an Error.
  *
- * @param arr  the array to search
- * @param k    1‑based index (1 = smallest)
- * @param cmp  optional compare function, defaults to the standard `< => >`
- * @returns    the k‑th smallest element, or `undefined` if k is out of bounds
+ * @param arr Array of comparable values (e.g. numbers, strings, etc.)
  */
-function kthSmallestQuickSelect<T>(
-  arr: T[],
-  k: number,
-  cmp?: (a: T, b: T) => number
-): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const compare = cmp ?? ((a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
-  let left = 0;
-  let right = arr.length - 1;
-  const target = k - 1;              // 0‑based
+export function majorityElement<T>(arr: T[]): T {
+  if (arr.length === 0) {
+    throw new Error('Array is empty');
+  }
 
-  while (left <= right) {
-    // Pick a pivot (here the middle element)
-    const pivotIdx = Math.floor((left + right) / 2);
-    const pivotVal = arr[pivotIdx];
+  // Phase 1 – Find a candidate
+  let candidate = arr[0];
+  let count = 1;
 
-    // Partition: elements < pivot on the left, > pivot on the right
-    let i = left;
-    let j = right;
-    while (i <= j) {
-      while (compare(arr[i], pivotVal) < 0) i++;
-      while (compare(arr[j], pivotVal) > 0) j--;
-      if (i <= j) {
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-        i++;
-        j--;
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = arr[i];
+        count = 1;
       }
     }
-
-    // Which side contains the target?
-    if (j < target) left = i;
-    else if (i > target) right = j;
-    else return arr[target];
   }
-}
-const arr = [7, 3, 5, 2, 9, 1, 4];
-const k = 3;           // find the 3rd smallest: answer should be 4
 
-console.log(kthSmallestQuickSelect(arr, k)); // 4
+  // Phase 2 – Verify the candidate (optional if the problem guarantees a majority)
+  count = 0;
+  for (const v of arr) {
+    if (v === candidate) count++;
+  }
+
+  if (count > Math.floor(arr.length / 2)) {
+    return candidate;
+  }
+
+  throw new Error('No majority element found');
+}
+export function majorityElementWithMap<T>(arr: T[]): T {
+  const freq = new Map<T, number>();
+
+  // Count occurrences
+  for (const v of arr) {
+    freq.set(v, (freq.get(v) ?? 0) + 1);
+  }
+
+  // Find the element that tops the midway mark
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, count] of freq) {
+    if (count > threshold) return val;
+  }
+
+  throw new Error('No majority element found');
+}
+export function majorityElementSorted<T>(arr: T[]): T {
+  if (arr.length === 0) throw new Error('Array is empty');
+
+  const sorted = [...arr].sort();  // shallow copy + in‑place sort
+  const candidate = sorted[Math.floor(sorted.length / 2)];
+  
+  // Optional: verify the candidate
+  let count = 0;
+  for (const v of arr) if (v === candidate) count++;
+  if (count > Math.floor(arr.length / 2)) return candidate;
+
+  throw new Error('No majority element found');
+}
+console.log(majorityElement([1, 1, 2, 1, 3, 1]));          // → 1
+console.log(majorityElementWithMap(['a', 'b', 'a', 'a']));  // → 'a'
+console.log(majorityElementSorted([5, 5, 5, 5, 2]));        // → 5
