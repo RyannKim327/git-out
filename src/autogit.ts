@@ -1,15 +1,34 @@
-// 1. Trim leading/trailing
-const trimmed = myString.trim();
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-// 2. Remove every whitespace character
-const noSpace = myString.replace(/\s/g, '');
+  let largest = -Infinity;
+  let second = -Infinity;
 
-// 3. Collapse multiple spaces/tabs/lines into one space
-const collapsed = myString.replace(/\s+/g, ' ');
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
+  }
 
-// 4. Remove only spaces (keep tabs, newlines, etc.)
-const onlySpaceRemoved = myString.replace(/ /g, '');
-function stripWhitespace(str: string, keepNewlines = false): string {
-  const pattern = keepNewlines ? /\s/g : /[ \t\r\f\v]/g; // tweak if you need to keep or drop newlines
-  return str.replace(pattern, '');
+  return second === -Infinity ? undefined : second;
 }
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
+
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
