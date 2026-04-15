@@ -1,23 +1,24 @@
-function firstRepeatedChar(s: string): string | undefined {
-  // Use a set to record characters we've already seen.
-  const seen = new Set<string>();
-
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      // This is the first time we hit a duplicate.
-      return ch;
-    }
-    seen.add(ch);
+/**
+ * Returns the mean of a non‑empty list of numbers.
+ * Throws if the array is empty or contains non‑numeric values.
+ *
+ * @param numbers – an array of numbers
+ * @returns the arithmetic mean
+ */
+function mean(numbers: readonly number[]): number {
+  if (numbers.length === 0) {
+    throw new Error('Cannot compute mean of an empty array.');
   }
 
-  // No duplicates found.
-  return undefined;
-}
+  const sum = numbers.reduce((acc, val) => {
+    if (typeof val !== 'number' || Number.isNaN(val)) {
+      throw new Error(`Invalid value detected: ${val}`);
+    }
+    return acc + val;
+  }, 0);
 
-// Example usage
-console.log(firstRepeatedChar("hello"));    // → "l"
-console.log(firstRepeatedChar("abcdef"));   // → undefined
-console.log(firstRepeatedChar("aabbcc"));   // → "a"
-function firstRepeatedCharImmutable(s: string): string | undefined {
-  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
+  return sum / numbers.length;
 }
+const scores = [80, 92, 75, 88];
+
+console.log(mean(scores)); // → 84.25
