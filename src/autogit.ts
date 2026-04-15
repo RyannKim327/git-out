@@ -1,102 +1,41 @@
-export interface ListNode<T = number> {
-  value: T;
-  next?: ListNode<T>;
-}
-export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;          // empty list is a palindrome
-
-  const stack: T[] = [];
-  let cur = head;
-
-  // Stage 1 – push all values onto the stack
-  while (cur) {
-    stack.push(cur.value);
-    cur = cur.next;
-  }
-
-  // Stage 2 – iterate a second time, comparing against popped values
-  cur = head;
-  while (cur) {
-    const top = stack.pop() as T; // stack can't be empty here
-    if (cur.value !== top) return false;
-    cur = cur.next;
-  }
-
-  return true;
-}
-export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
-  if (!head) return true;
-
-  // 1️⃣ Find middle (slow will stop at mid‑point)
-  let slow = head;
-  let fast = head;
-  let prevSlow: ListNode<T> | undefined = undefined;
-
-  while (fast && fast.next) {
-    fast = fast.next.next;
-    prevSlow = slow;
-    slow = slow.next;
-  }
-
-  // 2️⃣ For odd length lists, skip the middle element
-  if (fast) {
-    slow = slow.next;
-  }
-
-  // 3️⃣ Reverse the second half starting at `slow`
-  let secondHalf = reverseLinkedList(slow);
-
-  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
-  let p1 = head;
-  let p2 = secondHalf;
-  while (p2) {           // second half can be shorter or equal
-    if (p1.value !== p2.value) {
-      // Optional: undo reversal here if you want to keep list unchanged
-      return false;
-    }
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-
-  // Optional: restore first half? (skip for brevity)
-  return true;
-}
-
 /**
- * Reverse a linked list in place and return the new head.
+ * Checks whether a string is a palindrome.
+ *
+ * Options:
+ *   - ignoreCase: treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
+ *
+ * @param input The string to test
+ * @param opts  Optional settings
+ * @returns true if `input` is a palindrome under the chosen rules
  */
-function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
-  let prev: ListNode<T> | undefined = undefined;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
+export function isPalindrome(
+  input: string,
+  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+
+  let str = input;
+
+  // 1. Collapse the string if requested
+  if (ignoreNonAlnum) {
+    // Keep only ASCII letters and digits. For Unicode you might want
+    // a regex like `/\p{L}\p{N}/gu` instead.
+    str = str.replace(/[^A-Za-z0-9]/g, "");
   }
-  return prev;
-}
-function build(list: number[]): ListNode | undefined {
-  let head: ListNode | undefined;
-  let tail: ListNode | undefined;
 
-  for (const val of list) {
-    const node: ListNode = { value: val };
-    if (!head) {
-      head = node;
-      tail = node;
-    } else {
-      tail!.next = node;
-      tail = node;
-    }
+  // 2. Normalize case if requested
+  if (ignoreCase) {
+    str = str.toLowerCase();
   }
-  return head;
+
+  // 3. Compare the string to its reverse
+  const reversed = str.split("").reverse().join("");
+  return str === reversed;
 }
-
-const evenPal = build([1, 2, 2, 1]);
-const oddPal = build([1, 3, 3, 1]);
-const nonPal = build([1, 2, 3]);
-
-console.log(isPalindromeStack(evenPal)); // true
-console.log(isPalindromeLinear(oddPal)); // true
-console.log(isPalindromeLinear(nonPal)); // false
+console.log(isPalindrome("racecar"));                    // true
+console.log(isPalindrome("RaceCar"));                    // true
+console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("No lemon, no melon"));          // true
+console.log(isPalindrome("hello"));                       // false
