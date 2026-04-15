@@ -1,53 +1,23 @@
-// randomGreeting.ts
-//
-// 1️⃣  Read one line of text from stdin
-// 2️⃣  Pick a random greeting style
-// 3️⃣  Print a personalised message
-//
-
-import { stdin, stdout } from 'process';
-
-// A tiny helper that turns a promise into a line‑by‑line async iterator
-async function* readLines(): AsyncGenerator<string> {
-  let buffer = '';
-  for await (const chunk of stdin) {
-    buffer += chunk.toString();
-    let *lines* = buffer.split('\n');
-    buffer = lines.pop() ?? '';      // keep the unfinished part
-    for (const line of lines) {
-      yield line.trim();           // remove trailing CR / whitespace
-    }
+/**
+ * Randomly sorts (shuffles) an array in place.
+ * Uses the Fisher‑Yates algorithm for a uniform shuffle.
+ */
+function randomSort<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a random index from 0 to i (inclusive)
+    const j = Math.floor(Math.random() * (i + 1));
+    // Swap arr[i] and arr[j]
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  if (buffer) yield buffer.trim();   // last partial line
+  return arr;
 }
 
-async function main() {
-  // Ask for the user’s name
-  stdout.write('👋 What is your name? ');
-  const lines = readLines();
-
-  // Wait for the first line entered by the user
-  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
-
-  // Some random greeting ideas
-  const greetings = [
-    `Hey ${name}, hope you’re having a stellar day!`,
-    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
-    `Greetings, ${name}! Keep calm and code on.`,
-    `${name}, you’re the reason we write code in TypeScript!`,
-    `Howdy ${name}! 🎉`
-  ];
-
-  // Pick one at random
-  const choice = greetings[Math.floor(Math.random() * greetings.length)];
-
-  stdout.write(`${choice}\n`);
+// Example usage:
+const numbers = [1, 2, 3, 4, 5];
+console.log('Before:', numbers);
+console.log('After  :', randomSort([...numbers])); // clone to keep original unchanged
+function randomComparator<T>(a: T, b: T) {
+  return Math.random() - 0.5;   // not guaranteed to be a stable sort
 }
-
-main().catch(err => {
-  console.error('Something went wrong:', err);
-  process.exit(1);
-});
-$ node randomGreeting.js
-👋 What is your name? Alice
-Hey Alice, hope you’re having a stellar day!
+const scrambled = [...numbers].sort(randomComparator);
+console.log(scrambled);
