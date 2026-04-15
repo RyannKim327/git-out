@@ -1,24 +1,34 @@
-const numbers: number[] = [3, 7, -2, 9, 5];
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-const max = Math.max(...numbers);
-console.log(max); // 9
-const max = numbers.length ? Math.max(...numbers) : undefined;
-const max = numbers.reduce((a, b) => (a > b ? a : b));
-console.log(max); // 9
-const {max, index} = numbers.reduce(
-  (acc, val, idx) =>
-    val > acc.max
-      ? {max: val, index: idx}
-      : acc,
-  {max: Number.NEGATIVE_INFINITY, index: -1}
-);
+  let largest = -Infinity;
+  let second = -Infinity;
 
-console.log(max, index); // 9 3
-function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
 }
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
 
-// Example usage
-const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
-const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
