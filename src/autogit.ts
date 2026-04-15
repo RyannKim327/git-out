@@ -1,25 +1,21 @@
 /**
- * Returns the first character that appears only once in `s`.
- * If every character repeats (or the string is empty), returns `null`.
+ * Removes all vowels (a, e, i, o, u) from the given string.
+ *
+ * @param str - The input string to process.
+ * @returns A new string with all vowels removed.
  */
-function firstNonRepeating(s: string): string | null {
-  // 1. Scan the string once to build a frequency map
-  const freq = new Map<string, number>();
-
-  for (const ch of s) {
-    // increment the count for this character
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2. Scan again in original order and return the first with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null;          // nothing found
+export function removeVowels(str: string): string {
+  // The regex matches any of a, e, i, o, u in either case.
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
-console.log(firstNonRepeating("SWISS")); // 'W'
-console.log(firstNonRepeating("SWISS".toLowerCase())); // 'w'
-console.log(firstNonRepeating("aabbcc")); // null
+console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
+console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
+return str.replace(/[aeiouyAEIOUY]/g, '');
+export function removeVowelsManual(str: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of str) {
+    if (!vowels.has(ch)) result += ch;
+  }
+  return result;
+}
