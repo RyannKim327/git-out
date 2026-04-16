@@ -1,53 +1,100 @@
-// randomGreeting.ts
-//
-// 1️⃣  Read one line of text from stdin
-// 2️⃣  Pick a random greeting style
-// 3️⃣  Print a personalised message
-//
+/**
+ * Simple graph type
+ */
+type Node = string;                                  // or number, UUID, etc.
+type AdjList = Map<Node, Node[]>;                    // adjacency list
 
-import { stdin, stdout } from 'process';
+/**
+ * Bidirectional BFS – returns the length of the shortest path
+ * or null if no path exists.
+ *
+ * @param graph      adjacency list of the graph
+ * @param start      source node
+ * @param target     destination node
+ */
+export function biBfs(
+  graph: AdjList,
+  start: Node,
+  target: Node
+): number | null {
+  if (start === target) return 0;
 
-// A tiny helper that turns a promise into a line‑by‑line async iterator
-async function* readLines(): AsyncGenerator<string> {
-  let buffer = '';
-  for await (const chunk of stdin) {
-    buffer += chunk.toString();
-    let *lines* = buffer.split('\n');
-    buffer = lines.pop() ?? '';      // keep the unfinished part
-    for (const line of lines) {
-      yield line.trim();           // remove trailing CR / whitespace
+  // queues for each direction
+  const qStart = [start];
+  const qTarget = [target];
+
+  // distances from each end
+  const distStart = new Map<Node, number>();
+  const distTarget = new Map<Node, number>();
+  distStart.set(start, 0);
+  distTarget.set(target, 0);
+
+  while (qStart.length && qTarget.length) {
+    // Expand the frontier that is currently smaller
+    // (helps keep the branching factor balanced)
+    if (qStart.length <= qTarget.length) {
+      const step = expandFrontier(
+        qStart,
+        distStart,
+        distTarget,
+        graph
+      );
+      if (step !== null) return step;
+    } else {
+      const step = expandFrontier(
+        qTarget,
+        distTarget,
+        distStart,
+        graph
+      );
+      if (step !== null) return step;
     }
   }
-  if (buffer) yield buffer.trim();   // last partial line
+
+  return null;   // no connection
 }
 
-async function main() {
-  // Ask for the user’s name
-  stdout.write('👋 What is your name? ');
-  const lines = readLines();
+/**
+ * Helper that walks one layer of BFS.
+ * Returns the total distance when the two explored sets touch.
+ */
+function expandFrontier(
+  queue: Node[],
+  distThis: Map<Node, number>,
+  distOther: Map<Node, number>,
+  graph: AdjList
+): number | null {
+  const layerSize = queue.length;
 
-  // Wait for the first line entered by the user
-  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
+  for (let i = 0; i < layerSize; ++i) {
+    const current = queue.shift() as Node;
+    const neighbours = graph.get(current) ?? [];
 
-  // Some random greeting ideas
-  const greetings = [
-    `Hey ${name}, hope you’re having a stellar day!`,
-    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
-    `Greetings, ${name}! Keep calm and code on.`,
-    `${name}, you’re the reason we write code in TypeScript!`,
-    `Howdy ${name}! 🎉`
-  ];
+    for (const neighbour of neighbours) {
+      // Already visited from this side – skip
+      if (distThis.has(neighbour)) continue;
 
-  // Pick one at random
-  const choice = greetings[Math.floor(Math.random() * greetings.length)];
+      // Visited from the other side → path found
+      if (distOther.has(neighbour)) {
+        return (
+          distThis.get(current)! + 1 +
+          distOther.get(neighbour)!
+        );
+      }
 
-  stdout.write(`${choice}\n`);
+      // Push next layer
+      distThis.set(neighbour, distThis.get(current)! + 1);
+      queue.push(neighbour);
+    }
+  }
+
+  return null;
 }
-
-main().catch(err => {
-  console.error('Something went wrong:', err);
-  process.exit(1);
-});
-$ node randomGreeting.js
-👋 What is your name? Alice
-Hey Alice, hope you’re having a stellar day!
+// const graph: AdjList = new Map([
+//   ['A', ['B', 'C']],
+//   ['B', ['A', 'D']],
+//   ['C', ['A', 'D']],
+//   ['D', ['B', 'C', 'E']],
+//   ['E', ['D']]
+// ]);
+// console.log(biBfs(graph, 'A', 'E')); // 3
