@@ -1,46 +1,30 @@
 /**
- * Return the longest common substring of `a` and `b`.
- * If there are multiple substrings of the same maximum length,
- * the one that appears first in `a` is returned.
+ * Convert a decimal number to its binary representation.
+ *
+ * @param dec - A Number or a string that can be parsed to a Number.
+ * @returns The binary string.
  */
-export function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+function toBinary(dec: number | string): string {
+  // If a string was passed, turn it into a number first.
+  const numericValue = Number(dec);
 
-  // Work with the shorter string in the second dimension
-  const [s1, s2] = a.length < b.length ? [a, b] : [b, a];
-  const len1 = s1.length;
-  const len2 = s2.length;
-
-  // dp[j] = longest suffix length ending at s1[i-1] and s2[j-1]
-  let dp = new Array(len2 + 1).fill(0);
-  let best = 0;
-  let bestEndIdxS1 = 0; // end position (exclusive) in the longer string
-
-  for (let i = 1; i <= len1; i++) {
-    let prev = 0; // dp[j-1] from the previous row
-    for (let j = 1; j <= len2; j++) {
-      const temp = dp[j]; // value before updating; will become prev in next loop
-      if (s1[i - 1] === s2[j - 1]) {
-        // extend current matching suffix
-        dp[j] = prev + 1;
-        if (dp[j] > best) {
-          best = dp[j];
-          // bestEndIdxS1 refers to the longer/first string
-          bestEndIdxS1 = i;
-        }
-      } else {
-        dp[j] = 0;
-      }
-      prev = temp;
-    }
+  // Do a sanity check – NaN results in an empty string.
+  if (isNaN(numericValue)) {
+    throw new Error('Input must be a valid number');
   }
 
-  // Extract the substring from the longer string
-  if (best === 0) return '';
-  const startIdx = bestEndIdxS1 - best;
-  const longer = a.length >= b.length ? a : b;
-  return longer.slice(startIdx, bestEndIdxS1);
+  // Convert to binary.
+  return numericValue.toString(2);
 }
-console.log(longestCommonSubstring('abcdef', 'zabfxe')); // -> "abf"
-console.log(longestCommonSubstring('aabcc', 'abc'));     // -> "abc"
-console.log(longestCommonSubstring('xyz', 'abc'));      // -> ""
+
+/* --- Usage examples --- */
+console.log(toBinary(10));          // "1010"
+console.log(toBinary('255'));       // "11111111"
+console.log(toBinary(1000));        // "1111101000"
+const digits = toBinary(42).split('').map(Number);
+// digits => [1, 0, 1, 0, 1, 0]
+function toBinaryBigInt(n: bigint): string {
+  return n.toString(2);
+}
+
+console.log(toBinaryBigInt(12345678901234567890n)); // big binary string
