@@ -1,76 +1,48 @@
-// ------------------------------
-// Radix Sort (base 10)
-// ------------------------------
-
 /**
- * Performs a stable counting sort on the array `arr` using the digit at
- * position `digitPlace` (1, 10, 100, …).  The function returns the
- * sorted array – the original array remains untouched.
+ * Bubble‑sort an array.
+ *
+ * @param arr          The array to sort (does not get mutated).
+ * @param compareFn    Optional comparison function.  
+ *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
+ *                     If omitted, the default comparator uses the `<` and `>` operators that work
+ *                     for numbers, strings and any type that can be compared that way.
+ * @returns            A new array containing the elements of `arr` in ascending order.
  */
-function countingSortByDigit(
-  arr: number[],
-  digitPlace: number
-): number[] {
-  const buckets: { [key: number]: number[] } = {
-    0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [],
-  };
+export function bubbleSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): T[] {
+  // Make a shallow copy; we don’t want to touch the caller’s array
+  const result = [...arr];
 
-  for (const num of arr) {
-    // Extract the current digit:
-    //   Math.abs(num) to work with negative values,
-    //   modulo digitPlace to isolate the digit,
-    //   then divide by digitPlace to shift back.
-    const digit =
-      Math.floor((Math.abs(num) % (digitPlace * 10)) / digitPlace);
+  const compare = compareFn ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-    buckets[digit].push(num);
-  }
+  const n = result.length;
+  if (n < 2) return result; // already sorted
 
-  // Concatenate buckets in numeric order (0→9) to keep the sort stable.
-  return Object.values(buckets).reduce((out, bucket) => out.concat(bucket), []);
-}
-
-/**
- * Radix sort for an array of integers.  Handles negative values by
- * sorting positives and negatives separately and then combining.
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
-
-  // Separate positives and negatives.
-  const positives = arr.filter((n) => n >= 0);
-  const negatives = arr.filter((n) => n < 0).map((n) => Math.abs(n));
-
-  // Helper to sort a non‑negative array using radix sort.
-  const sortNonNegative = (numbers: number[]) => {
-    // Find the largest number so we know how many digit passes.
-    let max = 0;
-    for (const n of numbers) {
-      if (n > max) max = n;
+  let swapped: boolean;
+  // Standard bubble‑sort: keep looping while we keep swapping
+  do {
+    swapped = false;
+    for (let i = 0; i < n - 1; i++) {
+      if (compare(result[i], result[i + 1]) > 0) {
+        // swap
+        [result[i], result[i + 1]] = [result[i + 1], result[i]];
+        swapped = true;
+      }
     }
+  } while (swapped);
 
-    let digitPlace = 1;
-    while (digitPlace <= max) {
-      // Sort by this digit; each pass is stable.
-      const sorted = countingSortByDigit(numbers, digitPlace);
-      // Prepare for next iteration.
-      numbers = sorted;
-      digitPlace *= 10;
-    }
-    return numbers;
-  };
-
-  const sortedPos = sortNonNegative(positives);
-  const sortedNeg = sortNonNegative(negatives); // already abs values
-
-  // Negatives need to be reversed and negated back.
-  const sortedNegReversed = sortedNeg.reverse().map((n) => -n);
-
-  // Combine: negatives first, then positives.
-  return [...sortedNegReversed, ...sortedPos];
+  return result;
 }
-
-/* ------------------------------ Demo ------------------------------ */
-const sample = [170, 45, 75, -90, 802, 24, 2, 66, -31, 0];
-console.log('Original:', sample.join(', '));
-console.log('Sorted  :', radixSort(sample).join(', '));
+const unsorted = [5, 3, 8, 4, 2];
+const sorted = bubbleSort(unsorted);
+console.log(sorted); // [2, 3, 4, 5, 8]
+console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
+const words = ["banana", "Apple", "cherry"];
+const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(sortedByCase); // ["Apple", "banana", "cherry"]
