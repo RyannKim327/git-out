@@ -1,24 +1,14 @@
-const numbers: number[] = [3, 7, -2, 9, 5];
+// 1️⃣ Using a regex (global, matches all spaces)
+const withoutSpaces1 = str.replace(/ /g, '');
 
-const max = Math.max(...numbers);
-console.log(max); // 9
-const max = numbers.length ? Math.max(...numbers) : undefined;
-const max = numbers.reduce((a, b) => (a > b ? a : b));
-console.log(max); // 9
-const {max, index} = numbers.reduce(
-  (acc, val, idx) =>
-    val > acc.max
-      ? {max: val, index: idx}
-      : acc,
-  {max: Number.NEGATIVE_INFINITY, index: -1}
-);
+// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
+const withoutSpaces2 = str.replace(/\s+/g, '');
 
-console.log(max, index); // 9 3
-function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
-}
+// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
+const withoutSpaces3 = str.split(' ').join('');
 
-// Example usage
-const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
-const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
+// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
+const withoutSpaces4 = str.replaceAll(' ', '');
+
+// 5️⃣ For a functional style (works even in older versions)
+const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
