@@ -1,59 +1,46 @@
-// ---------------------------------------------------------------------
-// 1️⃣  Node definition
-// ---------------------------------------------------------------------
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+/**
+ * Return the longest common substring of `a` and `b`.
+ * If there are multiple substrings of the same maximum length,
+ * the one that appears first in `a` is returned.
+ */
+export function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
+  // Work with the shorter string in the second dimension
+  const [s1, s2] = a.length < b.length ? [a, b] : [b, a];
+  const len1 = s1.length;
+  const len2 = s2.length;
+
+  // dp[j] = longest suffix length ending at s1[i-1] and s2[j-1]
+  let dp = new Array(len2 + 1).fill(0);
+  let best = 0;
+  let bestEndIdxS1 = 0; // end position (exclusive) in the longer string
+
+  for (let i = 1; i <= len1; i++) {
+    let prev = 0; // dp[j-1] from the previous row
+    for (let j = 1; j <= len2; j++) {
+      const temp = dp[j]; // value before updating; will become prev in next loop
+      if (s1[i - 1] === s2[j - 1]) {
+        // extend current matching suffix
+        dp[j] = prev + 1;
+        if (dp[j] > best) {
+          best = dp[j];
+          // bestEndIdxS1 refers to the longer/first string
+          bestEndIdxS1 = i;
+        }
+      } else {
+        dp[j] = 0;
+      }
+      prev = temp;
+    }
   }
+
+  // Extract the substring from the longer string
+  if (best === 0) return '';
+  const startIdx = bestEndIdxS1 - best;
+  const longer = a.length >= b.length ? a : b;
+  return longer.slice(startIdx, bestEndIdxS1);
 }
-
-// ---------------------------------------------------------------------
-// 2️⃣  Helper that returns (height, diameter) for a subtree
-// ---------------------------------------------------------------------
-function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
-  // Base case: empty subtree
-  if (node === null) {
-    return { h: 0, d: 0 }; // height 0, diameter 0
-  }
-
-  // Recursively gather left and right results
-  const left = heightAndDiameter(node.left);
-  const right = heightAndDiameter(node.right);
-
-  // Current node's height
-  const curHeight = Math.max(left.h, right.h) + 1;
-
-  // Diameter that passes through this node
-  const curThrough = left.h + right.h + 1;
-
-  // Overall diameter for this subtree
-  const curDiameter = Math.max(curThrough, left.d, right.d);
-
-  return { h: curHeight, d: curDiameter };
-}
-
-// ---------------------------------------------------------------------
-// 3️⃣  Public entry point
-// ---------------------------------------------------------------------
-export function diameterOfBinaryTree(root: TreeNode | null): number {
-  return heightAndDiameter(root).d;
-}
-// Build a quick test tree:
-//        1
-//       / \
-//      2   3
-//         / \
-//        4   5
-const root = new TreeNode(
-  1,
-  new TreeNode(2),
-  new TreeNode(3, new TreeNode(4), new TreeNode(5))
-);
-
-console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
+console.log(longestCommonSubstring('abcdef', 'zabfxe')); // -> "abf"
+console.log(longestCommonSubstring('aabcc', 'abc'));     // -> "abc"
+console.log(longestCommonSubstring('xyz', 'abc'));      // -> ""
