@@ -1,100 +1,58 @@
 /**
- * Simple graph type
+ * Returns the BWT of `s` as an object containing
+ *   - last: the encoded string (last column of the sorted matrix)
+ *   - index: the row number that holds the original string (0‑based)
  */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
+function burrowsWheelerEncode(s: string): { last: string; index: number } {
+  const n = s.length;
+  // Build every rotation: slice(s, i) + slice(s, 0, i)
+  const rotations = Array.from({ length: n }, (_, i) =>
+    s.slice(i) + s.slice(0, i)
+  );
 
+  // Sort rotations lexicographically
+  rotations.sort();
+
+  // Extract last column and find original string's row
+  let lastCol = "";
+  let origIndex = -1;
+  for (let r = 0; r < n; r++) {
+    const row = rotations[r];
+    lastCol += row[row.length - 1];
+    if (row === s) origIndex = r;
+  }
+  return { last: lastCol, index: origIndex };
+}
+const { last, index } = burrowsWheelerEncode("BANANA");
+// last  => "ANNBAA"
+// index => 3   // 0‑based, the fourth row is "BANANA"
 /**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
- *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
+ * Inverse of the BWT.  Given the last column (`last`) and the original
+ * string's row index (`index`), reconstruct the original string.
  */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
+function burrowsWheelerDecode(last: string, index: number): string {
+  const n = last.length;
+  const first = [...last].sort();          // First column is sorted last
+  const table: string[] = Array(n).fill(""); // Working table of rows
 
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
-
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
-
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
+  // Repeatedly prepend last‑column chars to the table rows
+  for (let step = 0; step < n; step++) {
+    // Prepend each char of last to the corresponding row
+    for (let i = 0; i < n; i++) {
+      table[i] = last[i] + table[i];
     }
+    // Re‑sort the table – now the first column matches `first`
+    table.sort();
   }
 
-  return null;   // no connection
+  // The row at the original index is the decoded string
+  return table[index];
 }
+const original = burrowsWheelerDecode("ANNBAA", 3);
+console.log(original); // "BANANA"
+const input = "MNEMONIC";
+const { last, index } = burrowsWheelerEncode(input);
+const restored = burrowsWheelerDecode(last, index);
 
-/**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
- */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
-
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
-
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
-
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
-      }
-
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
-    }
-  }
-
-  return null;
-}
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+console.log(last, index);   // e.g., "NOIACEMM 4"
+console.log(restored === input); // true
