@@ -1,18 +1,48 @@
-const numbers: number[] = [12, 4, 56, 3, 9];
+// random-joke.ts
+import axios from "axios";
 
-// The default sort is string comparison → "12" < "56" < ...!
-const sorted = numbers.slice().sort((a, b) => a - b);
-
-console.log(sorted); // [3, 4, 9, 12, 56]
-function sortNums(arr: number[]): number[] {
-  return arr.slice().sort((a, b) => a - b);
+/**
+ * The shape of the JSON that the Joke API gives us.
+ */
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
 }
 
-const unsorted = [27, 13, 42, 8];
-console.log(sortNums(unsorted)); // [8, 13, 27, 42]
-function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
-  return arr.slice().sort(cmpFn);
-}
-function sortNumbersASC(nums: number[]): number[] {
-  return nums.slice().sort((a, b) => a - b);
-}
+/**
+ * Fetch a single random joke.
+ */
+const fetchRandomJoke = async (): Promise<Joke> => {
+  // The API returns an array of jokes even though we only ask for one – happy accidents.
+  const url = "https://official-joke-api.appspot.com/jokes/random";
+  const response = await axios.get<Joke>(url);
+  return response.data;
+};
+
+/**
+ * Pretty‑print a joke to the console.
+ */
+const printJoke = (joke: Joke) => {
+  console.log(`💡 ${joke.type.toUpperCase()}`);
+  console.log(`   ${joke.setup}`);
+  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
+};
+
+/**
+ * Simple wrapper that ties everything together.
+ */
+const main = async () => {
+  try {
+    const joke = await fetchRandomJoke();
+    printJoke(joke);
+  } catch (err) {
+    // Axios errors contain a `response` field with the server reply.
+    // If you’re debugging, you can inspect `err.response?.data` for the text.
+    console.error("🔴 Something went wrong retrieving a joke:", err);
+  }
+};
+
+// Run the little demo when the file is executed.
+main();
