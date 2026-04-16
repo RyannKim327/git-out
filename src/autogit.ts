@@ -1,32 +1,45 @@
-// Node for a singly‑linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
-
 /**
- * Returns the first node that appears in both lists,
- * or null if they don’t intersect.
+ * Return the longest common prefix of an array of strings.
+ * If the array is empty the result is the empty string.
+ *
+ * @param strs Array of strings
+ * @returns The longest common prefix
  */
-function findIntersection<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  // Step 1: remember every node of list A
-  for (let curr = headA; curr; curr = curr.next) {
-    seen.add(curr);
+  // Start with the entire first string as a tentative prefix.
+  let prefix = strs[0];
+
+  // Iterate over the rest of the strings.
+  for (let i = 1; i < strs.length; i++) {
+    const s = strs[i];
+
+    // Shrink the prefix until it matches the current string
+    // (or becomes empty).
+    while (!s.startsWith(prefix)) {
+      // Drop the last character
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return ""; // No common prefix
+    }
   }
 
-  // Step 2: walk list B until we hit a node already seen
-  for (let curr = headB; curr; curr = curr.next) {
-    if (seen.has(curr)) return curr; // intersection found
-  }
-  return null; // no intersection
+  return prefix;
 }
-const shared = new ListNode(8, new ListNode(9));
+console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
+console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
+console.log(longestCommonPrefix([]));                         // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+export function lcpBySorting(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
+  const sorted = [...strs].sort(); // Lexicographical order
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const minLen = Math.min(first.length, last.length);
 
-console.log(findIntersection(a1, b1)?.val); // 8
+  let i = 0;
+  while (i < minLen && first[i] === last[i]) i++;
+
+  return first.slice(0, i);
+}
