@@ -1,35 +1,18 @@
-// A very lightweight node definition –
-export class ListNode {
-  constructor(public val: number, public next: ListNode | null = null) {}
+const numbers: number[] = [12, 4, 56, 3, 9];
+
+// The default sort is string comparison → "12" < "56" < ...!
+const sorted = numbers.slice().sort((a, b) => a - b);
+
+console.log(sorted); // [3, 4, 9, 12, 56]
+function sortNums(arr: number[]): number[] {
+  return arr.slice().sort((a, b) => a - b);
 }
 
-/**
- * Returns the middle node of a linked list.
- * If there are an even number of nodes, it returns the *first* of the two middle nodes.
- * (Adjust `result` if you prefer the second middle node instead.)
- */
-export function findMiddle(head: ListNode | null): ListNode | null {
-  if (!head) return null;
-
-  let slow = head;          // moves one step at a time
-  let fast = head;          // moves two steps at a time
-
-  // Advance until fast reaches the end
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  return slow;   // `slow` rests right on the middle (or first middle)
+const unsorted = [27, 13, 42, 8];
+console.log(sortNums(unsorted)); // [8, 13, 27, 42]
+function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
+  return arr.slice().sort(cmpFn);
 }
-// Helper to build a list quickly
-const build = (values: number[]) =>
-  values.reduceRight((next, v) => new ListNode(v, next), null as any);
-
-// 1 → 2 → 3 → 4 → 5   → middle is 3
-const list1 = build([1, 2, 3, 4, 5]);
-console.log(findMiddle(list1)!.val); // 3
-
-// 1 → 2 → 3 → 4        → middle returned is 2
-const list2 = build([1, 2, 3, 4]);
-console.log(findMiddle(list2)!.val); // 2
+function sortNumbersASC(nums: number[]): number[] {
+  return nums.slice().sort((a, b) => a - b);
+}
