@@ -1,73 +1,35 @@
-/**
- * Returns the largest prime factor of a positive integer.
- * For values ≤ 1, it returns undefined (no prime factors).
- *
- * Supports both number (IEEE‑754 double) and BigInt inputs.
- */
-function largestPrimeFactor(input: number | bigint): number | bigint | undefined {
-  // Normalise to BigInt for arbitrary‑size support
-  let n = typeof input === "bigint" ? input : BigInt(input);
-
-  if (n <= 1n) return undefined; // 0, 1, or negative values have no prime factors
-
-  let lastFactor: bigint = 1n;
-
-  // Handle factor 2 separately to allow skipping even numbers later
-  while (n % 2n === 0n) {
-    lastFactor = 2n;
-    n /= 2n;
-  }
-
-  // Now n is odd – we only need to test odd divisors
-  let divisor = 3n;
-  const limit = sqrtBigInt(n); // helper that returns floor(sqrt(n))
-
-  while (divisor <= limit && n !== 1n) {
-    while (n % divisor === 0n) {
-      lastFactor = divisor;
-      n /= divisor;
-    }
-    divisor += 2n;          // next odd candidate
-  }
-
-  // If anything remains, it's a prime larger than any we tested
-  if (n > 1n) lastFactor = n;
-
-  // Return a number when possible for convenience
-  return lastFactor > Number.MAX_SAFE_INTEGER
-    ? lastFactor
-    : Number(lastFactor);
+// A very lightweight node definition –
+export class ListNode {
+  constructor(public val: number, public next: ListNode | null = null) {}
 }
 
-/* ---------- Helpers ---------- */
-
 /**
- * Integer square root of a BigInt (floor).
- * Uses binary search – good enough for moderate sizes.
+ * Returns the middle node of a linked list.
+ * If there are an even number of nodes, it returns the *first* of the two middle nodes.
+ * (Adjust `result` if you prefer the second middle node instead.)
  */
-function sqrtBigInt(value: bigint): bigint {
-  if (value < 0n) throw new Error("square root of negative");
-  if (value < 2n) return value;
+export function findMiddle(head: ListNode | null): ListNode | null {
+  if (!head) return null;
 
-  let low = 1n;
-  let high = value >> 1n; // n/2 is an upper bound
+  let slow = head;          // moves one step at a time
+  let fast = head;          // moves two steps at a time
 
-  while (low <= high) {
-    const mid = (low + high) >> 1n;
-    const midSq = mid * mid;
-
-    if (midSq === value) return mid;
-    if (midSq < value) low = mid + 1n;
-    else high = mid - 1n;
+  // Advance until fast reaches the end
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return high; // floor(sqrt(value))
+  return slow;   // `slow` rests right on the middle (or first middle)
 }
+// Helper to build a list quickly
+const build = (values: number[]) =>
+  values.reduceRight((next, v) => new ListNode(v, next), null as any);
 
-/* ---------- Usage examples ---------- */
+// 1 → 2 → 3 → 4 → 5   → middle is 3
+const list1 = build([1, 2, 3, 4, 5]);
+console.log(findMiddle(list1)!.val); // 3
 
-console.log(largestPrimeFactor(13195));   // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
-console.log(largestPrimeFactor(997**3)); // 997
-console.log(largestPrimeFactor(15n));     // 5
-console.log(largestPrimeFactor(1));       // undefined
+// 1 → 2 → 3 → 4        → middle returned is 2
+const list2 = build([1, 2, 3, 4]);
+console.log(findMiddle(list2)!.val); // 2
