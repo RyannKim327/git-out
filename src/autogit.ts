@@ -1,41 +1,39 @@
-// Basic node definition
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
+function lcs(a: string, b: string): string {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const dp: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
 
-/**
- * Detect a cycle in a singly linked list.
- * @param head The start node of the list (or null for an empty list).
- * @returns true if a cycle exists, otherwise false.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false;          // Empty list → no cycle
-
-  let slow = head;                  // One step per loop
-  let fast = head.next;             // Two steps per loop
-
-  while (fast && fast.next) {
-    if (slow === fast) return true; // Hopping together → cycle
-
-    slow = slow.next!;              // safe because slow can't be null here
-    fast = fast.next.next!;
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  return false;                     // Reached end → no cycle
+  // Re‑construct the subsequence
+  let i = rows - 1, j = cols - 1;
+  const res: string[] = [];
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      res.push(a[i - 1]);          // same character in both strings
+      i--; j--;                    // move diagonally
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;                          // move up
+    } else {
+      j--;                          // move left
+    }
+  }
+  return res.reverse().join('');
 }
-// acyclic list 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-console.log(hasCycle(a)); // false
+console.log(lcs("AGGTAB", "GXTXAYB")); // → "GTAB"
+// lcs.ts
+export function lcs(a: string, b: string): string {
+  // ...implementation as above...
+}
 
-// cyclic list 1 → 2 → 3 → 1 …
-const d = new ListNode(1);
-const e = new ListNode(2);
-const f = new ListNode(3);
-d.next = e; e.next = f; f.next = d;
-console.log(hasCycle(d)); // true
+// example usage
+import { lcs } from './lcs';
+console.log(lcs('abcbdab', 'bdcaba')); // prints bcdab
