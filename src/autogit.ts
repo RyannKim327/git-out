@@ -1,61 +1,100 @@
 /**
- * Shell sort – a simple, O(n²) algorithm that usually runs much faster
- * than insertion sort on realistically sized arrays.  
- * It sorts in‑place and returns the same array for convenience.
- *
- * @param  array  The array to sort.
- * @param  compare Optional compare function; defaults to numeric ascending.
- * @return The sorted array.
+ * Simple graph type
  */
-export function shellSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Fallback to numeric comparison if no function supplied.
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+type Node = string;                                  // or number, UUID, etc.
+type AdjList = Map<Node, Node[]>;                    // adjacency list
 
-  // Start with a large gap, then reduce it.
-  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
-  let gap = Math.floor(array.length / 2);
+/**
+ * Bidirectional BFS – returns the length of the shortest path
+ * or null if no path exists.
+ *
+ * @param graph      adjacency list of the graph
+ * @param start      source node
+ * @param target     destination node
+ */
+export function biBfs(
+  graph: AdjList,
+  start: Node,
+  target: Node
+): number | null {
+  if (start === target) return 0;
 
-  while (gap > 0) {
-    // Perform a "gapped" insertion sort for this gap.
-    for (let i = gap; i < array.length; i++) {
-      const temp = array[i];
-      let j = i;
+  // queues for each direction
+  const qStart = [start];
+  const qTarget = [target];
 
-      // shift earlier gap-sorted elements up until the correct location
-      // is found for temp.
-      while (j >= gap && cmp(array[j - gap], temp) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
+  // distances from each end
+  const distStart = new Map<Node, number>();
+  const distTarget = new Map<Node, number>();
+  distStart.set(start, 0);
+  distTarget.set(target, 0);
 
-      array[j] = temp;
+  while (qStart.length && qTarget.length) {
+    // Expand the frontier that is currently smaller
+    // (helps keep the branching factor balanced)
+    if (qStart.length <= qTarget.length) {
+      const step = expandFrontier(
+        qStart,
+        distStart,
+        distTarget,
+        graph
+      );
+      if (step !== null) return step;
+    } else {
+      const step = expandFrontier(
+        qTarget,
+        distTarget,
+        distStart,
+        graph
+      );
+      if (step !== null) return step;
     }
-
-    // Reduce the gap for the next pass.
-    gap = Math.floor(gap / 2);
   }
 
-  return array;
+  return null;   // no connection
 }
-import { shellSort } from "./shellSort";
 
-const nums = [34, 8, 64, 51, 32, 21];
-console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
-type Item = { name: string; value: number };
+/**
+ * Helper that walks one layer of BFS.
+ * Returns the total distance when the two explored sets touch.
+ */
+function expandFrontier(
+  queue: Node[],
+  distThis: Map<Node, number>,
+  distOther: Map<Node, number>,
+  graph: AdjList
+): number | null {
+  const layerSize = queue.length;
 
-const items: Item[] = [
-  { name: "apple",  value: 5 },
-  { name: "banana", value: 2 },
-  { name: "cherry", value: 7 },
-];
+  for (let i = 0; i < layerSize; ++i) {
+    const current = queue.shift() as Node;
+    const neighbours = graph.get(current) ?? [];
 
-shellSort(items, (a, b) => a.value - b.value);
-console.log(items);
-// → [
-//     { name: "banana", value: 2 },
-//     { name: "apple",  value: 5 },
-//     { name: "cherry", value: 7 }
-//   ]
+    for (const neighbour of neighbours) {
+      // Already visited from this side – skip
+      if (distThis.has(neighbour)) continue;
+
+      // Visited from the other side → path found
+      if (distOther.has(neighbour)) {
+        return (
+          distThis.get(current)! + 1 +
+          distOther.get(neighbour)!
+        );
+      }
+
+      // Push next layer
+      distThis.set(neighbour, distThis.get(current)! + 1);
+      queue.push(neighbour);
+    }
+  }
+
+  return null;
+}
+// const graph: AdjList = new Map([
+//   ['A', ['B', 'C']],
+//   ['B', ['A', 'D']],
+//   ['C', ['A', 'D']],
+//   ['D', ['B', 'C', 'E']],
+//   ['E', ['D']]
+// ]);
+// console.log(biBfs(graph, 'A', 'E')); // 3
