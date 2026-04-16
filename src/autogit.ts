@@ -1,23 +1,48 @@
-function firstRepeatedChar(s: string): string | undefined {
-  // Use a set to record characters we've already seen.
-  const seen = new Set<string>();
+// random-joke.ts
+import axios from "axios";
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      // This is the first time we hit a duplicate.
-      return ch;
-    }
-    seen.add(ch);
+/**
+ * The shape of the JSON that the Joke API gives us.
+ */
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
+}
+
+/**
+ * Fetch a single random joke.
+ */
+const fetchRandomJoke = async (): Promise<Joke> => {
+  // The API returns an array of jokes even though we only ask for one – happy accidents.
+  const url = "https://official-joke-api.appspot.com/jokes/random";
+  const response = await axios.get<Joke>(url);
+  return response.data;
+};
+
+/**
+ * Pretty‑print a joke to the console.
+ */
+const printJoke = (joke: Joke) => {
+  console.log(`💡 ${joke.type.toUpperCase()}`);
+  console.log(`   ${joke.setup}`);
+  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
+};
+
+/**
+ * Simple wrapper that ties everything together.
+ */
+const main = async () => {
+  try {
+    const joke = await fetchRandomJoke();
+    printJoke(joke);
+  } catch (err) {
+    // Axios errors contain a `response` field with the server reply.
+    // If you’re debugging, you can inspect `err.response?.data` for the text.
+    console.error("🔴 Something went wrong retrieving a joke:", err);
   }
+};
 
-  // No duplicates found.
-  return undefined;
-}
-
-// Example usage
-console.log(firstRepeatedChar("hello"));    // → "l"
-console.log(firstRepeatedChar("abcdef"));   // → undefined
-console.log(firstRepeatedChar("aabbcc"));   // → "a"
-function firstRepeatedCharImmutable(s: string): string | undefined {
-  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
-}
+// Run the little demo when the file is executed.
+main();
