@@ -1,100 +1,38 @@
-/**
- * Simple graph type
- */
-type Node = string;                                  // or number, UUID, etc.
-type AdjList = Map<Node, Node[]>;                    // adjacency list
+function areAnagrams(a: string, b: string): boolean {
+  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase();
 
-/**
- * Bidirectional BFS – returns the length of the shortest path
- * or null if no path exists.
- *
- * @param graph      adjacency list of the graph
- * @param start      source node
- * @param target     destination node
- */
-export function biBfs(
-  graph: AdjList,
-  start: Node,
-  target: Node
-): number | null {
-  if (start === target) return 0;
+  const normalizeA = normalize(a).split('').sort().join('');
+  const normalizeB = normalize(b).split('').sort().join('');
 
-  // queues for each direction
-  const qStart = [start];
-  const qTarget = [target];
-
-  // distances from each end
-  const distStart = new Map<Node, number>();
-  const distTarget = new Map<Node, number>();
-  distStart.set(start, 0);
-  distTarget.set(target, 0);
-
-  while (qStart.length && qTarget.length) {
-    // Expand the frontier that is currently smaller
-    // (helps keep the branching factor balanced)
-    if (qStart.length <= qTarget.length) {
-      const step = expandFrontier(
-        qStart,
-        distStart,
-        distTarget,
-        graph
-      );
-      if (step !== null) return step;
-    } else {
-      const step = expandFrontier(
-        qTarget,
-        distTarget,
-        distStart,
-        graph
-      );
-      if (step !== null) return step;
-    }
-  }
-
-  return null;   // no connection
+  return normalizeA === normalizeB;
 }
-
-/**
- * Helper that walks one layer of BFS.
- * Returns the total distance when the two explored sets touch.
- */
-function expandFrontier(
-  queue: Node[],
-  distThis: Map<Node, number>,
-  distOther: Map<Node, number>,
-  graph: AdjList
-): number | null {
-  const layerSize = queue.length;
-
-  for (let i = 0; i < layerSize; ++i) {
-    const current = queue.shift() as Node;
-    const neighbours = graph.get(current) ?? [];
-
-    for (const neighbour of neighbours) {
-      // Already visited from this side – skip
-      if (distThis.has(neighbour)) continue;
-
-      // Visited from the other side → path found
-      if (distOther.has(neighbour)) {
-        return (
-          distThis.get(current)! + 1 +
-          distOther.get(neighbour)!
-        );
-      }
-
-      // Push next layer
-      distThis.set(neighbour, distThis.get(current)! + 1);
-      queue.push(neighbour);
+function areAnagrams(a: string, b: string): boolean {
+  const buildMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
+      map[ch] = (map[ch] ?? 0) + 1;
     }
-  }
+    return map;
+  };
 
-  return null;
+  const aMap = buildMap(a);
+  const bMap = buildMap(b);
+
+  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
+  for (const k of keys) {
+    if (aMap[k] !== bMap[k]) return false;
+  }
+  return true;
 }
-// const graph: AdjList = new Map([
-//   ['A', ['B', 'C']],
-//   ['B', ['A', 'D']],
-//   ['C', ['A', 'D']],
-//   ['D', ['B', 'C', 'E']],
-//   ['E', ['D']]
-// ]);
-// console.log(biBfs(graph, 'A', 'E')); // 3
+const tests = [
+  ['listen', 'silent'],
+  ['hello', 'world'],
+  ['Dormitory', 'Dirty room'],
+  ['abc', 'abcd'],
+];
+
+for (const [a, b] of tests) {
+  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
+}
