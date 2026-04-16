@@ -1,39 +1,38 @@
-function lcs(a: string, b: string): string {
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  const dp: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+/**
+ * Performs an interpolation search on a strictly‑increasing array of numbers.
+ * @param arr   The sorted array (ascending).  Values must be finite numbers.
+ * @param key   The value you’re looking for.
+ * @returns The index of `key` in `arr`, or ‑1 if it isn’t present.
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  let low = 0;
+  let high = arr.length - 1;
+
+  // If the target is outside the range, we can bail early.
+  if (key < arr[low] || key > arr[high]) return -1;
+
+  while (low <= high && arr[low] !== arr[high]) {
+    // Estimate the likely position: a weighted average.
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    // Safety: clamp to array bounds.
+    if (pos < low)   return -1;
+    if (pos > high)  return -1;
+
+    const val = arr[pos];
+
+    if (val === key) return pos;
+    if (val < key)   low = pos + 1;
+    else             high = pos - 1;
   }
 
-  // Re‑construct the subsequence
-  let i = rows - 1, j = cols - 1;
-  const res: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      res.push(a[i - 1]);          // same character in both strings
-      i--; j--;                    // move diagonally
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                          // move up
-    } else {
-      j--;                          // move left
-    }
-  }
-  return res.reverse().join('');
+  // Final check if low might still hold the key.
+  return (arr[low] === key) ? low : -1;
 }
-console.log(lcs("AGGTAB", "GXTXAYB")); // → "GTAB"
-// lcs.ts
-export function lcs(a: string, b: string): string {
-  // ...implementation as above...
-}
-
-// example usage
-import { lcs } from './lcs';
-console.log(lcs('abcbdab', 'bdcaba')); // prints bcdab
+const nums = [3, 6, 9, 12, 15, 18, 21, 24, 27, 30];
+const idx = interpolationSearch(nums, 18); // 5
+console.log(idx); // prints 5
