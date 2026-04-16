@@ -1,58 +1,61 @@
 /**
- * Returns the BWT of `s` as an object containing
- *   - last: the encoded string (last column of the sorted matrix)
- *   - index: the row number that holds the original string (0‑based)
+ * Shell sort – a simple, O(n²) algorithm that usually runs much faster
+ * than insertion sort on realistically sized arrays.  
+ * It sorts in‑place and returns the same array for convenience.
+ *
+ * @param  array  The array to sort.
+ * @param  compare Optional compare function; defaults to numeric ascending.
+ * @return The sorted array.
  */
-function burrowsWheelerEncode(s: string): { last: string; index: number } {
-  const n = s.length;
-  // Build every rotation: slice(s, i) + slice(s, 0, i)
-  const rotations = Array.from({ length: n }, (_, i) =>
-    s.slice(i) + s.slice(0, i)
-  );
+export function shellSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Fallback to numeric comparison if no function supplied.
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  // Sort rotations lexicographically
-  rotations.sort();
+  // Start with a large gap, then reduce it.
+  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
+  let gap = Math.floor(array.length / 2);
 
-  // Extract last column and find original string's row
-  let lastCol = "";
-  let origIndex = -1;
-  for (let r = 0; r < n; r++) {
-    const row = rotations[r];
-    lastCol += row[row.length - 1];
-    if (row === s) origIndex = r;
-  }
-  return { last: lastCol, index: origIndex };
-}
-const { last, index } = burrowsWheelerEncode("BANANA");
-// last  => "ANNBAA"
-// index => 3   // 0‑based, the fourth row is "BANANA"
-/**
- * Inverse of the BWT.  Given the last column (`last`) and the original
- * string's row index (`index`), reconstruct the original string.
- */
-function burrowsWheelerDecode(last: string, index: number): string {
-  const n = last.length;
-  const first = [...last].sort();          // First column is sorted last
-  const table: string[] = Array(n).fill(""); // Working table of rows
+  while (gap > 0) {
+    // Perform a "gapped" insertion sort for this gap.
+    for (let i = gap; i < array.length; i++) {
+      const temp = array[i];
+      let j = i;
 
-  // Repeatedly prepend last‑column chars to the table rows
-  for (let step = 0; step < n; step++) {
-    // Prepend each char of last to the corresponding row
-    for (let i = 0; i < n; i++) {
-      table[i] = last[i] + table[i];
+      // shift earlier gap-sorted elements up until the correct location
+      // is found for temp.
+      while (j >= gap && cmp(array[j - gap], temp) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+
+      array[j] = temp;
     }
-    // Re‑sort the table – now the first column matches `first`
-    table.sort();
+
+    // Reduce the gap for the next pass.
+    gap = Math.floor(gap / 2);
   }
 
-  // The row at the original index is the decoded string
-  return table[index];
+  return array;
 }
-const original = burrowsWheelerDecode("ANNBAA", 3);
-console.log(original); // "BANANA"
-const input = "MNEMONIC";
-const { last, index } = burrowsWheelerEncode(input);
-const restored = burrowsWheelerDecode(last, index);
+import { shellSort } from "./shellSort";
 
-console.log(last, index);   // e.g., "NOIACEMM 4"
-console.log(restored === input); // true
+const nums = [34, 8, 64, 51, 32, 21];
+console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
+type Item = { name: string; value: number };
+
+const items: Item[] = [
+  { name: "apple",  value: 5 },
+  { name: "banana", value: 2 },
+  { name: "cherry", value: 7 },
+];
+
+shellSort(items, (a, b) => a.value - b.value);
+console.log(items);
+// → [
+//     { name: "banana", value: 2 },
+//     { name: "apple",  value: 5 },
+//     { name: "cherry", value: 7 }
+//   ]
