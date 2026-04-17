@@ -1,23 +1,28 @@
-function isPalindrome(s: string): boolean {
-  // 1. Normalise: lower‑case, trim, and strip non‑alphanumerics
-  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+/**
+ * Sorts an array of numbers (or any type that can be compared) in place.
+ * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
+ */
+export function insertionSort<T>(arr: T[]): void {
+  // Nothing to do for empty or single‑element arrays
+  if (arr.length < 2) return;
 
-  // 2. Compare with its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
-console.log(isPalindrome('Racecar'));                          // true
-console.log(isPalindrome('Hello'));                            // false
-function isPalindromeTwoPointer(s: string): boolean {
-  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-  let left = 0;
-  let right = cleaned.length - 1;
+  // Iterate over the array starting at index 1 because the sub‑array
+  // arr[0..i‑1] is already considered sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) return false;
-    left++;
-    right--;
+    // Shift elements that are greater than the key one position to the right.
+    // This makes space for the key to sit in its correct sorted spot.
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place the key after the element just smaller than it
+    arr[j + 1] = key;
   }
-  return true;
 }
+const nums = [5, 2, 9, 1, 5, 6];
+insertionSort(nums);
+console.log(nums); // [1, 2, 5, 5, 6, 9]
