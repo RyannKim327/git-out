@@ -1,34 +1,35 @@
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined; // no second element
+// A very lightweight node definition –
+export class ListNode {
+  constructor(public val: number, public next: ListNode | null = null) {}
+}
 
-  let largest = -Infinity;
-  let second = -Infinity;
+/**
+ * Returns the middle node of a linked list.
+ * If there are an even number of nodes, it returns the *first* of the two middle nodes.
+ * (Adjust `result` if you prefer the second middle node instead.)
+ */
+export function findMiddle(head: ListNode | null): ListNode | null {
+  if (!head) return null;
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n !== largest) {
-      second = n;
-    }
+  let slow = head;          // moves one step at a time
+  let fast = head;          // moves two steps at a time
+
+  // Advance until fast reaches the end
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return second === -Infinity ? undefined : second;
+  return slow;   // `slow` rests right on the middle (or first middle)
 }
-function secondLargest(nums: number[]): number | undefined {
-  const unique = Array.from(new Set(nums));     // remove duplicates
-  if (unique.length < 2) return undefined;      // no second element
+// Helper to build a list quickly
+const build = (values: number[]) =>
+  values.reduceRight((next, v) => new ListNode(v, next), null as any);
 
-  unique.sort((a, b) => b - a);                // descending order
-  return unique[1];
-}
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+// 1 → 2 → 3 → 4 → 5   → middle is 3
+const list1 = build([1, 2, 3, 4, 5]);
+console.log(findMiddle(list1)!.val); // 3
 
-  const max = Math.max(...nums);
-  const second = Math.max(...nums.filter(x => x !== max));
-  return second === -Infinity ? undefined : second;
-}
-const arr = [5, 1, 8, 7, 8, 3];
-
-console.log(secondLargest(arr)); // 7
+// 1 → 2 → 3 → 4        → middle returned is 2
+const list2 = build([1, 2, 3, 4]);
+console.log(findMiddle(list2)!.val); // 2
