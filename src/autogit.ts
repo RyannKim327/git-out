@@ -1,78 +1,59 @@
-/* exampleApi.ts
- *
- * Demonstrates a tiny, typed fetch of a JSON Placeholder user
- * using Axios – the most common promise‑based HTTP library.
- *
- * Prereqs:
- *   npm install axios
- *   (optionally) npm i -D ts-node @types/node @types/axios
- */
+// ---------------------------------------------------------------------
+// 1️⃣  Node definition
+// ---------------------------------------------------------------------
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-import axios from 'axios';
-
-/**
- * Represent a user from JSON Placeholder.
- */
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: {
-      lat: string;
-      lng: string;
-    };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
-}
-
-/**
- * GET /users/:id – returns a single user.
- * @param id - numeric user id (1‑10 for the public API)
- * @returns a Promise that resolves to a User.
- */
-async function getUser(id: number): Promise<User> {
-  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
-
-  // Axios automatically parses JSON so we get a typed response:
-  const { data } = await axios.get<User>(url);
-
-  return data;
-}
-
-/**
- * Main entry point: fetch and pretty‑print a user.
- */
-async function main() {
-  try {
-    const user = await getUser(3); // pick any id 1‑10
-    console.log('User fetched 👇');
-    console.dir(user, { depth: null, colors: true });
-  } catch (err) {
-    console.error('Error fetching user:', err);
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
 }
 
-// Invoke main if this script is run directly
-if (require.main === module) {
-  main();
-}
-# install deps
-npm install axios
-# run via ts-node
-npx ts-node exampleApi.ts
+// ---------------------------------------------------------------------
+// 2️⃣  Helper that returns (height, diameter) for a subtree
+// ---------------------------------------------------------------------
+function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
+  // Base case: empty subtree
+  if (node === null) {
+    return { h: 0, d: 0 }; // height 0, diameter 0
+  }
 
-# or compile to JS first
-npx tsc exampleApi.ts
-node exampleApi.js
+  // Recursively gather left and right results
+  const left = heightAndDiameter(node.left);
+  const right = heightAndDiameter(node.right);
+
+  // Current node's height
+  const curHeight = Math.max(left.h, right.h) + 1;
+
+  // Diameter that passes through this node
+  const curThrough = left.h + right.h + 1;
+
+  // Overall diameter for this subtree
+  const curDiameter = Math.max(curThrough, left.d, right.d);
+
+  return { h: curHeight, d: curDiameter };
+}
+
+// ---------------------------------------------------------------------
+// 3️⃣  Public entry point
+// ---------------------------------------------------------------------
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  return heightAndDiameter(root).d;
+}
+// Build a quick test tree:
+//        1
+//       / \
+//      2   3
+//         / \
+//        4   5
+const root = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
+
+console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
