@@ -1,23 +1,67 @@
-function firstRepeatedChar(s: string): string | undefined {
-  // Use a set to record characters we've already seen.
-  const seen = new Set<string>();
+type Node = {
+  id:          string;   // whatever uniquely identifies a node
+  children?:   Node[];   // adjacency list – change to whatever your graph uses
+};
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      // This is the first time we hit a duplicate.
-      return ch;
+interface StackItem {
+  node:  Node;
+  depth: number;
+}
+
+/**
+ * Iterative DFS that stops at a given depth limit.
+ * Returns true if the target is found, otherwise false.
+ */
+function depthLimitedDFS(
+  root:   Node,
+  targetId: string,
+  maxDepth: number
+): boolean {
+  const stack: StackItem[] = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;      // pop from the end
+
+    if (node.id === targetId) return true;     // hit
+
+    if (depth < maxDepth) {                   // still room to descend
+      const children = node.children ?? [];
+      // push children in reverse order if you want particular visit order
+      for (let i = children.length - 1; i >= 0; i--) {
+        stack.push({ node: children[i], depth: depth + 1 });
+      }
     }
-    seen.add(ch);
   }
-
-  // No duplicates found.
-  return undefined;
+  return false;
 }
+function depthLimitedBFS(
+  root:   Node,
+  targetId: string,
+  maxDepth: number
+): boolean {
+  const queue: StackItem[] = [{ node: root, depth: 0 }];
 
-// Example usage
-console.log(firstRepeatedChar("hello"));    // → "l"
-console.log(firstRepeatedChar("abcdef"));   // → undefined
-console.log(firstRepeatedChar("aabbcc"));   // → "a"
-function firstRepeatedCharImmutable(s: string): string | undefined {
-  return Array.from(s).find((ch, idx, arr) => arr.indexOf(ch) !== idx);
+  while (queue.length) {
+    const { node, depth } = queue.shift()!;  // shift from the front
+
+    if (node.id === targetId) return true;
+
+    if (depth < maxDepth) {
+      for (const child of node.children ?? []) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return false;
 }
+const tree: Node = {
+  id: 'root',
+  children: [
+    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
+    { id: 'b', children: [{ id: 'e' }] }
+  ]
+};
+
+console.log(depthLimitedDFS(tree, 'd', 2)); // true
+console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
+console.log(depthLimitedBFS(tree, 'e', 1)); // true
