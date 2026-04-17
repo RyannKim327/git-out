@@ -1,48 +1,80 @@
 /**
- * Bubble‑sort an array.
+ * Sorts an array of numbers in ascending order using selection sort.
+ * The array is sorted in place.
  *
- * @param arr          The array to sort (does not get mutated).
- * @param compareFn    Optional comparison function.  
- *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
- *                     If omitted, the default comparator uses the `<` and `>` operators that work
- *                     for numbers, strings and any type that can be compared that way.
- * @returns            A new array containing the elements of `arr` in ascending order.
+ * @param arr – the number array to sort
+ * @returns the same array reference, now sorted
  */
-export function bubbleSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  // Make a shallow copy; we don’t want to touch the caller’s array
-  const result = [...arr];
+export function selectionSortNumbers(arr: number[]): number[] {
+  const n = arr.length;
 
-  const compare = compareFn ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  for (let i = 0; i < n - 1; i++) {
+    // Assume the first unsorted element is the minimum
+    let minIndex = i;
 
-  const n = result.length;
-  if (n < 2) return result; // already sorted
-
-  let swapped: boolean;
-  // Standard bubble‑sort: keep looping while we keep swapping
-  do {
-    swapped = false;
-    for (let i = 0; i < n - 1; i++) {
-      if (compare(result[i], result[i + 1]) > 0) {
-        // swap
-        [result[i], result[i + 1]] = [result[i + 1], result[i]];
-        swapped = true;
+    // Find the actual minimum among the remaining unsorted portion
+    for (let j = i + 1; j < n; j++) {
+      if (arr[j] < arr[minIndex]) {
+        minIndex = j;
       }
     }
-  } while (swapped);
 
-  return result;
+    // If a smaller element was found, swap it into place
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
+  }
+
+  return arr;
 }
-const unsorted = [5, 3, 8, 4, 2];
-const sorted = bubbleSort(unsorted);
-console.log(sorted); // [2, 3, 4, 5, 8]
-console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
-const words = ["banana", "Apple", "cherry"];
-const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(sortedByCase); // ["Apple", "banana", "cherry"]
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
+/**
+ * Sorts an array in place using selection sort and a custom comparator.
+ *
+ * @param arr         The array to sort.
+ * @param compareFn   Comparator that defines the sort order.
+ * @returns The sorted array (same reference as @param arr).
+ */
+export function selectionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  const n = arr.length;
+
+  for (let i = 0; i < n - 1; i++) {
+    let minIndex = i;
+
+    for (let j = i + 1; j < n; j++) {
+      if (compareFn(arr[j], arr[minIndex]) < 0) {
+        minIndex = j;
+      }
+    }
+
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
+  }
+
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: 'Alice', age: 29 },
+  { name: 'Bob', age: 23 },
+  { name: 'Charlie', age: 35 }
+];
+
+// Sort by age (ascending)
+selectionSort(people, (a, b) => a.age - b.age);
+
+console.log(people);
+// → [
+//      { name: 'Bob', age: 23 },
+//      { name: 'Alice', age: 29 },
+//      { name: 'Charlie', age: 35 }
+//    ]
