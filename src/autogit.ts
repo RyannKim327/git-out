@@ -1,67 +1,40 @@
-type Node = {
-  id:          string;   // whatever uniquely identifies a node
-  children?:   Node[];   // adjacency list – change to whatever your graph uses
-};
-
-interface StackItem {
-  node:  Node;
-  depth: number;
-}
-
 /**
- * Iterative DFS that stops at a given depth limit.
- * Returns true if the target is found, otherwise false.
+ * Binary search – recursive version
+ *
+ * @param arr   Sorted array (ascending order)
+ * @param target Value you’re looking for
+ * @param low   Left boundary (inclusive) – do **not** pass this on the first call
+ * @param high  Right boundary (inclusive) – do **not** pass this on the first call
+ * @returns Index of target, or -1 if absent
  */
-function depthLimitedDFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const stack: StackItem[] = [{ node: root, depth: 0 }];
+function binarySearch<T extends number | string>(
+    arr: readonly T[],
+    target: T,
+    low = 0,
+    high = arr.length - 1
+): number {
+    // Base case: empty range → not found
+    if (low > high) return -1;
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;      // pop from the end
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-    if (node.id === targetId) return true;     // hit
-
-    if (depth < maxDepth) {                   // still room to descend
-      const children = node.children ?? [];
-      // push children in reverse order if you want particular visit order
-      for (let i = children.length - 1; i >= 0; i--) {
-        stack.push({ node: children[i], depth: depth + 1 });
-      }
+    if (midVal === target) {
+        return mid;                     // found
+    } else if (midVal < target) {
+        // search right half
+        return binarySearch(arr, target, mid + 1, high);
+    } else {
+        // left half
+        return binarySearch(arr, target, low, mid - 1);
     }
-  }
-  return false;
 }
-function depthLimitedBFS(
-  root:   Node,
-  targetId: string,
-  maxDepth: number
-): boolean {
-  const queue: StackItem[] = [{ node: root, depth: 0 }];
-
-  while (queue.length) {
-    const { node, depth } = queue.shift()!;  // shift from the front
-
-    if (node.id === targetId) return true;
-
-    if (depth < maxDepth) {
-      for (const child of node.children ?? []) {
-        queue.push({ node: child, depth: depth + 1 });
-      }
-    }
-  }
-  return false;
+const nums = [1, 4, 7, 12, 19, 31, 55];
+const idx  = binarySearch(nums, 19);
+console.log(idx);   // 4
+function binarySearchIter<T extends number | string>(
+    arr: readonly T[],
+    target: T
+): number {
+    return binarySearch(arr, target);
 }
-const tree: Node = {
-  id: 'root',
-  children: [
-    { id: 'a', children: [{ id: 'c' }, { id: 'd' }] },
-    { id: 'b', children: [{ id: 'e' }] }
-  ]
-};
-
-console.log(depthLimitedDFS(tree, 'd', 2)); // true
-console.log(depthLimitedDFS(tree, 'e', 1)); // false  (not deep enough)
-console.log(depthLimitedBFS(tree, 'e', 1)); // true
