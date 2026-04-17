@@ -1,25 +1,31 @@
-function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
-  if (arr.length < 2) return true;           // One or no elements is always sorted
-
-  // Default comparison is the "<=" operator for primitives
-  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
-
-  for (let i = 1; i < arr.length; i++) {
-    // If the current element is less than the previous one, it’s not sorted
-    if (cmp(arr[i - 1], arr[i]) > 0) return false;
+/**
+ * Recursively calculates the factorial of a non‑negative integer.
+ *
+ * @param n - the number to compute the factorial of
+ * @returns n! as a number (works well up to ~170 before overflow)
+ */
+function factorial(n: number): number {
+  // Guard against negative input - factorial isn’t defined there
+  if (n < 0) {
+    throw new Error('Factorial is only defined for non‑negative integers.');
   }
-  return true;
+
+  // Base case: 0! === 1 and 1! === 1
+  if (n <= 1) {
+    return 1;
+  }
+
+  // Recursive case
+  return n * factorial(n - 1);
 }
-console.log(isSortedAsc([1, 2, 3, 4]));  // true
-console.log(isSortedAsc([1, 3, 2, 5]));  // false
-interface Person { age: number; name: string }
 
-const people = [
-  { age: 22, name: "Alice" },
-  { age: 29, name: "Bob" },
-  { age: 30, name: "Carol" }
-];
+// Quick demo:
+console.log(factorial(5)); // 120
+function factorialBig(n: bigint): bigint {
+  if (n < 0n) {
+    throw new Error('Factorial is only defined for non‑negative integers.');
+  }
+  return n <= 1n ? 1n : n * factorialBig(n - 1n);
+}
 
-console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
-const isSortedAscShortcut = (arr: number[]): boolean =>
-  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+console.log(factorialBig(20n)); // 2432902008176640000n
