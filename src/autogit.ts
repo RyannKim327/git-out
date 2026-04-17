@@ -1,56 +1,53 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
-
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
-
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
-    }
-
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
 }
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
-
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
-
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
-
-    return merge(left, right, compare);
+// Example
+const arr1 = [1, 2, 3, 4, 5];
+const arr2 = [3, 4, 5, 6, 7];
+console.log(intersection(arr1, arr2)); // → [3, 4, 5]
+function intersectionByOrder<T>(a: T[], b: T[]): T[] {
+  const setA = new Set(a);
+  return b.filter(x => setA.has(x));
 }
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
+function multisetIntersection<T>(a: T[], b: T[]): T[] {
+  const counts = new Map<T, number>();
+  for (const item of a)
+    counts.set(item, (counts.get(item) ?? 0) + 1);
 
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
+  const result: T[] = [];
+  for (const item of b) {
+    const cnt = counts.get(item);
+    if (cnt && cnt > 0) {
+      result.push(item);
+      counts.set(item, cnt - 1);
+    }
+  }
+  return result;
+}
 
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
+// Example
+// a: [1, 2, 2, 3], b: [2, 2, 4]
+console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
+function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
+  const map = new Map<any, T>();
+  for (const item of b) map.set(keyFn(item), item);
+
+  const result: T[] = [];
+  for (const item of a) {
+    const match = map.get(keyFn(item));
+    if (match) result.push(match); // or push(item) if you prefer
+  }
+  return result;
+}
+
+// Example
+interface Person { id: number; name: string }
+const peopleA = [{id:1},{id:2},{id:3}];
+const peopleB = [{id:2},{id:4}];
+console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
+export const arrayUtils = {
+  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
+  // … other helpers here
+};
