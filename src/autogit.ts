@@ -1,107 +1,105 @@
-// A node can be anything that uniquely identifies a state.
-interface Node {
-  /** A unique string – the node’s id. */
-  id: string;
-  // Whatever other data the node owns can live here.
-  value?: any;
-}
+// Boyer-Moore string search in TypeScript
+// --------------------------------------------------------
 
-// Edges are just a mapping from a node id to its adjacent node ids.
-type AdjacencyList = Record<string, string[]>;
-
-// A path is simply an array of nodes (or their ids). Keep it generic so you
-// can work with a tree, graph, maze, etc.
-type Path = Node[];
 /**
- * Depth‑limited search.
- *
- * @param node      the current node
- * @param goalId    id of the goal node
- * @param graph     adjacency list describing neighbours
- * @param maxDepth  maximum depth you are allowed to go
- * @param pathSoFar the nodes traversed so far
- * @returns a Path to the goal, or null if the goal is deeper than maxDepth
+ * Build the bad‑character shift table.
+ * Return an array of 256 integers (for each possible char code).
+ * For Unicode > 0xFF we fallback to a Map.
  */
-function depthLimitedSearch(
-  node: Node,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number,
-  pathSoFar: Path = []
-): Path | null {
-  // If the current depth is already beyond what we’re allowed, reject.
-  if (pathSoFar.length > maxDepth) return null;
+function buildBadCharTable(pattern: string): { table: number[]; map: Map<number, number> } {
+  const table = new Array(256).fill(-1);
+  const map = new Map<number, number>();
 
-  // Add the current node to the path
-  const newPath = [...pathSoFar, node];
-
-  // Goal check
-  if (node.id === goalId) return newPath;
-
-  // Stop if this depth is the last allowed – do NOT keep recursing
-  if (newPath.length === maxDepth) return null;
-
-  // Fetch neighbours; guard against a missing entry
-  const neighbours = graph[node.id] ?? [];
-
-  for (const neighbourId of neighbours) {
-    // Avoid looping back on the same node in the current path
-    if (newPath.some(n => n.id === neighbourId)) continue;
-
-    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
-
-    const result = depthLimitedSearch(
-      neighbourNode,
-      goalId,
-      graph,
-      maxDepth,
-      newPath
-    );
-    if (result) return result; // found a valid path
+  for (let i = 0; i < pattern.length; i++) {
+    const code = pattern.charCodeAt(i);
+    if (code < 256) table[code] = i;
+    else map.set(code, i);
   }
 
-  return null; // nothing found at this depth
+  return { table, map };
 }
+
 /**
- * Iterative‑deepening DFS that stops when it finds the goal or
- * when a supplied depth limit is reached.
- *
- * @param startId    id of the start node
- * @param goalId     id of the goal node
- * @param graph      adjacency list
- * @param maxDepth   the deepest depth you’re willing to explore
- * @returns a Path to the goal or null if none exists within depth
+ * Build the good‑suffix shift array.
+ * Returns an array `shift` where shift[i] tells how far to jump
+ * when a mismatch occurs at pattern index i.
  */
-function iterativeDeepening(
-  startId: string,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number
-): Path | null {
-  const startNode: Node = { id: startId }; // elaborate if needed
+function buildGoodSuffixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const suffix = new Array(m).fill(-1);
+  const prefix = new Array(m).fill(false);
+  const shift = new Array(m).fill(m); // default shift = pattern length
 
-  for (let depth = 0; depth <= maxDepth; depth++) {
-    const result = depthLimitedSearch(startNode, goalId, graph, depth);
-    if (result) return result;
+  // Phase 1: find suffixes
+  for (let i = 0; i < m - 1; i++) {
+    let j = i;
+    let k = 0; // length of matched suffix
+    while (j >= 0 && pattern[j] === pattern[m - 1 - k]) {
+      j--;
+      k++;
+      suffix[k] = j + 1;
+    }
+    if (j === -1) {
+      // suffix matched entire prefix
+      for (let l = k + 1; l <= m - 1; l++) {
+        if (shift[l] === m) shift[l] = m - k - 1;
+      }
+    }
   }
-  return null;
-}
-const graph: AdjacencyList = {
-  A: ['B', 'C'],
-  B: ['D', 'E'],
-  C: ['F'],
-  D: [],
-  E: ['G', 'H'],
-  F: ['I'],
-  G: [],
-  H: [],
-  I: [],
-};
 
-const path = iterativeDeepening('A', 'H', graph, 10);
-if (path) {
-  console.log('Found path:', path.map(n => n.id).join(' → '));
-} else {
-  console.log('No path found within the depth limit');
+  // Phase 2: compute shift values
+  for (let i = m - 1; i >= 0; i--) {
+    if (suffix[i] !== -1) {
+      shift[i] = m - suffix[i] - i;
+    }
+  }
+
+  return shift;
 }
-Found path: A → B → E → H
+
+/**
+ * Boyer‑Moore search: returns the first index of `pattern` in `text` or -1 if not found.
+ */
+export function boyerMooreSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;
+
+  const { table: badCharTable, map: badCharMap } = buildBadCharTable(pattern);
+  const goodSuffix = buildGoodSuffixTable(pattern);
+
+  const n = text.length;
+  const m = pattern.length;
+  let s = 0; // shift of the pattern relative to text
+
+  while (s <= n - m) {
+    let j = m - 1;
+
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return s; // match found
+    }
+
+    const badCharCode = text.charCodeAt(s + j);
+    const badCharIdx = badCharCode < 256 ? badCharTable[badCharCode] : badCharMap.get(badCharCode) ?? -1;
+    const badShift = j - badCharIdx;
+
+    const goodShift = goodSuffix[j];
+
+    // take the greater jump
+    s += Math.max(badShift, goodShift);
+  }
+
+  return -1; // no match
+}
+import { boyerMooreSearch } from './boyer-moore';
+
+const text = "the quick brown fox jumps over the lazy dog";
+const pattern = "fox";
+
+const idx = boyerMooreSearch(text, pattern);
+console.log(idx); // 16
+
+// not found
+console.log(boyerMooreSearch(text, "cat")); // -1
