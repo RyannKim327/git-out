@@ -1,14 +1,24 @@
-function customLength(s: string): number {
-  let count = 0;
-  while (s[count] !== undefined) {
-    count++;
+/**
+ * Returns the mean of a non‑empty list of numbers.
+ * Throws if the array is empty or contains non‑numeric values.
+ *
+ * @param numbers – an array of numbers
+ * @returns the arithmetic mean
+ */
+function mean(numbers: readonly number[]): number {
+  if (numbers.length === 0) {
+    throw new Error('Cannot compute mean of an empty array.');
   }
-  return count;
+
+  const sum = numbers.reduce((acc, val) => {
+    if (typeof val !== 'number' || Number.isNaN(val)) {
+      throw new Error(`Invalid value detected: ${val}`);
+    }
+    return acc + val;
+  }, 0);
+
+  return sum / numbers.length;
 }
-function customLengthUsingForOf(s: string): number {
-  let count = 0;
-  for (const _ of s) {
-    count++;
-  }
-  return count;
-}
+const scores = [80, 92, 75, 88];
+
+console.log(mean(scores)); // → 84.25
