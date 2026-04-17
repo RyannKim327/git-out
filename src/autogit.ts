@@ -1,41 +1,21 @@
-// Basic singly‑linked list node
-type ListNode<T> = { value: T; next: ListNode<T> | null };
-
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) throw new Error("n must be a positive integer");
-
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // 1️⃣ Move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null; // fewer than n nodes
-    fast = fast.next;
-  }
-
-  // 2️⃣ Move both pointers until fast is at the end
-  while (fast) {
-    fast = fast.next;
-    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
-  }
-
-  return slow; // happy: nth from end
+/**
+ * Removes all vowels (a, e, i, o, u) from the given string.
+ *
+ * @param str - The input string to process.
+ * @returns A new string with all vowels removed.
+ */
+export function removeVowels(str: string): string {
+  // The regex matches any of a, e, i, o, u in either case.
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
-// build a list 1 -> 2 -> 3 -> 4 -> 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const head: ListNode<number> = { value: 1, next: node2 };
-
-const thirdFromEnd = nthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 3
-function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let current = head;
-  let idx = 1;
-  while (current && idx < n) {
-    current = current.next;
-    idx++;
+console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
+console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
+return str.replace(/[aeiouyAEIOUY]/g, '');
+export function removeVowelsManual(str: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of str) {
+    if (!vowels.has(ch)) result += ch;
   }
-  return idx === n ? current : null;
+  return result;
 }
