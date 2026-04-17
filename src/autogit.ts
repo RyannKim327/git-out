@@ -1,55 +1,78 @@
-/**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
+/* exampleApi.ts
+ *
+ * Demonstrates a tiny, typed fetch of a JSON Placeholder user
+ * using Axios – the most common promise‑based HTTP library.
+ *
+ * Prereqs:
+ *   npm install axios
+ *   (optionally) npm i -D ts-node @types/node @types/axios
  */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
 
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
+import axios from 'axios';
 
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
+/**
+ * Represent a user from JSON Placeholder.
+ */
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: {
+      lat: string;
+      lng: string;
+    };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
+}
 
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
+/**
+ * GET /users/:id – returns a single user.
+ * @param id - numeric user id (1‑10 for the public API)
+ * @returns a Promise that resolves to a User.
+ */
+async function getUser(id: number): Promise<User> {
+  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
 
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
+  // Axios automatically parses JSON so we get a typed response:
+  const { data } = await axios.get<User>(url);
 
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
+  return data;
+}
 
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
+/**
+ * Main entry point: fetch and pretty‑print a user.
+ */
+async function main() {
+  try {
+    const user = await getUser(3); // pick any id 1‑10
+    console.log('User fetched 👇');
+    console.dir(user, { depth: null, colors: true });
+  } catch (err) {
+    console.error('Error fetching user:', err);
   }
 }
-import { Stack } from './Stack';
 
-const stack = new Stack<number>();
+// Invoke main if this script is run directly
+if (require.main === module) {
+  main();
+}
+# install deps
+npm install axios
+# run via ts-node
+npx ts-node exampleApi.ts
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
-
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+# or compile to JS first
+npx tsc exampleApi.ts
+node exampleApi.js
