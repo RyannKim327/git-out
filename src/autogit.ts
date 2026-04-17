@@ -1,53 +1,34 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
 }
-
-// Example
-const arr1 = [1, 2, 3, 4, 5];
-const arr2 = [3, 4, 5, 6, 7];
-console.log(intersection(arr1, arr2)); // → [3, 4, 5]
-function intersectionByOrder<T>(a: T[], b: T[]): T[] {
-  const setA = new Set(a);
-  return b.filter(x => setA.has(x));
+function reverseUnicodeString(str: string): string {
+  const chars: string[] = [];
+  for (const ch of str) {
+    chars.unshift(ch);            // add each code‑point to the front
+  }
+  return chars.join('');
 }
-function multisetIntersection<T>(a: T[], b: T[]): T[] {
-  const counts = new Map<T, number>();
-  for (const item of a)
-    counts.set(item, (counts.get(item) ?? 0) + 1);
-
-  const result: T[] = [];
-  for (const item of b) {
-    const cnt = counts.get(item);
-    if (cnt && cnt > 0) {
-      result.push(item);
-      counts.set(item, cnt - 1);
-    }
+function reverseStringLoop(str: string): string {
+  const buf = str.split('');
+  let i = 0;
+  let j = buf.length - 1;
+  while (i < j) {
+    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
+    ++i;
+    --j;
+  }
+  return buf.join('');
+}
+function reverseFunctional(str: string): string {
+  return [...str].reduceRight((acc, char) => acc + char, '');
+}
+function reverseStringFast(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
   }
   return result;
 }
-
-// Example
-// a: [1, 2, 2, 3], b: [2, 2, 4]
-console.log(multisetIntersection([1, 2, 2, 3], [2, 2, 4])); // → [2, 2]
-function intersectionObjects<T>(a: T[], b: T[], keyFn: (x: T) => any): T[] {
-  const map = new Map<any, T>();
-  for (const item of b) map.set(keyFn(item), item);
-
-  const result: T[] = [];
-  for (const item of a) {
-    const match = map.get(keyFn(item));
-    if (match) result.push(match); // or push(item) if you prefer
-  }
-  return result;
-}
-
-// Example
-interface Person { id: number; name: string }
-const peopleA = [{id:1},{id:2},{id:3}];
-const peopleB = [{id:2},{id:4}];
-console.log(intersectionObjects(peopleA, peopleB, p => p.id)); // → [{id:2}]
-export const arrayUtils = {
-  intersection: <T>(a: T[], b: T[]) => new Set(b).size ? a.filter(v => new Set(b).has(v)) : [],
-  // … other helpers here
-};
+const raw = 'Hello, 🌍!';
+console.log(reverseString(raw));           // "!🌍 ,olleH"
+console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
