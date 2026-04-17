@@ -1,28 +1,39 @@
 /**
- * Sorts an array of numbers (or any type that can be compared) in place.
- * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
+ * Return true if `a` and `b` contain the same letters in any order.
+ *
+ * The function is case‑insensitive and skips any non‑alphanumeric
+ * characters (e.g. spaces, punctuation). If you want stricter rules,
+ * just comment out the cleanup lines.
  */
-export function insertionSort<T>(arr: T[]): void {
-  // Nothing to do for empty or single‑element arrays
-  if (arr.length < 2) return;
+function areAnagrams(a: string, b: string): boolean {
+  // 1️⃣ Normalise: lowercase, strip non‑alphanumerics
+  const clean = (s: string) =>
+    s.replace(/[^a-z0-9]/gi, "").toLowerCase();
 
-  // Iterate over the array starting at index 1 because the sub‑array
-  // arr[0..i‑1] is already considered sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  const cleanA = clean(a);
+  const cleanB = clean(b);
 
-    // Shift elements that are greater than the key one position to the right.
-    // This makes space for the key to sit in its correct sorted spot.
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  // 2️⃣ Quick length check – avoids extra work
+  if (cleanA.length !== cleanB.length) return false;
 
-    // Place the key after the element just smaller than it
-    arr[j + 1] = key;
+  // 3️⃣ Count frequency of each character in `cleanA`
+  const freq: Record<string, number> = {};
+
+  for (const ch of cleanA) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
+
+  // 4️⃣ Decrement using characters from `cleanB`
+  for (const ch of cleanB) {
+    if (!freq[ch]) return false; // missing char or too many of it
+    freq[ch]!--;                  // (non‑null assertion OK here)
+  }
+
+  // 5️⃣ All frequencies should be zero now
+  return Object.values(freq).every(v => v === 0);
 }
-const nums = [5, 2, 9, 1, 5, 6];
-insertionSort(nums);
-console.log(nums); // [1, 2, 5, 5, 6, 9]
+console.log(areAnagrams("listen", "silent"));          // true
+console.log(areAnagrams("Triangle", "Integral"));      // true
+console.log(areAnagrams("Hello!", "oellH"));           // true  (ignores punctuation)
+console.log(areAnagrams("Square", "Quears  "));        // true  (ignores spaces)
+console.log(areAnagrams("Hello", "world"));            // false
