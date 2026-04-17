@@ -1,24 +1,55 @@
-const numbers: number[] = [3, 7, -2, 9, 5];
+/**
+ * Return the median of two sorted arrays (integer values).
+ *
+ * @param a First sorted array (may be empty)
+ * @param b Second sorted array (may be empty)
+ * @returns median as a number
+ */
+function findMedianSortedArrays(a: number[], b: number[]): number {
+  // make sure a is the shorter array – helps keep log‑time on the shorter side
+  if (a.length > b.length) return findMedianSortedArrays(b, a);
 
-const max = Math.max(...numbers);
-console.log(max); // 9
-const max = numbers.length ? Math.max(...numbers) : undefined;
-const max = numbers.reduce((a, b) => (a > b ? a : b));
-console.log(max); // 9
-const {max, index} = numbers.reduce(
-  (acc, val, idx) =>
-    val > acc.max
-      ? {max: val, index: idx}
-      : acc,
-  {max: Number.NEGATIVE_INFINITY, index: -1}
-);
+  const m = a.length;
+  const n = b.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-console.log(max, index); // 9 3
-function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
+  let low = 0;
+  let high = m;
+
+  while (low <= high) {
+    // i is the cut in a, j in b
+    const i = Math.floor((low + high) / 2);
+    const j = halfLen - i;
+
+    const Aleft  = i === 0     ? -Infinity : a[i - 1];
+    const Aright = i === m     ? Infinity  : a[i];
+    const Bleft  = j === 0     ? -Infinity : b[j - 1];
+    const Bright = j === n     ? Infinity  : b[j];
+
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // perfect split found
+      if ((m + n) % 2 === 0) {
+        // even number of elements – average of the two middle values
+        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+      } else {
+        // odd – the max on the left side
+        return Math.max(Aleft, Bleft);
+      }
+    } else if (Aleft > Bright) {
+      // i is too big – move left
+      high = i - 1;
+    } else {
+      // i is too small – move right
+      low = i + 1;
+    }
+  }
+
+  // Should never reach here if input arrays are sorted
+  throw new Error('Input arrays are not valid');
 }
 
-// Example usage
-const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
-const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
+/* ---------- usage ---------- */
+console.log(findMedianSortedArrays([1, 3], [2]));          // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));      // 2.5
+console.log(findMedianSortedArrays([], [1]));             // 1
+console.log(findMedianSortedArrays([5], [1, 2, 3, 4]));   // 3.5
