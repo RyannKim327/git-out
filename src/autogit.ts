@@ -1,42 +1,28 @@
 /**
- * Returns the maximum sum sub‑array of a one‑dimensional numeric array,
- * together with the start and end indices of that sub‑array.
+ * How many times does `word` appear in `text`?
  *
- * @param nums   – array of numbers (can contain negatives!)
- * @returns      { sum, start, end }
- *
- * Complexity: O(n) time, O(1) extra space
+ * @param text   The string to search.
+ * @param word   The exact word you’re looking for (case‑insensitive).
+ * @returns      Number of matches.
  */
-export function maxSubArray(nums: number[]): { sum: number; start: number; end: number } {
-  if (nums.length === 0) throw new Error('Array must contain at least one element');
+export function countWord(text: string, word: string): number {
+  if (!word) return 0;                      // avoid /()/ which matches every position
 
-  let globalMax = nums[0];
-  let currentSum = nums[0];
-
-  // Track the indices
-  let startIdx = 0;          // beginning of the current candidate
-  let bestStartIdx = 0;      // beginning of the best so far
-  let bestEndIdx = 0;        // end of the best so far
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the current sub‑array or start fresh at i
-    if (currentSum + nums[i] > nums[i]) {
-      currentSum += nums[i];
-    } else {
-      currentSum = nums[i];
-      startIdx = i;         // new sub‑array starts here
-    }
-
-    // Did we find a new champion?
-    if (currentSum > globalMax) {
-      globalMax = currentSum;
-      bestStartIdx = startIdx;
-      bestEndIdx = i;
-    }
-  }
-
-  return { sum: globalMax, start: bestStartIdx, end: bestEndIdx };
+  const re = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
 }
-console.log(maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4]));
-// → { sum: 6, start: 3, end: 6 }
-// (the slice [4, -1, 2, 1] adds up to 6)
+
+/** Escape characters that have special meaning in a regex. */
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const note = "The quick brown fox jumps over the lazy dog. The fox is quick.";
+console.log(countWord(note, "the"));   // 3 (The, the, The)
+console.log(countWord(note, "fox"));   // 2
+function countWordSimple(text: string, word: string): number {
+  const lw = word.toLowerCase();
+  return text
+    .split(/\s+/)
+    .filter(tok => tok.toLowerCase() === lw).length;
+}
