@@ -1,142 +1,107 @@
-// --------------------------------------------
-// Binary‑heap priority queue (generic)
-// --------------------------------------------
-
-type Comparator<T> = (a: T, b: T) => number;
-
-/**
- * A priority queue that stores values in a binary heap.
- * The heap property is maintained by `comparator`.
- *
- * Examples:
- *  - new PriorityQueue<number>()          // min‑heap (default)
- *  - new PriorityQueue<number>((a,b)=>b-a) // max‑heap
- *  - new PriorityQueue<string>((a,b)=>a.localeCompare(b))
- */
-export class PriorityQueue<T> {
-  /** underlying array is 0‑based; the parent of index i is (i - 1) >> 1 */
-  private heap: T[] = [];
-
-  /** comparison function that must return negative if a < b */
-  private readonly comparator: Comparator<T>;
-
-  constructor(comparator?: Comparator<T>) {
-    // default is a min‑heap for natural order
-    this.comparator = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Public API                                                          */
-  /* ------------------------------------------------------------------ */
-
-  /** Returns true if there are no elements. */
-  isEmpty(): boolean {
-    return this.heap.length === 0;
-  }
-
-  /** Returns the element with the highest priority without removing it. */
-  peek(): T | undefined {
-    return this.heap[0];
-  }
-
-  /** Insert a new element. */
-  push(value: T): void {
-    this.heap.push(value);
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  /**
-   * Remove & return the element with the highest priority.
-   * Throws an error if the queue is empty.
-   */
-  pop(): T {
-    if (this.heap.length === 0) throw new Error('Pop from an empty priority queue');
-
-    const top = this.heap[0];
-    const last = this.heap.pop()!; // array non‑empty, so pop is safe
-
-    if (this.heap.length > 0) {
-      this.heap[0] = last;
-      this.bubbleDown(0);
-    }
-
-    return top;
-  }
-
-  /** Remove all items. */
-  clear(): void {
-    this.heap = [];
-  }
-
-  /** Current size of the queue. */
-  size(): number {
-    return this.heap.length;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Internal helpers                                                   */
-  /* ------------------------------------------------------------------ */
-
-  /** Move the element at idx up until the heap property holds. */
-  private bubbleUp(idx: number): void {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.heap[parentIdx];
-
-      // For min‑heap: bubble up when element < parent
-      if (this.comparator(element, parent) >= 0) break;
-
-      // swap
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
-
-  /** Move the element at idx down until the heap property holds. */
-  private bubbleDown(idx: number): void {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let swapIdx = -1;
-
-      if (leftIdx < length) {
-        const left = this.heap[leftIdx];
-        if (this.comparator(left, element) < 0) swapIdx = leftIdx;
-      }
-
-      if (rightIdx < length) {
-        const right = this.heap[rightIdx];
-        const betterChild = swapIdx === -1 ? element : this.heap[swapIdx];
-
-        if (this.comparator(right, betterChild) < 0) swapIdx = rightIdx;
-      }
-
-      if (swapIdx === -1) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-
-    this.heap[idx] = element;
-  }
+// A node can be anything that uniquely identifies a state.
+interface Node {
+  /** A unique string – the node’s id. */
+  id: string;
+  // Whatever other data the node owns can live here.
+  value?: any;
 }
 
-/* ------------------------------------------------------------------ */
-/* Example usage */
-/* ------------------------------------------------------------------ */
+// Edges are just a mapping from a node id to its adjacent node ids.
+type AdjacencyList = Record<string, string[]>;
 
-const pq = new PriorityQueue<number>(); // min‑heap
+// A path is simply an array of nodes (or their ids). Keep it generic so you
+// can work with a tree, graph, maze, etc.
+type Path = Node[];
+/**
+ * Depth‑limited search.
+ *
+ * @param node      the current node
+ * @param goalId    id of the goal node
+ * @param graph     adjacency list describing neighbours
+ * @param maxDepth  maximum depth you are allowed to go
+ * @param pathSoFar the nodes traversed so far
+ * @returns a Path to the goal, or null if the goal is deeper than maxDepth
+ */
+function depthLimitedSearch(
+  node: Node,
+  goalId: string,
+  graph: AdjacencyList,
+  maxDepth: number,
+  pathSoFar: Path = []
+): Path | null {
+  // If the current depth is already beyond what we’re allowed, reject.
+  if (pathSoFar.length > maxDepth) return null;
 
-pq.push(5);
-pq.push(3);
-pq.push(8);
-pq.push(1);
+  // Add the current node to the path
+  const newPath = [...pathSoFar, node];
 
-console.log(pq.pop()); // 1
-console.log(pq.pop()); // 3
-console.log([...Array(pq.size()).keys()].map(() => pq.pop())); // [5, 8]
+  // Goal check
+  if (node.id === goalId) return newPath;
+
+  // Stop if this depth is the last allowed – do NOT keep recursing
+  if (newPath.length === maxDepth) return null;
+
+  // Fetch neighbours; guard against a missing entry
+  const neighbours = graph[node.id] ?? [];
+
+  for (const neighbourId of neighbours) {
+    // Avoid looping back on the same node in the current path
+    if (newPath.some(n => n.id === neighbourId)) continue;
+
+    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
+
+    const result = depthLimitedSearch(
+      neighbourNode,
+      goalId,
+      graph,
+      maxDepth,
+      newPath
+    );
+    if (result) return result; // found a valid path
+  }
+
+  return null; // nothing found at this depth
+}
+/**
+ * Iterative‑deepening DFS that stops when it finds the goal or
+ * when a supplied depth limit is reached.
+ *
+ * @param startId    id of the start node
+ * @param goalId     id of the goal node
+ * @param graph      adjacency list
+ * @param maxDepth   the deepest depth you’re willing to explore
+ * @returns a Path to the goal or null if none exists within depth
+ */
+function iterativeDeepening(
+  startId: string,
+  goalId: string,
+  graph: AdjacencyList,
+  maxDepth: number
+): Path | null {
+  const startNode: Node = { id: startId }; // elaborate if needed
+
+  for (let depth = 0; depth <= maxDepth; depth++) {
+    const result = depthLimitedSearch(startNode, goalId, graph, depth);
+    if (result) return result;
+  }
+  return null;
+}
+const graph: AdjacencyList = {
+  A: ['B', 'C'],
+  B: ['D', 'E'],
+  C: ['F'],
+  D: [],
+  E: ['G', 'H'],
+  F: ['I'],
+  G: [],
+  H: [],
+  I: [],
+};
+
+const path = iterativeDeepening('A', 'H', graph, 10);
+if (path) {
+  console.log('Found path:', path.map(n => n.id).join(' → '));
+} else {
+  console.log('No path found within the depth limit');
+}
+Found path: A → B → E → H
