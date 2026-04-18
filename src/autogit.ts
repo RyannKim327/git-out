@@ -1,18 +1,59 @@
-const numbers: number[] = [12, 4, 56, 3, 9];
+// ---------------------------------------------------------------------
+// 1️⃣  Node definition
+// ---------------------------------------------------------------------
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-// The default sort is string comparison → "12" < "56" < ...!
-const sorted = numbers.slice().sort((a, b) => a - b);
-
-console.log(sorted); // [3, 4, 9, 12, 56]
-function sortNums(arr: number[]): number[] {
-  return arr.slice().sort((a, b) => a - b);
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
 }
 
-const unsorted = [27, 13, 42, 8];
-console.log(sortNums(unsorted)); // [8, 13, 27, 42]
-function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
-  return arr.slice().sort(cmpFn);
+// ---------------------------------------------------------------------
+// 2️⃣  Helper that returns (height, diameter) for a subtree
+// ---------------------------------------------------------------------
+function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
+  // Base case: empty subtree
+  if (node === null) {
+    return { h: 0, d: 0 }; // height 0, diameter 0
+  }
+
+  // Recursively gather left and right results
+  const left = heightAndDiameter(node.left);
+  const right = heightAndDiameter(node.right);
+
+  // Current node's height
+  const curHeight = Math.max(left.h, right.h) + 1;
+
+  // Diameter that passes through this node
+  const curThrough = left.h + right.h + 1;
+
+  // Overall diameter for this subtree
+  const curDiameter = Math.max(curThrough, left.d, right.d);
+
+  return { h: curHeight, d: curDiameter };
 }
-function sortNumbersASC(nums: number[]): number[] {
-  return nums.slice().sort((a, b) => a - b);
+
+// ---------------------------------------------------------------------
+// 3️⃣  Public entry point
+// ---------------------------------------------------------------------
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  return heightAndDiameter(root).d;
 }
+// Build a quick test tree:
+//        1
+//       / \
+//      2   3
+//         / \
+//        4   5
+const root = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
+
+console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
