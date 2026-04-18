@@ -1,25 +1,41 @@
-/**
- * Returns the maximum sum of any contiguous sub‑array of `arr`.
- * Works for arrays that contain only numbers.
- *
- * @param arr - array of numbers (can be empty)
- * @returns maximum sub‑array sum (for an empty array returns 0)
- */
-export function maxSubArraySum(arr: number[]): number {
-  if (arr.length === 0) return 0;
+// Basic singly‑linked list node
+type ListNode<T> = { value: T; next: ListNode<T> | null };
 
-  let maxEndingHere = arr[0];   // best sum ending at current index
-  let maxSoFar = arr[0];        // best sum found so far
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) throw new Error("n must be a positive integer");
 
-  for (let i = 1; i < arr.length; i++) {
-    // Either extend the previous sub‑array or start a new one at i
-    maxEndingHere = Math.max(arr[i], maxEndingHere + arr[i]);
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-    // Update the best overall sum
-    maxSoFar = Math.max(maxSoFar, maxEndingHere);
+  // 1️⃣ Move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // fewer than n nodes
+    fast = fast.next;
   }
 
-  return maxSoFar;
+  // 2️⃣ Move both pointers until fast is at the end
+  while (fast) {
+    fast = fast.next;
+    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
+  }
+
+  return slow; // happy: nth from end
 }
-const nums = [ -2, 1, -3, 4, -1, 2, 1, -5, 4 ];
-console.log(maxSubArraySum(nums));  // 6
+// build a list 1 -> 2 -> 3 -> 4 -> 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const head: ListNode<number> = { value: 1, next: node2 };
+
+const thirdFromEnd = nthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 3
+function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let current = head;
+  let idx = 1;
+  while (current && idx < n) {
+    current = current.next;
+    idx++;
+  }
+  return idx === n ? current : null;
+}
