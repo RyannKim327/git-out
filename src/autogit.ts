@@ -1,41 +1,65 @@
-// Basic singly‑linked list node
-type ListNode<T> = { value: T; next: ListNode<T> | null };
+/**
+ * Returns the largest prime factor of a positive integer (>1).
+ * Uses trial division up to √n – fast enough for 32‑bit ints.
+ */
+export function largestPrimeFactor(n: number): number {
+  if (n <= 1) throw new Error("n must be > 1");
 
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) throw new Error("n must be a positive integer");
+  // 2 is the only even prime
+  while (n % 2 === 0) n /= 2;
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // 1️⃣ Move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null; // fewer than n nodes
-    fast = fast.next;
+  // n is now odd – we only need to test odd divisors
+  let factor = 3;
+  const sqrt = Math.sqrt(n);
+  while (factor <= sqrt) {
+    while (n % factor === 0) {
+      n /= factor;          // keep dividing out this prime
+    }
+    factor += 2;            // next odd candidate
   }
 
-  // 2️⃣ Move both pointers until fast is at the end
-  while (fast) {
-    fast = fast.next;
-    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
-  }
-
-  return slow; // happy: nth from end
+  // If n is still > 2, it is a prime larger than any factor we tried.
+  return n;
 }
-// build a list 1 -> 2 -> 3 -> 4 -> 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const head: ListNode<number> = { value: 1, next: node2 };
+/**
+ * Returns the largest prime factor of a BigInt > 1.
+ */
+export function largestPrimeFactorBigInt(n: bigint): bigint {
+  if (n <= 1n) throw new Error("n must be > 1");
 
-const thirdFromEnd = nthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 3
-function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let current = head;
-  let idx = 1;
-  while (current && idx < n) {
-    current = current.next;
-    idx++;
+  // 2 is the only even prime
+  while (n % 2n === 0n) n /= 2n;
+
+  let factor = 3n;
+  const sqrt = bigintSqrt(n);
+  while (factor <= sqrt) {
+    while (n % factor === 0n) {
+      n /= factor;
+    }
+    factor += 2n;
   }
-  return idx === n ? current : null;
+
+  return n;
 }
+
+/**
+ * Integer square‑root of a BigInt – floor(√n).
+ * Uses Newton’s method; fast for large numbers.
+ */
+function bigintSqrt(value: bigint): bigint {
+  if (value < 0n) throw new Error("negative value");
+  if (value < 2n) return value;
+
+  let x0 = value;
+  let x1 = (x0 + 1n) >> 1n;
+  while (x1 < x0) {
+    x0 = x1;
+    x1 = (x0 + value / x0) >> 1n;
+  }
+  return x0;
+}
+console.log(largestPrimeFactor(13195));          // 29
+console.log(largestPrimeFactor(600851475143));   // 6857
+
+console.log(largestPrimeFactorBigInt(13195n));    // 29n
+console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
