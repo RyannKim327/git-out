@@ -1,65 +1,142 @@
+// --------------------------------------------
+// Binary‑heap priority queue (generic)
+// --------------------------------------------
+
+type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * Returns the largest prime factor of a positive integer (>1).
- * Uses trial division up to √n – fast enough for 32‑bit ints.
+ * A priority queue that stores values in a binary heap.
+ * The heap property is maintained by `comparator`.
+ *
+ * Examples:
+ *  - new PriorityQueue<number>()          // min‑heap (default)
+ *  - new PriorityQueue<number>((a,b)=>b-a) // max‑heap
+ *  - new PriorityQueue<string>((a,b)=>a.localeCompare(b))
  */
-export function largestPrimeFactor(n: number): number {
-  if (n <= 1) throw new Error("n must be > 1");
+export class PriorityQueue<T> {
+  /** underlying array is 0‑based; the parent of index i is (i - 1) >> 1 */
+  private heap: T[] = [];
 
-  // 2 is the only even prime
-  while (n % 2 === 0) n /= 2;
+  /** comparison function that must return negative if a < b */
+  private readonly comparator: Comparator<T>;
 
-  // n is now odd – we only need to test odd divisors
-  let factor = 3;
-  const sqrt = Math.sqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0) {
-      n /= factor;          // keep dividing out this prime
+  constructor(comparator?: Comparator<T>) {
+    // default is a min‑heap for natural order
+    this.comparator = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Public API                                                          */
+  /* ------------------------------------------------------------------ */
+
+  /** Returns true if there are no elements. */
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+
+  /** Returns the element with the highest priority without removing it. */
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  /** Insert a new element. */
+  push(value: T): void {
+    this.heap.push(value);
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  /**
+   * Remove & return the element with the highest priority.
+   * Throws an error if the queue is empty.
+   */
+  pop(): T {
+    if (this.heap.length === 0) throw new Error('Pop from an empty priority queue');
+
+    const top = this.heap[0];
+    const last = this.heap.pop()!; // array non‑empty, so pop is safe
+
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
     }
-    factor += 2;            // next odd candidate
+
+    return top;
   }
 
-  // If n is still > 2, it is a prime larger than any factor we tried.
-  return n;
-}
-/**
- * Returns the largest prime factor of a BigInt > 1.
- */
-export function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) throw new Error("n must be > 1");
+  /** Remove all items. */
+  clear(): void {
+    this.heap = [];
+  }
 
-  // 2 is the only even prime
-  while (n % 2n === 0n) n /= 2n;
+  /** Current size of the queue. */
+  size(): number {
+    return this.heap.length;
+  }
 
-  let factor = 3n;
-  const sqrt = bigintSqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0n) {
-      n /= factor;
+  /* ------------------------------------------------------------------ */
+  /* Internal helpers                                                   */
+  /* ------------------------------------------------------------------ */
+
+  /** Move the element at idx up until the heap property holds. */
+  private bubbleUp(idx: number): void {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.heap[parentIdx];
+
+      // For min‑heap: bubble up when element < parent
+      if (this.comparator(element, parent) >= 0) break;
+
+      // swap
+      this.heap[idx] = parent;
+      idx = parentIdx;
     }
-    factor += 2n;
+    this.heap[idx] = element;
   }
 
-  return n;
-}
+  /** Move the element at idx down until the heap property holds. */
+  private bubbleDown(idx: number): void {
+    const length = this.heap.length;
+    const element = this.heap[idx];
 
-/**
- * Integer square‑root of a BigInt – floor(√n).
- * Uses Newton’s method; fast for large numbers.
- */
-function bigintSqrt(value: bigint): bigint {
-  if (value < 0n) throw new Error("negative value");
-  if (value < 2n) return value;
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
 
-  let x0 = value;
-  let x1 = (x0 + 1n) >> 1n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) >> 1n;
+      if (leftIdx < length) {
+        const left = this.heap[leftIdx];
+        if (this.comparator(left, element) < 0) swapIdx = leftIdx;
+      }
+
+      if (rightIdx < length) {
+        const right = this.heap[rightIdx];
+        const betterChild = swapIdx === -1 ? element : this.heap[swapIdx];
+
+        if (this.comparator(right, betterChild) < 0) swapIdx = rightIdx;
+      }
+
+      if (swapIdx === -1) break;
+
+      this.heap[idx] = this.heap[swapIdx];
+      idx = swapIdx;
+    }
+
+    this.heap[idx] = element;
   }
-  return x0;
 }
-console.log(largestPrimeFactor(13195));          // 29
-console.log(largestPrimeFactor(600851475143));   // 6857
 
-console.log(largestPrimeFactorBigInt(13195n));    // 29n
-console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
+/* ------------------------------------------------------------------ */
+/* Example usage */
+/* ------------------------------------------------------------------ */
+
+const pq = new PriorityQueue<number>(); // min‑heap
+
+pq.push(5);
+pq.push(3);
+pq.push(8);
+pq.push(1);
+
+console.log(pq.pop()); // 1
+console.log(pq.pop()); // 3
+console.log([...Array(pq.size()).keys()].map(() => pq.pop())); // [5, 8]
