@@ -1,44 +1,102 @@
-const original = [1, 2, 3, 2, 4, 1];
+export interface ListNode<T = number> {
+  value: T;
+  next?: ListNode<T>;
+}
+export function isPalindromeStack<T>(head: ListNode<T> | undefined): boolean {
+  if (!head) return true;          // empty list is a palindrome
 
-const withoutDups = Array.from(new Set(original)); // [1, 2, 3, 4]
-const arr = [
-  { id: 1, name: 'A' },
-  { id: 2, name: 'B' },
-  { id: 1, name: 'A' }, // duplicate by id
-];
+  const stack: T[] = [];
+  let cur = head;
 
-const seen = new Set<number>();
-const unique = arr.filter(item => {
-  const key = item.id;                 // pick what defines uniqueness
-  if (seen.has(key)) return false;
-  seen.add(key);
+  // Stage 1 – push all values onto the stack
+  while (cur) {
+    stack.push(cur.value);
+    cur = cur.next;
+  }
+
+  // Stage 2 – iterate a second time, comparing against popped values
+  cur = head;
+  while (cur) {
+    const top = stack.pop() as T; // stack can't be empty here
+    if (cur.value !== top) return false;
+    cur = cur.next;
+  }
+
   return true;
-});
-// [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
-const arr = [
-  { id: 'x', data: 10 },
-  { id: 'y', data: 20 },
-  { id: 'x', data: 30 }, // later duplicate
-];
-
-const map = new Map<string, typeof arr[0]>();
-for (const item of arr) {
-  if (!map.has(item.id)) map.set(item.id, item);
 }
-const withoutDups = Array.from(map.values()); // keeps the first 'x'
-function uniq<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr));
-}
-const nums = uniq([4, 5, 4, 6, 5]); // [4, 5, 6]
-const arr = [1, 2, 3, 2, 4];
+export function isPalindromeLinear<T>(head: ListNode<T> | undefined): boolean {
+  if (!head) return true;
 
-const unique = arr.reduce<T[]>((acc, cur) => {
-  if (!acc.includes(cur)) acc.push(cur);
-  return acc;
-}, []); // [1, 2, 3, 4]
-function dedupe<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr));
+  // 1️⃣ Find middle (slow will stop at mid‑point)
+  let slow = head;
+  let fast = head;
+  let prevSlow: ListNode<T> | undefined = undefined;
+
+  while (fast && fast.next) {
+    fast = fast.next.next;
+    prevSlow = slow;
+    slow = slow.next;
+  }
+
+  // 2️⃣ For odd length lists, skip the middle element
+  if (fast) {
+    slow = slow.next;
+  }
+
+  // 3️⃣ Reverse the second half starting at `slow`
+  let secondHalf = reverseLinkedList(slow);
+
+  // 4️⃣ Compare the first half (up to prevSlow) with reversed second half
+  let p1 = head;
+  let p2 = secondHalf;
+  while (p2) {           // second half can be shorter or equal
+    if (p1.value !== p2.value) {
+      // Optional: undo reversal here if you want to keep list unchanged
+      return false;
+    }
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+
+  // Optional: restore first half? (skip for brevity)
+  return true;
 }
 
-console.log(dedupe([1, 2, 2, 3])); // 1 2 3
-console.log(dedupe(['a', 'b', 'a'])); // a b
+/**
+ * Reverse a linked list in place and return the new head.
+ */
+function reverseLinkedList<T>(head: ListNode<T> | undefined): ListNode<T> | undefined {
+  let prev: ListNode<T> | undefined = undefined;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev;
+}
+function build(list: number[]): ListNode | undefined {
+  let head: ListNode | undefined;
+  let tail: ListNode | undefined;
+
+  for (const val of list) {
+    const node: ListNode = { value: val };
+    if (!head) {
+      head = node;
+      tail = node;
+    } else {
+      tail!.next = node;
+      tail = node;
+    }
+  }
+  return head;
+}
+
+const evenPal = build([1, 2, 2, 1]);
+const oddPal = build([1, 3, 3, 1]);
+const nonPal = build([1, 2, 3]);
+
+console.log(isPalindromeStack(evenPal)); // true
+console.log(isPalindromeLinear(oddPal)); // true
+console.log(isPalindromeLinear(nonPal)); // false
