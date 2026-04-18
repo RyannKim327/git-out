@@ -1,48 +1,25 @@
-// random-joke.ts
-import axios from "axios";
-
 /**
- * The shape of the JSON that the Joke API gives us.
+ * Returns the maximum sum of any contiguous sub‑array of `arr`.
+ * Works for arrays that contain only numbers.
+ *
+ * @param arr - array of numbers (can be empty)
+ * @returns maximum sub‑array sum (for an empty array returns 0)
  */
-interface Joke {
-  id: number;
-  type: string;
-  setup: string;
-  punchline: string;
-}
+export function maxSubArraySum(arr: number[]): number {
+  if (arr.length === 0) return 0;
 
-/**
- * Fetch a single random joke.
- */
-const fetchRandomJoke = async (): Promise<Joke> => {
-  // The API returns an array of jokes even though we only ask for one – happy accidents.
-  const url = "https://official-joke-api.appspot.com/jokes/random";
-  const response = await axios.get<Joke>(url);
-  return response.data;
-};
+  let maxEndingHere = arr[0];   // best sum ending at current index
+  let maxSoFar = arr[0];        // best sum found so far
 
-/**
- * Pretty‑print a joke to the console.
- */
-const printJoke = (joke: Joke) => {
-  console.log(`💡 ${joke.type.toUpperCase()}`);
-  console.log(`   ${joke.setup}`);
-  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
-};
+  for (let i = 1; i < arr.length; i++) {
+    // Either extend the previous sub‑array or start a new one at i
+    maxEndingHere = Math.max(arr[i], maxEndingHere + arr[i]);
 
-/**
- * Simple wrapper that ties everything together.
- */
-const main = async () => {
-  try {
-    const joke = await fetchRandomJoke();
-    printJoke(joke);
-  } catch (err) {
-    // Axios errors contain a `response` field with the server reply.
-    // If you’re debugging, you can inspect `err.response?.data` for the text.
-    console.error("🔴 Something went wrong retrieving a joke:", err);
+    // Update the best overall sum
+    maxSoFar = Math.max(maxSoFar, maxEndingHere);
   }
-};
 
-// Run the little demo when the file is executed.
-main();
+  return maxSoFar;
+}
+const nums = [ -2, 1, -3, 4, -1, 2, 1, -5, 4 ];
+console.log(maxSubArraySum(nums));  // 6
