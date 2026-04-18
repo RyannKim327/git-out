@@ -1,18 +1,24 @@
-const arr = [1, 2, 3, 4, 5];
+const numbers: number[] = [3, 7, -2, 9, 5];
 
-// In‑place reversal
-arr.reverse();          // arr becomes [5, 4, 3, 2, 1]
+const max = Math.max(...numbers);
+console.log(max); // 9
+const max = numbers.length ? Math.max(...numbers) : undefined;
+const max = numbers.reduce((a, b) => (a > b ? a : b));
+console.log(max); // 9
+const {max, index} = numbers.reduce(
+  (acc, val, idx) =>
+    val > acc.max
+      ? {max: val, index: idx}
+      : acc,
+  {max: Number.NEGATIVE_INFINITY, index: -1}
+);
 
-// If you need a new array instead of mutating the original
-const reversed = [...arr].reverse();   // [5, 4, 3, 2, 1]
-
-// Or do it manually (e.g., for learning or if you want a custom logic)
-function reverse<T>(src: T[]): T[] {
-  const out: T[] = [];
-  for (let i = src.length - 1; i >= 0; i--) {
-    out.push(src[i]);
-  }
-  return out;
+console.log(max, index); // 9 3
+function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
 }
 
-const manualReversed = reverse([10, 20, 30]); // [30, 20, 10]
+// Example usage
+const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
+const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
