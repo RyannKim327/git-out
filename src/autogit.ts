@@ -1,41 +1,58 @@
-// Basic singly‑linked list node
-type ListNode<T> = { value: T; next: ListNode<T> | null };
-
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) throw new Error("n must be a positive integer");
-
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // 1️⃣ Move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null; // fewer than n nodes
-    fast = fast.next;
-  }
-
-  // 2️⃣ Move both pointers until fast is at the end
-  while (fast) {
-    fast = fast.next;
-    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
-  }
-
-  return slow; // happy: nth from end
+/** A very simple binary‑tree node. */
+export class TreeNode<T = unknown> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-// build a list 1 -> 2 -> 3 -> 4 -> 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const head: ListNode<number> = { value: 1, next: node2 };
 
-const thirdFromEnd = nthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 3
-function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let current = head;
-  let idx = 1;
-  while (current && idx < n) {
-    current = current.next;
-    idx++;
+/**
+ * Returns the maximum depth of a binary tree.
+ * Depth is counted in nodes, not edges.
+ *
+ * @param root The root node of the tree (or null for an empty tree).
+ * @returns an integer ≥ 0.
+ */
+export function maxDepth<T>(root: TreeNode<T> | null): number {
+  // recursion is the cleanest here
+  if (!root) return 0; // leaf’s child contributes 0
+
+  const leftDepth = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  // current node adds 1 to the greater of two sub‑depths
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
+}
+// Build a tiny tree:
+//       a
+//      / \
+//     b   c
+//    /
+//   d
+const root = new TreeNode('a',
+  new TreeNode('b',
+    new TreeNode('d')
+  ),
+  new TreeNode('c')
+);
+
+console.log(maxDepth(root)); // → 3
+export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    // All nodes in this `for` loop belong to the same level.
+    const levelSize = queue.length;
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+    depth++; // finished one level
   }
-  return idx === n ? current : null;
+  return depth;
 }
