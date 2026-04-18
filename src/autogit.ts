@@ -1,107 +1,61 @@
-// A node can be anything that uniquely identifies a state.
-interface Node {
-  /** A unique string – the node’s id. */
-  id: string;
-  // Whatever other data the node owns can live here.
-  value?: any;
-}
-
-// Edges are just a mapping from a node id to its adjacent node ids.
-type AdjacencyList = Record<string, string[]>;
-
-// A path is simply an array of nodes (or their ids). Keep it generic so you
-// can work with a tree, graph, maze, etc.
-type Path = Node[];
 /**
- * Depth‑limited search.
- *
- * @param node      the current node
- * @param goalId    id of the goal node
- * @param graph     adjacency list describing neighbours
- * @param maxDepth  maximum depth you are allowed to go
- * @param pathSoFar the nodes traversed so far
- * @returns a Path to the goal, or null if the goal is deeper than maxDepth
+ * Generic comparison, returns true if a should come before b.
+ * Default is for a number array (so it's an ascending sort).
  */
-function depthLimitedSearch(
-  node: Node,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number,
-  pathSoFar: Path = []
-): Path | null {
-  // If the current depth is already beyond what we’re allowed, reject.
-  if (pathSoFar.length > maxDepth) return null;
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  // Add the current node to the path
-  const newPath = [...pathSoFar, node];
+function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
+  const n = arr.length;
 
-  // Goal check
-  if (node.id === goalId) return newPath;
+  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
 
-  // Stop if this depth is the last allowed – do NOT keep recursing
-  if (newPath.length === maxDepth) return null;
-
-  // Fetch neighbours; guard against a missing entry
-  const neighbours = graph[node.id] ?? [];
-
-  for (const neighbourId of neighbours) {
-    // Avoid looping back on the same node in the current path
-    if (newPath.some(n => n.id === neighbourId)) continue;
-
-    const neighbourNode: Node = { id: neighbourId }; // or fetch real data
-
-    const result = depthLimitedSearch(
-      neighbourNode,
-      goalId,
-      graph,
-      maxDepth,
-      newPath
-    );
-    if (result) return result; // found a valid path
+  /* 2️⃣ Extract elements one by one */
+  for (let end = n - 1; end > 0; end--) {
+    // swap max element (root) with the last element of the heap
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    // heap size shrinks by one; restore heap property for the new root
+    siftDown(arr, 0, end, compare);
   }
-
-  return null; // nothing found at this depth
 }
+
 /**
- * Iterative‑deepening DFS that stops when it finds the goal or
- * when a supplied depth limit is reached.
- *
- * @param startId    id of the start node
- * @param goalId     id of the goal node
- * @param graph      adjacency list
- * @param maxDepth   the deepest depth you’re willing to explore
- * @returns a Path to the goal or null if none exists within depth
+ * Moves the element at `start` down the heap until the heap
+ * property is restored.  The heap is the sub‑array `[0, size)`.
  */
-function iterativeDeepening(
-  startId: string,
-  goalId: string,
-  graph: AdjacencyList,
-  maxDepth: number
-): Path | null {
-  const startNode: Node = { id: startId }; // elaborate if needed
+function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
+  let root = start;
 
-  for (let depth = 0; depth <= maxDepth; depth++) {
-    const result = depthLimitedSearch(startNode, goalId, graph, depth);
-    if (result) return result;
+  while (true) {
+    const left = 2 * root + 1;   // left child index
+    const right = left + 1;      // right child index
+    let swapIdx = root;
+
+    // if left child exists and is greater (or “comes first” by compare)
+    if (left < size && compare(arr[swapIdx], arr[left])) {
+      swapIdx = left;
+    }
+
+    // do the same for the right child
+    if (right < size && compare(arr[swapIdx], arr[right])) {
+      swapIdx = right;
+    }
+
+    // if root holds the max element, we are done
+    if (swapIdx === root) return;
+
+    // swap root with the larger child and continue
+    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
+    root = swapIdx;
   }
-  return null;
 }
-const graph: AdjacencyList = {
-  A: ['B', 'C'],
-  B: ['D', 'E'],
-  C: ['F'],
-  D: [],
-  E: ['G', 'H'],
-  F: ['I'],
-  G: [],
-  H: [],
-  I: [],
-};
 
-const path = iterativeDeepening('A', 'H', graph, 10);
-if (path) {
-  console.log('Found path:', path.map(n => n.id).join(' → '));
-} else {
-  console.log('No path found within the depth limit');
-}
-Found path: A → B → E → H
+/* --------------------  Example usage  -------------------- */
+
+const nums = [5, 1, 4, 2, 8, 0, 3];
+heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
+
+/* --------------------  Sorting strings  -------------------- */
+const strs = ["delta", "alpha", "charlie", "bravo"];
+heapSort(strs, (a, b) => a > b);   // descending order
+// strs => ["delta", "charlie", "bravo", "alpha"]
