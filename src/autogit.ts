@@ -1,58 +1,45 @@
 /**
- * Returns the BWT of `s` as an object containing
- *   - last: the encoded string (last column of the sorted matrix)
- *   - index: the row number that holds the original string (0‑based)
+ * Return the longest common prefix of an array of strings.
+ * If the array is empty the result is the empty string.
+ *
+ * @param strs Array of strings
+ * @returns The longest common prefix
  */
-function burrowsWheelerEncode(s: string): { last: string; index: number } {
-  const n = s.length;
-  // Build every rotation: slice(s, i) + slice(s, 0, i)
-  const rotations = Array.from({ length: n }, (_, i) =>
-    s.slice(i) + s.slice(0, i)
-  );
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  // Sort rotations lexicographically
-  rotations.sort();
+  // Start with the entire first string as a tentative prefix.
+  let prefix = strs[0];
 
-  // Extract last column and find original string's row
-  let lastCol = "";
-  let origIndex = -1;
-  for (let r = 0; r < n; r++) {
-    const row = rotations[r];
-    lastCol += row[row.length - 1];
-    if (row === s) origIndex = r;
-  }
-  return { last: lastCol, index: origIndex };
-}
-const { last, index } = burrowsWheelerEncode("BANANA");
-// last  => "ANNBAA"
-// index => 3   // 0‑based, the fourth row is "BANANA"
-/**
- * Inverse of the BWT.  Given the last column (`last`) and the original
- * string's row index (`index`), reconstruct the original string.
- */
-function burrowsWheelerDecode(last: string, index: number): string {
-  const n = last.length;
-  const first = [...last].sort();          // First column is sorted last
-  const table: string[] = Array(n).fill(""); // Working table of rows
+  // Iterate over the rest of the strings.
+  for (let i = 1; i < strs.length; i++) {
+    const s = strs[i];
 
-  // Repeatedly prepend last‑column chars to the table rows
-  for (let step = 0; step < n; step++) {
-    // Prepend each char of last to the corresponding row
-    for (let i = 0; i < n; i++) {
-      table[i] = last[i] + table[i];
+    // Shrink the prefix until it matches the current string
+    // (or becomes empty).
+    while (!s.startsWith(prefix)) {
+      // Drop the last character
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return ""; // No common prefix
     }
-    // Re‑sort the table – now the first column matches `first`
-    table.sort();
   }
 
-  // The row at the original index is the decoded string
-  return table[index];
+  return prefix;
 }
-const original = burrowsWheelerDecode("ANNBAA", 3);
-console.log(original); // "BANANA"
-const input = "MNEMONIC";
-const { last, index } = burrowsWheelerEncode(input);
-const restored = burrowsWheelerDecode(last, index);
+console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
+console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
+console.log(longestCommonPrefix([]));                         // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+export function lcpBySorting(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-console.log(last, index);   // e.g., "NOIACEMM 4"
-console.log(restored === input); // true
+  const sorted = [...strs].sort(); // Lexicographical order
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const minLen = Math.min(first.length, last.length);
+
+  let i = 0;
+  while (i < minLen && first[i] === last[i]) i++;
+
+  return first.slice(0, i);
+}
