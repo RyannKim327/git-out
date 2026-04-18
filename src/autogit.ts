@@ -1,52 +1,78 @@
-/**
- * Counting sort for an array of integers.
+/* exampleApi.ts
  *
- * @param arr – array of numbers (integers) to sort
- * @returns a new array containing the same numbers in ascending order
+ * Demonstrates a tiny, typed fetch of a JSON Placeholder user
+ * using Axios – the most common promise‑based HTTP library.
+ *
+ * Prereqs:
+ *   npm install axios
+ *   (optionally) npm i -D ts-node @types/node @types/axios
  */
-export function countingSort(arr: number[]): number[] {
-  // nothing to sort
-  if (arr.length <= 1) return [...arr];
 
-  // 1. locate the min/max so we know how big the count array must be
-  let min = arr[0];
-  let max = arr[0];
+import axios from 'axios';
 
-  for (let i = 1; i < arr.length; i++) {
-    const v = arr[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-
-  // 2. build the frequency table
-  // offset shifts the negative values to positive indices
-  const offset = -min;                     // e.g. min = -3 → offset = 3
-  const size   = max - min + 1;            // number of distinct keys
-  const count  = new Array<number>(size).fill(0);
-
-  for (const v of arr) {
-    count[v + offset]++;
-  }
-
-  // 3. reconstruct the sorted array
-  const out: number[] = new Array(arr.length);
-  let writeIdx = 0;
-
-  for (let i = 0; i < size; i++) {
-    const qty = count[i];
-    if (qty === 0) continue;
-
-    const value = i - offset;   // bring back to original key
-    for (let j = 0; j < qty; j++) {
-      out[writeIdx++] = value;
-    }
-  }
-
-  return out;
+/**
+ * Represent a user from JSON Placeholder.
+ */
+interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  address: {
+    street: string;
+    suite: string;
+    city: string;
+    zipcode: string;
+    geo: {
+      lat: string;
+      lng: string;
+    };
+  };
+  phone: string;
+  website: string;
+  company: {
+    name: string;
+    catchPhrase: string;
+    bs: string;
+  };
 }
-import { countingSort } from './countingSort';
 
-const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
-const sorted   = countingSort(unsorted);
+/**
+ * GET /users/:id – returns a single user.
+ * @param id - numeric user id (1‑10 for the public API)
+ * @returns a Promise that resolves to a User.
+ */
+async function getUser(id: number): Promise<User> {
+  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
 
-console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
+  // Axios automatically parses JSON so we get a typed response:
+  const { data } = await axios.get<User>(url);
+
+  return data;
+}
+
+/**
+ * Main entry point: fetch and pretty‑print a user.
+ */
+async function main() {
+  try {
+    const user = await getUser(3); // pick any id 1‑10
+    console.log('User fetched 👇');
+    console.dir(user, { depth: null, colors: true });
+  } catch (err) {
+    console.error('Error fetching user:', err);
+  }
+}
+
+// Invoke main if this script is run directly
+if (require.main === module) {
+  main();
+}
+# install deps
+npm install axios
+# run via ts-node
+npx ts-node exampleApi.ts
+
+# or compile to JS first
+npx tsc exampleApi.ts
+node exampleApi.js
