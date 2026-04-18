@@ -1,39 +1,52 @@
-/**
- * Return true if `a` and `b` contain the same letters in any order.
- *
- * The function is case‑insensitive and skips any non‑alphanumeric
- * characters (e.g. spaces, punctuation). If you want stricter rules,
- * just comment out the cleanup lines.
- */
-function areAnagrams(a: string, b: string): boolean {
-  // 1️⃣ Normalise: lowercase, strip non‑alphanumerics
-  const clean = (s: string) =>
-    s.replace(/[^a-z0-9]/gi, "").toLowerCase();
-
-  const cleanA = clean(a);
-  const cleanB = clean(b);
-
-  // 2️⃣ Quick length check – avoids extra work
-  if (cleanA.length !== cleanB.length) return false;
-
-  // 3️⃣ Count frequency of each character in `cleanA`
-  const freq: Record<string, number> = {};
-
-  for (const ch of cleanA) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
-  }
-
-  // 4️⃣ Decrement using characters from `cleanB`
-  for (const ch of cleanB) {
-    if (!freq[ch]) return false; // missing char or too many of it
-    freq[ch]!--;                  // (non‑null assertion OK here)
-  }
-
-  // 5️⃣ All frequencies should be zero now
-  return Object.values(freq).every(v => v === 0);
+// 1.  Define a node type ----------------------------------------------------
+type TreeNode<T = number> = {
+  val: T
+  left?: TreeNode<T>
+  right?: TreeNode<T>
 }
-console.log(areAnagrams("listen", "silent"));          // true
-console.log(areAnagrams("Triangle", "Integral"));      // true
-console.log(areAnagrams("Hello!", "oellH"));           // true  (ignores punctuation)
-console.log(areAnagrams("Square", "Quears  "));        // true  (ignores spaces)
-console.log(areAnagrams("Hello", "world"));            // false
+
+// 2.  Recursive leaf‑counter -----------------------------------------------
+function countLeaves<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0                            // empty subtree
+  if (!root.left && !root.right) return 1        // leaf reached
+  // otherwise sum the counts from both sides
+  return countLeaves(root.left) + countLeaves(root.right)
+}
+
+// 3.  Iterative version (works the same but uses an explicit stack) --------
+function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0
+
+  let count = 0
+  const stack: Array<TreeNode<T>> = [root]
+
+  while (stack.length) {
+    const node = stack.pop()!
+    const { left, right } = node
+
+    if (!left && !right) {
+      count++
+    } else {
+      if (right) stack.push(right)
+      if (left) stack.push(left)
+    }
+  }
+  return count
+}
+
+// 4.  Quick demo -------------------------------------------------------------
+const tree: TreeNode<number> = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4 },
+    right: { val: 5 }
+  },
+  right: {
+    val: 3,
+    right: { val: 6 }
+  }
+}
+
+console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
+console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
