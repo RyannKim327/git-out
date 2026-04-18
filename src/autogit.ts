@@ -1,14 +1,52 @@
-// 1️⃣ Using a regex (global, matches all spaces)
-const withoutSpaces1 = str.replace(/ /g, '');
+// 1.  Define a node type ----------------------------------------------------
+type TreeNode<T = number> = {
+  val: T
+  left?: TreeNode<T>
+  right?: TreeNode<T>
+}
 
-// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
-const withoutSpaces2 = str.replace(/\s+/g, '');
+// 2.  Recursive leaf‑counter -----------------------------------------------
+function countLeaves<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0                            // empty subtree
+  if (!root.left && !root.right) return 1        // leaf reached
+  // otherwise sum the counts from both sides
+  return countLeaves(root.left) + countLeaves(root.right)
+}
 
-// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
-const withoutSpaces3 = str.split(' ').join('');
+// 3.  Iterative version (works the same but uses an explicit stack) --------
+function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0
 
-// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
-const withoutSpaces4 = str.replaceAll(' ', '');
+  let count = 0
+  const stack: Array<TreeNode<T>> = [root]
 
-// 5️⃣ For a functional style (works even in older versions)
-const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
+  while (stack.length) {
+    const node = stack.pop()!
+    const { left, right } = node
+
+    if (!left && !right) {
+      count++
+    } else {
+      if (right) stack.push(right)
+      if (left) stack.push(left)
+    }
+  }
+  return count
+}
+
+// 4.  Quick demo -------------------------------------------------------------
+const tree: TreeNode<number> = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4 },
+    right: { val: 5 }
+  },
+  right: {
+    val: 3,
+    right: { val: 6 }
+  }
+}
+
+console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
+console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
