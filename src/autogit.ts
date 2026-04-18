@@ -1,24 +1,40 @@
-const numbers: number[] = [3, 7, -2, 9, 5];
+class TreeNode {
+  constructor(
+    public val: number,
+    public left: TreeNode | null = null,
+    public right: TreeNode | null = null
+  ) {}
+}
+function sumTree(root: TreeNode | null): number {
+  if (!root) return 0;          // nothing to add
+  const leftSum = sumTree(root.left);
+  const rightSum = sumTree(root.right);
+  return root.val + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let sum = 0;
+  const stack: Array<TreeNode> = [root];
 
-const max = Math.max(...numbers);
-console.log(max); // 9
-const max = numbers.length ? Math.max(...numbers) : undefined;
-const max = numbers.reduce((a, b) => (a > b ? a : b));
-console.log(max); // 9
-const {max, index} = numbers.reduce(
-  (acc, val, idx) =>
-    val > acc.max
-      ? {max: val, index: idx}
-      : acc,
-  {max: Number.NEGATIVE_INFINITY, index: -1}
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+
+  return sum;
+}
+const root = new TreeNode(5,
+  new TreeNode(3,
+    new TreeNode(2),
+    new TreeNode(4)
+  ),
+  new TreeNode(8,
+    null,
+    new TreeNode(9)
+  )
 );
 
-console.log(max, index); // 9 3
-function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
-}
-
-// Example usage
-const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
-const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
+console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
+console.log(sumTreeIterative(root)); // 31
