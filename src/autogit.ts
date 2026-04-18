@@ -1,66 +1,74 @@
 /**
- * Fibonacci Search
- *
- * @param arr  – sorted array (ascending)
- * @param target – value that we want to locate
- * @returns the index of target or −1 if it isn't present
+ * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
+ * lps[i] is the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
  */
-export function fibonacciSearch<T>(
-    arr: readonly T[],
-    target: T,
-    cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-    const n = arr.length;
+function buildLps(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;                 // length of the previous longest prefix‑suffix
+  let i = 1;                      // we start from the second character
 
-    // ---- 1. Generate the smallest Fibonacci number ≥ n ----
-    let fibMMm2 = 0; // (m‑2)’th Fibonacci
-    let fibMMm1 = 1; // (m‑1)’th Fibonacci
-    let fibM = fibMMm2 + fibMMm1; // m’th Fibonacci
-
-    while (fibM < n) {
-        fibMMm2 = fibMMm1;
-        fibMMm1 = fibM;
-        fibM = fibMMm2 + fibMMm1;
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous potential prefix
+        length = lps[length - 1];
+        // note: we do **not** increment i here
+      } else {
+        // no match at all; lps[i] stays 0
+        lps[i] = 0;
+        i++;
+      }
     }
+  }
 
-    // ---- 2. Marks the eliminated range from front ----
-    let offset = -1;
-
-    // ---- 3. While there are elements to inspect ----
-    while (fibM > 1) {
-        // Calculate the index to check
-        const i = Math.min(offset + fibMMm2, n - 1);
-
-        const comp = cmp(arr[i], target);
-
-        // case 1: the target is greater than the value at index i
-        if (comp < 0) {
-            fibM = fibMMm1;
-            fibMMm1 = fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-            offset = i;
-        }
-        // case 2: the target is less than the value at index i
-        else if (comp > 0) {
-            fibM = fibMMm2;
-            fibMMm1 = fibMMm1 - fibMMm2;
-            fibMMm2 = fibM - fibMMm1;
-        }
-        // case 3: element found
-        else {
-            return i;
-        }
-    }
-
-    // ---- 4. If the last remaining element is the target ----
-    if (fibMMm1 && offset + 1 < n && cmp(arr[offset + 1], target) === 0) {
-        return offset + 1;
-    }
-
-    return -1; // not found
+  return lps;
 }
-const nums = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
-const idx = fibonacciSearch(nums, 13);
 
-console.log(idx); // → 6
-console.log(idx === -1 ? "Not found" : `Found at ${idx}`);
+/**
+ * KMP search: returns the index of the first occurrence of the pattern in the text,
+ * or -1 if the pattern is absent.
+ */
+function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;              // trivial match
+  if (text.length < pattern.length) return -1;     // cannot match
+
+  const lps = buildLps(pattern);
+  let tIdx = 0;      // index into text
+  let pIdx = 0;      // index into pattern
+
+  while (tIdx < text.length) {
+    if (pattern[pIdx] === text[tIdx]) {
+      tIdx++;
+      pIdx++;
+
+      // full match
+      if (pIdx === pattern.length) {
+        return tIdx - pIdx;   // return starting index
+      }
+    } else {
+      if (pIdx !== 0) {
+        // skip comparisons by using the lps table
+        pIdx = lps[pIdx - 1];
+      } else {
+        tIdx++;
+      }
+    }
+  }
+
+  return -1; // not found
+}
+
+/* ---------- Example usage ---------- */
+const txt = "abxabcabcaby";
+const pat = "abcaby";
+
+const idx = kmpSearch(txt, pat);
+console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
+console.assert(kmpSearch("hello world", "world") === 6);
+console.assert(kmpSearch("hello world", "bye")    === -1);
+console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
