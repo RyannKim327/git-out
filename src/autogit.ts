@@ -1,65 +1,53 @@
-/**
- * Returns the largest prime factor of a positive integer (>1).
- * Uses trial division up to √n – fast enough for 32‑bit ints.
- */
-export function largestPrimeFactor(n: number): number {
-  if (n <= 1) throw new Error("n must be > 1");
+// randomGreeting.ts
+//
+// 1️⃣  Read one line of text from stdin
+// 2️⃣  Pick a random greeting style
+// 3️⃣  Print a personalised message
+//
 
-  // 2 is the only even prime
-  while (n % 2 === 0) n /= 2;
+import { stdin, stdout } from 'process';
 
-  // n is now odd – we only need to test odd divisors
-  let factor = 3;
-  const sqrt = Math.sqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0) {
-      n /= factor;          // keep dividing out this prime
+// A tiny helper that turns a promise into a line‑by‑line async iterator
+async function* readLines(): AsyncGenerator<string> {
+  let buffer = '';
+  for await (const chunk of stdin) {
+    buffer += chunk.toString();
+    let *lines* = buffer.split('\n');
+    buffer = lines.pop() ?? '';      // keep the unfinished part
+    for (const line of lines) {
+      yield line.trim();           // remove trailing CR / whitespace
     }
-    factor += 2;            // next odd candidate
   }
-
-  // If n is still > 2, it is a prime larger than any factor we tried.
-  return n;
-}
-/**
- * Returns the largest prime factor of a BigInt > 1.
- */
-export function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) throw new Error("n must be > 1");
-
-  // 2 is the only even prime
-  while (n % 2n === 0n) n /= 2n;
-
-  let factor = 3n;
-  const sqrt = bigintSqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0n) {
-      n /= factor;
-    }
-    factor += 2n;
-  }
-
-  return n;
+  if (buffer) yield buffer.trim();   // last partial line
 }
 
-/**
- * Integer square‑root of a BigInt – floor(√n).
- * Uses Newton’s method; fast for large numbers.
- */
-function bigintSqrt(value: bigint): bigint {
-  if (value < 0n) throw new Error("negative value");
-  if (value < 2n) return value;
+async function main() {
+  // Ask for the user’s name
+  stdout.write('👋 What is your name? ');
+  const lines = readLines();
 
-  let x0 = value;
-  let x1 = (x0 + 1n) >> 1n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) >> 1n;
-  }
-  return x0;
+  // Wait for the first line entered by the user
+  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
+
+  // Some random greeting ideas
+  const greetings = [
+    `Hey ${name}, hope you’re having a stellar day!`,
+    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
+    `Greetings, ${name}! Keep calm and code on.`,
+    `${name}, you’re the reason we write code in TypeScript!`,
+    `Howdy ${name}! 🎉`
+  ];
+
+  // Pick one at random
+  const choice = greetings[Math.floor(Math.random() * greetings.length)];
+
+  stdout.write(`${choice}\n`);
 }
-console.log(largestPrimeFactor(13195));          // 29
-console.log(largestPrimeFactor(600851475143));   // 6857
 
-console.log(largestPrimeFactorBigInt(13195n));    // 29n
-console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
+main().catch(err => {
+  console.error('Something went wrong:', err);
+  process.exit(1);
+});
+$ node randomGreeting.js
+👋 What is your name? Alice
+Hey Alice, hope you’re having a stellar day!
