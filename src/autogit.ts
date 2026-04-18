@@ -1,117 +1,74 @@
-// A minimal node that carries a value and a pointer to the next node.
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-push(value: T): void {
-  const newNode = new ListNode(value);
-  if (!this.head) {                // empty list
-    this.head = this.tail = newNode;
-  } else {
-    this.tail!.next = newNode;     // tail is never null here
-    this.tail = newNode;
-  }
-  this._size++;
-}
-unshift(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
-  if (!this.tail) this.tail = newNode;   // list was empty
-  this._size++;
-}
-pop(): T | null {
-  if (!this.head) return null;          // nothing to pop
-  let removed: T;
-  if (this.head === this.tail) {        // only one element
-    removed = this.head.value;
-    this.head = this.tail = null;
-  } else {
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
+/**
+ * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
+ * lps[i] is the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+function buildLps(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;                 // length of the previous longest prefix‑suffix
+  let i = 1;                      // we start from the second character
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous potential prefix
+        length = lps[length - 1];
+        // note: we do **not** increment i here
+      } else {
+        // no match at all; lps[i] stays 0
+        lps[i] = 0;
+        i++;
+      }
     }
-    removed = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-  }
-  this._size--;
-  return removed;
-}
-shift(): T | null {
-  if (!this.head) return null;
-  const removed = this.head.value;
-  this.head = this.head.next;
-  if (!this.head) this.tail = null;   // list became empty
-  this._size--;
-  return removed;
-}
-find(predicate: (value: T) => boolean): ListNode<T> | null {
-  for (let cur = this.head; cur; cur = cur.next) {
-    if (predicate(cur.value)) return cur;
-  }
-  return null;
-}
-delete(value: T): boolean {
-  if (!this.head) return false;
-
-  if (this.head.value === value) {
-    this.shift();            // reuse existing logic
-    return true;
   }
 
-  let previous = this.head;
-  let current = this.head.next;
+  return lps;
+}
 
-  while (current) {
-    if (current.value === value) {
-      previous.next = current.next;
-      if (current === this.tail) this.tail = previous;
-      this._size--;
-      return true;
+/**
+ * KMP search: returns the index of the first occurrence of the pattern in the text,
+ * or -1 if the pattern is absent.
+ */
+function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;              // trivial match
+  if (text.length < pattern.length) return -1;     // cannot match
+
+  const lps = buildLps(pattern);
+  let tIdx = 0;      // index into text
+  let pIdx = 0;      // index into pattern
+
+  while (tIdx < text.length) {
+    if (pattern[pIdx] === text[tIdx]) {
+      tIdx++;
+      pIdx++;
+
+      // full match
+      if (pIdx === pattern.length) {
+        return tIdx - pIdx;   // return starting index
+      }
+    } else {
+      if (pIdx !== 0) {
+        // skip comparisons by using the lps table
+        pIdx = lps[pIdx - 1];
+      } else {
+        tIdx++;
+      }
     }
-    previous = current;
-    current = current.next;
   }
-  return false;
-}
-size(): number {
-  return this._size;
+
+  return -1; // not found
 }
 
-isEmpty(): boolean {
-  return this._size === 0;
-}
-forEach(callback: (value: T) => void): void {
-  for (let cur = this.head; cur; cur = cur.next) {
-    callback(cur.value);
-  }
-}
-*[Symbol.iterator](): Iterator<T> {
-  let current = this.head;
-  while (current) {
-    yield current.value;
-    current = current.next;
-  }
-}
-const list = new LinkedList<number>();
-list.push(10);
-list.push(20);
-list.push(30);
+/* ---------- Example usage ---------- */
+const txt = "abxabcabcaby";
+const pat = "abcaby";
 
-for (const n of list) console.log(n); // 10 20 30
-import { ListNode, LinkedList } from "./linked-list";
-
-const list = new LinkedList<string>();
-list.push("first");
-list.push("second");
-list.unshift("zero");
-console.log(list.size()); // 3
-
-list.delete("second");
-console.log([...list]);   // ["zero", "first"]
-
-list.pop();
-console.log(list.shift()); // "zero"
+const idx = kmpSearch(txt, pat);
+console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
+console.assert(kmpSearch("hello world", "world") === 6);
+console.assert(kmpSearch("hello world", "bye")    === -1);
+console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
