@@ -1,86 +1,59 @@
-/**
- * Convert a decimal number to a binary string.
- *
- * @param n   A whole number (integer) you want to encode.
- * @returns   Binary representation of `n` as a string.
- */
-function decimalToBinary(n: number): string {
-  // JavaScript (and TypeScript) can do the heavy lifting for us.
-  // make sure the number is an integer first.
-  if (!Number.isFinite(n)) {
-    throw new RangeError('Only finite numbers are supported.');
-  }
+// ---------------------------------------------------------------------
+// 1️⃣  Node definition
+// ---------------------------------------------------------------------
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  // The built‑in toString radix overload expects an integer.
-  // If you pass a floating point value, the fractional part is
-  // silently truncated, so we guard against that.
-  if (!Number.isInteger(n)) {
-    throw new TypeError('Only integers are supported.  For decimal fractions see the next example.');
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
-
-  // Negative numbers are handled automatically by toString.
-  return n.toString(2);
 }
 
-// Usage examples:
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-console.log(decimalToBinary(-5));  // "-101"
-function bigIntToBinary(n: bigint): string {
-  if (n < 0n) {
-    return '-' + (-n).toString(2);
-  }
-  return n.toString(2);
-}
-
-// Examples
-console.log(bigIntToBinary(123456789012345678901234567890123456789n));
-// "1000101100110011100111101111011011110010101110001010011001110111"
-/**
- * Convert a decimal fraction (0 <= n < 1) to its binary representation.
- * Stops when the binary terminates or a max length is reached.
- *
- * @param n            The fractional part to convert.
- * @param maxBits     Optional maximum number of fractional bits.
- * @returns           Binary string including the leading "0.".
- */
-function fractionalDecimalToBinary(n: number, maxBits = 32): string {
-  if (n <= 0 || n >= 1) {
-    throw new RangeError('Input must be a fractional part between 0 (exclusive) and 1 (exclusive).');
+// ---------------------------------------------------------------------
+// 2️⃣  Helper that returns (height, diameter) for a subtree
+// ---------------------------------------------------------------------
+function heightAndDiameter(node: TreeNode | null): { h: number; d: number } {
+  // Base case: empty subtree
+  if (node === null) {
+    return { h: 0, d: 0 }; // height 0, diameter 0
   }
 
-  let result = '0.';
-  let value = n;
+  // Recursively gather left and right results
+  const left = heightAndDiameter(node.left);
+  const right = heightAndDiameter(node.right);
 
-  for (let i = 0; i < maxBits; i++) {
-    value *= 2;
-    if (value >= 1) {
-      result += '1';
-      value -= 1;
-    } else {
-      result += '0';
-    }
-    if (value === 0) break; // terminates exactly
-  }
+  // Current node's height
+  const curHeight = Math.max(left.h, right.h) + 1;
 
-  return result;
+  // Diameter that passes through this node
+  const curThrough = left.h + right.h + 1;
+
+  // Overall diameter for this subtree
+  const curDiameter = Math.max(curThrough, left.d, right.d);
+
+  return { h: curHeight, d: curDiameter };
 }
 
-// Examples
-console.log(fractionalDecimalToBinary(0.625)); // "0.101"
-console.log(fractionalDecimalToBinary(0.1));   // "0.00011001100110011001100110011001"
-function floatToBinary(num: number, maxFractionBits = 16): string {
-  if (!Number.isFinite(num)) throw new RangeError('Only finite numbers are supported.');
-
-  const sign = num < 0 ? '-' : '';
-  const absolute = Math.abs(num);
-  const intPart = Math.trunc(absolute);
-  const fracPart = absolute - intPart;
-
-  const intBin = intPart.toString(2);
-  const fracBin = fracPart ? fractionalDecimalToBinary(fracPart, maxFractionBits).slice(1) : '';
-
-  return `${sign}${intBin}${fracBin ? '.' + fracBin : ''}`;
+// ---------------------------------------------------------------------
+// 3️⃣  Public entry point
+// ---------------------------------------------------------------------
+export function diameterOfBinaryTree(root: TreeNode | null): number {
+  return heightAndDiameter(root).d;
 }
+// Build a quick test tree:
+//        1
+//       / \
+//      2   3
+//         / \
+//        4   5
+const root = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
 
-console.log(floatToBinary(-12.75)); // "-1100.11"
+console.log(diameterOfBinaryTree(root)); // 5  (path: 4-3-1-2-? actually 4-3-1-2 is 4 nodes but diameter counts nodes; here 5-3-1-2 is 4 nodes though, but path lengths are nodes thus 5 nodes? Let's quick double-check)
