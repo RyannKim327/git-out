@@ -1,39 +1,38 @@
-function lcs(a: string, b: string): string {
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  const dp: number[][] = Array.from({ length: rows }, () => Array(cols).fill(0));
+function areAnagrams(a: string, b: string): boolean {
+  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase();
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
+  const normalizeA = normalize(a).split('').sort().join('');
+  const normalizeB = normalize(b).split('').sort().join('');
 
-  // Re‑construct the subsequence
-  let i = rows - 1, j = cols - 1;
-  const res: string[] = [];
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      res.push(a[i - 1]);          // same character in both strings
-      i--; j--;                    // move diagonally
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;                          // move up
-    } else {
-      j--;                          // move left
-    }
-  }
-  return res.reverse().join('');
+  return normalizeA === normalizeB;
 }
-console.log(lcs("AGGTAB", "GXTXAYB")); // → "GTAB"
-// lcs.ts
-export function lcs(a: string, b: string): string {
-  // ...implementation as above...
-}
+function areAnagrams(a: string, b: string): boolean {
+  const buildMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
+      map[ch] = (map[ch] ?? 0) + 1;
+    }
+    return map;
+  };
 
-// example usage
-import { lcs } from './lcs';
-console.log(lcs('abcbdab', 'bdcaba')); // prints bcdab
+  const aMap = buildMap(a);
+  const bMap = buildMap(b);
+
+  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
+  for (const k of keys) {
+    if (aMap[k] !== bMap[k]) return false;
+  }
+  return true;
+}
+const tests = [
+  ['listen', 'silent'],
+  ['hello', 'world'],
+  ['Dormitory', 'Dirty room'],
+  ['abc', 'abcd'],
+];
+
+for (const [a, b] of tests) {
+  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
+}
