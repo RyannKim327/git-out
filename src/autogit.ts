@@ -1,53 +1,38 @@
-// randomGreeting.ts
-//
-// 1️⃣  Read one line of text from stdin
-// 2️⃣  Pick a random greeting style
-// 3️⃣  Print a personalised message
-//
+function areAnagrams(a: string, b: string): boolean {
+  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase();
 
-import { stdin, stdout } from 'process';
+  const normalizeA = normalize(a).split('').sort().join('');
+  const normalizeB = normalize(b).split('').sort().join('');
 
-// A tiny helper that turns a promise into a line‑by‑line async iterator
-async function* readLines(): AsyncGenerator<string> {
-  let buffer = '';
-  for await (const chunk of stdin) {
-    buffer += chunk.toString();
-    let *lines* = buffer.split('\n');
-    buffer = lines.pop() ?? '';      // keep the unfinished part
-    for (const line of lines) {
-      yield line.trim();           // remove trailing CR / whitespace
+  return normalizeA === normalizeB;
+}
+function areAnagrams(a: string, b: string): boolean {
+  const buildMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
+      map[ch] = (map[ch] ?? 0) + 1;
     }
+    return map;
+  };
+
+  const aMap = buildMap(a);
+  const bMap = buildMap(b);
+
+  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
+  for (const k of keys) {
+    if (aMap[k] !== bMap[k]) return false;
   }
-  if (buffer) yield buffer.trim();   // last partial line
+  return true;
 }
+const tests = [
+  ['listen', 'silent'],
+  ['hello', 'world'],
+  ['Dormitory', 'Dirty room'],
+  ['abc', 'abcd'],
+];
 
-async function main() {
-  // Ask for the user’s name
-  stdout.write('👋 What is your name? ');
-  const lines = readLines();
-
-  // Wait for the first line entered by the user
-  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
-
-  // Some random greeting ideas
-  const greetings = [
-    `Hey ${name}, hope you’re having a stellar day!`,
-    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
-    `Greetings, ${name}! Keep calm and code on.`,
-    `${name}, you’re the reason we write code in TypeScript!`,
-    `Howdy ${name}! 🎉`
-  ];
-
-  // Pick one at random
-  const choice = greetings[Math.floor(Math.random() * greetings.length)];
-
-  stdout.write(`${choice}\n`);
+for (const [a, b] of tests) {
+  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
 }
-
-main().catch(err => {
-  console.error('Something went wrong:', err);
-  process.exit(1);
-});
-$ node randomGreeting.js
-👋 What is your name? Alice
-Hey Alice, hope you’re having a stellar day!
