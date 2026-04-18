@@ -1,38 +1,48 @@
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;   // undefined means end of list
-}
-function listLength<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  let current = head;
+// random-joke.ts
+import axios from "axios";
 
-  while (current) {
-    count++;
-    current = current.next;
+/**
+ * The shape of the JSON that the Joke API gives us.
+ */
+interface Joke {
+  id: number;
+  type: string;
+  setup: string;
+  punchline: string;
+}
+
+/**
+ * Fetch a single random joke.
+ */
+const fetchRandomJoke = async (): Promise<Joke> => {
+  // The API returns an array of jokes even though we only ask for one – happy accidents.
+  const url = "https://official-joke-api.appspot.com/jokes/random";
+  const response = await axios.get<Joke>(url);
+  return response.data;
+};
+
+/**
+ * Pretty‑print a joke to the console.
+ */
+const printJoke = (joke: Joke) => {
+  console.log(`💡 ${joke.type.toUpperCase()}`);
+  console.log(`   ${joke.setup}`);
+  setTimeout(() => console.log(`   👉  ${joke.punchline}\n`), 1500);
+};
+
+/**
+ * Simple wrapper that ties everything together.
+ */
+const main = async () => {
+  try {
+    const joke = await fetchRandomJoke();
+    printJoke(joke);
+  } catch (err) {
+    // Axios errors contain a `response` field with the server reply.
+    // If you’re debugging, you can inspect `err.response?.data` for the text.
+    console.error("🔴 Something went wrong retrieving a joke:", err);
   }
+};
 
-  return count;
-}
-function listLengthRec<T>(node: ListNode<T> | undefined): number {
-  return node ? 1 + listLengthRec(node.next) : 0;
-}
-class LinkedList<T> {
-  head?: ListNode<T>;
-  tail?: ListNode<T>;
-
-  // ... push, pop, etc. ...
-
-  get length(): number {
-    let count = 0;
-    let cur = this.head;
-    while (cur) {
-      count++;
-      cur = cur.next;
-    }
-    return count;
-  }
-}
-const a: ListNode<number> = { value: 1, next: { value: 2, next: { value: 3 } } };
-
-console.log(listLength(a));          // 3
-console.log(listLengthRec(a));       // 3
+// Run the little demo when the file is executed.
+main();
