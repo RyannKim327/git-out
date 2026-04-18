@@ -1,78 +1,117 @@
-/* exampleApi.ts
- *
- * Demonstrates a tiny, typed fetch of a JSON Placeholder user
- * using Axios – the most common promise‑based HTTP library.
- *
- * Prereqs:
- *   npm install axios
- *   (optionally) npm i -D ts-node @types/node @types/axios
- */
+// A minimal node that carries a value and a pointer to the next node.
+export class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
+export class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
+push(value: T): void {
+  const newNode = new ListNode(value);
+  if (!this.head) {                // empty list
+    this.head = this.tail = newNode;
+  } else {
+    this.tail!.next = newNode;     // tail is never null here
+    this.tail = newNode;
+  }
+  this._size++;
+}
+unshift(value: T): void {
+  const newNode = new ListNode(value, this.head);
+  this.head = newNode;
+  if (!this.tail) this.tail = newNode;   // list was empty
+  this._size++;
+}
+pop(): T | null {
+  if (!this.head) return null;          // nothing to pop
+  let removed: T;
+  if (this.head === this.tail) {        // only one element
+    removed = this.head.value;
+    this.head = this.tail = null;
+  } else {
+    let current = this.head;
+    while (current.next !== this.tail) {
+      current = current.next!;
+    }
+    removed = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+  }
+  this._size--;
+  return removed;
+}
+shift(): T | null {
+  if (!this.head) return null;
+  const removed = this.head.value;
+  this.head = this.head.next;
+  if (!this.head) this.tail = null;   // list became empty
+  this._size--;
+  return removed;
+}
+find(predicate: (value: T) => boolean): ListNode<T> | null {
+  for (let cur = this.head; cur; cur = cur.next) {
+    if (predicate(cur.value)) return cur;
+  }
+  return null;
+}
+delete(value: T): boolean {
+  if (!this.head) return false;
 
-import axios from 'axios';
+  if (this.head.value === value) {
+    this.shift();            // reuse existing logic
+    return true;
+  }
 
-/**
- * Represent a user from JSON Placeholder.
- */
-interface User {
-  id: number;
-  name: string;
-  username: string;
-  email: string;
-  address: {
-    street: string;
-    suite: string;
-    city: string;
-    zipcode: string;
-    geo: {
-      lat: string;
-      lng: string;
-    };
-  };
-  phone: string;
-  website: string;
-  company: {
-    name: string;
-    catchPhrase: string;
-    bs: string;
-  };
+  let previous = this.head;
+  let current = this.head.next;
+
+  while (current) {
+    if (current.value === value) {
+      previous.next = current.next;
+      if (current === this.tail) this.tail = previous;
+      this._size--;
+      return true;
+    }
+    previous = current;
+    current = current.next;
+  }
+  return false;
+}
+size(): number {
+  return this._size;
 }
 
-/**
- * GET /users/:id – returns a single user.
- * @param id - numeric user id (1‑10 for the public API)
- * @returns a Promise that resolves to a User.
- */
-async function getUser(id: number): Promise<User> {
-  const url = `https://jsonplaceholder.typicode.com/users/${id}`;
-
-  // Axios automatically parses JSON so we get a typed response:
-  const { data } = await axios.get<User>(url);
-
-  return data;
+isEmpty(): boolean {
+  return this._size === 0;
 }
-
-/**
- * Main entry point: fetch and pretty‑print a user.
- */
-async function main() {
-  try {
-    const user = await getUser(3); // pick any id 1‑10
-    console.log('User fetched 👇');
-    console.dir(user, { depth: null, colors: true });
-  } catch (err) {
-    console.error('Error fetching user:', err);
+forEach(callback: (value: T) => void): void {
+  for (let cur = this.head; cur; cur = cur.next) {
+    callback(cur.value);
   }
 }
-
-// Invoke main if this script is run directly
-if (require.main === module) {
-  main();
+*[Symbol.iterator](): Iterator<T> {
+  let current = this.head;
+  while (current) {
+    yield current.value;
+    current = current.next;
+  }
 }
-# install deps
-npm install axios
-# run via ts-node
-npx ts-node exampleApi.ts
+const list = new LinkedList<number>();
+list.push(10);
+list.push(20);
+list.push(30);
 
-# or compile to JS first
-npx tsc exampleApi.ts
-node exampleApi.js
+for (const n of list) console.log(n); // 10 20 30
+import { ListNode, LinkedList } from "./linked-list";
+
+const list = new LinkedList<string>();
+list.push("first");
+list.push("second");
+list.unshift("zero");
+console.log(list.size()); // 3
+
+list.delete("second");
+console.log([...list]);   // ["zero", "first"]
+
+list.pop();
+console.log(list.shift()); // "zero"
