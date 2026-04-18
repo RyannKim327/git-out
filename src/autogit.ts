@@ -1,57 +1,76 @@
+// ------------------------------
+// Radix Sort (base 10)
+// ------------------------------
+
 /**
- * Interpolation Search
- * --------------------
- * @param arr  A sorted array of numbers (ascending).
- * @param key  The value you're looking for.
- * @returns    Index of key in arr, or −1 if key is absent.
- *
- * Complexity:
- *  * Best‑case: O(log log N)  (when data is uniformly distributed)
- *  * Worst‑case: O(N)         (when data is heavily skewed)
- *
- * Note: Behaviour for non‑numeric or unsorted input is undefined.
+ * Performs a stable counting sort on the array `arr` using the digit at
+ * position `digitPlace` (1, 10, 100, …).  The function returns the
+ * sorted array – the original array remains untouched.
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+function countingSortByDigit(
+  arr: number[],
+  digitPlace: number
+): number[] {
+  const buckets: { [key: number]: number[] } = {
+    0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [],
+  };
 
-  let low = 0;
-  let high = arr.length - 1;
+  for (const num of arr) {
+    // Extract the current digit:
+    //   Math.abs(num) to work with negative values,
+    //   modulo digitPlace to isolate the digit,
+    //   then divide by digitPlace to shift back.
+    const digit =
+      Math.floor((Math.abs(num) % (digitPlace * 10)) / digitPlace);
 
-  // Keep the loop going while the search space is valid.
-  while (
-    low <= high &&
-    key >= arr[low] &&
-    key <= arr[high]
-  ) {
-    // Guard against a zero division when arr[low] === arr[high].
-    if (arr[low] === arr[high]) {
-      // All remaining elements are equal; pick the first one.
-      return arr[low] === key ? low : -1;
-    }
-
-    // Estimate the probable position of key.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-      );
-
-    // We found the key.
-    if (arr[pos] === key) {
-      return pos;
-    }
-
-    // Update boundaries based on comparison.
-    if (arr[pos] < key) {
-      low = pos + 1;     // key is in the right sub‑array
-    } else {
-      high = pos - 1;    // key is in the left sub‑array
-    }
+    buckets[digit].push(num);
   }
 
-  // If we exit the loop, key isn't present.
-  return -1;
+  // Concatenate buckets in numeric order (0→9) to keep the sort stable.
+  return Object.values(buckets).reduce((out, bucket) => out.concat(bucket), []);
 }
-const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(data, 9));   // → 4
-console.log(interpolationSearch(data, 4));   // → -1
+
+/**
+ * Radix sort for an array of integers.  Handles negative values by
+ * sorting positives and negatives separately and then combining.
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
+
+  // Separate positives and negatives.
+  const positives = arr.filter((n) => n >= 0);
+  const negatives = arr.filter((n) => n < 0).map((n) => Math.abs(n));
+
+  // Helper to sort a non‑negative array using radix sort.
+  const sortNonNegative = (numbers: number[]) => {
+    // Find the largest number so we know how many digit passes.
+    let max = 0;
+    for (const n of numbers) {
+      if (n > max) max = n;
+    }
+
+    let digitPlace = 1;
+    while (digitPlace <= max) {
+      // Sort by this digit; each pass is stable.
+      const sorted = countingSortByDigit(numbers, digitPlace);
+      // Prepare for next iteration.
+      numbers = sorted;
+      digitPlace *= 10;
+    }
+    return numbers;
+  };
+
+  const sortedPos = sortNonNegative(positives);
+  const sortedNeg = sortNonNegative(negatives); // already abs values
+
+  // Negatives need to be reversed and negated back.
+  const sortedNegReversed = sortedNeg.reverse().map((n) => -n);
+
+  // Combine: negatives first, then positives.
+  return [...sortedNegReversed, ...sortedPos];
+}
+
+/* ------------------------------ Demo ------------------------------ */
+const sample = [170, 45, 75, -90, 802, 24, 2, 66, -31, 0];
+console.log('Original:', sample.join(', '));
+console.log('Sorted  :', radixSort(sample).join(', '));
