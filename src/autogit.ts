@@ -1,38 +1,44 @@
-function areAnagrams(a: string, b: string): boolean {
-  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase();
+const original = [1, 2, 3, 2, 4, 1];
 
-  const normalizeA = normalize(a).split('').sort().join('');
-  const normalizeB = normalize(b).split('').sort().join('');
-
-  return normalizeA === normalizeB;
-}
-function areAnagrams(a: string, b: string): boolean {
-  const buildMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
-      map[ch] = (map[ch] ?? 0) + 1;
-    }
-    return map;
-  };
-
-  const aMap = buildMap(a);
-  const bMap = buildMap(b);
-
-  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
-  for (const k of keys) {
-    if (aMap[k] !== bMap[k]) return false;
-  }
-  return true;
-}
-const tests = [
-  ['listen', 'silent'],
-  ['hello', 'world'],
-  ['Dormitory', 'Dirty room'],
-  ['abc', 'abcd'],
+const withoutDups = Array.from(new Set(original)); // [1, 2, 3, 4]
+const arr = [
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' },
+  { id: 1, name: 'A' }, // duplicate by id
 ];
 
-for (const [a, b] of tests) {
-  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
+const seen = new Set<number>();
+const unique = arr.filter(item => {
+  const key = item.id;                 // pick what defines uniqueness
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+// [{ id: 1, name: 'A' }, { id: 2, name: 'B' }]
+const arr = [
+  { id: 'x', data: 10 },
+  { id: 'y', data: 20 },
+  { id: 'x', data: 30 }, // later duplicate
+];
+
+const map = new Map<string, typeof arr[0]>();
+for (const item of arr) {
+  if (!map.has(item.id)) map.set(item.id, item);
 }
+const withoutDups = Array.from(map.values()); // keeps the first 'x'
+function uniq<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+const nums = uniq([4, 5, 4, 6, 5]); // [4, 5, 6]
+const arr = [1, 2, 3, 2, 4];
+
+const unique = arr.reduce<T[]>((acc, cur) => {
+  if (!acc.includes(cur)) acc.push(cur);
+  return acc;
+}, []); // [1, 2, 3, 4]
+function dedupe<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+
+console.log(dedupe([1, 2, 2, 3])); // 1 2 3
+console.log(dedupe(['a', 'b', 'a'])); // a b
