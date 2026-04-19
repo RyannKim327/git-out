@@ -1,21 +1,72 @@
+// ---------------------------------------------------------------------------
+//  cron‑example.ts
+// ---------------------------------------------------------------------------
+
+// 1️⃣  Install the dependencies first (run once):
+//     npm install node-cron
+//
+// 2️⃣  If you’re compiling TypeScript with tsc, add the type definitions:
+//     npm install --save-dev @types/node-cron
+//
+// 3️⃣  Run this file with ts-node for instant feedback:
+//     npx ts-node cron‑example.ts
+//
+// ---------------------------------------------------------------------------
+
+import cron, { CronJob } from 'node-cron';
+
 /**
- * Removes all vowels (a, e, i, o, u) from the given string.
- *
- * @param str - The input string to process.
- * @returns A new string with all vowels removed.
+ * A tiny helper to show that the job really ran.
+ * You could replace this with whatever real work you need.
  */
-export function removeVowels(str: string): string {
-  // The regex matches any of a, e, i, o, u in either case.
-  return str.replace(/[aeiouAEIOU]/g, '');
-}
-console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
-console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
-return str.replace(/[aeiouyAEIOUY]/g, '');
-export function removeVowelsManual(str: string): string {
-  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
-  let result = '';
-  for (const ch of str) {
-    if (!vowels.has(ch)) result += ch;
+const performScheduledWork = (): void => {
+  const now = new Date().toISOString();
+  console.log(`[${now}] The scheduled task has executed.`);
+};
+
+/**
+ * Create a CronJob that triggers every minute.
+ *
+ * The cron expression '* * * * *' means:
+ *   ┌───────────── minute (0 - 59)
+ *   │ ┌───────────── hour (0 - 23)
+ *   │ │ ┌───────────── day of month (1 - 31)
+ *   │ │ │ ┌───────────── month (1 - 12)
+ *   │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+ *   │ │ │ │ │
+ *   │ │ │ │ │
+ *   * * * * *
+ *
+ * Feel free to tweak the expression to your own schedule.
+ */
+const scheduledJob: CronJob = cron.schedule(
+  '* * * * *',
+  () => {
+    try {
+      performScheduledWork();
+    } catch (e) {
+      console.error('Unexpected error in cron job:', e);
+    }
+  },
+  {
+    scheduled: true,   // start automatically
+    timezone: 'UTC',   // use UTC by default; change if you need a different zone
   }
-  return result;
-}
+);
+
+// Optional: if you want to stop the job after, say, 5 executions
+let counter = 0;
+scheduledJob.setTimeZone('UTC'); // ensures time zone consistency
+
+scheduledJob.on('scheduled', () => {
+  console.log('Cron job started.');
+});
+
+scheduledJob.start(); // Explicitly start, even though scheduled:true
+
+// Clean exit after a short run (e.g., 5 minutes)
+setTimeout(() => {
+  console.log('Stopping cron job and exiting.');
+  scheduledJob.stop();
+  process.exit(0);
+}, 5 * 60 * 1000);
