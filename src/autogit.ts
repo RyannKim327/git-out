@@ -1,38 +1,50 @@
-function areAnagrams(a: string, b: string): boolean {
-  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase();
+/**
+ * Returns true if the supplied integer is a prime number.
+ *
+ * Special notes
+ * • 0 and 1 are *not* prime.
+ * • Negative numbers are treated as non‑prime because primes are defined for positive integers only.
+ * • The function uses the classic “divide up to sqrt(n)” trick – O(√n) which is fast enough for
+ *   almost every use‑case you’ll hit in day‑to‑day code. If you need primality for astronomically large
+ *   numbers you’ll need a more elaborate algorithm (Miller‑Rabin, etc.) – that’s a different story.
+ *
+ * @param n – the number you want to test
+ * @returns true if n is prime, false otherwise
+ */
+export function isPrime(n: number): boolean {
+  if (!Number.isInteger(n)) return false;   // TypeScript’s runtime check
+  if (n <= 1) return false;                // 0 and 1 aren’t prime, negative numbers aren’t considered either
 
-  const normalizeA = normalize(a).split('').sort().join('');
-  const normalizeB = normalize(b).split('').sort().join('');
+  // 2 and 3 are the only even and odd primes
+  if (n <= 3) return true;                 // 2 and 3
 
-  return normalizeA === normalizeB;
-}
-function areAnagrams(a: string, b: string): boolean {
-  const buildMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
-      map[ch] = (map[ch] ?? 0) + 1;
-    }
-    return map;
-  };
+  // Even numbers > 2 are composite
+  if (n % 2 === 0) return false;
 
-  const aMap = buildMap(a);
-  const bMap = buildMap(b);
-
-  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
-  for (const k of keys) {
-    if (aMap[k] !== bMap[k]) return false;
+  // We can skip even divisors – test only odd ones
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 3; i <= limit; i += 2) {
+    if (n % i === 0) return false;
   }
   return true;
 }
-const tests = [
-  ['listen', 'silent'],
-  ['hello', 'world'],
-  ['Dormitory', 'Dirty room'],
-  ['abc', 'abcd'],
-];
+import { isPrime } from "./primes";
 
-for (const [a, b] of tests) {
-  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
-}
+const numbers = [1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 25, 29, 31];
+
+numbers.forEach(n => {
+  console.log(`${n} is prime? ${isPrime(n)}`);
+});
+1 is prime? false
+2 is prime? true
+3 is prime? true
+4 is prime? false
+5 is prime? true
+16 is prime? false
+17 is prime? true
+19 is prime? true
+20 is prime? false
+23 is prime? true
+25 is prime? false
+29 is prime? true
+31 is prime? true
