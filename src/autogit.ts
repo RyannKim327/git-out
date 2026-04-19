@@ -1,72 +1,30 @@
-// ---------------------------------------------------------------------------
-//  cron‑example.ts
-// ---------------------------------------------------------------------------
+// Generic helper – works with any comparable type that can be used as a Map key
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
+}
 
-// 1️⃣  Install the dependencies first (run once):
-//     npm install node-cron
-//
-// 2️⃣  If you’re compiling TypeScript with tsc, add the type definitions:
-//     npm install --save-dev @types/node-cron
-//
-// 3️⃣  Run this file with ts-node for instant feedback:
-//     npx ts-node cron‑example.ts
-//
-// ---------------------------------------------------------------------------
+// Simple test
+const arr1 = [1, 2, 3, 5, 8];
+const arr2 = [3, 4, 5, 6, 9];
 
-import cron, { CronJob } from 'node-cron';
-
-/**
- * A tiny helper to show that the job really ran.
- * You could replace this with whatever real work you need.
- */
-const performScheduledWork = (): void => {
-  const now = new Date().toISOString();
-  console.log(`[${now}] The scheduled task has executed.`);
-};
-
-/**
- * Create a CronJob that triggers every minute.
- *
- * The cron expression '* * * * *' means:
- *   ┌───────────── minute (0 - 59)
- *   │ ┌───────────── hour (0 - 23)
- *   │ │ ┌───────────── day of month (1 - 31)
- *   │ │ │ ┌───────────── month (1 - 12)
- *   │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
- *   │ │ │ │ │
- *   │ │ │ │ │
- *   * * * * *
- *
- * Feel free to tweak the expression to your own schedule.
- */
-const scheduledJob: CronJob = cron.schedule(
-  '* * * * *',
-  () => {
-    try {
-      performScheduledWork();
-    } catch (e) {
-      console.error('Unexpected error in cron job:', e);
-    }
-  },
-  {
-    scheduled: true,   // start automatically
-    timezone: 'UTC',   // use UTC by default; change if you need a different zone
+console.log(intersection(arr1, arr2)); // → [3, 5]
+function firstIntersection<T>(a: T[], b: T[]): T | undefined {
+  const setB = new Set(b);
+  for (const item of a) {
+    if (setB.has(item)) return item;
   }
-);
-
-// Optional: if you want to stop the job after, say, 5 executions
-let counter = 0;
-scheduledJob.setTimeZone('UTC'); // ensures time zone consistency
-
-scheduledJob.on('scheduled', () => {
-  console.log('Cron job started.');
-});
-
-scheduledJob.start(); // Explicitly start, even though scheduled:true
-
-// Clean exit after a short run (e.g., 5 minutes)
-setTimeout(() => {
-  console.log('Stopping cron job and exiting.');
-  scheduledJob.stop();
-  process.exit(0);
-}, 5 * 60 * 1000);
+}
+function intersectionBy<T, K extends keyof T>(
+  a: T[],
+  b: T[],
+  key: K
+): T[] {
+  const map = new Map(b.map(v => [v[key], v]));
+  return a.filter(v => map.has(v[key]));
+}
+interface User { id: number; name: string }
+const usersA = [{ id:1 },{ id:2 },{ id:3 }]
+const usersB = [{ id:2 },{ id:3 },{ id:4 }]
+console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
+const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
