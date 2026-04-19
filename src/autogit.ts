@@ -1,32 +1,53 @@
-function countChar(str: string, target: string): number {
-  // split on the target, then subtract 1 because split returns one more element than matches
-  return str.split(target).length - 1;
-}
+// randomGreeting.ts
+//
+// 1️⃣  Read one line of text from stdin
+// 2️⃣  Pick a random greeting style
+// 3️⃣  Print a personalised message
+//
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countCharWithRegex(str: string, target: string): number {
-  const matches = str.match(new RegExp(target, 'g'));
-  return matches ? matches.length : 0;
-}
+import { stdin, stdout } from 'process';
 
-// Example
-console.log(countCharWithRegex("hello world", "l")); // 3
-console.log(countCharWithRegex("hello world", "z")); // 0
-function countLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+// A tiny helper that turns a promise into a line‑by‑line async iterator
+async function* readLines(): AsyncGenerator<string> {
+  let buffer = '';
+  for await (const chunk of stdin) {
+    buffer += chunk.toString();
+    let *lines* = buffer.split('\n');
+    buffer = lines.pop() ?? '';      // keep the unfinished part
+    for (const line of lines) {
+      yield line.trim();           // remove trailing CR / whitespace
+    }
   }
-  return count;
+  if (buffer) yield buffer.trim();   // last partial line
 }
 
-// Example
-console.log(countLoop('hello world', 'l')); // 3
-function countReduce(str: string, target: string): number {
-  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
-}
-// Equivalent to looping, but shows functional style
-import { count } from 'lodash';
+async function main() {
+  // Ask for the user’s name
+  stdout.write('👋 What is your name? ');
+  const lines = readLines();
 
-count('hello world', 'l'); // 3
+  // Wait for the first line entered by the user
+  const name = (await lines.next()).value?.split(' ')[0] ?? 'there';
+
+  // Some random greeting ideas
+  const greetings = [
+    `Hey ${name}, hope you’re having a stellar day!`,
+    `Yo ${name}! Did you know that typing a byte is like shouting for your keyboard?`,
+    `Greetings, ${name}! Keep calm and code on.`,
+    `${name}, you’re the reason we write code in TypeScript!`,
+    `Howdy ${name}! 🎉`
+  ];
+
+  // Pick one at random
+  const choice = greetings[Math.floor(Math.random() * greetings.length)];
+
+  stdout.write(`${choice}\n`);
+}
+
+main().catch(err => {
+  console.error('Something went wrong:', err);
+  process.exit(1);
+});
+$ node randomGreeting.js
+👋 What is your name? Alice
+Hey Alice, hope you’re having a stellar day!
