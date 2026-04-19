@@ -1,41 +1,48 @@
 /**
- * Checks whether a string is a palindrome.
+ * Bubble‑sort an array.
  *
- * Options:
- *   - ignoreCase: treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
- *
- * @param input The string to test
- * @param opts  Optional settings
- * @returns true if `input` is a palindrome under the chosen rules
+ * @param arr          The array to sort (does not get mutated).
+ * @param compareFn    Optional comparison function.  
+ *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
+ *                     If omitted, the default comparator uses the `<` and `>` operators that work
+ *                     for numbers, strings and any type that can be compared that way.
+ * @returns            A new array containing the elements of `arr` in ascending order.
  */
-export function isPalindrome(
-  input: string,
-  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+export function bubbleSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): T[] {
+  // Make a shallow copy; we don’t want to touch the caller’s array
+  const result = [...arr];
 
-  let str = input;
+  const compare = compareFn ?? ((a: any, b: any) => {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  });
 
-  // 1. Collapse the string if requested
-  if (ignoreNonAlnum) {
-    // Keep only ASCII letters and digits. For Unicode you might want
-    // a regex like `/\p{L}\p{N}/gu` instead.
-    str = str.replace(/[^A-Za-z0-9]/g, "");
-  }
+  const n = result.length;
+  if (n < 2) return result; // already sorted
 
-  // 2. Normalize case if requested
-  if (ignoreCase) {
-    str = str.toLowerCase();
-  }
+  let swapped: boolean;
+  // Standard bubble‑sort: keep looping while we keep swapping
+  do {
+    swapped = false;
+    for (let i = 0; i < n - 1; i++) {
+      if (compare(result[i], result[i + 1]) > 0) {
+        // swap
+        [result[i], result[i + 1]] = [result[i + 1], result[i]];
+        swapped = true;
+      }
+    }
+  } while (swapped);
 
-  // 3. Compare the string to its reverse
-  const reversed = str.split("").reverse().join("");
-  return str === reversed;
+  return result;
 }
-console.log(isPalindrome("racecar"));                    // true
-console.log(isPalindrome("RaceCar"));                    // true
-console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("No lemon, no melon"));          // true
-console.log(isPalindrome("hello"));                       // false
+const unsorted = [5, 3, 8, 4, 2];
+const sorted = bubbleSort(unsorted);
+console.log(sorted); // [2, 3, 4, 5, 8]
+console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
+const words = ["banana", "Apple", "cherry"];
+const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(sortedByCase); // ["Apple", "banana", "cherry"]
