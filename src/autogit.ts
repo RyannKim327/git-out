@@ -1,58 +1,40 @@
-/** A very simple binary‑tree node. */
-export class TreeNode<T = unknown> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
 /**
- * Returns the maximum depth of a binary tree.
- * Depth is counted in nodes, not edges.
+ * Binary search – recursive version
  *
- * @param root The root node of the tree (or null for an empty tree).
- * @returns an integer ≥ 0.
+ * @param arr   Sorted array (ascending order)
+ * @param target Value you’re looking for
+ * @param low   Left boundary (inclusive) – do **not** pass this on the first call
+ * @param high  Right boundary (inclusive) – do **not** pass this on the first call
+ * @returns Index of target, or -1 if absent
  */
-export function maxDepth<T>(root: TreeNode<T> | null): number {
-  // recursion is the cleanest here
-  if (!root) return 0; // leaf’s child contributes 0
+function binarySearch<T extends number | string>(
+    arr: readonly T[],
+    target: T,
+    low = 0,
+    high = arr.length - 1
+): number {
+    // Base case: empty range → not found
+    if (low > high) return -1;
 
-  const leftDepth = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  // current node adds 1 to the greater of two sub‑depths
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const root = new TreeNode('a',
-  new TreeNode('b',
-    new TreeNode('d')
-  ),
-  new TreeNode('c')
-);
-
-console.log(maxDepth(root)); // → 3
-export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    // All nodes in this `for` loop belong to the same level.
-    const levelSize = queue.length;
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+    if (midVal === target) {
+        return mid;                     // found
+    } else if (midVal < target) {
+        // search right half
+        return binarySearch(arr, target, mid + 1, high);
+    } else {
+        // left half
+        return binarySearch(arr, target, low, mid - 1);
     }
-    depth++; // finished one level
-  }
-  return depth;
+}
+const nums = [1, 4, 7, 12, 19, 31, 55];
+const idx  = binarySearch(nums, 19);
+console.log(idx);   // 4
+function binarySearchIter<T extends number | string>(
+    arr: readonly T[],
+    target: T
+): number {
+    return binarySearch(arr, target);
 }
