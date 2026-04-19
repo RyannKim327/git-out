@@ -1,45 +1,28 @@
 /**
- * Return the longest common prefix of an array of strings.
- * If the array is empty the result is the empty string.
- *
- * @param strs Array of strings
- * @returns The longest common prefix
+ * Sorts an array of numbers (or any type that can be compared) in place.
+ * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
+export function insertionSort<T>(arr: T[]): void {
+  // Nothing to do for empty or single‑element arrays
+  if (arr.length < 2) return;
 
-  // Start with the entire first string as a tentative prefix.
-  let prefix = strs[0];
+  // Iterate over the array starting at index 1 because the sub‑array
+  // arr[0..i‑1] is already considered sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  // Iterate over the rest of the strings.
-  for (let i = 1; i < strs.length; i++) {
-    const s = strs[i];
-
-    // Shrink the prefix until it matches the current string
-    // (or becomes empty).
-    while (!s.startsWith(prefix)) {
-      // Drop the last character
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return ""; // No common prefix
+    // Shift elements that are greater than the key one position to the right.
+    // This makes space for the key to sit in its correct sorted spot.
+    while (j >= 0 && arr[j] > key) {
+      arr[j + 1] = arr[j];
+      j--;
     }
+
+    // Place the key after the element just smaller than it
+    arr[j + 1] = key;
   }
-
-  return prefix;
 }
-console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
-console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
-console.log(longestCommonPrefix([]));                         // ""
-console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
-export function lcpBySorting(strs: string[]): string {
-  if (strs.length === 0) return "";
-
-  const sorted = [...strs].sort(); // Lexicographical order
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-  const minLen = Math.min(first.length, last.length);
-
-  let i = 0;
-  while (i < minLen && first[i] === last[i]) i++;
-
-  return first.slice(0, i);
-}
+const nums = [5, 2, 9, 1, 5, 6];
+insertionSort(nums);
+console.log(nums); // [1, 2, 5, 5, 6, 9]
