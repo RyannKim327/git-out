@@ -1,14 +1,58 @@
-// 1️⃣ Using a regex (global, matches all spaces)
-const withoutSpaces1 = str.replace(/ /g, '');
+/** A very simple binary‑tree node. */
+export class TreeNode<T = unknown> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
 
-// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
-const withoutSpaces2 = str.replace(/\s+/g, '');
+/**
+ * Returns the maximum depth of a binary tree.
+ * Depth is counted in nodes, not edges.
+ *
+ * @param root The root node of the tree (or null for an empty tree).
+ * @returns an integer ≥ 0.
+ */
+export function maxDepth<T>(root: TreeNode<T> | null): number {
+  // recursion is the cleanest here
+  if (!root) return 0; // leaf’s child contributes 0
 
-// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
-const withoutSpaces3 = str.split(' ').join('');
+  const leftDepth = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
-const withoutSpaces4 = str.replaceAll(' ', '');
+  // current node adds 1 to the greater of two sub‑depths
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
+}
+// Build a tiny tree:
+//       a
+//      / \
+//     b   c
+//    /
+//   d
+const root = new TreeNode('a',
+  new TreeNode('b',
+    new TreeNode('d')
+  ),
+  new TreeNode('c')
+);
 
-// 5️⃣ For a functional style (works even in older versions)
-const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
+console.log(maxDepth(root)); // → 3
+export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    // All nodes in this `for` loop belong to the same level.
+    const levelSize = queue.length;
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+    depth++; // finished one level
+  }
+  return depth;
+}
