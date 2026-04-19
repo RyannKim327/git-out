@@ -1,50 +1,93 @@
-/**
- * Returns true if the supplied integer is a prime number.
- *
- * Special notes
- * • 0 and 1 are *not* prime.
- * • Negative numbers are treated as non‑prime because primes are defined for positive integers only.
- * • The function uses the classic “divide up to sqrt(n)” trick – O(√n) which is fast enough for
- *   almost every use‑case you’ll hit in day‑to‑day code. If you need primality for astronomically large
- *   numbers you’ll need a more elaborate algorithm (Miller‑Rabin, etc.) – that’s a different story.
- *
- * @param n – the number you want to test
- * @returns true if n is prime, false otherwise
- */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n)) return false;   // TypeScript’s runtime check
-  if (n <= 1) return false;                // 0 and 1 aren’t prime, negative numbers aren’t considered either
+// ---- Graph representation -------------------------------------------------
+type Node = string | number;               // you can pick whatever type you prefer
+type AdjacencyList = Record<Node, Node[]>; // node -> list of neighbour nodes
 
-  // 2 and 3 are the only even and odd primes
-  if (n <= 3) return true;                 // 2 and 3
+class Graph {
+  private readonly adj: AdjacencyList = {};
 
-  // Even numbers > 2 are composite
-  if (n % 2 === 0) return false;
+  // Add (or extend) adjacency list for a node
+  addEdge(u: Node, v: Node, undirected = true) {
+    if (!this.adj[u]) this.adj[u] = [];
+    this.adj[u].push(v);
 
-  // We can skip even divisors – test only odd ones
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
+    if (undirected) {
+      if (!this.adj[v]) this.adj[v] = [];
+      this.adj[v].push(u);
+    }
   }
-  return true;
+
+  // Optional: get all nodes in the graph
+  nodes(): Node[] {
+    return Object.keys(this.adj).map(k => parseNode(k));
+  }
+
+  // Expose raw list for BFS
+  get neighbours() {
+    return this.adj;
+  }
 }
-import { isPrime } from "./primes";
 
-const numbers = [1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 25, 29, 31];
+// Helper to preserve numeric keys when using an object as map
+function parseNode(val: string): Node {
+  return isNaN(Number(val)) ? val : Number(val);
+}
 
-numbers.forEach(n => {
-  console.log(`${n} is prime? ${isPrime(n)}`);
-});
-1 is prime? false
-2 is prime? true
-3 is prime? true
-4 is prime? false
-5 is prime? true
-16 is prime? false
-17 is prime? true
-19 is prime? true
-20 is prime? false
-23 is prime? true
-25 is prime? false
-29 is prime? true
-31 is prime? true
+// ---- BFS implementation ---------------------------------------------------
+/**
+ * Performs a breadth‑first search starting from `source`.
+ * @param graph      The graph to search.
+ * @param source     The node where we begin the search.
+ * @param target     (Optional) If provided, the search stops when this node is reached.
+ * @returns          If no target: a map of node → distance from source.
+ *                   If target: the distance to that node, or -1 if unreachable.
+ */
+function bfs(
+  graph: Graph,
+  source: Node,
+  target?: Node
+): Record<Node, number> | number {
+  const distances: Record<Node, number> = {};
+  const queue: Node[] = [source];
+  const visited = new Set<Node>();
+
+  visited.add(source);
+  distances[source] = 0;
+
+  while (queue.length) {
+    const u = queue.shift() as Node;
+    const currDist = distances[u] as number;
+
+    // Stop early if we’re looking for a particular target
+    if (target !== undefined && u === target) {
+      return currDist;
+    }
+
+    for (const v of graph.neighbours[u] || []) {
+      if (!visited.has(v)) {
+        visited.add(v);
+        distances[v] = currDist + 1;
+        queue.push(v);
+      }
+    }
+  }
+
+  // No path found to `target`
+  if (target !== undefined) return -1;
+
+  return distances;
+}
+
+// ---- Example usage --------------------------------------------------------
+const g = new Graph();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('C', 'E');
+g.addEdge('E', 'F');
+
+// Full distance map from A
+console.log('Distances from A:', bfs(g, 'A'));
+
+// Shortest path length from A to F
+console.log('Distance A → F:', bfs(g, 'A', 'F'));
