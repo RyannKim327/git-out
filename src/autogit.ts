@@ -1,50 +1,57 @@
 /**
- * Returns true if the supplied integer is a prime number.
+ * Interpolation Search
+ * --------------------
+ * @param arr  A sorted array of numbers (ascending).
+ * @param key  The value you're looking for.
+ * @returns    Index of key in arr, or −1 if key is absent.
  *
- * Special notes
- * • 0 and 1 are *not* prime.
- * • Negative numbers are treated as non‑prime because primes are defined for positive integers only.
- * • The function uses the classic “divide up to sqrt(n)” trick – O(√n) which is fast enough for
- *   almost every use‑case you’ll hit in day‑to‑day code. If you need primality for astronomically large
- *   numbers you’ll need a more elaborate algorithm (Miller‑Rabin, etc.) – that’s a different story.
+ * Complexity:
+ *  * Best‑case: O(log log N)  (when data is uniformly distributed)
+ *  * Worst‑case: O(N)         (when data is heavily skewed)
  *
- * @param n – the number you want to test
- * @returns true if n is prime, false otherwise
+ * Note: Behaviour for non‑numeric or unsorted input is undefined.
  */
-export function isPrime(n: number): boolean {
-  if (!Number.isInteger(n)) return false;   // TypeScript’s runtime check
-  if (n <= 1) return false;                // 0 and 1 aren’t prime, negative numbers aren’t considered either
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // 2 and 3 are the only even and odd primes
-  if (n <= 3) return true;                 // 2 and 3
+  let low = 0;
+  let high = arr.length - 1;
 
-  // Even numbers > 2 are composite
-  if (n % 2 === 0) return false;
+  // Keep the loop going while the search space is valid.
+  while (
+    low <= high &&
+    key >= arr[low] &&
+    key <= arr[high]
+  ) {
+    // Guard against a zero division when arr[low] === arr[high].
+    if (arr[low] === arr[high]) {
+      // All remaining elements are equal; pick the first one.
+      return arr[low] === key ? low : -1;
+    }
 
-  // We can skip even divisors – test only odd ones
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 3; i <= limit; i += 2) {
-    if (n % i === 0) return false;
+    // Estimate the probable position of key.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+      );
+
+    // We found the key.
+    if (arr[pos] === key) {
+      return pos;
+    }
+
+    // Update boundaries based on comparison.
+    if (arr[pos] < key) {
+      low = pos + 1;     // key is in the right sub‑array
+    } else {
+      high = pos - 1;    // key is in the left sub‑array
+    }
   }
-  return true;
+
+  // If we exit the loop, key isn't present.
+  return -1;
 }
-import { isPrime } from "./primes";
-
-const numbers = [1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 25, 29, 31];
-
-numbers.forEach(n => {
-  console.log(`${n} is prime? ${isPrime(n)}`);
-});
-1 is prime? false
-2 is prime? true
-3 is prime? true
-4 is prime? false
-5 is prime? true
-16 is prime? false
-17 is prime? true
-19 is prime? true
-20 is prime? false
-23 is prime? true
-25 is prime? false
-29 is prime? true
-31 is prime? true
+const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(data, 9));   // → 4
+console.log(interpolationSearch(data, 4));   // → -1
