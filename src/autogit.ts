@@ -1,41 +1,34 @@
-// Basic node definition
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
+const haystack: string = "Hello, world!";
+const needle: string = "world";
 
+const found = haystack.includes(needle); // true
+const haystack = "Hello, world!";
+const needle = "world";
+
+const found = haystack.indexOf(needle) !== -1; // true
+const haystack = "Hello, world!";
+const pattern = /world/;          // or /world/i for case‑insensitive
+const found = pattern.test(haystack); // true
+// case‑insensitive:
+const haystack = "Hello, World!";
+const needle = "world";
+const found = haystack.toLowerCase().includes(needle.toLowerCase());
+
+// locale‑aware:
+const localeFound = haystack.localeCompare(needle, undefined, { sensitivity: 'accent' }) === 0;
 /**
- * Detect a cycle in a singly linked list.
- * @param head The start node of the list (or null for an empty list).
- * @returns true if a cycle exists, otherwise false.
+ * Checks whether a string contains a substring, optionally case‑insensitive.
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false;          // Empty list → no cycle
-
-  let slow = head;                  // One step per loop
-  let fast = head.next;             // Two steps per loop
-
-  while (fast && fast.next) {
-    if (slow === fast) return true; // Hopping together → cycle
-
-    slow = slow.next!;              // safe because slow can't be null here
-    fast = fast.next.next!;
+function contains(
+  target: string,
+  probe: string,
+  caseInsensitive = false
+): boolean {
+  if (caseInsensitive) {
+    return target.toLowerCase().includes(probe.toLowerCase());
   }
-
-  return false;                     // Reached end → no cycle
+  return target.includes(probe);
 }
-// acyclic list 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-console.log(hasCycle(a)); // false
 
-// cyclic list 1 → 2 → 3 → 1 …
-const d = new ListNode(1);
-const e = new ListNode(2);
-const f = new ListNode(3);
-d.next = e; e.next = f; f.next = d;
-console.log(hasCycle(d)); // true
+// Usage
+const ok = contains("Hello, World!", "world", true); // true
