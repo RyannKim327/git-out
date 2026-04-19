@@ -1,32 +1,41 @@
-function countChar(str: string, target: string): number {
-  // split on the target, then subtract 1 because split returns one more element than matches
-  return str.split(target).length - 1;
+// Basic node definition
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countCharWithRegex(str: string, target: string): number {
-  const matches = str.match(new RegExp(target, 'g'));
-  return matches ? matches.length : 0;
-}
+/**
+ * Detect a cycle in a singly linked list.
+ * @param head The start node of the list (or null for an empty list).
+ * @returns true if a cycle exists, otherwise false.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false;          // Empty list → no cycle
 
-// Example
-console.log(countCharWithRegex("hello world", "l")); // 3
-console.log(countCharWithRegex("hello world", "z")); // 0
-function countLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+  let slow = head;                  // One step per loop
+  let fast = head.next;             // Two steps per loop
+
+  while (fast && fast.next) {
+    if (slow === fast) return true; // Hopping together → cycle
+
+    slow = slow.next!;              // safe because slow can't be null here
+    fast = fast.next.next!;
   }
-  return count;
-}
 
-// Example
-console.log(countLoop('hello world', 'l')); // 3
-function countReduce(str: string, target: string): number {
-  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
+  return false;                     // Reached end → no cycle
 }
-// Equivalent to looping, but shows functional style
-import { count } from 'lodash';
+// acyclic list 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+console.log(hasCycle(a)); // false
 
-count('hello world', 'l'); // 3
+// cyclic list 1 → 2 → 3 → 1 …
+const d = new ListNode(1);
+const e = new ListNode(2);
+const f = new ListNode(3);
+d.next = e; e.next = f; f.next = d;
+console.log(hasCycle(d)); // true
