@@ -1,52 +1,41 @@
 /**
- * Binary search for a sorted array.  
- * @param arr  The sorted array (or array‑like object).
- * @param target  The value you’re looking for.
- * @param low   Optional starting index (default 0).
- * @param high  Optional ending index (default arr.length – 1).
- * @returns index of target if found, otherwise -1.
+ * Checks whether a string is a palindrome.
+ *
+ * Options:
+ *   - ignoreCase: treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
+ *
+ * @param input The string to test
+ * @param opts  Optional settings
+ * @returns true if `input` is a palindrome under the chosen rules
  */
-export function binarySearch<T extends number | string>(
-    arr: ArrayLike<T>,
-    target: T,
-    low: number = 0,
-    high: number = arr.length - 1
-): number {
-    while (low <= high) {
-        // guard against overflow – works with big ints as well
-        const mid = Math.floor((low + high) / 2);
-        const midVal = arr[mid];
+export function isPalindrome(
+  input: string,
+  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
 
-        if (midVal === target) {
-            return mid;
-        }
+  let str = input;
 
-        // Type narrowing: if T is string we still compare interger‑wise
-        if (midVal < target) {
-            low = mid + 1;
-        } else {
-            high = mid - 1;
-        }
-    }
-    return -1; // not found
+  // 1. Collapse the string if requested
+  if (ignoreNonAlnum) {
+    // Keep only ASCII letters and digits. For Unicode you might want
+    // a regex like `/\p{L}\p{N}/gu` instead.
+    str = str.replace(/[^A-Za-z0-9]/g, "");
+  }
+
+  // 2. Normalize case if requested
+  if (ignoreCase) {
+    str = str.toLowerCase();
+  }
+
+  // 3. Compare the string to its reverse
+  const reversed = str.split("").reverse().join("");
+  return str === reversed;
 }
-import { binarySearch } from "./binary-search.ts";
-
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearch(nums, 7));   // => 3
-console.log(binarySearch(nums, 4));   // => -1
-export function binarySearchRec<T extends number | string>(
-    arr: ArrayLike<T>,
-    target: T,
-    low: number = 0,
-    high: number = arr.length - 1
-): number {
-    if (low > high) return -1;
-
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
-
-    if (midVal === target) return mid;
-    if (midVal < target) return binarySearchRec(arr, target, mid + 1, high);
-    return binarySearchRec(arr, target, low, mid - 1);
-}
+console.log(isPalindrome("racecar"));                    // true
+console.log(isPalindrome("RaceCar"));                    // true
+console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("No lemon, no melon"));          // true
+console.log(isPalindrome("hello"));                       // false
