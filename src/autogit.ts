@@ -1,48 +1,61 @@
 /**
- * Bubble‑sort an array.
+ * Return true if `text` is a palindrome.
  *
- * @param arr          The array to sort (does not get mutated).
- * @param compareFn    Optional comparison function.  
- *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
- *                     If omitted, the default comparator uses the `<` and `>` operators that work
- *                     for numbers, strings and any type that can be compared that way.
- * @returns            A new array containing the elements of `arr` in ascending order.
+ * The function walks from both ends towards the middle, comparing matching
+ * characters.  It never creates an auxiliary string or array, so the
+ * extra space cost is O(1).
+ *
+ * Options:
+ *   - ignoreCase:   treat 'A' and 'a' as the same (default true)
+ *   - ignoreNonAlpha: strip out anything that isn’t a letter or digit (default true)
  */
-export function bubbleSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  // Make a shallow copy; we don’t want to touch the caller’s array
-  const result = [...arr];
+function isPalindrome(
+  text: string,
+  ignoreCase = true,
+  ignoreNonAlpha = true
+): boolean {
+  let left = 0;
+  let right = text.length - 1;
 
-  const compare = compareFn ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
-
-  const n = result.length;
-  if (n < 2) return result; // already sorted
-
-  let swapped: boolean;
-  // Standard bubble‑sort: keep looping while we keep swapping
-  do {
-    swapped = false;
-    for (let i = 0; i < n - 1; i++) {
-      if (compare(result[i], result[i + 1]) > 0) {
-        // swap
-        [result[i], result[i + 1]] = [result[i + 1], result[i]];
-        swapped = true;
-      }
+  while (left < right) {
+    // Skip unwanted characters on the left
+    while (
+      left < right &&
+      (ignoreNonAlpha ? !isAlphaNumeric(text[left]) : false)
+    ) {
+      left++;
     }
-  } while (swapped);
 
-  return result;
+    // Skip unwanted characters on the right
+    while (
+      left < right &&
+      (ignoreNonAlpha ? !isAlphaNumeric(text[right]) : false)
+    ) {
+      right--;
+    }
+
+    // Compare the two characters
+    const leftCh  = ignoreCase ? text[left].toLowerCase() : text[left];
+    const rightCh = ignoreCase ? text[right].toLowerCase() : text[right];
+
+    if (leftCh !== rightCh) return false;
+
+    left++;
+    right--;
+  }
+
+  return true;
 }
-const unsorted = [5, 3, 8, 4, 2];
-const sorted = bubbleSort(unsorted);
-console.log(sorted); // [2, 3, 4, 5, 8]
-console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
-const words = ["banana", "Apple", "cherry"];
-const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(sortedByCase); // ["Apple", "banana", "cherry"]
+
+function isAlphaNumeric(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  // '0'-'9' => 48-57, 'A'-'Z' => 65-90, 'a'-'z' => 97-122
+  return (
+    (code >= 48 && code <= 57) ||
+    (code >= 65 && code <= 90) ||
+    (code >= 97 && code <= 122)
+  );
+}
+console.log(isPalindrome("Was it a rat I saw?")); // true
+console.log(isPalindrome("No 'x' in Nixon"));     // true
+console.log(isPalindrome("Hello"));                // false
