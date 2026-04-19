@@ -1,65 +1,21 @@
 /**
- * Returns the largest prime factor of a positive integer (>1).
- * Uses trial division up to √n – fast enough for 32‑bit ints.
+ * Removes all vowels (a, e, i, o, u) from the given string.
+ *
+ * @param str - The input string to process.
+ * @returns A new string with all vowels removed.
  */
-export function largestPrimeFactor(n: number): number {
-  if (n <= 1) throw new Error("n must be > 1");
-
-  // 2 is the only even prime
-  while (n % 2 === 0) n /= 2;
-
-  // n is now odd – we only need to test odd divisors
-  let factor = 3;
-  const sqrt = Math.sqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0) {
-      n /= factor;          // keep dividing out this prime
-    }
-    factor += 2;            // next odd candidate
-  }
-
-  // If n is still > 2, it is a prime larger than any factor we tried.
-  return n;
+export function removeVowels(str: string): string {
+  // The regex matches any of a, e, i, o, u in either case.
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
-/**
- * Returns the largest prime factor of a BigInt > 1.
- */
-export function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) throw new Error("n must be > 1");
-
-  // 2 is the only even prime
-  while (n % 2n === 0n) n /= 2n;
-
-  let factor = 3n;
-  const sqrt = bigintSqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0n) {
-      n /= factor;
-    }
-    factor += 2n;
+console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
+console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
+return str.replace(/[aeiouyAEIOUY]/g, '');
+export function removeVowelsManual(str: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of str) {
+    if (!vowels.has(ch)) result += ch;
   }
-
-  return n;
+  return result;
 }
-
-/**
- * Integer square‑root of a BigInt – floor(√n).
- * Uses Newton’s method; fast for large numbers.
- */
-function bigintSqrt(value: bigint): bigint {
-  if (value < 0n) throw new Error("negative value");
-  if (value < 2n) return value;
-
-  let x0 = value;
-  let x1 = (x0 + 1n) >> 1n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) >> 1n;
-  }
-  return x0;
-}
-console.log(largestPrimeFactor(13195));          // 29
-console.log(largestPrimeFactor(600851475143));   // 6857
-
-console.log(largestPrimeFactorBigInt(13195n));    // 29n
-console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
