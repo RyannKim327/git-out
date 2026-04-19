@@ -1,28 +1,42 @@
 /**
- * Sorts an array of numbers (or any type that can be compared) in place.
- * @param arr The array to be sorted. Mutation is intentional for O(1) auxiliary space.
+ * Returns the maximum sum sub‑array of a one‑dimensional numeric array,
+ * together with the start and end indices of that sub‑array.
+ *
+ * @param nums   – array of numbers (can contain negatives!)
+ * @returns      { sum, start, end }
+ *
+ * Complexity: O(n) time, O(1) extra space
  */
-export function insertionSort<T>(arr: T[]): void {
-  // Nothing to do for empty or single‑element arrays
-  if (arr.length < 2) return;
+export function maxSubArray(nums: number[]): { sum: number; start: number; end: number } {
+  if (nums.length === 0) throw new Error('Array must contain at least one element');
 
-  // Iterate over the array starting at index 1 because the sub‑array
-  // arr[0..i‑1] is already considered sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  let globalMax = nums[0];
+  let currentSum = nums[0];
 
-    // Shift elements that are greater than the key one position to the right.
-    // This makes space for the key to sit in its correct sorted spot.
-    while (j >= 0 && arr[j] > key) {
-      arr[j + 1] = arr[j];
-      j--;
+  // Track the indices
+  let startIdx = 0;          // beginning of the current candidate
+  let bestStartIdx = 0;      // beginning of the best so far
+  let bestEndIdx = 0;        // end of the best so far
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the current sub‑array or start fresh at i
+    if (currentSum + nums[i] > nums[i]) {
+      currentSum += nums[i];
+    } else {
+      currentSum = nums[i];
+      startIdx = i;         // new sub‑array starts here
     }
 
-    // Place the key after the element just smaller than it
-    arr[j + 1] = key;
+    // Did we find a new champion?
+    if (currentSum > globalMax) {
+      globalMax = currentSum;
+      bestStartIdx = startIdx;
+      bestEndIdx = i;
+    }
   }
+
+  return { sum: globalMax, start: bestStartIdx, end: bestEndIdx };
 }
-const nums = [5, 2, 9, 1, 5, 6];
-insertionSort(nums);
-console.log(nums); // [1, 2, 5, 5, 6, 9]
+console.log(maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4]));
+// → { sum: 6, start: 3, end: 6 }
+// (the slice [4, -1, 2, 1] adds up to 6)
