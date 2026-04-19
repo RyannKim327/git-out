@@ -1,80 +1,32 @@
+// Node for a singly‑linked list
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
+
 /**
- * Sorts an array of numbers in ascending order using selection sort.
- * The array is sorted in place.
- *
- * @param arr – the number array to sort
- * @returns the same array reference, now sorted
+ * Returns the first node that appears in both lists,
+ * or null if they don’t intersect.
  */
-export function selectionSortNumbers(arr: number[]): number[] {
-  const n = arr.length;
+function findIntersection<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
 
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the first unsorted element is the minimum
-    let minIndex = i;
-
-    // Find the actual minimum among the remaining unsorted portion
-    for (let j = i + 1; j < n; j++) {
-      if (arr[j] < arr[minIndex]) {
-        minIndex = j;
-      }
-    }
-
-    // If a smaller element was found, swap it into place
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
+  // Step 1: remember every node of list A
+  for (let curr = headA; curr; curr = curr.next) {
+    seen.add(curr);
   }
 
-  return arr;
-}
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
-/**
- * Sorts an array in place using selection sort and a custom comparator.
- *
- * @param arr         The array to sort.
- * @param compareFn   Comparator that defines the sort order.
- * @returns The sorted array (same reference as @param arr).
- */
-export function selectionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  const n = arr.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    let minIndex = i;
-
-    for (let j = i + 1; j < n; j++) {
-      if (compareFn(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
-    }
-
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
+  // Step 2: walk list B until we hit a node already seen
+  for (let curr = headB; curr; curr = curr.next) {
+    if (seen.has(curr)) return curr; // intersection found
   }
-
-  return arr;
+  return null; // no intersection
 }
-interface Person {
-  name: string;
-  age: number;
-}
+const shared = new ListNode(8, new ListNode(9));
 
-const people: Person[] = [
-  { name: 'Alice', age: 29 },
-  { name: 'Bob', age: 23 },
-  { name: 'Charlie', age: 35 }
-];
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
 
-// Sort by age (ascending)
-selectionSort(people, (a, b) => a.age - b.age);
-
-console.log(people);
-// → [
-//      { name: 'Bob', age: 23 },
-//      { name: 'Alice', age: 29 },
-//      { name: 'Charlie', age: 35 }
-//    ]
+console.log(findIntersection(a1, b1)?.val); // 8
