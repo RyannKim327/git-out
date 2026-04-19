@@ -1,52 +1,41 @@
 /**
- * Counting sort for an array of integers.
+ * Checks whether a string is a palindrome.
  *
- * @param arr – array of numbers (integers) to sort
- * @returns a new array containing the same numbers in ascending order
+ * Options:
+ *   - ignoreCase: treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
+ *
+ * @param input The string to test
+ * @param opts  Optional settings
+ * @returns true if `input` is a palindrome under the chosen rules
  */
-export function countingSort(arr: number[]): number[] {
-  // nothing to sort
-  if (arr.length <= 1) return [...arr];
+export function isPalindrome(
+  input: string,
+  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
 
-  // 1. locate the min/max so we know how big the count array must be
-  let min = arr[0];
-  let max = arr[0];
+  let str = input;
 
-  for (let i = 1; i < arr.length; i++) {
-    const v = arr[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
+  // 1. Collapse the string if requested
+  if (ignoreNonAlnum) {
+    // Keep only ASCII letters and digits. For Unicode you might want
+    // a regex like `/\p{L}\p{N}/gu` instead.
+    str = str.replace(/[^A-Za-z0-9]/g, "");
   }
 
-  // 2. build the frequency table
-  // offset shifts the negative values to positive indices
-  const offset = -min;                     // e.g. min = -3 → offset = 3
-  const size   = max - min + 1;            // number of distinct keys
-  const count  = new Array<number>(size).fill(0);
-
-  for (const v of arr) {
-    count[v + offset]++;
+  // 2. Normalize case if requested
+  if (ignoreCase) {
+    str = str.toLowerCase();
   }
 
-  // 3. reconstruct the sorted array
-  const out: number[] = new Array(arr.length);
-  let writeIdx = 0;
-
-  for (let i = 0; i < size; i++) {
-    const qty = count[i];
-    if (qty === 0) continue;
-
-    const value = i - offset;   // bring back to original key
-    for (let j = 0; j < qty; j++) {
-      out[writeIdx++] = value;
-    }
-  }
-
-  return out;
+  // 3. Compare the string to its reverse
+  const reversed = str.split("").reverse().join("");
+  return str === reversed;
 }
-import { countingSort } from './countingSort';
-
-const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
-const sorted   = countingSort(unsorted);
-
-console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
+console.log(isPalindrome("racecar"));                    // true
+console.log(isPalindrome("RaceCar"));                    // true
+console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("No lemon, no melon"));          // true
+console.log(isPalindrome("hello"));                       // false
