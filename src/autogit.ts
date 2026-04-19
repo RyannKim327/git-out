@@ -1,34 +1,14 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
-function reverseUnicodeString(str: string): string {
-  const chars: string[] = [];
-  for (const ch of str) {
-    chars.unshift(ch);            // add each code‑point to the front
-  }
-  return chars.join('');
-}
-function reverseStringLoop(str: string): string {
-  const buf = str.split('');
-  let i = 0;
-  let j = buf.length - 1;
-  while (i < j) {
-    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
-    ++i;
-    --j;
-  }
-  return buf.join('');
-}
-function reverseFunctional(str: string): string {
-  return [...str].reduceRight((acc, char) => acc + char, '');
-}
-function reverseStringFast(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
-}
-const raw = 'Hello, 🌍!';
-console.log(reverseString(raw));           // "!🌍 ,olleH"
-console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
+// 1️⃣ Using a regex (global, matches all spaces)
+const withoutSpaces1 = str.replace(/ /g, '');
+
+// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
+const withoutSpaces2 = str.replace(/\s+/g, '');
+
+// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
+const withoutSpaces3 = str.split(' ').join('');
+
+// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
+const withoutSpaces4 = str.replaceAll(' ', '');
+
+// 5️⃣ For a functional style (works even in older versions)
+const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
