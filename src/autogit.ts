@@ -1,63 +1,43 @@
-/**
- * Quick‑sort an array in ascending order.
- * Modifies the original array – if you need a copy, clone it first.
- *
- * @param arr  The array to sort (array of numbers, strings, or any comparable items).
- * @returns    The same array reference, now sorted.
- */
-function quickSort<T>(arr: T[]): T[] {
-  // Base case: 0 or 1 element is already sorted
-  if (arr.length < 2) {
-    return arr;
-  }
-
-  // Pick a pivot – here we just use the middle element.
-  const pivotIndex = Math.floor(arr.length / 2);
-  const pivot = arr[pivotIndex];
-
-  // Partition into three buckets
-  const left: T[] = [];
-  const right: T[] = [];
-
-  // Skip the pivot itself to avoid infinite recursion
-  for (let i = 0; i < arr.length; i++) {
-    if (i === pivotIndex) continue;
-    // @ts-ignore – operator < works on strings/numbers. For custom types, provide a comparator.
-    if (arr[i] <= pivot) left.push(arr[i]);
-    else right.push(arr[i]);
-  }
-
-  // Recursively sort the buckets and concatenate
-  return [...quickSort(left), pivot, ...quickSort(right)];
+function triangleAreaBaseHeight(
+    base: number,
+    height: number
+): number {
+    // Guard against negative or zero values
+    if (base <= 0 || height <= 0) {
+        throw new Error('Base and height must be positive numbers.');
+    }
+    return (base * height) / 2;
 }
-const numbers = [12, 4, 5, 3, 8, 7];
-console.log(quickSort(numbers)); // [3, 4, 5, 7, 8, 12]
-type Comparator<T> = (a: T, b: T) => number;
 
-function quickSortWithComparator<T>(
-  arr: T[],
-  compare: Comparator<T>
-): T[] {
-  if (arr.length < 2) return arr;
+// Example usage
+console.log(triangleAreaBaseHeight(10, 5)); // 25
+function triangleAreaBySides(a: number, b: number, c: number): number {
+    // Validate that sides can form a triangle
+    if (a + b <= c || a + c <= b || b + c <= a) {
+        throw new Error('The given sides do not form a valid triangle.');
+    }
 
-  const pivot = arr[Math.floor(arr.length / 2)];
-  const left: T[] = [];
-  const right: T[] = [];
+    const s = (a + b + c) / 2;
+    const areaSquared = s * (s - a) * (s - b) * (s - c);
 
-  for (const item of arr) {
-    if (compare(item, pivot) <= 0) left.push(item);
-    else right.push(item);
-  }
+    // Numerical safety check: areaSquared should be non‑negative
+    if (areaSquared < 0) {
+        throw new Error('Computed a negative area; check your side lengths.');
+    }
 
-  return [...quickSortWithComparator(left, compare), pivot, ...quickSortWithComparator(right, compare)];
+    return Math.sqrt(areaSquared);
 }
-interface Person { name: string; age: number; }
 
-const people: Person[] = [
-  { name: 'Bob', age: 24 },
-  { name: 'Alice', age: 30 },
-  { name: 'Carol', age: 19 }
-];
+// Example
+console.log(triangleAreaBySides(3, 4, 5)); // 6
+type TriangleSpec =
+  | { base: number; height: number }
+  | { a: number; b: number; c: number };
 
-const byAge = (a: Person, b: Person) => a.age - b.age;
-console.log(quickSortWithComparator(people, byAge));
+function areaOfTriangle(spec: TriangleSpec): number {
+    if ('base' in spec && 'height' in spec) {
+        return triangleAreaBaseHeight(spec.base, spec.height);
+    } else {
+        return triangleAreaBySides(spec.a, spec.b, spec.c);
+    }
+}
