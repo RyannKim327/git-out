@@ -1,40 +1,52 @@
 /**
- * Binary search – recursive version
+ * Find the longest common subsequence between two strings.
  *
- * @param arr   Sorted array (ascending order)
- * @param target Value you’re looking for
- * @param low   Left boundary (inclusive) – do **not** pass this on the first call
- * @param high  Right boundary (inclusive) – do **not** pass this on the first call
- * @returns Index of target, or -1 if absent
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS string (empty if there is none).
  */
-function binarySearch<T extends number | string>(
-    arr: readonly T[],
-    target: T,
-    low = 0,
-    high = arr.length - 1
-): number {
-    // Base case: empty range → not found
-    if (low > high) return -1;
+export function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length
+  const m = b.length
 
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
+  // 1‑based DP table, size (n+1) × (m+1)
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    Array(m + 1).fill(0)
+  )
 
-    if (midVal === target) {
-        return mid;                     // found
-    } else if (midVal < target) {
-        // search right half
-        return binarySearch(arr, target, mid + 1, high);
-    } else {
-        // left half
-        return binarySearch(arr, target, low, mid - 1);
+  // Build the DP table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
+      }
     }
+  }
+
+  // Reconstruct the LCS from the table
+  let i = n
+  let j = m
+  const lcs: string[] = []
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs.push(a[i - 1]) // characters match – part of LCS
+      i--
+      j--
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--
+    } else {
+      j--
+    }
+  }
+
+  return lcs.reverse().join("")
 }
-const nums = [1, 4, 7, 12, 19, 31, 55];
-const idx  = binarySearch(nums, 19);
-console.log(idx);   // 4
-function binarySearchIter<T extends number | string>(
-    arr: readonly T[],
-    target: T
-): number {
-    return binarySearch(arr, target);
-}
+import { longestCommonSubsequence } from "./lcs"
+
+const s1 = "AGGTAB"
+const s2 = "GXTXAYB"
+
+console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
