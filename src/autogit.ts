@@ -1,69 +1,34 @@
-interface ListNode {
-  val: number | string | any;   // whatever type you’re storing
-  next?: ListNode | null;
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
 }
-function reverse(head: ListNode | null): ListNode | null {
-  let prev: ListNode | null = null;
-  let cur = head;
-
-  while (cur) {
-    const next = cur.next;   // keep the next node
-    cur.next = prev;         // reverse the pointer
-    prev = cur;              // move prev forward
-    cur = next;              // move cur forward
+function reverseUnicodeString(str: string): string {
+  const chars: string[] = [];
+  for (const ch of str) {
+    chars.unshift(ch);            // add each code‑point to the front
   }
-
-  return prev; // new head
+  return chars.join('');
 }
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
-  
-  // --- find middle with fast/slow pointers ---
-  let slow = head;
-  let fast = head;
-  
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next!;
+function reverseStringLoop(str: string): string {
+  const buf = str.split('');
+  let i = 0;
+  let j = buf.length - 1;
+  while (i < j) {
+    [buf[i], buf[j]] = [buf[j], buf[i]]; // swap
+    ++i;
+    --j;
   }
-  
-  // For odd‑length lists, skip the middle node
-  if (fast) {
-    slow = slow.next!;
+  return buf.join('');
+}
+function reverseFunctional(str: string): string {
+  return [...str].reduceRight((acc, char) => acc + char, '');
+}
+function reverseStringFast(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
   }
-  
-  // --- reverse the second half ---
-  const secondHalfStart = reverse(slow);
-  
-  // --- compare first half and reversed second half ---
-  let p1 = head;
-  let p2 = secondHalfStart;
-  let result = true;
-  
-  while (result && p2) {           // p2 is shorter or equal to p1
-    if (p1!.val !== p2.val) result = false;
-    p1 = p1!.next!;
-    p2 = p2.next!;
-  }
-  
-  // If you want the original list preserved, reverse the second half again:
-  // reverse(secondHalfStart);
-  
   return result;
 }
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string | any)[] = [];
-  let cur = head;
-
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
-  }
-
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) return false;
-    cur = cur.next;
-  }
-  return true;
-}
+const raw = 'Hello, 🌍!';
+console.log(reverseString(raw));           // "!🌍 ,olleH"
+console.log(reverseUnicodeString(raw));    // same, but safely handles 🌍
