@@ -1,48 +1,63 @@
 /**
- * Bubble‑sort an array.
+ * Quick‑sort an array in ascending order.
+ * Modifies the original array – if you need a copy, clone it first.
  *
- * @param arr          The array to sort (does not get mutated).
- * @param compareFn    Optional comparison function.  
- *                     Should return a negative value if a < b, zero if a == b, and positive if a > b.
- *                     If omitted, the default comparator uses the `<` and `>` operators that work
- *                     for numbers, strings and any type that can be compared that way.
- * @returns            A new array containing the elements of `arr` in ascending order.
+ * @param arr  The array to sort (array of numbers, strings, or any comparable items).
+ * @returns    The same array reference, now sorted.
  */
-export function bubbleSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): T[] {
-  // Make a shallow copy; we don’t want to touch the caller’s array
-  const result = [...arr];
+function quickSort<T>(arr: T[]): T[] {
+  // Base case: 0 or 1 element is already sorted
+  if (arr.length < 2) {
+    return arr;
+  }
 
-  const compare = compareFn ?? ((a: any, b: any) => {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  });
+  // Pick a pivot – here we just use the middle element.
+  const pivotIndex = Math.floor(arr.length / 2);
+  const pivot = arr[pivotIndex];
 
-  const n = result.length;
-  if (n < 2) return result; // already sorted
+  // Partition into three buckets
+  const left: T[] = [];
+  const right: T[] = [];
 
-  let swapped: boolean;
-  // Standard bubble‑sort: keep looping while we keep swapping
-  do {
-    swapped = false;
-    for (let i = 0; i < n - 1; i++) {
-      if (compare(result[i], result[i + 1]) > 0) {
-        // swap
-        [result[i], result[i + 1]] = [result[i + 1], result[i]];
-        swapped = true;
-      }
-    }
-  } while (swapped);
+  // Skip the pivot itself to avoid infinite recursion
+  for (let i = 0; i < arr.length; i++) {
+    if (i === pivotIndex) continue;
+    // @ts-ignore – operator < works on strings/numbers. For custom types, provide a comparator.
+    if (arr[i] <= pivot) left.push(arr[i]);
+    else right.push(arr[i]);
+  }
 
-  return result;
+  // Recursively sort the buckets and concatenate
+  return [...quickSort(left), pivot, ...quickSort(right)];
 }
-const unsorted = [5, 3, 8, 4, 2];
-const sorted = bubbleSort(unsorted);
-console.log(sorted); // [2, 3, 4, 5, 8]
-console.log(unsorted); // unchanged: [5, 3, 8, 4, 2]
-const words = ["banana", "Apple", "cherry"];
-const sortedByCase = bubbleSort(words, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(sortedByCase); // ["Apple", "banana", "cherry"]
+const numbers = [12, 4, 5, 3, 8, 7];
+console.log(quickSort(numbers)); // [3, 4, 5, 7, 8, 12]
+type Comparator<T> = (a: T, b: T) => number;
+
+function quickSortWithComparator<T>(
+  arr: T[],
+  compare: Comparator<T>
+): T[] {
+  if (arr.length < 2) return arr;
+
+  const pivot = arr[Math.floor(arr.length / 2)];
+  const left: T[] = [];
+  const right: T[] = [];
+
+  for (const item of arr) {
+    if (compare(item, pivot) <= 0) left.push(item);
+    else right.push(item);
+  }
+
+  return [...quickSortWithComparator(left, compare), pivot, ...quickSortWithComparator(right, compare)];
+}
+interface Person { name: string; age: number; }
+
+const people: Person[] = [
+  { name: 'Bob', age: 24 },
+  { name: 'Alice', age: 30 },
+  { name: 'Carol', age: 19 }
+];
+
+const byAge = (a: Person, b: Person) => a.age - b.age;
+console.log(quickSortWithComparator(people, byAge));
