@@ -1,52 +1,32 @@
-/**
- * Find the longest common subsequence between two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS string (empty if there is none).
- */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length
-  const m = b.length
-
-  // 1‑based DP table, size (n+1) × (m+1)
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    Array(m + 1).fill(0)
-  )
-
-  // Build the DP table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
-      }
-    }
-  }
-
-  // Reconstruct the LCS from the table
-  let i = n
-  let j = m
-  const lcs: string[] = []
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs.push(a[i - 1]) // characters match – part of LCS
-      i--
-      j--
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--
-    } else {
-      j--
-    }
-  }
-
-  return lcs.reverse().join("")
+function countChar(str: string, target: string): number {
+  // split on the target, then subtract 1 because split returns one more element than matches
+  return str.split(target).length - 1;
 }
-import { longestCommonSubsequence } from "./lcs"
 
-const s1 = "AGGTAB"
-const s2 = "GXTXAYB"
+// Example
+console.log(countChar("hello world", "l")); // 3
+function countCharWithRegex(str: string, target: string): number {
+  const matches = str.match(new RegExp(target, 'g'));
+  return matches ? matches.length : 0;
+}
 
-console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
+// Example
+console.log(countCharWithRegex("hello world", "l")); // 3
+console.log(countCharWithRegex("hello world", "z")); // 0
+function countLoop(str: string, target: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
+  }
+  return count;
+}
+
+// Example
+console.log(countLoop('hello world', 'l')); // 3
+function countReduce(str: string, target: string): number {
+  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
+}
+// Equivalent to looping, but shows functional style
+import { count } from 'lodash';
+
+count('hello world', 'l'); // 3
