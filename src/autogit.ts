@@ -1,57 +1,80 @@
 /**
- * Interpolation Search
- * --------------------
- * @param arr  A sorted array of numbers (ascending).
- * @param key  The value you're looking for.
- * @returns    Index of key in arr, or −1 if key is absent.
+ * Sorts an array of numbers in ascending order using selection sort.
+ * The array is sorted in place.
  *
- * Complexity:
- *  * Best‑case: O(log log N)  (when data is uniformly distributed)
- *  * Worst‑case: O(N)         (when data is heavily skewed)
- *
- * Note: Behaviour for non‑numeric or unsorted input is undefined.
+ * @param arr – the number array to sort
+ * @returns the same array reference, now sorted
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+export function selectionSortNumbers(arr: number[]): number[] {
+  const n = arr.length;
 
-  let low = 0;
-  let high = arr.length - 1;
+  for (let i = 0; i < n - 1; i++) {
+    // Assume the first unsorted element is the minimum
+    let minIndex = i;
 
-  // Keep the loop going while the search space is valid.
-  while (
-    low <= high &&
-    key >= arr[low] &&
-    key <= arr[high]
-  ) {
-    // Guard against a zero division when arr[low] === arr[high].
-    if (arr[low] === arr[high]) {
-      // All remaining elements are equal; pick the first one.
-      return arr[low] === key ? low : -1;
+    // Find the actual minimum among the remaining unsorted portion
+    for (let j = i + 1; j < n; j++) {
+      if (arr[j] < arr[minIndex]) {
+        minIndex = j;
+      }
     }
 
-    // Estimate the probable position of key.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-      );
-
-    // We found the key.
-    if (arr[pos] === key) {
-      return pos;
-    }
-
-    // Update boundaries based on comparison.
-    if (arr[pos] < key) {
-      low = pos + 1;     // key is in the right sub‑array
-    } else {
-      high = pos - 1;    // key is in the left sub‑array
+    // If a smaller element was found, swap it into place
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
     }
   }
 
-  // If we exit the loop, key isn't present.
-  return -1;
+  return arr;
 }
-const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(data, 9));   // → 4
-console.log(interpolationSearch(data, 4));   // → -1
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
+/**
+ * Sorts an array in place using selection sort and a custom comparator.
+ *
+ * @param arr         The array to sort.
+ * @param compareFn   Comparator that defines the sort order.
+ * @returns The sorted array (same reference as @param arr).
+ */
+export function selectionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  const n = arr.length;
+
+  for (let i = 0; i < n - 1; i++) {
+    let minIndex = i;
+
+    for (let j = i + 1; j < n; j++) {
+      if (compareFn(arr[j], arr[minIndex]) < 0) {
+        minIndex = j;
+      }
+    }
+
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
+  }
+
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: 'Alice', age: 29 },
+  { name: 'Bob', age: 23 },
+  { name: 'Charlie', age: 35 }
+];
+
+// Sort by age (ascending)
+selectionSort(people, (a, b) => a.age - b.age);
+
+console.log(people);
+// → [
+//      { name: 'Bob', age: 23 },
+//      { name: 'Alice', age: 29 },
+//      { name: 'Charlie', age: 35 }
+//    ]
