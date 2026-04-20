@@ -1,80 +1,40 @@
 /**
- * Sorts an array of numbers in ascending order using selection sort.
- * The array is sorted in place.
+ * Binary search – recursive version
  *
- * @param arr – the number array to sort
- * @returns the same array reference, now sorted
+ * @param arr   Sorted array (ascending order)
+ * @param target Value you’re looking for
+ * @param low   Left boundary (inclusive) – do **not** pass this on the first call
+ * @param high  Right boundary (inclusive) – do **not** pass this on the first call
+ * @returns Index of target, or -1 if absent
  */
-export function selectionSortNumbers(arr: number[]): number[] {
-  const n = arr.length;
+function binarySearch<T extends number | string>(
+    arr: readonly T[],
+    target: T,
+    low = 0,
+    high = arr.length - 1
+): number {
+    // Base case: empty range → not found
+    if (low > high) return -1;
 
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the first unsorted element is the minimum
-    let minIndex = i;
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-    // Find the actual minimum among the remaining unsorted portion
-    for (let j = i + 1; j < n; j++) {
-      if (arr[j] < arr[minIndex]) {
-        minIndex = j;
-      }
+    if (midVal === target) {
+        return mid;                     // found
+    } else if (midVal < target) {
+        // search right half
+        return binarySearch(arr, target, mid + 1, high);
+    } else {
+        // left half
+        return binarySearch(arr, target, low, mid - 1);
     }
-
-    // If a smaller element was found, swap it into place
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
-  }
-
-  return arr;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
-/**
- * Sorts an array in place using selection sort and a custom comparator.
- *
- * @param arr         The array to sort.
- * @param compareFn   Comparator that defines the sort order.
- * @returns The sorted array (same reference as @param arr).
- */
-export function selectionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  const n = arr.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    let minIndex = i;
-
-    for (let j = i + 1; j < n; j++) {
-      if (compareFn(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
-    }
-
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
-  }
-
-  return arr;
+const nums = [1, 4, 7, 12, 19, 31, 55];
+const idx  = binarySearch(nums, 19);
+console.log(idx);   // 4
+function binarySearchIter<T extends number | string>(
+    arr: readonly T[],
+    target: T
+): number {
+    return binarySearch(arr, target);
 }
-interface Person {
-  name: string;
-  age: number;
-}
-
-const people: Person[] = [
-  { name: 'Alice', age: 29 },
-  { name: 'Bob', age: 23 },
-  { name: 'Charlie', age: 35 }
-];
-
-// Sort by age (ascending)
-selectionSort(people, (a, b) => a.age - b.age);
-
-console.log(people);
-// → [
-//      { name: 'Bob', age: 23 },
-//      { name: 'Alice', age: 29 },
-//      { name: 'Charlie', age: 35 }
-//    ]
