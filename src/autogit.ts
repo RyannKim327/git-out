@@ -1,49 +1,58 @@
-/**
- * Checks if an array of numbers is in ascending order.
- */
-function isSorted(arr: number[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i - 1] > arr[i]) return false;
-  }
-  return true;
+/** A very simple binary‑tree node. */
+export class TreeNode<T = unknown> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
 /**
- * Randomly shuffles an array in place using Fisher‑Yates.
- */
-function shuffleInPlace<T>(arr: T[]): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-/**
- * A “random sort”—shuffle until the array is sorted.
+ * Returns the maximum depth of a binary tree.
+ * Depth is counted in nodes, not edges.
  *
- * The function is deliberately small and intentionally slow.
- * Good for teaching randomness, not for production work.
+ * @param root The root node of the tree (or null for an empty tree).
+ * @returns an integer ≥ 0.
  */
-export function completelyRandomSort<T extends number>(arr: T[]): T[] {
-  // Work on a copy so the original stays untouched.
-  const working = [...arr];
+export function maxDepth<T>(root: TreeNode<T> | null): number {
+  // recursion is the cleanest here
+  if (!root) return 0; // leaf’s child contributes 0
 
-  // Keep an iteration counter for demonstration.
-  let attempts = 0;
+  const leftDepth = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-  // Guard against accidentally running forever on empty or single‑element arrays.
-  if (working.length <= 1) return working;
-
-  while (!isSorted(working)) {
-    shuffleInPlace(working);
-    attempts++;
-    // Optional: print progress every 1000 attempts (comment this out in tight loops).
-    // if (attempts % 1000 === 0) console.log(`Still sorting… attempt #${attempts}`);
-  }
-
-  console.log(`Sorted after ${attempts} random shuffles!`);
-  return working;
+  // current node adds 1 to the greater of two sub‑depths
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
 }
-const data = [42, 7, 13, 2, 27];
-const sorted = completelyRandomSort(data);
-console.log(sorted); // → [2, 7, 13, 27, 42]
+// Build a tiny tree:
+//       a
+//      / \
+//     b   c
+//    /
+//   d
+const root = new TreeNode('a',
+  new TreeNode('b',
+    new TreeNode('d')
+  ),
+  new TreeNode('c')
+);
+
+console.log(maxDepth(root)); // → 3
+export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    // All nodes in this `for` loop belong to the same level.
+    const levelSize = queue.length;
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+    depth++; // finished one level
+  }
+  return depth;
+}
