@@ -1,40 +1,29 @@
 /**
- * Binary search – recursive version
+ * Returns the first non‑repeating character in `s`, or `null` if every
+ * character repeats. The search respects Unicode code‑points, so it works
+ * with emojis, accented letters, etc.
  *
- * @param arr   Sorted array (ascending order)
- * @param target Value you’re looking for
- * @param low   Left boundary (inclusive) – do **not** pass this on the first call
- * @param high  Right boundary (inclusive) – do **not** pass this on the first call
- * @returns Index of target, or -1 if absent
+ * @param s – input string
+ * @returns the character or null
  */
-function binarySearch<T extends number | string>(
-    arr: readonly T[],
-    target: T,
-    low = 0,
-    high = arr.length - 1
-): number {
-    // Base case: empty range → not found
-    if (low > high) return -1;
+function firstNonRepeatingChar(s: string): string | null {
+  // Count every character in a single scan.
+  const counter = new Map<string, number>();
 
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
+  for (const ch of s) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+  }
 
-    if (midVal === target) {
-        return mid;                     // found
-    } else if (midVal < target) {
-        // search right half
-        return binarySearch(arr, target, mid + 1, high);
-    } else {
-        // left half
-        return binarySearch(arr, target, low, mid - 1);
+  // Find the first character whose count is 1.
+  for (const ch of s) {
+    if (counter.get(ch) === 1) {
+      return ch;
     }
+  }
+
+  return null;          // all characters repeat
 }
-const nums = [1, 4, 7, 12, 19, 31, 55];
-const idx  = binarySearch(nums, 19);
-console.log(idx);   // 4
-function binarySearchIter<T extends number | string>(
-    arr: readonly T[],
-    target: T
-): number {
-    return binarySearch(arr, target);
-}
+console.log(firstNonRepeatingChar("abacabad")); // "c"
+console.log(firstNonRepeatingChar("swiss"));    // "w"
+console.log(firstNonRepeatingChar("aabb"));     // null
+console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
