@@ -1,15 +1,38 @@
-// 1. Trim leading/trailing
-const trimmed = myString.trim();
+function areAnagrams(a: string, b: string): boolean {
+  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase();
 
-// 2. Remove every whitespace character
-const noSpace = myString.replace(/\s/g, '');
+  const normalizeA = normalize(a).split('').sort().join('');
+  const normalizeB = normalize(b).split('').sort().join('');
 
-// 3. Collapse multiple spaces/tabs/lines into one space
-const collapsed = myString.replace(/\s+/g, ' ');
+  return normalizeA === normalizeB;
+}
+function areAnagrams(a: string, b: string): boolean {
+  const buildMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
+      map[ch] = (map[ch] ?? 0) + 1;
+    }
+    return map;
+  };
 
-// 4. Remove only spaces (keep tabs, newlines, etc.)
-const onlySpaceRemoved = myString.replace(/ /g, '');
-function stripWhitespace(str: string, keepNewlines = false): string {
-  const pattern = keepNewlines ? /\s/g : /[ \t\r\f\v]/g; // tweak if you need to keep or drop newlines
-  return str.replace(pattern, '');
+  const aMap = buildMap(a);
+  const bMap = buildMap(b);
+
+  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
+  for (const k of keys) {
+    if (aMap[k] !== bMap[k]) return false;
+  }
+  return true;
+}
+const tests = [
+  ['listen', 'silent'],
+  ['hello', 'world'],
+  ['Dormitory', 'Dirty room'],
+  ['abc', 'abcd'],
+];
+
+for (const [a, b] of tests) {
+  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
 }
