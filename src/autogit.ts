@@ -1,41 +1,45 @@
 /**
- * Checks whether a string is a palindrome.
+ * Return the longest common prefix of an array of strings.
+ * If the array is empty the result is the empty string.
  *
- * Options:
- *   - ignoreCase: treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
- *
- * @param input The string to test
- * @param opts  Optional settings
- * @returns true if `input` is a palindrome under the chosen rules
+ * @param strs Array of strings
+ * @returns The longest common prefix
  */
-export function isPalindrome(
-  input: string,
-  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  let str = input;
+  // Start with the entire first string as a tentative prefix.
+  let prefix = strs[0];
 
-  // 1. Collapse the string if requested
-  if (ignoreNonAlnum) {
-    // Keep only ASCII letters and digits. For Unicode you might want
-    // a regex like `/\p{L}\p{N}/gu` instead.
-    str = str.replace(/[^A-Za-z0-9]/g, "");
+  // Iterate over the rest of the strings.
+  for (let i = 1; i < strs.length; i++) {
+    const s = strs[i];
+
+    // Shrink the prefix until it matches the current string
+    // (or becomes empty).
+    while (!s.startsWith(prefix)) {
+      // Drop the last character
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return ""; // No common prefix
+    }
   }
 
-  // 2. Normalize case if requested
-  if (ignoreCase) {
-    str = str.toLowerCase();
-  }
-
-  // 3. Compare the string to its reverse
-  const reversed = str.split("").reverse().join("");
-  return str === reversed;
+  return prefix;
 }
-console.log(isPalindrome("racecar"));                    // true
-console.log(isPalindrome("RaceCar"));                    // true
-console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("No lemon, no melon"));          // true
-console.log(isPalindrome("hello"));                       // false
+console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
+console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
+console.log(longestCommonPrefix([]));                         // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+export function lcpBySorting(strs: string[]): string {
+  if (strs.length === 0) return "";
+
+  const sorted = [...strs].sort(); // Lexicographical order
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const minLen = Math.min(first.length, last.length);
+
+  let i = 0;
+  while (i < minLen && first[i] === last[i]) i++;
+
+  return first.slice(0, i);
+}
