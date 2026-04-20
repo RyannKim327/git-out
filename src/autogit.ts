@@ -1,32 +1,41 @@
-function countChar(str: string, target: string): number {
-  // split on the target, then subtract 1 because split returns one more element than matches
-  return str.split(target).length - 1;
-}
+/**
+ * Checks whether a string is a palindrome.
+ *
+ * Options:
+ *   - ignoreCase: treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
+ *
+ * @param input The string to test
+ * @param opts  Optional settings
+ * @returns true if `input` is a palindrome under the chosen rules
+ */
+export function isPalindrome(
+  input: string,
+  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
 
-// Example
-console.log(countChar("hello world", "l")); // 3
-function countCharWithRegex(str: string, target: string): number {
-  const matches = str.match(new RegExp(target, 'g'));
-  return matches ? matches.length : 0;
-}
+  let str = input;
 
-// Example
-console.log(countCharWithRegex("hello world", "l")); // 3
-console.log(countCharWithRegex("hello world", "z")); // 0
-function countLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+  // 1. Collapse the string if requested
+  if (ignoreNonAlnum) {
+    // Keep only ASCII letters and digits. For Unicode you might want
+    // a regex like `/\p{L}\p{N}/gu` instead.
+    str = str.replace(/[^A-Za-z0-9]/g, "");
   }
-  return count;
-}
 
-// Example
-console.log(countLoop('hello world', 'l')); // 3
-function countReduce(str: string, target: string): number {
-  return [...str].reduce((acc, ch) => (ch === target ? acc + 1 : acc), 0);
-}
-// Equivalent to looping, but shows functional style
-import { count } from 'lodash';
+  // 2. Normalize case if requested
+  if (ignoreCase) {
+    str = str.toLowerCase();
+  }
 
-count('hello world', 'l'); // 3
+  // 3. Compare the string to its reverse
+  const reversed = str.split("").reverse().join("");
+  return str === reversed;
+}
+console.log(isPalindrome("racecar"));                    // true
+console.log(isPalindrome("RaceCar"));                    // true
+console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("No lemon, no melon"));          // true
+console.log(isPalindrome("hello"));                       // false
