@@ -1,45 +1,51 @@
+// Basic node definition – feel free to swap in your own
+class TreeNode<T = number> {
+  val: T
+  left: TreeNode<T> | null = null
+  right: TreeNode<T> | null = null
+
+  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
+    this.val = val
+    if (left) this.left = left
+    if (right) this.right = right
+  }
+}
+
 /**
- * Return the longest common prefix of an array of strings.
- * If the array is empty the result is the empty string.
- *
- * @param strs Array of strings
- * @returns The longest common prefix
+ * Returns the diameter of the tree rooted at `root`.
+ * If the tree is empty, the diameter is 0.
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0
 
-  // Start with the entire first string as a tentative prefix.
-  let prefix = strs[0];
+  /**
+   * Helper that returns the height (in nodes) of the subtree.
+   * While unwinding recursion, we update the maximum diameter.
+   */
+  function height(node: TreeNode | null): number {
+    if (!node) return 0
 
-  // Iterate over the rest of the strings.
-  for (let i = 1; i < strs.length; i++) {
-    const s = strs[i];
+    const leftHeight = height(node.left)
+    const rightHeight = height(node.right)
 
-    // Shrink the prefix until it matches the current string
-    // (or becomes empty).
-    while (!s.startsWith(prefix)) {
-      // Drop the last character
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return ""; // No common prefix
-    }
+    // Path that goes through this node = leftHeight + rightHeight
+    const localDiameter = leftHeight + rightHeight
+
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter
+
+    // Height is max child height plus this node
+    return Math.max(leftHeight, rightHeight) + 1
   }
 
-  return prefix;
+  height(root)
+  return maxDiameter   // edge‑count diameter
 }
-console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
-console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
-console.log(longestCommonPrefix([]));                         // ""
-console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
-export function lcpBySorting(strs: string[]): string {
-  if (strs.length === 0) return "";
 
-  const sorted = [...strs].sort(); // Lexicographical order
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-  const minLen = Math.min(first.length, last.length);
+/* ---------- quick test ---------- */
+const tree = new TreeNode(
+  1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
+)
 
-  let i = 0;
-  while (i < minLen && first[i] === last[i]) i++;
-
-  return first.slice(0, i);
-}
+console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
