@@ -1,136 +1,93 @@
-// ---------- types ----------
-export type Node = string | number | symbol;
+// ---- Graph representation -------------------------------------------------
+type Node = string | number;               // you can pick whatever type you prefer
+type AdjacencyList = Record<Node, Node[]>; // node -> list of neighbour nodes
 
-export type Edge = {
-  to: Node;
-  cost: number;
-};
+class Graph {
+  private readonly adj: AdjacencyList = {};
 
-export type Graph = Map<Node, Edge[]>;
+  // Add (or extend) adjacency list for a node
+  addEdge(u: Node, v: Node, undirected = true) {
+    if (!this.adj[u]) this.adj[u] = [];
+    this.adj[u].push(v);
 
-// ---------- binary min‑heap ----------
-class PriorityQueue<T> {
-  private items: Array<[T, number]> = []; // [value, priority]
-
-  private static swap(arr: any[], i: number, j: number) {
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-
-  private siftUp(idx: number) {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.items[parent][1] <= this.items[idx][1]) break;
-      PriorityQueue.swap(this.items, parent, idx);
-      idx = parent;
+    if (undirected) {
+      if (!this.adj[v]) this.adj[v] = [];
+      this.adj[v].push(u);
     }
   }
 
-  private siftDown(idx: number) {
-    const length = this.items.length;
-    while (true) {
-      let left = idx * 2 + 1;
-      let right = idx * 2 + 2;
-      let smallest = idx;
-
-      if (left < length && this.items[left][1] < this.items[smallest][1])
-        smallest = left;
-      if (right < length && this.items[right][1] < this.items[smallest][1])
-        smallest = right;
-
-      if (smallest === idx) break;
-      PriorityQueue.swap(this.items, idx, smallest);
-      idx = smallest;
-    }
+  // Optional: get all nodes in the graph
+  nodes(): Node[] {
+    return Object.keys(this.adj).map(k => parseNode(k));
   }
 
-  enqueue(value: T, priority: number) {
-    this.items.push([value, priority]);
-    this.siftUp(this.items.length - 1);
-  }
-
-  dequeue(): T | undefined {
-    if (!this.items.length) return undefined;
-    const min = this.items[0][0];
-    const last = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = last;
-      this.siftDown(0);
-    }
-    return min;
-  }
-
-  get size() {
-    return this.items.length;
+  // Expose raw list for BFS
+  get neighbours() {
+    return this.adj;
   }
 }
 
-// ---------- Dijkstra ----------
-export function dijkstra(
+// Helper to preserve numeric keys when using an object as map
+function parseNode(val: string): Node {
+  return isNaN(Number(val)) ? val : Number(val);
+}
+
+// ---- BFS implementation ---------------------------------------------------
+/**
+ * Performs a breadth‑first search starting from `source`.
+ * @param graph      The graph to search.
+ * @param source     The node where we begin the search.
+ * @param target     (Optional) If provided, the search stops when this node is reached.
+ * @returns          If no target: a map of node → distance from source.
+ *                   If target: the distance to that node, or -1 if unreachable.
+ */
+function bfs(
   graph: Graph,
-  start: Node,
+  source: Node,
   target?: Node
-): { distances: Map<Node, number>; predecessors: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const predecessors = new Map<Node, Node | null>();
-  const pq = new PriorityQueue<Node>();
+): Record<Node, number> | number {
+  const distances: Record<Node, number> = {};
+  const queue: Node[] = [source];
+  const visited = new Set<Node>();
 
-  // init
-  graph.forEach((_, node) => {
-    distances.set(node, Infinity);
-    predecessors.set(node, null);
-  });
-  distances.set(start, 0);
-  pq.enqueue(start, 0);
+  visited.add(source);
+  distances[source] = 0;
 
-  while (pq.size) {
-    const u = pq.dequeue()!;
-    const du = distances.get(u)!;
+  while (queue.length) {
+    const u = queue.shift() as Node;
+    const currDist = distances[u] as number;
 
-    // Stop early if we hit the target (optional)
-    if (target !== undefined && u === target) break;
+    // Stop early if we’re looking for a particular target
+    if (target !== undefined && u === target) {
+      return currDist;
+    }
 
-    const edges = graph.get(u) || [];
-    for (const { to: v, cost } of edges) {
-      const alt = du + cost;
-      if (alt < distances.get(v)!) {
-        distances.set(v, alt);
-        predecessors.set(v, u);
-        pq.enqueue(v, alt);
+    for (const v of graph.neighbours[u] || []) {
+      if (!visited.has(v)) {
+        visited.add(v);
+        distances[v] = currDist + 1;
+        queue.push(v);
       }
     }
   }
 
-  return { distances, predecessors };
+  // No path found to `target`
+  if (target !== undefined) return -1;
+
+  return distances;
 }
 
-// ---------- helper to rebuild a path ----------
-export function reconstructPath(
-  predecessors: Map<Node, Node | null>,
-  start: Node,
-  target: Node
-): Node[] {
-  const path: Node[] = [];
-  let current: Node | null = target;
+// ---- Example usage --------------------------------------------------------
+const g = new Graph();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('C', 'E');
+g.addEdge('E', 'F');
 
-  while (current !== null) {
-    path.unshift(current);
-    if (current === start) break;
-    current = predecessors.get(current) || null;
-  }
+// Full distance map from A
+console.log('Distances from A:', bfs(g, 'A'));
 
-  if (path[0] !== start) {
-    throw new Error(`No path found from ${String(start)} to ${String(target)}`);
-  }
-
-  return path;
-}
-const g: Graph = new Map([
-  ['A', [{ to: 'B', cost: 2 }, { to: 'C', cost: 5 }]],
-  ['B', [{ to: 'C', cost: 1 }, { to: 'D', cost: 4 }]],
-  ['C', [{ to: 'D', cost: 1 }]],
-  ['D', []],
-]);
-
-const { distances, predecessors } = dijkstra(g, 'A', 'D');
-console.log('Distance to D:', distances.get('D'));      // 4
-console.log('Path:', reconstructPath(predecessors, 'A', 'D'));
+// Shortest path length from A to F
+console.log('Distance A → F:', bfs(g, 'A', 'F'));
