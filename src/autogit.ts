@@ -1,31 +1,61 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-    if (!s1 || !s2) return '';
+/**
+ * Shell sort – a simple, O(n²) algorithm that usually runs much faster
+ * than insertion sort on realistically sized arrays.  
+ * It sorts in‑place and returns the same array for convenience.
+ *
+ * @param  array  The array to sort.
+ * @param  compare Optional compare function; defaults to numeric ascending.
+ * @return The sorted array.
+ */
+export function shellSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Fallback to numeric comparison if no function supplied.
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-    const m = s1.length, n = s2.length;
-    // one‑dimensional DP (only the previous row is needed)
-    const dp = new Array(n + 1).fill(0);
-    let maxLen = 0;          // longest length seen so far
-    let endIdxS1 = 0;        // index where that longest ends in s1
+  // Start with a large gap, then reduce it.
+  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
+  let gap = Math.floor(array.length / 2);
 
-    for (let i = 1; i <= m; i++) {
-        // iterate j from right to left so the current row doesn't overwrite the
-        // values we still need from the previous row
-        for (let j = n; j >= 1; j--) {
-            if (s1[i - 1] === s2[j - 1]) {
-                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
-                if (dp[j] > maxLen) {
-                    maxLen = dp[j];
-                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
-                }
-            } else {
-                dp[j] = 0;
-            }
-        }
+  while (gap > 0) {
+    // Perform a "gapped" insertion sort for this gap.
+    for (let i = gap; i < array.length; i++) {
+      const temp = array[i];
+      let j = i;
+
+      // shift earlier gap-sorted elements up until the correct location
+      // is found for temp.
+      while (j >= gap && cmp(array[j - gap], temp) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+
+      array[j] = temp;
     }
 
-    // Extract slice from s1 using the remembered end index and length
-    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
-}
+    // Reduce the gap for the next pass.
+    gap = Math.floor(gap / 2);
+  }
 
-// Quick demo
-console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
+  return array;
+}
+import { shellSort } from "./shellSort";
+
+const nums = [34, 8, 64, 51, 32, 21];
+console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
+type Item = { name: string; value: number };
+
+const items: Item[] = [
+  { name: "apple",  value: 5 },
+  { name: "banana", value: 2 },
+  { name: "cherry", value: 7 },
+];
+
+shellSort(items, (a, b) => a.value - b.value);
+console.log(items);
+// → [
+//     { name: "banana", value: 2 },
+//     { name: "apple",  value: 5 },
+//     { name: "cherry", value: 7 }
+//   ]
