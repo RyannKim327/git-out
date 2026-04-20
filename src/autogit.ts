@@ -1,61 +1,34 @@
-/**
- * Shell sort – a simple, O(n²) algorithm that usually runs much faster
- * than insertion sort on realistically sized arrays.  
- * It sorts in‑place and returns the same array for convenience.
- *
- * @param  array  The array to sort.
- * @param  compare Optional compare function; defaults to numeric ascending.
- * @return The sorted array.
- */
-export function shellSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Fallback to numeric comparison if no function supplied.
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-  // Start with a large gap, then reduce it.
-  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
-  let gap = Math.floor(array.length / 2);
+  let largest = -Infinity;
+  let second = -Infinity;
 
-  while (gap > 0) {
-    // Perform a "gapped" insertion sort for this gap.
-    for (let i = gap; i < array.length; i++) {
-      const temp = array[i];
-      let j = i;
-
-      // shift earlier gap-sorted elements up until the correct location
-      // is found for temp.
-      while (j >= gap && cmp(array[j - gap], temp) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
-
-      array[j] = temp;
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
     }
-
-    // Reduce the gap for the next pass.
-    gap = Math.floor(gap / 2);
   }
 
-  return array;
+  return second === -Infinity ? undefined : second;
 }
-import { shellSort } from "./shellSort";
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
 
-const nums = [34, 8, 64, 51, 32, 21];
-console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
-type Item = { name: string; value: number };
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
 
-const items: Item[] = [
-  { name: "apple",  value: 5 },
-  { name: "banana", value: 2 },
-  { name: "cherry", value: 7 },
-];
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
 
-shellSort(items, (a, b) => a.value - b.value);
-console.log(items);
-// → [
-//     { name: "banana", value: 2 },
-//     { name: "apple",  value: 5 },
-//     { name: "cherry", value: 7 }
-//   ]
+console.log(secondLargest(arr)); // 7
