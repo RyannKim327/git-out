@@ -1,61 +1,39 @@
-function kthSmallestBySort(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
-  const sorted = [...arr].sort((a, b) => a - b)   // cloning keeps the input untouched
-  return sorted[k - 1]
-}
-function partition(arr: number[], left: number, right: number, pivotIndex: number): number {
-  const pivotValue = arr[pivotIndex]
-  // move pivot to end
-  [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]]
-  let storeIndex = left
+/**
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
+ *
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ */
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+  }
 
-  for (let i = left; i < right; i++) {
-    if (arr[i] < pivotValue) {
-      [arr[storeIndex], arr[i]] = [arr[i], arr[storeIndex]]
-      storeIndex++
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-  }
 
-  // move pivot to its final place
-  [arr[right], arr[storeIndex]] = [arr[storeIndex], arr[right]]
-  return storeIndex
-}
-
-function quickselect(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
-
-  let left = 0
-  let right = arr.length - 1
-  const targetIdx = k - 1
-
-  while (true) {
-    const pivotIdx = Math.floor(Math.random() * (right - left + 1)) + left
-    const pivotPos = partition(arr, left, right, pivotIdx)
-
-    if (pivotPos === targetIdx) return arr[pivotPos]
-    if (pivotPos > targetIdx) right = pivotPos - 1
-    else left = pivotPos + 1
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
   }
 }
-const arrCopy = [...original]
-const kth = quickselect(arrCopy, k)
-function kthSmallestByCounting(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-  // Find min/max to size the histogram
-  let min = arr[0], max = arr[0]
-  for (const v of arr) {
-    if (v < min) min = v
-    if (v > max) max = v
-  }
-
-  const freq = new Array(max - min + 1).fill(0)
-  for (const v of arr) freq[v - min]++
-
-  let count = 0
-  for (let i = 0; i < freq.length; i++) {
-    count += freq[i]
-    if (count >= k) return i + min
-  }
-  return null   // shouldn't happen
-}
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
