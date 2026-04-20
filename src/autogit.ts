@@ -1,34 +1,52 @@
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined; // no second element
+/**
+ * Counting sort for an array of integers.
+ *
+ * @param arr – array of numbers (integers) to sort
+ * @returns a new array containing the same numbers in ascending order
+ */
+export function countingSort(arr: number[]): number[] {
+  // nothing to sort
+  if (arr.length <= 1) return [...arr];
 
-  let largest = -Infinity;
-  let second = -Infinity;
+  // 1. locate the min/max so we know how big the count array must be
+  let min = arr[0];
+  let max = arr[0];
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n !== largest) {
-      second = n;
+  for (let i = 1; i < arr.length; i++) {
+    const v = arr[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+
+  // 2. build the frequency table
+  // offset shifts the negative values to positive indices
+  const offset = -min;                     // e.g. min = -3 → offset = 3
+  const size   = max - min + 1;            // number of distinct keys
+  const count  = new Array<number>(size).fill(0);
+
+  for (const v of arr) {
+    count[v + offset]++;
+  }
+
+  // 3. reconstruct the sorted array
+  const out: number[] = new Array(arr.length);
+  let writeIdx = 0;
+
+  for (let i = 0; i < size; i++) {
+    const qty = count[i];
+    if (qty === 0) continue;
+
+    const value = i - offset;   // bring back to original key
+    for (let j = 0; j < qty; j++) {
+      out[writeIdx++] = value;
     }
   }
 
-  return second === -Infinity ? undefined : second;
+  return out;
 }
-function secondLargest(nums: number[]): number | undefined {
-  const unique = Array.from(new Set(nums));     // remove duplicates
-  if (unique.length < 2) return undefined;      // no second element
+import { countingSort } from './countingSort';
 
-  unique.sort((a, b) => b - a);                // descending order
-  return unique[1];
-}
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
+const sorted   = countingSort(unsorted);
 
-  const max = Math.max(...nums);
-  const second = Math.max(...nums.filter(x => x !== max));
-  return second === -Infinity ? undefined : second;
-}
-const arr = [5, 1, 8, 7, 8, 3];
-
-console.log(secondLargest(arr)); // 7
+console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
