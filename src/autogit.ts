@@ -1,32 +1,61 @@
-// Node for a singly‑linked list
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+function kthSmallestBySort(arr: number[], k: number): number | null {
+  if (k < 1 || k > arr.length) return null
+  const sorted = [...arr].sort((a, b) => a - b)   // cloning keeps the input untouched
+  return sorted[k - 1]
 }
+function partition(arr: number[], left: number, right: number, pivotIndex: number): number {
+  const pivotValue = arr[pivotIndex]
+  // move pivot to end
+  [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]]
+  let storeIndex = left
 
-/**
- * Returns the first node that appears in both lists,
- * or null if they don’t intersect.
- */
-function findIntersection<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
-
-  // Step 1: remember every node of list A
-  for (let curr = headA; curr; curr = curr.next) {
-    seen.add(curr);
+  for (let i = left; i < right; i++) {
+    if (arr[i] < pivotValue) {
+      [arr[storeIndex], arr[i]] = [arr[i], arr[storeIndex]]
+      storeIndex++
+    }
   }
 
-  // Step 2: walk list B until we hit a node already seen
-  for (let curr = headB; curr; curr = curr.next) {
-    if (seen.has(curr)) return curr; // intersection found
-  }
-  return null; // no intersection
+  // move pivot to its final place
+  [arr[right], arr[storeIndex]] = [arr[storeIndex], arr[right]]
+  return storeIndex
 }
-const shared = new ListNode(8, new ListNode(9));
 
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
+function quickselect(arr: number[], k: number): number | null {
+  if (k < 1 || k > arr.length) return null
 
-console.log(findIntersection(a1, b1)?.val); // 8
+  let left = 0
+  let right = arr.length - 1
+  const targetIdx = k - 1
+
+  while (true) {
+    const pivotIdx = Math.floor(Math.random() * (right - left + 1)) + left
+    const pivotPos = partition(arr, left, right, pivotIdx)
+
+    if (pivotPos === targetIdx) return arr[pivotPos]
+    if (pivotPos > targetIdx) right = pivotPos - 1
+    else left = pivotPos + 1
+  }
+}
+const arrCopy = [...original]
+const kth = quickselect(arrCopy, k)
+function kthSmallestByCounting(arr: number[], k: number): number | null {
+  if (k < 1 || k > arr.length) return null
+
+  // Find min/max to size the histogram
+  let min = arr[0], max = arr[0]
+  for (const v of arr) {
+    if (v < min) min = v
+    if (v > max) max = v
+  }
+
+  const freq = new Array(max - min + 1).fill(0)
+  for (const v of arr) freq[v - min]++
+
+  let count = 0
+  for (let i = 0; i < freq.length; i++) {
+    count += freq[i]
+    if (count >= k) return i + min
+  }
+  return null   // shouldn't happen
+}
