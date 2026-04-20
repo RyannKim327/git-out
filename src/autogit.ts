@@ -1,40 +1,56 @@
-class TreeNode {
-  constructor(
-    public val: number,
-    public left: TreeNode | null = null,
-    public right: TreeNode | null = null
-  ) {}
-}
-function sumTree(root: TreeNode | null): number {
-  if (!root) return 0;          // nothing to add
-  const leftSum = sumTree(root.left);
-  const rightSum = sumTree(root.right);
-  return root.val + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let sum = 0;
-  const stack: Array<TreeNode> = [root];
+// 1️⃣  Define a compare function signature
+type Comparator<T> = (a: T, b: T) => number;
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
+// 2️⃣  Merge helper – combines two sorted halves
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-  return sum;
+    while (i < left.length && j < right.length) {
+        // If left[i] <= right[j] according to cmp, push left[i]
+        if (cmp(left[i], right[j]) <= 0) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
+    }
+
+    // Append any leftovers
+    return result.concat(left.slice(i)).concat(right.slice(j));
 }
-const root = new TreeNode(5,
-  new TreeNode(3,
-    new TreeNode(2),
-    new TreeNode(4)
-  ),
-  new TreeNode(8,
-    null,
-    new TreeNode(9)
-  )
-);
 
-console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
-console.log(sumTreeIterative(root)); // 31
+// 3️⃣  The recursive merge‑sort function
+export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
+    // Default comparator for primitive types
+    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+
+    // Base case: arrays of length 0 or 1 are already sorted
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const mid = Math.floor(arr.length / 2);
+    const left  = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    return merge(left, right, compare);
+}
+// Numbers
+const nums = [5, 2, 9, 1, 5, 6];
+const sortedNums = mergeSort(nums);
+// sortedNums === [1, 2, 5, 5, 6, 9]
+
+// Strings
+const words = ["banana", "apple", "cherry"];
+const sortedWords = mergeSort(words);
+// sortedWords === ["apple", "banana", "cherry"]
+
+// Custom objects (by age)
+type Person = { name: string; age: number };
+const people: Person[] = [
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob",   age: 35 },
+];
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// sortedByAge => Alice, John, Bob
