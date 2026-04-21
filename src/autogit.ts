@@ -1,30 +1,33 @@
-// Define what the API will return (pick and choose any fields you need)
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
 
-// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
-async function apiGet<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+function middle<T>(head: Node<T> | null): Node<T> | null {
+  if (!head) return null;           // empty list
+
+  let slow: Node<T> | null = head;
+  let fast: Node<T> | null = head;
+
+  // Move `fast` twice as fast as `slow`.
+  // When `fast` reaches the end, `slow` will be at the middle.
+  while (fast && fast.next) {
+    slow = slow!.next!;
+    fast = fast.next.next;
   }
-  return response.json() as Promise<T>;
+
+  return slow; // this node is the middle
+}
+while (fast && fast.next) {
+  slow = slow!.next!;
+  fast = fast.next?.next ?? null;
 }
 
-// Example usage: pull a single todo item
-async function fetchTodo(todoId: number) {
-  try {
-    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
-    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
-    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
-  } catch (err) {
-    console.error('Oops:', err);
-  }
-}
+// after loop, `slow` is still the first middle;
+slow = slow?.next ?? null;      // move to the second middle
+const list = new Node(1,
+  new Node(2,
+    new Node(3,
+      new Node(4,
+        new Node(5)))));
 
-// Kick it off (demo)
-fetchTodo(42);
+console.log(middle(list)?.value); // 3
