@@ -1,9 +1,16 @@
-// 1. The classic `+` operator
-const a = "hello";
-const b = "world";
-const combined1 = a + " " + b; // "hello world"
+function reverseString(str: string): string {
+  return str.split('').reverse().join('');
+}
 
-// 2. Template literals (ES6+)
-const combined2 = `${a} ${b}`; // "hello world"
-const parts = [a, "awesome", b];
-const combined3 = parts.join(" "); // "hello awesome world"
+console.log(reverseString('hello')); // "olleh"
+function reverseStringManual(str: string): string {
+  let result = '';
+  for (let i = str.length - 1; i >= 0; i--) {
+    result += str[i];
+  }
+  return result;
+}
+
+console.log(reverseStringManual('world')); // "dlrow"
+console.assert(reverseString('abc') === 'cba');
+console.assert(reverseStringManual('abc') === 'cba');
