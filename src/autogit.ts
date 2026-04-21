@@ -1,52 +1,38 @@
-// 1.  Define a node type ----------------------------------------------------
-type TreeNode<T = number> = {
-  val: T
-  left?: TreeNode<T>
-  right?: TreeNode<T>
+interface ListNode<T> {
+  value: T;
+  next?: ListNode<T>;   // undefined means end of list
 }
+function listLength<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-// 2.  Recursive leaf‑counter -----------------------------------------------
-function countLeaves<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0                            // empty subtree
-  if (!root.left && !root.right) return 1        // leaf reached
-  // otherwise sum the counts from both sides
-  return countLeaves(root.left) + countLeaves(root.right)
+  while (current) {
+    count++;
+    current = current.next;
+  }
+
+  return count;
 }
+function listLengthRec<T>(node: ListNode<T> | undefined): number {
+  return node ? 1 + listLengthRec(node.next) : 0;
+}
+class LinkedList<T> {
+  head?: ListNode<T>;
+  tail?: ListNode<T>;
 
-// 3.  Iterative version (works the same but uses an explicit stack) --------
-function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0
+  // ... push, pop, etc. ...
 
-  let count = 0
-  const stack: Array<TreeNode<T>> = [root]
-
-  while (stack.length) {
-    const node = stack.pop()!
-    const { left, right } = node
-
-    if (!left && !right) {
-      count++
-    } else {
-      if (right) stack.push(right)
-      if (left) stack.push(left)
+  get length(): number {
+    let count = 0;
+    let cur = this.head;
+    while (cur) {
+      count++;
+      cur = cur.next;
     }
-  }
-  return count
-}
-
-// 4.  Quick demo -------------------------------------------------------------
-const tree: TreeNode<number> = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4 },
-    right: { val: 5 }
-  },
-  right: {
-    val: 3,
-    right: { val: 6 }
+    return count;
   }
 }
+const a: ListNode<number> = { value: 1, next: { value: 2, next: { value: 3 } } };
 
-console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
-console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
+console.log(listLength(a));          // 3
+console.log(listLengthRec(a));       // 3
