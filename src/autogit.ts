@@ -1,27 +1,18 @@
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+const numbers: number[] = [12, 4, 56, 3, 9];
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialIterative(5));   // 120
-console.log(factorialIterative(0));   // 1
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n === 0 || n === 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+// The default sort is string comparison → "12" < "56" < ...!
+const sorted = numbers.slice().sort((a, b) => a - b);
 
-  let result = 1n;          // `n` suffix makes it a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
+console.log(sorted); // [3, 4, 9, 12, 56]
+function sortNums(arr: number[]): number[] {
+  return arr.slice().sort((a, b) => a - b);
 }
-console.log(factorialBigInt(50).toString());
-// 304140932655... (the full 50! value)
+
+const unsorted = [27, 13, 42, 8];
+console.log(sortNums(unsorted)); // [8, 13, 27, 42]
+function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
+  return arr.slice().sort(cmpFn);
+}
+function sortNumbersASC(nums: number[]): number[] {
+  return nums.slice().sort((a, b) => a - b);
+}
