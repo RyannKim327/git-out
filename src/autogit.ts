@@ -1,61 +1,57 @@
+const EMAIL_REGEX = new RegExp(
+  // local part   : a letter or digit, followed by 0–63 chars that can be
+  //                 letters, digits, or one of  . _ - + % #
+  // domain part  : 1+ labels separated by dots.  Each label may contain
+  //                 letters, digits, hyphens (not at the ends).
+  //                 The final label (TLD) must be at least two letters.
+  //             This purposely *does not* allow quoted local parts,
+  //             nor IP‑literal addresses (e.g. [127.0.0.1]).
+  //             It covers the vast majority of addresses you’ll see.
+  /^(?=.{1,254}$)(?:[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$/i
+);
 /**
- * Return true if `text` is a palindrome.
+ * Returns true if the string looks like a real e‑mail address.
  *
- * The function walks from both ends towards the middle, comparing matching
- * characters.  It never creates an auxiliary string or array, so the
- * extra space cost is O(1).
- *
- * Options:
- *   - ignoreCase:   treat 'A' and 'a' as the same (default true)
- *   - ignoreNonAlpha: strip out anything that isn’t a letter or digit (default true)
+ * @param address The value to test.
+ * @returns Boolean indicating validity.
  */
-function isPalindrome(
-  text: string,
-  ignoreCase = true,
-  ignoreNonAlpha = true
-): boolean {
-  let left = 0;
-  let right = text.length - 1;
-
-  while (left < right) {
-    // Skip unwanted characters on the left
-    while (
-      left < right &&
-      (ignoreNonAlpha ? !isAlphaNumeric(text[left]) : false)
-    ) {
-      left++;
-    }
-
-    // Skip unwanted characters on the right
-    while (
-      left < right &&
-      (ignoreNonAlpha ? !isAlphaNumeric(text[right]) : false)
-    ) {
-      right--;
-    }
-
-    // Compare the two characters
-    const leftCh  = ignoreCase ? text[left].toLowerCase() : text[left];
-    const rightCh = ignoreCase ? text[right].toLowerCase() : text[right];
-
-    if (leftCh !== rightCh) return false;
-
-    left++;
-    right--;
-  }
-
-  return true;
+export function isValidEmail(address: string): boolean {
+  return EMAIL_REGEX.test(address);
 }
+import { useState } from "react";
+import { isValidEmail } from "./validators";
 
-function isAlphaNumeric(ch: string): boolean {
-  const code = ch.charCodeAt(0);
-  // '0'-'9' => 48-57, 'A'-'Z' => 65-90, 'a'-'z' => 97-122
+export function EmailForm() {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState(false);
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(!isValidEmail(email));
+  };
+
   return (
-    (code >= 48 && code <= 57) ||
-    (code >= 65 && code <= 90) ||
-    (code >= 97 && code <= 122)
+    <form onSubmit={onSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ borderColor: error ? "red" : undefined }}
+      />
+      {error && <p>That doesn’t look like a valid e‑mail.</p>}
+      <button type="submit">Send</button>
+    </form>
   );
 }
-console.log(isPalindrome("Was it a rat I saw?")); // true
-console.log(isPalindrome("No 'x' in Nixon"));     // true
-console.log(isPalindrome("Hello"));                // false
+const testEmails = [
+  "hello@example.com",
+  "user+tag@domain.co.uk",
+  "firstname.lastname@sub.domain.org",
+  `"just a quote"@example.com",  // invalid here
+  "invalid@",
+  "@no-local.com",
+  "space in local@domain.com",
+  "very.long@domain.verylongtldnameforeverthisdoesnotmakeanysensebecausewhothereisit.com"
+];
+
+testEmails.forEach(e => console.log(`${e} → ${isValidEmail(e)}`));
