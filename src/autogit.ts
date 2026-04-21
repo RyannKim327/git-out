@@ -1,18 +1,72 @@
-const numbers: number[] = [12, 4, 56, 3, 9];
-
-// The default sort is string comparison → "12" < "56" < ...!
-const sorted = numbers.slice().sort((a, b) => a - b);
-
-console.log(sorted); // [3, 4, 9, 12, 56]
-function sortNums(arr: number[]): number[] {
-  return arr.slice().sort((a, b) => a - b);
+// A single node in a singly linked list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
 
-const unsorted = [27, 13, 42, 8];
-console.log(sortNums(unsorted)); // [8, 13, 27, 42]
-function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
-  return arr.slice().sort(cmpFn);
+// The queue itself
+export class Queue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // back of the queue
+  private _size = 0;
+
+  /** Adds a value to the back of the queue. */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
+
+    if (this.tail) {
+      // Pre‑existing queue – link the new node after the old tail
+      this.tail.next = newNode;
+    } else {
+      // Empty queue – new node becomes the head
+      this.head = newNode;
+    }
+
+    // In either case, the new node is the new tail
+    this.tail = newNode;
+    this._size += 1;
+  }
+
+  /** Removes and returns the value at the front of the queue. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Queue is empty
+
+    const value = this.head.value;
+    this.head = this.head.next;   // Advance the head
+
+    // If the queue became empty, clear the tail too
+    if (!this.head) this.tail = null;
+
+    this._size -= 1;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** How many items are in the queue? */
+  size(): number {
+    return this._size;
+  }
 }
-function sortNumbersASC(nums: number[]): number[] {
-  return nums.slice().sort((a, b) => a - b);
-}
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());  // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());   // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue(); // removes 30
+
+console.log(q.isEmpty()); // true
