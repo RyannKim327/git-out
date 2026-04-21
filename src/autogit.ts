@@ -1,57 +1,142 @@
+// --------------------------------------------
+// Binary‑heap priority queue (generic)
+// --------------------------------------------
+
+type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * Interpolation Search
- * --------------------
- * @param arr  A sorted array of numbers (ascending).
- * @param key  The value you're looking for.
- * @returns    Index of key in arr, or −1 if key is absent.
+ * A priority queue that stores values in a binary heap.
+ * The heap property is maintained by `comparator`.
  *
- * Complexity:
- *  * Best‑case: O(log log N)  (when data is uniformly distributed)
- *  * Worst‑case: O(N)         (when data is heavily skewed)
- *
- * Note: Behaviour for non‑numeric or unsorted input is undefined.
+ * Examples:
+ *  - new PriorityQueue<number>()          // min‑heap (default)
+ *  - new PriorityQueue<number>((a,b)=>b-a) // max‑heap
+ *  - new PriorityQueue<string>((a,b)=>a.localeCompare(b))
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+export class PriorityQueue<T> {
+  /** underlying array is 0‑based; the parent of index i is (i - 1) >> 1 */
+  private heap: T[] = [];
 
-  let low = 0;
-  let high = arr.length - 1;
+  /** comparison function that must return negative if a < b */
+  private readonly comparator: Comparator<T>;
 
-  // Keep the loop going while the search space is valid.
-  while (
-    low <= high &&
-    key >= arr[low] &&
-    key <= arr[high]
-  ) {
-    // Guard against a zero division when arr[low] === arr[high].
-    if (arr[low] === arr[high]) {
-      // All remaining elements are equal; pick the first one.
-      return arr[low] === key ? low : -1;
-    }
-
-    // Estimate the probable position of key.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-      );
-
-    // We found the key.
-    if (arr[pos] === key) {
-      return pos;
-    }
-
-    // Update boundaries based on comparison.
-    if (arr[pos] < key) {
-      low = pos + 1;     // key is in the right sub‑array
-    } else {
-      high = pos - 1;    // key is in the left sub‑array
-    }
+  constructor(comparator?: Comparator<T>) {
+    // default is a min‑heap for natural order
+    this.comparator = comparator ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }
 
-  // If we exit the loop, key isn't present.
-  return -1;
+  /* ------------------------------------------------------------------ */
+  /* Public API                                                          */
+  /* ------------------------------------------------------------------ */
+
+  /** Returns true if there are no elements. */
+  isEmpty(): boolean {
+    return this.heap.length === 0;
+  }
+
+  /** Returns the element with the highest priority without removing it. */
+  peek(): T | undefined {
+    return this.heap[0];
+  }
+
+  /** Insert a new element. */
+  push(value: T): void {
+    this.heap.push(value);
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  /**
+   * Remove & return the element with the highest priority.
+   * Throws an error if the queue is empty.
+   */
+  pop(): T {
+    if (this.heap.length === 0) throw new Error('Pop from an empty priority queue');
+
+    const top = this.heap[0];
+    const last = this.heap.pop()!; // array non‑empty, so pop is safe
+
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
+    }
+
+    return top;
+  }
+
+  /** Remove all items. */
+  clear(): void {
+    this.heap = [];
+  }
+
+  /** Current size of the queue. */
+  size(): number {
+    return this.heap.length;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Internal helpers                                                   */
+  /* ------------------------------------------------------------------ */
+
+  /** Move the element at idx up until the heap property holds. */
+  private bubbleUp(idx: number): void {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.heap[parentIdx];
+
+      // For min‑heap: bubble up when element < parent
+      if (this.comparator(element, parent) >= 0) break;
+
+      // swap
+      this.heap[idx] = parent;
+      idx = parentIdx;
+    }
+    this.heap[idx] = element;
+  }
+
+  /** Move the element at idx down until the heap property holds. */
+  private bubbleDown(idx: number): void {
+    const length = this.heap.length;
+    const element = this.heap[idx];
+
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let swapIdx = -1;
+
+      if (leftIdx < length) {
+        const left = this.heap[leftIdx];
+        if (this.comparator(left, element) < 0) swapIdx = leftIdx;
+      }
+
+      if (rightIdx < length) {
+        const right = this.heap[rightIdx];
+        const betterChild = swapIdx === -1 ? element : this.heap[swapIdx];
+
+        if (this.comparator(right, betterChild) < 0) swapIdx = rightIdx;
+      }
+
+      if (swapIdx === -1) break;
+
+      this.heap[idx] = this.heap[swapIdx];
+      idx = swapIdx;
+    }
+
+    this.heap[idx] = element;
+  }
 }
-const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(data, 9));   // → 4
-console.log(interpolationSearch(data, 4));   // → -1
+
+/* ------------------------------------------------------------------ */
+/* Example usage */
+/* ------------------------------------------------------------------ */
+
+const pq = new PriorityQueue<number>(); // min‑heap
+
+pq.push(5);
+pq.push(3);
+pq.push(8);
+pq.push(1);
+
+console.log(pq.pop()); // 1
+console.log(pq.pop()); // 3
+console.log([...Array(pq.size()).keys()].map(() => pq.pop())); // [5, 8]
