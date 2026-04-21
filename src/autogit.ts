@@ -1,76 +1,47 @@
-// ------------------------------
-// Radix Sort (base 10)
-// ------------------------------
-
 /**
- * Performs a stable counting sort on the array `arr` using the digit at
- * position `digitPlace` (1, 10, 100, …).  The function returns the
- * sorted array – the original array remains untouched.
+ * Return the median of two sorted arrays (ascending order).
+ *
+ * @param nums1 first sorted array
+ * @param nums2 second sorted array
+ * @return median value (number or natural fractional)
  */
-function countingSortByDigit(
-  arr: number[],
-  digitPlace: number
-): number[] {
-  const buckets: { [key: number]: number[] } = {
-    0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [],
-  };
+export function medianOfTwoSortedArrays(nums1: number[], nums2: number[]): number {
+  const [A, B] = nums1.length <= nums2.length ? [nums1, nums2] : [nums2, nums1];
+  const m = A.length, n = B.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  for (const num of arr) {
-    // Extract the current digit:
-    //   Math.abs(num) to work with negative values,
-    //   modulo digitPlace to isolate the digit,
-    //   then divide by digitPlace to shift back.
-    const digit =
-      Math.floor((Math.abs(num) % (digitPlace * 10)) / digitPlace);
+  // Binary‑search over A to find the correct partition
+  let low = 0, high = m;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);          // partition of A
+    const j = halfLen - i;                           // partition of B
 
-    buckets[digit].push(num);
+    const Aleft  = i === 0 ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m ? Number.POSITIVE_INFINITY : A[i];
+    const Bleft  = j === 0 ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n ? Number.POSITIVE_INFINITY : B[j];
+
+    // Correct partition?
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd combined length → median is max(left side)
+      // Even combined length → median is average of max(left) and min(right)
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
+      } else {
+        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+      }
+    } else if (Aleft > Bright) {
+      // Need to move left in A
+      high = i - 1;
+    } else {
+      // Need to move right in A
+      low = i + 1;
+    }
   }
 
-  // Concatenate buckets in numeric order (0→9) to keep the sort stable.
-  return Object.values(buckets).reduce((out, bucket) => out.concat(bucket), []);
+  throw new Error("Inputs are not sorted or arrays are empty");
 }
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
 
-/**
- * Radix sort for an array of integers.  Handles negative values by
- * sorting positives and negatives separately and then combining.
- */
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
-
-  // Separate positives and negatives.
-  const positives = arr.filter((n) => n >= 0);
-  const negatives = arr.filter((n) => n < 0).map((n) => Math.abs(n));
-
-  // Helper to sort a non‑negative array using radix sort.
-  const sortNonNegative = (numbers: number[]) => {
-    // Find the largest number so we know how many digit passes.
-    let max = 0;
-    for (const n of numbers) {
-      if (n > max) max = n;
-    }
-
-    let digitPlace = 1;
-    while (digitPlace <= max) {
-      // Sort by this digit; each pass is stable.
-      const sorted = countingSortByDigit(numbers, digitPlace);
-      // Prepare for next iteration.
-      numbers = sorted;
-      digitPlace *= 10;
-    }
-    return numbers;
-  };
-
-  const sortedPos = sortNonNegative(positives);
-  const sortedNeg = sortNonNegative(negatives); // already abs values
-
-  // Negatives need to be reversed and negated back.
-  const sortedNegReversed = sortedNeg.reverse().map((n) => -n);
-
-  // Combine: negatives first, then positives.
-  return [...sortedNegReversed, ...sortedPos];
-}
-
-/* ------------------------------ Demo ------------------------------ */
-const sample = [170, 45, 75, -90, 802, 24, 2, 66, -31, 0];
-console.log('Original:', sample.join(', '));
-console.log('Sorted  :', radixSort(sample).join(', '));
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // → 8
