@@ -1,34 +1,9 @@
-const haystack: string = "Hello, world!";
-const needle: string = "world";
+const str = "  123   ";
 
-const found = haystack.includes(needle); // true
-const haystack = "Hello, world!";
-const needle = "world";
+const num1 = Number(str);            // 123
+const num2 = +'123';                 // 123
+const num3 = parseInt(str, 10);      // 123
+const num4 = parseFloat('123.45');   // 123.45
+const num5 = str * 1;                // 123
 
-const found = haystack.indexOf(needle) !== -1; // true
-const haystack = "Hello, world!";
-const pattern = /world/;          // or /world/i for case‑insensitive
-const found = pattern.test(haystack); // true
-// case‑insensitive:
-const haystack = "Hello, World!";
-const needle = "world";
-const found = haystack.toLowerCase().includes(needle.toLowerCase());
-
-// locale‑aware:
-const localeFound = haystack.localeCompare(needle, undefined, { sensitivity: 'accent' }) === 0;
-/**
- * Checks whether a string contains a substring, optionally case‑insensitive.
- */
-function contains(
-  target: string,
-  probe: string,
-  caseInsensitive = false
-): boolean {
-  if (caseInsensitive) {
-    return target.toLowerCase().includes(probe.toLowerCase());
-  }
-  return target.includes(probe);
-}
-
-// Usage
-const ok = contains("Hello, World!", "world", true); // true
+console.log([num1, num2, num3, num4, num5]); // [123, 123, 123, 123.45, 123]
