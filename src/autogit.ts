@@ -1,58 +1,52 @@
-/**
- * Returns the BWT of `s` as an object containing
- *   - last: the encoded string (last column of the sorted matrix)
- *   - index: the row number that holds the original string (0‑based)
- */
-function burrowsWheelerEncode(s: string): { last: string; index: number } {
-  const n = s.length;
-  // Build every rotation: slice(s, i) + slice(s, 0, i)
-  const rotations = Array.from({ length: n }, (_, i) =>
-    s.slice(i) + s.slice(0, i)
-  );
-
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Extract last column and find original string's row
-  let lastCol = "";
-  let origIndex = -1;
-  for (let r = 0; r < n; r++) {
-    const row = rotations[r];
-    lastCol += row[row.length - 1];
-    if (row === s) origIndex = r;
-  }
-  return { last: lastCol, index: origIndex };
+// 1.  Define a node type ----------------------------------------------------
+type TreeNode<T = number> = {
+  val: T
+  left?: TreeNode<T>
+  right?: TreeNode<T>
 }
-const { last, index } = burrowsWheelerEncode("BANANA");
-// last  => "ANNBAA"
-// index => 3   // 0‑based, the fourth row is "BANANA"
-/**
- * Inverse of the BWT.  Given the last column (`last`) and the original
- * string's row index (`index`), reconstruct the original string.
- */
-function burrowsWheelerDecode(last: string, index: number): string {
-  const n = last.length;
-  const first = [...last].sort();          // First column is sorted last
-  const table: string[] = Array(n).fill(""); // Working table of rows
 
-  // Repeatedly prepend last‑column chars to the table rows
-  for (let step = 0; step < n; step++) {
-    // Prepend each char of last to the corresponding row
-    for (let i = 0; i < n; i++) {
-      table[i] = last[i] + table[i];
+// 2.  Recursive leaf‑counter -----------------------------------------------
+function countLeaves<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0                            // empty subtree
+  if (!root.left && !root.right) return 1        // leaf reached
+  // otherwise sum the counts from both sides
+  return countLeaves(root.left) + countLeaves(root.right)
+}
+
+// 3.  Iterative version (works the same but uses an explicit stack) --------
+function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0
+
+  let count = 0
+  const stack: Array<TreeNode<T>> = [root]
+
+  while (stack.length) {
+    const node = stack.pop()!
+    const { left, right } = node
+
+    if (!left && !right) {
+      count++
+    } else {
+      if (right) stack.push(right)
+      if (left) stack.push(left)
     }
-    // Re‑sort the table – now the first column matches `first`
-    table.sort();
   }
-
-  // The row at the original index is the decoded string
-  return table[index];
+  return count
 }
-const original = burrowsWheelerDecode("ANNBAA", 3);
-console.log(original); // "BANANA"
-const input = "MNEMONIC";
-const { last, index } = burrowsWheelerEncode(input);
-const restored = burrowsWheelerDecode(last, index);
 
-console.log(last, index);   // e.g., "NOIACEMM 4"
-console.log(restored === input); // true
+// 4.  Quick demo -------------------------------------------------------------
+const tree: TreeNode<number> = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4 },
+    right: { val: 5 }
+  },
+  right: {
+    val: 3,
+    right: { val: 6 }
+  }
+}
+
+console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
+console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
