@@ -1,93 +1,41 @@
-START: push (root, depth=0) onto stack
-WHILE stack not empty:
-    (node, depth) = stack.pop()
-    IF depth > limit: continue          // prune
-    IF node is goal: return node
-    FOR each child of node in reverse order:
-        push (child, depth+1) onto stack
-END
-// ---------------------------------------------------------------------------
-// 1️⃣  Types
-// ---------------------------------------------------------------------------
+// Basic singly‑linked list node
+type ListNode<T> = { value: T; next: ListNode<T> | null };
 
-/**
- * A minimal graph node. Feel free to embed more data.
- */
-interface Node<T = unknown> {
-  /** The value you care about (e.g., a string, number, custom class, …) */
-  value: T;
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) throw new Error("n must be a positive integer");
 
-  /** Immediate successors of this node. Empty array for a leaf. */
-  children: Node[];
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  /** Optional flag to mark a node as a goal. */
-  isGoal?: boolean;
-}
-
-/**
- * Result of the search – the node that satisfied the goal.
- * `null` if no node was found within the depth limit.
- */
-type SearchResult<T> = Node<T> | null;
-
-// ---------------------------------------------------------------------------
-// 2️⃣  The algorithm
-// ---------------------------------------------------------------------------
-
-/**
- * Iterative depth‑limited DFS.
- *
- * @param root  The root node of the search.
- * @param limit The maximum depth to visit (root has depth 0).
- * @returns The first node that reports `isGoal === true`, or null.
- */
-function depthLimitedSearch<T>(
-  root: Node<T>,
-  limit: number
-): SearchResult<T> {
-  // Explicit stack: each entry is [node, currentDepth]
-  const stack: Array<[Node<T>, number]> = [[root, 0]];
-
-  while (stack.length) {
-    const [node, depth] = stack.pop()!; // pop() is safe because we just checked stack.length
-
-    // 1️⃣  Depth guard
-    if (depth > limit) continue;
-
-    // 2️⃣  Goal test
-    if (node.isGoal) return node;
-
-    // 3️⃣  Expand children (reverse order for natural DFS order)
-    for (let i = node.children.length - 1; i >= 0; i--) {
-      stack.push([node.children[i], depth + 1]);
-    }
+  // 1️⃣ Move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // fewer than n nodes
+    fast = fast.next;
   }
 
-  // Not found within the depth limit
-  return null;
+  // 2️⃣ Move both pointers until fast is at the end
+  while (fast) {
+    fast = fast.next;
+    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
+  }
+
+  return slow; // happy: nth from end
 }
+// build a list 1 -> 2 -> 3 -> 4 -> 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const head: ListNode<number> = { value: 1, next: node2 };
 
-// ---------------------------------------------------------------------------
-// 3️⃣  A quick demo / test
-// ---------------------------------------------------------------------------
-
-const sampleTree: Node<string> = {
-  value: 'A',
-  children: [
-    { value: 'B', children: [], isGoal: false },
-    {
-      value: 'C',
-      children: [
-        { value: 'D', children: [], isGoal: true },
-        { value: 'E', children: [] },
-      ],
-    },
-  ],
-};
-
-const result = depthLimitedSearch(sampleTree, 2);
-console.log(
-  result
-    ? `Found goal: ${result.value}`
-    : 'No goal node found within depth limit.'
-); // → Found goal: D
+const thirdFromEnd = nthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 3
+function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let current = head;
+  let idx = 1;
+  while (current && idx < n) {
+    current = current.next;
+    idx++;
+  }
+  return idx === n ? current : null;
+}
