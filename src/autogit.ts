@@ -1,34 +1,29 @@
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined; // no second element
+/**
+ * Returns the first non‑repeating character in `s`, or `null` if every
+ * character repeats. The search respects Unicode code‑points, so it works
+ * with emojis, accented letters, etc.
+ *
+ * @param s – input string
+ * @returns the character or null
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // Count every character in a single scan.
+  const counter = new Map<string, number>();
 
-  let largest = -Infinity;
-  let second = -Infinity;
+  for (const ch of s) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+  }
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n !== largest) {
-      second = n;
+  // Find the first character whose count is 1.
+  for (const ch of s) {
+    if (counter.get(ch) === 1) {
+      return ch;
     }
   }
 
-  return second === -Infinity ? undefined : second;
+  return null;          // all characters repeat
 }
-function secondLargest(nums: number[]): number | undefined {
-  const unique = Array.from(new Set(nums));     // remove duplicates
-  if (unique.length < 2) return undefined;      // no second element
-
-  unique.sort((a, b) => b - a);                // descending order
-  return unique[1];
-}
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
-
-  const max = Math.max(...nums);
-  const second = Math.max(...nums.filter(x => x !== max));
-  return second === -Infinity ? undefined : second;
-}
-const arr = [5, 1, 8, 7, 8, 3];
-
-console.log(secondLargest(arr)); // 7
+console.log(firstNonRepeatingChar("abacabad")); // "c"
+console.log(firstNonRepeatingChar("swiss"));    // "w"
+console.log(firstNonRepeatingChar("aabb"));     // null
+console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
