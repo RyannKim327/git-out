@@ -1,41 +1,30 @@
-// Basic node definition
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+// Define what the API will return (pick and choose any fields you need)
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-/**
- * Detect a cycle in a singly linked list.
- * @param head The start node of the list (or null for an empty list).
- * @returns true if a cycle exists, otherwise false.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false;          // Empty list → no cycle
-
-  let slow = head;                  // One step per loop
-  let fast = head.next;             // Two steps per loop
-
-  while (fast && fast.next) {
-    if (slow === fast) return true; // Hopping together → cycle
-
-    slow = slow.next!;              // safe because slow can't be null here
-    fast = fast.next.next!;
+// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
+async function apiGet<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
-
-  return false;                     // Reached end → no cycle
+  return response.json() as Promise<T>;
 }
-// acyclic list 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-console.log(hasCycle(a)); // false
 
-// cyclic list 1 → 2 → 3 → 1 …
-const d = new ListNode(1);
-const e = new ListNode(2);
-const f = new ListNode(3);
-d.next = e; e.next = f; f.next = d;
-console.log(hasCycle(d)); // true
+// Example usage: pull a single todo item
+async function fetchTodo(todoId: number) {
+  try {
+    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
+    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
+    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
+  } catch (err) {
+    console.error('Oops:', err);
+  }
+}
+
+// Kick it off (demo)
+fetchTodo(42);
