@@ -1,30 +1,61 @@
-// Generic helper – works with any comparable type that can be used as a Map key
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
-}
-
-// Simple test
-const arr1 = [1, 2, 3, 5, 8];
-const arr2 = [3, 4, 5, 6, 9];
-
-console.log(intersection(arr1, arr2)); // → [3, 5]
-function firstIntersection<T>(a: T[], b: T[]): T | undefined {
-  const setB = new Set(b);
-  for (const item of a) {
-    if (setB.has(item)) return item;
-  }
-}
-function intersectionBy<T, K extends keyof T>(
-  a: T[],
-  b: T[],
-  key: K
+/**
+ * Shell sort – a simple, O(n²) algorithm that usually runs much faster
+ * than insertion sort on realistically sized arrays.  
+ * It sorts in‑place and returns the same array for convenience.
+ *
+ * @param  array  The array to sort.
+ * @param  compare Optional compare function; defaults to numeric ascending.
+ * @return The sorted array.
+ */
+export function shellSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
 ): T[] {
-  const map = new Map(b.map(v => [v[key], v]));
-  return a.filter(v => map.has(v[key]));
+  // Fallback to numeric comparison if no function supplied.
+  const cmp = compare ?? ((a: any, b: any) => a - b);
+
+  // Start with a large gap, then reduce it.
+  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
+  let gap = Math.floor(array.length / 2);
+
+  while (gap > 0) {
+    // Perform a "gapped" insertion sort for this gap.
+    for (let i = gap; i < array.length; i++) {
+      const temp = array[i];
+      let j = i;
+
+      // shift earlier gap-sorted elements up until the correct location
+      // is found for temp.
+      while (j >= gap && cmp(array[j - gap], temp) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+
+      array[j] = temp;
+    }
+
+    // Reduce the gap for the next pass.
+    gap = Math.floor(gap / 2);
+  }
+
+  return array;
 }
-interface User { id: number; name: string }
-const usersA = [{ id:1 },{ id:2 },{ id:3 }]
-const usersB = [{ id:2 },{ id:3 },{ id:4 }]
-console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
-const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
+import { shellSort } from "./shellSort";
+
+const nums = [34, 8, 64, 51, 32, 21];
+console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
+type Item = { name: string; value: number };
+
+const items: Item[] = [
+  { name: "apple",  value: 5 },
+  { name: "banana", value: 2 },
+  { name: "cherry", value: 7 },
+];
+
+shellSort(items, (a, b) => a.value - b.value);
+console.log(items);
+// → [
+//     { name: "banana", value: 2 },
+//     { name: "apple",  value: 5 },
+//     { name: "cherry", value: 7 }
+//   ]
