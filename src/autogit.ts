@@ -1,58 +1,39 @@
-/** A very simple binary‑tree node. */
-export class TreeNode<T = unknown> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
 /**
- * Returns the maximum depth of a binary tree.
- * Depth is counted in nodes, not edges.
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
  *
- * @param root The root node of the tree (or null for an empty tree).
- * @returns an integer ≥ 0.
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
  */
-export function maxDepth<T>(root: TreeNode<T> | null): number {
-  // recursion is the cleanest here
-  if (!root) return 0; // leaf’s child contributes 0
-
-  const leftDepth = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // current node adds 1 to the greater of two sub‑depths
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const root = new TreeNode('a',
-  new TreeNode('b',
-    new TreeNode('d')
-  ),
-  new TreeNode('c')
-);
-
-console.log(maxDepth(root)); // → 3
-export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    // All nodes in this `for` loop belong to the same level.
-    const levelSize = queue.length;
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
-    depth++; // finished one level
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
   }
-  return depth;
+
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
+  }
 }
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
+
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
