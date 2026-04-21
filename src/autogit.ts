@@ -1,27 +1,38 @@
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+interface ListNode<T> {
+  value: T;
+  next?: ListNode<T>;   // undefined means end of list
+}
+function listLength<T>(head: ListNode<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  while (current) {
+    count++;
+    current = current.next;
   }
-  return result;
-}
-console.log(factorialIterative(5));   // 120
-console.log(factorialIterative(0));   // 1
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n === 0 || n === 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  let result = 1n;          // `n` suffix makes it a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
+  return count;
 }
-console.log(factorialBigInt(50).toString());
-// 304140932655... (the full 50! value)
+function listLengthRec<T>(node: ListNode<T> | undefined): number {
+  return node ? 1 + listLengthRec(node.next) : 0;
+}
+class LinkedList<T> {
+  head?: ListNode<T>;
+  tail?: ListNode<T>;
+
+  // ... push, pop, etc. ...
+
+  get length(): number {
+    let count = 0;
+    let cur = this.head;
+    while (cur) {
+      count++;
+      cur = cur.next;
+    }
+    return count;
+  }
+}
+const a: ListNode<number> = { value: 1, next: { value: 2, next: { value: 3 } } };
+
+console.log(listLength(a));          // 3
+console.log(listLengthRec(a));       // 3
