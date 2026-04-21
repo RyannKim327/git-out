@@ -1,47 +1,79 @@
 /**
- * Return the median of two sorted arrays (ascending order).
- *
- * @param nums1 first sorted array
- * @param nums2 second sorted array
- * @return median value (number or natural fractional)
+ * Edge list representation – maps a node id to an array of neighbour ids.
  */
-export function medianOfTwoSortedArrays(nums1: number[], nums2: number[]): number {
-  const [A, B] = nums1.length <= nums2.length ? [nums1, nums2] : [nums2, nums1];
-  const m = A.length, n = B.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+type AdjacencyList<T> = Record<string, T[]>;
 
-  // Binary‑search over A to find the correct partition
-  let low = 0, high = m;
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);          // partition of A
-    const j = halfLen - i;                           // partition of B
+/**
+ * A simple helper that maps a node to its “depth” from one end of the search.
+ */
+type Visited<T> = Record<string, number>;
 
-    const Aleft  = i === 0 ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m ? Number.POSITIVE_INFINITY : A[i];
-    const Bleft  = j === 0 ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n ? Number.POSITIVE_INFINITY : B[j];
+/**
+ * Bidirectional BFS.
+ *
+ * @param graph   The graph, keyed by string id, pointing to an array of neighbour ids.
+ * @param start   The id of the start node.
+ * @param target  The id of the target node.
+ * @returns The length of the shortest path, or -1 if no path exists.
+ */
+export function bidirectionalBfs<T extends string>(
+  graph: AdjacencyList<T>,
+  start: T,
+  target: T
+): number {
+  if (start === target) return 0;
 
-    // Correct partition?
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd combined length → median is max(left side)
-      // Even combined length → median is average of max(left) and min(right)
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      } else {
-        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-      }
-    } else if (Aleft > Bright) {
-      // Need to move left in A
-      high = i - 1;
-    } else {
-      // Need to move right in A
-      low = i + 1;
+  // Two frontiers: one growing from start, one from target
+  let frontierStart = new Set([start]);
+  let frontierTarget = new Set([target]);
+
+  // Book‑keeping maps: node → distance from its originating side
+  const visitedStart: Visited<T> = { [start]: 0 };
+  const visitedTarget: Visited<T> = { [target]: 0 };
+
+  let distance = 0; // overall layers explored
+
+  while (frontierStart.size && frontierTarget.size) {
+    // Always expand the smaller frontier first
+    if (frontierStart.size > frontierTarget.size) {
+      [frontierStart, frontierTarget] = [frontierTarget, frontierStart];
+      [visitedStart, visitedTarget] = [visitedTarget, visitedStart];
     }
+
+    const nextFrontier = new Set<T>();
+
+    for (const node of frontierStart) {
+      const neighbours = graph[node] ?? [];
+
+      for (const neighbour of neighbours) {
+        // If the other search has already hit this node, we’re done
+        if (visitedTarget.hasOwnProperty(neighbour)) {
+          return visitedStart[node] + 1 + visitedTarget[neighbour];
+        }
+
+        // New node, add to the next layer and record distance
+        if (!visitedStart.hasOwnProperty(neighbour)) {
+          visitedStart[neighbour] = visitedStart[node] + 1;
+          nextFrontier.add(neighbour);
+        }
+      }
+    }
+
+    frontierStart = nextFrontier;
+    distance += 1;
   }
 
-  throw new Error("Inputs are not sorted or arrays are empty");
+  // No intersection found
+  return -1;
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
+const graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd', 'e'],
+  c: ['a', 'f'],
+  d: ['b'],
+  e: ['b', 'f'],
+  f: ['c', 'e'],
+} as const; // type inference: “as const” locks the keys
 
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // → 8
+console.log(bidirectionalBfs(graph, 'a', 'f')); // → 3 (a‑b‑e‑f or a‑c‑f)
+console.log(bidirectionalBfs(graph, 'a', 'x')); // → -1 (x not in graph)
