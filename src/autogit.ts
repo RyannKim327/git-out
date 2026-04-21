@@ -1,52 +1,21 @@
-// 1.  Define a node type ----------------------------------------------------
-type TreeNode<T = number> = {
-  val: T
-  left?: TreeNode<T>
-  right?: TreeNode<T>
+/**
+ * Removes all vowels (a, e, i, o, u) from the given string.
+ *
+ * @param str - The input string to process.
+ * @returns A new string with all vowels removed.
+ */
+export function removeVowels(str: string): string {
+  // The regex matches any of a, e, i, o, u in either case.
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
-
-// 2.  Recursive leaf‑counter -----------------------------------------------
-function countLeaves<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0                            // empty subtree
-  if (!root.left && !root.right) return 1        // leaf reached
-  // otherwise sum the counts from both sides
-  return countLeaves(root.left) + countLeaves(root.right)
-}
-
-// 3.  Iterative version (works the same but uses an explicit stack) --------
-function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0
-
-  let count = 0
-  const stack: Array<TreeNode<T>> = [root]
-
-  while (stack.length) {
-    const node = stack.pop()!
-    const { left, right } = node
-
-    if (!left && !right) {
-      count++
-    } else {
-      if (right) stack.push(right)
-      if (left) stack.push(left)
-    }
+console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
+console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
+return str.replace(/[aeiouyAEIOUY]/g, '');
+export function removeVowelsManual(str: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of str) {
+    if (!vowels.has(ch)) result += ch;
   }
-  return count
+  return result;
 }
-
-// 4.  Quick demo -------------------------------------------------------------
-const tree: TreeNode<number> = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4 },
-    right: { val: 5 }
-  },
-  right: {
-    val: 3,
-    right: { val: 6 }
-  }
-}
-
-console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
-console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
