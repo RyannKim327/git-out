@@ -1,57 +1,72 @@
-const EMAIL_REGEX = new RegExp(
-  // local part   : a letter or digit, followed by 0–63 chars that can be
-  //                 letters, digits, or one of  . _ - + % #
-  // domain part  : 1+ labels separated by dots.  Each label may contain
-  //                 letters, digits, hyphens (not at the ends).
-  //                 The final label (TLD) must be at least two letters.
-  //             This purposely *does not* allow quoted local parts,
-  //             nor IP‑literal addresses (e.g. [127.0.0.1]).
-  //             It covers the vast majority of addresses you’ll see.
-  /^(?=.{1,254}$)(?:[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$/i
-);
-/**
- * Returns true if the string looks like a real e‑mail address.
- *
- * @param address The value to test.
- * @returns Boolean indicating validity.
- */
-export function isValidEmail(address: string): boolean {
-  return EMAIL_REGEX.test(address);
+// A single node in a singly linked list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
-import { useState } from "react";
-import { isValidEmail } from "./validators";
 
-export function EmailForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState(false);
+// The queue itself
+export class Queue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // back of the queue
+  private _size = 0;
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(!isValidEmail(email));
-  };
+  /** Adds a value to the back of the queue. */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
 
-  return (
-    <form onSubmit={onSubmit}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ borderColor: error ? "red" : undefined }}
-      />
-      {error && <p>That doesn’t look like a valid e‑mail.</p>}
-      <button type="submit">Send</button>
-    </form>
-  );
+    if (this.tail) {
+      // Pre‑existing queue – link the new node after the old tail
+      this.tail.next = newNode;
+    } else {
+      // Empty queue – new node becomes the head
+      this.head = newNode;
+    }
+
+    // In either case, the new node is the new tail
+    this.tail = newNode;
+    this._size += 1;
+  }
+
+  /** Removes and returns the value at the front of the queue. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Queue is empty
+
+    const value = this.head.value;
+    this.head = this.head.next;   // Advance the head
+
+    // If the queue became empty, clear the tail too
+    if (!this.head) this.tail = null;
+
+    this._size -= 1;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** How many items are in the queue? */
+  size(): number {
+    return this._size;
+  }
 }
-const testEmails = [
-  "hello@example.com",
-  "user+tag@domain.co.uk",
-  "firstname.lastname@sub.domain.org",
-  `"just a quote"@example.com",  // invalid here
-  "invalid@",
-  "@no-local.com",
-  "space in local@domain.com",
-  "very.long@domain.verylongtldnameforeverthisdoesnotmakeanysensebecausewhothereisit.com"
-];
+const q = new Queue<number>();
 
-testEmails.forEach(e => console.log(`${e} → ${isValidEmail(e)}`));
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());  // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());   // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue(); // removes 30
+
+console.log(q.isEmpty()); // true
