@@ -1,51 +1,74 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
+/**
+ * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
+ * lps[i] is the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+function buildLps(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;                 // length of the previous longest prefix‑suffix
+  let i = 1;                      // we start from the second character
 
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous potential prefix
+        length = lps[length - 1];
+        // note: we do **not** increment i here
+      } else {
+        // no match at all; lps[i] stays 0
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
+
+  return lps;
 }
 
 /**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
+ * KMP search: returns the index of the first occurrence of the pattern in the text,
+ * or -1 if the pattern is absent.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
+function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;              // trivial match
+  if (text.length < pattern.length) return -1;     // cannot match
 
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
+  const lps = buildLps(pattern);
+  let tIdx = 0;      // index into text
+  let pIdx = 0;      // index into pattern
 
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
+  while (tIdx < text.length) {
+    if (pattern[pIdx] === text[tIdx]) {
+      tIdx++;
+      pIdx++;
 
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
-
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
+      // full match
+      if (pIdx === pattern.length) {
+        return tIdx - pIdx;   // return starting index
+      }
+    } else {
+      if (pIdx !== 0) {
+        // skip comparisons by using the lps table
+        pIdx = lps[pIdx - 1];
+      } else {
+        tIdx++;
+      }
+    }
   }
 
-  height(root)
-  return maxDiameter   // edge‑count diameter
+  return -1; // not found
 }
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
+/* ---------- Example usage ---------- */
+const txt = "abxabcabcaby";
+const pat = "abcaby";
 
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+const idx = kmpSearch(txt, pat);
+console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
+console.assert(kmpSearch("hello world", "world") === 6);
+console.assert(kmpSearch("hello world", "bye")    === -1);
+console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
