@@ -1,21 +1,30 @@
-/**
- * Removes all vowels (a, e, i, o, u) from the given string.
- *
- * @param str - The input string to process.
- * @returns A new string with all vowels removed.
- */
-export function removeVowels(str: string): string {
-  // The regex matches any of a, e, i, o, u in either case.
-  return str.replace(/[aeiouAEIOU]/g, '');
+// Define what the API will return (pick and choose any fields you need)
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
-console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
-return str.replace(/[aeiouyAEIOUY]/g, '');
-export function removeVowelsManual(str: string): string {
-  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
-  let result = '';
-  for (const ch of str) {
-    if (!vowels.has(ch)) result += ch;
+
+// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
+async function apiGet<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
-  return result;
+  return response.json() as Promise<T>;
 }
+
+// Example usage: pull a single todo item
+async function fetchTodo(todoId: number) {
+  try {
+    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
+    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
+    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
+  } catch (err) {
+    console.error('Oops:', err);
+  }
+}
+
+// Kick it off (demo)
+fetchTodo(42);
