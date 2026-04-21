@@ -1,41 +1,40 @@
 /**
- * Checks whether a string is a palindrome.
+ * Binary search – recursive version
  *
- * Options:
- *   - ignoreCase: treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
- *
- * @param input The string to test
- * @param opts  Optional settings
- * @returns true if `input` is a palindrome under the chosen rules
+ * @param arr   Sorted array (ascending order)
+ * @param target Value you’re looking for
+ * @param low   Left boundary (inclusive) – do **not** pass this on the first call
+ * @param high  Right boundary (inclusive) – do **not** pass this on the first call
+ * @returns Index of target, or -1 if absent
  */
-export function isPalindrome(
-  input: string,
-  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+function binarySearch<T extends number | string>(
+    arr: readonly T[],
+    target: T,
+    low = 0,
+    high = arr.length - 1
+): number {
+    // Base case: empty range → not found
+    if (low > high) return -1;
 
-  let str = input;
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  // 1. Collapse the string if requested
-  if (ignoreNonAlnum) {
-    // Keep only ASCII letters and digits. For Unicode you might want
-    // a regex like `/\p{L}\p{N}/gu` instead.
-    str = str.replace(/[^A-Za-z0-9]/g, "");
-  }
-
-  // 2. Normalize case if requested
-  if (ignoreCase) {
-    str = str.toLowerCase();
-  }
-
-  // 3. Compare the string to its reverse
-  const reversed = str.split("").reverse().join("");
-  return str === reversed;
+    if (midVal === target) {
+        return mid;                     // found
+    } else if (midVal < target) {
+        // search right half
+        return binarySearch(arr, target, mid + 1, high);
+    } else {
+        // left half
+        return binarySearch(arr, target, low, mid - 1);
+    }
 }
-console.log(isPalindrome("racecar"));                    // true
-console.log(isPalindrome("RaceCar"));                    // true
-console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("No lemon, no melon"));          // true
-console.log(isPalindrome("hello"));                       // false
+const nums = [1, 4, 7, 12, 19, 31, 55];
+const idx  = binarySearch(nums, 19);
+console.log(idx);   // 4
+function binarySearchIter<T extends number | string>(
+    arr: readonly T[],
+    target: T
+): number {
+    return binarySearch(arr, target);
+}
