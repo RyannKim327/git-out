@@ -1,61 +1,57 @@
 /**
- * Shell sort – a simple, O(n²) algorithm that usually runs much faster
- * than insertion sort on realistically sized arrays.  
- * It sorts in‑place and returns the same array for convenience.
+ * Interpolation Search
+ * --------------------
+ * @param arr  A sorted array of numbers (ascending).
+ * @param key  The value you're looking for.
+ * @returns    Index of key in arr, or −1 if key is absent.
  *
- * @param  array  The array to sort.
- * @param  compare Optional compare function; defaults to numeric ascending.
- * @return The sorted array.
+ * Complexity:
+ *  * Best‑case: O(log log N)  (when data is uniformly distributed)
+ *  * Worst‑case: O(N)         (when data is heavily skewed)
+ *
+ * Note: Behaviour for non‑numeric or unsorted input is undefined.
  */
-export function shellSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Fallback to numeric comparison if no function supplied.
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // Start with a large gap, then reduce it.
-  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
-  let gap = Math.floor(array.length / 2);
+  let low = 0;
+  let high = arr.length - 1;
 
-  while (gap > 0) {
-    // Perform a "gapped" insertion sort for this gap.
-    for (let i = gap; i < array.length; i++) {
-      const temp = array[i];
-      let j = i;
-
-      // shift earlier gap-sorted elements up until the correct location
-      // is found for temp.
-      while (j >= gap && cmp(array[j - gap], temp) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
-
-      array[j] = temp;
+  // Keep the loop going while the search space is valid.
+  while (
+    low <= high &&
+    key >= arr[low] &&
+    key <= arr[high]
+  ) {
+    // Guard against a zero division when arr[low] === arr[high].
+    if (arr[low] === arr[high]) {
+      // All remaining elements are equal; pick the first one.
+      return arr[low] === key ? low : -1;
     }
 
-    // Reduce the gap for the next pass.
-    gap = Math.floor(gap / 2);
+    // Estimate the probable position of key.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+      );
+
+    // We found the key.
+    if (arr[pos] === key) {
+      return pos;
+    }
+
+    // Update boundaries based on comparison.
+    if (arr[pos] < key) {
+      low = pos + 1;     // key is in the right sub‑array
+    } else {
+      high = pos - 1;    // key is in the left sub‑array
+    }
   }
 
-  return array;
+  // If we exit the loop, key isn't present.
+  return -1;
 }
-import { shellSort } from "./shellSort";
-
-const nums = [34, 8, 64, 51, 32, 21];
-console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
-type Item = { name: string; value: number };
-
-const items: Item[] = [
-  { name: "apple",  value: 5 },
-  { name: "banana", value: 2 },
-  { name: "cherry", value: 7 },
-];
-
-shellSort(items, (a, b) => a.value - b.value);
-console.log(items);
-// → [
-//     { name: "banana", value: 2 },
-//     { name: "apple",  value: 5 },
-//     { name: "cherry", value: 7 }
-//   ]
+const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(data, 9));   // → 4
+console.log(interpolationSearch(data, 4));   // → -1
