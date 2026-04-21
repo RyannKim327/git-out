@@ -1,72 +1,61 @@
-// A single node in a singly linked list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+/**
+ * Shell sort – a simple, O(n²) algorithm that usually runs much faster
+ * than insertion sort on realistically sized arrays.  
+ * It sorts in‑place and returns the same array for convenience.
+ *
+ * @param  array  The array to sort.
+ * @param  compare Optional compare function; defaults to numeric ascending.
+ * @return The sorted array.
+ */
+export function shellSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Fallback to numeric comparison if no function supplied.
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-// The queue itself
-export class Queue<T> {
-  private head: Node<T> | null = null; // front of the queue
-  private tail: Node<T> | null = null; // back of the queue
-  private _size = 0;
+  // Start with a large gap, then reduce it.
+  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
+  let gap = Math.floor(array.length / 2);
 
-  /** Adds a value to the back of the queue. */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
+  while (gap > 0) {
+    // Perform a "gapped" insertion sort for this gap.
+    for (let i = gap; i < array.length; i++) {
+      const temp = array[i];
+      let j = i;
 
-    if (this.tail) {
-      // Pre‑existing queue – link the new node after the old tail
-      this.tail.next = newNode;
-    } else {
-      // Empty queue – new node becomes the head
-      this.head = newNode;
+      // shift earlier gap-sorted elements up until the correct location
+      // is found for temp.
+      while (j >= gap && cmp(array[j - gap], temp) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+
+      array[j] = temp;
     }
 
-    // In either case, the new node is the new tail
-    this.tail = newNode;
-    this._size += 1;
+    // Reduce the gap for the next pass.
+    gap = Math.floor(gap / 2);
   }
 
-  /** Removes and returns the value at the front of the queue. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Queue is empty
-
-    const value = this.head.value;
-    this.head = this.head.next;   // Advance the head
-
-    // If the queue became empty, clear the tail too
-    if (!this.head) this.tail = null;
-
-    this._size -= 1;
-    return value;
-  }
-
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** How many items are in the queue? */
-  size(): number {
-    return this._size;
-  }
+  return array;
 }
-const q = new Queue<number>();
+import { shellSort } from "./shellSort";
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+const nums = [34, 8, 64, 51, 32, 21];
+console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
+type Item = { name: string; value: number };
 
-console.log(q.peek());  // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());   // 1
-console.log(q.isEmpty()); // false
+const items: Item[] = [
+  { name: "apple",  value: 5 },
+  { name: "banana", value: 2 },
+  { name: "cherry", value: 7 },
+];
 
-q.dequeue(); // removes 30
-
-console.log(q.isEmpty()); // true
+shellSort(items, (a, b) => a.value - b.value);
+console.log(items);
+// → [
+//     { name: "banana", value: 2 },
+//     { name: "apple",  value: 5 },
+//     { name: "cherry", value: 7 }
+//   ]
