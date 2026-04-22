@@ -1,55 +1,39 @@
 /**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
+ *
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
  */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
-
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
   }
 
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
   }
 }
-import { Stack } from './Stack';
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
-
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
