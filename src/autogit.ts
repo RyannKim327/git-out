@@ -1,20 +1,39 @@
 /**
- * Returns an integer between `min` and `max` (both inclusive).
+ * Reverses the order of words in `text`.
  *
- * @param min - The smallest value you want (inclusive)
- * @param max - The largest value you want (inclusive)
+ * • Consecutive whitespace is treated as a single separator.
+ * • Leading/trailing whitespace is trimmed out.
+ *
+ * @param text – The string whose words you want to reverse.
+ * @returns A new string with the words in reverse order.
  */
-export function randomInt(min: number, max: number): number {
-  // Guard against accidental inverted bounds
-  if (min > max) [min, max] = [max, min];
+function reverseWords(text: string): string {
+  return text
+    .trim()                      // remove leading/trailing spaces
+    .split(/\s+/)                // split on any run of whitespace
+    .reverse()                   // reverse the array
+    .join(' ');                  // join back with a single space
+}
 
-  // `Math.random()` gives us a value in the half‑open interval [0, 1).
-  // Multiply to widen the range, add 1 to make the bound inclusive,
-  // then floor to truncate to an integer.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+// Example
+const input = "  The quick  brown   fox jumps over   the lazy dog  ";
+console.log(reverseWords(input));
+// → "dog lazy the over jumps fox brown quick The"
+function reverseWordsKeepPunct(text: string): string {
+  // Matches words or any non‑space sequences
+  const tokens = text.match(/\S+/g) ?? [];
+  return tokens.split('').reverse().join(' ');
 }
-const roll = randomInt(1, 6);   // a fair d6 roll
-console.log(roll);              // 1–6, every call varies
-export function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
-}
+const tests = [
+  { in: "", out: "" },
+  { in: "hello", out: "hello" },
+  { in: "one two three", out: "three two one" },
+  { in: "  a   b c   ", out: "c b a" },
+  { in: "Hello, world!", out: "world! Hello," },
+];
+
+tests.forEach(({ in: t, out: expected }) => {
+  const result = reverseWords(t);
+  console.assert(result === expected, `❌ ${t} → ${result} (expected ${expected})`);
+});
+console.log("All basic tests passed!");
