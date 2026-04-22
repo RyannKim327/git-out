@@ -1,56 +1,42 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
+// O(n) time, O(1) space – the classic Boyer‑Moore vote‑count algorithm
+function majorityElement(nums: number[]): number | null {
+  if (nums.length === 0) return null;  // no data
 
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
+  // 1️⃣ First pass: find a candidate
+  let candidate = nums[0];
+  let count = 1;
 
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = nums[i];
+        count = 1;
+      }
     }
+  }
 
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+  // 2️⃣ Second pass: verify that the candidate really is the majority
+  count = 0;
+  for (const v of nums) if (v === candidate) count++;
+
+  return count > Math.floor(nums.length / 2) ? candidate : null;
 }
+function majorityElementUsingMap(nums: number[]): number | null {
+  const freq = new Map<number, number>();
+  const threshold = Math.floor(nums.length / 2);
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
-
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
+  for (const n of nums) {
+    freq.set(n, (freq.get(n) ?? 0) + 1);
+    if (freq.get(n)! > threshold) {
+      return n;            // early win
     }
-
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
-
-    return merge(left, right, compare);
+  }
+  return null;              // nothing crossed threshold
 }
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
-
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
-
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
+console.log(majorityElement([3, 3, 4, 2, 3]));          // 3
+console.log(majorityElement([1, 2, 3, 4]));             // null (no majority)
+console.log(majorityElementUsingMap([1, 1, 2, 1, 3]));  // 1
+function majorityString<T>(arr: T[]): T | null { /* same logic, just generic */ }
