@@ -1,58 +1,74 @@
 /**
- * Returns the BWT of `s` as an object containing
- *   - last: the encoded string (last column of the sorted matrix)
- *   - index: the row number that holds the original string (0‑based)
+ * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
+ * lps[i] is the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
  */
-function burrowsWheelerEncode(s: string): { last: string; index: number } {
-  const n = s.length;
-  // Build every rotation: slice(s, i) + slice(s, 0, i)
-  const rotations = Array.from({ length: n }, (_, i) =>
-    s.slice(i) + s.slice(0, i)
-  );
+function buildLps(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;                 // length of the previous longest prefix‑suffix
+  let i = 1;                      // we start from the second character
 
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // Extract last column and find original string's row
-  let lastCol = "";
-  let origIndex = -1;
-  for (let r = 0; r < n; r++) {
-    const row = rotations[r];
-    lastCol += row[row.length - 1];
-    if (row === s) origIndex = r;
-  }
-  return { last: lastCol, index: origIndex };
-}
-const { last, index } = burrowsWheelerEncode("BANANA");
-// last  => "ANNBAA"
-// index => 3   // 0‑based, the fourth row is "BANANA"
-/**
- * Inverse of the BWT.  Given the last column (`last`) and the original
- * string's row index (`index`), reconstruct the original string.
- */
-function burrowsWheelerDecode(last: string, index: number): string {
-  const n = last.length;
-  const first = [...last].sort();          // First column is sorted last
-  const table: string[] = Array(n).fill(""); // Working table of rows
-
-  // Repeatedly prepend last‑column chars to the table rows
-  for (let step = 0; step < n; step++) {
-    // Prepend each char of last to the corresponding row
-    for (let i = 0; i < n; i++) {
-      table[i] = last[i] + table[i];
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous potential prefix
+        length = lps[length - 1];
+        // note: we do **not** increment i here
+      } else {
+        // no match at all; lps[i] stays 0
+        lps[i] = 0;
+        i++;
+      }
     }
-    // Re‑sort the table – now the first column matches `first`
-    table.sort();
   }
 
-  // The row at the original index is the decoded string
-  return table[index];
+  return lps;
 }
-const original = burrowsWheelerDecode("ANNBAA", 3);
-console.log(original); // "BANANA"
-const input = "MNEMONIC";
-const { last, index } = burrowsWheelerEncode(input);
-const restored = burrowsWheelerDecode(last, index);
 
-console.log(last, index);   // e.g., "NOIACEMM 4"
-console.log(restored === input); // true
+/**
+ * KMP search: returns the index of the first occurrence of the pattern in the text,
+ * or -1 if the pattern is absent.
+ */
+function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;              // trivial match
+  if (text.length < pattern.length) return -1;     // cannot match
+
+  const lps = buildLps(pattern);
+  let tIdx = 0;      // index into text
+  let pIdx = 0;      // index into pattern
+
+  while (tIdx < text.length) {
+    if (pattern[pIdx] === text[tIdx]) {
+      tIdx++;
+      pIdx++;
+
+      // full match
+      if (pIdx === pattern.length) {
+        return tIdx - pIdx;   // return starting index
+      }
+    } else {
+      if (pIdx !== 0) {
+        // skip comparisons by using the lps table
+        pIdx = lps[pIdx - 1];
+      } else {
+        tIdx++;
+      }
+    }
+  }
+
+  return -1; // not found
+}
+
+/* ---------- Example usage ---------- */
+const txt = "abxabcabcaby";
+const pat = "abcaby";
+
+const idx = kmpSearch(txt, pat);
+console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
+console.assert(kmpSearch("hello world", "world") === 6);
+console.assert(kmpSearch("hello world", "bye")    === -1);
+console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
