@@ -1,34 +1,20 @@
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined; // no second element
+/**
+ * Returns an integer between `min` and `max` (both inclusive).
+ *
+ * @param min - The smallest value you want (inclusive)
+ * @param max - The largest value you want (inclusive)
+ */
+export function randomInt(min: number, max: number): number {
+  // Guard against accidental inverted bounds
+  if (min > max) [min, max] = [max, min];
 
-  let largest = -Infinity;
-  let second = -Infinity;
-
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n !== largest) {
-      second = n;
-    }
-  }
-
-  return second === -Infinity ? undefined : second;
+  // `Math.random()` gives us a value in the half‑open interval [0, 1).
+  // Multiply to widen the range, add 1 to make the bound inclusive,
+  // then floor to truncate to an integer.
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-function secondLargest(nums: number[]): number | undefined {
-  const unique = Array.from(new Set(nums));     // remove duplicates
-  if (unique.length < 2) return undefined;      // no second element
-
-  unique.sort((a, b) => b - a);                // descending order
-  return unique[1];
+const roll = randomInt(1, 6);   // a fair d6 roll
+console.log(roll);              // 1–6, every call varies
+export function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
 }
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
-
-  const max = Math.max(...nums);
-  const second = Math.max(...nums.filter(x => x !== max));
-  return second === -Infinity ? undefined : second;
-}
-const arr = [5, 1, 8, 7, 8, 3];
-
-console.log(secondLargest(arr)); // 7
