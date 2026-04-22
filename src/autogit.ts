@@ -1,39 +1,61 @@
 /**
- * Insertion sort – O(n²) average‑case (stable, in‑place)
+ * Shell sort – a simple, O(n²) algorithm that usually runs much faster
+ * than insertion sort on realistically sized arrays.  
+ * It sorts in‑place and returns the same array for convenience.
  *
- * @param arr       The array to be sorted
- * @param compareFn Optional comparison callback.  If omitted, natural ordering
- *                  (a <= b) is used.  The callback should return
- *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ * @param  array  The array to sort.
+ * @param  compare Optional compare function; defaults to numeric ascending.
+ * @return The sorted array.
  */
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): void {
-  // fall back to natural ordering for primitives
-  if (!compareFn) {
-    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
-  }
+export function shellSort<T>(
+  array: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Fallback to numeric comparison if no function supplied.
+  const cmp = compare ?? ((a: any, b: any) => a - b);
 
-  // start from the second element – the first element is a 1‑item sorted slice
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  // Start with a large gap, then reduce it.
+  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
+  let gap = Math.floor(array.length / 2);
 
-    // move elements that are greater than `key` one position to the right
-    while (j >= 0 && compareFn(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  while (gap > 0) {
+    // Perform a "gapped" insertion sort for this gap.
+    for (let i = gap; i < array.length; i++) {
+      const temp = array[i];
+      let j = i;
+
+      // shift earlier gap-sorted elements up until the correct location
+      // is found for temp.
+      while (j >= gap && cmp(array[j - gap], temp) > 0) {
+        array[j] = array[j - gap];
+        j -= gap;
+      }
+
+      array[j] = temp;
     }
 
-    // place `key` after the element just smaller than it
-    arr[j + 1] = key;
+    // Reduce the gap for the next pass.
+    gap = Math.floor(gap / 2);
   }
-}
-const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
-insertionSort(numbers);
-console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-const words = ['banana', 'apple', 'cherry', 'date'];
-insertionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // ["apple", "banana", "cherry", "date"]
+  return array;
+}
+import { shellSort } from "./shellSort";
+
+const nums = [34, 8, 64, 51, 32, 21];
+console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
+type Item = { name: string; value: number };
+
+const items: Item[] = [
+  { name: "apple",  value: 5 },
+  { name: "banana", value: 2 },
+  { name: "cherry", value: 7 },
+];
+
+shellSort(items, (a, b) => a.value - b.value);
+console.log(items);
+// → [
+//     { name: "banana", value: 2 },
+//     { name: "apple",  value: 5 },
+//     { name: "cherry", value: 7 }
+//   ]
