@@ -1,79 +1,69 @@
+// simple-api-call.ts
 /**
- * Edge list representation – maps a node id to an array of neighbour ids.
+ * A minimal example of calling a REST API in Node.js with TypeScript.
+ * Requires Node 18+ (fetch is built‑in). If you need older Node, use
+ * node‑fetch or axios instead.
  */
-type AdjacencyList<T> = Record<string, T[]>;
 
-/**
- * A simple helper that maps a node to its “depth” from one end of the search.
- */
-type Visited<T> = Record<string, number>;
+import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
 
-/**
- * Bidirectional BFS.
- *
- * @param graph   The graph, keyed by string id, pointing to an array of neighbour ids.
- * @param start   The id of the start node.
- * @param target  The id of the target node.
- * @returns The length of the shortest path, or -1 if no path exists.
- */
-export function bidirectionalBfs<T extends string>(
-  graph: AdjacencyList<T>,
-  start: T,
-  target: T
-): number {
-  if (start === target) return 0;
+// 1️⃣  Define the shape of the JSON we expect back:
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-  // Two frontiers: one growing from start, one from target
-  let frontierStart = new Set([start]);
-  let frontierTarget = new Set([target]);
+// 2️⃣  Utility to guard for non‑2xx HTTP codes:
+function checkStatus(response: Response): Response {
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response;
+}
 
-  // Book‑keeping maps: node → distance from its originating side
-  const visitedStart: Visited<T> = { [start]: 0 };
-  const visitedTarget: Visited<T> = { [target]: 0 };
+// 3️⃣  The async function that does the fetching:
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
 
-  let distance = 0; // overall layers explored
+  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
+  const options: RequestInit = {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
+  };
 
-  while (frontierStart.size && frontierTarget.size) {
-    // Always expand the smaller frontier first
-    if (frontierStart.size > frontierTarget.size) {
-      [frontierStart, frontierTarget] = [frontierTarget, frontierStart];
-      [visitedStart, visitedTarget] = [visitedTarget, visitedStart];
-    }
+  const response = await fetch(url, options);
+  checkStatus(response);
 
-    const nextFrontier = new Set<T>();
+  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
+  const data = (await response.json()) as Post;
 
-    for (const node of frontierStart) {
-      const neighbours = graph[node] ?? [];
-
-      for (const neighbour of neighbours) {
-        // If the other search has already hit this node, we’re done
-        if (visitedTarget.hasOwnProperty(neighbour)) {
-          return visitedStart[node] + 1 + visitedTarget[neighbour];
-        }
-
-        // New node, add to the next layer and record distance
-        if (!visitedStart.hasOwnProperty(neighbour)) {
-          visitedStart[neighbour] = visitedStart[node] + 1;
-          nextFrontier.add(neighbour);
-        }
-      }
-    }
-
-    frontierStart = nextFrontier;
-    distance += 1;
+  // Non‑strict guard: ensure required keys exist
+  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
+    throw new Error('Malformed data');
   }
 
-  // No intersection found
-  return -1;
+  return data;
 }
-const graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd', 'e'],
-  c: ['a', 'f'],
-  d: ['b'],
-  e: ['b', 'f'],
-  f: ['c', 'e'],
-} as const; // type inference: “as const” locks the keys
 
-console.log(bidirectionalBfs(graph, 'a', 'f')); // → 3 (a‑b‑e‑f or a‑c‑f)
-console.log(bidirectionalBfs(graph, 'a', 'x')); // → -1 (x not in graph)
+// 4️⃣  Drive the example: fetch a single post and log it.
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log('Fetched post:', post);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+})();
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "./dist"
+  },
+  "include": ["simple-api-call.ts"]
+}
