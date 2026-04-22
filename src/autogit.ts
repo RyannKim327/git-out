@@ -1,69 +1,60 @@
-// simple-api-call.ts
+// bubbleSort.ts
+
+export type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * A minimal example of calling a REST API in Node.js with TypeScript.
- * Requires Node 18+ (fetch is built‑in). If you need older Node, use
- * node‑fetch or axios instead.
+ * Sorts an array in place using the Bubble Sort algorithm.
+ *
+ * @param arr    — The array to sort. It will be modified directly.
+ * @param cmp    — Optional comparator. If omitted, number comparison is used.
+ *
+ * @returns      — The sorted array (same reference as the input).
  */
+export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;          // nothing to do
 
-import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
+  // Traditional outer loop: run n‑1 passes
+  for (let pass = 0; pass < n - 1; pass++) {
+    let swapped = false;
 
-// 1️⃣  Define the shape of the JSON we expect back:
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+    // Inner loop: compare adjacent elements
+    for (let i = 0; i < n - 1 - pass; i++) {
+      if (cmp(arr[i], arr[i + 1]) > 0) {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
+        swapped = true;
+      }
+    }
 
-// 2️⃣  Utility to guard for non‑2xx HTTP codes:
-function checkStatus(response: Response): Response {
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  return response;
-}
-
-// 3️⃣  The async function that does the fetching:
-async function fetchPost(postId: number): Promise<Post> {
-  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
-
-  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
-  const options: RequestInit = {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' },
-    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
-  };
-
-  const response = await fetch(url, options);
-  checkStatus(response);
-
-  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
-  const data = (await response.json()) as Post;
-
-  // Non‑strict guard: ensure required keys exist
-  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
-    throw new Error('Malformed data');
+    // If we made no swaps this pass, the array is sorted
+    if (!swapped) break;
   }
 
-  return data;
+  return arr;
 }
 
-// 4️⃣  Drive the example: fetch a single post and log it.
-(async () => {
-  try {
-    const post = await fetchPost(1);
-    console.log('Fetched post:', post);
-  } catch (err) {
-    console.error('Something went wrong:', err);
-  }
-})();
-{
-  "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "strict": true,
-    "outDir": "./dist"
-  },
-  "include": ["simple-api-call.ts"]
+/** Default numeric comparator */
+function defaultCmp(a: number, b: number): number {
+  return a - b;
 }
+import { bubbleSort } from './bubbleSort';
+
+const numbers = [5, 2, 9, 1, 5, 6];
+bubbleSort(numbers);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+
+// Custom comparator – strings, case‑insensitive
+const strings = ['Banana', 'apple', 'Cherry'];
+bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(strings); // ['apple', 'Banana', 'Cherry']
+
+// Sorting objects
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Ali', age: 30 },
+  { name: 'Beth', age: 24 },
+  { name: 'Carl', age: 38 },
+];
+bubbleSort(people, (p, q) => p.age - q.age);
+console.log(people);
+// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
