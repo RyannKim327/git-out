@@ -1,56 +1,45 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
+/**
+ * Return the longest common prefix of an array of strings.
+ * If the array is empty the result is the empty string.
+ *
+ * @param strs Array of strings
+ * @returns The longest common prefix
+ */
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
+  // Start with the entire first string as a tentative prefix.
+  let prefix = strs[0];
 
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
+  // Iterate over the rest of the strings.
+  for (let i = 1; i < strs.length; i++) {
+    const s = strs[i];
+
+    // Shrink the prefix until it matches the current string
+    // (or becomes empty).
+    while (!s.startsWith(prefix)) {
+      // Drop the last character
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return ""; // No common prefix
     }
+  }
 
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+  return prefix;
 }
+console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
+console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
+console.log(longestCommonPrefix([]));                         // ""
+console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
+export function lcpBySorting(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+  const sorted = [...strs].sort(); // Lexicographical order
+  const first = sorted[0];
+  const last  = sorted[sorted.length - 1];
+  const minLen = Math.min(first.length, last.length);
 
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
+  let i = 0;
+  while (i < minLen && first[i] === last[i]) i++;
 
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
-
-    return merge(left, right, compare);
+  return first.slice(0, i);
 }
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
-
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
-
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
