@@ -1,43 +1,14 @@
-function triangleAreaBaseHeight(
-    base: number,
-    height: number
-): number {
-    // Guard against negative or zero values
-    if (base <= 0 || height <= 0) {
-        throw new Error('Base and height must be positive numbers.');
-    }
-    return (base * height) / 2;
-}
+// 1️⃣ Using a regex (global, matches all spaces)
+const withoutSpaces1 = str.replace(/ /g, '');
 
-// Example usage
-console.log(triangleAreaBaseHeight(10, 5)); // 25
-function triangleAreaBySides(a: number, b: number, c: number): number {
-    // Validate that sides can form a triangle
-    if (a + b <= c || a + c <= b || b + c <= a) {
-        throw new Error('The given sides do not form a valid triangle.');
-    }
+// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
+const withoutSpaces2 = str.replace(/\s+/g, '');
 
-    const s = (a + b + c) / 2;
-    const areaSquared = s * (s - a) * (s - b) * (s - c);
+// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
+const withoutSpaces3 = str.split(' ').join('');
 
-    // Numerical safety check: areaSquared should be non‑negative
-    if (areaSquared < 0) {
-        throw new Error('Computed a negative area; check your side lengths.');
-    }
+// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
+const withoutSpaces4 = str.replaceAll(' ', '');
 
-    return Math.sqrt(areaSquared);
-}
-
-// Example
-console.log(triangleAreaBySides(3, 4, 5)); // 6
-type TriangleSpec =
-  | { base: number; height: number }
-  | { a: number; b: number; c: number };
-
-function areaOfTriangle(spec: TriangleSpec): number {
-    if ('base' in spec && 'height' in spec) {
-        return triangleAreaBaseHeight(spec.base, spec.height);
-    } else {
-        return triangleAreaBySides(spec.a, spec.b, spec.c);
-    }
-}
+// 5️⃣ For a functional style (works even in older versions)
+const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
