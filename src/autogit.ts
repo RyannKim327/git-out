@@ -1,40 +1,15 @@
-class TreeNode {
-  constructor(
-    public val: number,
-    public left: TreeNode | null = null,
-    public right: TreeNode | null = null
-  ) {}
-}
-function sumTree(root: TreeNode | null): number {
-  if (!root) return 0;          // nothing to add
-  const leftSum = sumTree(root.left);
-  const rightSum = sumTree(root.right);
-  return root.val + leftSum + rightSum;
-}
-function sumTreeIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let sum = 0;
-  const stack: Array<TreeNode> = [root];
+// 1. Trim leading/trailing
+const trimmed = myString.trim();
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.val;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
+// 2. Remove every whitespace character
+const noSpace = myString.replace(/\s/g, '');
 
-  return sum;
+// 3. Collapse multiple spaces/tabs/lines into one space
+const collapsed = myString.replace(/\s+/g, ' ');
+
+// 4. Remove only spaces (keep tabs, newlines, etc.)
+const onlySpaceRemoved = myString.replace(/ /g, '');
+function stripWhitespace(str: string, keepNewlines = false): string {
+  const pattern = keepNewlines ? /\s/g : /[ \t\r\f\v]/g; // tweak if you need to keep or drop newlines
+  return str.replace(pattern, '');
 }
-const root = new TreeNode(5,
-  new TreeNode(3,
-    new TreeNode(2),
-    new TreeNode(4)
-  ),
-  new TreeNode(8,
-    null,
-    new TreeNode(9)
-  )
-);
-
-console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
-console.log(sumTreeIterative(root)); // 31
