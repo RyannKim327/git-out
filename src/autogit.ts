@@ -1,45 +1,55 @@
 /**
- * Return the longest common prefix of an array of strings.
- * If the array is empty the result is the empty string.
- *
- * @param strs Array of strings
- * @returns The longest common prefix
+ * A classic LIFO stack backed by an array.
+ * @template T The type stored in the stack.
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
+export class Stack<T> {
+  // The internal storage array – keep it private.
+  private items: T[] = [];
 
-  // Start with the entire first string as a tentative prefix.
-  let prefix = strs[0];
-
-  // Iterate over the rest of the strings.
-  for (let i = 1; i < strs.length; i++) {
-    const s = strs[i];
-
-    // Shrink the prefix until it matches the current string
-    // (or becomes empty).
-    while (!s.startsWith(prefix)) {
-      // Drop the last character
-      prefix = prefix.slice(0, -1);
-      if (!prefix) return ""; // No common prefix
-    }
+  /** Push a value onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  return prefix;
+  /** Remove and return the top value. Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Return the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return how many items are currently in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Simple truthy check for emptiness. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** (Optional) Clear all items from the stack. */
+  clear(): void {
+    this.items.length = 0; // Fastest way to empty an array
+  }
 }
-console.log(longestCommonPrefix(["flower","flow","flight"])); // "fl"
-console.log(longestCommonPrefix(["dog","racecar","car"]));    // ""
-console.log(longestCommonPrefix([]));                         // ""
-console.log(longestCommonPrefix(["interspecies", "interstellar", "interstate"])); // "inters"
-export function lcpBySorting(strs: string[]): string {
-  if (strs.length === 0) return "";
+import { Stack } from './Stack';
 
-  const sorted = [...strs].sort(); // Lexicographical order
-  const first = sorted[0];
-  const last  = sorted[sorted.length - 1];
-  const minLen = Math.min(first.length, last.length);
+const stack = new Stack<number>();
 
-  let i = 0;
-  while (i < minLen && first[i] === last[i]) i++;
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-  return first.slice(0, i);
-}
+console.log(stack.size());  // 3
+console.log(stack.peek());  // 30
+
+console.log(stack.pop());   // 30
+console.log(stack.pop());   // 20
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
