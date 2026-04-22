@@ -1,60 +1,56 @@
-// bubbleSort.ts
+// 1️⃣  Define a compare function signature
+type Comparator<T> = (a: T, b: T) => number;
 
-export type Comparator<T> = (a: T, b: T) => number;
+// 2️⃣  Merge helper – combines two sorted halves
+function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
+    const result: T[] = [];
+    let i = 0, j = 0;
 
-/**
- * Sorts an array in place using the Bubble Sort algorithm.
- *
- * @param arr    — The array to sort. It will be modified directly.
- * @param cmp    — Optional comparator. If omitted, number comparison is used.
- *
- * @returns      — The sorted array (same reference as the input).
- */
-export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
-  const n = arr.length;
-  if (n < 2) return arr;          // nothing to do
-
-  // Traditional outer loop: run n‑1 passes
-  for (let pass = 0; pass < n - 1; pass++) {
-    let swapped = false;
-
-    // Inner loop: compare adjacent elements
-    for (let i = 0; i < n - 1 - pass; i++) {
-      if (cmp(arr[i], arr[i + 1]) > 0) {
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
-        swapped = true;
-      }
+    while (i < left.length && j < right.length) {
+        // If left[i] <= right[j] according to cmp, push left[i]
+        if (cmp(left[i], right[j]) <= 0) {
+            result.push(left[i++]);
+        } else {
+            result.push(right[j++]);
+        }
     }
 
-    // If we made no swaps this pass, the array is sorted
-    if (!swapped) break;
-  }
-
-  return arr;
+    // Append any leftovers
+    return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
-/** Default numeric comparator */
-function defaultCmp(a: number, b: number): number {
-  return a - b;
+// 3️⃣  The recursive merge‑sort function
+export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
+    // Default comparator for primitive types
+    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+
+    // Base case: arrays of length 0 or 1 are already sorted
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const mid = Math.floor(arr.length / 2);
+    const left  = mergeSort(arr.slice(0, mid), compare);
+    const right = mergeSort(arr.slice(mid), compare);
+
+    return merge(left, right, compare);
 }
-import { bubbleSort } from './bubbleSort';
+// Numbers
+const nums = [5, 2, 9, 1, 5, 6];
+const sortedNums = mergeSort(nums);
+// sortedNums === [1, 2, 5, 5, 6, 9]
 
-const numbers = [5, 2, 9, 1, 5, 6];
-bubbleSort(numbers);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
+// Strings
+const words = ["banana", "apple", "cherry"];
+const sortedWords = mergeSort(words);
+// sortedWords === ["apple", "banana", "cherry"]
 
-// Custom comparator – strings, case‑insensitive
-const strings = ['Banana', 'apple', 'Cherry'];
-bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(strings); // ['apple', 'Banana', 'Cherry']
-
-// Sorting objects
-interface Person { name: string; age: number }
+// Custom objects (by age)
+type Person = { name: string; age: number };
 const people: Person[] = [
-  { name: 'Ali', age: 30 },
-  { name: 'Beth', age: 24 },
-  { name: 'Carl', age: 38 },
+    { name: "John", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Bob",   age: 35 },
 ];
-bubbleSort(people, (p, q) => p.age - q.age);
-console.log(people);
-// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// sortedByAge => Alice, John, Bob
