@@ -1,39 +1,81 @@
 /**
- * Insertion sort – O(n²) average‑case (stable, in‑place)
- *
- * @param arr       The array to be sorted
- * @param compareFn Optional comparison callback.  If omitted, natural ordering
- *                  (a <= b) is used.  The callback should return
- *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ * A very generic tree node interface.
+ * `children` can be empty, allowing the node to be a leaf.
  */
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): void {
-  // fall back to natural ordering for primitives
-  if (!compareFn) {
-    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
-  }
+interface TreeNode<T = unknown> {
+  /** Whatever payload you want to store. */
+  value: T
 
-  // start from the second element – the first element is a 1‑item sorted slice
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // move elements that are greater than `key` one position to the right
-    while (j >= 0 && compareFn(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // place `key` after the element just smaller than it
-    arr[j + 1] = key;
-  }
+  /** Children of this node – an empty array represents a leaf. */
+  children?: TreeNode<T>[]
 }
-const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
-insertionSort(numbers);
-console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-const words = ['banana', 'apple', 'cherry', 'date'];
-insertionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // ["apple", "banana", "cherry", "date"]
+/**
+ * Depth‑Limited Search (DFS) – recursive version.
+ *
+ * @param root   The node from which the search starts.
+ * @param target A predicate that decides whether the node we are looking for
+ *               was found.
+ * @param limit  The maximum depth (0 → only the root, 1 → root + its children, …).
+ * @param depth  Current depth – the caller should omit it.
+ * @returns The first matching node, or undefined if none is found within the limit.
+ */
+export function depthLimitedSearchRecursive<T>(
+  root: TreeNode<T>,
+  target: (node: TreeNode<T>) => boolean,
+  limit: number,
+  depth = 0
+): TreeNode<T> | undefined {
+  // If the depth exceeds the limit, stop exploring this branch
+  if (depth > limit) return undefined
+
+  if (target(root)) return root
+
+  if (!root.children) return undefined
+
+  for (const child of root.children) {
+    const hit = depthLimitedSearchRecursive(child, target, limit, depth + 1)
+    if (hit) return hit
+  }
+
+  return undefined
+}
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,
+  target: (node: TreeNode<T>) => boolean,
+  limit: number
+): TreeNode<T> | undefined {
+  // Stack entries hold the node and its depth
+  type StackEntry = { node: TreeNode<T>; depth: number }
+  const stack: StackEntry[] = [{ node: root, depth: 0 }]
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!
+
+    if (target(node)) return node
+    if (depth === limit) continue           // don't push children deeper than the limit
+
+    // push children in reverse order so that the leftmost child is processed first
+    if (node.children) {
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 })
+      }
+    }
+  }
+
+  return undefined
+}
+// Example tree (int values)
+const tree: TreeNode<number> = {
+  value: 1,
+  children: [
+    { value: 2, children: [{ value: 4 }, { value: 5 }] },
+    { value: 3, children: [{ value: 6 }, { value: 7 }] }
+  ]
+}
+
+// Find the node with value 5, but never look deeper than depth 2
+const target = (n: TreeNode<number>) => n.value === 5
+const found = depthLimitedSearch(tree, target, 2)
+
+console.log(found?.value)   // prints 5
