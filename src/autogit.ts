@@ -1,78 +1,41 @@
-/**
- * A very small, self‑contained topological‑sort utility.
- *
- * Users should supply a directed graph in adjacency‑list form:
- *
- *   const g = new Map<string, Set<string>>();
- *   g.set('A', new Set(['B', 'C']));
- *   g.set('B', new Set(['D']));
- *   g.set('C', new Set(['D']));
- *   g.set('D', new Set());
- *
- * Call `topologicalSort(g)` and receive an array in an order that
- * satisfies all dependencies. If a cycle is detected the function
- * throws an Error describing the nodes that loop.
- */
+// Basic singly‑linked list node
+type ListNode<T> = { value: T; next: ListNode<T> | null };
 
-type Graph<ID> = Map<ID, Set<ID>>;
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) throw new Error("n must be a positive integer");
 
-/**
- * Detects a directed cycle in a graph by trying a Kahn‑style removal.
- */
-function topologicalSort<ID>(graph: Graph<ID>): ID[] {
-  // 1. Make a copy of indegree counts
-  const indegree = new Map<ID, number>();
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  // Walk the graph once to count in‑edges
-  for (const [node, edges] of graph.entries()) {
-    // Ensure every node in the map has an indegree entry
-    if (!indegree.has(node)) indegree.set(node, 0);
-    for (const neigh of edges) {
-      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
-      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
-      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
-    }
+  // 1️⃣ Move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // fewer than n nodes
+    fast = fast.next;
   }
 
-  // 2. Queue of nodes with no incoming edges
-  const queue: ID[] = [];
-  for (const [node, num] of indegree.entries())
-    if (num === 0) queue.push(node);
-
-  const result: ID[] = [];
-
-  // 3. Repeatedly pop a zero‑in‑degree node, append to result
-  //    and “remove” its outgoing edges
-  while (queue.length) {
-    const node = queue.shift()!;
-    result.push(node);
-
-    const outgoing = graph.get(node) ?? new Set();
-    for (const neigh of outgoing) {
-      // decrement indegree; if it goes to 0 push to queue
-      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
-      indegree.set(neigh, newIndeg);
-      if (newIndeg === 0) queue.push(neigh);
-    }
+  // 2️⃣ Move both pointers until fast is at the end
+  while (fast) {
+    fast = fast.next;
+    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
   }
 
-  // 4. If we didn't visit all nodes → a cycle exists
-  if (result.length !== indegree.size) {
-    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
-    throw new Error(
-      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
-    );
-  }
-
-  return result;
+  return slow; // happy: nth from end
 }
+// build a list 1 -> 2 -> 3 -> 4 -> 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const head: ListNode<number> = { value: 1, next: node2 };
 
-/* ---------- demo ---------- */
-const example = new Map<string, Set<string>>([
-  ['A', new Set(['B', 'C'])],
-  ['B', new Set(['D'])],
-  ['C', new Set(['D'])],
-  ['D', new Set()],
-]);
-
-console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
+const thirdFromEnd = nthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 3
+function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let current = head;
+  let idx = 1;
+  while (current && idx < n) {
+    current = current.next;
+    idx++;
+  }
+  return idx === n ? current : null;
+}
