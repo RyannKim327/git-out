@@ -1,21 +1,26 @@
-/**
- * Removes all vowels (a, e, i, o, u) from the given string.
- *
- * @param str - The input string to process.
- * @returns A new string with all vowels removed.
- */
-export function removeVowels(str: string): string {
-  // The regex matches any of a, e, i, o, u in either case.
-  return str.replace(/[aeiouAEIOU]/g, '');
-}
-console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
-console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
-return str.replace(/[aeiouyAEIOUY]/g, '');
-export function removeVowelsManual(str: string): string {
-  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
-  let result = '';
-  for (const ch of str) {
-    if (!vowels.has(ch)) result += ch;
+const original = [1, 2, 3, 2, 4, 1, 5];
+const deduped = [...new Set(original)];   // => [1, 2, 3, 4, 5]
+const original = [1, 2, 3, 2, 4, 1, 5];
+const deduped = original.filter((value, index, self) =>
+  self.indexOf(value) === index
+); // => [1, 2, 3, 4, 5]
+const original = [1, 2, 3, 2, 4, 1, 5];
+const deduped = original.reduce<number[]>((acc, val) => {
+  if (!acc.includes(val)) {
+    acc.push(val);
   }
-  return result;
+  return acc;
+}, []);  // => [1, 2, 3, 4, 5]
+function dedupe<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
+}
+const cleaned = dedupe([1, 1, 2, 3, 3]); // -> [1, 2, 3]
+type Obj = Record<string, any>;
+
+function dedupeDeep<T extends Obj>(arr: T[]): T[] {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = JSON.stringify(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
 }
