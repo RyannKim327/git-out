@@ -1,43 +1,39 @@
-function triangleAreaBaseHeight(
-    base: number,
-    height: number
-): number {
-    // Guard against negative or zero values
-    if (base <= 0 || height <= 0) {
-        throw new Error('Base and height must be positive numbers.');
+/**
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
+ *
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ */
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+  }
+
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-    return (base * height) / 2;
+
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
+  }
 }
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-// Example usage
-console.log(triangleAreaBaseHeight(10, 5)); // 25
-function triangleAreaBySides(a: number, b: number, c: number): number {
-    // Validate that sides can form a triangle
-    if (a + b <= c || a + c <= b || b + c <= a) {
-        throw new Error('The given sides do not form a valid triangle.');
-    }
-
-    const s = (a + b + c) / 2;
-    const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-    // Numerical safety check: areaSquared should be non‑negative
-    if (areaSquared < 0) {
-        throw new Error('Computed a negative area; check your side lengths.');
-    }
-
-    return Math.sqrt(areaSquared);
-}
-
-// Example
-console.log(triangleAreaBySides(3, 4, 5)); // 6
-type TriangleSpec =
-  | { base: number; height: number }
-  | { a: number; b: number; c: number };
-
-function areaOfTriangle(spec: TriangleSpec): number {
-    if ('base' in spec && 'height' in spec) {
-        return triangleAreaBaseHeight(spec.base, spec.height);
-    } else {
-        return triangleAreaBySides(spec.a, spec.b, spec.c);
-    }
-}
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
