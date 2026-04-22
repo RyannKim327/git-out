@@ -1,61 +1,51 @@
+// Basic node definition – feel free to swap in your own
+class TreeNode<T = number> {
+  val: T
+  left: TreeNode<T> | null = null
+  right: TreeNode<T> | null = null
+
+  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
+    this.val = val
+    if (left) this.left = left
+    if (right) this.right = right
+  }
+}
+
 /**
- * Shell sort – a simple, O(n²) algorithm that usually runs much faster
- * than insertion sort on realistically sized arrays.  
- * It sorts in‑place and returns the same array for convenience.
- *
- * @param  array  The array to sort.
- * @param  compare Optional compare function; defaults to numeric ascending.
- * @return The sorted array.
+ * Returns the diameter of the tree rooted at `root`.
+ * If the tree is empty, the diameter is 0.
  */
-export function shellSort<T>(
-  array: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Fallback to numeric comparison if no function supplied.
-  const cmp = compare ?? ((a: any, b: any) => a - b);
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0
 
-  // Start with a large gap, then reduce it.
-  // A common strategy is h = (3^k - 1) / 2, but starting from size / 2 works well too.
-  let gap = Math.floor(array.length / 2);
+  /**
+   * Helper that returns the height (in nodes) of the subtree.
+   * While unwinding recursion, we update the maximum diameter.
+   */
+  function height(node: TreeNode | null): number {
+    if (!node) return 0
 
-  while (gap > 0) {
-    // Perform a "gapped" insertion sort for this gap.
-    for (let i = gap; i < array.length; i++) {
-      const temp = array[i];
-      let j = i;
+    const leftHeight = height(node.left)
+    const rightHeight = height(node.right)
 
-      // shift earlier gap-sorted elements up until the correct location
-      // is found for temp.
-      while (j >= gap && cmp(array[j - gap], temp) > 0) {
-        array[j] = array[j - gap];
-        j -= gap;
-      }
+    // Path that goes through this node = leftHeight + rightHeight
+    const localDiameter = leftHeight + rightHeight
 
-      array[j] = temp;
-    }
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter
 
-    // Reduce the gap for the next pass.
-    gap = Math.floor(gap / 2);
+    // Height is max child height plus this node
+    return Math.max(leftHeight, rightHeight) + 1
   }
 
-  return array;
+  height(root)
+  return maxDiameter   // edge‑count diameter
 }
-import { shellSort } from "./shellSort";
 
-const nums = [34, 8, 64, 51, 32, 21];
-console.log(shellSort(nums)); // → [8, 21, 32, 34, 51, 64]
-type Item = { name: string; value: number };
+/* ---------- quick test ---------- */
+const tree = new TreeNode(
+  1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
+)
 
-const items: Item[] = [
-  { name: "apple",  value: 5 },
-  { name: "banana", value: 2 },
-  { name: "cherry", value: 7 },
-];
-
-shellSort(items, (a, b) => a.value - b.value);
-console.log(items);
-// → [
-//     { name: "banana", value: 2 },
-//     { name: "apple",  value: 5 },
-//     { name: "cherry", value: 7 }
-//   ]
+console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
