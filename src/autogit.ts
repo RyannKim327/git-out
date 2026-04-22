@@ -1,56 +1,55 @@
-// 1️⃣  Define a compare function signature
-type Comparator<T> = (a: T, b: T) => number;
+/**
+ * A classic LIFO stack backed by an array.
+ * @template T The type stored in the stack.
+ */
+export class Stack<T> {
+  // The internal storage array – keep it private.
+  private items: T[] = [];
 
-// 2️⃣  Merge helper – combines two sorted halves
-function merge<T>(left: T[], right: T[], cmp: Comparator<T>): T[] {
-    const result: T[] = [];
-    let i = 0, j = 0;
+  /** Push a value onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
+  }
 
-    while (i < left.length && j < right.length) {
-        // If left[i] <= right[j] according to cmp, push left[i]
-        if (cmp(left[i], right[j]) <= 0) {
-            result.push(left[i++]);
-        } else {
-            result.push(right[j++]);
-        }
-    }
+  /** Remove and return the top value. Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
 
-    // Append any leftovers
-    return result.concat(left.slice(i)).concat(right.slice(j));
+  /** Return the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return how many items are currently in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Simple truthy check for emptiness. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** (Optional) Clear all items from the stack. */
+  clear(): void {
+    this.items.length = 0; // Fastest way to empty an array
+  }
 }
+import { Stack } from './Stack';
 
-// 3️⃣  The recursive merge‑sort function
-export function mergeSort<T>(arr: T[], cmp?: Comparator<T>): T[] {
-    // Default comparator for primitive types
-    const compare: Comparator<T> = cmp ?? ((a, b) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0);
+const stack = new Stack<number>();
 
-    // Base case: arrays of length 0 or 1 are already sorted
-    if (arr.length <= 1) {
-        return arr;
-    }
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-    const mid = Math.floor(arr.length / 2);
-    const left  = mergeSort(arr.slice(0, mid), compare);
-    const right = mergeSort(arr.slice(mid), compare);
+console.log(stack.size());  // 3
+console.log(stack.peek());  // 30
 
-    return merge(left, right, compare);
-}
-// Numbers
-const nums = [5, 2, 9, 1, 5, 6];
-const sortedNums = mergeSort(nums);
-// sortedNums === [1, 2, 5, 5, 6, 9]
+console.log(stack.pop());   // 30
+console.log(stack.pop());   // 20
+console.log(stack.isEmpty()); // false
 
-// Strings
-const words = ["banana", "apple", "cherry"];
-const sortedWords = mergeSort(words);
-// sortedWords === ["apple", "banana", "cherry"]
-
-// Custom objects (by age)
-type Person = { name: string; age: number };
-const people: Person[] = [
-    { name: "John", age: 30 },
-    { name: "Alice", age: 25 },
-    { name: "Bob",   age: 35 },
-];
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// sortedByAge => Alice, John, Bob
+stack.clear();
+console.log(stack.isEmpty()); // true
