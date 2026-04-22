@@ -1,42 +1,52 @@
-// O(n) time, O(1) space – the classic Boyer‑Moore vote‑count algorithm
-function majorityElement(nums: number[]): number | null {
-  if (nums.length === 0) return null;  // no data
+// src/services/ApiService.ts
+async function fetchRandomJoke(): Promise<any> {
+  const url = 'https://official-joke-api.appspot.com/jokes/random';
 
-  // 1️⃣ First pass: find a candidate
-  let candidate = nums[0];
-  let count = 1;
+  try {
+    const response = await fetch(url);
 
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = nums[i];
-        count = 1;
-      }
+    if (!response.ok) {
+      throw new Error(`API responded with ${response.status}`);
     }
+
+    const data = await response.json();   // <- the "async task" part
+    return data;
+  } catch (err) {
+    console.warn('Unable to load joke:', err);
+    throw err;          // bubble up so the caller can react
   }
-
-  // 2️⃣ Second pass: verify that the candidate really is the majority
-  count = 0;
-  for (const v of nums) if (v === candidate) count++;
-
-  return count > Math.floor(nums.length / 2) ? candidate : null;
 }
-function majorityElementUsingMap(nums: number[]): number | null {
-  const freq = new Map<number, number>();
-  const threshold = Math.floor(nums.length / 2);
 
-  for (const n of nums) {
-    freq.set(n, (freq.get(n) ?? 0) + 1);
-    if (freq.get(n)! > threshold) {
-      return n;            // early win
-    }
-  }
-  return null;              // nothing crossed threshold
+export const ApiService = { fetchRandomJoke };
+// src/App.tsx
+import React, { useEffect, useState } from 'react';
+import { Text, View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ApiService } from './services/ApiService';
+
+export default function App() {
+  const [joke, setJoke] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    ApiService.fetchRandomJoke()
+      .then((data) => setJoke(`${data.setup} … ${data.punchline}`))
+      .catch(() => setJoke('Couldn’t fetch a joke :('))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" />
+      ) : (
+        <Text style={styles.text}>{joke ?? 'Press reload to fetch a joke.'}</Text>
+      )}
+    </View>
+  );
 }
-console.log(majorityElement([3, 3, 4, 2, 3]));          // 3
-console.log(majorityElement([1, 2, 3, 4]));             // null (no majority)
-console.log(majorityElementUsingMap([1, 1, 2, 1, 3]));  // 1
-function majorityString<T>(arr: T[]): T | null { /* same logic, just generic */ }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 18, padding: 20, textAlign: 'center' },
+});
