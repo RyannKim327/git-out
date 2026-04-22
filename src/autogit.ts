@@ -1,57 +1,30 @@
-function removeItem<T>(arr: T[], item: T): void {
-  const idx = arr.indexOf(item);      // first occurrence
-  if (idx !== -1) {
-    arr.splice(idx, 1);               // mutate the original array
-  }
+// Generic helper – works with any comparable type that can be used as a Map key
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
 }
-function removed<T>(arr: T[], item: T): T[] {
-  return arr.filter(x => x !== item); // keeps unchanged items
-}
-function removeAt<T>(arr: T[], idx: number): void {
-  if (idx >= 0 && idx < arr.length) {
-    arr.splice(idx, 1);
-  }
-}
-const set = new Set(arr);   // unique elements
-set.delete(item);           // removes it if present
-const newArr = [...set];    // back to an array
-type RemoveOptions = {
-  /** If true, only remove the first matching element */
-  firstOnly?: boolean;
-};
 
-function remove<T>(
-  arr: T[],
-  itemOrIdx: T | number,
-  options: RemoveOptions = {}
+// Simple test
+const arr1 = [1, 2, 3, 5, 8];
+const arr2 = [3, 4, 5, 6, 9];
+
+console.log(intersection(arr1, arr2)); // → [3, 5]
+function firstIntersection<T>(a: T[], b: T[]): T | undefined {
+  const setB = new Set(b);
+  for (const item of a) {
+    if (setB.has(item)) return item;
+  }
+}
+function intersectionBy<T, K extends keyof T>(
+  a: T[],
+  b: T[],
+  key: K
 ): T[] {
-  const { firstOnly = false } = options;
-
-  // Remove by index
-  if (typeof itemOrIdx === 'number') {
-    const idx = itemOrIdx;
-    if (idx >= 0 && idx < arr.length) {
-      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
-    }
-    return arr;
-  }
-
-  // Remove by value
-  const item = itemOrIdx as T;
-  const idx = arr.indexOf(item);
-
-  if (idx === -1) return arr; // nothing to do
-
-  if (firstOnly) {
-    // fast path: mutate in place
-    arr.splice(idx, 1);
-    return arr;
-  }
-
-  // immutable: create a new array
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+  const map = new Map(b.map(v => [v[key], v]));
+  return a.filter(v => map.has(v[key]));
 }
-let nums = [1, 2, 3, 2, 4];
-remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
-remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
-remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
+interface User { id: number; name: string }
+const usersA = [{ id:1 },{ id:2 },{ id:3 }]
+const usersB = [{ id:2 },{ id:3 },{ id:4 }]
+console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
+const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
