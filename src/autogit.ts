@@ -1,57 +1,49 @@
-const EMAIL_REGEX = new RegExp(
-  // local part   : a letter or digit, followed by 0–63 chars that can be
-  //                 letters, digits, or one of  . _ - + % #
-  // domain part  : 1+ labels separated by dots.  Each label may contain
-  //                 letters, digits, hyphens (not at the ends).
-  //                 The final label (TLD) must be at least two letters.
-  //             This purposely *does not* allow quoted local parts,
-  //             nor IP‑literal addresses (e.g. [127.0.0.1]).
-  //             It covers the vast majority of addresses you’ll see.
-  /^(?=.{1,254}$)(?:[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$/i
-);
 /**
- * Returns true if the string looks like a real e‑mail address.
- *
- * @param address The value to test.
- * @returns Boolean indicating validity.
+ * Checks if an array of numbers is in ascending order.
  */
-export function isValidEmail(address: string): boolean {
-  return EMAIL_REGEX.test(address);
+function isSorted(arr: number[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i - 1] > arr[i]) return false;
+  }
+  return true;
 }
-import { useState } from "react";
-import { isValidEmail } from "./validators";
 
-export function EmailForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState(false);
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(!isValidEmail(email));
-  };
-
-  return (
-    <form onSubmit={onSubmit}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ borderColor: error ? "red" : undefined }}
-      />
-      {error && <p>That doesn’t look like a valid e‑mail.</p>}
-      <button type="submit">Send</button>
-    </form>
-  );
+/**
+ * Randomly shuffles an array in place using Fisher‑Yates.
+ */
+function shuffleInPlace<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 }
-const testEmails = [
-  "hello@example.com",
-  "user+tag@domain.co.uk",
-  "firstname.lastname@sub.domain.org",
-  `"just a quote"@example.com",  // invalid here
-  "invalid@",
-  "@no-local.com",
-  "space in local@domain.com",
-  "very.long@domain.verylongtldnameforeverthisdoesnotmakeanysensebecausewhothereisit.com"
-];
 
-testEmails.forEach(e => console.log(`${e} → ${isValidEmail(e)}`));
+/**
+ * A “random sort”—shuffle until the array is sorted.
+ *
+ * The function is deliberately small and intentionally slow.
+ * Good for teaching randomness, not for production work.
+ */
+export function completelyRandomSort<T extends number>(arr: T[]): T[] {
+  // Work on a copy so the original stays untouched.
+  const working = [...arr];
+
+  // Keep an iteration counter for demonstration.
+  let attempts = 0;
+
+  // Guard against accidentally running forever on empty or single‑element arrays.
+  if (working.length <= 1) return working;
+
+  while (!isSorted(working)) {
+    shuffleInPlace(working);
+    attempts++;
+    // Optional: print progress every 1000 attempts (comment this out in tight loops).
+    // if (attempts % 1000 === 0) console.log(`Still sorting… attempt #${attempts}`);
+  }
+
+  console.log(`Sorted after ${attempts} random shuffles!`);
+  return working;
+}
+const data = [42, 7, 13, 2, 27];
+const sorted = completelyRandomSort(data);
+console.log(sorted); // → [2, 7, 13, 27, 42]
