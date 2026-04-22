@@ -1,28 +1,25 @@
-/**
- * How many times does `word` appear in `text`?
- *
- * @param text   The string to search.
- * @param word   The exact word you’re looking for (case‑insensitive).
- * @returns      Number of matches.
- */
-export function countWord(text: string, word: string): number {
-  if (!word) return 0;                      // avoid /()/ which matches every position
+function isSortedAsc<T>(arr: T[], compareFn?: (a: T, b: T) => number): boolean {
+  if (arr.length < 2) return true;           // One or no elements is always sorted
 
-  const re = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
-}
+  // Default comparison is the "<=" operator for primitives
+  const cmp = compareFn ?? ((a: T, b: T) => (a as any) <= (b as any) ? 0 : 1);
 
-/** Escape characters that have special meaning in a regex. */
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (let i = 1; i < arr.length; i++) {
+    // If the current element is less than the previous one, it’s not sorted
+    if (cmp(arr[i - 1], arr[i]) > 0) return false;
+  }
+  return true;
 }
-const note = "The quick brown fox jumps over the lazy dog. The fox is quick.";
-console.log(countWord(note, "the"));   // 3 (The, the, The)
-console.log(countWord(note, "fox"));   // 2
-function countWordSimple(text: string, word: string): number {
-  const lw = word.toLowerCase();
-  return text
-    .split(/\s+/)
-    .filter(tok => tok.toLowerCase() === lw).length;
-}
+console.log(isSortedAsc([1, 2, 3, 4]));  // true
+console.log(isSortedAsc([1, 3, 2, 5]));  // false
+interface Person { age: number; name: string }
+
+const people = [
+  { age: 22, name: "Alice" },
+  { age: 29, name: "Bob" },
+  { age: 30, name: "Carol" }
+];
+
+console.log(isSortedAsc(people, (a, b) => a.age - b.age)); // true
+const isSortedAscShortcut = (arr: number[]): boolean =>
+  arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
