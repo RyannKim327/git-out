@@ -1,41 +1,34 @@
-// Basic singly‑linked list node
-type ListNode<T> = { value: T; next: ListNode<T> | null };
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) throw new Error("n must be a positive integer");
+  let largest = -Infinity;
+  let second = -Infinity;
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // 1️⃣ Move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null; // fewer than n nodes
-    fast = fast.next;
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
   }
 
-  // 2️⃣ Move both pointers until fast is at the end
-  while (fast) {
-    fast = fast.next;
-    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
-  }
-
-  return slow; // happy: nth from end
+  return second === -Infinity ? undefined : second;
 }
-// build a list 1 -> 2 -> 3 -> 4 -> 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const head: ListNode<number> = { value: 1, next: node2 };
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
 
-const thirdFromEnd = nthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 3
-function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let current = head;
-  let idx = 1;
-  while (current && idx < n) {
-    current = current.next;
-    idx++;
-  }
-  return idx === n ? current : null;
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
 }
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
