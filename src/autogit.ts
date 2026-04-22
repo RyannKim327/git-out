@@ -1,30 +1,23 @@
-// Define what the API will return (pick and choose any fields you need)
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
+function isPalindrome(s: string): boolean {
+  // 1. Normalise: lower‑case, trim, and strip non‑alphanumerics
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
-async function apiGet<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  // 2. Compare with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Racecar'));                          // true
+console.log(isPalindrome('Hello'));                            // false
+function isPalindromeTwoPointer(s: string): boolean {
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
-  return response.json() as Promise<T>;
+  return true;
 }
-
-// Example usage: pull a single todo item
-async function fetchTodo(todoId: number) {
-  try {
-    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
-    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
-    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
-  } catch (err) {
-    console.error('Oops:', err);
-  }
-}
-
-// Kick it off (demo)
-fetchTodo(42);
