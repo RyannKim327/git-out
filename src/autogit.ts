@@ -1,74 +1,57 @@
+const EMAIL_REGEX = new RegExp(
+  // local part   : a letter or digit, followed by 0–63 chars that can be
+  //                 letters, digits, or one of  . _ - + % #
+  // domain part  : 1+ labels separated by dots.  Each label may contain
+  //                 letters, digits, hyphens (not at the ends).
+  //                 The final label (TLD) must be at least two letters.
+  //             This purposely *does not* allow quoted local parts,
+  //             nor IP‑literal addresses (e.g. [127.0.0.1]).
+  //             It covers the vast majority of addresses you’ll see.
+  /^(?=.{1,254}$)(?:[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$/i
+);
 /**
- * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
- * lps[i] is the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
+ * Returns true if the string looks like a real e‑mail address.
+ *
+ * @param address The value to test.
+ * @returns Boolean indicating validity.
  */
-function buildLps(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;                 // length of the previous longest prefix‑suffix
-  let i = 1;                      // we start from the second character
-
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous potential prefix
-        length = lps[length - 1];
-        // note: we do **not** increment i here
-      } else {
-        // no match at all; lps[i] stays 0
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-
-  return lps;
+export function isValidEmail(address: string): boolean {
+  return EMAIL_REGEX.test(address);
 }
+import { useState } from "react";
+import { isValidEmail } from "./validators";
 
-/**
- * KMP search: returns the index of the first occurrence of the pattern in the text,
- * or -1 if the pattern is absent.
- */
-function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;              // trivial match
-  if (text.length < pattern.length) return -1;     // cannot match
+export function EmailForm() {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState(false);
 
-  const lps = buildLps(pattern);
-  let tIdx = 0;      // index into text
-  let pIdx = 0;      // index into pattern
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(!isValidEmail(email));
+  };
 
-  while (tIdx < text.length) {
-    if (pattern[pIdx] === text[tIdx]) {
-      tIdx++;
-      pIdx++;
-
-      // full match
-      if (pIdx === pattern.length) {
-        return tIdx - pIdx;   // return starting index
-      }
-    } else {
-      if (pIdx !== 0) {
-        // skip comparisons by using the lps table
-        pIdx = lps[pIdx - 1];
-      } else {
-        tIdx++;
-      }
-    }
-  }
-
-  return -1; // not found
+  return (
+    <form onSubmit={onSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={{ borderColor: error ? "red" : undefined }}
+      />
+      {error && <p>That doesn’t look like a valid e‑mail.</p>}
+      <button type="submit">Send</button>
+    </form>
+  );
 }
+const testEmails = [
+  "hello@example.com",
+  "user+tag@domain.co.uk",
+  "firstname.lastname@sub.domain.org",
+  `"just a quote"@example.com",  // invalid here
+  "invalid@",
+  "@no-local.com",
+  "space in local@domain.com",
+  "very.long@domain.verylongtldnameforeverthisdoesnotmakeanysensebecausewhothereisit.com"
+];
 
-/* ---------- Example usage ---------- */
-const txt = "abxabcabcaby";
-const pat = "abcaby";
-
-const idx = kmpSearch(txt, pat);
-console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
-console.assert(kmpSearch("hello world", "world") === 6);
-console.assert(kmpSearch("hello world", "bye")    === -1);
-console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
+testEmails.forEach(e => console.log(`${e} → ${isValidEmail(e)}`));
