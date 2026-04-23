@@ -1,52 +1,76 @@
-// 1.  Define a node type ----------------------------------------------------
-type TreeNode<T = number> = {
-  val: T
-  left?: TreeNode<T>
-  right?: TreeNode<T>
+// ------------------------------
+// Radix Sort (base 10)
+// ------------------------------
+
+/**
+ * Performs a stable counting sort on the array `arr` using the digit at
+ * position `digitPlace` (1, 10, 100, …).  The function returns the
+ * sorted array – the original array remains untouched.
+ */
+function countingSortByDigit(
+  arr: number[],
+  digitPlace: number
+): number[] {
+  const buckets: { [key: number]: number[] } = {
+    0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [],
+  };
+
+  for (const num of arr) {
+    // Extract the current digit:
+    //   Math.abs(num) to work with negative values,
+    //   modulo digitPlace to isolate the digit,
+    //   then divide by digitPlace to shift back.
+    const digit =
+      Math.floor((Math.abs(num) % (digitPlace * 10)) / digitPlace);
+
+    buckets[digit].push(num);
+  }
+
+  // Concatenate buckets in numeric order (0→9) to keep the sort stable.
+  return Object.values(buckets).reduce((out, bucket) => out.concat(bucket), []);
 }
 
-// 2.  Recursive leaf‑counter -----------------------------------------------
-function countLeaves<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0                            // empty subtree
-  if (!root.left && !root.right) return 1        // leaf reached
-  // otherwise sum the counts from both sides
-  return countLeaves(root.left) + countLeaves(root.right)
-}
+/**
+ * Radix sort for an array of integers.  Handles negative values by
+ * sorting positives and negatives separately and then combining.
+ */
+export function radixSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-// 3.  Iterative version (works the same but uses an explicit stack) --------
-function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0
+  // Separate positives and negatives.
+  const positives = arr.filter((n) => n >= 0);
+  const negatives = arr.filter((n) => n < 0).map((n) => Math.abs(n));
 
-  let count = 0
-  const stack: Array<TreeNode<T>> = [root]
-
-  while (stack.length) {
-    const node = stack.pop()!
-    const { left, right } = node
-
-    if (!left && !right) {
-      count++
-    } else {
-      if (right) stack.push(right)
-      if (left) stack.push(left)
+  // Helper to sort a non‑negative array using radix sort.
+  const sortNonNegative = (numbers: number[]) => {
+    // Find the largest number so we know how many digit passes.
+    let max = 0;
+    for (const n of numbers) {
+      if (n > max) max = n;
     }
-  }
-  return count
+
+    let digitPlace = 1;
+    while (digitPlace <= max) {
+      // Sort by this digit; each pass is stable.
+      const sorted = countingSortByDigit(numbers, digitPlace);
+      // Prepare for next iteration.
+      numbers = sorted;
+      digitPlace *= 10;
+    }
+    return numbers;
+  };
+
+  const sortedPos = sortNonNegative(positives);
+  const sortedNeg = sortNonNegative(negatives); // already abs values
+
+  // Negatives need to be reversed and negated back.
+  const sortedNegReversed = sortedNeg.reverse().map((n) => -n);
+
+  // Combine: negatives first, then positives.
+  return [...sortedNegReversed, ...sortedPos];
 }
 
-// 4.  Quick demo -------------------------------------------------------------
-const tree: TreeNode<number> = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4 },
-    right: { val: 5 }
-  },
-  right: {
-    val: 3,
-    right: { val: 6 }
-  }
-}
-
-console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
-console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
+/* ------------------------------ Demo ------------------------------ */
+const sample = [170, 45, 75, -90, 802, 24, 2, 66, -31, 0];
+console.log('Original:', sample.join(', '));
+console.log('Sorted  :', radixSort(sample).join(', '));
