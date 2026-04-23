@@ -1,57 +1,61 @@
-const EMAIL_REGEX = new RegExp(
-  // local part   : a letter or digit, followed by 0–63 chars that can be
-  //                 letters, digits, or one of  . _ - + % #
-  // domain part  : 1+ labels separated by dots.  Each label may contain
-  //                 letters, digits, hyphens (not at the ends).
-  //                 The final label (TLD) must be at least two letters.
-  //             This purposely *does not* allow quoted local parts,
-  //             nor IP‑literal addresses (e.g. [127.0.0.1]).
-  //             It covers the vast majority of addresses you’ll see.
-  /^(?=.{1,254}$)(?:[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+\/=?^_`{|}~-]+)*)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\\.[A-Za-z]{2,}$/i
-);
 /**
- * Returns true if the string looks like a real e‑mail address.
- *
- * @param address The value to test.
- * @returns Boolean indicating validity.
+ * Generic comparison, returns true if a should come before b.
+ * Default is for a number array (so it's an ascending sort).
  */
-export function isValidEmail(address: string): boolean {
-  return EMAIL_REGEX.test(address);
+type Comparator<T> = (a: T, b: T) => boolean;
+
+function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
+  const n = arr.length;
+
+  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
+
+  /* 2️⃣ Extract elements one by one */
+  for (let end = n - 1; end > 0; end--) {
+    // swap max element (root) with the last element of the heap
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    // heap size shrinks by one; restore heap property for the new root
+    siftDown(arr, 0, end, compare);
+  }
 }
-import { useState } from "react";
-import { isValidEmail } from "./validators";
 
-export function EmailForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState(false);
+/**
+ * Moves the element at `start` down the heap until the heap
+ * property is restored.  The heap is the sub‑array `[0, size)`.
+ */
+function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
+  let root = start;
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(!isValidEmail(email));
-  };
+  while (true) {
+    const left = 2 * root + 1;   // left child index
+    const right = left + 1;      // right child index
+    let swapIdx = root;
 
-  return (
-    <form onSubmit={onSubmit}>
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ borderColor: error ? "red" : undefined }}
-      />
-      {error && <p>That doesn’t look like a valid e‑mail.</p>}
-      <button type="submit">Send</button>
-    </form>
-  );
+    // if left child exists and is greater (or “comes first” by compare)
+    if (left < size && compare(arr[swapIdx], arr[left])) {
+      swapIdx = left;
+    }
+
+    // do the same for the right child
+    if (right < size && compare(arr[swapIdx], arr[right])) {
+      swapIdx = right;
+    }
+
+    // if root holds the max element, we are done
+    if (swapIdx === root) return;
+
+    // swap root with the larger child and continue
+    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
+    root = swapIdx;
+  }
 }
-const testEmails = [
-  "hello@example.com",
-  "user+tag@domain.co.uk",
-  "firstname.lastname@sub.domain.org",
-  `"just a quote"@example.com",  // invalid here
-  "invalid@",
-  "@no-local.com",
-  "space in local@domain.com",
-  "very.long@domain.verylongtldnameforeverthisdoesnotmakeanysensebecausewhothereisit.com"
-];
 
-testEmails.forEach(e => console.log(`${e} → ${isValidEmail(e)}`));
+/* --------------------  Example usage  -------------------- */
+
+const nums = [5, 1, 4, 2, 8, 0, 3];
+heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
+
+/* --------------------  Sorting strings  -------------------- */
+const strs = ["delta", "alpha", "charlie", "bravo"];
+heapSort(strs, (a, b) => a > b);   // descending order
+// strs => ["delta", "charlie", "bravo", "alpha"]
