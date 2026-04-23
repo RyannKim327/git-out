@@ -1,52 +1,42 @@
-/**
- * Counting sort for an array of integers.
- *
- * @param arr – array of numbers (integers) to sort
- * @returns a new array containing the same numbers in ascending order
- */
-export function countingSort(arr: number[]): number[] {
-  // nothing to sort
-  if (arr.length <= 1) return [...arr];
+// O(n) time, O(1) space – the classic Boyer‑Moore vote‑count algorithm
+function majorityElement(nums: number[]): number | null {
+  if (nums.length === 0) return null;  // no data
 
-  // 1. locate the min/max so we know how big the count array must be
-  let min = arr[0];
-  let max = arr[0];
+  // 1️⃣ First pass: find a candidate
+  let candidate = nums[0];
+  let count = 1;
 
-  for (let i = 1; i < arr.length; i++) {
-    const v = arr[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
-
-  // 2. build the frequency table
-  // offset shifts the negative values to positive indices
-  const offset = -min;                     // e.g. min = -3 → offset = 3
-  const size   = max - min + 1;            // number of distinct keys
-  const count  = new Array<number>(size).fill(0);
-
-  for (const v of arr) {
-    count[v + offset]++;
-  }
-
-  // 3. reconstruct the sorted array
-  const out: number[] = new Array(arr.length);
-  let writeIdx = 0;
-
-  for (let i = 0; i < size; i++) {
-    const qty = count[i];
-    if (qty === 0) continue;
-
-    const value = i - offset;   // bring back to original key
-    for (let j = 0; j < qty; j++) {
-      out[writeIdx++] = value;
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = nums[i];
+        count = 1;
+      }
     }
   }
 
-  return out;
+  // 2️⃣ Second pass: verify that the candidate really is the majority
+  count = 0;
+  for (const v of nums) if (v === candidate) count++;
+
+  return count > Math.floor(nums.length / 2) ? candidate : null;
 }
-import { countingSort } from './countingSort';
+function majorityElementUsingMap(nums: number[]): number | null {
+  const freq = new Map<number, number>();
+  const threshold = Math.floor(nums.length / 2);
 
-const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
-const sorted   = countingSort(unsorted);
-
-console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
+  for (const n of nums) {
+    freq.set(n, (freq.get(n) ?? 0) + 1);
+    if (freq.get(n)! > threshold) {
+      return n;            // early win
+    }
+  }
+  return null;              // nothing crossed threshold
+}
+console.log(majorityElement([3, 3, 4, 2, 3]));          // 3
+console.log(majorityElement([1, 2, 3, 4]));             // null (no majority)
+console.log(majorityElementUsingMap([1, 1, 2, 1, 3]));  // 1
+function majorityString<T>(arr: T[]): T | null { /* same logic, just generic */ }
