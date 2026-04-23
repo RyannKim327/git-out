@@ -1,26 +1,40 @@
-const original = [1, 2, 3, 2, 4, 1, 5];
-const deduped = [...new Set(original)];   // => [1, 2, 3, 4, 5]
-const original = [1, 2, 3, 2, 4, 1, 5];
-const deduped = original.filter((value, index, self) =>
-  self.indexOf(value) === index
-); // => [1, 2, 3, 4, 5]
-const original = [1, 2, 3, 2, 4, 1, 5];
-const deduped = original.reduce<number[]>((acc, val) => {
-  if (!acc.includes(val)) {
-    acc.push(val);
-  }
-  return acc;
-}, []);  // => [1, 2, 3, 4, 5]
-function dedupe<T>(arr: T[]): T[] {
-  return [...new Set(arr)];
+class TreeNode {
+  constructor(
+    public val: number,
+    public left: TreeNode | null = null,
+    public right: TreeNode | null = null
+  ) {}
 }
-const cleaned = dedupe([1, 1, 2, 3, 3]); // -> [1, 2, 3]
-type Obj = Record<string, any>;
+function sumTree(root: TreeNode | null): number {
+  if (!root) return 0;          // nothing to add
+  const leftSum = sumTree(root.left);
+  const rightSum = sumTree(root.right);
+  return root.val + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let sum = 0;
+  const stack: Array<TreeNode> = [root];
 
-function dedupeDeep<T extends Obj>(arr: T[]): T[] {
-  const seen = new Set<string>();
-  return arr.filter(item => {
-    const key = JSON.stringify(item);
-    return seen.has(key) ? false : seen.add(key);
-  });
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+
+  return sum;
 }
+const root = new TreeNode(5,
+  new TreeNode(3,
+    new TreeNode(2),
+    new TreeNode(4)
+  ),
+  new TreeNode(8,
+    null,
+    new TreeNode(9)
+  )
+);
+
+console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
+console.log(sumTreeIterative(root)); // 31
