@@ -1,30 +1,14 @@
-// Define what the API will return (pick and choose any fields you need)
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
+// 1️⃣ Using a regex (global, matches all spaces)
+const withoutSpaces1 = str.replace(/ /g, '');
 
-// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
-async function apiGet<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
-  }
-  return response.json() as Promise<T>;
-}
+// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
+const withoutSpaces2 = str.replace(/\s+/g, '');
 
-// Example usage: pull a single todo item
-async function fetchTodo(todoId: number) {
-  try {
-    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
-    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
-    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
-  } catch (err) {
-    console.error('Oops:', err);
-  }
-}
+// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
+const withoutSpaces3 = str.split(' ').join('');
 
-// Kick it off (demo)
-fetchTodo(42);
+// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
+const withoutSpaces4 = str.replaceAll(' ', '');
+
+// 5️⃣ For a functional style (works even in older versions)
+const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
