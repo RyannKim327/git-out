@@ -1,16 +1,4 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
+const original = "HeLLo WorLD!";
+const lower = original.toLowerCase();
 
-console.log(reverseString('hello')); // "olleh"
-function reverseStringManual(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
-}
-
-console.log(reverseStringManual('world')); // "dlrow"
-console.assert(reverseString('abc') === 'cba');
-console.assert(reverseStringManual('abc') === 'cba');
+console.log(lower); // => "hello world!"
