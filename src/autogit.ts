@@ -1,117 +1,18 @@
-// A minimal node that carries a value and a pointer to the next node.
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-push(value: T): void {
-  const newNode = new ListNode(value);
-  if (!this.head) {                // empty list
-    this.head = this.tail = newNode;
-  } else {
-    this.tail!.next = newNode;     // tail is never null here
-    this.tail = newNode;
-  }
-  this._size++;
-}
-unshift(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
-  if (!this.tail) this.tail = newNode;   // list was empty
-  this._size++;
-}
-pop(): T | null {
-  if (!this.head) return null;          // nothing to pop
-  let removed: T;
-  if (this.head === this.tail) {        // only one element
-    removed = this.head.value;
-    this.head = this.tail = null;
-  } else {
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    removed = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-  }
-  this._size--;
-  return removed;
-}
-shift(): T | null {
-  if (!this.head) return null;
-  const removed = this.head.value;
-  this.head = this.head.next;
-  if (!this.head) this.tail = null;   // list became empty
-  this._size--;
-  return removed;
-}
-find(predicate: (value: T) => boolean): ListNode<T> | null {
-  for (let cur = this.head; cur; cur = cur.next) {
-    if (predicate(cur.value)) return cur;
-  }
-  return null;
-}
-delete(value: T): boolean {
-  if (!this.head) return false;
+const numbers: number[] = [12, 4, 56, 3, 9];
 
-  if (this.head.value === value) {
-    this.shift();            // reuse existing logic
-    return true;
-  }
+// The default sort is string comparison → "12" < "56" < ...!
+const sorted = numbers.slice().sort((a, b) => a - b);
 
-  let previous = this.head;
-  let current = this.head.next;
-
-  while (current) {
-    if (current.value === value) {
-      previous.next = current.next;
-      if (current === this.tail) this.tail = previous;
-      this._size--;
-      return true;
-    }
-    previous = current;
-    current = current.next;
-  }
-  return false;
-}
-size(): number {
-  return this._size;
+console.log(sorted); // [3, 4, 9, 12, 56]
+function sortNums(arr: number[]): number[] {
+  return arr.slice().sort((a, b) => a - b);
 }
 
-isEmpty(): boolean {
-  return this._size === 0;
+const unsorted = [27, 13, 42, 8];
+console.log(sortNums(unsorted)); // [8, 13, 27, 42]
+function sortBy<T>(arr: T[], cmpFn: (a: T, b: T) => number): T[] {
+  return arr.slice().sort(cmpFn);
 }
-forEach(callback: (value: T) => void): void {
-  for (let cur = this.head; cur; cur = cur.next) {
-    callback(cur.value);
-  }
+function sortNumbersASC(nums: number[]): number[] {
+  return nums.slice().sort((a, b) => a - b);
 }
-*[Symbol.iterator](): Iterator<T> {
-  let current = this.head;
-  while (current) {
-    yield current.value;
-    current = current.next;
-  }
-}
-const list = new LinkedList<number>();
-list.push(10);
-list.push(20);
-list.push(30);
-
-for (const n of list) console.log(n); // 10 20 30
-import { ListNode, LinkedList } from "./linked-list";
-
-const list = new LinkedList<string>();
-list.push("first");
-list.push("second");
-list.unshift("zero");
-console.log(list.size()); // 3
-
-list.delete("second");
-console.log([...list]);   // ["zero", "first"]
-
-list.pop();
-console.log(list.shift()); // "zero"
