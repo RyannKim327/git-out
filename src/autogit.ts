@@ -1,20 +1,26 @@
-/**
- * Returns an integer between `min` and `max` (both inclusive).
- *
- * @param min - The smallest value you want (inclusive)
- * @param max - The largest value you want (inclusive)
- */
-export function randomInt(min: number, max: number): number {
-  // Guard against accidental inverted bounds
-  if (min > max) [min, max] = [max, min];
-
-  // `Math.random()` gives us a value in the half‑open interval [0, 1).
-  // Multiply to widen the range, add 1 to make the bound inclusive,
-  // then floor to truncate to an integer.
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+const original = [1, 2, 3, 2, 4, 1, 5];
+const deduped = [...new Set(original)];   // => [1, 2, 3, 4, 5]
+const original = [1, 2, 3, 2, 4, 1, 5];
+const deduped = original.filter((value, index, self) =>
+  self.indexOf(value) === index
+); // => [1, 2, 3, 4, 5]
+const original = [1, 2, 3, 2, 4, 1, 5];
+const deduped = original.reduce<number[]>((acc, val) => {
+  if (!acc.includes(val)) {
+    acc.push(val);
+  }
+  return acc;
+}, []);  // => [1, 2, 3, 4, 5]
+function dedupe<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
 }
-const roll = randomInt(1, 6);   // a fair d6 roll
-console.log(roll);              // 1–6, every call varies
-export function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min;
+const cleaned = dedupe([1, 1, 2, 3, 3]); // -> [1, 2, 3]
+type Obj = Record<string, any>;
+
+function dedupeDeep<T extends Obj>(arr: T[]): T[] {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = JSON.stringify(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
 }
