@@ -1,72 +1,41 @@
-// A single node in a singly linked list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
+/**
+ * Checks whether a string is a palindrome.
+ *
+ * Options:
+ *   - ignoreCase: treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
+ *
+ * @param input The string to test
+ * @param opts  Optional settings
+ * @returns true if `input` is a palindrome under the chosen rules
+ */
+export function isPalindrome(
+  input: string,
+  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+
+  let str = input;
+
+  // 1. Collapse the string if requested
+  if (ignoreNonAlnum) {
+    // Keep only ASCII letters and digits. For Unicode you might want
+    // a regex like `/\p{L}\p{N}/gu` instead.
+    str = str.replace(/[^A-Za-z0-9]/g, "");
+  }
+
+  // 2. Normalize case if requested
+  if (ignoreCase) {
+    str = str.toLowerCase();
+  }
+
+  // 3. Compare the string to its reverse
+  const reversed = str.split("").reverse().join("");
+  return str === reversed;
 }
-
-// The queue itself
-export class Queue<T> {
-  private head: Node<T> | null = null; // front of the queue
-  private tail: Node<T> | null = null; // back of the queue
-  private _size = 0;
-
-  /** Adds a value to the back of the queue. */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-
-    if (this.tail) {
-      // Pre‑existing queue – link the new node after the old tail
-      this.tail.next = newNode;
-    } else {
-      // Empty queue – new node becomes the head
-      this.head = newNode;
-    }
-
-    // In either case, the new node is the new tail
-    this.tail = newNode;
-    this._size += 1;
-  }
-
-  /** Removes and returns the value at the front of the queue. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Queue is empty
-
-    const value = this.head.value;
-    this.head = this.head.next;   // Advance the head
-
-    // If the queue became empty, clear the tail too
-    if (!this.head) this.tail = null;
-
-    this._size -= 1;
-    return value;
-  }
-
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** How many items are in the queue? */
-  size(): number {
-    return this._size;
-  }
-}
-const q = new Queue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());  // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());   // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue(); // removes 30
-
-console.log(q.isEmpty()); // true
+console.log(isPalindrome("racecar"));                    // true
+console.log(isPalindrome("RaceCar"));                    // true
+console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("No lemon, no melon"));          // true
+console.log(isPalindrome("hello"));                       // false
