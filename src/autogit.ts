@@ -1,79 +1,93 @@
-/**
- * Edge list representation – maps a node id to an array of neighbour ids.
- */
-type AdjacencyList<T> = Record<string, T[]>;
+START: push (root, depth=0) onto stack
+WHILE stack not empty:
+    (node, depth) = stack.pop()
+    IF depth > limit: continue          // prune
+    IF node is goal: return node
+    FOR each child of node in reverse order:
+        push (child, depth+1) onto stack
+END
+// ---------------------------------------------------------------------------
+// 1️⃣  Types
+// ---------------------------------------------------------------------------
 
 /**
- * A simple helper that maps a node to its “depth” from one end of the search.
+ * A minimal graph node. Feel free to embed more data.
  */
-type Visited<T> = Record<string, number>;
+interface Node<T = unknown> {
+  /** The value you care about (e.g., a string, number, custom class, …) */
+  value: T;
+
+  /** Immediate successors of this node. Empty array for a leaf. */
+  children: Node[];
+
+  /** Optional flag to mark a node as a goal. */
+  isGoal?: boolean;
+}
 
 /**
- * Bidirectional BFS.
+ * Result of the search – the node that satisfied the goal.
+ * `null` if no node was found within the depth limit.
+ */
+type SearchResult<T> = Node<T> | null;
+
+// ---------------------------------------------------------------------------
+// 2️⃣  The algorithm
+// ---------------------------------------------------------------------------
+
+/**
+ * Iterative depth‑limited DFS.
  *
- * @param graph   The graph, keyed by string id, pointing to an array of neighbour ids.
- * @param start   The id of the start node.
- * @param target  The id of the target node.
- * @returns The length of the shortest path, or -1 if no path exists.
+ * @param root  The root node of the search.
+ * @param limit The maximum depth to visit (root has depth 0).
+ * @returns The first node that reports `isGoal === true`, or null.
  */
-export function bidirectionalBfs<T extends string>(
-  graph: AdjacencyList<T>,
-  start: T,
-  target: T
-): number {
-  if (start === target) return 0;
+function depthLimitedSearch<T>(
+  root: Node<T>,
+  limit: number
+): SearchResult<T> {
+  // Explicit stack: each entry is [node, currentDepth]
+  const stack: Array<[Node<T>, number]> = [[root, 0]];
 
-  // Two frontiers: one growing from start, one from target
-  let frontierStart = new Set([start]);
-  let frontierTarget = new Set([target]);
+  while (stack.length) {
+    const [node, depth] = stack.pop()!; // pop() is safe because we just checked stack.length
 
-  // Book‑keeping maps: node → distance from its originating side
-  const visitedStart: Visited<T> = { [start]: 0 };
-  const visitedTarget: Visited<T> = { [target]: 0 };
+    // 1️⃣  Depth guard
+    if (depth > limit) continue;
 
-  let distance = 0; // overall layers explored
+    // 2️⃣  Goal test
+    if (node.isGoal) return node;
 
-  while (frontierStart.size && frontierTarget.size) {
-    // Always expand the smaller frontier first
-    if (frontierStart.size > frontierTarget.size) {
-      [frontierStart, frontierTarget] = [frontierTarget, frontierStart];
-      [visitedStart, visitedTarget] = [visitedTarget, visitedStart];
+    // 3️⃣  Expand children (reverse order for natural DFS order)
+    for (let i = node.children.length - 1; i >= 0; i--) {
+      stack.push([node.children[i], depth + 1]);
     }
-
-    const nextFrontier = new Set<T>();
-
-    for (const node of frontierStart) {
-      const neighbours = graph[node] ?? [];
-
-      for (const neighbour of neighbours) {
-        // If the other search has already hit this node, we’re done
-        if (visitedTarget.hasOwnProperty(neighbour)) {
-          return visitedStart[node] + 1 + visitedTarget[neighbour];
-        }
-
-        // New node, add to the next layer and record distance
-        if (!visitedStart.hasOwnProperty(neighbour)) {
-          visitedStart[neighbour] = visitedStart[node] + 1;
-          nextFrontier.add(neighbour);
-        }
-      }
-    }
-
-    frontierStart = nextFrontier;
-    distance += 1;
   }
 
-  // No intersection found
-  return -1;
+  // Not found within the depth limit
+  return null;
 }
-const graph = {
-  a: ['b', 'c'],
-  b: ['a', 'd', 'e'],
-  c: ['a', 'f'],
-  d: ['b'],
-  e: ['b', 'f'],
-  f: ['c', 'e'],
-} as const; // type inference: “as const” locks the keys
 
-console.log(bidirectionalBfs(graph, 'a', 'f')); // → 3 (a‑b‑e‑f or a‑c‑f)
-console.log(bidirectionalBfs(graph, 'a', 'x')); // → -1 (x not in graph)
+// ---------------------------------------------------------------------------
+// 3️⃣  A quick demo / test
+// ---------------------------------------------------------------------------
+
+const sampleTree: Node<string> = {
+  value: 'A',
+  children: [
+    { value: 'B', children: [], isGoal: false },
+    {
+      value: 'C',
+      children: [
+        { value: 'D', children: [], isGoal: true },
+        { value: 'E', children: [] },
+      ],
+    },
+  ],
+};
+
+const result = depthLimitedSearch(sampleTree, 2);
+console.log(
+  result
+    ? `Found goal: ${result.value}`
+    : 'No goal node found within depth limit.'
+); // → Found goal: D
