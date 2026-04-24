@@ -1,81 +1,44 @@
-/**
- * A very generic tree node interface.
- * `children` can be empty, allowing the node to be a leaf.
- */
-interface TreeNode<T = unknown> {
-  /** Whatever payload you want to store. */
-  value: T
+// Count the occurrences of the digit at `exp` (1, 10, 100, …)
+function countingSortByDigit(arr: number[], exp: number): number[] {
+  const n = arr.length;
+  const output = new Array(n);
+  const count = new Array(10).fill(0); // base 10
 
-  /** Children of this node – an empty array represents a leaf. */
-  children?: TreeNode<T>[]
-}
-
-/**
- * Depth‑Limited Search (DFS) – recursive version.
- *
- * @param root   The node from which the search starts.
- * @param target A predicate that decides whether the node we are looking for
- *               was found.
- * @param limit  The maximum depth (0 → only the root, 1 → root + its children, …).
- * @param depth  Current depth – the caller should omit it.
- * @returns The first matching node, or undefined if none is found within the limit.
- */
-export function depthLimitedSearchRecursive<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number,
-  depth = 0
-): TreeNode<T> | undefined {
-  // If the depth exceeds the limit, stop exploring this branch
-  if (depth > limit) return undefined
-
-  if (target(root)) return root
-
-  if (!root.children) return undefined
-
-  for (const child of root.children) {
-    const hit = depthLimitedSearchRecursive(child, target, limit, depth + 1)
-    if (hit) return hit
+  // 1. Count digit occurrences
+  for (let i = 0; i < n; i++) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    count[digit] += 1;
   }
 
-  return undefined
-}
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number
-): TreeNode<T> | undefined {
-  // Stack entries hold the node and its depth
-  type StackEntry = { node: TreeNode<T>; depth: number }
-  const stack: StackEntry[] = [{ node: root, depth: 0 }]
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!
-
-    if (target(node)) return node
-    if (depth === limit) continue           // don't push children deeper than the limit
-
-    // push children in reverse order so that the leftmost child is processed first
-    if (node.children) {
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 })
-      }
-    }
+  // 2. Accumulate counts
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
   }
 
-  return undefined
-}
-// Example tree (int values)
-const tree: TreeNode<number> = {
-  value: 1,
-  children: [
-    { value: 2, children: [{ value: 4 }, { value: 5 }] },
-    { value: 3, children: [{ value: 6 }, { value: 7 }] }
-  ]
-}
+  // 3. Build the output array (reverse traversal for stability)
+  for (let i = n - 1; i >= 0; i--) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    output[count[digit] - 1] = arr[i];
+    count[digit] -= 1;
+  }
 
-// Find the node with value 5, but never look deeper than depth 2
-const target = (n: TreeNode<number>) => n.value === 5
-const found = depthLimitedSearch(tree, target, 2)
+  return output;
+}
+export function radixSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-console.log(found?.value)   // prints 5
+  // Find the maximum number to know how many digits we need
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
+  }
+
+  // Start with the least‑significant digit (exp = 1, 10, 100, …)
+  for (let exp = 1; max / exp >= 1; exp *= 10) {
+    arr = countingSortByDigit(arr, exp);
+  }
+
+  return arr;
+}
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
