@@ -1,38 +1,42 @@
-function areAnagrams(a: string, b: string): boolean {
-  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase();
+// O(n) time, O(1) space – the classic Boyer‑Moore vote‑count algorithm
+function majorityElement(nums: number[]): number | null {
+  if (nums.length === 0) return null;  // no data
 
-  const normalizeA = normalize(a).split('').sort().join('');
-  const normalizeB = normalize(b).split('').sort().join('');
+  // 1️⃣ First pass: find a candidate
+  let candidate = nums[0];
+  let count = 1;
 
-  return normalizeA === normalizeB;
-}
-function areAnagrams(a: string, b: string): boolean {
-  const buildMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
-      map[ch] = (map[ch] ?? 0) + 1;
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = nums[i];
+        count = 1;
+      }
     }
-    return map;
-  };
-
-  const aMap = buildMap(a);
-  const bMap = buildMap(b);
-
-  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
-  for (const k of keys) {
-    if (aMap[k] !== bMap[k]) return false;
   }
-  return true;
-}
-const tests = [
-  ['listen', 'silent'],
-  ['hello', 'world'],
-  ['Dormitory', 'Dirty room'],
-  ['abc', 'abcd'],
-];
 
-for (const [a, b] of tests) {
-  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
+  // 2️⃣ Second pass: verify that the candidate really is the majority
+  count = 0;
+  for (const v of nums) if (v === candidate) count++;
+
+  return count > Math.floor(nums.length / 2) ? candidate : null;
 }
+function majorityElementUsingMap(nums: number[]): number | null {
+  const freq = new Map<number, number>();
+  const threshold = Math.floor(nums.length / 2);
+
+  for (const n of nums) {
+    freq.set(n, (freq.get(n) ?? 0) + 1);
+    if (freq.get(n)! > threshold) {
+      return n;            // early win
+    }
+  }
+  return null;              // nothing crossed threshold
+}
+console.log(majorityElement([3, 3, 4, 2, 3]));          // 3
+console.log(majorityElement([1, 2, 3, 4]));             // null (no majority)
+console.log(majorityElementUsingMap([1, 1, 2, 1, 3]));  // 1
+function majorityString<T>(arr: T[]): T | null { /* same logic, just generic */ }
