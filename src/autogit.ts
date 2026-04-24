@@ -1,31 +1,52 @@
 /**
- * Recursively calculates the factorial of a non‑negative integer.
+ * Counting sort for an array of integers.
  *
- * @param n - the number to compute the factorial of
- * @returns n! as a number (works well up to ~170 before overflow)
+ * @param arr – array of numbers (integers) to sort
+ * @returns a new array containing the same numbers in ascending order
  */
-function factorial(n: number): number {
-  // Guard against negative input - factorial isn’t defined there
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
+export function countingSort(arr: number[]): number[] {
+  // nothing to sort
+  if (arr.length <= 1) return [...arr];
+
+  // 1. locate the min/max so we know how big the count array must be
+  let min = arr[0];
+  let max = arr[0];
+
+  for (let i = 1; i < arr.length; i++) {
+    const v = arr[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
   }
 
-  // Base case: 0! === 1 and 1! === 1
-  if (n <= 1) {
-    return 1;
+  // 2. build the frequency table
+  // offset shifts the negative values to positive indices
+  const offset = -min;                     // e.g. min = -3 → offset = 3
+  const size   = max - min + 1;            // number of distinct keys
+  const count  = new Array<number>(size).fill(0);
+
+  for (const v of arr) {
+    count[v + offset]++;
   }
 
-  // Recursive case
-  return n * factorial(n - 1);
+  // 3. reconstruct the sorted array
+  const out: number[] = new Array(arr.length);
+  let writeIdx = 0;
+
+  for (let i = 0; i < size; i++) {
+    const qty = count[i];
+    if (qty === 0) continue;
+
+    const value = i - offset;   // bring back to original key
+    for (let j = 0; j < qty; j++) {
+      out[writeIdx++] = value;
+    }
+  }
+
+  return out;
 }
+import { countingSort } from './countingSort';
 
-// Quick demo:
-console.log(factorial(5)); // 120
-function factorialBig(n: bigint): bigint {
-  if (n < 0n) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
-  }
-  return n <= 1n ? 1n : n * factorialBig(n - 1n);
-}
+const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
+const sorted   = countingSort(unsorted);
 
-console.log(factorialBig(20n)); // 2432902008176640000n
+console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
