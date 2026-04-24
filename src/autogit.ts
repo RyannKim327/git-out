@@ -1,92 +1,60 @@
+// bubbleSort.ts
+
+export type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * Longest Increasing Subsequence – O(n²) DP
- * @param a   input array of numbers
- * @returns   length of LIS
+ * Sorts an array in place using the Bubble Sort algorithm.
+ *
+ * @param arr    — The array to sort. It will be modified directly.
+ * @param cmp    — Optional comparator. If omitted, number comparison is used.
+ *
+ * @returns      — The sorted array (same reference as the input).
  */
-function lisLengthDP(a: number[]): number {
-  const n = a.length;
-  if (n === 0) return 0;
+export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;          // nothing to do
 
-  const dp = new Array(n).fill(1);   // each element itself
+  // Traditional outer loop: run n‑1 passes
+  for (let pass = 0; pass < n - 1; pass++) {
+    let swapped = false;
 
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
+    // Inner loop: compare adjacent elements
+    for (let i = 0; i < n - 1 - pass; i++) {
+      if (cmp(arr[i], arr[i + 1]) > 0) {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
+        swapped = true;
       }
     }
+
+    // If we made no swaps this pass, the array is sorted
+    if (!swapped) break;
   }
 
-  return Math.max(...dp);
-}
-console.log(lisLengthDP([10, 9, 2, 5, 3, 7, 101, 18])); // 4  (2,3,7,101)
-/**
- * Longest Increasing Subsequence – O(n log n)
- * @param a   input array of numbers
- * @returns   length of LIS
- */
-function lisLengthNLogN(a: number[]): number {
-  const tails: number[] = [];
-
-  for (const x of a) {
-    // Binary search: find the first index in tails where tails[idx] >= x
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    // left is the position to replace
-    tails[left] = x;
-  }
-
-  return tails.length;
-}
-console.log(lisLengthNLogN([10, 9, 2, 5, 3, 7, 101, 18])); // 4
-function lis(a: number[]): number[] {
-  const n = a.length;
-  if (n === 0) return [];
-
-  const tails: { val: number; idx: number }[] = [];
-  const prev: number[] = new Array(n).fill(-1);
-
-  for (let i = 0; i < n; i++) {
-    const x = a[i];
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid].val < x) left = mid + 1;
-      else right = mid;
-    }
-
-    const idx = left > 0 ? tails[left - 1].idx : -1;
-    prev[i] = idx;
-
-    const entry = { val: x, idx: i };
-    if (left === tails.length) tails.push(entry);
-    else tails[left] = entry; // keep minimal tail
-  }
-
-  // Reconstruct sequence
-  const seq: number[] = [];
-  let curr = tails[tails.length - 1].idx;
-  while (curr !== -1) {
-    seq.push(a[curr]);
-    curr = prev[curr];
-  }
-  return seq.reverse();
+  return arr;
 }
 
-console.log(lis([10, 9, 2, 5, 3, 7, 101, 18])); // [2, 3, 7, 101]
-const arr = Array.from({ length: 200_000 }, (_, i) => Math.floor(Math.random() * 1_000_000));
+/** Default numeric comparator */
+function defaultCmp(a: number, b: number): number {
+  return a - b;
+}
+import { bubbleSort } from './bubbleSort';
 
-console.time('DP');
-lisLengthDP(arr);
-console.timeEnd('DP');
+const numbers = [5, 2, 9, 1, 5, 6];
+bubbleSort(numbers);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
 
-console.time('NlogN');
-lisLengthNLogN(arr);
-console.timeEnd('NlogN');
+// Custom comparator – strings, case‑insensitive
+const strings = ['Banana', 'apple', 'Cherry'];
+bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(strings); // ['apple', 'Banana', 'Cherry']
+
+// Sorting objects
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Ali', age: 30 },
+  { name: 'Beth', age: 24 },
+  { name: 'Carl', age: 38 },
+];
+bubbleSort(people, (p, q) => p.age - q.age);
+console.log(people);
+// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
