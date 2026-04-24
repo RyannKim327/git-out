@@ -1,86 +1,31 @@
-/**
- * Convert a decimal number to a binary string.
- *
- * @param n   A whole number (integer) you want to encode.
- * @returns   Binary representation of `n` as a string.
- */
-function decimalToBinary(n: number): string {
-  // JavaScript (and TypeScript) can do the heavy lifting for us.
-  // make sure the number is an integer first.
-  if (!Number.isFinite(n)) {
-    throw new RangeError('Only finite numbers are supported.');
-  }
+function longestCommonSubstring(s1: string, s2: string): string {
+    if (!s1 || !s2) return '';
 
-  // The built‑in toString radix overload expects an integer.
-  // If you pass a floating point value, the fractional part is
-  // silently truncated, so we guard against that.
-  if (!Number.isInteger(n)) {
-    throw new TypeError('Only integers are supported.  For decimal fractions see the next example.');
-  }
+    const m = s1.length, n = s2.length;
+    // one‑dimensional DP (only the previous row is needed)
+    const dp = new Array(n + 1).fill(0);
+    let maxLen = 0;          // longest length seen so far
+    let endIdxS1 = 0;        // index where that longest ends in s1
 
-  // Negative numbers are handled automatically by toString.
-  return n.toString(2);
-}
-
-// Usage examples:
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-console.log(decimalToBinary(-5));  // "-101"
-function bigIntToBinary(n: bigint): string {
-  if (n < 0n) {
-    return '-' + (-n).toString(2);
-  }
-  return n.toString(2);
-}
-
-// Examples
-console.log(bigIntToBinary(123456789012345678901234567890123456789n));
-// "1000101100110011100111101111011011110010101110001010011001110111"
-/**
- * Convert a decimal fraction (0 <= n < 1) to its binary representation.
- * Stops when the binary terminates or a max length is reached.
- *
- * @param n            The fractional part to convert.
- * @param maxBits     Optional maximum number of fractional bits.
- * @returns           Binary string including the leading "0.".
- */
-function fractionalDecimalToBinary(n: number, maxBits = 32): string {
-  if (n <= 0 || n >= 1) {
-    throw new RangeError('Input must be a fractional part between 0 (exclusive) and 1 (exclusive).');
-  }
-
-  let result = '0.';
-  let value = n;
-
-  for (let i = 0; i < maxBits; i++) {
-    value *= 2;
-    if (value >= 1) {
-      result += '1';
-      value -= 1;
-    } else {
-      result += '0';
+    for (let i = 1; i <= m; i++) {
+        // iterate j from right to left so the current row doesn't overwrite the
+        // values we still need from the previous row
+        for (let j = n; j >= 1; j--) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
+                if (dp[j] > maxLen) {
+                    maxLen = dp[j];
+                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
+                }
+            } else {
+                dp[j] = 0;
+            }
+        }
     }
-    if (value === 0) break; // terminates exactly
-  }
 
-  return result;
+    // Extract slice from s1 using the remembered end index and length
+    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
 }
 
-// Examples
-console.log(fractionalDecimalToBinary(0.625)); // "0.101"
-console.log(fractionalDecimalToBinary(0.1));   // "0.00011001100110011001100110011001"
-function floatToBinary(num: number, maxFractionBits = 16): string {
-  if (!Number.isFinite(num)) throw new RangeError('Only finite numbers are supported.');
-
-  const sign = num < 0 ? '-' : '';
-  const absolute = Math.abs(num);
-  const intPart = Math.trunc(absolute);
-  const fracPart = absolute - intPart;
-
-  const intBin = intPart.toString(2);
-  const fracBin = fracPart ? fractionalDecimalToBinary(fracPart, maxFractionBits).slice(1) : '';
-
-  return `${sign}${intBin}${fracBin ? '.' + fracBin : ''}`;
-}
-
-console.log(floatToBinary(-12.75)); // "-1100.11"
+// Quick demo
+console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
