@@ -1,27 +1,40 @@
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+class TreeNode {
+  constructor(
+    public val: number,
+    public left: TreeNode | null = null,
+    public right: TreeNode | null = null
+  ) {}
+}
+function sumTree(root: TreeNode | null): number {
+  if (!root) return 0;          // nothing to add
+  const leftSum = sumTree(root.left);
+  const rightSum = sumTree(root.right);
+  return root.val + leftSum + rightSum;
+}
+function sumTreeIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let sum = 0;
+  const stack: Array<TreeNode> = [root];
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.val;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
-  return result;
-}
-console.log(factorialIterative(5));   // 120
-console.log(factorialIterative(0));   // 1
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n === 0 || n === 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  let result = 1n;          // `n` suffix makes it a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
+  return sum;
 }
-console.log(factorialBigInt(50).toString());
-// 304140932655... (the full 50! value)
+const root = new TreeNode(5,
+  new TreeNode(3,
+    new TreeNode(2),
+    new TreeNode(4)
+  ),
+  new TreeNode(8,
+    null,
+    new TreeNode(9)
+  )
+);
+
+console.log(sumTree(root));          // 5 + 3 + 2 + 4 + 8 + 9 = 31
+console.log(sumTreeIterative(root)); // 31
