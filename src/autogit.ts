@@ -1,51 +1,78 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
+/**
+ * A very small, self‑contained topological‑sort utility.
+ *
+ * Users should supply a directed graph in adjacency‑list form:
+ *
+ *   const g = new Map<string, Set<string>>();
+ *   g.set('A', new Set(['B', 'C']));
+ *   g.set('B', new Set(['D']));
+ *   g.set('C', new Set(['D']));
+ *   g.set('D', new Set());
+ *
+ * Call `topologicalSort(g)` and receive an array in an order that
+ * satisfies all dependencies. If a cycle is detected the function
+ * throws an Error describing the nodes that loop.
+ */
 
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
-  }
-}
+type Graph<ID> = Map<ID, Set<ID>>;
 
 /**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
+ * Detects a directed cycle in a graph by trying a Kahn‑style removal.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
+function topologicalSort<ID>(graph: Graph<ID>): ID[] {
+  // 1. Make a copy of indegree counts
+  const indegree = new Map<ID, number>();
 
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
-
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
-
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
-
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
+  // Walk the graph once to count in‑edges
+  for (const [node, edges] of graph.entries()) {
+    // Ensure every node in the map has an indegree entry
+    if (!indegree.has(node)) indegree.set(node, 0);
+    for (const neigh of edges) {
+      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
+      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
+      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
+    }
   }
 
-  height(root)
-  return maxDiameter   // edge‑count diameter
+  // 2. Queue of nodes with no incoming edges
+  const queue: ID[] = [];
+  for (const [node, num] of indegree.entries())
+    if (num === 0) queue.push(node);
+
+  const result: ID[] = [];
+
+  // 3. Repeatedly pop a zero‑in‑degree node, append to result
+  //    and “remove” its outgoing edges
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    const outgoing = graph.get(node) ?? new Set();
+    for (const neigh of outgoing) {
+      // decrement indegree; if it goes to 0 push to queue
+      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
+      indegree.set(neigh, newIndeg);
+      if (newIndeg === 0) queue.push(neigh);
+    }
+  }
+
+  // 4. If we didn't visit all nodes → a cycle exists
+  if (result.length !== indegree.size) {
+    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
+    throw new Error(
+      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
+    );
+  }
+
+  return result;
 }
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
+/* ---------- demo ---------- */
+const example = new Map<string, Set<string>>([
+  ['A', new Set(['B', 'C'])],
+  ['B', new Set(['D'])],
+  ['C', new Set(['D'])],
+  ['D', new Set()],
+]);
 
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
