@@ -1,9 +1,38 @@
-const str = "  123   ";
+function areAnagrams(a: string, b: string): boolean {
+  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase();
 
-const num1 = Number(str);            // 123
-const num2 = +'123';                 // 123
-const num3 = parseInt(str, 10);      // 123
-const num4 = parseFloat('123.45');   // 123.45
-const num5 = str * 1;                // 123
+  const normalizeA = normalize(a).split('').sort().join('');
+  const normalizeB = normalize(b).split('').sort().join('');
 
-console.log([num1, num2, num3, num4, num5]); // [123, 123, 123, 123.45, 123]
+  return normalizeA === normalizeB;
+}
+function areAnagrams(a: string, b: string): boolean {
+  const buildMap = (s: string) => {
+    const map: Record<string, number> = {};
+    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
+      map[ch] = (map[ch] ?? 0) + 1;
+    }
+    return map;
+  };
+
+  const aMap = buildMap(a);
+  const bMap = buildMap(b);
+
+  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
+  for (const k of keys) {
+    if (aMap[k] !== bMap[k]) return false;
+  }
+  return true;
+}
+const tests = [
+  ['listen', 'silent'],
+  ['hello', 'world'],
+  ['Dormitory', 'Dirty room'],
+  ['abc', 'abcd'],
+];
+
+for (const [a, b] of tests) {
+  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
+}
