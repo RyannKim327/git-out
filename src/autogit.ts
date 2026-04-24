@@ -1,38 +1,23 @@
-function areAnagrams(a: string, b: string): boolean {
-  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase();
+function isPalindrome(s: string): boolean {
+  // 1. Normalise: lower‑case, trim, and strip non‑alphanumerics
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-  const normalizeA = normalize(a).split('').sort().join('');
-  const normalizeB = normalize(b).split('').sort().join('');
-
-  return normalizeA === normalizeB;
+  // 2. Compare with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
-function areAnagrams(a: string, b: string): boolean {
-  const buildMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
-      map[ch] = (map[ch] ?? 0) + 1;
-    }
-    return map;
-  };
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Racecar'));                          // true
+console.log(isPalindrome('Hello'));                            // false
+function isPalindromeTwoPointer(s: string): boolean {
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let left = 0;
+  let right = cleaned.length - 1;
 
-  const aMap = buildMap(a);
-  const bMap = buildMap(b);
-
-  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
-  for (const k of keys) {
-    if (aMap[k] !== bMap[k]) return false;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
   return true;
-}
-const tests = [
-  ['listen', 'silent'],
-  ['hello', 'world'],
-  ['Dormitory', 'Dirty room'],
-  ['abc', 'abcd'],
-];
-
-for (const [a, b] of tests) {
-  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
 }
