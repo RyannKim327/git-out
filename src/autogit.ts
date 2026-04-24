@@ -1,93 +1,81 @@
-START: push (root, depth=0) onto stack
-WHILE stack not empty:
-    (node, depth) = stack.pop()
-    IF depth > limit: continue          // prune
-    IF node is goal: return node
-    FOR each child of node in reverse order:
-        push (child, depth+1) onto stack
-END
-// ---------------------------------------------------------------------------
-// 1️⃣  Types
-// ---------------------------------------------------------------------------
-
 /**
- * A minimal graph node. Feel free to embed more data.
+ * A very generic tree node interface.
+ * `children` can be empty, allowing the node to be a leaf.
  */
-interface Node<T = unknown> {
-  /** The value you care about (e.g., a string, number, custom class, …) */
-  value: T;
+interface TreeNode<T = unknown> {
+  /** Whatever payload you want to store. */
+  value: T
 
-  /** Immediate successors of this node. Empty array for a leaf. */
-  children: Node[];
-
-  /** Optional flag to mark a node as a goal. */
-  isGoal?: boolean;
+  /** Children of this node – an empty array represents a leaf. */
+  children?: TreeNode<T>[]
 }
 
 /**
- * Result of the search – the node that satisfied the goal.
- * `null` if no node was found within the depth limit.
- */
-type SearchResult<T> = Node<T> | null;
-
-// ---------------------------------------------------------------------------
-// 2️⃣  The algorithm
-// ---------------------------------------------------------------------------
-
-/**
- * Iterative depth‑limited DFS.
+ * Depth‑Limited Search (DFS) – recursive version.
  *
- * @param root  The root node of the search.
- * @param limit The maximum depth to visit (root has depth 0).
- * @returns The first node that reports `isGoal === true`, or null.
+ * @param root   The node from which the search starts.
+ * @param target A predicate that decides whether the node we are looking for
+ *               was found.
+ * @param limit  The maximum depth (0 → only the root, 1 → root + its children, …).
+ * @param depth  Current depth – the caller should omit it.
+ * @returns The first matching node, or undefined if none is found within the limit.
  */
-function depthLimitedSearch<T>(
-  root: Node<T>,
+export function depthLimitedSearchRecursive<T>(
+  root: TreeNode<T>,
+  target: (node: TreeNode<T>) => boolean,
+  limit: number,
+  depth = 0
+): TreeNode<T> | undefined {
+  // If the depth exceeds the limit, stop exploring this branch
+  if (depth > limit) return undefined
+
+  if (target(root)) return root
+
+  if (!root.children) return undefined
+
+  for (const child of root.children) {
+    const hit = depthLimitedSearchRecursive(child, target, limit, depth + 1)
+    if (hit) return hit
+  }
+
+  return undefined
+}
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,
+  target: (node: TreeNode<T>) => boolean,
   limit: number
-): SearchResult<T> {
-  // Explicit stack: each entry is [node, currentDepth]
-  const stack: Array<[Node<T>, number]> = [[root, 0]];
+): TreeNode<T> | undefined {
+  // Stack entries hold the node and its depth
+  type StackEntry = { node: TreeNode<T>; depth: number }
+  const stack: StackEntry[] = [{ node: root, depth: 0 }]
 
   while (stack.length) {
-    const [node, depth] = stack.pop()!; // pop() is safe because we just checked stack.length
+    const { node, depth } = stack.pop()!
 
-    // 1️⃣  Depth guard
-    if (depth > limit) continue;
+    if (target(node)) return node
+    if (depth === limit) continue           // don't push children deeper than the limit
 
-    // 2️⃣  Goal test
-    if (node.isGoal) return node;
-
-    // 3️⃣  Expand children (reverse order for natural DFS order)
-    for (let i = node.children.length - 1; i >= 0; i--) {
-      stack.push([node.children[i], depth + 1]);
+    // push children in reverse order so that the leftmost child is processed first
+    if (node.children) {
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 })
+      }
     }
   }
 
-  // Not found within the depth limit
-  return null;
+  return undefined
+}
+// Example tree (int values)
+const tree: TreeNode<number> = {
+  value: 1,
+  children: [
+    { value: 2, children: [{ value: 4 }, { value: 5 }] },
+    { value: 3, children: [{ value: 6 }, { value: 7 }] }
+  ]
 }
 
-// ---------------------------------------------------------------------------
-// 3️⃣  A quick demo / test
-// ---------------------------------------------------------------------------
+// Find the node with value 5, but never look deeper than depth 2
+const target = (n: TreeNode<number>) => n.value === 5
+const found = depthLimitedSearch(tree, target, 2)
 
-const sampleTree: Node<string> = {
-  value: 'A',
-  children: [
-    { value: 'B', children: [], isGoal: false },
-    {
-      value: 'C',
-      children: [
-        { value: 'D', children: [], isGoal: true },
-        { value: 'E', children: [] },
-      ],
-    },
-  ],
-};
-
-const result = depthLimitedSearch(sampleTree, 2);
-console.log(
-  result
-    ? `Found goal: ${result.value}`
-    : 'No goal node found within depth limit.'
-); // → Found goal: D
+console.log(found?.value)   // prints 5
