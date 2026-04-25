@@ -1,96 +1,41 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
+/**
+ * Checks whether a string is a palindrome.
+ *
+ * Options:
+ *   - ignoreCase: treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
+ *
+ * @param input The string to test
+ * @param opts  Optional settings
+ * @returns true if `input` is a palindrome under the chosen rules
+ */
+export function isPalindrome(
+  input: string,
+  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
 
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
+  let str = input;
 
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
-}
-
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
-
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
-
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
-      }
-    }
-
-    // Stop early if nothing changed
-    if (!updated) break;
+  // 1. Collapse the string if requested
+  if (ignoreNonAlnum) {
+    // Keep only ASCII letters and digits. For Unicode you might want
+    // a regex like `/\p{L}\p{N}/gu` instead.
+    str = str.replace(/[^A-Za-z0-9]/g, "");
   }
 
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
-    }
+  // 2. Normalize case if requested
+  if (ignoreCase) {
+    str = str.toLowerCase();
   }
 
-  return { dist, prev, hasNegativeCycle };
+  // 3. Compare the string to its reverse
+  const reversed = str.split("").reverse().join("");
+  return str === reversed;
 }
-
-/* ---------- 3️⃣  Example usage ------------------------------------ */
-
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
-
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
-  }
-  return path;
-}
-
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+console.log(isPalindrome("racecar"));                    // true
+console.log(isPalindrome("RaceCar"));                    // true
+console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("No lemon, no melon"));          // true
+console.log(isPalindrome("hello"));                       // false
