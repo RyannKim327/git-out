@@ -1,52 +1,51 @@
-// 1.  Define a node type ----------------------------------------------------
-type TreeNode<T = number> = {
+// Basic node definition – feel free to swap in your own
+class TreeNode<T = number> {
   val: T
-  left?: TreeNode<T>
-  right?: TreeNode<T>
-}
+  left: TreeNode<T> | null = null
+  right: TreeNode<T> | null = null
 
-// 2.  Recursive leaf‑counter -----------------------------------------------
-function countLeaves<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0                            // empty subtree
-  if (!root.left && !root.right) return 1        // leaf reached
-  // otherwise sum the counts from both sides
-  return countLeaves(root.left) + countLeaves(root.right)
-}
-
-// 3.  Iterative version (works the same but uses an explicit stack) --------
-function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0
-
-  let count = 0
-  const stack: Array<TreeNode<T>> = [root]
-
-  while (stack.length) {
-    const node = stack.pop()!
-    const { left, right } = node
-
-    if (!left && !right) {
-      count++
-    } else {
-      if (right) stack.push(right)
-      if (left) stack.push(left)
-    }
-  }
-  return count
-}
-
-// 4.  Quick demo -------------------------------------------------------------
-const tree: TreeNode<number> = {
-  val: 1,
-  left: {
-    val: 2,
-    left: { val: 4 },
-    right: { val: 5 }
-  },
-  right: {
-    val: 3,
-    right: { val: 6 }
+  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
+    this.val = val
+    if (left) this.left = left
+    if (right) this.right = right
   }
 }
 
-console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
-console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
+/**
+ * Returns the diameter of the tree rooted at `root`.
+ * If the tree is empty, the diameter is 0.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0
+
+  /**
+   * Helper that returns the height (in nodes) of the subtree.
+   * While unwinding recursion, we update the maximum diameter.
+   */
+  function height(node: TreeNode | null): number {
+    if (!node) return 0
+
+    const leftHeight = height(node.left)
+    const rightHeight = height(node.right)
+
+    // Path that goes through this node = leftHeight + rightHeight
+    const localDiameter = leftHeight + rightHeight
+
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter
+
+    // Height is max child height plus this node
+    return Math.max(leftHeight, rightHeight) + 1
+  }
+
+  height(root)
+  return maxDiameter   // edge‑count diameter
+}
+
+/* ---------- quick test ---------- */
+const tree = new TreeNode(
+  1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
+)
+
+console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
