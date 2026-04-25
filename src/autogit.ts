@@ -1,43 +1,69 @@
+// simple-api-call.ts
 /**
- * Returns true if n is a prime number, false otherwise.
- *
- * Numbers less than 2 are not prime by definition.
- * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
- * After that only numbers of the form 6k ± 1 can be prime.
+ * A minimal example of calling a REST API in Node.js with TypeScript.
+ * Requires Node 18+ (fetch is built‑in). If you need older Node, use
+ * node‑fetch or axios instead.
  */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1, and negatives are not prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
 
-  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
+import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
 
-  return true;
+// 1️⃣  Define the shape of the JSON we expect back:
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
-  console.log(`${num} → ${isPrime(num)}`));
-1 → false
-2 → true
-3 → true
-4 → false
-5 → true
-16 → false
-17 → true
-19 → true
-20 → false
-23 → true
-24 → false
-29 → true
-export function isPrimeBigInt(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+// 2️⃣  Utility to guard for non‑2xx HTTP codes:
+function checkStatus(response: Response): Response {
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-  return true;
+  return response;
+}
+
+// 3️⃣  The async function that does the fetching:
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+
+  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
+  const options: RequestInit = {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
+  };
+
+  const response = await fetch(url, options);
+  checkStatus(response);
+
+  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
+  const data = (await response.json()) as Post;
+
+  // Non‑strict guard: ensure required keys exist
+  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
+    throw new Error('Malformed data');
+  }
+
+  return data;
+}
+
+// 4️⃣  Drive the example: fetch a single post and log it.
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log('Fetched post:', post);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+})();
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "./dist"
+  },
+  "include": ["simple-api-call.ts"]
 }
