@@ -1,44 +1,86 @@
-// Count the occurrences of the digit at `exp` (1, 10, 100, …)
-function countingSortByDigit(arr: number[], exp: number): number[] {
-  const n = arr.length;
-  const output = new Array(n);
-  const count = new Array(10).fill(0); // base 10
-
-  // 1. Count digit occurrences
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
+/**
+ * Convert a decimal number to a binary string.
+ *
+ * @param n   A whole number (integer) you want to encode.
+ * @returns   Binary representation of `n` as a string.
+ */
+function decimalToBinary(n: number): string {
+  // JavaScript (and TypeScript) can do the heavy lifting for us.
+  // make sure the number is an integer first.
+  if (!Number.isFinite(n)) {
+    throw new RangeError('Only finite numbers are supported.');
   }
 
-  // 2. Accumulate counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
+  // The built‑in toString radix overload expects an integer.
+  // If you pass a floating point value, the fractional part is
+  // silently truncated, so we guard against that.
+  if (!Number.isInteger(n)) {
+    throw new TypeError('Only integers are supported.  For decimal fractions see the next example.');
   }
 
-  // 3. Build the output array (reverse traversal for stability)
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    output[count[digit] - 1] = arr[i];
-    count[digit] -= 1;
-  }
-
-  return output;
+  // Negative numbers are handled automatically by toString.
+  return n.toString(2);
 }
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
 
-  // Find the maximum number to know how many digits we need
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
+// Usage examples:
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(-5));  // "-101"
+function bigIntToBinary(n: bigint): string {
+  if (n < 0n) {
+    return '-' + (-n).toString(2);
   }
-
-  // Start with the least‑significant digit (exp = 1, 10, 100, …)
-  for (let exp = 1; max / exp >= 1; exp *= 10) {
-    arr = countingSortByDigit(arr, exp);
-  }
-
-  return arr;
+  return n.toString(2);
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
+
+// Examples
+console.log(bigIntToBinary(123456789012345678901234567890123456789n));
+// "1000101100110011100111101111011011110010101110001010011001110111"
+/**
+ * Convert a decimal fraction (0 <= n < 1) to its binary representation.
+ * Stops when the binary terminates or a max length is reached.
+ *
+ * @param n            The fractional part to convert.
+ * @param maxBits     Optional maximum number of fractional bits.
+ * @returns           Binary string including the leading "0.".
+ */
+function fractionalDecimalToBinary(n: number, maxBits = 32): string {
+  if (n <= 0 || n >= 1) {
+    throw new RangeError('Input must be a fractional part between 0 (exclusive) and 1 (exclusive).');
+  }
+
+  let result = '0.';
+  let value = n;
+
+  for (let i = 0; i < maxBits; i++) {
+    value *= 2;
+    if (value >= 1) {
+      result += '1';
+      value -= 1;
+    } else {
+      result += '0';
+    }
+    if (value === 0) break; // terminates exactly
+  }
+
+  return result;
+}
+
+// Examples
+console.log(fractionalDecimalToBinary(0.625)); // "0.101"
+console.log(fractionalDecimalToBinary(0.1));   // "0.00011001100110011001100110011001"
+function floatToBinary(num: number, maxFractionBits = 16): string {
+  if (!Number.isFinite(num)) throw new RangeError('Only finite numbers are supported.');
+
+  const sign = num < 0 ? '-' : '';
+  const absolute = Math.abs(num);
+  const intPart = Math.trunc(absolute);
+  const fracPart = absolute - intPart;
+
+  const intBin = intPart.toString(2);
+  const fracBin = fracPart ? fractionalDecimalToBinary(fracPart, maxFractionBits).slice(1) : '';
+
+  return `${sign}${intBin}${fracBin ? '.' + fracBin : ''}`;
+}
+
+console.log(floatToBinary(-12.75)); // "-1100.11"
