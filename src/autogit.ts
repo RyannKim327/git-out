@@ -1,43 +1,31 @@
-/**
- * Returns true if n is a prime number, false otherwise.
- *
- * Numbers less than 2 are not prime by definition.
- * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
- * After that only numbers of the form 6k ± 1 can be prime.
- */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1, and negatives are not prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
+function longestCommonSubstring(s1: string, s2: string): string {
+    if (!s1 || !s2) return '';
 
-  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
+    const m = s1.length, n = s2.length;
+    // one‑dimensional DP (only the previous row is needed)
+    const dp = new Array(n + 1).fill(0);
+    let maxLen = 0;          // longest length seen so far
+    let endIdxS1 = 0;        // index where that longest ends in s1
 
-  return true;
+    for (let i = 1; i <= m; i++) {
+        // iterate j from right to left so the current row doesn't overwrite the
+        // values we still need from the previous row
+        for (let j = n; j >= 1; j--) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
+                if (dp[j] > maxLen) {
+                    maxLen = dp[j];
+                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
+                }
+            } else {
+                dp[j] = 0;
+            }
+        }
+    }
+
+    // Extract slice from s1 using the remembered end index and length
+    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
 }
-[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
-  console.log(`${num} → ${isPrime(num)}`));
-1 → false
-2 → true
-3 → true
-4 → false
-5 → true
-16 → false
-17 → true
-19 → true
-20 → false
-23 → true
-24 → false
-29 → true
-export function isPrimeBigInt(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
-}
+// Quick demo
+console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
