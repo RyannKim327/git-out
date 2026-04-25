@@ -1,30 +1,52 @@
-// Generic helper – works with any comparable type that can be used as a Map key
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
-}
+/**
+ * Counting sort for an array of integers.
+ *
+ * @param arr – array of numbers (integers) to sort
+ * @returns a new array containing the same numbers in ascending order
+ */
+export function countingSort(arr: number[]): number[] {
+  // nothing to sort
+  if (arr.length <= 1) return [...arr];
 
-// Simple test
-const arr1 = [1, 2, 3, 5, 8];
-const arr2 = [3, 4, 5, 6, 9];
+  // 1. locate the min/max so we know how big the count array must be
+  let min = arr[0];
+  let max = arr[0];
 
-console.log(intersection(arr1, arr2)); // → [3, 5]
-function firstIntersection<T>(a: T[], b: T[]): T | undefined {
-  const setB = new Set(b);
-  for (const item of a) {
-    if (setB.has(item)) return item;
+  for (let i = 1; i < arr.length; i++) {
+    const v = arr[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
   }
+
+  // 2. build the frequency table
+  // offset shifts the negative values to positive indices
+  const offset = -min;                     // e.g. min = -3 → offset = 3
+  const size   = max - min + 1;            // number of distinct keys
+  const count  = new Array<number>(size).fill(0);
+
+  for (const v of arr) {
+    count[v + offset]++;
+  }
+
+  // 3. reconstruct the sorted array
+  const out: number[] = new Array(arr.length);
+  let writeIdx = 0;
+
+  for (let i = 0; i < size; i++) {
+    const qty = count[i];
+    if (qty === 0) continue;
+
+    const value = i - offset;   // bring back to original key
+    for (let j = 0; j < qty; j++) {
+      out[writeIdx++] = value;
+    }
+  }
+
+  return out;
 }
-function intersectionBy<T, K extends keyof T>(
-  a: T[],
-  b: T[],
-  key: K
-): T[] {
-  const map = new Map(b.map(v => [v[key], v]));
-  return a.filter(v => map.has(v[key]));
-}
-interface User { id: number; name: string }
-const usersA = [{ id:1 },{ id:2 },{ id:3 }]
-const usersB = [{ id:2 },{ id:3 },{ id:4 }]
-console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
-const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
+import { countingSort } from './countingSort';
+
+const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
+const sorted   = countingSort(unsorted);
+
+console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
