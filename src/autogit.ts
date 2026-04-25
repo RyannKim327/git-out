@@ -1,52 +1,44 @@
-/**
- * Counting sort for an array of integers.
- *
- * @param arr – array of numbers (integers) to sort
- * @returns a new array containing the same numbers in ascending order
- */
-export function countingSort(arr: number[]): number[] {
-  // nothing to sort
-  if (arr.length <= 1) return [...arr];
+// Count the occurrences of the digit at `exp` (1, 10, 100, …)
+function countingSortByDigit(arr: number[], exp: number): number[] {
+  const n = arr.length;
+  const output = new Array(n);
+  const count = new Array(10).fill(0); // base 10
 
-  // 1. locate the min/max so we know how big the count array must be
-  let min = arr[0];
-  let max = arr[0];
-
-  for (let i = 1; i < arr.length; i++) {
-    const v = arr[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
+  // 1. Count digit occurrences
+  for (let i = 0; i < n; i++) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    count[digit] += 1;
   }
 
-  // 2. build the frequency table
-  // offset shifts the negative values to positive indices
-  const offset = -min;                     // e.g. min = -3 → offset = 3
-  const size   = max - min + 1;            // number of distinct keys
-  const count  = new Array<number>(size).fill(0);
-
-  for (const v of arr) {
-    count[v + offset]++;
+  // 2. Accumulate counts
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
   }
 
-  // 3. reconstruct the sorted array
-  const out: number[] = new Array(arr.length);
-  let writeIdx = 0;
-
-  for (let i = 0; i < size; i++) {
-    const qty = count[i];
-    if (qty === 0) continue;
-
-    const value = i - offset;   // bring back to original key
-    for (let j = 0; j < qty; j++) {
-      out[writeIdx++] = value;
-    }
+  // 3. Build the output array (reverse traversal for stability)
+  for (let i = n - 1; i >= 0; i--) {
+    const digit = Math.floor(arr[i] / exp) % 10;
+    output[count[digit] - 1] = arr[i];
+    count[digit] -= 1;
   }
 
-  return out;
+  return output;
 }
-import { countingSort } from './countingSort';
+export function radixSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
-const sorted   = countingSort(unsorted);
+  // Find the maximum number to know how many digits we need
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i] > max) max = arr[i];
+  }
 
-console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
+  // Start with the least‑significant digit (exp = 1, 10, 100, …)
+  for (let exp = 1; max / exp >= 1; exp *= 10) {
+    arr = countingSortByDigit(arr, exp);
+  }
+
+  return arr;
+}
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
