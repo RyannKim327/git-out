@@ -1,14 +1,21 @@
-// 1️⃣ Using a regex (global, matches all spaces)
-const withoutSpaces1 = str.replace(/ /g, '');
-
-// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
-const withoutSpaces2 = str.replace(/\s+/g, '');
-
-// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
-const withoutSpaces3 = str.split(' ').join('');
-
-// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
-const withoutSpaces4 = str.replaceAll(' ', '');
-
-// 5️⃣ For a functional style (works even in older versions)
-const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
+/**
+ * Removes all vowels (a, e, i, o, u) from the given string.
+ *
+ * @param str - The input string to process.
+ * @returns A new string with all vowels removed.
+ */
+export function removeVowels(str: string): string {
+  // The regex matches any of a, e, i, o, u in either case.
+  return str.replace(/[aeiouAEIOU]/g, '');
+}
+console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
+console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
+return str.replace(/[aeiouyAEIOUY]/g, '');
+export function removeVowelsManual(str: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of str) {
+    if (!vowels.has(ch)) result += ch;
+  }
+  return result;
+}
