@@ -1,61 +1,61 @@
-function kthSmallestBySort(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
-  const sorted = [...arr].sort((a, b) => a - b)   // cloning keeps the input untouched
-  return sorted[k - 1]
-}
-function partition(arr: number[], left: number, right: number, pivotIndex: number): number {
-  const pivotValue = arr[pivotIndex]
-  // move pivot to end
-  [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]]
-  let storeIndex = left
+/**
+ * Recursive binary search.
+ * @param data  A sorted array of comparable items.
+ * @param target The value we’re looking for.
+ * @param low   The lowest index (inclusive) of the current search window.
+ * @param high  The highest index (exclusive) of the current search window.
+ * @returns The index of `target` in `data`, or -1 if not found.
+ */
+function binarySearchRecursive<T>(
+  data: T[],
+  target: T,
+  low: number = 0,
+  high: number = data.length
+): number {
+  // Base case: no more elements left
+  if (low >= high) return -1;
 
-  for (let i = left; i < right; i++) {
-    if (arr[i] < pivotValue) {
-      [arr[storeIndex], arr[i]] = [arr[i], arr[storeIndex]]
-      storeIndex++
-    }
-  }
+  // Middle index (floor division)
+  const mid = Math.floor((low + high) / 2);
+  const midVal = data[mid];
 
-  // move pivot to its final place
-  [arr[right], arr[storeIndex]] = [arr[storeIndex], arr[right]]
-  return storeIndex
-}
-
-function quickselect(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
-
-  let left = 0
-  let right = arr.length - 1
-  const targetIdx = k - 1
-
-  while (true) {
-    const pivotIdx = Math.floor(Math.random() * (right - left + 1)) + left
-    const pivotPos = partition(arr, left, right, pivotIdx)
-
-    if (pivotPos === targetIdx) return arr[pivotPos]
-    if (pivotPos > targetIdx) right = pivotPos - 1
-    else left = pivotPos + 1
+  // Compare: adjust the comparison operator (#) based on how you want to order T.
+  // For numbers and strings this works out of the box. If you have a custom type,
+  // supply a comparator instead of using `===` and `<`.
+  if (midVal === target) {
+    return mid;
+  } else if (midVal < target) {
+    // target is in the right half
+    return binarySearchRecursive(data, target, mid + 1, high);
+  } else {
+    // target is in the left half
+    return binarySearchRecursive(data, target, low, mid);
   }
 }
-const arrCopy = [...original]
-const kth = quickselect(arrCopy, k)
-function kthSmallestByCounting(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
+const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-  // Find min/max to size the histogram
-  let min = arr[0], max = arr[0]
-  for (const v of arr) {
-    if (v < min) min = v
-    if (v > max) max = v
-  }
+console.log(binarySearchRecursive(sorted, 7));  // → 3
+console.log(binarySearchRecursive(sorted, 2));  // → -1
+function binarySearchRecursiveCmp<T>(
+  data: T[],
+  target: T,
+  cmp: (a: T, b: T) => number,
+  low: number = 0,
+  high: number = data.length
+): number {
+  if (low >= high) return -1;
 
-  const freq = new Array(max - min + 1).fill(0)
-  for (const v of arr) freq[v - min]++
+  const mid = Math.floor((low + high) / 2);
+  const midVal = data[mid];
+  const order = cmp(midVal, target);
 
-  let count = 0
-  for (let i = 0; i < freq.length; i++) {
-    count += freq[i]
-    if (count >= k) return i + min
-  }
-  return null   // shouldn't happen
+  if (order === 0) return mid;
+  if (order < 0) return binarySearchRecursiveCmp(data, target, cmp, mid + 1, high);
+  return binarySearchRecursiveCmp(data, target, cmp, low, mid);
 }
+interface Player { name: string; score: number }
+const players: Player[] = [ {name:"A", score:10}, {name:"B", score:20}, {name:"C", score:30} ];
+
+const cmp = (a: Player, b: Player) => a.score - b.score;
+const idx = binarySearchRecursiveCmp(players, {name:"X", score:20}, cmp);
+console.log(idx); // 1
