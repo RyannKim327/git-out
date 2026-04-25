@@ -1,38 +1,14 @@
-interface ListNode<T> {
-  value: T;
-  next?: ListNode<T>;   // undefined means end of list
-}
-function listLength<T>(head: ListNode<T> | undefined): number {
-  let count = 0;
-  let current = head;
+// 1️⃣ Using a regex (global, matches all spaces)
+const withoutSpaces1 = str.replace(/ /g, '');
 
-  while (current) {
-    count++;
-    current = current.next;
-  }
+// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
+const withoutSpaces2 = str.replace(/\s+/g, '');
 
-  return count;
-}
-function listLengthRec<T>(node: ListNode<T> | undefined): number {
-  return node ? 1 + listLengthRec(node.next) : 0;
-}
-class LinkedList<T> {
-  head?: ListNode<T>;
-  tail?: ListNode<T>;
+// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
+const withoutSpaces3 = str.split(' ').join('');
 
-  // ... push, pop, etc. ...
+// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
+const withoutSpaces4 = str.replaceAll(' ', '');
 
-  get length(): number {
-    let count = 0;
-    let cur = this.head;
-    while (cur) {
-      count++;
-      cur = cur.next;
-    }
-    return count;
-  }
-}
-const a: ListNode<number> = { value: 1, next: { value: 2, next: { value: 3 } } };
-
-console.log(listLength(a));          // 3
-console.log(listLengthRec(a));       // 3
+// 5️⃣ For a functional style (works even in older versions)
+const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
