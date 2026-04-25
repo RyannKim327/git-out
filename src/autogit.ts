@@ -1,96 +1,30 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
-
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
-
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
+// Generic helper – works with any comparable type that can be used as a Map key
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
 }
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+// Simple test
+const arr1 = [1, 2, 3, 5, 8];
+const arr2 = [3, 4, 5, 6, 9];
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
-
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
-      }
-    }
-
-    // Stop early if nothing changed
-    if (!updated) break;
+console.log(intersection(arr1, arr2)); // → [3, 5]
+function firstIntersection<T>(a: T[], b: T[]): T | undefined {
+  const setB = new Set(b);
+  for (const item of a) {
+    if (setB.has(item)) return item;
   }
-
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegativeCycle };
 }
-
-/* ---------- 3️⃣  Example usage ------------------------------------ */
-
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
-
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
-  }
-  return path;
+function intersectionBy<T, K extends keyof T>(
+  a: T[],
+  b: T[],
+  key: K
+): T[] {
+  const map = new Map(b.map(v => [v[key], v]));
+  return a.filter(v => map.has(v[key]));
 }
-
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+interface User { id: number; name: string }
+const usersA = [{ id:1 },{ id:2 },{ id:3 }]
+const usersB = [{ id:2 },{ id:3 },{ id:4 }]
+console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
+const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
