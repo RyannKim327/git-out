@@ -1,43 +1,60 @@
-function triangleAreaBaseHeight(
-    base: number,
-    height: number
-): number {
-    // Guard against negative or zero values
-    if (base <= 0 || height <= 0) {
-        throw new Error('Base and height must be positive numbers.');
+// bubbleSort.ts
+
+export type Comparator<T> = (a: T, b: T) => number;
+
+/**
+ * Sorts an array in place using the Bubble Sort algorithm.
+ *
+ * @param arr    — The array to sort. It will be modified directly.
+ * @param cmp    — Optional comparator. If omitted, number comparison is used.
+ *
+ * @returns      — The sorted array (same reference as the input).
+ */
+export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;          // nothing to do
+
+  // Traditional outer loop: run n‑1 passes
+  for (let pass = 0; pass < n - 1; pass++) {
+    let swapped = false;
+
+    // Inner loop: compare adjacent elements
+    for (let i = 0; i < n - 1 - pass; i++) {
+      if (cmp(arr[i], arr[i + 1]) > 0) {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
+        swapped = true;
+      }
     }
-    return (base * height) / 2;
+
+    // If we made no swaps this pass, the array is sorted
+    if (!swapped) break;
+  }
+
+  return arr;
 }
 
-// Example usage
-console.log(triangleAreaBaseHeight(10, 5)); // 25
-function triangleAreaBySides(a: number, b: number, c: number): number {
-    // Validate that sides can form a triangle
-    if (a + b <= c || a + c <= b || b + c <= a) {
-        throw new Error('The given sides do not form a valid triangle.');
-    }
-
-    const s = (a + b + c) / 2;
-    const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-    // Numerical safety check: areaSquared should be non‑negative
-    if (areaSquared < 0) {
-        throw new Error('Computed a negative area; check your side lengths.');
-    }
-
-    return Math.sqrt(areaSquared);
+/** Default numeric comparator */
+function defaultCmp(a: number, b: number): number {
+  return a - b;
 }
+import { bubbleSort } from './bubbleSort';
 
-// Example
-console.log(triangleAreaBySides(3, 4, 5)); // 6
-type TriangleSpec =
-  | { base: number; height: number }
-  | { a: number; b: number; c: number };
+const numbers = [5, 2, 9, 1, 5, 6];
+bubbleSort(numbers);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
 
-function areaOfTriangle(spec: TriangleSpec): number {
-    if ('base' in spec && 'height' in spec) {
-        return triangleAreaBaseHeight(spec.base, spec.height);
-    } else {
-        return triangleAreaBySides(spec.a, spec.b, spec.c);
-    }
-}
+// Custom comparator – strings, case‑insensitive
+const strings = ['Banana', 'apple', 'Cherry'];
+bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(strings); // ['apple', 'Banana', 'Cherry']
+
+// Sorting objects
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Ali', age: 30 },
+  { name: 'Beth', age: 24 },
+  { name: 'Carl', age: 38 },
+];
+bubbleSort(people, (p, q) => p.age - q.age);
+console.log(people);
+// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
