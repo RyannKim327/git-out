@@ -1,42 +1,60 @@
+// bubbleSort.ts
+
+export type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * Returns the maximum sum sub‑array of a one‑dimensional numeric array,
- * together with the start and end indices of that sub‑array.
+ * Sorts an array in place using the Bubble Sort algorithm.
  *
- * @param nums   – array of numbers (can contain negatives!)
- * @returns      { sum, start, end }
+ * @param arr    — The array to sort. It will be modified directly.
+ * @param cmp    — Optional comparator. If omitted, number comparison is used.
  *
- * Complexity: O(n) time, O(1) extra space
+ * @returns      — The sorted array (same reference as the input).
  */
-export function maxSubArray(nums: number[]): { sum: number; start: number; end: number } {
-  if (nums.length === 0) throw new Error('Array must contain at least one element');
+export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;          // nothing to do
 
-  let globalMax = nums[0];
-  let currentSum = nums[0];
+  // Traditional outer loop: run n‑1 passes
+  for (let pass = 0; pass < n - 1; pass++) {
+    let swapped = false;
 
-  // Track the indices
-  let startIdx = 0;          // beginning of the current candidate
-  let bestStartIdx = 0;      // beginning of the best so far
-  let bestEndIdx = 0;        // end of the best so far
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the current sub‑array or start fresh at i
-    if (currentSum + nums[i] > nums[i]) {
-      currentSum += nums[i];
-    } else {
-      currentSum = nums[i];
-      startIdx = i;         // new sub‑array starts here
+    // Inner loop: compare adjacent elements
+    for (let i = 0; i < n - 1 - pass; i++) {
+      if (cmp(arr[i], arr[i + 1]) > 0) {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
+        swapped = true;
+      }
     }
 
-    // Did we find a new champion?
-    if (currentSum > globalMax) {
-      globalMax = currentSum;
-      bestStartIdx = startIdx;
-      bestEndIdx = i;
-    }
+    // If we made no swaps this pass, the array is sorted
+    if (!swapped) break;
   }
 
-  return { sum: globalMax, start: bestStartIdx, end: bestEndIdx };
+  return arr;
 }
-console.log(maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4]));
-// → { sum: 6, start: 3, end: 6 }
-// (the slice [4, -1, 2, 1] adds up to 6)
+
+/** Default numeric comparator */
+function defaultCmp(a: number, b: number): number {
+  return a - b;
+}
+import { bubbleSort } from './bubbleSort';
+
+const numbers = [5, 2, 9, 1, 5, 6];
+bubbleSort(numbers);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+
+// Custom comparator – strings, case‑insensitive
+const strings = ['Banana', 'apple', 'Cherry'];
+bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(strings); // ['apple', 'Banana', 'Cherry']
+
+// Sorting objects
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Ali', age: 30 },
+  { name: 'Beth', age: 24 },
+  { name: 'Carl', age: 38 },
+];
+bubbleSort(people, (p, q) => p.age - q.age);
+console.log(people);
+// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
