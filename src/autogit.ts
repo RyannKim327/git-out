@@ -1,69 +1,52 @@
-// simple-api-call.ts
-/**
- * A minimal example of calling a REST API in Node.js with TypeScript.
- * Requires Node 18+ (fetch is built‑in). If you need older Node, use
- * node‑fetch or axios instead.
- */
-
-import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
-
-// 1️⃣  Define the shape of the JSON we expect back:
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+// 1.  Define a node type ----------------------------------------------------
+type TreeNode<T = number> = {
+  val: T
+  left?: TreeNode<T>
+  right?: TreeNode<T>
 }
 
-// 2️⃣  Utility to guard for non‑2xx HTTP codes:
-function checkStatus(response: Response): Response {
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  return response;
+// 2.  Recursive leaf‑counter -----------------------------------------------
+function countLeaves<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0                            // empty subtree
+  if (!root.left && !root.right) return 1        // leaf reached
+  // otherwise sum the counts from both sides
+  return countLeaves(root.left) + countLeaves(root.right)
 }
 
-// 3️⃣  The async function that does the fetching:
-async function fetchPost(postId: number): Promise<Post> {
-  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+// 3.  Iterative version (works the same but uses an explicit stack) --------
+function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0
 
-  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
-  const options: RequestInit = {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' },
-    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
-  };
+  let count = 0
+  const stack: Array<TreeNode<T>> = [root]
 
-  const response = await fetch(url, options);
-  checkStatus(response);
+  while (stack.length) {
+    const node = stack.pop()!
+    const { left, right } = node
 
-  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
-  const data = (await response.json()) as Post;
-
-  // Non‑strict guard: ensure required keys exist
-  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
-    throw new Error('Malformed data');
+    if (!left && !right) {
+      count++
+    } else {
+      if (right) stack.push(right)
+      if (left) stack.push(left)
+    }
   }
-
-  return data;
+  return count
 }
 
-// 4️⃣  Drive the example: fetch a single post and log it.
-(async () => {
-  try {
-    const post = await fetchPost(1);
-    console.log('Fetched post:', post);
-  } catch (err) {
-    console.error('Something went wrong:', err);
-  }
-})();
-{
-  "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "strict": true,
-    "outDir": "./dist"
+// 4.  Quick demo -------------------------------------------------------------
+const tree: TreeNode<number> = {
+  val: 1,
+  left: {
+    val: 2,
+    left: { val: 4 },
+    right: { val: 5 }
   },
-  "include": ["simple-api-call.ts"]
+  right: {
+    val: 3,
+    right: { val: 6 }
+  }
 }
+
+console.log('Recursive count:', countLeaves(tree))       // 3 (4,5,6)
+console.log('Iterative count:', countLeavesIter(tree))   // 3 (4,5,6)
