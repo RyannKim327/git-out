@@ -1,31 +1,69 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-    if (!s1 || !s2) return '';
-
-    const m = s1.length, n = s2.length;
-    // one‑dimensional DP (only the previous row is needed)
-    const dp = new Array(n + 1).fill(0);
-    let maxLen = 0;          // longest length seen so far
-    let endIdxS1 = 0;        // index where that longest ends in s1
-
-    for (let i = 1; i <= m; i++) {
-        // iterate j from right to left so the current row doesn't overwrite the
-        // values we still need from the previous row
-        for (let j = n; j >= 1; j--) {
-            if (s1[i - 1] === s2[j - 1]) {
-                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
-                if (dp[j] > maxLen) {
-                    maxLen = dp[j];
-                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
-                }
-            } else {
-                dp[j] = 0;
-            }
-        }
-    }
-
-    // Extract slice from s1 using the remembered end index and length
-    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
+interface ListNode {
+  val: number | string | any;   // whatever type you’re storing
+  next?: ListNode | null;
 }
+function reverse(head: ListNode | null): ListNode | null {
+  let prev: ListNode | null = null;
+  let cur = head;
 
-// Quick demo
-console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
+  while (cur) {
+    const next = cur.next;   // keep the next node
+    cur.next = prev;         // reverse the pointer
+    prev = cur;              // move prev forward
+    cur = next;              // move cur forward
+  }
+
+  return prev; // new head
+}
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
+  
+  // --- find middle with fast/slow pointers ---
+  let slow = head;
+  let fast = head;
+  
+  while (fast && fast.next) {
+    slow = slow.next!;
+    fast = fast.next.next!;
+  }
+  
+  // For odd‑length lists, skip the middle node
+  if (fast) {
+    slow = slow.next!;
+  }
+  
+  // --- reverse the second half ---
+  const secondHalfStart = reverse(slow);
+  
+  // --- compare first half and reversed second half ---
+  let p1 = head;
+  let p2 = secondHalfStart;
+  let result = true;
+  
+  while (result && p2) {           // p2 is shorter or equal to p1
+    if (p1!.val !== p2.val) result = false;
+    p1 = p1!.next!;
+    p2 = p2.next!;
+  }
+  
+  // If you want the original list preserved, reverse the second half again:
+  // reverse(secondHalfStart);
+  
+  return result;
+}
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string | any)[] = [];
+  let cur = head;
+
+  while (cur) {
+    stack.push(cur.val);
+    cur = cur.next;
+  }
+
+  cur = head;
+  while (cur) {
+    if (cur.val !== stack.pop()) return false;
+    cur = cur.next;
+  }
+  return true;
+}
