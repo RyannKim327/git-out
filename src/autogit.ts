@@ -1,46 +1,61 @@
-type AnagramOpts = {
-  /** treat 'A' the same as 'a' */
-  caseSensitive?: boolean;
-  /** ignore all whitespace (spaces, tabs, newlines) */
-  ignoreSpaces?: boolean;
-};
-
-function areAnagrams(a: string, b: string, opts?: AnagramOpts): boolean {
-  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
-
-  // Helper to clean a string according to the options
-  const clean = (s: string) =>
-    (!caseSensitive ? s.toLowerCase() : s)
-      .split('')
-      .filter(ch => !(ignoreSpaces && /\s/.test(ch)))
-      .sort()   // sort alphabetically
-      .join('');
-
-  return clean(a) === clean(b);
+function kthSmallestBySort(arr: number[], k: number): number | null {
+  if (k < 1 || k > arr.length) return null
+  const sorted = [...arr].sort((a, b) => a - b)   // cloning keeps the input untouched
+  return sorted[k - 1]
 }
-console.log(areAnagrams('Listen', 'Silent'));          // true (case‑insensitive)
-console.log(areAnagrams('Listen', 'Silent', {caseSensitive: true})); // false
-console.log(areAnagrams('conversation', 'voices rant on', {ignoreSpaces: true})); // true
-function areAnagramsFast(a: string, b: string, opts?: AnagramOpts): boolean {
-  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
+function partition(arr: number[], left: number, right: number, pivotIndex: number): number {
+  const pivotValue = arr[pivotIndex]
+  // move pivot to end
+  [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]]
+  let storeIndex = left
 
-  const buildMap = (s: string) => {
-    const map = new Map<string, number>();
-    for (const ch of s) {
-      const key = (!caseSensitive ? ch.toLowerCase() : ch);
-      if (ignoreSpaces && /\s/.test(key)) continue;
-      map.set(key, (map.get(key) || 0) + 1);
+  for (let i = left; i < right; i++) {
+    if (arr[i] < pivotValue) {
+      [arr[storeIndex], arr[i]] = [arr[i], arr[storeIndex]]
+      storeIndex++
     }
-    return map;
-  };
-
-  const mapA = buildMap(a);
-  const mapB = buildMap(b);
-
-  if (mapA.size !== mapB.size) return false;
-
-  for (const [k, v] of mapA.entries()) {
-    if (mapB.get(k) !== v) return false;
   }
-  return true;
+
+  // move pivot to its final place
+  [arr[right], arr[storeIndex]] = [arr[storeIndex], arr[right]]
+  return storeIndex
+}
+
+function quickselect(arr: number[], k: number): number | null {
+  if (k < 1 || k > arr.length) return null
+
+  let left = 0
+  let right = arr.length - 1
+  const targetIdx = k - 1
+
+  while (true) {
+    const pivotIdx = Math.floor(Math.random() * (right - left + 1)) + left
+    const pivotPos = partition(arr, left, right, pivotIdx)
+
+    if (pivotPos === targetIdx) return arr[pivotPos]
+    if (pivotPos > targetIdx) right = pivotPos - 1
+    else left = pivotPos + 1
+  }
+}
+const arrCopy = [...original]
+const kth = quickselect(arrCopy, k)
+function kthSmallestByCounting(arr: number[], k: number): number | null {
+  if (k < 1 || k > arr.length) return null
+
+  // Find min/max to size the histogram
+  let min = arr[0], max = arr[0]
+  for (const v of arr) {
+    if (v < min) min = v
+    if (v > max) max = v
+  }
+
+  const freq = new Array(max - min + 1).fill(0)
+  for (const v of arr) freq[v - min]++
+
+  let count = 0
+  for (let i = 0; i < freq.length; i++) {
+    count += freq[i]
+    if (count >= k) return i + min
+  }
+  return null   // shouldn't happen
 }
