@@ -1,69 +1,43 @@
-interface ListNode {
-  val: number | string | any;   // whatever type you’re storing
-  next?: ListNode | null;
+function triangleAreaBaseHeight(
+    base: number,
+    height: number
+): number {
+    // Guard against negative or zero values
+    if (base <= 0 || height <= 0) {
+        throw new Error('Base and height must be positive numbers.');
+    }
+    return (base * height) / 2;
 }
-function reverse(head: ListNode | null): ListNode | null {
-  let prev: ListNode | null = null;
-  let cur = head;
 
-  while (cur) {
-    const next = cur.next;   // keep the next node
-    cur.next = prev;         // reverse the pointer
-    prev = cur;              // move prev forward
-    cur = next;              // move cur forward
-  }
+// Example usage
+console.log(triangleAreaBaseHeight(10, 5)); // 25
+function triangleAreaBySides(a: number, b: number, c: number): number {
+    // Validate that sides can form a triangle
+    if (a + b <= c || a + c <= b || b + c <= a) {
+        throw new Error('The given sides do not form a valid triangle.');
+    }
 
-  return prev; // new head
+    const s = (a + b + c) / 2;
+    const areaSquared = s * (s - a) * (s - b) * (s - c);
+
+    // Numerical safety check: areaSquared should be non‑negative
+    if (areaSquared < 0) {
+        throw new Error('Computed a negative area; check your side lengths.');
+    }
+
+    return Math.sqrt(areaSquared);
 }
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
-  
-  // --- find middle with fast/slow pointers ---
-  let slow = head;
-  let fast = head;
-  
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next!;
-  }
-  
-  // For odd‑length lists, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-  
-  // --- reverse the second half ---
-  const secondHalfStart = reverse(slow);
-  
-  // --- compare first half and reversed second half ---
-  let p1 = head;
-  let p2 = secondHalfStart;
-  let result = true;
-  
-  while (result && p2) {           // p2 is shorter or equal to p1
-    if (p1!.val !== p2.val) result = false;
-    p1 = p1!.next!;
-    p2 = p2.next!;
-  }
-  
-  // If you want the original list preserved, reverse the second half again:
-  // reverse(secondHalfStart);
-  
-  return result;
-}
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string | any)[] = [];
-  let cur = head;
 
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
-  }
+// Example
+console.log(triangleAreaBySides(3, 4, 5)); // 6
+type TriangleSpec =
+  | { base: number; height: number }
+  | { a: number; b: number; c: number };
 
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) return false;
-    cur = cur.next;
-  }
-  return true;
+function areaOfTriangle(spec: TriangleSpec): number {
+    if ('base' in spec && 'height' in spec) {
+        return triangleAreaBaseHeight(spec.base, spec.height);
+    } else {
+        return triangleAreaBySides(spec.a, spec.b, spec.c);
+    }
 }
