@@ -1,31 +1,52 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-    if (!s1 || !s2) return '';
+/**
+ * Counting sort for an array of integers.
+ *
+ * @param arr – array of numbers (integers) to sort
+ * @returns a new array containing the same numbers in ascending order
+ */
+export function countingSort(arr: number[]): number[] {
+  // nothing to sort
+  if (arr.length <= 1) return [...arr];
 
-    const m = s1.length, n = s2.length;
-    // one‑dimensional DP (only the previous row is needed)
-    const dp = new Array(n + 1).fill(0);
-    let maxLen = 0;          // longest length seen so far
-    let endIdxS1 = 0;        // index where that longest ends in s1
+  // 1. locate the min/max so we know how big the count array must be
+  let min = arr[0];
+  let max = arr[0];
 
-    for (let i = 1; i <= m; i++) {
-        // iterate j from right to left so the current row doesn't overwrite the
-        // values we still need from the previous row
-        for (let j = n; j >= 1; j--) {
-            if (s1[i - 1] === s2[j - 1]) {
-                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
-                if (dp[j] > maxLen) {
-                    maxLen = dp[j];
-                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
-                }
-            } else {
-                dp[j] = 0;
-            }
-        }
+  for (let i = 1; i < arr.length; i++) {
+    const v = arr[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+
+  // 2. build the frequency table
+  // offset shifts the negative values to positive indices
+  const offset = -min;                     // e.g. min = -3 → offset = 3
+  const size   = max - min + 1;            // number of distinct keys
+  const count  = new Array<number>(size).fill(0);
+
+  for (const v of arr) {
+    count[v + offset]++;
+  }
+
+  // 3. reconstruct the sorted array
+  const out: number[] = new Array(arr.length);
+  let writeIdx = 0;
+
+  for (let i = 0; i < size; i++) {
+    const qty = count[i];
+    if (qty === 0) continue;
+
+    const value = i - offset;   // bring back to original key
+    for (let j = 0; j < qty; j++) {
+      out[writeIdx++] = value;
     }
+  }
 
-    // Extract slice from s1 using the remembered end index and length
-    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
+  return out;
 }
+import { countingSort } from './countingSort';
 
-// Quick demo
-console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
+const unsorted = [23, -5, 1, 0, 5, -5, 23, 12];
+const sorted   = countingSort(unsorted);
+
+console.log(sorted); // [-5, -5, 0, 1, 5, 12, 23, 23]
