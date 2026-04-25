@@ -1,72 +1,57 @@
-// ---------------------------------------------------------------------------
-//  cron‑example.ts
-// ---------------------------------------------------------------------------
-
-// 1️⃣  Install the dependencies first (run once):
-//     npm install node-cron
-//
-// 2️⃣  If you’re compiling TypeScript with tsc, add the type definitions:
-//     npm install --save-dev @types/node-cron
-//
-// 3️⃣  Run this file with ts-node for instant feedback:
-//     npx ts-node cron‑example.ts
-//
-// ---------------------------------------------------------------------------
-
-import cron, { CronJob } from 'node-cron';
-
-/**
- * A tiny helper to show that the job really ran.
- * You could replace this with whatever real work you need.
- */
-const performScheduledWork = (): void => {
-  const now = new Date().toISOString();
-  console.log(`[${now}] The scheduled task has executed.`);
+function removeItem<T>(arr: T[], item: T): void {
+  const idx = arr.indexOf(item);      // first occurrence
+  if (idx !== -1) {
+    arr.splice(idx, 1);               // mutate the original array
+  }
+}
+function removed<T>(arr: T[], item: T): T[] {
+  return arr.filter(x => x !== item); // keeps unchanged items
+}
+function removeAt<T>(arr: T[], idx: number): void {
+  if (idx >= 0 && idx < arr.length) {
+    arr.splice(idx, 1);
+  }
+}
+const set = new Set(arr);   // unique elements
+set.delete(item);           // removes it if present
+const newArr = [...set];    // back to an array
+type RemoveOptions = {
+  /** If true, only remove the first matching element */
+  firstOnly?: boolean;
 };
 
-/**
- * Create a CronJob that triggers every minute.
- *
- * The cron expression '* * * * *' means:
- *   ┌───────────── minute (0 - 59)
- *   │ ┌───────────── hour (0 - 23)
- *   │ │ ┌───────────── day of month (1 - 31)
- *   │ │ │ ┌───────────── month (1 - 12)
- *   │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
- *   │ │ │ │ │
- *   │ │ │ │ │
- *   * * * * *
- *
- * Feel free to tweak the expression to your own schedule.
- */
-const scheduledJob: CronJob = cron.schedule(
-  '* * * * *',
-  () => {
-    try {
-      performScheduledWork();
-    } catch (e) {
-      console.error('Unexpected error in cron job:', e);
+function remove<T>(
+  arr: T[],
+  itemOrIdx: T | number,
+  options: RemoveOptions = {}
+): T[] {
+  const { firstOnly = false } = options;
+
+  // Remove by index
+  if (typeof itemOrIdx === 'number') {
+    const idx = itemOrIdx;
+    if (idx >= 0 && idx < arr.length) {
+      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
     }
-  },
-  {
-    scheduled: true,   // start automatically
-    timezone: 'UTC',   // use UTC by default; change if you need a different zone
+    return arr;
   }
-);
 
-// Optional: if you want to stop the job after, say, 5 executions
-let counter = 0;
-scheduledJob.setTimeZone('UTC'); // ensures time zone consistency
+  // Remove by value
+  const item = itemOrIdx as T;
+  const idx = arr.indexOf(item);
 
-scheduledJob.on('scheduled', () => {
-  console.log('Cron job started.');
-});
+  if (idx === -1) return arr; // nothing to do
 
-scheduledJob.start(); // Explicitly start, even though scheduled:true
+  if (firstOnly) {
+    // fast path: mutate in place
+    arr.splice(idx, 1);
+    return arr;
+  }
 
-// Clean exit after a short run (e.g., 5 minutes)
-setTimeout(() => {
-  console.log('Stopping cron job and exiting.');
-  scheduledJob.stop();
-  process.exit(0);
-}, 5 * 60 * 1000);
+  // immutable: create a new array
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
+let nums = [1, 2, 3, 2, 4];
+remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
+remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
+remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
