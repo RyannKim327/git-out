@@ -1,51 +1,43 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
-
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
-  }
-}
-
 /**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
+ * Returns true if n is a prime number, false otherwise.
+ *
+ * Numbers less than 2 are not prime by definition.
+ * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
+ * After that only numbers of the form 6k ± 1 can be prime.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1, and negatives are not prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
 
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
-
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
-
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
-
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
+  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
 
-  height(root)
-  return maxDiameter   // edge‑count diameter
+  return true;
 }
+[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
+  console.log(`${num} → ${isPrime(num)}`));
+1 → false
+2 → true
+3 → true
+4 → false
+5 → true
+16 → false
+17 → true
+19 → true
+20 → false
+23 → true
+24 → false
+29 → true
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
-
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+  }
+  return true;
+}
