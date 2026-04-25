@@ -1,14 +1,93 @@
-// 1️⃣ Using a regex (global, matches all spaces)
-const withoutSpaces1 = str.replace(/ /g, '');
+// ---- Graph representation -------------------------------------------------
+type Node = string | number;               // you can pick whatever type you prefer
+type AdjacencyList = Record<Node, Node[]>; // node -> list of neighbour nodes
 
-// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
-const withoutSpaces2 = str.replace(/\s+/g, '');
+class Graph {
+  private readonly adj: AdjacencyList = {};
 
-// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
-const withoutSpaces3 = str.split(' ').join('');
+  // Add (or extend) adjacency list for a node
+  addEdge(u: Node, v: Node, undirected = true) {
+    if (!this.adj[u]) this.adj[u] = [];
+    this.adj[u].push(v);
 
-// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
-const withoutSpaces4 = str.replaceAll(' ', '');
+    if (undirected) {
+      if (!this.adj[v]) this.adj[v] = [];
+      this.adj[v].push(u);
+    }
+  }
 
-// 5️⃣ For a functional style (works even in older versions)
-const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
+  // Optional: get all nodes in the graph
+  nodes(): Node[] {
+    return Object.keys(this.adj).map(k => parseNode(k));
+  }
+
+  // Expose raw list for BFS
+  get neighbours() {
+    return this.adj;
+  }
+}
+
+// Helper to preserve numeric keys when using an object as map
+function parseNode(val: string): Node {
+  return isNaN(Number(val)) ? val : Number(val);
+}
+
+// ---- BFS implementation ---------------------------------------------------
+/**
+ * Performs a breadth‑first search starting from `source`.
+ * @param graph      The graph to search.
+ * @param source     The node where we begin the search.
+ * @param target     (Optional) If provided, the search stops when this node is reached.
+ * @returns          If no target: a map of node → distance from source.
+ *                   If target: the distance to that node, or -1 if unreachable.
+ */
+function bfs(
+  graph: Graph,
+  source: Node,
+  target?: Node
+): Record<Node, number> | number {
+  const distances: Record<Node, number> = {};
+  const queue: Node[] = [source];
+  const visited = new Set<Node>();
+
+  visited.add(source);
+  distances[source] = 0;
+
+  while (queue.length) {
+    const u = queue.shift() as Node;
+    const currDist = distances[u] as number;
+
+    // Stop early if we’re looking for a particular target
+    if (target !== undefined && u === target) {
+      return currDist;
+    }
+
+    for (const v of graph.neighbours[u] || []) {
+      if (!visited.has(v)) {
+        visited.add(v);
+        distances[v] = currDist + 1;
+        queue.push(v);
+      }
+    }
+  }
+
+  // No path found to `target`
+  if (target !== undefined) return -1;
+
+  return distances;
+}
+
+// ---- Example usage --------------------------------------------------------
+const g = new Graph();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('C', 'E');
+g.addEdge('E', 'F');
+
+// Full distance map from A
+console.log('Distances from A:', bfs(g, 'A'));
+
+// Shortest path length from A to F
+console.log('Distance A → F:', bfs(g, 'A', 'F'));
