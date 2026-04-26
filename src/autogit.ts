@@ -1,30 +1,52 @@
-// Generic helper – works with any comparable type that can be used as a Map key
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
-}
+// src/services/ApiService.ts
+async function fetchRandomJoke(): Promise<any> {
+  const url = 'https://official-joke-api.appspot.com/jokes/random';
 
-// Simple test
-const arr1 = [1, 2, 3, 5, 8];
-const arr2 = [3, 4, 5, 6, 9];
+  try {
+    const response = await fetch(url);
 
-console.log(intersection(arr1, arr2)); // → [3, 5]
-function firstIntersection<T>(a: T[], b: T[]): T | undefined {
-  const setB = new Set(b);
-  for (const item of a) {
-    if (setB.has(item)) return item;
+    if (!response.ok) {
+      throw new Error(`API responded with ${response.status}`);
+    }
+
+    const data = await response.json();   // <- the "async task" part
+    return data;
+  } catch (err) {
+    console.warn('Unable to load joke:', err);
+    throw err;          // bubble up so the caller can react
   }
 }
-function intersectionBy<T, K extends keyof T>(
-  a: T[],
-  b: T[],
-  key: K
-): T[] {
-  const map = new Map(b.map(v => [v[key], v]));
-  return a.filter(v => map.has(v[key]));
+
+export const ApiService = { fetchRandomJoke };
+// src/App.tsx
+import React, { useEffect, useState } from 'react';
+import { Text, View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ApiService } from './services/ApiService';
+
+export default function App() {
+  const [joke, setJoke] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    ApiService.fetchRandomJoke()
+      .then((data) => setJoke(`${data.setup} … ${data.punchline}`))
+      .catch(() => setJoke('Couldn’t fetch a joke :('))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" />
+      ) : (
+        <Text style={styles.text}>{joke ?? 'Press reload to fetch a joke.'}</Text>
+      )}
+    </View>
+  );
 }
-interface User { id: number; name: string }
-const usersA = [{ id:1 },{ id:2 },{ id:3 }]
-const usersB = [{ id:2 },{ id:3 },{ id:4 }]
-console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
-const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 18, padding: 20, textAlign: 'center' },
+});
