@@ -1,60 +1,65 @@
-// bubbleSort.ts
-
-export type Comparator<T> = (a: T, b: T) => number;
-
 /**
- * Sorts an array in place using the Bubble Sort algorithm.
- *
- * @param arr    — The array to sort. It will be modified directly.
- * @param cmp    — Optional comparator. If omitted, number comparison is used.
- *
- * @returns      — The sorted array (same reference as the input).
+ * Returns the largest prime factor of a positive integer (>1).
+ * Uses trial division up to √n – fast enough for 32‑bit ints.
  */
-export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
-  const n = arr.length;
-  if (n < 2) return arr;          // nothing to do
+export function largestPrimeFactor(n: number): number {
+  if (n <= 1) throw new Error("n must be > 1");
 
-  // Traditional outer loop: run n‑1 passes
-  for (let pass = 0; pass < n - 1; pass++) {
-    let swapped = false;
+  // 2 is the only even prime
+  while (n % 2 === 0) n /= 2;
 
-    // Inner loop: compare adjacent elements
-    for (let i = 0; i < n - 1 - pass; i++) {
-      if (cmp(arr[i], arr[i + 1]) > 0) {
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
-        swapped = true;
-      }
+  // n is now odd – we only need to test odd divisors
+  let factor = 3;
+  const sqrt = Math.sqrt(n);
+  while (factor <= sqrt) {
+    while (n % factor === 0) {
+      n /= factor;          // keep dividing out this prime
     }
-
-    // If we made no swaps this pass, the array is sorted
-    if (!swapped) break;
+    factor += 2;            // next odd candidate
   }
 
-  return arr;
+  // If n is still > 2, it is a prime larger than any factor we tried.
+  return n;
+}
+/**
+ * Returns the largest prime factor of a BigInt > 1.
+ */
+export function largestPrimeFactorBigInt(n: bigint): bigint {
+  if (n <= 1n) throw new Error("n must be > 1");
+
+  // 2 is the only even prime
+  while (n % 2n === 0n) n /= 2n;
+
+  let factor = 3n;
+  const sqrt = bigintSqrt(n);
+  while (factor <= sqrt) {
+    while (n % factor === 0n) {
+      n /= factor;
+    }
+    factor += 2n;
+  }
+
+  return n;
 }
 
-/** Default numeric comparator */
-function defaultCmp(a: number, b: number): number {
-  return a - b;
+/**
+ * Integer square‑root of a BigInt – floor(√n).
+ * Uses Newton’s method; fast for large numbers.
+ */
+function bigintSqrt(value: bigint): bigint {
+  if (value < 0n) throw new Error("negative value");
+  if (value < 2n) return value;
+
+  let x0 = value;
+  let x1 = (x0 + 1n) >> 1n;
+  while (x1 < x0) {
+    x0 = x1;
+    x1 = (x0 + value / x0) >> 1n;
+  }
+  return x0;
 }
-import { bubbleSort } from './bubbleSort';
+console.log(largestPrimeFactor(13195));          // 29
+console.log(largestPrimeFactor(600851475143));   // 6857
 
-const numbers = [5, 2, 9, 1, 5, 6];
-bubbleSort(numbers);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-
-// Custom comparator – strings, case‑insensitive
-const strings = ['Banana', 'apple', 'Cherry'];
-bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(strings); // ['apple', 'Banana', 'Cherry']
-
-// Sorting objects
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Ali', age: 30 },
-  { name: 'Beth', age: 24 },
-  { name: 'Carl', age: 38 },
-];
-bubbleSort(people, (p, q) => p.age - q.age);
-console.log(people);
-// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
+console.log(largestPrimeFactorBigInt(13195n));    // 29n
+console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
