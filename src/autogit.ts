@@ -1,48 +1,30 @@
-/**
- * Return the longest common prefix of an array of strings.
- *
- * @param strs - The strings to investigate.
- * @returns The common prefix (empty string if there is none, or if the array is empty).
- */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
-
-  // Start with the first string as the provisional prefix
-  let prefix = strs[0];
-
-  // Stop as soon as prefix becomes empty – nothing more to find
-  for (let i = 1; i < strs.length && prefix.length; i++) {
-    const current = strs[i];
-    let j = 0;
-
-    // Compare char‑by‑char until a mismatch is detected
-    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-      j++;
-    }
-
-    // Update prefix to the matched portion
-    prefix = prefix.substring(0, j);
-  }
-
-  return prefix;
+// Generic helper – works with any comparable type that can be used as a Map key
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
 }
-const words = ["flower","flow","flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
 
-const mixed = ["dog","racecar","car"];
-console.log(longestCommonPrefix(mixed)); // → ""
+// Simple test
+const arr1 = [1, 2, 3, 5, 8];
+const arr2 = [3, 4, 5, 6, 9];
 
-const emptyCases: string[] = [];
-console.log(longestCommonPrefix(emptyCases)); // → ""
-export function lcpVertical(strs: string[]): string {
-  if (!strs.length) return "";
-  for (let i = 0; i < strs[0].length; i++) {
-    const char = strs[0][i];
-    for (let j = 1; j < strs.length; j++) {
-      if (i >= strs[j].length || strs[j][i] !== char) {
-        return strs[0].substring(0, i);
-      }
-    }
+console.log(intersection(arr1, arr2)); // → [3, 5]
+function firstIntersection<T>(a: T[], b: T[]): T | undefined {
+  const setB = new Set(b);
+  for (const item of a) {
+    if (setB.has(item)) return item;
   }
-  return strs[0];
 }
+function intersectionBy<T, K extends keyof T>(
+  a: T[],
+  b: T[],
+  key: K
+): T[] {
+  const map = new Map(b.map(v => [v[key], v]));
+  return a.filter(v => map.has(v[key]));
+}
+interface User { id: number; name: string }
+const usersA = [{ id:1 },{ id:2 },{ id:3 }]
+const usersB = [{ id:2 },{ id:3 },{ id:4 }]
+console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
+const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
