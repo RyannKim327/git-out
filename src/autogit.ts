@@ -1,44 +1,33 @@
-// Count the occurrences of the digit at `exp` (1, 10, 100, …)
-function countingSortByDigit(arr: number[], exp: number): number[] {
-  const n = arr.length;
-  const output = new Array(n);
-  const count = new Array(10).fill(0); // base 10
-
-  // 1. Count digit occurrences
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
-  }
-
-  // 2. Accumulate counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array (reverse traversal for stability)
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    output[count[digit] - 1] = arr[i];
-    count[digit] -= 1;
-  }
-
-  return output;
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
 
-  // Find the maximum number to know how many digits we need
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
+function middle<T>(head: Node<T> | null): Node<T> | null {
+  if (!head) return null;           // empty list
+
+  let slow: Node<T> | null = head;
+  let fast: Node<T> | null = head;
+
+  // Move `fast` twice as fast as `slow`.
+  // When `fast` reaches the end, `slow` will be at the middle.
+  while (fast && fast.next) {
+    slow = slow!.next!;
+    fast = fast.next.next;
   }
 
-  // Start with the least‑significant digit (exp = 1, 10, 100, …)
-  for (let exp = 1; max / exp >= 1; exp *= 10) {
-    arr = countingSortByDigit(arr, exp);
-  }
-
-  return arr;
+  return slow; // this node is the middle
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
+while (fast && fast.next) {
+  slow = slow!.next!;
+  fast = fast.next?.next ?? null;
+}
+
+// after loop, `slow` is still the first middle;
+slow = slow?.next ?? null;      // move to the second middle
+const list = new Node(1,
+  new Node(2,
+    new Node(3,
+      new Node(4,
+        new Node(5)))));
+
+console.log(middle(list)?.value); // 3
