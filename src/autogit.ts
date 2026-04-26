@@ -1,136 +1,86 @@
-// ---------- types ----------
-export type Node = string | number | symbol;
-
-export type Edge = {
-  to: Node;
-  cost: number;
-};
-
-export type Graph = Map<Node, Edge[]>;
-
-// ---------- binary min‑heap ----------
-class PriorityQueue<T> {
-  private items: Array<[T, number]> = []; // [value, priority]
-
-  private static swap(arr: any[], i: number, j: number) {
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+/**
+ * Convert a decimal number to a binary string.
+ *
+ * @param n   A whole number (integer) you want to encode.
+ * @returns   Binary representation of `n` as a string.
+ */
+function decimalToBinary(n: number): string {
+  // JavaScript (and TypeScript) can do the heavy lifting for us.
+  // make sure the number is an integer first.
+  if (!Number.isFinite(n)) {
+    throw new RangeError('Only finite numbers are supported.');
   }
 
-  private siftUp(idx: number) {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.items[parent][1] <= this.items[idx][1]) break;
-      PriorityQueue.swap(this.items, parent, idx);
-      idx = parent;
-    }
+  // The built‑in toString radix overload expects an integer.
+  // If you pass a floating point value, the fractional part is
+  // silently truncated, so we guard against that.
+  if (!Number.isInteger(n)) {
+    throw new TypeError('Only integers are supported.  For decimal fractions see the next example.');
   }
 
-  private siftDown(idx: number) {
-    const length = this.items.length;
-    while (true) {
-      let left = idx * 2 + 1;
-      let right = idx * 2 + 2;
-      let smallest = idx;
-
-      if (left < length && this.items[left][1] < this.items[smallest][1])
-        smallest = left;
-      if (right < length && this.items[right][1] < this.items[smallest][1])
-        smallest = right;
-
-      if (smallest === idx) break;
-      PriorityQueue.swap(this.items, idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  enqueue(value: T, priority: number) {
-    this.items.push([value, priority]);
-    this.siftUp(this.items.length - 1);
-  }
-
-  dequeue(): T | undefined {
-    if (!this.items.length) return undefined;
-    const min = this.items[0][0];
-    const last = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = last;
-      this.siftDown(0);
-    }
-    return min;
-  }
-
-  get size() {
-    return this.items.length;
-  }
+  // Negative numbers are handled automatically by toString.
+  return n.toString(2);
 }
 
-// ---------- Dijkstra ----------
-export function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; predecessors: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const predecessors = new Map<Node, Node | null>();
-  const pq = new PriorityQueue<Node>();
+// Usage examples:
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+console.log(decimalToBinary(-5));  // "-101"
+function bigIntToBinary(n: bigint): string {
+  if (n < 0n) {
+    return '-' + (-n).toString(2);
+  }
+  return n.toString(2);
+}
 
-  // init
-  graph.forEach((_, node) => {
-    distances.set(node, Infinity);
-    predecessors.set(node, null);
-  });
-  distances.set(start, 0);
-  pq.enqueue(start, 0);
+// Examples
+console.log(bigIntToBinary(123456789012345678901234567890123456789n));
+// "1000101100110011100111101111011011110010101110001010011001110111"
+/**
+ * Convert a decimal fraction (0 <= n < 1) to its binary representation.
+ * Stops when the binary terminates or a max length is reached.
+ *
+ * @param n            The fractional part to convert.
+ * @param maxBits     Optional maximum number of fractional bits.
+ * @returns           Binary string including the leading "0.".
+ */
+function fractionalDecimalToBinary(n: number, maxBits = 32): string {
+  if (n <= 0 || n >= 1) {
+    throw new RangeError('Input must be a fractional part between 0 (exclusive) and 1 (exclusive).');
+  }
 
-  while (pq.size) {
-    const u = pq.dequeue()!;
-    const du = distances.get(u)!;
+  let result = '0.';
+  let value = n;
 
-    // Stop early if we hit the target (optional)
-    if (target !== undefined && u === target) break;
-
-    const edges = graph.get(u) || [];
-    for (const { to: v, cost } of edges) {
-      const alt = du + cost;
-      if (alt < distances.get(v)!) {
-        distances.set(v, alt);
-        predecessors.set(v, u);
-        pq.enqueue(v, alt);
-      }
+  for (let i = 0; i < maxBits; i++) {
+    value *= 2;
+    if (value >= 1) {
+      result += '1';
+      value -= 1;
+    } else {
+      result += '0';
     }
+    if (value === 0) break; // terminates exactly
   }
 
-  return { distances, predecessors };
+  return result;
 }
 
-// ---------- helper to rebuild a path ----------
-export function reconstructPath(
-  predecessors: Map<Node, Node | null>,
-  start: Node,
-  target: Node
-): Node[] {
-  const path: Node[] = [];
-  let current: Node | null = target;
+// Examples
+console.log(fractionalDecimalToBinary(0.625)); // "0.101"
+console.log(fractionalDecimalToBinary(0.1));   // "0.00011001100110011001100110011001"
+function floatToBinary(num: number, maxFractionBits = 16): string {
+  if (!Number.isFinite(num)) throw new RangeError('Only finite numbers are supported.');
 
-  while (current !== null) {
-    path.unshift(current);
-    if (current === start) break;
-    current = predecessors.get(current) || null;
-  }
+  const sign = num < 0 ? '-' : '';
+  const absolute = Math.abs(num);
+  const intPart = Math.trunc(absolute);
+  const fracPart = absolute - intPart;
 
-  if (path[0] !== start) {
-    throw new Error(`No path found from ${String(start)} to ${String(target)}`);
-  }
+  const intBin = intPart.toString(2);
+  const fracBin = fracPart ? fractionalDecimalToBinary(fracPart, maxFractionBits).slice(1) : '';
 
-  return path;
+  return `${sign}${intBin}${fracBin ? '.' + fracBin : ''}`;
 }
-const g: Graph = new Map([
-  ['A', [{ to: 'B', cost: 2 }, { to: 'C', cost: 5 }]],
-  ['B', [{ to: 'C', cost: 1 }, { to: 'D', cost: 4 }]],
-  ['C', [{ to: 'D', cost: 1 }]],
-  ['D', []],
-]);
 
-const { distances, predecessors } = dijkstra(g, 'A', 'D');
-console.log('Distance to D:', distances.get('D'));      // 4
-console.log('Path:', reconstructPath(predecessors, 'A', 'D'));
+console.log(floatToBinary(-12.75)); // "-1100.11"
