@@ -1,52 +1,52 @@
-// src/services/ApiService.ts
-async function fetchRandomJoke(): Promise<any> {
-  const url = 'https://official-joke-api.appspot.com/jokes/random';
+/**
+ * Find the longest common subsequence between two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS string (empty if there is none).
+ */
+export function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length
+  const m = b.length
 
-  try {
-    const response = await fetch(url);
+  // 1‑based DP table, size (n+1) × (m+1)
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    Array(m + 1).fill(0)
+  )
 
-    if (!response.ok) {
-      throw new Error(`API responded with ${response.status}`);
+  // Build the DP table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
+      }
     }
-
-    const data = await response.json();   // <- the "async task" part
-    return data;
-  } catch (err) {
-    console.warn('Unable to load joke:', err);
-    throw err;          // bubble up so the caller can react
   }
+
+  // Reconstruct the LCS from the table
+  let i = n
+  let j = m
+  const lcs: string[] = []
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs.push(a[i - 1]) // characters match – part of LCS
+      i--
+      j--
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--
+    } else {
+      j--
+    }
+  }
+
+  return lcs.reverse().join("")
 }
+import { longestCommonSubsequence } from "./lcs"
 
-export const ApiService = { fetchRandomJoke };
-// src/App.tsx
-import React, { useEffect, useState } from 'react';
-import { Text, View, ActivityIndicator, StyleSheet } from 'react-native';
-import { ApiService } from './services/ApiService';
+const s1 = "AGGTAB"
+const s2 = "GXTXAYB"
 
-export default function App() {
-  const [joke, setJoke] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    ApiService.fetchRandomJoke()
-      .then((data) => setJoke(`${data.setup} … ${data.punchline}`))
-      .catch(() => setJoke('Couldn’t fetch a joke :('))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" />
-      ) : (
-        <Text style={styles.text}>{joke ?? 'Press reload to fetch a joke.'}</Text>
-      )}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 18, padding: 20, textAlign: 'center' },
-});
+console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
