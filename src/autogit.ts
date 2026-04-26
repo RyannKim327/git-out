@@ -1,79 +1,60 @@
-/**
- * Merge two sorted sub‑arrays into one sorted array.
- * `left` and `right` must already be sorted.
- * Returns a new sorted array.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  compare: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0; // index for left
-  let j = 0; // index for right
+// bubbleSort.ts
 
-  while (i < left.length && j < right.length) {
-    // If left[i] <= right[j] according to the compare function,
-    // push left[i] into the result and advance i
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i]);
-      i++;
-    } else {
-      result.push(right[j]);
-      j++;
+export type Comparator<T> = (a: T, b: T) => number;
+
+/**
+ * Sorts an array in place using the Bubble Sort algorithm.
+ *
+ * @param arr    — The array to sort. It will be modified directly.
+ * @param cmp    — Optional comparator. If omitted, number comparison is used.
+ *
+ * @returns      — The sorted array (same reference as the input).
+ */
+export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;          // nothing to do
+
+  // Traditional outer loop: run n‑1 passes
+  for (let pass = 0; pass < n - 1; pass++) {
+    let swapped = false;
+
+    // Inner loop: compare adjacent elements
+    for (let i = 0; i < n - 1 - pass; i++) {
+      if (cmp(arr[i], arr[i + 1]) > 0) {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
+        swapped = true;
+      }
     }
+
+    // If we made no swaps this pass, the array is sorted
+    if (!swapped) break;
   }
 
-  // Append any remaining elements.
-  // Only one of the following while loops will actually run.
-  while (i < left.length) {
-    result.push(left[i]);
-    i++;
-  }
-  while (j < right.length) {
-    result.push(right[j]);
-    j++;
-  }
-
-  return result;
+  return arr;
 }
 
-/**
- * Recursively divides the array and merges the sorted halves.
- * `compare` should return:
- *   < 0 if a < b
- *   0  if a === b
- *   > 0 if a > b
- */
-export function mergeSort<T>(
-  array: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array; // Base case: already sorted
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
+/** Default numeric comparator */
+function defaultCmp(a: number, b: number): number {
+  return a - b;
 }
-// Sort numbers
-const nums = [8, 3, 5, 1, 9, 0];
-const sortedNums = mergeSort(nums);
-// -> [0, 1, 3, 5, 8, 9]
+import { bubbleSort } from './bubbleSort';
 
-// Sort strings alphabetically
-const words = ["pear", "apple", "banana"];
-const sortedWords = mergeSort(words);
-// -> ["apple", "banana", "pear"]
+const numbers = [5, 2, 9, 1, 5, 6];
+bubbleSort(numbers);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
 
-// Sort objects by a property
-type Person = { name: string; age: number };
+// Custom comparator – strings, case‑insensitive
+const strings = ['Banana', 'apple', 'Cherry'];
+bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(strings); // ['apple', 'Banana', 'Cherry']
+
+// Sorting objects
+interface Person { name: string; age: number }
 const people: Person[] = [
-  { name: "Charlie", age: 25 },
-  { name: "Alice", age: 30 },
-  { name: "Bob", age: 20 },
+  { name: 'Ali', age: 30 },
+  { name: 'Beth', age: 24 },
+  { name: 'Carl', age: 38 },
 ];
-
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// -> [{name:"Bob", age:20}, {name:"Charlie", age:25}, {name:"Alice", age:30}]
+bubbleSort(people, (p, q) => p.age - q.age);
+console.log(people);
+// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
