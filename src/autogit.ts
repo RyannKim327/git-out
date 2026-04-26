@@ -1,65 +1,78 @@
 /**
- * Returns the largest prime factor of a positive integer (>1).
- * Uses trial division up to √n – fast enough for 32‑bit ints.
+ * A very small, self‑contained topological‑sort utility.
+ *
+ * Users should supply a directed graph in adjacency‑list form:
+ *
+ *   const g = new Map<string, Set<string>>();
+ *   g.set('A', new Set(['B', 'C']));
+ *   g.set('B', new Set(['D']));
+ *   g.set('C', new Set(['D']));
+ *   g.set('D', new Set());
+ *
+ * Call `topologicalSort(g)` and receive an array in an order that
+ * satisfies all dependencies. If a cycle is detected the function
+ * throws an Error describing the nodes that loop.
  */
-export function largestPrimeFactor(n: number): number {
-  if (n <= 1) throw new Error("n must be > 1");
 
-  // 2 is the only even prime
-  while (n % 2 === 0) n /= 2;
-
-  // n is now odd – we only need to test odd divisors
-  let factor = 3;
-  const sqrt = Math.sqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0) {
-      n /= factor;          // keep dividing out this prime
-    }
-    factor += 2;            // next odd candidate
-  }
-
-  // If n is still > 2, it is a prime larger than any factor we tried.
-  return n;
-}
-/**
- * Returns the largest prime factor of a BigInt > 1.
- */
-export function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) throw new Error("n must be > 1");
-
-  // 2 is the only even prime
-  while (n % 2n === 0n) n /= 2n;
-
-  let factor = 3n;
-  const sqrt = bigintSqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0n) {
-      n /= factor;
-    }
-    factor += 2n;
-  }
-
-  return n;
-}
+type Graph<ID> = Map<ID, Set<ID>>;
 
 /**
- * Integer square‑root of a BigInt – floor(√n).
- * Uses Newton’s method; fast for large numbers.
+ * Detects a directed cycle in a graph by trying a Kahn‑style removal.
  */
-function bigintSqrt(value: bigint): bigint {
-  if (value < 0n) throw new Error("negative value");
-  if (value < 2n) return value;
+function topologicalSort<ID>(graph: Graph<ID>): ID[] {
+  // 1. Make a copy of indegree counts
+  const indegree = new Map<ID, number>();
 
-  let x0 = value;
-  let x1 = (x0 + 1n) >> 1n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) >> 1n;
+  // Walk the graph once to count in‑edges
+  for (const [node, edges] of graph.entries()) {
+    // Ensure every node in the map has an indegree entry
+    if (!indegree.has(node)) indegree.set(node, 0);
+    for (const neigh of edges) {
+      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
+      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
+      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
+    }
   }
-  return x0;
-}
-console.log(largestPrimeFactor(13195));          // 29
-console.log(largestPrimeFactor(600851475143));   // 6857
 
-console.log(largestPrimeFactorBigInt(13195n));    // 29n
-console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
+  // 2. Queue of nodes with no incoming edges
+  const queue: ID[] = [];
+  for (const [node, num] of indegree.entries())
+    if (num === 0) queue.push(node);
+
+  const result: ID[] = [];
+
+  // 3. Repeatedly pop a zero‑in‑degree node, append to result
+  //    and “remove” its outgoing edges
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    const outgoing = graph.get(node) ?? new Set();
+    for (const neigh of outgoing) {
+      // decrement indegree; if it goes to 0 push to queue
+      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
+      indegree.set(neigh, newIndeg);
+      if (newIndeg === 0) queue.push(neigh);
+    }
+  }
+
+  // 4. If we didn't visit all nodes → a cycle exists
+  if (result.length !== indegree.size) {
+    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
+    throw new Error(
+      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
+    );
+  }
+
+  return result;
+}
+
+/* ---------- demo ---------- */
+const example = new Map<string, Set<string>>([
+  ['A', new Set(['B', 'C'])],
+  ['B', new Set(['D'])],
+  ['C', new Set(['D'])],
+  ['D', new Set()],
+]);
+
+console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
