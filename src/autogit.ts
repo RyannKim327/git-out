@@ -1,34 +1,42 @@
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined; // no second element
+// O(n) time, O(1) space – the classic Boyer‑Moore vote‑count algorithm
+function majorityElement(nums: number[]): number | null {
+  if (nums.length === 0) return null;  // no data
 
-  let largest = -Infinity;
-  let second = -Infinity;
+  // 1️⃣ First pass: find a candidate
+  let candidate = nums[0];
+  let count = 1;
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n !== largest) {
-      second = n;
+  for (let i = 1; i < nums.length; i++) {
+    if (nums[i] === candidate) {
+      count++;
+    } else {
+      count--;
+      if (count === 0) {
+        candidate = nums[i];
+        count = 1;
+      }
     }
   }
 
-  return second === -Infinity ? undefined : second;
-}
-function secondLargest(nums: number[]): number | undefined {
-  const unique = Array.from(new Set(nums));     // remove duplicates
-  if (unique.length < 2) return undefined;      // no second element
+  // 2️⃣ Second pass: verify that the candidate really is the majority
+  count = 0;
+  for (const v of nums) if (v === candidate) count++;
 
-  unique.sort((a, b) => b - a);                // descending order
-  return unique[1];
+  return count > Math.floor(nums.length / 2) ? candidate : null;
 }
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+function majorityElementUsingMap(nums: number[]): number | null {
+  const freq = new Map<number, number>();
+  const threshold = Math.floor(nums.length / 2);
 
-  const max = Math.max(...nums);
-  const second = Math.max(...nums.filter(x => x !== max));
-  return second === -Infinity ? undefined : second;
+  for (const n of nums) {
+    freq.set(n, (freq.get(n) ?? 0) + 1);
+    if (freq.get(n)! > threshold) {
+      return n;            // early win
+    }
+  }
+  return null;              // nothing crossed threshold
 }
-const arr = [5, 1, 8, 7, 8, 3];
-
-console.log(secondLargest(arr)); // 7
+console.log(majorityElement([3, 3, 4, 2, 3]));          // 3
+console.log(majorityElement([1, 2, 3, 4]));             // null (no majority)
+console.log(majorityElementUsingMap([1, 1, 2, 1, 3]));  // 1
+function majorityString<T>(arr: T[]): T | null { /* same logic, just generic */ }
