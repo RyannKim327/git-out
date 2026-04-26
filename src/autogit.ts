@@ -1,52 +1,79 @@
 /**
- * Find the longest common subsequence between two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS string (empty if there is none).
+ * Edge list representation – maps a node id to an array of neighbour ids.
  */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length
-  const m = b.length
+type AdjacencyList<T> = Record<string, T[]>;
 
-  // 1‑based DP table, size (n+1) × (m+1)
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    Array(m + 1).fill(0)
-  )
+/**
+ * A simple helper that maps a node to its “depth” from one end of the search.
+ */
+type Visited<T> = Record<string, number>;
 
-  // Build the DP table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
+/**
+ * Bidirectional BFS.
+ *
+ * @param graph   The graph, keyed by string id, pointing to an array of neighbour ids.
+ * @param start   The id of the start node.
+ * @param target  The id of the target node.
+ * @returns The length of the shortest path, or -1 if no path exists.
+ */
+export function bidirectionalBfs<T extends string>(
+  graph: AdjacencyList<T>,
+  start: T,
+  target: T
+): number {
+  if (start === target) return 0;
+
+  // Two frontiers: one growing from start, one from target
+  let frontierStart = new Set([start]);
+  let frontierTarget = new Set([target]);
+
+  // Book‑keeping maps: node → distance from its originating side
+  const visitedStart: Visited<T> = { [start]: 0 };
+  const visitedTarget: Visited<T> = { [target]: 0 };
+
+  let distance = 0; // overall layers explored
+
+  while (frontierStart.size && frontierTarget.size) {
+    // Always expand the smaller frontier first
+    if (frontierStart.size > frontierTarget.size) {
+      [frontierStart, frontierTarget] = [frontierTarget, frontierStart];
+      [visitedStart, visitedTarget] = [visitedTarget, visitedStart];
+    }
+
+    const nextFrontier = new Set<T>();
+
+    for (const node of frontierStart) {
+      const neighbours = graph[node] ?? [];
+
+      for (const neighbour of neighbours) {
+        // If the other search has already hit this node, we’re done
+        if (visitedTarget.hasOwnProperty(neighbour)) {
+          return visitedStart[node] + 1 + visitedTarget[neighbour];
+        }
+
+        // New node, add to the next layer and record distance
+        if (!visitedStart.hasOwnProperty(neighbour)) {
+          visitedStart[neighbour] = visitedStart[node] + 1;
+          nextFrontier.add(neighbour);
+        }
       }
     }
+
+    frontierStart = nextFrontier;
+    distance += 1;
   }
 
-  // Reconstruct the LCS from the table
-  let i = n
-  let j = m
-  const lcs: string[] = []
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs.push(a[i - 1]) // characters match – part of LCS
-      i--
-      j--
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--
-    } else {
-      j--
-    }
-  }
-
-  return lcs.reverse().join("")
+  // No intersection found
+  return -1;
 }
-import { longestCommonSubsequence } from "./lcs"
+const graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd', 'e'],
+  c: ['a', 'f'],
+  d: ['b'],
+  e: ['b', 'f'],
+  f: ['c', 'e'],
+} as const; // type inference: “as const” locks the keys
 
-const s1 = "AGGTAB"
-const s2 = "GXTXAYB"
-
-console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
+console.log(bidirectionalBfs(graph, 'a', 'f')); // → 3 (a‑b‑e‑f or a‑c‑f)
+console.log(bidirectionalBfs(graph, 'a', 'x')); // → -1 (x not in graph)
