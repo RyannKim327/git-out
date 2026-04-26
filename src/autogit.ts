@@ -1,41 +1,14 @@
-/**
- * Checks whether a string is a palindrome.
- *
- * Options:
- *   - ignoreCase: treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
- *
- * @param input The string to test
- * @param opts  Optional settings
- * @returns true if `input` is a palindrome under the chosen rules
- */
-export function isPalindrome(
-  input: string,
-  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+// 1️⃣ Using a regex (global, matches all spaces)
+const withoutSpaces1 = str.replace(/ /g, '');
 
-  let str = input;
+// 2️⃣ If you need to get rid of **all** whitespace (tabs, newlines, etc.)
+const withoutSpaces2 = str.replace(/\s+/g, '');
 
-  // 1. Collapse the string if requested
-  if (ignoreNonAlnum) {
-    // Keep only ASCII letters and digits. For Unicode you might want
-    // a regex like `/\p{L}\p{N}/gu` instead.
-    str = str.replace(/[^A-Za-z0-9]/g, "");
-  }
+// 3️⃣ Using `split` + `join` (this will only remove the literal space character)
+const withoutSpaces3 = str.split(' ').join('');
 
-  // 2. Normalize case if requested
-  if (ignoreCase) {
-    str = str.toLowerCase();
-  }
+// 4️⃣ If you have ES2021, `replaceAll` is a tiny bit cleaner
+const withoutSpaces4 = str.replaceAll(' ', '');
 
-  // 3. Compare the string to its reverse
-  const reversed = str.split("").reverse().join("");
-  return str === reversed;
-}
-console.log(isPalindrome("racecar"));                    // true
-console.log(isPalindrome("RaceCar"));                    // true
-console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("No lemon, no melon"));          // true
-console.log(isPalindrome("hello"));                       // false
+// 5️⃣ For a functional style (works even in older versions)
+const withoutSpaces5 = Array.from(str).filter(ch => ch !== ' ').join('');
