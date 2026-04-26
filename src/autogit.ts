@@ -1,96 +1,69 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
+// simple-api-call.ts
+/**
+ * A minimal example of calling a REST API in Node.js with TypeScript.
+ * Requires Node 18+ (fetch is built‑in). If you need older Node, use
+ * node‑fetch or axios instead.
+ */
 
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
+import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
 
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
+// 1️⃣  Define the shape of the JSON we expect back:
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
-
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
-
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
-      }
-    }
-
-    // Stop early if nothing changed
-    if (!updated) break;
+// 2️⃣  Utility to guard for non‑2xx HTTP codes:
+function checkStatus(response: Response): Response {
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegativeCycle };
+  return response;
 }
 
-/* ---------- 3️⃣  Example usage ------------------------------------ */
+// 3️⃣  The async function that does the fetching:
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
 
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
+  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
+  const options: RequestInit = {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
+  };
 
-const vertexCount = 4;
-const source = 0;
+  const response = await fetch(url, options);
+  checkStatus(response);
 
-const result = bellmanFord(vertexCount, edges, source);
+  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
+  const data = (await response.json()) as Post;
 
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
+  // Non‑strict guard: ensure required keys exist
+  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
+    throw new Error('Malformed data');
   }
-  return path;
+
+  return data;
 }
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+// 4️⃣  Drive the example: fetch a single post and log it.
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log('Fetched post:', post);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+})();
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "./dist"
+  },
+  "include": ["simple-api-call.ts"]
+}
