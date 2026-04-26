@@ -1,46 +1,41 @@
-type AnagramOpts = {
-  /** treat 'A' the same as 'a' */
-  caseSensitive?: boolean;
-  /** ignore all whitespace (spaces, tabs, newlines) */
-  ignoreSpaces?: boolean;
-};
+// Basic singly‑linked list node
+type ListNode<T> = { value: T; next: ListNode<T> | null };
 
-function areAnagrams(a: string, b: string, opts?: AnagramOpts): boolean {
-  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) throw new Error("n must be a positive integer");
 
-  // Helper to clean a string according to the options
-  const clean = (s: string) =>
-    (!caseSensitive ? s.toLowerCase() : s)
-      .split('')
-      .filter(ch => !(ignoreSpaces && /\s/.test(ch)))
-      .sort()   // sort alphabetically
-      .join('');
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  return clean(a) === clean(b);
-}
-console.log(areAnagrams('Listen', 'Silent'));          // true (case‑insensitive)
-console.log(areAnagrams('Listen', 'Silent', {caseSensitive: true})); // false
-console.log(areAnagrams('conversation', 'voices rant on', {ignoreSpaces: true})); // true
-function areAnagramsFast(a: string, b: string, opts?: AnagramOpts): boolean {
-  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
-
-  const buildMap = (s: string) => {
-    const map = new Map<string, number>();
-    for (const ch of s) {
-      const key = (!caseSensitive ? ch.toLowerCase() : ch);
-      if (ignoreSpaces && /\s/.test(key)) continue;
-      map.set(key, (map.get(key) || 0) + 1);
-    }
-    return map;
-  };
-
-  const mapA = buildMap(a);
-  const mapB = buildMap(b);
-
-  if (mapA.size !== mapB.size) return false;
-
-  for (const [k, v] of mapA.entries()) {
-    if (mapB.get(k) !== v) return false;
+  // 1️⃣ Move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null; // fewer than n nodes
+    fast = fast.next;
   }
-  return true;
+
+  // 2️⃣ Move both pointers until fast is at the end
+  while (fast) {
+    fast = fast.next;
+    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
+  }
+
+  return slow; // happy: nth from end
+}
+// build a list 1 -> 2 -> 3 -> 4 -> 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const head: ListNode<number> = { value: 1, next: node2 };
+
+const thirdFromEnd = nthFromEnd(head, 3);
+console.log(thirdFromEnd?.value); // 3
+function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  let current = head;
+  let idx = 1;
+  while (current && idx < n) {
+    current = current.next;
+    idx++;
+  }
+  return idx === n ? current : null;
 }
