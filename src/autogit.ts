@@ -1,41 +1,79 @@
 /**
- * Checks whether a string is a palindrome.
- *
- * Options:
- *   - ignoreCase: treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
- *
- * @param input The string to test
- * @param opts  Optional settings
- * @returns true if `input` is a palindrome under the chosen rules
+ * Merge two sorted sub‑arrays into one sorted array.
+ * `left` and `right` must already be sorted.
+ * Returns a new sorted array.
  */
-export function isPalindrome(
-  input: string,
-  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+function merge<T>(
+  left: T[],
+  right: T[],
+  compare: (a: T, b: T) => number
+): T[] {
+  const result: T[] = [];
+  let i = 0; // index for left
+  let j = 0; // index for right
 
-  let str = input;
-
-  // 1. Collapse the string if requested
-  if (ignoreNonAlnum) {
-    // Keep only ASCII letters and digits. For Unicode you might want
-    // a regex like `/\p{L}\p{N}/gu` instead.
-    str = str.replace(/[^A-Za-z0-9]/g, "");
+  while (i < left.length && j < right.length) {
+    // If left[i] <= right[j] according to the compare function,
+    // push left[i] into the result and advance i
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i]);
+      i++;
+    } else {
+      result.push(right[j]);
+      j++;
+    }
   }
 
-  // 2. Normalize case if requested
-  if (ignoreCase) {
-    str = str.toLowerCase();
+  // Append any remaining elements.
+  // Only one of the following while loops will actually run.
+  while (i < left.length) {
+    result.push(left[i]);
+    i++;
+  }
+  while (j < right.length) {
+    result.push(right[j]);
+    j++;
   }
 
-  // 3. Compare the string to its reverse
-  const reversed = str.split("").reverse().join("");
-  return str === reversed;
+  return result;
 }
-console.log(isPalindrome("racecar"));                    // true
-console.log(isPalindrome("RaceCar"));                    // true
-console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("No lemon, no melon"));          // true
-console.log(isPalindrome("hello"));                       // false
+
+/**
+ * Recursively divides the array and merges the sorted halves.
+ * `compare` should return:
+ *   < 0 if a < b
+ *   0  if a === b
+ *   > 0 if a > b
+ */
+export function mergeSort<T>(
+  array: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (array.length <= 1) return array; // Base case: already sorted
+
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
+
+  return merge(left, right, compare);
+}
+// Sort numbers
+const nums = [8, 3, 5, 1, 9, 0];
+const sortedNums = mergeSort(nums);
+// -> [0, 1, 3, 5, 8, 9]
+
+// Sort strings alphabetically
+const words = ["pear", "apple", "banana"];
+const sortedWords = mergeSort(words);
+// -> ["apple", "banana", "pear"]
+
+// Sort objects by a property
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: "Charlie", age: 25 },
+  { name: "Alice", age: 30 },
+  { name: "Bob", age: 20 },
+];
+
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// -> [{name:"Bob", age:20}, {name:"Charlie", age:25}, {name:"Alice", age:30}]
