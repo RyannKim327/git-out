@@ -1,42 +1,34 @@
-// O(n) time, O(1) space – the classic Boyer‑Moore vote‑count algorithm
-function majorityElement(nums: number[]): number | null {
-  if (nums.length === 0) return null;  // no data
+const haystack: string = "Hello, world!";
+const needle: string = "world";
 
-  // 1️⃣ First pass: find a candidate
-  let candidate = nums[0];
-  let count = 1;
+const found = haystack.includes(needle); // true
+const haystack = "Hello, world!";
+const needle = "world";
 
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = nums[i];
-        count = 1;
-      }
-    }
+const found = haystack.indexOf(needle) !== -1; // true
+const haystack = "Hello, world!";
+const pattern = /world/;          // or /world/i for case‑insensitive
+const found = pattern.test(haystack); // true
+// case‑insensitive:
+const haystack = "Hello, World!";
+const needle = "world";
+const found = haystack.toLowerCase().includes(needle.toLowerCase());
+
+// locale‑aware:
+const localeFound = haystack.localeCompare(needle, undefined, { sensitivity: 'accent' }) === 0;
+/**
+ * Checks whether a string contains a substring, optionally case‑insensitive.
+ */
+function contains(
+  target: string,
+  probe: string,
+  caseInsensitive = false
+): boolean {
+  if (caseInsensitive) {
+    return target.toLowerCase().includes(probe.toLowerCase());
   }
-
-  // 2️⃣ Second pass: verify that the candidate really is the majority
-  count = 0;
-  for (const v of nums) if (v === candidate) count++;
-
-  return count > Math.floor(nums.length / 2) ? candidate : null;
+  return target.includes(probe);
 }
-function majorityElementUsingMap(nums: number[]): number | null {
-  const freq = new Map<number, number>();
-  const threshold = Math.floor(nums.length / 2);
 
-  for (const n of nums) {
-    freq.set(n, (freq.get(n) ?? 0) + 1);
-    if (freq.get(n)! > threshold) {
-      return n;            // early win
-    }
-  }
-  return null;              // nothing crossed threshold
-}
-console.log(majorityElement([3, 3, 4, 2, 3]));          // 3
-console.log(majorityElement([1, 2, 3, 4]));             // null (no majority)
-console.log(majorityElementUsingMap([1, 1, 2, 1, 3]));  // 1
-function majorityString<T>(arr: T[]): T | null { /* same logic, just generic */ }
+// Usage
+const ok = contains("Hello, World!", "world", true); // true
