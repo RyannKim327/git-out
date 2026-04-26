@@ -1,29 +1,40 @@
-/**
- * Returns the first non‑repeating character in `s`, or `null` if every
- * character repeats. The search respects Unicode code‑points, so it works
- * with emojis, accented letters, etc.
- *
- * @param s – input string
- * @returns the character or null
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // Count every character in a single scan.
-  const counter = new Map<string, number>();
+// rock-paper-scissors.ts
+import * as readline from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
 
-  for (const ch of s) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
-  }
+const rl = readline.createInterface({
+  input: stdin,
+  output: stdout,
+});
 
-  // Find the first character whose count is 1.
-  for (const ch of s) {
-    if (counter.get(ch) === 1) {
-      return ch;
-    }
-  }
+async function play() {
+  console.log('Rock, Paper, Scissors!');
+  const human = (await rl.question('Your move (rock/paper/scissors): ')).trim().toLowerCase();
 
-  return null;          // all characters repeat
+  const options = ['rock', 'paper', 'scissors'] as const;
+  const comp = options[Math.floor(Math.random() * options.length)];
+
+  console.log(`\nComputer chose: ${comp}\n`);
+
+  const result =
+    human === comp
+      ? "It's a tie."
+      : (human === 'rock' && comp === 'scissors') ||
+        (human === 'paper' && comp === 'rock') ||
+        (human === 'scissors' && comp === 'paper')
+      ? 'You win!'
+      : 'You lose!';
+
+  console.log(result);
+  rl.close();
 }
-console.log(firstNonRepeatingChar("abacabad")); // "c"
-console.log(firstNonRepeatingChar("swiss"));    // "w"
-console.log(firstNonRepeatingChar("aabb"));     // null
-console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
+
+play();
+# 1. Install TypeScript locally (if you haven’t already)
+npm install -D typescript
+
+# 2. Compile the file
+npx tsc rock-paper-scissors.ts --lib es2023,dom
+
+# 3. Execute the compiled JS
+node rock-paper-scissors.js
