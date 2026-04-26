@@ -1,41 +1,27 @@
-// Basic singly‑linked list node
-type ListNode<T> = { value: T; next: ListNode<T> | null };
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) throw new Error("n must be a positive integer");
-
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // 1️⃣ Move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null; // fewer than n nodes
-    fast = fast.next;
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  // 2️⃣ Move both pointers until fast is at the end
-  while (fast) {
-    fast = fast.next;
-    slow = (slow as ListNode<T>).next; // fast guarantees slow != null here
-  }
-
-  return slow; // happy: nth from end
+  return result;
 }
-// build a list 1 -> 2 -> 3 -> 4 -> 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const head: ListNode<number> = { value: 1, next: node2 };
-
-const thirdFromEnd = nthFromEnd(head, 3);
-console.log(thirdFromEnd?.value); // 3
-function nthFromStart<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  let current = head;
-  let idx = 1;
-  while (current && idx < n) {
-    current = current.next;
-    idx++;
-  }
-  return idx === n ? current : null;
+console.log(factorialIterative(5));   // 120
+console.log(factorialIterative(0));   // 1
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n === 0 || n === 1) return 1;
+  return n * factorialRecursive(n - 1);
 }
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+
+  let result = 1n;          // `n` suffix makes it a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(50).toString());
+// 304140932655... (the full 50! value)
