@@ -1,9 +1,34 @@
-const str = "  123   ";
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-const num1 = Number(str);            // 123
-const num2 = +'123';                 // 123
-const num3 = parseInt(str, 10);      // 123
-const num4 = parseFloat('123.45');   // 123.45
-const num5 = str * 1;                // 123
+  let largest = -Infinity;
+  let second = -Infinity;
 
-console.log([num1, num2, num3, num4, num5]); // [123, 123, 123, 123.45, 123]
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
+}
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
+
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
