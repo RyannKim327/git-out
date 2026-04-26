@@ -1,81 +1,49 @@
 /**
- * A very generic tree node interface.
- * `children` can be empty, allowing the node to be a leaf.
+ * Checks if an array of numbers is in ascending order.
  */
-interface TreeNode<T = unknown> {
-  /** Whatever payload you want to store. */
-  value: T
-
-  /** Children of this node – an empty array represents a leaf. */
-  children?: TreeNode<T>[]
+function isSorted(arr: number[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i - 1] > arr[i]) return false;
+  }
+  return true;
 }
 
 /**
- * Depth‑Limited Search (DFS) – recursive version.
- *
- * @param root   The node from which the search starts.
- * @param target A predicate that decides whether the node we are looking for
- *               was found.
- * @param limit  The maximum depth (0 → only the root, 1 → root + its children, …).
- * @param depth  Current depth – the caller should omit it.
- * @returns The first matching node, or undefined if none is found within the limit.
+ * Randomly shuffles an array in place using Fisher‑Yates.
  */
-export function depthLimitedSearchRecursive<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number,
-  depth = 0
-): TreeNode<T> | undefined {
-  // If the depth exceeds the limit, stop exploring this branch
-  if (depth > limit) return undefined
+function shuffleInPlace<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
 
-  if (target(root)) return root
+/**
+ * A “random sort”—shuffle until the array is sorted.
+ *
+ * The function is deliberately small and intentionally slow.
+ * Good for teaching randomness, not for production work.
+ */
+export function completelyRandomSort<T extends number>(arr: T[]): T[] {
+  // Work on a copy so the original stays untouched.
+  const working = [...arr];
 
-  if (!root.children) return undefined
+  // Keep an iteration counter for demonstration.
+  let attempts = 0;
 
-  for (const child of root.children) {
-    const hit = depthLimitedSearchRecursive(child, target, limit, depth + 1)
-    if (hit) return hit
+  // Guard against accidentally running forever on empty or single‑element arrays.
+  if (working.length <= 1) return working;
+
+  while (!isSorted(working)) {
+    shuffleInPlace(working);
+    attempts++;
+    // Optional: print progress every 1000 attempts (comment this out in tight loops).
+    // if (attempts % 1000 === 0) console.log(`Still sorting… attempt #${attempts}`);
   }
 
-  return undefined
+  console.log(`Sorted after ${attempts} random shuffles!`);
+  return working;
 }
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number
-): TreeNode<T> | undefined {
-  // Stack entries hold the node and its depth
-  type StackEntry = { node: TreeNode<T>; depth: number }
-  const stack: StackEntry[] = [{ node: root, depth: 0 }]
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!
-
-    if (target(node)) return node
-    if (depth === limit) continue           // don't push children deeper than the limit
-
-    // push children in reverse order so that the leftmost child is processed first
-    if (node.children) {
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 })
-      }
-    }
-  }
-
-  return undefined
-}
-// Example tree (int values)
-const tree: TreeNode<number> = {
-  value: 1,
-  children: [
-    { value: 2, children: [{ value: 4 }, { value: 5 }] },
-    { value: 3, children: [{ value: 6 }, { value: 7 }] }
-  ]
-}
-
-// Find the node with value 5, but never look deeper than depth 2
-const target = (n: TreeNode<number>) => n.value === 5
-const found = depthLimitedSearch(tree, target, 2)
-
-console.log(found?.value)   // prints 5
+const data = [42, 7, 13, 2, 27];
+const sorted = completelyRandomSort(data);
+console.log(sorted); // → [2, 7, 13, 27, 42]
