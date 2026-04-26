@@ -1,61 +1,43 @@
 /**
- * Generic comparison, returns true if a should come before b.
- * Default is for a number array (so it's an ascending sort).
+ * Returns true if n is a prime number, false otherwise.
+ *
+ * Numbers less than 2 are not prime by definition.
+ * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
+ * After that only numbers of the form 6k ± 1 can be prime.
  */
-type Comparator<T> = (a: T, b: T) => boolean;
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1, and negatives are not prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
 
-function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
-  const n = arr.length;
-
-  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
-
-  /* 2️⃣ Extract elements one by one */
-  for (let end = n - 1; end > 0; end--) {
-    // swap max element (root) with the last element of the heap
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    // heap size shrinks by one; restore heap property for the new root
-    siftDown(arr, 0, end, compare);
+  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
+
+  return true;
 }
+[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
+  console.log(`${num} → ${isPrime(num)}`));
+1 → false
+2 → true
+3 → true
+4 → false
+5 → true
+16 → false
+17 → true
+19 → true
+20 → false
+23 → true
+24 → false
+29 → true
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-/**
- * Moves the element at `start` down the heap until the heap
- * property is restored.  The heap is the sub‑array `[0, size)`.
- */
-function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
-  let root = start;
-
-  while (true) {
-    const left = 2 * root + 1;   // left child index
-    const right = left + 1;      // right child index
-    let swapIdx = root;
-
-    // if left child exists and is greater (or “comes first” by compare)
-    if (left < size && compare(arr[swapIdx], arr[left])) {
-      swapIdx = left;
-    }
-
-    // do the same for the right child
-    if (right < size && compare(arr[swapIdx], arr[right])) {
-      swapIdx = right;
-    }
-
-    // if root holds the max element, we are done
-    if (swapIdx === root) return;
-
-    // swap root with the larger child and continue
-    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
-    root = swapIdx;
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
   }
+  return true;
 }
-
-/* --------------------  Example usage  -------------------- */
-
-const nums = [5, 1, 4, 2, 8, 0, 3];
-heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
-
-/* --------------------  Sorting strings  -------------------- */
-const strs = ["delta", "alpha", "charlie", "bravo"];
-heapSort(strs, (a, b) => a > b);   // descending order
-// strs => ["delta", "charlie", "bravo", "alpha"]
