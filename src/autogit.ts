@@ -1,34 +1,34 @@
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined; // no second element
+// fetch-posts.ts
+import axios, { AxiosResponse } from 'axios';
 
-  let largest = -Infinity;
-  let second = -Infinity;
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-  for (const n of nums) {
-    if (n > largest) {
-      second = largest;
-      largest = n;
-    } else if (n > second && n !== largest) {
-      second = n;
-    }
+async function fetchPosts(): Promise<Post[]> {
+  const url = 'https://jsonplaceholder.typicode.com/posts';
+  const response: AxiosResponse<Post[]> = await axios.get(url);
+  return response.data;
+}
+
+async function main() {
+  try {
+    const posts = await fetchPosts();
+    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
+  } catch (err) {
+    console.error('Failed to fetch posts:', err);
   }
-
-  return second === -Infinity ? undefined : second;
 }
-function secondLargest(nums: number[]): number | undefined {
-  const unique = Array.from(new Set(nums));     // remove duplicates
-  if (unique.length < 2) return undefined;      // no second element
 
-  unique.sort((a, b) => b - a);                // descending order
-  return unique[1];
-}
-function secondLargest(nums: number[]): number | undefined {
-  if (nums.length < 2) return undefined;
+main();
+# 1️⃣  Install dependencies
+npm install axios
 
-  const max = Math.max(...nums);
-  const second = Math.max(...nums.filter(x => x !== max));
-  return second === -Infinity ? undefined : second;
-}
-const arr = [5, 1, 8, 7, 8, 3];
+# 2️⃣  Compile to JavaScript
+tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
 
-console.log(secondLargest(arr)); // 7
+# 3️⃣  Execute
+node fetch-posts.js
