@@ -1,78 +1,30 @@
-/**
- * A very small, self‑contained topological‑sort utility.
- *
- * Users should supply a directed graph in adjacency‑list form:
- *
- *   const g = new Map<string, Set<string>>();
- *   g.set('A', new Set(['B', 'C']));
- *   g.set('B', new Set(['D']));
- *   g.set('C', new Set(['D']));
- *   g.set('D', new Set());
- *
- * Call `topologicalSort(g)` and receive an array in an order that
- * satisfies all dependencies. If a cycle is detected the function
- * throws an Error describing the nodes that loop.
- */
-
-type Graph<ID> = Map<ID, Set<ID>>;
-
-/**
- * Detects a directed cycle in a graph by trying a Kahn‑style removal.
- */
-function topologicalSort<ID>(graph: Graph<ID>): ID[] {
-  // 1. Make a copy of indegree counts
-  const indegree = new Map<ID, number>();
-
-  // Walk the graph once to count in‑edges
-  for (const [node, edges] of graph.entries()) {
-    // Ensure every node in the map has an indegree entry
-    if (!indegree.has(node)) indegree.set(node, 0);
-    for (const neigh of edges) {
-      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
-      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
-      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
-    }
-  }
-
-  // 2. Queue of nodes with no incoming edges
-  const queue: ID[] = [];
-  for (const [node, num] of indegree.entries())
-    if (num === 0) queue.push(node);
-
-  const result: ID[] = [];
-
-  // 3. Repeatedly pop a zero‑in‑degree node, append to result
-  //    and “remove” its outgoing edges
-  while (queue.length) {
-    const node = queue.shift()!;
-    result.push(node);
-
-    const outgoing = graph.get(node) ?? new Set();
-    for (const neigh of outgoing) {
-      // decrement indegree; if it goes to 0 push to queue
-      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
-      indegree.set(neigh, newIndeg);
-      if (newIndeg === 0) queue.push(neigh);
-    }
-  }
-
-  // 4. If we didn't visit all nodes → a cycle exists
-  if (result.length !== indegree.size) {
-    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
-    throw new Error(
-      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
-    );
-  }
-
-  return result;
+// Generic helper – works with any comparable type that can be used as a Map key
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(item => setB.has(item));
 }
 
-/* ---------- demo ---------- */
-const example = new Map<string, Set<string>>([
-  ['A', new Set(['B', 'C'])],
-  ['B', new Set(['D'])],
-  ['C', new Set(['D'])],
-  ['D', new Set()],
-]);
+// Simple test
+const arr1 = [1, 2, 3, 5, 8];
+const arr2 = [3, 4, 5, 6, 9];
 
-console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
+console.log(intersection(arr1, arr2)); // → [3, 5]
+function firstIntersection<T>(a: T[], b: T[]): T | undefined {
+  const setB = new Set(b);
+  for (const item of a) {
+    if (setB.has(item)) return item;
+  }
+}
+function intersectionBy<T, K extends keyof T>(
+  a: T[],
+  b: T[],
+  key: K
+): T[] {
+  const map = new Map(b.map(v => [v[key], v]));
+  return a.filter(v => map.has(v[key]));
+}
+interface User { id: number; name: string }
+const usersA = [{ id:1 },{ id:2 },{ id:3 }]
+const usersB = [{ id:2 },{ id:3 },{ id:4 }]
+console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
+const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
