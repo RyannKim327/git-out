@@ -1,43 +1,29 @@
-function triangleAreaBaseHeight(
-    base: number,
-    height: number
-): number {
-    // Guard against negative or zero values
-    if (base <= 0 || height <= 0) {
-        throw new Error('Base and height must be positive numbers.');
+/**
+ * Returns the first non‑repeating character in `s`, or `null` if every
+ * character repeats. The search respects Unicode code‑points, so it works
+ * with emojis, accented letters, etc.
+ *
+ * @param s – input string
+ * @returns the character or null
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // Count every character in a single scan.
+  const counter = new Map<string, number>();
+
+  for (const ch of s) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+  }
+
+  // Find the first character whose count is 1.
+  for (const ch of s) {
+    if (counter.get(ch) === 1) {
+      return ch;
     }
-    return (base * height) / 2;
+  }
+
+  return null;          // all characters repeat
 }
-
-// Example usage
-console.log(triangleAreaBaseHeight(10, 5)); // 25
-function triangleAreaBySides(a: number, b: number, c: number): number {
-    // Validate that sides can form a triangle
-    if (a + b <= c || a + c <= b || b + c <= a) {
-        throw new Error('The given sides do not form a valid triangle.');
-    }
-
-    const s = (a + b + c) / 2;
-    const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-    // Numerical safety check: areaSquared should be non‑negative
-    if (areaSquared < 0) {
-        throw new Error('Computed a negative area; check your side lengths.');
-    }
-
-    return Math.sqrt(areaSquared);
-}
-
-// Example
-console.log(triangleAreaBySides(3, 4, 5)); // 6
-type TriangleSpec =
-  | { base: number; height: number }
-  | { a: number; b: number; c: number };
-
-function areaOfTriangle(spec: TriangleSpec): number {
-    if ('base' in spec && 'height' in spec) {
-        return triangleAreaBaseHeight(spec.base, spec.height);
-    } else {
-        return triangleAreaBySides(spec.a, spec.b, spec.c);
-    }
-}
+console.log(firstNonRepeatingChar("abacabad")); // "c"
+console.log(firstNonRepeatingChar("swiss"));    // "w"
+console.log(firstNonRepeatingChar("aabb"));     // null
+console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
