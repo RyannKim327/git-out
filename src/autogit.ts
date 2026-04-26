@@ -1,58 +1,43 @@
-/** A very simple binary‑tree node. */
-export class TreeNode<T = unknown> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
-/**
- * Returns the maximum depth of a binary tree.
- * Depth is counted in nodes, not edges.
- *
- * @param root The root node of the tree (or null for an empty tree).
- * @returns an integer ≥ 0.
- */
-export function maxDepth<T>(root: TreeNode<T> | null): number {
-  // recursion is the cleanest here
-  if (!root) return 0; // leaf’s child contributes 0
-
-  const leftDepth = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // current node adds 1 to the greater of two sub‑depths
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const root = new TreeNode('a',
-  new TreeNode('b',
-    new TreeNode('d')
-  ),
-  new TreeNode('c')
-);
-
-console.log(maxDepth(root)); // → 3
-export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    // All nodes in this `for` loop belong to the same level.
-    const levelSize = queue.length;
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+function triangleAreaBaseHeight(
+    base: number,
+    height: number
+): number {
+    // Guard against negative or zero values
+    if (base <= 0 || height <= 0) {
+        throw new Error('Base and height must be positive numbers.');
     }
-    depth++; // finished one level
-  }
-  return depth;
+    return (base * height) / 2;
+}
+
+// Example usage
+console.log(triangleAreaBaseHeight(10, 5)); // 25
+function triangleAreaBySides(a: number, b: number, c: number): number {
+    // Validate that sides can form a triangle
+    if (a + b <= c || a + c <= b || b + c <= a) {
+        throw new Error('The given sides do not form a valid triangle.');
+    }
+
+    const s = (a + b + c) / 2;
+    const areaSquared = s * (s - a) * (s - b) * (s - c);
+
+    // Numerical safety check: areaSquared should be non‑negative
+    if (areaSquared < 0) {
+        throw new Error('Computed a negative area; check your side lengths.');
+    }
+
+    return Math.sqrt(areaSquared);
+}
+
+// Example
+console.log(triangleAreaBySides(3, 4, 5)); // 6
+type TriangleSpec =
+  | { base: number; height: number }
+  | { a: number; b: number; c: number };
+
+function areaOfTriangle(spec: TriangleSpec): number {
+    if ('base' in spec && 'height' in spec) {
+        return triangleAreaBaseHeight(spec.base, spec.height);
+    } else {
+        return triangleAreaBySides(spec.a, spec.b, spec.c);
+    }
 }
