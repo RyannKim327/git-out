@@ -1,80 +1,34 @@
+const haystack: string = "Hello, world!";
+const needle: string = "world";
+
+const found = haystack.includes(needle); // true
+const haystack = "Hello, world!";
+const needle = "world";
+
+const found = haystack.indexOf(needle) !== -1; // true
+const haystack = "Hello, world!";
+const pattern = /world/;          // or /world/i for case‑insensitive
+const found = pattern.test(haystack); // true
+// case‑insensitive:
+const haystack = "Hello, World!";
+const needle = "world";
+const found = haystack.toLowerCase().includes(needle.toLowerCase());
+
+// locale‑aware:
+const localeFound = haystack.localeCompare(needle, undefined, { sensitivity: 'accent' }) === 0;
 /**
- * Sorts an array of numbers in ascending order using selection sort.
- * The array is sorted in place.
- *
- * @param arr – the number array to sort
- * @returns the same array reference, now sorted
+ * Checks whether a string contains a substring, optionally case‑insensitive.
  */
-export function selectionSortNumbers(arr: number[]): number[] {
-  const n = arr.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the first unsorted element is the minimum
-    let minIndex = i;
-
-    // Find the actual minimum among the remaining unsorted portion
-    for (let j = i + 1; j < n; j++) {
-      if (arr[j] < arr[minIndex]) {
-        minIndex = j;
-      }
-    }
-
-    // If a smaller element was found, swap it into place
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
+function contains(
+  target: string,
+  probe: string,
+  caseInsensitive = false
+): boolean {
+  if (caseInsensitive) {
+    return target.toLowerCase().includes(probe.toLowerCase());
   }
-
-  return arr;
-}
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
-/**
- * Sorts an array in place using selection sort and a custom comparator.
- *
- * @param arr         The array to sort.
- * @param compareFn   Comparator that defines the sort order.
- * @returns The sorted array (same reference as @param arr).
- */
-export function selectionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  const n = arr.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    let minIndex = i;
-
-    for (let j = i + 1; j < n; j++) {
-      if (compareFn(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
-    }
-
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
-  }
-
-  return arr;
-}
-interface Person {
-  name: string;
-  age: number;
+  return target.includes(probe);
 }
 
-const people: Person[] = [
-  { name: 'Alice', age: 29 },
-  { name: 'Bob', age: 23 },
-  { name: 'Charlie', age: 35 }
-];
-
-// Sort by age (ascending)
-selectionSort(people, (a, b) => a.age - b.age);
-
-console.log(people);
-// → [
-//      { name: 'Bob', age: 23 },
-//      { name: 'Alice', age: 29 },
-//      { name: 'Charlie', age: 35 }
-//    ]
+// Usage
+const ok = contains("Hello, World!", "world", true); // true
