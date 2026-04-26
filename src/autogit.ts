@@ -1,51 +1,39 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
-
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
-  }
-}
-
 /**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
+ * Reverses the order of words in `text`.
+ *
+ * • Consecutive whitespace is treated as a single separator.
+ * • Leading/trailing whitespace is trimmed out.
+ *
+ * @param text – The string whose words you want to reverse.
+ * @returns A new string with the words in reverse order.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
-
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
-
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
-
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
-
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
-  }
-
-  height(root)
-  return maxDiameter   // edge‑count diameter
+function reverseWords(text: string): string {
+  return text
+    .trim()                      // remove leading/trailing spaces
+    .split(/\s+/)                // split on any run of whitespace
+    .reverse()                   // reverse the array
+    .join(' ');                  // join back with a single space
 }
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
+// Example
+const input = "  The quick  brown   fox jumps over   the lazy dog  ";
+console.log(reverseWords(input));
+// → "dog lazy the over jumps fox brown quick The"
+function reverseWordsKeepPunct(text: string): string {
+  // Matches words or any non‑space sequences
+  const tokens = text.match(/\S+/g) ?? [];
+  return tokens.split('').reverse().join(' ');
+}
+const tests = [
+  { in: "", out: "" },
+  { in: "hello", out: "hello" },
+  { in: "one two three", out: "three two one" },
+  { in: "  a   b c   ", out: "c b a" },
+  { in: "Hello, world!", out: "world! Hello," },
+];
 
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+tests.forEach(({ in: t, out: expected }) => {
+  const result = reverseWords(t);
+  console.assert(result === expected, `❌ ${t} → ${result} (expected ${expected})`);
+});
+console.log("All basic tests passed!");
