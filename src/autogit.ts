@@ -1,43 +1,49 @@
-function triangleAreaBaseHeight(
-    base: number,
-    height: number
-): number {
-    // Guard against negative or zero values
-    if (base <= 0 || height <= 0) {
-        throw new Error('Base and height must be positive numbers.');
-    }
-    return (base * height) / 2;
+/**
+ * Checks if an array of numbers is in ascending order.
+ */
+function isSorted(arr: number[]): boolean {
+  for (let i = 1; i < arr.length; i++) {
+    if (arr[i - 1] > arr[i]) return false;
+  }
+  return true;
 }
 
-// Example usage
-console.log(triangleAreaBaseHeight(10, 5)); // 25
-function triangleAreaBySides(a: number, b: number, c: number): number {
-    // Validate that sides can form a triangle
-    if (a + b <= c || a + c <= b || b + c <= a) {
-        throw new Error('The given sides do not form a valid triangle.');
-    }
-
-    const s = (a + b + c) / 2;
-    const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-    // Numerical safety check: areaSquared should be non‑negative
-    if (areaSquared < 0) {
-        throw new Error('Computed a negative area; check your side lengths.');
-    }
-
-    return Math.sqrt(areaSquared);
+/**
+ * Randomly shuffles an array in place using Fisher‑Yates.
+ */
+function shuffleInPlace<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 }
 
-// Example
-console.log(triangleAreaBySides(3, 4, 5)); // 6
-type TriangleSpec =
-  | { base: number; height: number }
-  | { a: number; b: number; c: number };
+/**
+ * A “random sort”—shuffle until the array is sorted.
+ *
+ * The function is deliberately small and intentionally slow.
+ * Good for teaching randomness, not for production work.
+ */
+export function completelyRandomSort<T extends number>(arr: T[]): T[] {
+  // Work on a copy so the original stays untouched.
+  const working = [...arr];
 
-function areaOfTriangle(spec: TriangleSpec): number {
-    if ('base' in spec && 'height' in spec) {
-        return triangleAreaBaseHeight(spec.base, spec.height);
-    } else {
-        return triangleAreaBySides(spec.a, spec.b, spec.c);
-    }
+  // Keep an iteration counter for demonstration.
+  let attempts = 0;
+
+  // Guard against accidentally running forever on empty or single‑element arrays.
+  if (working.length <= 1) return working;
+
+  while (!isSorted(working)) {
+    shuffleInPlace(working);
+    attempts++;
+    // Optional: print progress every 1000 attempts (comment this out in tight loops).
+    // if (attempts % 1000 === 0) console.log(`Still sorting… attempt #${attempts}`);
+  }
+
+  console.log(`Sorted after ${attempts} random shuffles!`);
+  return working;
 }
+const data = [42, 7, 13, 2, 27];
+const sorted = completelyRandomSort(data);
+console.log(sorted); // → [2, 7, 13, 27, 42]
