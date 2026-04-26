@@ -1,40 +1,17 @@
-// rock-paper-scissors.ts
-import * as readline from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
+const original = [1, 2, 3, 4, 5];
 
-const rl = readline.createInterface({
-  input: stdin,
-  output: stdout,
-});
+// If you don’t mind mutating the original array:
+original.reverse();          // original is now [5, 4, 3, 2, 1]
 
-async function play() {
-  console.log('Rock, Paper, Scissors!');
-  const human = (await rl.question('Your move (rock/paper/scissors): ')).trim().toLowerCase();
-
-  const options = ['rock', 'paper', 'scissors'] as const;
-  const comp = options[Math.floor(Math.random() * options.length)];
-
-  console.log(`\nComputer chose: ${comp}\n`);
-
-  const result =
-    human === comp
-      ? "It's a tie."
-      : (human === 'rock' && comp === 'scissors') ||
-        (human === 'paper' && comp === 'rock') ||
-        (human === 'scissors' && comp === 'paper')
-      ? 'You win!'
-      : 'You lose!';
-
-  console.log(result);
-  rl.close();
+// If you want a fresh array and keep the original intact:
+const reversed = [...original].reverse();   // reversed is [5, 4, 3, 2, 1]
+const reversed = original.reduce(
+  (acc, cur) => [cur, ...acc] as typeof original,
+  [] as typeof original
+);
+// reversed is [5, 4, 3, 2, 1]
+const reversed: typeof original = [];
+for (let i = original.length - 1; i >= 0; i--) {
+  reversed.push(original[i]);
 }
-
-play();
-# 1. Install TypeScript locally (if you haven’t already)
-npm install -D typescript
-
-# 2. Compile the file
-npx tsc rock-paper-scissors.ts --lib es2023,dom
-
-# 3. Execute the compiled JS
-node rock-paper-scissors.js
+// reversed is [5, 4, 3, 2, 1]
