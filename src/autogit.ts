@@ -1,58 +1,52 @@
-/** A very simple binary‑tree node. */
-export class TreeNode<T = unknown> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
 /**
- * Returns the maximum depth of a binary tree.
- * Depth is counted in nodes, not edges.
+ * Find the longest common subsequence between two strings.
  *
- * @param root The root node of the tree (or null for an empty tree).
- * @returns an integer ≥ 0.
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS string (empty if there is none).
  */
-export function maxDepth<T>(root: TreeNode<T> | null): number {
-  // recursion is the cleanest here
-  if (!root) return 0; // leaf’s child contributes 0
+export function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length
+  const m = b.length
 
-  const leftDepth = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+  // 1‑based DP table, size (n+1) × (m+1)
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    Array(m + 1).fill(0)
+  )
 
-  // current node adds 1 to the greater of two sub‑depths
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const root = new TreeNode('a',
-  new TreeNode('b',
-    new TreeNode('d')
-  ),
-  new TreeNode('c')
-);
-
-console.log(maxDepth(root)); // → 3
-export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    // All nodes in this `for` loop belong to the same level.
-    const levelSize = queue.length;
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  // Build the DP table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
+      }
     }
-    depth++; // finished one level
   }
-  return depth;
+
+  // Reconstruct the LCS from the table
+  let i = n
+  let j = m
+  const lcs: string[] = []
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs.push(a[i - 1]) // characters match – part of LCS
+      i--
+      j--
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--
+    } else {
+      j--
+    }
+  }
+
+  return lcs.reverse().join("")
 }
+import { longestCommonSubsequence } from "./lcs"
+
+const s1 = "AGGTAB"
+const s2 = "GXTXAYB"
+
+console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
