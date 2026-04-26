@@ -1,17 +1,34 @@
-const original = [1, 2, 3, 4, 5];
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-// If you don’t mind mutating the original array:
-original.reverse();          // original is now [5, 4, 3, 2, 1]
+  let largest = -Infinity;
+  let second = -Infinity;
 
-// If you want a fresh array and keep the original intact:
-const reversed = [...original].reverse();   // reversed is [5, 4, 3, 2, 1]
-const reversed = original.reduce(
-  (acc, cur) => [cur, ...acc] as typeof original,
-  [] as typeof original
-);
-// reversed is [5, 4, 3, 2, 1]
-const reversed: typeof original = [];
-for (let i = original.length - 1; i >= 0; i--) {
-  reversed.push(original[i]);
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
 }
-// reversed is [5, 4, 3, 2, 1]
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
+
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
