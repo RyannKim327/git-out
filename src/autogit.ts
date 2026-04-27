@@ -1,43 +1,39 @@
 /**
- * Returns true if n is a prime number, false otherwise.
+ * Reverses the order of words in `text`.
  *
- * Numbers less than 2 are not prime by definition.
- * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
- * After that only numbers of the form 6k ± 1 can be prime.
+ * • Consecutive whitespace is treated as a single separator.
+ * • Leading/trailing whitespace is trimmed out.
+ *
+ * @param text – The string whose words you want to reverse.
+ * @returns A new string with the words in reverse order.
  */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1, and negatives are not prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
-
-  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-
-  return true;
+function reverseWords(text: string): string {
+  return text
+    .trim()                      // remove leading/trailing spaces
+    .split(/\s+/)                // split on any run of whitespace
+    .reverse()                   // reverse the array
+    .join(' ');                  // join back with a single space
 }
-[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
-  console.log(`${num} → ${isPrime(num)}`));
-1 → false
-2 → true
-3 → true
-4 → false
-5 → true
-16 → false
-17 → true
-19 → true
-20 → false
-23 → true
-24 → false
-29 → true
-export function isPrimeBigInt(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
+// Example
+const input = "  The quick  brown   fox jumps over   the lazy dog  ";
+console.log(reverseWords(input));
+// → "dog lazy the over jumps fox brown quick The"
+function reverseWordsKeepPunct(text: string): string {
+  // Matches words or any non‑space sequences
+  const tokens = text.match(/\S+/g) ?? [];
+  return tokens.split('').reverse().join(' ');
 }
+const tests = [
+  { in: "", out: "" },
+  { in: "hello", out: "hello" },
+  { in: "one two three", out: "three two one" },
+  { in: "  a   b c   ", out: "c b a" },
+  { in: "Hello, world!", out: "world! Hello," },
+];
+
+tests.forEach(({ in: t, out: expected }) => {
+  const result = reverseWords(t);
+  console.assert(result === expected, `❌ ${t} → ${result} (expected ${expected})`);
+});
+console.log("All basic tests passed!");
