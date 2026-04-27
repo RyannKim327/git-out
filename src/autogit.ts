@@ -1,79 +1,78 @@
 /**
- * Merge two sorted sub‑arrays into one sorted array.
- * `left` and `right` must already be sorted.
- * Returns a new sorted array.
+ * A very small, self‑contained topological‑sort utility.
+ *
+ * Users should supply a directed graph in adjacency‑list form:
+ *
+ *   const g = new Map<string, Set<string>>();
+ *   g.set('A', new Set(['B', 'C']));
+ *   g.set('B', new Set(['D']));
+ *   g.set('C', new Set(['D']));
+ *   g.set('D', new Set());
+ *
+ * Call `topologicalSort(g)` and receive an array in an order that
+ * satisfies all dependencies. If a cycle is detected the function
+ * throws an Error describing the nodes that loop.
  */
-function merge<T>(
-  left: T[],
-  right: T[],
-  compare: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0; // index for left
-  let j = 0; // index for right
 
-  while (i < left.length && j < right.length) {
-    // If left[i] <= right[j] according to the compare function,
-    // push left[i] into the result and advance i
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i]);
-      i++;
-    } else {
-      result.push(right[j]);
-      j++;
+type Graph<ID> = Map<ID, Set<ID>>;
+
+/**
+ * Detects a directed cycle in a graph by trying a Kahn‑style removal.
+ */
+function topologicalSort<ID>(graph: Graph<ID>): ID[] {
+  // 1. Make a copy of indegree counts
+  const indegree = new Map<ID, number>();
+
+  // Walk the graph once to count in‑edges
+  for (const [node, edges] of graph.entries()) {
+    // Ensure every node in the map has an indegree entry
+    if (!indegree.has(node)) indegree.set(node, 0);
+    for (const neigh of edges) {
+      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
+      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
+      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
     }
   }
 
-  // Append any remaining elements.
-  // Only one of the following while loops will actually run.
-  while (i < left.length) {
-    result.push(left[i]);
-    i++;
+  // 2. Queue of nodes with no incoming edges
+  const queue: ID[] = [];
+  for (const [node, num] of indegree.entries())
+    if (num === 0) queue.push(node);
+
+  const result: ID[] = [];
+
+  // 3. Repeatedly pop a zero‑in‑degree node, append to result
+  //    and “remove” its outgoing edges
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    const outgoing = graph.get(node) ?? new Set();
+    for (const neigh of outgoing) {
+      // decrement indegree; if it goes to 0 push to queue
+      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
+      indegree.set(neigh, newIndeg);
+      if (newIndeg === 0) queue.push(neigh);
+    }
   }
-  while (j < right.length) {
-    result.push(right[j]);
-    j++;
+
+  // 4. If we didn't visit all nodes → a cycle exists
+  if (result.length !== indegree.size) {
+    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
+    throw new Error(
+      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
+    );
   }
 
   return result;
 }
 
-/**
- * Recursively divides the array and merges the sorted halves.
- * `compare` should return:
- *   < 0 if a < b
- *   0  if a === b
- *   > 0 if a > b
- */
-export function mergeSort<T>(
-  array: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array; // Base case: already sorted
+/* ---------- demo ---------- */
+const example = new Map<string, Set<string>>([
+  ['A', new Set(['B', 'C'])],
+  ['B', new Set(['D'])],
+  ['C', new Set(['D'])],
+  ['D', new Set()],
+]);
 
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
-}
-// Sort numbers
-const nums = [8, 3, 5, 1, 9, 0];
-const sortedNums = mergeSort(nums);
-// -> [0, 1, 3, 5, 8, 9]
-
-// Sort strings alphabetically
-const words = ["pear", "apple", "banana"];
-const sortedWords = mergeSort(words);
-// -> ["apple", "banana", "pear"]
-
-// Sort objects by a property
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Charlie", age: 25 },
-  { name: "Alice", age: 30 },
-  { name: "Bob", age: 20 },
-];
-
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// -> [{name:"Bob", age:20}, {name:"Charlie", age:25}, {name:"Alice", age:30}]
+console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
