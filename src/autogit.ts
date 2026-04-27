@@ -1,31 +1,96 @@
-/**
- * Recursively calculates the factorial of a non‑negative integer.
- *
- * @param n - the number to compute the factorial of
- * @returns n! as a number (works well up to ~170 before overflow)
- */
-function factorial(n: number): number {
-  // Guard against negative input - factorial isn’t defined there
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
-  }
+/* ---------- 1️⃣  Types & helpers ------------------------------------ */
 
-  // Base case: 0! === 1 and 1! === 1
-  if (n <= 1) {
-    return 1;
-  }
+type Edge = {
+  /** source vertex */
+  u: number;
+  /** destination vertex */
+  v: number;
+  /** edge weight */
+  w: number;
+};
 
-  // Recursive case
-  return n * factorial(n - 1);
+interface Result {
+  /** distance from the source to every vertex */
+  dist: number[];
+  /** immediately‑prev vertex on the shortest path, or null if unreachable */
+  prev: (number | null)[];
+  /** did we spot a negative‑weight cycle? */
+  hasNegativeCycle: boolean;
 }
 
-// Quick demo:
-console.log(factorial(5)); // 120
-function factorialBig(n: bigint): bigint {
-  if (n < 0n) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
+/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): Result {
+  const dist = new Array<number>(vertexCount).fill(Infinity);
+  const prev = new Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relaxes every edge V‑1 times
+  for (let iter = 0; iter < vertexCount - 1; ++iter) {
+    let updated = false;
+
+    for (const { u, v, w } of edges) {
+      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        updated = true;
+      }
+    }
+
+    // Stop early if nothing changed
+    if (!updated) break;
   }
-  return n <= 1n ? 1n : n * factorialBig(n - 1n);
+
+  // 2️⃣ Detect negative‑weight cycles:
+  let hasNegativeCycle = false;
+  for (const { u, v, w } of edges) {
+    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, prev, hasNegativeCycle };
 }
 
-console.log(factorialBig(20n)); // 2432902008176640000n
+/* ---------- 3️⃣  Example usage ------------------------------------ */
+
+const edges: Edge[] = [
+  { u: 0, v: 1, w: 4 },
+  { u: 0, v: 2, w: 5 },
+  { u: 1, v: 2, w: -3 },
+  { u: 1, v: 3, w: 2 },
+  { u: 2, v: 3, w: 4 },
+  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
+];
+
+const vertexCount = 4;
+const source = 0;
+
+const result = bellmanFord(vertexCount, edges, source);
+
+console.log('Distances:', result.dist);
+console.log('Prev:' , result.prev);
+console.log(
+  'Negative cycle detected:',
+  result.hasNegativeCycle ? 'Yes' : 'No'
+);
+
+// If you want to reconstruct a path to a target vertex:
+function reconstructPath(prev: (number | null)[], target: number) {
+  const path: number[] = [];
+  let current: number | null = target;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = prev[current];
+  }
+  return path;
+}
+
+console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
