@@ -1,42 +1,69 @@
-/**
- * Returns the maximum sum sub‑array of a one‑dimensional numeric array,
- * together with the start and end indices of that sub‑array.
- *
- * @param nums   – array of numbers (can contain negatives!)
- * @returns      { sum, start, end }
- *
- * Complexity: O(n) time, O(1) extra space
- */
-export function maxSubArray(nums: number[]): { sum: number; start: number; end: number } {
-  if (nums.length === 0) throw new Error('Array must contain at least one element');
+interface ListNode {
+  val: number | string | any;   // whatever type you’re storing
+  next?: ListNode | null;
+}
+function reverse(head: ListNode | null): ListNode | null {
+  let prev: ListNode | null = null;
+  let cur = head;
 
-  let globalMax = nums[0];
-  let currentSum = nums[0];
-
-  // Track the indices
-  let startIdx = 0;          // beginning of the current candidate
-  let bestStartIdx = 0;      // beginning of the best so far
-  let bestEndIdx = 0;        // end of the best so far
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the current sub‑array or start fresh at i
-    if (currentSum + nums[i] > nums[i]) {
-      currentSum += nums[i];
-    } else {
-      currentSum = nums[i];
-      startIdx = i;         // new sub‑array starts here
-    }
-
-    // Did we find a new champion?
-    if (currentSum > globalMax) {
-      globalMax = currentSum;
-      bestStartIdx = startIdx;
-      bestEndIdx = i;
-    }
+  while (cur) {
+    const next = cur.next;   // keep the next node
+    cur.next = prev;         // reverse the pointer
+    prev = cur;              // move prev forward
+    cur = next;              // move cur forward
   }
 
-  return { sum: globalMax, start: bestStartIdx, end: bestEndIdx };
+  return prev; // new head
 }
-console.log(maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4]));
-// → { sum: 6, start: 3, end: 6 }
-// (the slice [4, -1, 2, 1] adds up to 6)
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
+  
+  // --- find middle with fast/slow pointers ---
+  let slow = head;
+  let fast = head;
+  
+  while (fast && fast.next) {
+    slow = slow.next!;
+    fast = fast.next.next!;
+  }
+  
+  // For odd‑length lists, skip the middle node
+  if (fast) {
+    slow = slow.next!;
+  }
+  
+  // --- reverse the second half ---
+  const secondHalfStart = reverse(slow);
+  
+  // --- compare first half and reversed second half ---
+  let p1 = head;
+  let p2 = secondHalfStart;
+  let result = true;
+  
+  while (result && p2) {           // p2 is shorter or equal to p1
+    if (p1!.val !== p2.val) result = false;
+    p1 = p1!.next!;
+    p2 = p2.next!;
+  }
+  
+  // If you want the original list preserved, reverse the second half again:
+  // reverse(secondHalfStart);
+  
+  return result;
+}
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string | any)[] = [];
+  let cur = head;
+
+  while (cur) {
+    stack.push(cur.val);
+    cur = cur.next;
+  }
+
+  cur = head;
+  while (cur) {
+    if (cur.val !== stack.pop()) return false;
+    cur = cur.next;
+  }
+  return true;
+}
