@@ -1,29 +1,8 @@
-/**
- * Returns the first non‑repeating character in `s`, or `null` if every
- * character repeats. The search respects Unicode code‑points, so it works
- * with emojis, accented letters, etc.
- *
- * @param s – input string
- * @returns the character or null
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // Count every character in a single scan.
-  const counter = new Map<string, number>();
+const numbers: number[] = [12, 7, 9, 4, 18, 1];
 
-  for (const ch of s) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
-  }
+// The default Array.prototype.sort() compares elements as strings,
+// so for numeric sorting you need a comparison function.
+numbers.sort((a, b) => a - b);
 
-  // Find the first character whose count is 1.
-  for (const ch of s) {
-    if (counter.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null;          // all characters repeat
-}
-console.log(firstNonRepeatingChar("abacabad")); // "c"
-console.log(firstNonRepeatingChar("swiss"));    // "w"
-console.log(firstNonRepeatingChar("aabb"));     // null
-console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
+console.log(numbers); // [1, 4, 7, 9, 12, 18]
+const sorted = [...numbers].sort((a, b) => a - b);
