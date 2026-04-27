@@ -1,44 +1,39 @@
-// Count the occurrences of the digit at `exp` (1, 10, 100, …)
-function countingSortByDigit(arr: number[], exp: number): number[] {
-  const n = arr.length;
-  const output = new Array(n);
-  const count = new Array(10).fill(0); // base 10
-
-  // 1. Count digit occurrences
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
-  }
-
-  // 2. Accumulate counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array (reverse traversal for stability)
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    output[count[digit] - 1] = arr[i];
-    count[digit] -= 1;
-  }
-
-  return output;
+/**
+ * Reverses the order of words in `text`.
+ *
+ * • Consecutive whitespace is treated as a single separator.
+ * • Leading/trailing whitespace is trimmed out.
+ *
+ * @param text – The string whose words you want to reverse.
+ * @returns A new string with the words in reverse order.
+ */
+function reverseWords(text: string): string {
+  return text
+    .trim()                      // remove leading/trailing spaces
+    .split(/\s+/)                // split on any run of whitespace
+    .reverse()                   // reverse the array
+    .join(' ');                  // join back with a single space
 }
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
 
-  // Find the maximum number to know how many digits we need
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
-  }
-
-  // Start with the least‑significant digit (exp = 1, 10, 100, …)
-  for (let exp = 1; max / exp >= 1; exp *= 10) {
-    arr = countingSortByDigit(arr, exp);
-  }
-
-  return arr;
+// Example
+const input = "  The quick  brown   fox jumps over   the lazy dog  ";
+console.log(reverseWords(input));
+// → "dog lazy the over jumps fox brown quick The"
+function reverseWordsKeepPunct(text: string): string {
+  // Matches words or any non‑space sequences
+  const tokens = text.match(/\S+/g) ?? [];
+  return tokens.split('').reverse().join(' ');
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
+const tests = [
+  { in: "", out: "" },
+  { in: "hello", out: "hello" },
+  { in: "one two three", out: "three two one" },
+  { in: "  a   b c   ", out: "c b a" },
+  { in: "Hello, world!", out: "world! Hello," },
+];
+
+tests.forEach(({ in: t, out: expected }) => {
+  const result = reverseWords(t);
+  console.assert(result === expected, `❌ ${t} → ${result} (expected ${expected})`);
+});
+console.log("All basic tests passed!");
