@@ -1,35 +1,29 @@
-// A minimal node definition
-interface TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
+/**
+ * Returns the first non‑repeating character in `s`, or `null` if every
+ * character repeats. The search respects Unicode code‑points, so it works
+ * with emojis, accented letters, etc.
+ *
+ * @param s – input string
+ * @returns the character or null
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // Count every character in a single scan.
+  const counter = new Map<string, number>();
 
-// Recursive helper that treats the tree as an expression tree
-function sumTree(node: TreeNode<number> | null): number {
-  if (!node) return 0;                // nothing here – contributes nothing
-  return node.value + sumTree(node.left) + sumTree(node.right);
-}
-const root: TreeNode<number> = {
-  value: 10,
-  left: { value: 5, left: null, right: null },
-  right: { value: -3, left: null, right: null },
-};
-
-console.log(sumTree(root)); // 12
-function sumTreeIterative(root: TreeNode<number> | null): number {
-  if (!root) return 0;
-
-  let sum = 0;
-  const stack: TreeNode<number>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value;
-
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
+  for (const ch of s) {
+    counter.set(ch, (counter.get(ch) ?? 0) + 1);
   }
 
-  return sum;
+  // Find the first character whose count is 1.
+  for (const ch of s) {
+    if (counter.get(ch) === 1) {
+      return ch;
+    }
+  }
+
+  return null;          // all characters repeat
 }
+console.log(firstNonRepeatingChar("abacabad")); // "c"
+console.log(firstNonRepeatingChar("swiss"));    // "w"
+console.log(firstNonRepeatingChar("aabb"));     // null
+console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
