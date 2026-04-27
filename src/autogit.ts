@@ -1,55 +1,52 @@
 /**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
+ * Find the longest common subsequence between two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS string (empty if there is none).
  */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
+export function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length
+  const m = b.length
 
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
+  // 1‑based DP table, size (n+1) × (m+1)
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    Array(m + 1).fill(0)
+  )
+
+  // Build the DP table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
+      }
+    }
   }
 
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
+  // Reconstruct the LCS from the table
+  let i = n
+  let j = m
+  const lcs: string[] = []
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs.push(a[i - 1]) // characters match – part of LCS
+      i--
+      j--
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--
+    } else {
+      j--
+    }
   }
 
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
-  }
+  return lcs.reverse().join("")
 }
-import { Stack } from './Stack';
+import { longestCommonSubsequence } from "./lcs"
 
-const stack = new Stack<number>();
+const s1 = "AGGTAB"
+const s2 = "GXTXAYB"
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
-
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
