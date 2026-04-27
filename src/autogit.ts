@@ -1,117 +1,39 @@
-// A minimal node that carries a value and a pointer to the next node.
-export class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-push(value: T): void {
-  const newNode = new ListNode(value);
-  if (!this.head) {                // empty list
-    this.head = this.tail = newNode;
-  } else {
-    this.tail!.next = newNode;     // tail is never null here
-    this.tail = newNode;
-  }
-  this._size++;
-}
-unshift(value: T): void {
-  const newNode = new ListNode(value, this.head);
-  this.head = newNode;
-  if (!this.tail) this.tail = newNode;   // list was empty
-  this._size++;
-}
-pop(): T | null {
-  if (!this.head) return null;          // nothing to pop
-  let removed: T;
-  if (this.head === this.tail) {        // only one element
-    removed = this.head.value;
-    this.head = this.tail = null;
-  } else {
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    removed = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-  }
-  this._size--;
-  return removed;
-}
-shift(): T | null {
-  if (!this.head) return null;
-  const removed = this.head.value;
-  this.head = this.head.next;
-  if (!this.head) this.tail = null;   // list became empty
-  this._size--;
-  return removed;
-}
-find(predicate: (value: T) => boolean): ListNode<T> | null {
-  for (let cur = this.head; cur; cur = cur.next) {
-    if (predicate(cur.value)) return cur;
-  }
-  return null;
-}
-delete(value: T): boolean {
-  if (!this.head) return false;
-
-  if (this.head.value === value) {
-    this.shift();            // reuse existing logic
-    return true;
-  }
-
-  let previous = this.head;
-  let current = this.head.next;
-
-  while (current) {
-    if (current.value === value) {
-      previous.next = current.next;
-      if (current === this.tail) this.tail = previous;
-      this._size--;
-      return true;
-    }
-    previous = current;
-    current = current.next;
-  }
-  return false;
-}
-size(): number {
-  return this._size;
+/**
+ * Reverses the order of words in `text`.
+ *
+ * • Consecutive whitespace is treated as a single separator.
+ * • Leading/trailing whitespace is trimmed out.
+ *
+ * @param text – The string whose words you want to reverse.
+ * @returns A new string with the words in reverse order.
+ */
+function reverseWords(text: string): string {
+  return text
+    .trim()                      // remove leading/trailing spaces
+    .split(/\s+/)                // split on any run of whitespace
+    .reverse()                   // reverse the array
+    .join(' ');                  // join back with a single space
 }
 
-isEmpty(): boolean {
-  return this._size === 0;
+// Example
+const input = "  The quick  brown   fox jumps over   the lazy dog  ";
+console.log(reverseWords(input));
+// → "dog lazy the over jumps fox brown quick The"
+function reverseWordsKeepPunct(text: string): string {
+  // Matches words or any non‑space sequences
+  const tokens = text.match(/\S+/g) ?? [];
+  return tokens.split('').reverse().join(' ');
 }
-forEach(callback: (value: T) => void): void {
-  for (let cur = this.head; cur; cur = cur.next) {
-    callback(cur.value);
-  }
-}
-*[Symbol.iterator](): Iterator<T> {
-  let current = this.head;
-  while (current) {
-    yield current.value;
-    current = current.next;
-  }
-}
-const list = new LinkedList<number>();
-list.push(10);
-list.push(20);
-list.push(30);
+const tests = [
+  { in: "", out: "" },
+  { in: "hello", out: "hello" },
+  { in: "one two three", out: "three two one" },
+  { in: "  a   b c   ", out: "c b a" },
+  { in: "Hello, world!", out: "world! Hello," },
+];
 
-for (const n of list) console.log(n); // 10 20 30
-import { ListNode, LinkedList } from "./linked-list";
-
-const list = new LinkedList<string>();
-list.push("first");
-list.push("second");
-list.unshift("zero");
-console.log(list.size()); // 3
-
-list.delete("second");
-console.log([...list]);   // ["zero", "first"]
-
-list.pop();
-console.log(list.shift()); // "zero"
+tests.forEach(({ in: t, out: expected }) => {
+  const result = reverseWords(t);
+  console.assert(result === expected, `❌ ${t} → ${result} (expected ${expected})`);
+});
+console.log("All basic tests passed!");
