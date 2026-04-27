@@ -1,66 +1,35 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+// A minimal node definition
+interface TreeNode<T> {
+  value: T;
+  left: TreeNode<T> | null;
+  right: TreeNode<T> | null;
 }
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
-
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
+// Recursive helper that treats the tree as an expression tree
+function sumTree(node: TreeNode<number> | null): number {
+  if (!node) return 0;                // nothing here – contributes nothing
+  return node.value + sumTree(node.left) + sumTree(node.right);
 }
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+const root: TreeNode<number> = {
+  value: 10,
+  left: { value: 5, left: null, right: null },
+  right: { value: -3, left: null, right: null },
+};
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
+console.log(sumTree(root)); // 12
+function sumTreeIterative(root: TreeNode<number> | null): number {
   if (!root) return 0;
 
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
+  let sum = 0;
+  const stack: TreeNode<number>[] = [root];
 
   while (stack.length) {
     const node = stack.pop()!;
-    if (!node) continue;
+    sum += node.value;
 
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+    if (node.left) stack.push(node.left);
+    if (node.right) stack.push(node.right);
   }
 
-  return leafCount;
-}
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
-
-  if (!root) return leaves;
-
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return leaves;
+  return sum;
 }
