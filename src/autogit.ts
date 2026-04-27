@@ -1,31 +1,78 @@
 /**
- * Recursively calculates the factorial of a non‑negative integer.
+ * A very small, self‑contained topological‑sort utility.
  *
- * @param n - the number to compute the factorial of
- * @returns n! as a number (works well up to ~170 before overflow)
+ * Users should supply a directed graph in adjacency‑list form:
+ *
+ *   const g = new Map<string, Set<string>>();
+ *   g.set('A', new Set(['B', 'C']));
+ *   g.set('B', new Set(['D']));
+ *   g.set('C', new Set(['D']));
+ *   g.set('D', new Set());
+ *
+ * Call `topologicalSort(g)` and receive an array in an order that
+ * satisfies all dependencies. If a cycle is detected the function
+ * throws an Error describing the nodes that loop.
  */
-function factorial(n: number): number {
-  // Guard against negative input - factorial isn’t defined there
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
+
+type Graph<ID> = Map<ID, Set<ID>>;
+
+/**
+ * Detects a directed cycle in a graph by trying a Kahn‑style removal.
+ */
+function topologicalSort<ID>(graph: Graph<ID>): ID[] {
+  // 1. Make a copy of indegree counts
+  const indegree = new Map<ID, number>();
+
+  // Walk the graph once to count in‑edges
+  for (const [node, edges] of graph.entries()) {
+    // Ensure every node in the map has an indegree entry
+    if (!indegree.has(node)) indegree.set(node, 0);
+    for (const neigh of edges) {
+      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
+      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
+      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
+    }
   }
 
-  // Base case: 0! === 1 and 1! === 1
-  if (n <= 1) {
-    return 1;
+  // 2. Queue of nodes with no incoming edges
+  const queue: ID[] = [];
+  for (const [node, num] of indegree.entries())
+    if (num === 0) queue.push(node);
+
+  const result: ID[] = [];
+
+  // 3. Repeatedly pop a zero‑in‑degree node, append to result
+  //    and “remove” its outgoing edges
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    const outgoing = graph.get(node) ?? new Set();
+    for (const neigh of outgoing) {
+      // decrement indegree; if it goes to 0 push to queue
+      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
+      indegree.set(neigh, newIndeg);
+      if (newIndeg === 0) queue.push(neigh);
+    }
   }
 
-  // Recursive case
-  return n * factorial(n - 1);
+  // 4. If we didn't visit all nodes → a cycle exists
+  if (result.length !== indegree.size) {
+    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
+    throw new Error(
+      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
+    );
+  }
+
+  return result;
 }
 
-// Quick demo:
-console.log(factorial(5)); // 120
-function factorialBig(n: bigint): bigint {
-  if (n < 0n) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
-  }
-  return n <= 1n ? 1n : n * factorialBig(n - 1n);
-}
+/* ---------- demo ---------- */
+const example = new Map<string, Set<string>>([
+  ['A', new Set(['B', 'C'])],
+  ['B', new Set(['D'])],
+  ['C', new Set(['D'])],
+  ['D', new Set()],
+]);
 
-console.log(factorialBig(20n)); // 2432902008176640000n
+console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
