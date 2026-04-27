@@ -1,33 +1,9 @@
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+const str = "  123   ";
 
-function middle<T>(head: Node<T> | null): Node<T> | null {
-  if (!head) return null;           // empty list
+const num1 = Number(str);            // 123
+const num2 = +'123';                 // 123
+const num3 = parseInt(str, 10);      // 123
+const num4 = parseFloat('123.45');   // 123.45
+const num5 = str * 1;                // 123
 
-  let slow: Node<T> | null = head;
-  let fast: Node<T> | null = head;
-
-  // Move `fast` twice as fast as `slow`.
-  // When `fast` reaches the end, `slow` will be at the middle.
-  while (fast && fast.next) {
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
-
-  return slow; // this node is the middle
-}
-while (fast && fast.next) {
-  slow = slow!.next!;
-  fast = fast.next?.next ?? null;
-}
-
-// after loop, `slow` is still the first middle;
-slow = slow?.next ?? null;      // move to the second middle
-const list = new Node(1,
-  new Node(2,
-    new Node(3,
-      new Node(4,
-        new Node(5)))));
-
-console.log(middle(list)?.value); // 3
+console.log([num1, num2, num3, num4, num5]); // [123, 123, 123, 123.45, 123]
