@@ -1,61 +1,57 @@
-function kthSmallestBySort(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
-  const sorted = [...arr].sort((a, b) => a - b)   // cloning keeps the input untouched
-  return sorted[k - 1]
+function removeItem<T>(arr: T[], item: T): void {
+  const idx = arr.indexOf(item);      // first occurrence
+  if (idx !== -1) {
+    arr.splice(idx, 1);               // mutate the original array
+  }
 }
-function partition(arr: number[], left: number, right: number, pivotIndex: number): number {
-  const pivotValue = arr[pivotIndex]
-  // move pivot to end
-  [arr[pivotIndex], arr[right]] = [arr[right], arr[pivotIndex]]
-  let storeIndex = left
+function removed<T>(arr: T[], item: T): T[] {
+  return arr.filter(x => x !== item); // keeps unchanged items
+}
+function removeAt<T>(arr: T[], idx: number): void {
+  if (idx >= 0 && idx < arr.length) {
+    arr.splice(idx, 1);
+  }
+}
+const set = new Set(arr);   // unique elements
+set.delete(item);           // removes it if present
+const newArr = [...set];    // back to an array
+type RemoveOptions = {
+  /** If true, only remove the first matching element */
+  firstOnly?: boolean;
+};
 
-  for (let i = left; i < right; i++) {
-    if (arr[i] < pivotValue) {
-      [arr[storeIndex], arr[i]] = [arr[i], arr[storeIndex]]
-      storeIndex++
+function remove<T>(
+  arr: T[],
+  itemOrIdx: T | number,
+  options: RemoveOptions = {}
+): T[] {
+  const { firstOnly = false } = options;
+
+  // Remove by index
+  if (typeof itemOrIdx === 'number') {
+    const idx = itemOrIdx;
+    if (idx >= 0 && idx < arr.length) {
+      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
     }
+    return arr;
   }
 
-  // move pivot to its final place
-  [arr[right], arr[storeIndex]] = [arr[storeIndex], arr[right]]
-  return storeIndex
+  // Remove by value
+  const item = itemOrIdx as T;
+  const idx = arr.indexOf(item);
+
+  if (idx === -1) return arr; // nothing to do
+
+  if (firstOnly) {
+    // fast path: mutate in place
+    arr.splice(idx, 1);
+    return arr;
+  }
+
+  // immutable: create a new array
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
 }
-
-function quickselect(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
-
-  let left = 0
-  let right = arr.length - 1
-  const targetIdx = k - 1
-
-  while (true) {
-    const pivotIdx = Math.floor(Math.random() * (right - left + 1)) + left
-    const pivotPos = partition(arr, left, right, pivotIdx)
-
-    if (pivotPos === targetIdx) return arr[pivotPos]
-    if (pivotPos > targetIdx) right = pivotPos - 1
-    else left = pivotPos + 1
-  }
-}
-const arrCopy = [...original]
-const kth = quickselect(arrCopy, k)
-function kthSmallestByCounting(arr: number[], k: number): number | null {
-  if (k < 1 || k > arr.length) return null
-
-  // Find min/max to size the histogram
-  let min = arr[0], max = arr[0]
-  for (const v of arr) {
-    if (v < min) min = v
-    if (v > max) max = v
-  }
-
-  const freq = new Array(max - min + 1).fill(0)
-  for (const v of arr) freq[v - min]++
-
-  let count = 0
-  for (let i = 0; i < freq.length; i++) {
-    count += freq[i]
-    if (count >= k) return i + min
-  }
-  return null   // shouldn't happen
-}
+let nums = [1, 2, 3, 2, 4];
+remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
+remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
+remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
