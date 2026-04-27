@@ -1,30 +1,23 @@
-// Generic helper – works with any comparable type that can be used as a Map key
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(item => setB.has(item));
+function isPalindrome(s: string): boolean {
+  // 1. Normalise: lower‑case, trim, and strip non‑alphanumerics
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // 2. Compare with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // true
+console.log(isPalindrome('Racecar'));                          // true
+console.log(isPalindrome('Hello'));                            // false
+function isPalindromeTwoPointer(s: string): boolean {
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let left = 0;
+  let right = cleaned.length - 1;
 
-// Simple test
-const arr1 = [1, 2, 3, 5, 8];
-const arr2 = [3, 4, 5, 6, 9];
-
-console.log(intersection(arr1, arr2)); // → [3, 5]
-function firstIntersection<T>(a: T[], b: T[]): T | undefined {
-  const setB = new Set(b);
-  for (const item of a) {
-    if (setB.has(item)) return item;
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) return false;
+    left++;
+    right--;
   }
+  return true;
 }
-function intersectionBy<T, K extends keyof T>(
-  a: T[],
-  b: T[],
-  key: K
-): T[] {
-  const map = new Map(b.map(v => [v[key], v]));
-  return a.filter(v => map.has(v[key]));
-}
-interface User { id: number; name: string }
-const usersA = [{ id:1 },{ id:2 },{ id:3 }]
-const usersB = [{ id:2 },{ id:3 },{ id:4 }]
-console.log(intersectionBy(usersA, usersB, 'id')) // → [{id:2},{id:3}]
-const uniqCommon = Array.from(new Set(intersection(arr1, arr2)));
