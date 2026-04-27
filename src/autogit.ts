@@ -1,52 +1,24 @@
-/**
- * Find the longest common subsequence between two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS string (empty if there is none).
- */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length
-  const m = b.length
+const numbers: number[] = [3, 7, -2, 9, 5];
 
-  // 1‑based DP table, size (n+1) × (m+1)
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    Array(m + 1).fill(0)
-  )
+const max = Math.max(...numbers);
+console.log(max); // 9
+const max = numbers.length ? Math.max(...numbers) : undefined;
+const max = numbers.reduce((a, b) => (a > b ? a : b));
+console.log(max); // 9
+const {max, index} = numbers.reduce(
+  (acc, val, idx) =>
+    val > acc.max
+      ? {max: val, index: idx}
+      : acc,
+  {max: Number.NEGATIVE_INFINITY, index: -1}
+);
 
-  // Build the DP table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
-      }
-    }
-  }
-
-  // Reconstruct the LCS from the table
-  let i = n
-  let j = m
-  const lcs: string[] = []
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs.push(a[i - 1]) // characters match – part of LCS
-      i--
-      j--
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--
-    } else {
-      j--
-    }
-  }
-
-  return lcs.reverse().join("")
+console.log(max, index); // 9 3
+function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
 }
-import { longestCommonSubsequence } from "./lcs"
 
-const s1 = "AGGTAB"
-const s2 = "GXTXAYB"
-
-console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
+// Example usage
+const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
+const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
