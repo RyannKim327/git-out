@@ -1,80 +1,43 @@
 /**
- * Sorts an array of numbers in ascending order using selection sort.
- * The array is sorted in place.
+ * Returns true if n is a prime number, false otherwise.
  *
- * @param arr – the number array to sort
- * @returns the same array reference, now sorted
+ * Numbers less than 2 are not prime by definition.
+ * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
+ * After that only numbers of the form 6k ± 1 can be prime.
  */
-export function selectionSortNumbers(arr: number[]): number[] {
-  const n = arr.length;
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1, and negatives are not prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
 
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the first unsorted element is the minimum
-    let minIndex = i;
-
-    // Find the actual minimum among the remaining unsorted portion
-    for (let j = i + 1; j < n; j++) {
-      if (arr[j] < arr[minIndex]) {
-        minIndex = j;
-      }
-    }
-
-    // If a smaller element was found, swap it into place
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
+  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
 
-  return arr;
+  return true;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
-/**
- * Sorts an array in place using selection sort and a custom comparator.
- *
- * @param arr         The array to sort.
- * @param compareFn   Comparator that defines the sort order.
- * @returns The sorted array (same reference as @param arr).
- */
-export function selectionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  const n = arr.length;
+[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
+  console.log(`${num} → ${isPrime(num)}`));
+1 → false
+2 → true
+3 → true
+4 → false
+5 → true
+16 → false
+17 → true
+19 → true
+20 → false
+23 → true
+24 → false
+29 → true
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  for (let i = 0; i < n - 1; i++) {
-    let minIndex = i;
-
-    for (let j = i + 1; j < n; j++) {
-      if (compareFn(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
-    }
-
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
   }
-
-  return arr;
+  return true;
 }
-interface Person {
-  name: string;
-  age: number;
-}
-
-const people: Person[] = [
-  { name: 'Alice', age: 29 },
-  { name: 'Bob', age: 23 },
-  { name: 'Charlie', age: 35 }
-];
-
-// Sort by age (ascending)
-selectionSort(people, (a, b) => a.age - b.age);
-
-console.log(people);
-// → [
-//      { name: 'Bob', age: 23 },
-//      { name: 'Alice', age: 29 },
-//      { name: 'Charlie', age: 35 }
-//    ]
