@@ -1,16 +1,24 @@
-/**
- * Returns the mean (average) of a numeric array.
- *
- * @param values – an array of numbers
- * @returns the arithmetic mean, or NaN if the array is empty
- */
-function mean(values: readonly number[]): number {
-  if (values.length === 0) return NaN;
+const numbers: number[] = [3, 7, -2, 9, 5];
 
-  const total = values.reduce((sum, v) => sum + v, 0);
-  return total / values.length;
+const max = Math.max(...numbers);
+console.log(max); // 9
+const max = numbers.length ? Math.max(...numbers) : undefined;
+const max = numbers.reduce((a, b) => (a > b ? a : b));
+console.log(max); // 9
+const {max, index} = numbers.reduce(
+  (acc, val, idx) =>
+    val > acc.max
+      ? {max: val, index: idx}
+      : acc,
+  {max: Number.NEGATIVE_INFINITY, index: -1}
+);
+
+console.log(max, index); // 9 3
+function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
 }
-const scores = [78, 92, 85, 67, 90];
-console.log(mean(scores)); // → 84.4
 
-console.log(mean([])); // → NaN
+// Example usage
+const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
+const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
