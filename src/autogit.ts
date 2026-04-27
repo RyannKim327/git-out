@@ -1,67 +1,51 @@
-/**
- * In‑place quicksort.
- *
- * @param arr  The array to sort
- * @param cmp  Optional comparator: (a,b) => number.
- *             If omitted, the default comparison uses the built‑in
- *             < , == , > operators (works for strings, numbers, etc.).
- * @returns    The same array reference, now sorted
- */
-export function quickSort<T>(
-    arr: T[],
-    cmp?: (a: T, b: T) => number
-): T[] {
-    // Default comparator for primitives
-    const defaultCmp = (a: T, b: T): number => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    };
+// Basic node definition – feel free to swap in your own
+class TreeNode<T = number> {
+  val: T
+  left: TreeNode<T> | null = null
+  right: TreeNode<T> | null = null
 
-    const compare = cmp ?? defaultCmp;
-
-    // Lomuto partition: pivot is the last element
-    const partition = (lo: number, hi: number): number => {
-        const pivot = arr[hi];
-        let i = lo;            // place for the next smaller element
-        for (let j = lo; j < hi; j++) {
-            if (compare(arr[j], pivot) <= 0) {
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-                i++;
-            }
-        }
-        // put pivot in its final place
-        [arr[i], arr[hi]] = [arr[hi], arr[i]];
-        return i;
-    };
-
-    const quick = (lo: number, hi: number): void => {
-        if (lo < hi) {
-            const p = partition(lo, hi);
-            quick(lo, p - 1);
-            quick(p + 1, hi);
-        }
-    };
-
-    quick(0, arr.length - 1);
-    return arr;
+  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
+    this.val = val
+    if (left) this.left = left
+    if (right) this.right = right
+  }
 }
-// Numbers – default comparison works
-const nums = [5, 3, 8, 4, 2];
-quickSort(nums);
-console.log(nums); // [2, 3, 4, 5, 8]
 
-// Strings – default comparison is lexicographic
-const words = ['banana', 'apple', 'cherry'];
-quickSort(words);
-console.log(words); // ['apple', 'banana', 'cherry']
+/**
+ * Returns the diameter of the tree rooted at `root`.
+ * If the tree is empty, the diameter is 0.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0
 
-// Custom comparator (descending)
-interface Person { name: string; age: number; }
-const people: Person[] = [
-    { name: 'Eve', age: 29 },
-    { name: 'Bob', age: 42 },
-    { name: 'Alice', age: 35 }
-];
-quickSort(people, (a, b) => b.age - a.age); // sort by age descending
-console.log(people);
+  /**
+   * Helper that returns the height (in nodes) of the subtree.
+   * While unwinding recursion, we update the maximum diameter.
+   */
+  function height(node: TreeNode | null): number {
+    if (!node) return 0
+
+    const leftHeight = height(node.left)
+    const rightHeight = height(node.right)
+
+    // Path that goes through this node = leftHeight + rightHeight
+    const localDiameter = leftHeight + rightHeight
+
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter
+
+    // Height is max child height plus this node
+    return Math.max(leftHeight, rightHeight) + 1
+  }
+
+  height(root)
+  return maxDiameter   // edge‑count diameter
+}
+
+/* ---------- quick test ---------- */
+const tree = new TreeNode(
+  1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
+)
+
+console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
