@@ -1,42 +1,52 @@
-// O(n) time, O(1) space – the classic Boyer‑Moore vote‑count algorithm
-function majorityElement(nums: number[]): number | null {
-  if (nums.length === 0) return null;  // no data
+/**
+ * Find the longest common subsequence between two strings.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS string (empty if there is none).
+ */
+export function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length
+  const m = b.length
 
-  // 1️⃣ First pass: find a candidate
-  let candidate = nums[0];
-  let count = 1;
+  // 1‑based DP table, size (n+1) × (m+1)
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    Array(m + 1).fill(0)
+  )
 
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] === candidate) {
-      count++;
-    } else {
-      count--;
-      if (count === 0) {
-        candidate = nums[i];
-        count = 1;
+  // Build the DP table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
       }
     }
   }
 
-  // 2️⃣ Second pass: verify that the candidate really is the majority
-  count = 0;
-  for (const v of nums) if (v === candidate) count++;
+  // Reconstruct the LCS from the table
+  let i = n
+  let j = m
+  const lcs: string[] = []
 
-  return count > Math.floor(nums.length / 2) ? candidate : null;
-}
-function majorityElementUsingMap(nums: number[]): number | null {
-  const freq = new Map<number, number>();
-  const threshold = Math.floor(nums.length / 2);
-
-  for (const n of nums) {
-    freq.set(n, (freq.get(n) ?? 0) + 1);
-    if (freq.get(n)! > threshold) {
-      return n;            // early win
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs.push(a[i - 1]) // characters match – part of LCS
+      i--
+      j--
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--
+    } else {
+      j--
     }
   }
-  return null;              // nothing crossed threshold
+
+  return lcs.reverse().join("")
 }
-console.log(majorityElement([3, 3, 4, 2, 3]));          // 3
-console.log(majorityElement([1, 2, 3, 4]));             // null (no majority)
-console.log(majorityElementUsingMap([1, 1, 2, 1, 3]));  // 1
-function majorityString<T>(arr: T[]): T | null { /* same logic, just generic */ }
+import { longestCommonSubsequence } from "./lcs"
+
+const s1 = "AGGTAB"
+const s2 = "GXTXAYB"
+
+console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
