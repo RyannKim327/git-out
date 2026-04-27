@@ -1,69 +1,24 @@
-interface ListNode {
-  val: number | string | any;   // whatever type you’re storing
-  next?: ListNode | null;
-}
-function reverse(head: ListNode | null): ListNode | null {
-  let prev: ListNode | null = null;
-  let cur = head;
+const numbers: number[] = [3, 7, -2, 9, 5];
 
-  while (cur) {
-    const next = cur.next;   // keep the next node
-    cur.next = prev;         // reverse the pointer
-    prev = cur;              // move prev forward
-    cur = next;              // move cur forward
-  }
+const max = Math.max(...numbers);
+console.log(max); // 9
+const max = numbers.length ? Math.max(...numbers) : undefined;
+const max = numbers.reduce((a, b) => (a > b ? a : b));
+console.log(max); // 9
+const {max, index} = numbers.reduce(
+  (acc, val, idx) =>
+    val > acc.max
+      ? {max: val, index: idx}
+      : acc,
+  {max: Number.NEGATIVE_INFINITY, index: -1}
+);
 
-  return prev; // new head
+console.log(max, index); // 9 3
+function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
 }
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
-  
-  // --- find middle with fast/slow pointers ---
-  let slow = head;
-  let fast = head;
-  
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next!;
-  }
-  
-  // For odd‑length lists, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-  
-  // --- reverse the second half ---
-  const secondHalfStart = reverse(slow);
-  
-  // --- compare first half and reversed second half ---
-  let p1 = head;
-  let p2 = secondHalfStart;
-  let result = true;
-  
-  while (result && p2) {           // p2 is shorter or equal to p1
-    if (p1!.val !== p2.val) result = false;
-    p1 = p1!.next!;
-    p2 = p2.next!;
-  }
-  
-  // If you want the original list preserved, reverse the second half again:
-  // reverse(secondHalfStart);
-  
-  return result;
-}
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string | any)[] = [];
-  let cur = head;
 
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
-  }
-
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) return false;
-    cur = cur.next;
-  }
-  return true;
-}
+// Example usage
+const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
+const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
