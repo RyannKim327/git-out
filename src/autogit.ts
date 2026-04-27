@@ -1,58 +1,31 @@
-/** A very simple binary‑tree node. */
-export class TreeNode<T = unknown> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
 /**
- * Returns the maximum depth of a binary tree.
- * Depth is counted in nodes, not edges.
+ * Recursively calculates the factorial of a non‑negative integer.
  *
- * @param root The root node of the tree (or null for an empty tree).
- * @returns an integer ≥ 0.
+ * @param n - the number to compute the factorial of
+ * @returns n! as a number (works well up to ~170 before overflow)
  */
-export function maxDepth<T>(root: TreeNode<T> | null): number {
-  // recursion is the cleanest here
-  if (!root) return 0; // leaf’s child contributes 0
-
-  const leftDepth = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // current node adds 1 to the greater of two sub‑depths
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
-}
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const root = new TreeNode('a',
-  new TreeNode('b',
-    new TreeNode('d')
-  ),
-  new TreeNode('c')
-);
-
-console.log(maxDepth(root)); // → 3
-export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    // All nodes in this `for` loop belong to the same level.
-    const levelSize = queue.length;
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
-    depth++; // finished one level
+function factorial(n: number): number {
+  // Guard against negative input - factorial isn’t defined there
+  if (n < 0) {
+    throw new Error('Factorial is only defined for non‑negative integers.');
   }
-  return depth;
+
+  // Base case: 0! === 1 and 1! === 1
+  if (n <= 1) {
+    return 1;
+  }
+
+  // Recursive case
+  return n * factorial(n - 1);
 }
+
+// Quick demo:
+console.log(factorial(5)); // 120
+function factorialBig(n: bigint): bigint {
+  if (n < 0n) {
+    throw new Error('Factorial is only defined for non‑negative integers.');
+  }
+  return n <= 1n ? 1n : n * factorialBig(n - 1n);
+}
+
+console.log(factorialBig(20n)); // 2432902008176640000n
