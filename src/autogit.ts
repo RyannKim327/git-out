@@ -1,38 +1,58 @@
-/**
- * Counting sort for an array of non‑negative integers.
- * @param arr - The array to sort.
- * @param maxVal - (Optional) Max value in the input. If omitted, it’s derived from the data.
- * @returns a new sorted array.
- */
-export function countingSort(arr: number[], maxVal?: number): number[] {
-  if (arr.length === 0) return [];
-
-  // 1️⃣ Determine the maximum value (or use the supplied one)
-  const max = maxVal ?? Math.max(...arr);
-
-  // 2️⃣ Frequency table
-  const count: number[] = new Array(max + 1).fill(0);
-  for (const num of arr) {
-    if (num < 0) throw new Error('Counting sort in this version expects non‑negative numbers');
-    count[num] += 1;
-  }
-
-  // 3️⃣ Build the result
-  const result: number[] = [];
-  for (let value = 0; value <= max; value++) {
-    const qty = count[value];
-    for (let i = 0; i < qty; i++) {
-      result.push(value);
-    }
-  }
-
-  return result;
+/** A very simple binary‑tree node. */
+export class TreeNode<T = unknown> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-import { countingSort } from './countingSort';
 
-const data = [12, 4, 1, 12, 7, 7, 4, 4, 0];
-const sorted = countingSort(data);
-console.log(sorted); // [0, 1, 4, 4, 4, 7, 7, 12, 12]
-if (data.reduce((acc, cur, i) => acc && cur >= data[i - 1], true)) {
-  return data.slice();
+/**
+ * Returns the maximum depth of a binary tree.
+ * Depth is counted in nodes, not edges.
+ *
+ * @param root The root node of the tree (or null for an empty tree).
+ * @returns an integer ≥ 0.
+ */
+export function maxDepth<T>(root: TreeNode<T> | null): number {
+  // recursion is the cleanest here
+  if (!root) return 0; // leaf’s child contributes 0
+
+  const leftDepth = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  // current node adds 1 to the greater of two sub‑depths
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
+}
+// Build a tiny tree:
+//       a
+//      / \
+//     b   c
+//    /
+//   d
+const root = new TreeNode('a',
+  new TreeNode('b',
+    new TreeNode('d')
+  ),
+  new TreeNode('c')
+);
+
+console.log(maxDepth(root)); // → 3
+export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    // All nodes in this `for` loop belong to the same level.
+    const levelSize = queue.length;
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+    depth++; // finished one level
+  }
+  return depth;
 }
