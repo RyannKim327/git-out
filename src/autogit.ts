@@ -1,30 +1,34 @@
-// Define what the API will return (pick and choose any fields you need)
-interface Todo {
+// fetch-posts.ts
+import axios, { AxiosResponse } from 'axios';
+
+interface Post {
   userId: number;
   id: number;
   title: string;
-  completed: boolean;
+  body: string;
 }
 
-// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
-async function apiGet<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
-  }
-  return response.json() as Promise<T>;
+async function fetchPosts(): Promise<Post[]> {
+  const url = 'https://jsonplaceholder.typicode.com/posts';
+  const response: AxiosResponse<Post[]> = await axios.get(url);
+  return response.data;
 }
 
-// Example usage: pull a single todo item
-async function fetchTodo(todoId: number) {
+async function main() {
   try {
-    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
-    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
-    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
+    const posts = await fetchPosts();
+    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
   } catch (err) {
-    console.error('Oops:', err);
+    console.error('Failed to fetch posts:', err);
   }
 }
 
-// Kick it off (demo)
-fetchTodo(42);
+main();
+# 1️⃣  Install dependencies
+npm install axios
+
+# 2️⃣  Compile to JavaScript
+tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
+
+# 3️⃣  Execute
+node fetch-posts.js
