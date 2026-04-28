@@ -1,31 +1,39 @@
 /**
- * Recursively calculates the factorial of a non‑negative integer.
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
  *
- * @param n - the number to compute the factorial of
- * @returns n! as a number (works well up to ~170 before overflow)
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
  */
-function factorial(n: number): number {
-  // Guard against negative input - factorial isn’t defined there
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
   }
 
-  // Base case: 0! === 1 and 1! === 1
-  if (n <= 1) {
-    return 1;
-  }
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  // Recursive case
-  return n * factorial(n - 1);
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
+  }
 }
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-// Quick demo:
-console.log(factorial(5)); // 120
-function factorialBig(n: bigint): bigint {
-  if (n < 0n) {
-    throw new Error('Factorial is only defined for non‑negative integers.');
-  }
-  return n <= 1n ? 1n : n * factorialBig(n - 1n);
-}
-
-console.log(factorialBig(20n)); // 2432902008176640000n
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
