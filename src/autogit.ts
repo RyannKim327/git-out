@@ -1,21 +1,41 @@
 /**
- * Removes all vowels (a, e, i, o, u) from the given string.
+ * Checks whether a string is a palindrome.
  *
- * @param str - The input string to process.
- * @returns A new string with all vowels removed.
+ * Options:
+ *   - ignoreCase: treat “A” and “a” as the same (default: true)
+ *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
+ *
+ * @param input The string to test
+ * @param opts  Optional settings
+ * @returns true if `input` is a palindrome under the chosen rules
  */
-export function removeVowels(str: string): string {
-  // The regex matches any of a, e, i, o, u in either case.
-  return str.replace(/[aeiouAEIOU]/g, '');
-}
-console.log(removeVowels("Hello, World!"));       // "Hll, Wrld!"
-console.log(removeVowels("TypeScript is awesome")); // "TypScrpt s wsm"
-return str.replace(/[aeiouyAEIOUY]/g, '');
-export function removeVowelsManual(str: string): string {
-  const vowels = new Set(['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']);
-  let result = '';
-  for (const ch of str) {
-    if (!vowels.has(ch)) result += ch;
+export function isPalindrome(
+  input: string,
+  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+
+  let str = input;
+
+  // 1. Collapse the string if requested
+  if (ignoreNonAlnum) {
+    // Keep only ASCII letters and digits. For Unicode you might want
+    // a regex like `/\p{L}\p{N}/gu` instead.
+    str = str.replace(/[^A-Za-z0-9]/g, "");
   }
-  return result;
+
+  // 2. Normalize case if requested
+  if (ignoreCase) {
+    str = str.toLowerCase();
+  }
+
+  // 3. Compare the string to its reverse
+  const reversed = str.split("").reverse().join("");
+  return str === reversed;
 }
+console.log(isPalindrome("racecar"));                    // true
+console.log(isPalindrome("RaceCar"));                    // true
+console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("No lemon, no melon"));          // true
+console.log(isPalindrome("hello"));                       // false
