@@ -1,61 +1,57 @@
 /**
- * Generic comparison, returns true if a should come before b.
- * Default is for a number array (so it's an ascending sort).
+ * Interpolation Search
+ * --------------------
+ * @param arr  A sorted array of numbers (ascending).
+ * @param key  The value you're looking for.
+ * @returns    Index of key in arr, or −1 if key is absent.
+ *
+ * Complexity:
+ *  * Best‑case: O(log log N)  (when data is uniformly distributed)
+ *  * Worst‑case: O(N)         (when data is heavily skewed)
+ *
+ * Note: Behaviour for non‑numeric or unsorted input is undefined.
  */
-type Comparator<T> = (a: T, b: T) => boolean;
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
-  const n = arr.length;
+  let low = 0;
+  let high = arr.length - 1;
 
-  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
-
-  /* 2️⃣ Extract elements one by one */
-  for (let end = n - 1; end > 0; end--) {
-    // swap max element (root) with the last element of the heap
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    // heap size shrinks by one; restore heap property for the new root
-    siftDown(arr, 0, end, compare);
-  }
-}
-
-/**
- * Moves the element at `start` down the heap until the heap
- * property is restored.  The heap is the sub‑array `[0, size)`.
- */
-function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
-  let root = start;
-
-  while (true) {
-    const left = 2 * root + 1;   // left child index
-    const right = left + 1;      // right child index
-    let swapIdx = root;
-
-    // if left child exists and is greater (or “comes first” by compare)
-    if (left < size && compare(arr[swapIdx], arr[left])) {
-      swapIdx = left;
+  // Keep the loop going while the search space is valid.
+  while (
+    low <= high &&
+    key >= arr[low] &&
+    key <= arr[high]
+  ) {
+    // Guard against a zero division when arr[low] === arr[high].
+    if (arr[low] === arr[high]) {
+      // All remaining elements are equal; pick the first one.
+      return arr[low] === key ? low : -1;
     }
 
-    // do the same for the right child
-    if (right < size && compare(arr[swapIdx], arr[right])) {
-      swapIdx = right;
+    // Estimate the probable position of key.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+      );
+
+    // We found the key.
+    if (arr[pos] === key) {
+      return pos;
     }
 
-    // if root holds the max element, we are done
-    if (swapIdx === root) return;
-
-    // swap root with the larger child and continue
-    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
-    root = swapIdx;
+    // Update boundaries based on comparison.
+    if (arr[pos] < key) {
+      low = pos + 1;     // key is in the right sub‑array
+    } else {
+      high = pos - 1;    // key is in the left sub‑array
+    }
   }
+
+  // If we exit the loop, key isn't present.
+  return -1;
 }
-
-/* --------------------  Example usage  -------------------- */
-
-const nums = [5, 1, 4, 2, 8, 0, 3];
-heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
-
-/* --------------------  Sorting strings  -------------------- */
-const strs = ["delta", "alpha", "charlie", "bravo"];
-heapSort(strs, (a, b) => a > b);   // descending order
-// strs => ["delta", "charlie", "bravo", "alpha"]
+const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(data, 9));   // → 4
+console.log(interpolationSearch(data, 4));   // → -1
