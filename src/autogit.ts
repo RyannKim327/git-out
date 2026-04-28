@@ -1,93 +1,93 @@
-// ---- Graph representation -------------------------------------------------
-type Node = string | number;               // you can pick whatever type you prefer
-type AdjacencyList = Record<Node, Node[]>; // node -> list of neighbour nodes
+START: push (root, depth=0) onto stack
+WHILE stack not empty:
+    (node, depth) = stack.pop()
+    IF depth > limit: continue          // prune
+    IF node is goal: return node
+    FOR each child of node in reverse order:
+        push (child, depth+1) onto stack
+END
+// ---------------------------------------------------------------------------
+// 1️⃣  Types
+// ---------------------------------------------------------------------------
 
-class Graph {
-  private readonly adj: AdjacencyList = {};
-
-  // Add (or extend) adjacency list for a node
-  addEdge(u: Node, v: Node, undirected = true) {
-    if (!this.adj[u]) this.adj[u] = [];
-    this.adj[u].push(v);
-
-    if (undirected) {
-      if (!this.adj[v]) this.adj[v] = [];
-      this.adj[v].push(u);
-    }
-  }
-
-  // Optional: get all nodes in the graph
-  nodes(): Node[] {
-    return Object.keys(this.adj).map(k => parseNode(k));
-  }
-
-  // Expose raw list for BFS
-  get neighbours() {
-    return this.adj;
-  }
-}
-
-// Helper to preserve numeric keys when using an object as map
-function parseNode(val: string): Node {
-  return isNaN(Number(val)) ? val : Number(val);
-}
-
-// ---- BFS implementation ---------------------------------------------------
 /**
- * Performs a breadth‑first search starting from `source`.
- * @param graph      The graph to search.
- * @param source     The node where we begin the search.
- * @param target     (Optional) If provided, the search stops when this node is reached.
- * @returns          If no target: a map of node → distance from source.
- *                   If target: the distance to that node, or -1 if unreachable.
+ * A minimal graph node. Feel free to embed more data.
  */
-function bfs(
-  graph: Graph,
-  source: Node,
-  target?: Node
-): Record<Node, number> | number {
-  const distances: Record<Node, number> = {};
-  const queue: Node[] = [source];
-  const visited = new Set<Node>();
+interface Node<T = unknown> {
+  /** The value you care about (e.g., a string, number, custom class, …) */
+  value: T;
 
-  visited.add(source);
-  distances[source] = 0;
+  /** Immediate successors of this node. Empty array for a leaf. */
+  children: Node[];
 
-  while (queue.length) {
-    const u = queue.shift() as Node;
-    const currDist = distances[u] as number;
+  /** Optional flag to mark a node as a goal. */
+  isGoal?: boolean;
+}
 
-    // Stop early if we’re looking for a particular target
-    if (target !== undefined && u === target) {
-      return currDist;
-    }
+/**
+ * Result of the search – the node that satisfied the goal.
+ * `null` if no node was found within the depth limit.
+ */
+type SearchResult<T> = Node<T> | null;
 
-    for (const v of graph.neighbours[u] || []) {
-      if (!visited.has(v)) {
-        visited.add(v);
-        distances[v] = currDist + 1;
-        queue.push(v);
-      }
+// ---------------------------------------------------------------------------
+// 2️⃣  The algorithm
+// ---------------------------------------------------------------------------
+
+/**
+ * Iterative depth‑limited DFS.
+ *
+ * @param root  The root node of the search.
+ * @param limit The maximum depth to visit (root has depth 0).
+ * @returns The first node that reports `isGoal === true`, or null.
+ */
+function depthLimitedSearch<T>(
+  root: Node<T>,
+  limit: number
+): SearchResult<T> {
+  // Explicit stack: each entry is [node, currentDepth]
+  const stack: Array<[Node<T>, number]> = [[root, 0]];
+
+  while (stack.length) {
+    const [node, depth] = stack.pop()!; // pop() is safe because we just checked stack.length
+
+    // 1️⃣  Depth guard
+    if (depth > limit) continue;
+
+    // 2️⃣  Goal test
+    if (node.isGoal) return node;
+
+    // 3️⃣  Expand children (reverse order for natural DFS order)
+    for (let i = node.children.length - 1; i >= 0; i--) {
+      stack.push([node.children[i], depth + 1]);
     }
   }
 
-  // No path found to `target`
-  if (target !== undefined) return -1;
-
-  return distances;
+  // Not found within the depth limit
+  return null;
 }
 
-// ---- Example usage --------------------------------------------------------
-const g = new Graph();
-g.addEdge('A', 'B');
-g.addEdge('A', 'C');
-g.addEdge('B', 'D');
-g.addEdge('C', 'D');
-g.addEdge('C', 'E');
-g.addEdge('E', 'F');
+// ---------------------------------------------------------------------------
+// 3️⃣  A quick demo / test
+// ---------------------------------------------------------------------------
 
-// Full distance map from A
-console.log('Distances from A:', bfs(g, 'A'));
+const sampleTree: Node<string> = {
+  value: 'A',
+  children: [
+    { value: 'B', children: [], isGoal: false },
+    {
+      value: 'C',
+      children: [
+        { value: 'D', children: [], isGoal: true },
+        { value: 'E', children: [] },
+      ],
+    },
+  ],
+};
 
-// Shortest path length from A to F
-console.log('Distance A → F:', bfs(g, 'A', 'F'));
+const result = depthLimitedSearch(sampleTree, 2);
+console.log(
+  result
+    ? `Found goal: ${result.value}`
+    : 'No goal node found within depth limit.'
+); // → Found goal: D
