@@ -1,80 +1,40 @@
-/**
- * Sorts an array of numbers in ascending order using selection sort.
- * The array is sorted in place.
- *
- * @param arr – the number array to sort
- * @returns the same array reference, now sorted
- */
-export function selectionSortNumbers(arr: number[]): number[] {
-  const n = arr.length;
+// rock-paper-scissors.ts
+import * as readline from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
 
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the first unsorted element is the minimum
-    let minIndex = i;
+const rl = readline.createInterface({
+  input: stdin,
+  output: stdout,
+});
 
-    // Find the actual minimum among the remaining unsorted portion
-    for (let j = i + 1; j < n; j++) {
-      if (arr[j] < arr[minIndex]) {
-        minIndex = j;
-      }
-    }
+async function play() {
+  console.log('Rock, Paper, Scissors!');
+  const human = (await rl.question('Your move (rock/paper/scissors): ')).trim().toLowerCase();
 
-    // If a smaller element was found, swap it into place
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
-  }
+  const options = ['rock', 'paper', 'scissors'] as const;
+  const comp = options[Math.floor(Math.random() * options.length)];
 
-  return arr;
-}
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
-/**
- * Sorts an array in place using selection sort and a custom comparator.
- *
- * @param arr         The array to sort.
- * @param compareFn   Comparator that defines the sort order.
- * @returns The sorted array (same reference as @param arr).
- */
-export function selectionSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number
-): T[] {
-  const n = arr.length;
+  console.log(`\nComputer chose: ${comp}\n`);
 
-  for (let i = 0; i < n - 1; i++) {
-    let minIndex = i;
+  const result =
+    human === comp
+      ? "It's a tie."
+      : (human === 'rock' && comp === 'scissors') ||
+        (human === 'paper' && comp === 'rock') ||
+        (human === 'scissors' && comp === 'paper')
+      ? 'You win!'
+      : 'You lose!';
 
-    for (let j = i + 1; j < n; j++) {
-      if (compareFn(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
-    }
-
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
-  }
-
-  return arr;
-}
-interface Person {
-  name: string;
-  age: number;
+  console.log(result);
+  rl.close();
 }
 
-const people: Person[] = [
-  { name: 'Alice', age: 29 },
-  { name: 'Bob', age: 23 },
-  { name: 'Charlie', age: 35 }
-];
+play();
+# 1. Install TypeScript locally (if you haven’t already)
+npm install -D typescript
 
-// Sort by age (ascending)
-selectionSort(people, (a, b) => a.age - b.age);
+# 2. Compile the file
+npx tsc rock-paper-scissors.ts --lib es2023,dom
 
-console.log(people);
-// → [
-//      { name: 'Bob', age: 23 },
-//      { name: 'Alice', age: 29 },
-//      { name: 'Charlie', age: 35 }
-//    ]
+# 3. Execute the compiled JS
+node rock-paper-scissors.js
