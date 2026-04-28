@@ -1,80 +1,38 @@
-// The node structure we’ll be working with.
-export class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
 /**
- * Reverse a singly linked list.
- *
- * @param head The head node (or `null` if the list is empty).
- * @returns The new head after reversal.
+ * Counting sort for an array of non‑negative integers.
+ * @param arr - The array to sort.
+ * @param maxVal - (Optional) Max value in the input. If omitted, it’s derived from the data.
+ * @returns a new sorted array.
  */
-export function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // Will become the new tail
-  let curr: ListNode<T> | null = head;   // The node we’re currently visiting
+export function countingSort(arr: number[], maxVal?: number): number[] {
+  if (arr.length === 0) return [];
 
-  while (curr !== null) {
-    const nextNode = curr.next; // remember where we’re headed
-    curr.next = prev;           // flip the direction
-    prev = curr;                // move prev forward
-    curr = nextNode;            // move curr forward
+  // 1️⃣ Determine the maximum value (or use the supplied one)
+  const max = maxVal ?? Math.max(...arr);
+
+  // 2️⃣ Frequency table
+  const count: number[] = new Array(max + 1).fill(0);
+  for (const num of arr) {
+    if (num < 0) throw new Error('Counting sort in this version expects non‑negative numbers');
+    count[num] += 1;
   }
 
-  // When curr is null, prev is the new head.
-  return prev;
-}
-/**
- * Reverse using recursion (not advisable for huge lists).
- * Works nicely for small or medium lists.
- */
-export function reverseRecursively<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: empty list or single element
-  if (!head || !head.next) {
-    return head;
+  // 3️⃣ Build the result
+  const result: number[] = [];
+  for (let value = 0; value <= max; value++) {
+    const qty = count[value];
+    for (let i = 0; i < qty; i++) {
+      result.push(value);
+    }
   }
 
-  // Recursively reverse the rest of the list
-  const newHead = reverseRecursively(head.next);
-
-  // After the deeper call finishes, head is the *last* node we visited
-  // So we need to attach the current head to the end of the reversed part.
-  head.next.next = head;
-  head.next = null;      // break the original link
-
-  return newHead;        // propagate the new head up the stack
-}
-// Helper to convert array ➜ linked list ➜ array (for easy verification)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  let tail: ListNode<T> | null = null;
-
-  for (const val of arr) {
-    const node = new ListNode(val);
-    if (!head) head = node;
-    else if (tail) tail.next = node;
-    tail = node;
-  }
-  return head;
-}
-
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  for (let node = head; node; node = node.next) result.push(node.val);
   return result;
 }
+import { countingSort } from './countingSort';
 
-// Demo
-const list = arrayToList([1, 2, 3, 4, 5]);
-console.log('Original →', listToArray(list));
-console.log('Iterative →', listToArray(reverseLinkedList(list)));
-Original → [ 1, 2, 3, 4, 5 ]
-Iterative → [ 5, 4, 3, 2, 1 ]
-function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev = null, curr = head;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  return prev;
+const data = [12, 4, 1, 12, 7, 7, 4, 4, 0];
+const sorted = countingSort(data);
+console.log(sorted); // [0, 1, 4, 4, 4, 7, 7, 12, 12]
+if (data.reduce((acc, cur, i) => acc && cur >= data[i - 1], true)) {
+  return data.slice();
 }
