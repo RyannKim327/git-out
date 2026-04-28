@@ -1,61 +1,128 @@
-/**
- * Generic comparison, returns true if a should come before b.
- * Default is for a number array (so it's an ascending sort).
- */
-type Comparator<T> = (a: T, b: T) => boolean;
+type Comparator<T> = (a: T, b: T) => number;
 
-function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
-  const n = arr.length;
+interface BSTNode<T> {
+  value: T;
+  left: BSTNode<T> | null;
+  right: BSTNode<T> | null;
+}
+class BinarySearchTree<T> {
+  private root: BSTNode<T> | null = null;
+  private readonly compare: Comparator<T>;
 
-  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
-
-  /* 2️⃣ Extract elements one by one */
-  for (let end = n - 1; end > 0; end--) {
-    // swap max element (root) with the last element of the heap
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    // heap size shrinks by one; restore heap property for the new root
-    siftDown(arr, 0, end, compare);
+  constructor(compareFn: Comparator<T>) {
+    this.compare = compareFn;
   }
+
+  /* ---------- Public API ---------- */
+
+  insert(value: T): void {
+    this.root = this._insert(this.root, value);
+  }
+
+  find(value: T): T | null {
+    const node = this._find(this.root, value);
+    return node ? node.value : null;
+  }
+
+  delete(value: T): void {
+    this.root = this._delete(this.root, value);
+  }
+
+  // In‑order walk: returns the keys sorted ascending
+  inorder(): T[] {
+    const out: T[] = [];
+    this._inorder(this.root, out);
+    return out;
+  }
+
+  // Optional helpers
+  preorder(): T[] { /* … */ }
+  postorder(): T[] { /* … */ }
+}
+private _insert(node: BSTNode<T> | null, value: T): BSTNode<T> {
+  if (!node) return { value, left: null, right: null };
+
+  const cmp = this.compare(value, node.value);
+  if (cmp < 0) {
+    node.left = this._insert(node.left, value);
+  } else if (cmp > 0) {
+    node.right = this._insert(node.right, value);
+  } // duplicate values are ignored
+
+  return node;
 }
 
-/**
- * Moves the element at `start` down the heap until the heap
- * property is restored.  The heap is the sub‑array `[0, size)`.
- */
-function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
-  let root = start;
+private _find(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
+  if (!node) return null;
 
-  while (true) {
-    const left = 2 * root + 1;   // left child index
-    const right = left + 1;      // right child index
-    let swapIdx = root;
+  const cmp = this.compare(value, node.value);
+  if (cmp === 0) return node;
+  return cmp < 0 ? this._find(node.left, value) : this._find(node.right, value);
+}
+private _delete(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
+  if (!node) return null;
 
-    // if left child exists and is greater (or “comes first” by compare)
-    if (left < size && compare(arr[swapIdx], arr[left])) {
-      swapIdx = left;
-    }
+  const cmp = this.compare(value, node.value);
+  if (cmp < 0) {
+    node.left = this._delete(node.left, value);
+  } else if (cmp > 0) {
+    node.right = this._delete(node.right, value);
+  } else {
+    // node to delete found
+    if (!node.left) return node.right;          // only right child or none
+    if (!node.right) return node.left;          // only left child
 
-    // do the same for the right child
-    if (right < size && compare(arr[swapIdx], arr[right])) {
-      swapIdx = right;
-    }
-
-    // if root holds the max element, we are done
-    if (swapIdx === root) return;
-
-    // swap root with the larger child and continue
-    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
-    root = swapIdx;
+    // two children: find the in‑order successor (smallest on right)
+    const succ = this._minNode(node.right)!;
+    node.value = succ.value;                   // replace value
+    node.right = this._delete(node.right, succ.value); // delete successor
   }
+  return node;
 }
 
-/* --------------------  Example usage  -------------------- */
+private _minNode(node: BSTNode<T>): BSTNode<T> | null {
+  while (node.left) node = node.left;
+  return node;
+}
+private _inorder(node: BSTNode<T> | null, out: T[]): void {
+  if (!node) return;
+  this._inorder(node.left, out);
+  out.push(node.value);
+  this._inorder(node.right, out);
+}
 
-const nums = [5, 1, 4, 2, 8, 0, 3];
-heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
+// You can add preorder/postorder in the same style if you need them.
+const compareNumbers = (a: number, b: number) => a - b;
 
-/* --------------------  Sorting strings  -------------------- */
-const strs = ["delta", "alpha", "charlie", "bravo"];
-heapSort(strs, (a, b) => a > b);   // descending order
-// strs => ["delta", "charlie", "bravo", "alpha"]
+const bst = new BinarySearchTree<number>(compareNumbers);
+
+bst.insert(10);
+bst.insert(5);
+bst.insert(15);
+bst.insert(3);
+bst.insert(7);
+
+console.log("inorder:", bst.inorder());   // [3,5,7,10,15]
+console.log("find 7:", bst.find(7));      // 7
+console.log("find 99:", bst.find(99));    // null
+
+bst.delete(5);
+console.log("after delete 5:", bst.inorder()); // [3,7,10,15]
+*inorderIter(): Generator<T> {
+  const stack: BSTNode<T>[] = [];
+  let current = this.root;
+
+  while (stack.length || current) {
+    while (current) {
+      stack.push(current);
+      current = current.left!;
+    }
+
+    current = stack.pop()!;
+    yield current.value;
+    current = current.right!;
+  }
+}
+for (const val of bst.inorderIter()) {
+  console.log(val);
+}
