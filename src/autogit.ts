@@ -1,52 +1,18 @@
-/**
- * Binary search for a sorted array.  
- * @param arr  The sorted array (or array‑like object).
- * @param target  The value you’re looking for.
- * @param low   Optional starting index (default 0).
- * @param high  Optional ending index (default arr.length – 1).
- * @returns index of target if found, otherwise -1.
- */
-export function binarySearch<T extends number | string>(
-    arr: ArrayLike<T>,
-    target: T,
-    low: number = 0,
-    high: number = arr.length - 1
-): number {
-    while (low <= high) {
-        // guard against overflow – works with big ints as well
-        const mid = Math.floor((low + high) / 2);
-        const midVal = arr[mid];
+const numbers = [12, -5, 7, 42, 3.9];
 
-        if (midVal === target) {
-            return mid;
-        }
+// 1️⃣ Spice it up with the spread operator (`Math.max`)
+const maxUsingMath = Math.max(...numbers);
+console.log('maxUsingMath →', maxUsingMath); // 42
 
-        // Type narrowing: if T is string we still compare interger‑wise
-        if (midVal < target) {
-            low = mid + 1;
-        } else {
-            high = mid - 1;
-        }
-    }
-    return -1; // not found
+// 2️⃣ Stack‑overflow‑safe – you don’t want to blow the argument limit
+const maxUsingReduce = numbers.reduce((max, n) => (n > max ? n : max), -Infinity);
+console.log('maxUsingReduce →', maxUsingReduce); // 42
+
+// 3️⃣ Old‑school loop (great for huge arrays)
+let maxOldSchool = -Infinity;
+for (const n of numbers) {
+  if (n > maxOldSchool) maxOldSchool = n;
 }
-import { binarySearch } from "./binary-search.ts";
-
-const nums = [1, 3, 5, 7, 9, 11, 13];
-console.log(binarySearch(nums, 7));   // => 3
-console.log(binarySearch(nums, 4));   // => -1
-export function binarySearchRec<T extends number | string>(
-    arr: ArrayLike<T>,
-    target: T,
-    low: number = 0,
-    high: number = arr.length - 1
-): number {
-    if (low > high) return -1;
-
-    const mid = Math.floor((low + high) / 2);
-    const midVal = arr[mid];
-
-    if (midVal === target) return mid;
-    if (midVal < target) return binarySearchRec(arr, target, mid + 1, high);
-    return binarySearchRec(arr, target, low, mid - 1);
-}
+console.log('maxOldSchool →', maxOldSchool); // 42
+const bigNumbers = new Float64Array([1.5, 2.3, 0.0, 9.1]);
+const maxFloat = Math.max(...bigNumbers); // works, but may still hit the limit
