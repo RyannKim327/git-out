@@ -1,29 +1,24 @@
-/**
- * Returns the first non‑repeating character in `s`, or `null` if every
- * character repeats. The search respects Unicode code‑points, so it works
- * with emojis, accented letters, etc.
- *
- * @param s – input string
- * @returns the character or null
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // Count every character in a single scan.
-  const counter = new Map<string, number>();
+const numbers: number[] = [3, 7, -2, 9, 5];
 
-  for (const ch of s) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
-  }
+const max = Math.max(...numbers);
+console.log(max); // 9
+const max = numbers.length ? Math.max(...numbers) : undefined;
+const max = numbers.reduce((a, b) => (a > b ? a : b));
+console.log(max); // 9
+const {max, index} = numbers.reduce(
+  (acc, val, idx) =>
+    val > acc.max
+      ? {max: val, index: idx}
+      : acc,
+  {max: Number.NEGATIVE_INFINITY, index: -1}
+);
 
-  // Find the first character whose count is 1.
-  for (const ch of s) {
-    if (counter.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null;          // all characters repeat
+console.log(max, index); // 9 3
+function maximum<T>(arr: T[], compare: (a: T, b: T) => boolean): T | undefined {
+  if (arr.length === 0) return undefined;
+  return arr.reduce((max, cur) => (compare(cur, max) ? cur : max), arr[0]);
 }
-console.log(firstNonRepeatingChar("abacabad")); // "c"
-console.log(firstNonRepeatingChar("swiss"));    // "w"
-console.log(firstNonRepeatingChar("aabb"));     // null
-console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
+
+// Example usage
+const maxNum = maximum([3, 7, 9], (a, b) => a > b);           // 9
+const maxStr = maximum(['apple', 'banana', 'fig'], (a, b) => a > b); // 'fig'
