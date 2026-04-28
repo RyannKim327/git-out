@@ -1,72 +1,39 @@
-// A single node in a singly linked list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+/**
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
+ *
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ */
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+  }
 
-// The queue itself
-export class Queue<T> {
-  private head: Node<T> | null = null; // front of the queue
-  private tail: Node<T> | null = null; // back of the queue
-  private _size = 0;
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  /** Adds a value to the back of the queue. */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
-
-    if (this.tail) {
-      // Pre‑existing queue – link the new node after the old tail
-      this.tail.next = newNode;
-    } else {
-      // Empty queue – new node becomes the head
-      this.head = newNode;
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
 
-    // In either case, the new node is the new tail
-    this.tail = newNode;
-    this._size += 1;
-  }
-
-  /** Removes and returns the value at the front of the queue. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Queue is empty
-
-    const value = this.head.value;
-    this.head = this.head.next;   // Advance the head
-
-    // If the queue became empty, clear the tail too
-    if (!this.head) this.tail = null;
-
-    this._size -= 1;
-    return value;
-  }
-
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** How many items are in the queue? */
-  size(): number {
-    return this._size;
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
   }
 }
-const q = new Queue<number>();
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());  // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());   // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue(); // removes 30
-
-console.log(q.isEmpty()); // true
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
