@@ -1,31 +1,32 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-    if (!s1 || !s2) return '';
+/**
+ * Count how many times a whole word appears in a text.
+ *
+ * @param text   The text to search in.
+ * @param word   The word you’re looking for.
+ * @param caseSensitive Set to `true` if you want case‑sensitive matches.
+ * @returns The number of non‑overlapping occurrences.
+ */
+export function countWordOccurrences(
+  text: string,
+  word: string,
+  caseSensitive: boolean = false
+): number {
+  // Escape any regex metacharacters that could be in the word.
+  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    const m = s1.length, n = s2.length;
-    // one‑dimensional DP (only the previous row is needed)
-    const dp = new Array(n + 1).fill(0);
-    let maxLen = 0;          // longest length seen so far
-    let endIdxS1 = 0;        // index where that longest ends in s1
+  // Build a regex that matches the word with word‑boundaries.
+  // \b ensures we don’t count “the” inside “there”.
+  const flags = caseSensitive ? 'g' : 'gi';
+  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
 
-    for (let i = 1; i <= m; i++) {
-        // iterate j from right to left so the current row doesn't overwrite the
-        // values we still need from the previous row
-        for (let j = n; j >= 1; j--) {
-            if (s1[i - 1] === s2[j - 1]) {
-                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
-                if (dp[j] > maxLen) {
-                    maxLen = dp[j];
-                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
-                }
-            } else {
-                dp[j] = 0;
-            }
-        }
-    }
-
-    // Extract slice from s1 using the remembered end index and length
-    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
+  const matches = text.match(regex);
+  return matches?.length ?? 0;
 }
-
-// Quick demo
-console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
+console.log(countWordOccurrences('Hello world, hello again.', 'hello')); // 2
+console.log(countWordOccurrences('Batman & batman! Batman?', 'batman')); // 1 (case‑sensitive)
+console.log(countWordOccurrences('The cat in the cathedral.', 'cat')); // 2
+function countBySplit(text: string, word: string, caseSensitive = false) {
+  const flags = caseSensitive ? '' : 'i';
+  const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, flags);
+  return text.split(regex).length - 1;
+}
