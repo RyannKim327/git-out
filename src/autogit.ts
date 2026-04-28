@@ -1,57 +1,39 @@
-function removeItem<T>(arr: T[], item: T): void {
-  const idx = arr.indexOf(item);      // first occurrence
-  if (idx !== -1) {
-    arr.splice(idx, 1);               // mutate the original array
-  }
-}
-function removed<T>(arr: T[], item: T): T[] {
-  return arr.filter(x => x !== item); // keeps unchanged items
-}
-function removeAt<T>(arr: T[], idx: number): void {
-  if (idx >= 0 && idx < arr.length) {
-    arr.splice(idx, 1);
-  }
-}
-const set = new Set(arr);   // unique elements
-set.delete(item);           // removes it if present
-const newArr = [...set];    // back to an array
-type RemoveOptions = {
-  /** If true, only remove the first matching element */
-  firstOnly?: boolean;
-};
-
-function remove<T>(
+/**
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
+ *
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ */
+export function insertionSort<T>(
   arr: T[],
-  itemOrIdx: T | number,
-  options: RemoveOptions = {}
-): T[] {
-  const { firstOnly = false } = options;
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+  }
 
-  // Remove by index
-  if (typeof itemOrIdx === 'number') {
-    const idx = itemOrIdx;
-    if (idx >= 0 && idx < arr.length) {
-      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-    return arr;
+
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
   }
-
-  // Remove by value
-  const item = itemOrIdx as T;
-  const idx = arr.indexOf(item);
-
-  if (idx === -1) return arr; // nothing to do
-
-  if (firstOnly) {
-    // fast path: mutate in place
-    arr.splice(idx, 1);
-    return arr;
-  }
-
-  // immutable: create a new array
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
 }
-let nums = [1, 2, 3, 2, 4];
-remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
-remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
-remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
+
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
