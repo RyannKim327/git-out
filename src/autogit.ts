@@ -1,40 +1,72 @@
-// rock-paper-scissors.ts
-import * as readline from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
-
-const rl = readline.createInterface({
-  input: stdin,
-  output: stdout,
-});
-
-async function play() {
-  console.log('Rock, Paper, Scissors!');
-  const human = (await rl.question('Your move (rock/paper/scissors): ')).trim().toLowerCase();
-
-  const options = ['rock', 'paper', 'scissors'] as const;
-  const comp = options[Math.floor(Math.random() * options.length)];
-
-  console.log(`\nComputer chose: ${comp}\n`);
-
-  const result =
-    human === comp
-      ? "It's a tie."
-      : (human === 'rock' && comp === 'scissors') ||
-        (human === 'paper' && comp === 'rock') ||
-        (human === 'scissors' && comp === 'paper')
-      ? 'You win!'
-      : 'You lose!';
-
-  console.log(result);
-  rl.close();
+// A single node in a singly linked list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
 
-play();
-# 1. Install TypeScript locally (if you haven’t already)
-npm install -D typescript
+// The queue itself
+export class Queue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // back of the queue
+  private _size = 0;
 
-# 2. Compile the file
-npx tsc rock-paper-scissors.ts --lib es2023,dom
+  /** Adds a value to the back of the queue. */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
 
-# 3. Execute the compiled JS
-node rock-paper-scissors.js
+    if (this.tail) {
+      // Pre‑existing queue – link the new node after the old tail
+      this.tail.next = newNode;
+    } else {
+      // Empty queue – new node becomes the head
+      this.head = newNode;
+    }
+
+    // In either case, the new node is the new tail
+    this.tail = newNode;
+    this._size += 1;
+  }
+
+  /** Removes and returns the value at the front of the queue. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Queue is empty
+
+    const value = this.head.value;
+    this.head = this.head.next;   // Advance the head
+
+    // If the queue became empty, clear the tail too
+    if (!this.head) this.tail = null;
+
+    this._size -= 1;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** How many items are in the queue? */
+  size(): number {
+    return this._size;
+  }
+}
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());  // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());   // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue(); // removes 30
+
+console.log(q.isEmpty()); // true
