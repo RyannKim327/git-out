@@ -1,74 +1,52 @@
 /**
- * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
- * lps[i] is the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
+ * Binary search for a sorted array.  
+ * @param arr  The sorted array (or array‑like object).
+ * @param target  The value you’re looking for.
+ * @param low   Optional starting index (default 0).
+ * @param high  Optional ending index (default arr.length – 1).
+ * @returns index of target if found, otherwise -1.
  */
-function buildLps(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;                 // length of the previous longest prefix‑suffix
-  let i = 1;                      // we start from the second character
+export function binarySearch<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    while (low <= high) {
+        // guard against overflow – works with big ints as well
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous potential prefix
-        length = lps[length - 1];
-        // note: we do **not** increment i here
-      } else {
-        // no match at all; lps[i] stays 0
-        lps[i] = 0;
-        i++;
-      }
+        if (midVal === target) {
+            return mid;
+        }
+
+        // Type narrowing: if T is string we still compare interger‑wise
+        if (midVal < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
     }
-  }
-
-  return lps;
+    return -1; // not found
 }
+import { binarySearch } from "./binary-search.ts";
 
-/**
- * KMP search: returns the index of the first occurrence of the pattern in the text,
- * or -1 if the pattern is absent.
- */
-function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;              // trivial match
-  if (text.length < pattern.length) return -1;     // cannot match
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearch(nums, 7));   // => 3
+console.log(binarySearch(nums, 4));   // => -1
+export function binarySearchRec<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    if (low > high) return -1;
 
-  const lps = buildLps(pattern);
-  let tIdx = 0;      // index into text
-  let pIdx = 0;      // index into pattern
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  while (tIdx < text.length) {
-    if (pattern[pIdx] === text[tIdx]) {
-      tIdx++;
-      pIdx++;
-
-      // full match
-      if (pIdx === pattern.length) {
-        return tIdx - pIdx;   // return starting index
-      }
-    } else {
-      if (pIdx !== 0) {
-        // skip comparisons by using the lps table
-        pIdx = lps[pIdx - 1];
-      } else {
-        tIdx++;
-      }
-    }
-  }
-
-  return -1; // not found
+    if (midVal === target) return mid;
+    if (midVal < target) return binarySearchRec(arr, target, mid + 1, high);
+    return binarySearchRec(arr, target, low, mid - 1);
 }
-
-/* ---------- Example usage ---------- */
-const txt = "abxabcabcaby";
-const pat = "abcaby";
-
-const idx = kmpSearch(txt, pat);
-console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
-console.assert(kmpSearch("hello world", "world") === 6);
-console.assert(kmpSearch("hello world", "bye")    === -1);
-console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
