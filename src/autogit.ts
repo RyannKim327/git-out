@@ -1,16 +1,43 @@
-/**
- * Return a random integer between `min` and `max`, inclusive.
- */
-function randomInt(min: number, max: number): number {
-  // Math.random() → [0, 1)
-  // Multiply by (max - min + 1) → [0, max - min + 1)
-  // floor to get an integer in [0, max - min]
-  // Shift by min to get the desired range
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function triangleAreaBaseHeight(
+    base: number,
+    height: number
+): number {
+    // Guard against negative or zero values
+    if (base <= 0 || height <= 0) {
+        throw new Error('Base and height must be positive numbers.');
+    }
+    return (base * height) / 2;
 }
 
-/* Example */
-console.log(randomInt(5, 15)); // might print 7, 12, 15, …
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // [min, max)
+// Example usage
+console.log(triangleAreaBaseHeight(10, 5)); // 25
+function triangleAreaBySides(a: number, b: number, c: number): number {
+    // Validate that sides can form a triangle
+    if (a + b <= c || a + c <= b || b + c <= a) {
+        throw new Error('The given sides do not form a valid triangle.');
+    }
+
+    const s = (a + b + c) / 2;
+    const areaSquared = s * (s - a) * (s - b) * (s - c);
+
+    // Numerical safety check: areaSquared should be non‑negative
+    if (areaSquared < 0) {
+        throw new Error('Computed a negative area; check your side lengths.');
+    }
+
+    return Math.sqrt(areaSquared);
+}
+
+// Example
+console.log(triangleAreaBySides(3, 4, 5)); // 6
+type TriangleSpec =
+  | { base: number; height: number }
+  | { a: number; b: number; c: number };
+
+function areaOfTriangle(spec: TriangleSpec): number {
+    if ('base' in spec && 'height' in spec) {
+        return triangleAreaBaseHeight(spec.base, spec.height);
+    } else {
+        return triangleAreaBySides(spec.a, spec.b, spec.c);
+    }
 }
