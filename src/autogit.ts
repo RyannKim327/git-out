@@ -1,34 +1,39 @@
-// fetch-posts.ts
-import axios, { AxiosResponse } from 'axios';
+/**
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
+ *
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ */
+export function insertionSort<T>(
+  arr: T[],
+  compareFn?: (a: T, b: T) => number
+): void {
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+  }
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-async function fetchPosts(): Promise<Post[]> {
-  const url = 'https://jsonplaceholder.typicode.com/posts';
-  const response: AxiosResponse<Post[]> = await axios.get(url);
-  return response.data;
-}
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-async function main() {
-  try {
-    const posts = await fetchPosts();
-    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
-  } catch (err) {
-    console.error('Failed to fetch posts:', err);
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
   }
 }
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-main();
-# 1️⃣  Install dependencies
-npm install axios
-
-# 2️⃣  Compile to JavaScript
-tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
-
-# 3️⃣  Execute
-node fetch-posts.js
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
