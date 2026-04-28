@@ -1,35 +1,30 @@
-// A minimal node definition
-interface TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+// Define what the API will return (pick and choose any fields you need)
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-// Recursive helper that treats the tree as an expression tree
-function sumTree(node: TreeNode<number> | null): number {
-  if (!node) return 0;                // nothing here – contributes nothing
-  return node.value + sumTree(node.left) + sumTree(node.right);
-}
-const root: TreeNode<number> = {
-  value: 10,
-  left: { value: 5, left: null, right: null },
-  right: { value: -3, left: null, right: null },
-};
-
-console.log(sumTree(root)); // 12
-function sumTreeIterative(root: TreeNode<number> | null): number {
-  if (!root) return 0;
-
-  let sum = 0;
-  const stack: TreeNode<number>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value;
-
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
+// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
+async function apiGet<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
   }
-
-  return sum;
+  return response.json() as Promise<T>;
 }
+
+// Example usage: pull a single todo item
+async function fetchTodo(todoId: number) {
+  try {
+    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
+    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
+    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
+  } catch (err) {
+    console.error('Oops:', err);
+  }
+}
+
+// Kick it off (demo)
+fetchTodo(42);
