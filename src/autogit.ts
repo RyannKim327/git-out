@@ -1,41 +1,31 @@
-/**
- * Checks whether a string is a palindrome.
- *
- * Options:
- *   - ignoreCase: treat “A” and “a” as the same (default: true)
- *   - ignoreNonAlnum: strip out everything that isn’t a letter or digit (default: true)
- *
- * @param input The string to test
- * @param opts  Optional settings
- * @returns true if `input` is a palindrome under the chosen rules
- */
-export function isPalindrome(
-  input: string,
-  opts: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-  const { ignoreCase = true, ignoreNonAlnum = true } = opts;
+function longestCommonSubstring(s1: string, s2: string): string {
+    if (!s1 || !s2) return '';
 
-  let str = input;
+    const m = s1.length, n = s2.length;
+    // one‑dimensional DP (only the previous row is needed)
+    const dp = new Array(n + 1).fill(0);
+    let maxLen = 0;          // longest length seen so far
+    let endIdxS1 = 0;        // index where that longest ends in s1
 
-  // 1. Collapse the string if requested
-  if (ignoreNonAlnum) {
-    // Keep only ASCII letters and digits. For Unicode you might want
-    // a regex like `/\p{L}\p{N}/gu` instead.
-    str = str.replace(/[^A-Za-z0-9]/g, "");
-  }
+    for (let i = 1; i <= m; i++) {
+        // iterate j from right to left so the current row doesn't overwrite the
+        // values we still need from the previous row
+        for (let j = n; j >= 1; j--) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
+                if (dp[j] > maxLen) {
+                    maxLen = dp[j];
+                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
+                }
+            } else {
+                dp[j] = 0;
+            }
+        }
+    }
 
-  // 2. Normalize case if requested
-  if (ignoreCase) {
-    str = str.toLowerCase();
-  }
-
-  // 3. Compare the string to its reverse
-  const reversed = str.split("").reverse().join("");
-  return str === reversed;
+    // Extract slice from s1 using the remembered end index and length
+    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
 }
-console.log(isPalindrome("racecar"));                    // true
-console.log(isPalindrome("RaceCar"));                    // true
-console.log(isPalindrome("RaceCar", { ignoreCase: false })) // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("No lemon, no melon"));          // true
-console.log(isPalindrome("hello"));                       // false
+
+// Quick demo
+console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
