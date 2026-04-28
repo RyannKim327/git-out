@@ -1,49 +1,74 @@
 /**
- * Checks if an array of numbers is in ascending order.
+ * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
+ * lps[i] is the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
  */
-function isSorted(arr: number[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i - 1] > arr[i]) return false;
+function buildLps(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;                 // length of the previous longest prefix‑suffix
+  let i = 1;                      // we start from the second character
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous potential prefix
+        length = lps[length - 1];
+        // note: we do **not** increment i here
+      } else {
+        // no match at all; lps[i] stays 0
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-  return true;
+
+  return lps;
 }
 
 /**
- * Randomly shuffles an array in place using Fisher‑Yates.
+ * KMP search: returns the index of the first occurrence of the pattern in the text,
+ * or -1 if the pattern is absent.
  */
-function shuffleInPlace<T>(arr: T[]): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
+function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;              // trivial match
+  if (text.length < pattern.length) return -1;     // cannot match
 
-/**
- * A “random sort”—shuffle until the array is sorted.
- *
- * The function is deliberately small and intentionally slow.
- * Good for teaching randomness, not for production work.
- */
-export function completelyRandomSort<T extends number>(arr: T[]): T[] {
-  // Work on a copy so the original stays untouched.
-  const working = [...arr];
+  const lps = buildLps(pattern);
+  let tIdx = 0;      // index into text
+  let pIdx = 0;      // index into pattern
 
-  // Keep an iteration counter for demonstration.
-  let attempts = 0;
+  while (tIdx < text.length) {
+    if (pattern[pIdx] === text[tIdx]) {
+      tIdx++;
+      pIdx++;
 
-  // Guard against accidentally running forever on empty or single‑element arrays.
-  if (working.length <= 1) return working;
-
-  while (!isSorted(working)) {
-    shuffleInPlace(working);
-    attempts++;
-    // Optional: print progress every 1000 attempts (comment this out in tight loops).
-    // if (attempts % 1000 === 0) console.log(`Still sorting… attempt #${attempts}`);
+      // full match
+      if (pIdx === pattern.length) {
+        return tIdx - pIdx;   // return starting index
+      }
+    } else {
+      if (pIdx !== 0) {
+        // skip comparisons by using the lps table
+        pIdx = lps[pIdx - 1];
+      } else {
+        tIdx++;
+      }
+    }
   }
 
-  console.log(`Sorted after ${attempts} random shuffles!`);
-  return working;
+  return -1; // not found
 }
-const data = [42, 7, 13, 2, 27];
-const sorted = completelyRandomSort(data);
-console.log(sorted); // → [2, 7, 13, 27, 42]
+
+/* ---------- Example usage ---------- */
+const txt = "abxabcabcaby";
+const pat = "abcaby";
+
+const idx = kmpSearch(txt, pat);
+console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
+console.assert(kmpSearch("hello world", "world") === 6);
+console.assert(kmpSearch("hello world", "bye")    === -1);
+console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
