@@ -1,39 +1,61 @@
 /**
- * Insertion sort – O(n²) average‑case (stable, in‑place)
- *
- * @param arr       The array to be sorted
- * @param compareFn Optional comparison callback.  If omitted, natural ordering
- *                  (a <= b) is used.  The callback should return
- *                  <0 when a < b, 0 when a === b, >0 when a > b.
+ * Generic comparison, returns true if a should come before b.
+ * Default is for a number array (so it's an ascending sort).
  */
-export function insertionSort<T>(
-  arr: T[],
-  compareFn?: (a: T, b: T) => number
-): void {
-  // fall back to natural ordering for primitives
-  if (!compareFn) {
-    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
-  }
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  // start from the second element – the first element is a 1‑item sorted slice
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
+  const n = arr.length;
 
-    // move elements that are greater than `key` one position to the right
-    while (j >= 0 && compareFn(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
 
-    // place `key` after the element just smaller than it
-    arr[j + 1] = key;
+  /* 2️⃣ Extract elements one by one */
+  for (let end = n - 1; end > 0; end--) {
+    // swap max element (root) with the last element of the heap
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    // heap size shrinks by one; restore heap property for the new root
+    siftDown(arr, 0, end, compare);
   }
 }
-const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
-insertionSort(numbers);
-console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-const words = ['banana', 'apple', 'cherry', 'date'];
-insertionSort(words, (a, b) => a.localeCompare(b));
-console.log(words); // ["apple", "banana", "cherry", "date"]
+/**
+ * Moves the element at `start` down the heap until the heap
+ * property is restored.  The heap is the sub‑array `[0, size)`.
+ */
+function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
+  let root = start;
+
+  while (true) {
+    const left = 2 * root + 1;   // left child index
+    const right = left + 1;      // right child index
+    let swapIdx = root;
+
+    // if left child exists and is greater (or “comes first” by compare)
+    if (left < size && compare(arr[swapIdx], arr[left])) {
+      swapIdx = left;
+    }
+
+    // do the same for the right child
+    if (right < size && compare(arr[swapIdx], arr[right])) {
+      swapIdx = right;
+    }
+
+    // if root holds the max element, we are done
+    if (swapIdx === root) return;
+
+    // swap root with the larger child and continue
+    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
+    root = swapIdx;
+  }
+}
+
+/* --------------------  Example usage  -------------------- */
+
+const nums = [5, 1, 4, 2, 8, 0, 3];
+heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
+
+/* --------------------  Sorting strings  -------------------- */
+const strs = ["delta", "alpha", "charlie", "bravo"];
+heapSort(strs, (a, b) => a > b);   // descending order
+// strs => ["delta", "charlie", "bravo", "alpha"]
