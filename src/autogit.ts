@@ -1,32 +1,55 @@
 /**
- * Count how many times a whole word appears in a text.
- *
- * @param text   The text to search in.
- * @param word   The word you’re looking for.
- * @param caseSensitive Set to `true` if you want case‑sensitive matches.
- * @returns The number of non‑overlapping occurrences.
+ * A classic LIFO stack backed by an array.
+ * @template T The type stored in the stack.
  */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  caseSensitive: boolean = false
-): number {
-  // Escape any regex metacharacters that could be in the word.
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export class Stack<T> {
+  // The internal storage array – keep it private.
+  private items: T[] = [];
 
-  // Build a regex that matches the word with word‑boundaries.
-  // \b ensures we don’t count “the” inside “there”.
-  const flags = caseSensitive ? 'g' : 'gi';
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  /** Push a value onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
+  }
 
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
+  /** Remove and return the top value. Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Return the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return how many items are currently in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Simple truthy check for emptiness. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** (Optional) Clear all items from the stack. */
+  clear(): void {
+    this.items.length = 0; // Fastest way to empty an array
+  }
 }
-console.log(countWordOccurrences('Hello world, hello again.', 'hello')); // 2
-console.log(countWordOccurrences('Batman & batman! Batman?', 'batman')); // 1 (case‑sensitive)
-console.log(countWordOccurrences('The cat in the cathedral.', 'cat')); // 2
-function countBySplit(text: string, word: string, caseSensitive = false) {
-  const flags = caseSensitive ? '' : 'i';
-  const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, flags);
-  return text.split(regex).length - 1;
-}
+import { Stack } from './Stack';
+
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.size());  // 3
+console.log(stack.peek());  // 30
+
+console.log(stack.pop());   // 30
+console.log(stack.pop());   // 20
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
