@@ -1,79 +1,57 @@
-/**
- * Merge two sorted sub‑arrays into one sorted array.
- * `left` and `right` must already be sorted.
- * Returns a new sorted array.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  compare: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0; // index for left
-  let j = 0; // index for right
+function removeItem<T>(arr: T[], item: T): void {
+  const idx = arr.indexOf(item);      // first occurrence
+  if (idx !== -1) {
+    arr.splice(idx, 1);               // mutate the original array
+  }
+}
+function removed<T>(arr: T[], item: T): T[] {
+  return arr.filter(x => x !== item); // keeps unchanged items
+}
+function removeAt<T>(arr: T[], idx: number): void {
+  if (idx >= 0 && idx < arr.length) {
+    arr.splice(idx, 1);
+  }
+}
+const set = new Set(arr);   // unique elements
+set.delete(item);           // removes it if present
+const newArr = [...set];    // back to an array
+type RemoveOptions = {
+  /** If true, only remove the first matching element */
+  firstOnly?: boolean;
+};
 
-  while (i < left.length && j < right.length) {
-    // If left[i] <= right[j] according to the compare function,
-    // push left[i] into the result and advance i
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i]);
-      i++;
-    } else {
-      result.push(right[j]);
-      j++;
+function remove<T>(
+  arr: T[],
+  itemOrIdx: T | number,
+  options: RemoveOptions = {}
+): T[] {
+  const { firstOnly = false } = options;
+
+  // Remove by index
+  if (typeof itemOrIdx === 'number') {
+    const idx = itemOrIdx;
+    if (idx >= 0 && idx < arr.length) {
+      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
     }
+    return arr;
   }
 
-  // Append any remaining elements.
-  // Only one of the following while loops will actually run.
-  while (i < left.length) {
-    result.push(left[i]);
-    i++;
-  }
-  while (j < right.length) {
-    result.push(right[j]);
-    j++;
+  // Remove by value
+  const item = itemOrIdx as T;
+  const idx = arr.indexOf(item);
+
+  if (idx === -1) return arr; // nothing to do
+
+  if (firstOnly) {
+    // fast path: mutate in place
+    arr.splice(idx, 1);
+    return arr;
   }
 
-  return result;
+  // immutable: create a new array
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
 }
-
-/**
- * Recursively divides the array and merges the sorted halves.
- * `compare` should return:
- *   < 0 if a < b
- *   0  if a === b
- *   > 0 if a > b
- */
-export function mergeSort<T>(
-  array: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array; // Base case: already sorted
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
-}
-// Sort numbers
-const nums = [8, 3, 5, 1, 9, 0];
-const sortedNums = mergeSort(nums);
-// -> [0, 1, 3, 5, 8, 9]
-
-// Sort strings alphabetically
-const words = ["pear", "apple", "banana"];
-const sortedWords = mergeSort(words);
-// -> ["apple", "banana", "pear"]
-
-// Sort objects by a property
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Charlie", age: 25 },
-  { name: "Alice", age: 30 },
-  { name: "Bob", age: 20 },
-];
-
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// -> [{name:"Bob", age:20}, {name:"Charlie", age:25}, {name:"Alice", age:30}]
+let nums = [1, 2, 3, 2, 4];
+remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
+remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
+remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
