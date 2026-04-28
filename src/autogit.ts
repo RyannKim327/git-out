@@ -1,49 +1,72 @@
-/**
- * Checks if an array of numbers is in ascending order.
- */
-function isSorted(arr: number[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i - 1] > arr[i]) return false;
-  }
-  return true;
-}
+// ---------------------------------------------------------------------------
+//  cron‑example.ts
+// ---------------------------------------------------------------------------
+
+// 1️⃣  Install the dependencies first (run once):
+//     npm install node-cron
+//
+// 2️⃣  If you’re compiling TypeScript with tsc, add the type definitions:
+//     npm install --save-dev @types/node-cron
+//
+// 3️⃣  Run this file with ts-node for instant feedback:
+//     npx ts-node cron‑example.ts
+//
+// ---------------------------------------------------------------------------
+
+import cron, { CronJob } from 'node-cron';
 
 /**
- * Randomly shuffles an array in place using Fisher‑Yates.
+ * A tiny helper to show that the job really ran.
+ * You could replace this with whatever real work you need.
  */
-function shuffleInPlace<T>(arr: T[]): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
+const performScheduledWork = (): void => {
+  const now = new Date().toISOString();
+  console.log(`[${now}] The scheduled task has executed.`);
+};
 
 /**
- * A “random sort”—shuffle until the array is sorted.
+ * Create a CronJob that triggers every minute.
  *
- * The function is deliberately small and intentionally slow.
- * Good for teaching randomness, not for production work.
+ * The cron expression '* * * * *' means:
+ *   ┌───────────── minute (0 - 59)
+ *   │ ┌───────────── hour (0 - 23)
+ *   │ │ ┌───────────── day of month (1 - 31)
+ *   │ │ │ ┌───────────── month (1 - 12)
+ *   │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+ *   │ │ │ │ │
+ *   │ │ │ │ │
+ *   * * * * *
+ *
+ * Feel free to tweak the expression to your own schedule.
  */
-export function completelyRandomSort<T extends number>(arr: T[]): T[] {
-  // Work on a copy so the original stays untouched.
-  const working = [...arr];
-
-  // Keep an iteration counter for demonstration.
-  let attempts = 0;
-
-  // Guard against accidentally running forever on empty or single‑element arrays.
-  if (working.length <= 1) return working;
-
-  while (!isSorted(working)) {
-    shuffleInPlace(working);
-    attempts++;
-    // Optional: print progress every 1000 attempts (comment this out in tight loops).
-    // if (attempts % 1000 === 0) console.log(`Still sorting… attempt #${attempts}`);
+const scheduledJob: CronJob = cron.schedule(
+  '* * * * *',
+  () => {
+    try {
+      performScheduledWork();
+    } catch (e) {
+      console.error('Unexpected error in cron job:', e);
+    }
+  },
+  {
+    scheduled: true,   // start automatically
+    timezone: 'UTC',   // use UTC by default; change if you need a different zone
   }
+);
 
-  console.log(`Sorted after ${attempts} random shuffles!`);
-  return working;
-}
-const data = [42, 7, 13, 2, 27];
-const sorted = completelyRandomSort(data);
-console.log(sorted); // → [2, 7, 13, 27, 42]
+// Optional: if you want to stop the job after, say, 5 executions
+let counter = 0;
+scheduledJob.setTimeZone('UTC'); // ensures time zone consistency
+
+scheduledJob.on('scheduled', () => {
+  console.log('Cron job started.');
+});
+
+scheduledJob.start(); // Explicitly start, even though scheduled:true
+
+// Clean exit after a short run (e.g., 5 minutes)
+setTimeout(() => {
+  console.log('Stopping cron job and exiting.');
+  scheduledJob.stop();
+  process.exit(0);
+}, 5 * 60 * 1000);
