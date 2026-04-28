@@ -1,55 +1,61 @@
 /**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
+ * Generic comparison, returns true if a should come before b.
+ * Default is for a number array (so it's an ascending sort).
  */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
+function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
+  const n = arr.length;
 
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
+  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
+  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
 
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
+  /* 2️⃣ Extract elements one by one */
+  for (let end = n - 1; end > 0; end--) {
+    // swap max element (root) with the last element of the heap
+    [arr[0], arr[end]] = [arr[end], arr[0]];
+    // heap size shrinks by one; restore heap property for the new root
+    siftDown(arr, 0, end, compare);
   }
 }
-import { Stack } from './Stack';
 
-const stack = new Stack<number>();
+/**
+ * Moves the element at `start` down the heap until the heap
+ * property is restored.  The heap is the sub‑array `[0, size)`.
+ */
+function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
+  let root = start;
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+  while (true) {
+    const left = 2 * root + 1;   // left child index
+    const right = left + 1;      // right child index
+    let swapIdx = root;
 
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
+    // if left child exists and is greater (or “comes first” by compare)
+    if (left < size && compare(arr[swapIdx], arr[left])) {
+      swapIdx = left;
+    }
 
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
+    // do the same for the right child
+    if (right < size && compare(arr[swapIdx], arr[right])) {
+      swapIdx = right;
+    }
 
-stack.clear();
-console.log(stack.isEmpty()); // true
+    // if root holds the max element, we are done
+    if (swapIdx === root) return;
+
+    // swap root with the larger child and continue
+    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
+    root = swapIdx;
+  }
+}
+
+/* --------------------  Example usage  -------------------- */
+
+const nums = [5, 1, 4, 2, 8, 0, 3];
+heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
+
+/* --------------------  Sorting strings  -------------------- */
+const strs = ["delta", "alpha", "charlie", "bravo"];
+heapSort(strs, (a, b) => a > b);   // descending order
+// strs => ["delta", "charlie", "bravo", "alpha"]
