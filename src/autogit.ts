@@ -1,74 +1,62 @@
 /**
- * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
- * lps[i] is the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
+ * Merge two sorted halves in `src` from `left`..`mid` and `mid`..`right`
+ * into the destination array `dest`.
  */
-function buildLps(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;                 // length of the previous longest prefix‑suffix
-  let i = 1;                      // we start from the second character
+function merge<T>(
+  src: T[],
+  dest: T[],
+  left: number,
+  mid: number,
+  right: number,
+  compare: (a: T, b: T) => number
+) {
+  let i = left;   // index into left half
+  let j = mid;    // index into right half
+  let k = left;   // index into dest
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous potential prefix
-        length = lps[length - 1];
-        // note: we do **not** increment i here
-      } else {
-        // no match at all; lps[i] stays 0
-        lps[i] = 0;
-        i++;
-      }
-    }
+  while (i < mid && j < right) {
+    dest[k++] = compare(src[i], src[j]) <= 0 ? src[i++] : src[j++];
   }
 
-  return lps;
+  // Copy any remaining elements from left half
+  while (i < mid) dest[k++] = src[i++];
+  // Copy any remaining elements from right half
+  while (j < right) dest[k++] = src[j++];
 }
 
 /**
- * KMP search: returns the index of the first occurrence of the pattern in the text,
- * or -1 if the pattern is absent.
+ * Bottom‑up merge sort.
+ * @param arr   The array you want to sort in place.
+ * @param cmp   Optional comparator: (a, b) => number
+ *              (negative → a < b, zero → a == b, positive → a > b)
  */
-function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;              // trivial match
-  if (text.length < pattern.length) return -1;     // cannot match
+export function mergeSortIterative<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): void {
+  const compare = cmp ?? ((a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0));
+  const n = arr.length;
+  if (n <= 1) return;
 
-  const lps = buildLps(pattern);
-  let tIdx = 0;      // index into text
-  let pIdx = 0;      // index into pattern
+  // A scratch array of the same size – we reuse it each pass.
+  const temp: T[] = new Array(n);
 
-  while (tIdx < text.length) {
-    if (pattern[pIdx] === text[tIdx]) {
-      tIdx++;
-      pIdx++;
-
-      // full match
-      if (pIdx === pattern.length) {
-        return tIdx - pIdx;   // return starting index
-      }
-    } else {
-      if (pIdx !== 0) {
-        // skip comparisons by using the lps table
-        pIdx = lps[pIdx - 1];
-      } else {
-        tIdx++;
-      }
+  // The size of sub‑arrays we merge: 1, 2, 4, 8, …
+  for (let width = 1; width < n; width *= 2) {
+    // Merge in chunks of size 2*width
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid = Math.min(left + width, n);
+      const right = Math.min(left + 2 * width, n);
+      merge(arr, temp, left, mid, right, compare);
     }
+
+    // Now temp contains the sorted runs of size 2*width.
+    // Copy it back to arr for the next pass.
+    for (let i = 0; i < n; i++) arr[i] = temp[i];
   }
-
-  return -1; // not found
 }
-
-/* ---------- Example usage ---------- */
-const txt = "abxabcabcaby";
-const pat = "abcaby";
-
-const idx = kmpSearch(txt, pat);
-console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
-console.assert(kmpSearch("hello world", "world") === 6);
-console.assert(kmpSearch("hello world", "bye")    === -1);
-console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data);
+// → [3, 9, 10, 27, 38, 43, 82]
+mergeSortIterative(data, (a, b) => b - a);  // descending order
