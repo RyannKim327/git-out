@@ -1,30 +1,34 @@
-// Define what the API will return (pick and choose any fields you need)
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined; // no second element
 
-// A generic helper that wraps fetch & JSON parsing, throws on non‑OK status
-async function apiGet<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  let largest = -Infinity;
+  let second = -Infinity;
+
+  for (const n of nums) {
+    if (n > largest) {
+      second = largest;
+      largest = n;
+    } else if (n > second && n !== largest) {
+      second = n;
+    }
   }
-  return response.json() as Promise<T>;
-}
 
-// Example usage: pull a single todo item
-async function fetchTodo(todoId: number) {
-  try {
-    const todo = await apiGet<Todo>(`https://jsonplaceholder.typicode.com/todos/${todoId}`);
-    console.log(`Todo #${todo.id} (user ${todo.userId}): ${todo.title}`);
-    console.log(`Completed? ${todo.completed ? 'Yes' : 'No'}`);
-  } catch (err) {
-    console.error('Oops:', err);
-  }
+  return second === -Infinity ? undefined : second;
 }
+function secondLargest(nums: number[]): number | undefined {
+  const unique = Array.from(new Set(nums));     // remove duplicates
+  if (unique.length < 2) return undefined;      // no second element
 
-// Kick it off (demo)
-fetchTodo(42);
+  unique.sort((a, b) => b - a);                // descending order
+  return unique[1];
+}
+function secondLargest(nums: number[]): number | undefined {
+  if (nums.length < 2) return undefined;
+
+  const max = Math.max(...nums);
+  const second = Math.max(...nums.filter(x => x !== max));
+  return second === -Infinity ? undefined : second;
+}
+const arr = [5, 1, 8, 7, 8, 3];
+
+console.log(secondLargest(arr)); // 7
