@@ -1,48 +1,73 @@
-/**
- * Return the longest common prefix of an array of strings.
- *
- * @param strs - The strings to investigate.
- * @returns The common prefix (empty string if there is none, or if the array is empty).
- */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
-
-  // Start with the first string as the provisional prefix
-  let prefix = strs[0];
-
-  // Stop as soon as prefix becomes empty – nothing more to find
-  for (let i = 1; i < strs.length && prefix.length; i++) {
-    const current = strs[i];
-    let j = 0;
-
-    // Compare char‑by‑char until a mismatch is detected
-    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-      j++;
-    }
-
-    // Update prefix to the matched portion
-    prefix = prefix.substring(0, j);
-  }
-
-  return prefix;
+// ── List node -----------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-const words = ["flower","flow","flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
 
-const mixed = ["dog","racecar","car"];
-console.log(longestCommonPrefix(mixed)); // → ""
+// ── Intersection finder ------------------------------------
+function intersect<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
 
-const emptyCases: string[] = [];
-console.log(longestCommonPrefix(emptyCases)); // → ""
-export function lcpVertical(strs: string[]): string {
-  if (!strs.length) return "";
-  for (let i = 0; i < strs[0].length; i++) {
-    const char = strs[0][i];
-    for (let j = 1; j < strs.length; j++) {
-      if (i >= strs[j].length || strs[j][i] !== char) {
-        return strs[0].substring(0, i);
-      }
-    }
+  // 1. Count nodes in each list
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
+
+  // 2. Make the heads point to the same distance from the end
+  let ptrA: ListNode<T> | null = headA;
+  let ptrB: ListNode<T> | null = headB;
+  if (lenA > lenB) {
+    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
+  } else {
+    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
   }
-  return strs[0];
+
+  // 3. Move together until we hit the common node (by reference)
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA;
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
+  }
+
+  return null;          // no intersection
+}
+
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+  while (cur) {
+    ++len;
+    cur = cur.next;
+  }
+  return len;
+}
+// shared tail: 5 → 6
+const tail = new ListNode(5, new ListNode(6));
+
+// list A: 1 → 2 → 3 → (shared)
+const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
+
+// list B: 9 → (shared)
+const b = new ListNode(9, tail);
+
+const intersectNode = intersect(a, b);
+console.log(intersectNode?.val); // 5
+function intersectUsingSet<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;
+    cur = cur.next;
+  }
+  return null;
 }
