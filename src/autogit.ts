@@ -1,55 +1,34 @@
+const haystack: string = "Hello, world!";
+const needle: string = "world";
+
+const found = haystack.includes(needle); // true
+const haystack = "Hello, world!";
+const needle = "world";
+
+const found = haystack.indexOf(needle) !== -1; // true
+const haystack = "Hello, world!";
+const pattern = /world/;          // or /world/i for case‑insensitive
+const found = pattern.test(haystack); // true
+// case‑insensitive:
+const haystack = "Hello, World!";
+const needle = "world";
+const found = haystack.toLowerCase().includes(needle.toLowerCase());
+
+// locale‑aware:
+const localeFound = haystack.localeCompare(needle, undefined, { sensitivity: 'accent' }) === 0;
 /**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
+ * Checks whether a string contains a substring, optionally case‑insensitive.
  */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
-
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
+function contains(
+  target: string,
+  probe: string,
+  caseInsensitive = false
+): boolean {
+  if (caseInsensitive) {
+    return target.toLowerCase().includes(probe.toLowerCase());
   }
-
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
-  }
+  return target.includes(probe);
 }
-import { Stack } from './Stack';
 
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
-
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+// Usage
+const ok = contains("Hello, World!", "world", true); // true
