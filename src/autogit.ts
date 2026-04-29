@@ -1,61 +1,73 @@
-/**
- * Generic comparison, returns true if a should come before b.
- * Default is for a number array (so it's an ascending sort).
- */
-type Comparator<T> = (a: T, b: T) => boolean;
-
-function heapSort<T>(arr: T[], compare: Comparator<T> = (a, b) => a < b): void {
-  const n = arr.length;
-
-  /* 1️⃣ Build a max‑heap (or max‑based on compare) */
-  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(arr, i, n, compare);
-
-  /* 2️⃣ Extract elements one by one */
-  for (let end = n - 1; end > 0; end--) {
-    // swap max element (root) with the last element of the heap
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    // heap size shrinks by one; restore heap property for the new root
-    siftDown(arr, 0, end, compare);
-  }
+// ── List node -----------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-/**
- * Moves the element at `start` down the heap until the heap
- * property is restored.  The heap is the sub‑array `[0, size)`.
- */
-function siftDown<T>(arr: T[], start: number, size: number, compare: Comparator<T>): void {
-  let root = start;
+// ── Intersection finder ------------------------------------
+function intersect<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
 
-  while (true) {
-    const left = 2 * root + 1;   // left child index
-    const right = left + 1;      // right child index
-    let swapIdx = root;
+  // 1. Count nodes in each list
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
 
-    // if left child exists and is greater (or “comes first” by compare)
-    if (left < size && compare(arr[swapIdx], arr[left])) {
-      swapIdx = left;
-    }
-
-    // do the same for the right child
-    if (right < size && compare(arr[swapIdx], arr[right])) {
-      swapIdx = right;
-    }
-
-    // if root holds the max element, we are done
-    if (swapIdx === root) return;
-
-    // swap root with the larger child and continue
-    [arr[root], arr[swapIdx]] = [arr[swapIdx], arr[root]];
-    root = swapIdx;
+  // 2. Make the heads point to the same distance from the end
+  let ptrA: ListNode<T> | null = headA;
+  let ptrB: ListNode<T> | null = headB;
+  if (lenA > lenB) {
+    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
+  } else {
+    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
   }
+
+  // 3. Move together until we hit the common node (by reference)
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA;
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
+  }
+
+  return null;          // no intersection
 }
 
-/* --------------------  Example usage  -------------------- */
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+  while (cur) {
+    ++len;
+    cur = cur.next;
+  }
+  return len;
+}
+// shared tail: 5 → 6
+const tail = new ListNode(5, new ListNode(6));
 
-const nums = [5, 1, 4, 2, 8, 0, 3];
-heapSort(nums);     // nums is now [0, 1, 2, 3, 4, 5, 8]
+// list A: 1 → 2 → 3 → (shared)
+const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
 
-/* --------------------  Sorting strings  -------------------- */
-const strs = ["delta", "alpha", "charlie", "bravo"];
-heapSort(strs, (a, b) => a > b);   // descending order
-// strs => ["delta", "charlie", "bravo", "alpha"]
+// list B: 9 → (shared)
+const b = new ListNode(9, tail);
+
+const intersectNode = intersect(a, b);
+console.log(intersectNode?.val); // 5
+function intersectUsingSet<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;
+    cur = cur.next;
+  }
+  return null;
+}
