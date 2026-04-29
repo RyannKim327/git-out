@@ -1,34 +1,27 @@
-const haystack: string = "Hello, world!";
-const needle: string = "world";
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-const found = haystack.includes(needle); // true
-const haystack = "Hello, world!";
-const needle = "world";
-
-const found = haystack.indexOf(needle) !== -1; // true
-const haystack = "Hello, world!";
-const pattern = /world/;          // or /world/i for case‑insensitive
-const found = pattern.test(haystack); // true
-// case‑insensitive:
-const haystack = "Hello, World!";
-const needle = "world";
-const found = haystack.toLowerCase().includes(needle.toLowerCase());
-
-// locale‑aware:
-const localeFound = haystack.localeCompare(needle, undefined, { sensitivity: 'accent' }) === 0;
-/**
- * Checks whether a string contains a substring, optionally case‑insensitive.
- */
-function contains(
-  target: string,
-  probe: string,
-  caseInsensitive = false
-): boolean {
-  if (caseInsensitive) {
-    return target.toLowerCase().includes(probe.toLowerCase());
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-  return target.includes(probe);
+  return result;
 }
+console.log(factorialIterative(5));   // 120
+console.log(factorialIterative(0));   // 1
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n === 0 || n === 1) return 1;
+  return n * factorialRecursive(n - 1);
+}
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-// Usage
-const ok = contains("Hello, World!", "world", true); // true
+  let result = 1n;          // `n` suffix makes it a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(50).toString());
+// 304140932655... (the full 50! value)
