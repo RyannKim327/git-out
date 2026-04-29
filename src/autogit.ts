@@ -1,20 +1,16 @@
 /**
- * Return the first character that appears more than once in `s`.
- * If no character repeats, returns `undefined`.
+ * Return a random integer between `min` and `max`, inclusive.
  */
-function firstRepeated<T extends string>(s: T): T | undefined {
-  const seen = new Set<string>();
-
-  for (const ch of s) {
-    // if we've already seen this char, it's the first repeat
-    if (seen.has(ch)) return ch as T;
-
-    seen.add(ch);
-  }
-
-  return undefined;   // no repeats
+function randomInt(min: number, max: number): number {
+  // Math.random() → [0, 1)
+  // Multiply by (max - min + 1) → [0, max - min + 1)
+  // floor to get an integer in [0, max - min]
+  // Shift by min to get the desired range
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-console.log(firstRepeated('abcd'));        // undefined  (no repeat)
-console.log(firstRepeated('abca'));        // 'a'        (first repeat)
-console.log(firstRepeated('aabbcc'));      // 'a'        (even though 'b' repeats later, 'a' is first)
-console.log(firstRepeated('noisy'));       // undefined
+
+/* Example */
+console.log(randomInt(5, 15)); // might print 7, 12, 15, …
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min; // [min, max)
+}
