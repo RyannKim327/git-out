@@ -1,34 +1,52 @@
-// fetch-posts.ts
-import axios, { AxiosResponse } from 'axios';
+// src/services/ApiService.ts
+async function fetchRandomJoke(): Promise<any> {
+  const url = 'https://official-joke-api.appspot.com/jokes/random';
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
-
-async function fetchPosts(): Promise<Post[]> {
-  const url = 'https://jsonplaceholder.typicode.com/posts';
-  const response: AxiosResponse<Post[]> = await axios.get(url);
-  return response.data;
-}
-
-async function main() {
   try {
-    const posts = await fetchPosts();
-    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`API responded with ${response.status}`);
+    }
+
+    const data = await response.json();   // <- the "async task" part
+    return data;
   } catch (err) {
-    console.error('Failed to fetch posts:', err);
+    console.warn('Unable to load joke:', err);
+    throw err;          // bubble up so the caller can react
   }
 }
 
-main();
-# 1️⃣  Install dependencies
-npm install axios
+export const ApiService = { fetchRandomJoke };
+// src/App.tsx
+import React, { useEffect, useState } from 'react';
+import { Text, View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ApiService } from './services/ApiService';
 
-# 2️⃣  Compile to JavaScript
-tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
+export default function App() {
+  const [joke, setJoke] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-# 3️⃣  Execute
-node fetch-posts.js
+  useEffect(() => {
+    setLoading(true);
+    ApiService.fetchRandomJoke()
+      .then((data) => setJoke(`${data.setup} … ${data.punchline}`))
+      .catch(() => setJoke('Couldn’t fetch a joke :('))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" />
+      ) : (
+        <Text style={styles.text}>{joke ?? 'Press reload to fetch a joke.'}</Text>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 18, padding: 20, textAlign: 'center' },
+});
