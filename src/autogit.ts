@@ -1,64 +1,38 @@
 /**
- * Very permissive yet useful email pattern.
- *
- *  - No whitespace
- *  - At least one character before and after the @
- *  - Requires a dot‑separated domain part
- *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
- *
- * The pattern is intentionally simple: it catches the majority of mistakes while
- * avoiding needless complexity that can cost performance or readability.
+ * Counting sort for an array of non‑negative integers.
+ * @param arr - The array to sort.
+ * @param maxVal - (Optional) Max value in the input. If omitted, it’s derived from the data.
+ * @returns a new sorted array.
  */
-export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function countingSort(arr: number[], maxVal?: number): number[] {
+  if (arr.length === 0) return [];
 
-/**
- * Strict RFC‑5322 compliant-ish pattern.  
- *  - Handles quoted local‑part, escaped characters, and domain literals.
- *  - Still keeps things readable by splitting the regex into small parts.
- *
- * Use this only if you need the extra validation and can afford a slightly slower check.
- */
-export const strictEmailRE = new RegExp(
-  // Local part (quoted or unquoted)
-  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
-  // Domain part (letters, digits, hyphens, dots)
-  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
-  '$'
-);
+  // 1️⃣ Determine the maximum value (or use the supplied one)
+  const max = maxVal ?? Math.max(...arr);
 
-/**
- * Helper that returns `true` if the input matches *either* pattern.
- *
- * @param email Email string to validate.
- * @returns `true` when the string looks like a valid email address.
- */
-export function isValidEmail(email: string): boolean {
-  // Trim first – most forms send untrimmed values.
-  const trimmed = email.trim();
-  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
+  // 2️⃣ Frequency table
+  const count: number[] = new Array(max + 1).fill(0);
+  for (const num of arr) {
+    if (num < 0) throw new Error('Counting sort in this version expects non‑negative numbers');
+    count[num] += 1;
+  }
+
+  // 3️⃣ Build the result
+  const result: number[] = [];
+  for (let value = 0; value <= max; value++) {
+    const qty = count[value];
+    for (let i = 0; i < qty; i++) {
+      result.push(value);
+    }
+  }
+
+  return result;
 }
-import { isValidEmail } from './emailValidator';
+import { countingSort } from './countingSort';
 
-const test = 'user.name+tag@sub.domain.co.uk';
-
-if (isValidEmail(test)) {
-  console.log(`"${test}" passes the regex test`);
-} else {
-  console.log(`"${test}" is definitely not a valid email`);
+const data = [12, 4, 1, 12, 7, 7, 4, 4, 0];
+const sorted = countingSort(data);
+console.log(sorted); // [0, 1, 4, 4, 4, 7, 7, 12, 12]
+if (data.reduce((acc, cur, i) => acc && cur >= data[i - 1], true)) {
+  return data.slice();
 }
-const cases = [
-  'simple@example.com',
-  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
-  'very.unusual.@.example.com',
-  'disposable.style.email.with+symbol@example.com',
-  '"much.more unusual"@example.com',
-  'admin@mailserver1',                 // missing TLD
-  'example@localhost',                 // often allowed in dev env
-  'plainaddress',
-  'email.@example.com',
-  '@missing-local.org',
-  'user@.invalid.com',
-  'huge‑domain‑name‑that‑really‑long.com',
-];
-
-cases.forEach(e => console.log(e, isValidEmail(e)));
