@@ -1,65 +1,48 @@
 /**
- * Returns the largest prime factor of a positive integer (>1).
- * Uses trial division up to √n – fast enough for 32‑bit ints.
+ * Return the longest common prefix of an array of strings.
+ *
+ * @param strs - The strings to investigate.
+ * @returns The common prefix (empty string if there is none, or if the array is empty).
  */
-export function largestPrimeFactor(n: number): number {
-  if (n <= 1) throw new Error("n must be > 1");
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  // 2 is the only even prime
-  while (n % 2 === 0) n /= 2;
+  // Start with the first string as the provisional prefix
+  let prefix = strs[0];
 
-  // n is now odd – we only need to test odd divisors
-  let factor = 3;
-  const sqrt = Math.sqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0) {
-      n /= factor;          // keep dividing out this prime
+  // Stop as soon as prefix becomes empty – nothing more to find
+  for (let i = 1; i < strs.length && prefix.length; i++) {
+    const current = strs[i];
+    let j = 0;
+
+    // Compare char‑by‑char until a mismatch is detected
+    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
+      j++;
     }
-    factor += 2;            // next odd candidate
+
+    // Update prefix to the matched portion
+    prefix = prefix.substring(0, j);
   }
 
-  // If n is still > 2, it is a prime larger than any factor we tried.
-  return n;
+  return prefix;
 }
-/**
- * Returns the largest prime factor of a BigInt > 1.
- */
-export function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) throw new Error("n must be > 1");
+const words = ["flower","flow","flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
 
-  // 2 is the only even prime
-  while (n % 2n === 0n) n /= 2n;
+const mixed = ["dog","racecar","car"];
+console.log(longestCommonPrefix(mixed)); // → ""
 
-  let factor = 3n;
-  const sqrt = bigintSqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0n) {
-      n /= factor;
+const emptyCases: string[] = [];
+console.log(longestCommonPrefix(emptyCases)); // → ""
+export function lcpVertical(strs: string[]): string {
+  if (!strs.length) return "";
+  for (let i = 0; i < strs[0].length; i++) {
+    const char = strs[0][i];
+    for (let j = 1; j < strs.length; j++) {
+      if (i >= strs[j].length || strs[j][i] !== char) {
+        return strs[0].substring(0, i);
+      }
     }
-    factor += 2n;
   }
-
-  return n;
+  return strs[0];
 }
-
-/**
- * Integer square‑root of a BigInt – floor(√n).
- * Uses Newton’s method; fast for large numbers.
- */
-function bigintSqrt(value: bigint): bigint {
-  if (value < 0n) throw new Error("negative value");
-  if (value < 2n) return value;
-
-  let x0 = value;
-  let x1 = (x0 + 1n) >> 1n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) >> 1n;
-  }
-  return x0;
-}
-console.log(largestPrimeFactor(13195));          // 29
-console.log(largestPrimeFactor(600851475143));   // 6857
-
-console.log(largestPrimeFactorBigInt(13195n));    // 29n
-console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
