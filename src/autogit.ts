@@ -1,69 +1,52 @@
-interface ListNode {
-  val: number | string | any;   // whatever type you’re storing
-  next?: ListNode | null;
+/**
+ * Binary search for a sorted array.  
+ * @param arr  The sorted array (or array‑like object).
+ * @param target  The value you’re looking for.
+ * @param low   Optional starting index (default 0).
+ * @param high  Optional ending index (default arr.length – 1).
+ * @returns index of target if found, otherwise -1.
+ */
+export function binarySearch<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    while (low <= high) {
+        // guard against overflow – works with big ints as well
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
+
+        if (midVal === target) {
+            return mid;
+        }
+
+        // Type narrowing: if T is string we still compare interger‑wise
+        if (midVal < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return -1; // not found
 }
-function reverse(head: ListNode | null): ListNode | null {
-  let prev: ListNode | null = null;
-  let cur = head;
+import { binarySearch } from "./binary-search.ts";
 
-  while (cur) {
-    const next = cur.next;   // keep the next node
-    cur.next = prev;         // reverse the pointer
-    prev = cur;              // move prev forward
-    cur = next;              // move cur forward
-  }
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearch(nums, 7));   // => 3
+console.log(binarySearch(nums, 4));   // => -1
+export function binarySearchRec<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    if (low > high) return -1;
 
-  return prev; // new head
-}
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
-  
-  // --- find middle with fast/slow pointers ---
-  let slow = head;
-  let fast = head;
-  
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next!;
-  }
-  
-  // For odd‑length lists, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-  
-  // --- reverse the second half ---
-  const secondHalfStart = reverse(slow);
-  
-  // --- compare first half and reversed second half ---
-  let p1 = head;
-  let p2 = secondHalfStart;
-  let result = true;
-  
-  while (result && p2) {           // p2 is shorter or equal to p1
-    if (p1!.val !== p2.val) result = false;
-    p1 = p1!.next!;
-    p2 = p2.next!;
-  }
-  
-  // If you want the original list preserved, reverse the second half again:
-  // reverse(secondHalfStart);
-  
-  return result;
-}
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string | any)[] = [];
-  let cur = head;
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
-  }
-
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) return false;
-    cur = cur.next;
-  }
-  return true;
+    if (midVal === target) return mid;
+    if (midVal < target) return binarySearchRec(arr, target, mid + 1, high);
+    return binarySearchRec(arr, target, low, mid - 1);
 }
