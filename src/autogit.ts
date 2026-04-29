@@ -1,32 +1,16 @@
 /**
- * Count how many times a whole word appears in a text.
- *
- * @param text   The text to search in.
- * @param word   The word you’re looking for.
- * @param caseSensitive Set to `true` if you want case‑sensitive matches.
- * @returns The number of non‑overlapping occurrences.
+ * Return a random integer between `min` and `max`, inclusive.
  */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  caseSensitive: boolean = false
-): number {
-  // Escape any regex metacharacters that could be in the word.
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  // Build a regex that matches the word with word‑boundaries.
-  // \b ensures we don’t count “the” inside “there”.
-  const flags = caseSensitive ? 'g' : 'gi';
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
-
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
+function randomInt(min: number, max: number): number {
+  // Math.random() → [0, 1)
+  // Multiply by (max - min + 1) → [0, max - min + 1)
+  // floor to get an integer in [0, max - min]
+  // Shift by min to get the desired range
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-console.log(countWordOccurrences('Hello world, hello again.', 'hello')); // 2
-console.log(countWordOccurrences('Batman & batman! Batman?', 'batman')); // 1 (case‑sensitive)
-console.log(countWordOccurrences('The cat in the cathedral.', 'cat')); // 2
-function countBySplit(text: string, word: string, caseSensitive = false) {
-  const flags = caseSensitive ? '' : 'i';
-  const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, flags);
-  return text.split(regex).length - 1;
+
+/* Example */
+console.log(randomInt(5, 15)); // might print 7, 12, 15, …
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min; // [min, max)
 }
