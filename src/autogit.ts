@@ -1,52 +1,47 @@
 /**
- * Find the longest common subsequence between two strings.
+ * Return the median of two sorted arrays (ascending order).
  *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS string (empty if there is none).
+ * @param nums1 first sorted array
+ * @param nums2 second sorted array
+ * @return median value (number or natural fractional)
  */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length
-  const m = b.length
+export function medianOfTwoSortedArrays(nums1: number[], nums2: number[]): number {
+  const [A, B] = nums1.length <= nums2.length ? [nums1, nums2] : [nums2, nums1];
+  const m = A.length, n = B.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  // 1‑based DP table, size (n+1) × (m+1)
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    Array(m + 1).fill(0)
-  )
+  // Binary‑search over A to find the correct partition
+  let low = 0, high = m;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);          // partition of A
+    const j = halfLen - i;                           // partition of B
 
-  // Build the DP table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1
+    const Aleft  = i === 0 ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m ? Number.POSITIVE_INFINITY : A[i];
+    const Bleft  = j === 0 ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n ? Number.POSITIVE_INFINITY : B[j];
+
+    // Correct partition?
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd combined length → median is max(left side)
+      // Even combined length → median is average of max(left) and min(right)
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
       } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
+        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
       }
-    }
-  }
-
-  // Reconstruct the LCS from the table
-  let i = n
-  let j = m
-  const lcs: string[] = []
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs.push(a[i - 1]) // characters match – part of LCS
-      i--
-      j--
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--
+    } else if (Aleft > Bright) {
+      // Need to move left in A
+      high = i - 1;
     } else {
-      j--
+      // Need to move right in A
+      low = i + 1;
     }
   }
 
-  return lcs.reverse().join("")
+  throw new Error("Inputs are not sorted or arrays are empty");
 }
-import { longestCommonSubsequence } from "./lcs"
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
 
-const s1 = "AGGTAB"
-const s2 = "GXTXAYB"
-
-console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // → 8
