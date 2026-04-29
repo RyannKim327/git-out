@@ -1,65 +1,80 @@
 /**
- * Returns the largest prime factor of a positive integer (>1).
- * Uses trial division up to √n – fast enough for 32‑bit ints.
+ * Sorts an array of numbers in ascending order using selection sort.
+ * The array is sorted in place.
+ *
+ * @param arr – the number array to sort
+ * @returns the same array reference, now sorted
  */
-export function largestPrimeFactor(n: number): number {
-  if (n <= 1) throw new Error("n must be > 1");
+export function selectionSortNumbers(arr: number[]): number[] {
+  const n = arr.length;
 
-  // 2 is the only even prime
-  while (n % 2 === 0) n /= 2;
+  for (let i = 0; i < n - 1; i++) {
+    // Assume the first unsorted element is the minimum
+    let minIndex = i;
 
-  // n is now odd – we only need to test odd divisors
-  let factor = 3;
-  const sqrt = Math.sqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0) {
-      n /= factor;          // keep dividing out this prime
+    // Find the actual minimum among the remaining unsorted portion
+    for (let j = i + 1; j < n; j++) {
+      if (arr[j] < arr[minIndex]) {
+        minIndex = j;
+      }
     }
-    factor += 2;            // next odd candidate
-  }
 
-  // If n is still > 2, it is a prime larger than any factor we tried.
-  return n;
-}
-/**
- * Returns the largest prime factor of a BigInt > 1.
- */
-export function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) throw new Error("n must be > 1");
-
-  // 2 is the only even prime
-  while (n % 2n === 0n) n /= 2n;
-
-  let factor = 3n;
-  const sqrt = bigintSqrt(n);
-  while (factor <= sqrt) {
-    while (n % factor === 0n) {
-      n /= factor;
+    // If a smaller element was found, swap it into place
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
     }
-    factor += 2n;
   }
 
-  return n;
+  return arr;
 }
-
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSortNumbers(nums)); // → [11, 12, 22, 25, 64]
 /**
- * Integer square‑root of a BigInt – floor(√n).
- * Uses Newton’s method; fast for large numbers.
+ * Sorts an array in place using selection sort and a custom comparator.
+ *
+ * @param arr         The array to sort.
+ * @param compareFn   Comparator that defines the sort order.
+ * @returns The sorted array (same reference as @param arr).
  */
-function bigintSqrt(value: bigint): bigint {
-  if (value < 0n) throw new Error("negative value");
-  if (value < 2n) return value;
+export function selectionSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number
+): T[] {
+  const n = arr.length;
 
-  let x0 = value;
-  let x1 = (x0 + 1n) >> 1n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x0 + value / x0) >> 1n;
+  for (let i = 0; i < n - 1; i++) {
+    let minIndex = i;
+
+    for (let j = i + 1; j < n; j++) {
+      if (compareFn(arr[j], arr[minIndex]) < 0) {
+        minIndex = j;
+      }
+    }
+
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
   }
-  return x0;
-}
-console.log(largestPrimeFactor(13195));          // 29
-console.log(largestPrimeFactor(600851475143));   // 6857
 
-console.log(largestPrimeFactorBigInt(13195n));    // 29n
-console.log(largestPrimeFactorBigInt(600851475143n)); // 6857n
+  return arr;
+}
+interface Person {
+  name: string;
+  age: number;
+}
+
+const people: Person[] = [
+  { name: 'Alice', age: 29 },
+  { name: 'Bob', age: 23 },
+  { name: 'Charlie', age: 35 }
+];
+
+// Sort by age (ascending)
+selectionSort(people, (a, b) => a.age - b.age);
+
+console.log(people);
+// → [
+//      { name: 'Bob', age: 23 },
+//      { name: 'Alice', age: 29 },
+//      { name: 'Charlie', age: 35 }
+//    ]
