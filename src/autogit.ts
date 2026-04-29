@@ -1,29 +1,27 @@
-/**
- * Returns the first non‑repeating character in `s`, or `null` if every
- * character repeats. The search respects Unicode code‑points, so it works
- * with emojis, accented letters, etc.
- *
- * @param s – input string
- * @returns the character or null
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // Count every character in a single scan.
-  const counter = new Map<string, number>();
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  for (const ch of s) {
-    counter.set(ch, (counter.get(ch) ?? 0) + 1);
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  // Find the first character whose count is 1.
-  for (const ch of s) {
-    if (counter.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null;          // all characters repeat
+  return result;
 }
-console.log(firstNonRepeatingChar("abacabad")); // "c"
-console.log(firstNonRepeatingChar("swiss"));    // "w"
-console.log(firstNonRepeatingChar("aabb"));     // null
-console.log(firstNonRepeatingChar("😀😃😄😀")); // "😃" (emoji support)
+console.log(factorialIterative(5));   // 120
+console.log(factorialIterative(0));   // 1
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n === 0 || n === 1) return 1;
+  return n * factorialRecursive(n - 1);
+}
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+
+  let result = 1n;          // `n` suffix makes it a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(50).toString());
+// 304140932655... (the full 50! value)
