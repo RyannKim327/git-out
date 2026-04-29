@@ -1,60 +1,80 @@
-// bubbleSort.ts
-
-export type Comparator<T> = (a: T, b: T) => number;
-
+// The node structure we’ll be working with.
+export class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 /**
- * Sorts an array in place using the Bubble Sort algorithm.
+ * Reverse a singly linked list.
  *
- * @param arr    — The array to sort. It will be modified directly.
- * @param cmp    — Optional comparator. If omitted, number comparison is used.
- *
- * @returns      — The sorted array (same reference as the input).
+ * @param head The head node (or `null` if the list is empty).
+ * @returns The new head after reversal.
  */
-export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
-  const n = arr.length;
-  if (n < 2) return arr;          // nothing to do
+export function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // Will become the new tail
+  let curr: ListNode<T> | null = head;   // The node we’re currently visiting
 
-  // Traditional outer loop: run n‑1 passes
-  for (let pass = 0; pass < n - 1; pass++) {
-    let swapped = false;
-
-    // Inner loop: compare adjacent elements
-    for (let i = 0; i < n - 1 - pass; i++) {
-      if (cmp(arr[i], arr[i + 1]) > 0) {
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
-        swapped = true;
-      }
-    }
-
-    // If we made no swaps this pass, the array is sorted
-    if (!swapped) break;
+  while (curr !== null) {
+    const nextNode = curr.next; // remember where we’re headed
+    curr.next = prev;           // flip the direction
+    prev = curr;                // move prev forward
+    curr = nextNode;            // move curr forward
   }
 
-  return arr;
+  // When curr is null, prev is the new head.
+  return prev;
+}
+/**
+ * Reverse using recursion (not advisable for huge lists).
+ * Works nicely for small or medium lists.
+ */
+export function reverseRecursively<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: empty list or single element
+  if (!head || !head.next) {
+    return head;
+  }
+
+  // Recursively reverse the rest of the list
+  const newHead = reverseRecursively(head.next);
+
+  // After the deeper call finishes, head is the *last* node we visited
+  // So we need to attach the current head to the end of the reversed part.
+  head.next.next = head;
+  head.next = null;      // break the original link
+
+  return newHead;        // propagate the new head up the stack
+}
+// Helper to convert array ➜ linked list ➜ array (for easy verification)
+function arrayToList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null;
+  let tail: ListNode<T> | null = null;
+
+  for (const val of arr) {
+    const node = new ListNode(val);
+    if (!head) head = node;
+    else if (tail) tail.next = node;
+    tail = node;
+  }
+  return head;
 }
 
-/** Default numeric comparator */
-function defaultCmp(a: number, b: number): number {
-  return a - b;
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  for (let node = head; node; node = node.next) result.push(node.val);
+  return result;
 }
-import { bubbleSort } from './bubbleSort';
 
-const numbers = [5, 2, 9, 1, 5, 6];
-bubbleSort(numbers);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-
-// Custom comparator – strings, case‑insensitive
-const strings = ['Banana', 'apple', 'Cherry'];
-bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(strings); // ['apple', 'Banana', 'Cherry']
-
-// Sorting objects
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Ali', age: 30 },
-  { name: 'Beth', age: 24 },
-  { name: 'Carl', age: 38 },
-];
-bubbleSort(people, (p, q) => p.age - q.age);
-console.log(people);
-// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
+// Demo
+const list = arrayToList([1, 2, 3, 4, 5]);
+console.log('Original →', listToArray(list));
+console.log('Iterative →', listToArray(reverseLinkedList(list)));
+Original → [ 1, 2, 3, 4, 5 ]
+Iterative → [ 5, 4, 3, 2, 1 ]
+function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev = null, curr = head;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  return prev;
+}
