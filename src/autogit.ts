@@ -1,20 +1,18 @@
-/**
- * Return the first character that appears more than once in `s`.
- * If no character repeats, returns `undefined`.
- */
-function firstRepeated<T extends string>(s: T): T | undefined {
-  const seen = new Set<string>();
+// 1. Remove whitespace from the ends – trim()
+const raw = "   some text   ";
+const trimmed = raw.trim();          // "some text"
 
-  for (const ch of s) {
-    // if we've already seen this char, it's the first repeat
-    if (seen.has(ch)) return ch as T;
+// 2. Remove whitespace everywhere in the string
+const raw2 = "  some text  with  spaces ";
+const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
 
-    seen.add(ch);
-  }
+// 3. Remove all *outside* whitespace but keep internal spaces
+const raw3 = "   some text with  internal   spaces   ";
+const keepInternal = raw3.trim();           // "some text with  internal   spaces"
 
-  return undefined;   // no repeats
-}
-console.log(firstRepeated('abcd'));        // undefined  (no repeat)
-console.log(firstRepeated('abca'));        // 'a'        (first repeat)
-console.log(firstRepeated('aabbcc'));      // 'a'        (even though 'b' repeats later, 'a' is first)
-console.log(firstRepeated('noisy'));       // undefined
+// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
+const raw4 = "line1\n  line2\t";
+const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
+
+// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
+const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
