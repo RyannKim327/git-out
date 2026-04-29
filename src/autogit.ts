@@ -1,73 +1,64 @@
-// ── List node -----------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Very permissive yet useful email pattern.
+ *
+ *  - No whitespace
+ *  - At least one character before and after the @
+ *  - Requires a dot‑separated domain part
+ *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
+ *
+ * The pattern is intentionally simple: it catches the majority of mistakes while
+ * avoiding needless complexity that can cost performance or readability.
+ */
+export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Strict RFC‑5322 compliant-ish pattern.  
+ *  - Handles quoted local‑part, escaped characters, and domain literals.
+ *  - Still keeps things readable by splitting the regex into small parts.
+ *
+ * Use this only if you need the extra validation and can afford a slightly slower check.
+ */
+export const strictEmailRE = new RegExp(
+  // Local part (quoted or unquoted)
+  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
+  // Domain part (letters, digits, hyphens, dots)
+  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
+  '$'
+);
+
+/**
+ * Helper that returns `true` if the input matches *either* pattern.
+ *
+ * @param email Email string to validate.
+ * @returns `true` when the string looks like a valid email address.
+ */
+export function isValidEmail(email: string): boolean {
+  // Trim first – most forms send untrimmed values.
+  const trimmed = email.trim();
+  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
 }
+import { isValidEmail } from './emailValidator';
 
-// ── Intersection finder ------------------------------------
-function intersect<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
+const test = 'user.name+tag@sub.domain.co.uk';
 
-  // 1. Count nodes in each list
-  const lenA = getLength(headA);
-  const lenB = getLength(headB);
-
-  // 2. Make the heads point to the same distance from the end
-  let ptrA: ListNode<T> | null = headA;
-  let ptrB: ListNode<T> | null = headB;
-  if (lenA > lenB) {
-    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
-  } else {
-    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
-  }
-
-  // 3. Move together until we hit the common node (by reference)
-  while (ptrA && ptrB) {
-    if (ptrA === ptrB) return ptrA;
-    ptrA = ptrA.next;
-    ptrB = ptrB.next;
-  }
-
-  return null;          // no intersection
+if (isValidEmail(test)) {
+  console.log(`"${test}" passes the regex test`);
+} else {
+  console.log(`"${test}" is definitely not a valid email`);
 }
+const cases = [
+  'simple@example.com',
+  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
+  'very.unusual.@.example.com',
+  'disposable.style.email.with+symbol@example.com',
+  '"much.more unusual"@example.com',
+  'admin@mailserver1',                 // missing TLD
+  'example@localhost',                 // often allowed in dev env
+  'plainaddress',
+  'email.@example.com',
+  '@missing-local.org',
+  'user@.invalid.com',
+  'huge‑domain‑name‑that‑really‑long.com',
+];
 
-function getLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-  while (cur) {
-    ++len;
-    cur = cur.next;
-  }
-  return len;
-}
-// shared tail: 5 → 6
-const tail = new ListNode(5, new ListNode(6));
-
-// list A: 1 → 2 → 3 → (shared)
-const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
-
-// list B: 9 → (shared)
-const b = new ListNode(9, tail);
-
-const intersectNode = intersect(a, b);
-console.log(intersectNode?.val); // 5
-function intersectUsingSet<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
-  }
-
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;
-    cur = cur.next;
-  }
-  return null;
-}
+cases.forEach(e => console.log(e, isValidEmail(e)));
