@@ -1,16 +1,25 @@
-/**
- * Return a random integer between `min` and `max`, inclusive.
- */
-function randomInt(min: number, max: number): number {
-  // Math.random() → [0, 1)
-  // Multiply by (max - min + 1) → [0, max - min + 1)
-  // floor to get an integer in [0, max - min]
-  // Shift by min to get the desired range
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
+  }
+  return count;
 }
+function countCharRegex(str: string, target: string): number {
+  // Escape special regex chars in the target
+  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matches = str.match(new RegExp(escaped, 'g'));
+  return matches ? matches.length : 0;
+}
+function countCharSplit(str: string, target: string): number {
+  // Splitting on the target gives you one more element than the number of matches
+  return str.split(target).length - 1;
+}
+const s = 'hello world, hello universe!';
+console.log(countChar(s, 'l'));          // 3
+console.log(countCharRegex(s, 'l'));    // 3
+console.log(countCharSplit(s, 'l'));    // 3
 
-/* Example */
-console.log(randomInt(5, 15)); // might print 7, 12, 15, …
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // [min, max)
-}
+console.log(countChar(s, ' '));          // 3
+console.log(countCharRegex(s, ' '));    // 3
+console.log(countCharSplit(s, ' '));    // 3
