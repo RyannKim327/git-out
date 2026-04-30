@@ -1,48 +1,27 @@
-/**
- * Return the longest common prefix of an array of strings.
- *
- * @param strs - The strings to investigate.
- * @returns The common prefix (empty string if there is none, or if the array is empty).
- */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  // Start with the first string as the provisional prefix
-  let prefix = strs[0];
-
-  // Stop as soon as prefix becomes empty – nothing more to find
-  for (let i = 1; i < strs.length && prefix.length; i++) {
-    const current = strs[i];
-    let j = 0;
-
-    // Compare char‑by‑char until a mismatch is detected
-    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-      j++;
-    }
-
-    // Update prefix to the matched portion
-    prefix = prefix.substring(0, j);
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return prefix;
+  return result;
 }
-const words = ["flower","flow","flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
+console.log(factorialIterative(5));   // 120
+console.log(factorialIterative(0));   // 1
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n === 0 || n === 1) return 1;
+  return n * factorialRecursive(n - 1);
+}
+function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-const mixed = ["dog","racecar","car"];
-console.log(longestCommonPrefix(mixed)); // → ""
-
-const emptyCases: string[] = [];
-console.log(longestCommonPrefix(emptyCases)); // → ""
-export function lcpVertical(strs: string[]): string {
-  if (!strs.length) return "";
-  for (let i = 0; i < strs[0].length; i++) {
-    const char = strs[0][i];
-    for (let j = 1; j < strs.length; j++) {
-      if (i >= strs[j].length || strs[j][i] !== char) {
-        return strs[0].substring(0, i);
-      }
-    }
+  let result = 1n;          // `n` suffix makes it a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
   }
-  return strs[0];
+  return result;
 }
+console.log(factorialBigInt(50).toString());
+// 304140932655... (the full 50! value)
