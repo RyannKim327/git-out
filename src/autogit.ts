@@ -1,67 +1,70 @@
+// random-cron.ts
+// ----------
+// Requires:
+//   npm install node-cron
+//   npm install --save-dev @types/node-cron   (optional if you want type safety)
+// ----------
+import cron from 'node-cron';
+
 /**
- * In‑place quicksort.
- *
- * @param arr  The array to sort
- * @param cmp  Optional comparator: (a,b) => number.
- *             If omitted, the default comparison uses the built‑in
- *             < , == , > operators (works for strings, numbers, etc.).
- * @returns    The same array reference, now sorted
+ * Handy helper that returns a random integer in [min, max] inclusive.
  */
-export function quickSort<T>(
-    arr: T[],
-    cmp?: (a: T, b: T) => number
-): T[] {
-    // Default comparator for primitives
-    const defaultCmp = (a: T, b: T): number => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    };
-
-    const compare = cmp ?? defaultCmp;
-
-    // Lomuto partition: pivot is the last element
-    const partition = (lo: number, hi: number): number => {
-        const pivot = arr[hi];
-        let i = lo;            // place for the next smaller element
-        for (let j = lo; j < hi; j++) {
-            if (compare(arr[j], pivot) <= 0) {
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-                i++;
-            }
-        }
-        // put pivot in its final place
-        [arr[i], arr[hi]] = [arr[hi], arr[i]];
-        return i;
-    };
-
-    const quick = (lo: number, hi: number): void => {
-        if (lo < hi) {
-            const p = partition(lo, hi);
-            quick(lo, p - 1);
-            quick(p + 1, hi);
-        }
-    };
-
-    quick(0, arr.length - 1);
-    return arr;
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-// Numbers – default comparison works
-const nums = [5, 3, 8, 4, 2];
-quickSort(nums);
-console.log(nums); // [2, 3, 4, 5, 8]
 
-// Strings – default comparison is lexicographic
-const words = ['banana', 'apple', 'cherry'];
-quickSort(words);
-console.log(words); // ['apple', 'banana', 'cherry']
-
-// Custom comparator (descending)
-interface Person { name: string; age: number; }
-const people: Person[] = [
-    { name: 'Eve', age: 29 },
-    { name: 'Bob', age: 42 },
-    { name: 'Alice', age: 35 }
+/**
+ * A tiny random “quote” pool. Feel free to replace these with your own.
+ */
+const QUOTES: string[] = [
+  "Do not wait to strike till the iron is hot; but make it hot by striking.",
+  "All that we see or seem is but a dream within a dream.",
+  "Noise is bliss when you’re chasing a dream.",
+  "In the middle of difficulty lies opportunity.",
+  "The only limit to our realization of tomorrow is our doubts about today."
 ];
-quickSort(people, (a, b) => b.age - a.age); // sort by age descending
-console.log(people);
+
+/**
+ * Pick a random quote from `QUOTES`.
+ */
+function getRandomQuote(): string {
+  const idx = randInt(0, QUOTES.length - 1);
+  return QUOTES[idx];
+}
+
+/**
+ * Pick a random time (hour/minute) so that the job will fire at a different
+ * spot each day. These are UTC values in the cron string.
+ */
+function generateRandomCronExpr(): string {
+  const hour = randInt(0, 23);
+  const minute = randInt(0, 59);
+  // e.g. "14 3 * * *" → 3:14 AM UTC every day
+  return `${minute} ${hour} * * *`;
+}
+
+/**
+ * Launch a cron job that runs at the generated random time.
+ */
+function scheduleDailyQuote() {
+  const cronExpr = generateRandomCronExpr();
+  console.log(`Scheduling daily quote at *${cronExpr}* (UTC).`);
+
+  cron.schedule(cronExpr, () => {
+    const msg = getRandomQuote();
+    const time = new Date().toISOString();
+    console.log(`[${time}] Random quote: ${msg}`);
+  });
+}
+
+scheduleDailyQuote();
+# 1. Install deps
+npm install --save node-cron
+# Optional typings
+npm install --save-dev @types/node-cron
+
+# 2. Compile (if you’re using tsc)
+tsc random-cron.ts
+
+# 3. Run
+node random-cron.js
