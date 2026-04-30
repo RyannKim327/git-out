@@ -1,52 +1,34 @@
+const haystack: string = "Hello, world!";
+const needle: string = "world";
+
+const found = haystack.includes(needle); // true
+const haystack = "Hello, world!";
+const needle = "world";
+
+const found = haystack.indexOf(needle) !== -1; // true
+const haystack = "Hello, world!";
+const pattern = /world/;          // or /world/i for case‑insensitive
+const found = pattern.test(haystack); // true
+// case‑insensitive:
+const haystack = "Hello, World!";
+const needle = "world";
+const found = haystack.toLowerCase().includes(needle.toLowerCase());
+
+// locale‑aware:
+const localeFound = haystack.localeCompare(needle, undefined, { sensitivity: 'accent' }) === 0;
 /**
- * Find the longest common subsequence between two strings.
- *
- * @param a First string.
- * @param b Second string.
- * @returns The LCS string (empty if there is none).
+ * Checks whether a string contains a substring, optionally case‑insensitive.
  */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const n = a.length
-  const m = b.length
-
-  // 1‑based DP table, size (n+1) × (m+1)
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    Array(m + 1).fill(0)
-  )
-
-  // Build the DP table
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
-      }
-    }
+function contains(
+  target: string,
+  probe: string,
+  caseInsensitive = false
+): boolean {
+  if (caseInsensitive) {
+    return target.toLowerCase().includes(probe.toLowerCase());
   }
-
-  // Reconstruct the LCS from the table
-  let i = n
-  let j = m
-  const lcs: string[] = []
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      lcs.push(a[i - 1]) // characters match – part of LCS
-      i--
-      j--
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--
-    } else {
-      j--
-    }
-  }
-
-  return lcs.reverse().join("")
+  return target.includes(probe);
 }
-import { longestCommonSubsequence } from "./lcs"
 
-const s1 = "AGGTAB"
-const s2 = "GXTXAYB"
-
-console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
+// Usage
+const ok = contains("Hello, World!", "world", true); // true
