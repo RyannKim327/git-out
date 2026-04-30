@@ -1,48 +1,78 @@
 /**
- * Return the longest common prefix of an array of strings.
+ * A very small, self‑contained topological‑sort utility.
  *
- * @param strs - The strings to investigate.
- * @returns The common prefix (empty string if there is none, or if the array is empty).
+ * Users should supply a directed graph in adjacency‑list form:
+ *
+ *   const g = new Map<string, Set<string>>();
+ *   g.set('A', new Set(['B', 'C']));
+ *   g.set('B', new Set(['D']));
+ *   g.set('C', new Set(['D']));
+ *   g.set('D', new Set());
+ *
+ * Call `topologicalSort(g)` and receive an array in an order that
+ * satisfies all dependencies. If a cycle is detected the function
+ * throws an Error describing the nodes that loop.
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
 
-  // Start with the first string as the provisional prefix
-  let prefix = strs[0];
+type Graph<ID> = Map<ID, Set<ID>>;
 
-  // Stop as soon as prefix becomes empty – nothing more to find
-  for (let i = 1; i < strs.length && prefix.length; i++) {
-    const current = strs[i];
-    let j = 0;
+/**
+ * Detects a directed cycle in a graph by trying a Kahn‑style removal.
+ */
+function topologicalSort<ID>(graph: Graph<ID>): ID[] {
+  // 1. Make a copy of indegree counts
+  const indegree = new Map<ID, number>();
 
-    // Compare char‑by‑char until a mismatch is detected
-    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-      j++;
-    }
-
-    // Update prefix to the matched portion
-    prefix = prefix.substring(0, j);
-  }
-
-  return prefix;
-}
-const words = ["flower","flow","flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
-
-const mixed = ["dog","racecar","car"];
-console.log(longestCommonPrefix(mixed)); // → ""
-
-const emptyCases: string[] = [];
-console.log(longestCommonPrefix(emptyCases)); // → ""
-export function lcpVertical(strs: string[]): string {
-  if (!strs.length) return "";
-  for (let i = 0; i < strs[0].length; i++) {
-    const char = strs[0][i];
-    for (let j = 1; j < strs.length; j++) {
-      if (i >= strs[j].length || strs[j][i] !== char) {
-        return strs[0].substring(0, i);
-      }
+  // Walk the graph once to count in‑edges
+  for (const [node, edges] of graph.entries()) {
+    // Ensure every node in the map has an indegree entry
+    if (!indegree.has(node)) indegree.set(node, 0);
+    for (const neigh of edges) {
+      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
+      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
+      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
     }
   }
-  return strs[0];
+
+  // 2. Queue of nodes with no incoming edges
+  const queue: ID[] = [];
+  for (const [node, num] of indegree.entries())
+    if (num === 0) queue.push(node);
+
+  const result: ID[] = [];
+
+  // 3. Repeatedly pop a zero‑in‑degree node, append to result
+  //    and “remove” its outgoing edges
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    const outgoing = graph.get(node) ?? new Set();
+    for (const neigh of outgoing) {
+      // decrement indegree; if it goes to 0 push to queue
+      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
+      indegree.set(neigh, newIndeg);
+      if (newIndeg === 0) queue.push(neigh);
+    }
+  }
+
+  // 4. If we didn't visit all nodes → a cycle exists
+  if (result.length !== indegree.size) {
+    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
+    throw new Error(
+      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
+    );
+  }
+
+  return result;
 }
+
+/* ---------- demo ---------- */
+const example = new Map<string, Set<string>>([
+  ['A', new Set(['B', 'C'])],
+  ['B', new Set(['D'])],
+  ['C', new Set(['D'])],
+  ['D', new Set()],
+]);
+
+console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
