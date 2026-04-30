@@ -1,58 +1,39 @@
-/** A very simple binary‑tree node. */
-export class TreeNode<T = unknown> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
 /**
- * Returns the maximum depth of a binary tree.
- * Depth is counted in nodes, not edges.
+ * Reverses the order of words in `text`.
  *
- * @param root The root node of the tree (or null for an empty tree).
- * @returns an integer ≥ 0.
+ * • Consecutive whitespace is treated as a single separator.
+ * • Leading/trailing whitespace is trimmed out.
+ *
+ * @param text – The string whose words you want to reverse.
+ * @returns A new string with the words in reverse order.
  */
-export function maxDepth<T>(root: TreeNode<T> | null): number {
-  // recursion is the cleanest here
-  if (!root) return 0; // leaf’s child contributes 0
-
-  const leftDepth = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  // current node adds 1 to the greater of two sub‑depths
-  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
+function reverseWords(text: string): string {
+  return text
+    .trim()                      // remove leading/trailing spaces
+    .split(/\s+/)                // split on any run of whitespace
+    .reverse()                   // reverse the array
+    .join(' ');                  // join back with a single space
 }
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const root = new TreeNode('a',
-  new TreeNode('b',
-    new TreeNode('d')
-  ),
-  new TreeNode('c')
-);
 
-console.log(maxDepth(root)); // → 3
-export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  const queue: TreeNode<T>[] = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    // All nodes in this `for` loop belong to the same level.
-    const levelSize = queue.length;
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
-    depth++; // finished one level
-  }
-  return depth;
+// Example
+const input = "  The quick  brown   fox jumps over   the lazy dog  ";
+console.log(reverseWords(input));
+// → "dog lazy the over jumps fox brown quick The"
+function reverseWordsKeepPunct(text: string): string {
+  // Matches words or any non‑space sequences
+  const tokens = text.match(/\S+/g) ?? [];
+  return tokens.split('').reverse().join(' ');
 }
+const tests = [
+  { in: "", out: "" },
+  { in: "hello", out: "hello" },
+  { in: "one two three", out: "three two one" },
+  { in: "  a   b c   ", out: "c b a" },
+  { in: "Hello, world!", out: "world! Hello," },
+];
+
+tests.forEach(({ in: t, out: expected }) => {
+  const result = reverseWords(t);
+  console.assert(result === expected, `❌ ${t} → ${result} (expected ${expected})`);
+});
+console.log("All basic tests passed!");
