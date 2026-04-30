@@ -1,66 +1,33 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
+function middle<T>(head: Node<T> | null): Node<T> | null {
+  if (!head) return null;           // empty list
 
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+  let slow: Node<T> | null = head;
+  let fast: Node<T> | null = head;
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+  // Move `fast` twice as fast as `slow`.
+  // When `fast` reaches the end, `slow` will be at the middle.
+  while (fast && fast.next) {
+    slow = slow!.next!;
+    fast = fast.next.next;
   }
 
-  return leafCount;
+  return slow; // this node is the middle
 }
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
-
-  if (!root) return leaves;
-
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return leaves;
+while (fast && fast.next) {
+  slow = slow!.next!;
+  fast = fast.next?.next ?? null;
 }
+
+// after loop, `slow` is still the first middle;
+slow = slow?.next ?? null;      // move to the second middle
+const list = new Node(1,
+  new Node(2,
+    new Node(3,
+      new Node(4,
+        new Node(5)))));
+
+console.log(middle(list)?.value); // 3
