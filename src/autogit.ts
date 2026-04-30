@@ -1,38 +1,79 @@
-function areAnagrams(a: string, b: string): boolean {
-  // Remove whitespace & make everything lowercase (so “Dormitory”, “dirtyroom” work)
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase();
+/**
+ * Edge list representation – maps a node id to an array of neighbour ids.
+ */
+type AdjacencyList<T> = Record<string, T[]>;
 
-  const normalizeA = normalize(a).split('').sort().join('');
-  const normalizeB = normalize(b).split('').sort().join('');
+/**
+ * A simple helper that maps a node to its “depth” from one end of the search.
+ */
+type Visited<T> = Record<string, number>;
 
-  return normalizeA === normalizeB;
-}
-function areAnagrams(a: string, b: string): boolean {
-  const buildMap = (s: string) => {
-    const map: Record<string, number> = {};
-    for (const ch of s.replace(/\s+/g, '').toLowerCase()) {
-      map[ch] = (map[ch] ?? 0) + 1;
+/**
+ * Bidirectional BFS.
+ *
+ * @param graph   The graph, keyed by string id, pointing to an array of neighbour ids.
+ * @param start   The id of the start node.
+ * @param target  The id of the target node.
+ * @returns The length of the shortest path, or -1 if no path exists.
+ */
+export function bidirectionalBfs<T extends string>(
+  graph: AdjacencyList<T>,
+  start: T,
+  target: T
+): number {
+  if (start === target) return 0;
+
+  // Two frontiers: one growing from start, one from target
+  let frontierStart = new Set([start]);
+  let frontierTarget = new Set([target]);
+
+  // Book‑keeping maps: node → distance from its originating side
+  const visitedStart: Visited<T> = { [start]: 0 };
+  const visitedTarget: Visited<T> = { [target]: 0 };
+
+  let distance = 0; // overall layers explored
+
+  while (frontierStart.size && frontierTarget.size) {
+    // Always expand the smaller frontier first
+    if (frontierStart.size > frontierTarget.size) {
+      [frontierStart, frontierTarget] = [frontierTarget, frontierStart];
+      [visitedStart, visitedTarget] = [visitedTarget, visitedStart];
     }
-    return map;
-  };
 
-  const aMap = buildMap(a);
-  const bMap = buildMap(b);
+    const nextFrontier = new Set<T>();
 
-  const keys = new Set([...Object.keys(aMap), ...Object.keys(bMap)]);
-  for (const k of keys) {
-    if (aMap[k] !== bMap[k]) return false;
+    for (const node of frontierStart) {
+      const neighbours = graph[node] ?? [];
+
+      for (const neighbour of neighbours) {
+        // If the other search has already hit this node, we’re done
+        if (visitedTarget.hasOwnProperty(neighbour)) {
+          return visitedStart[node] + 1 + visitedTarget[neighbour];
+        }
+
+        // New node, add to the next layer and record distance
+        if (!visitedStart.hasOwnProperty(neighbour)) {
+          visitedStart[neighbour] = visitedStart[node] + 1;
+          nextFrontier.add(neighbour);
+        }
+      }
+    }
+
+    frontierStart = nextFrontier;
+    distance += 1;
   }
-  return true;
-}
-const tests = [
-  ['listen', 'silent'],
-  ['hello', 'world'],
-  ['Dormitory', 'Dirty room'],
-  ['abc', 'abcd'],
-];
 
-for (const [a, b] of tests) {
-  console.log(`${a} ↔ ${b} → ${areAnagrams(a, b)}`);
+  // No intersection found
+  return -1;
 }
+const graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd', 'e'],
+  c: ['a', 'f'],
+  d: ['b'],
+  e: ['b', 'f'],
+  f: ['c', 'e'],
+} as const; // type inference: “as const” locks the keys
+
+console.log(bidirectionalBfs(graph, 'a', 'f')); // → 3 (a‑b‑e‑f or a‑c‑f)
+console.log(bidirectionalBfs(graph, 'a', 'x')); // → -1 (x not in graph)
