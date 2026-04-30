@@ -1,38 +1,31 @@
-// A minimal Node interface for a singly–linked list
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+function longestCommonSubstring(s1: string, s2: string): string {
+    if (!s1 || !s2) return '';
+
+    const m = s1.length, n = s2.length;
+    // one‑dimensional DP (only the previous row is needed)
+    const dp = new Array(n + 1).fill(0);
+    let maxLen = 0;          // longest length seen so far
+    let endIdxS1 = 0;        // index where that longest ends in s1
+
+    for (let i = 1; i <= m; i++) {
+        // iterate j from right to left so the current row doesn't overwrite the
+        // values we still need from the previous row
+        for (let j = n; j >= 1; j--) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
+                if (dp[j] > maxLen) {
+                    maxLen = dp[j];
+                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
+                }
+            } else {
+                dp[j] = 0;
+            }
+        }
+    }
+
+    // Extract slice from s1 using the remembered end index and length
+    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
 }
 
-/**
- * Detects whether the list rooted at `head` contains a cycle.
- * @returns true if a cycle is found, otherwise false.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // ∅ → no nodes → no cycle
-  if (!head) return false;
-
-  let slow: ListNode<T> | null = head;      // moves 1 step per loop
-  let fast: ListNode<T> | null = head;      // moves 2 steps per loop
-
-  while (fast && fast.next) {
-    slow = slow!.next;          // safe–because slow starts at head
-    fast = fast.next.next;      // fast may skip over a null
-    if (slow === fast) return true;   // they met → cycle
-  }
-
-  return false;                 // fast reached the end → no cycle
-}
-// Building a list: 1 → 2 → 3 → 4 → 5 → (back to 3)
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-node5.next = node3;   // close the loop
-
-console.log(hasCycle(node1)); // → true
-
-// Remove the loop to confirm the detector sees no cycle
-node5.next = null;
-console.log(hasCycle(node1)); // → false
+// Quick demo
+console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
