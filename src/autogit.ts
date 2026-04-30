@@ -1,51 +1,93 @@
-function areAnagrams(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .replace(/[^a-zA-Z0-9]/g, "") // strip non‑alphanumerics
-      .toLowerCase();               // ignore case
+// ---- Graph representation -------------------------------------------------
+type Node = string | number;               // you can pick whatever type you prefer
+type AdjacencyList = Record<Node, Node[]>; // node -> list of neighbour nodes
 
-  const na = normalize(a);
-  const nb = normalize(b);
-  if (na.length !== nb.length) return false;
+class Graph {
+  private readonly adj: AdjacencyList = {};
 
-  // Count frequencies
-  const freq = new Map<string, number>();
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+  // Add (or extend) adjacency list for a node
+  addEdge(u: Node, v: Node, undirected = true) {
+    if (!this.adj[u]) this.adj[u] = [];
+    this.adj[u].push(v);
 
-  for (const ch of nb) {
-    const count = (freq.get(ch) ?? 0) - 1;
-    if (count < 0) return false;   // more of ch in nb than in a
-    if (count === 0) freq.delete(ch);
-    else freq.set(ch, count);
-  }
-
-  return freq.size === 0;
-}
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-
-  const na = normalize(a).split("").sort().join("");
-  const nb = normalize(b).split("").sort().join("");
-
-  return na === nb;
-}
-console.assert(areAnagrams("Dormitory", "dirty room") === true);
-console.assert(areAnagrams("Hello", "Olelh") === true);
-console.assert(areAnagrams("Cats", "Acting") === false);
-function containsAnagram(s: string, minLength = 2): boolean {
-  const chars = s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const seen = new Set<string>();
-
-  for (let i = 0; i < chars.length; i++) {
-    for (let j = i + minLength; j <= chars.length; j++) {
-      const sub = chars.slice(i, j);
-      const key = sub.split("").sort().join("");
-      if (seen.has(key)) return true;
-      seen.add(key);
+    if (undirected) {
+      if (!this.adj[v]) this.adj[v] = [];
+      this.adj[v].push(u);
     }
   }
-  return false;
+
+  // Optional: get all nodes in the graph
+  nodes(): Node[] {
+    return Object.keys(this.adj).map(k => parseNode(k));
+  }
+
+  // Expose raw list for BFS
+  get neighbours() {
+    return this.adj;
+  }
 }
+
+// Helper to preserve numeric keys when using an object as map
+function parseNode(val: string): Node {
+  return isNaN(Number(val)) ? val : Number(val);
+}
+
+// ---- BFS implementation ---------------------------------------------------
+/**
+ * Performs a breadth‑first search starting from `source`.
+ * @param graph      The graph to search.
+ * @param source     The node where we begin the search.
+ * @param target     (Optional) If provided, the search stops when this node is reached.
+ * @returns          If no target: a map of node → distance from source.
+ *                   If target: the distance to that node, or -1 if unreachable.
+ */
+function bfs(
+  graph: Graph,
+  source: Node,
+  target?: Node
+): Record<Node, number> | number {
+  const distances: Record<Node, number> = {};
+  const queue: Node[] = [source];
+  const visited = new Set<Node>();
+
+  visited.add(source);
+  distances[source] = 0;
+
+  while (queue.length) {
+    const u = queue.shift() as Node;
+    const currDist = distances[u] as number;
+
+    // Stop early if we’re looking for a particular target
+    if (target !== undefined && u === target) {
+      return currDist;
+    }
+
+    for (const v of graph.neighbours[u] || []) {
+      if (!visited.has(v)) {
+        visited.add(v);
+        distances[v] = currDist + 1;
+        queue.push(v);
+      }
+    }
+  }
+
+  // No path found to `target`
+  if (target !== undefined) return -1;
+
+  return distances;
+}
+
+// ---- Example usage --------------------------------------------------------
+const g = new Graph();
+g.addEdge('A', 'B');
+g.addEdge('A', 'C');
+g.addEdge('B', 'D');
+g.addEdge('C', 'D');
+g.addEdge('C', 'E');
+g.addEdge('E', 'F');
+
+// Full distance map from A
+console.log('Distances from A:', bfs(g, 'A'));
+
+// Shortest path length from A to F
+console.log('Distance A → F:', bfs(g, 'A', 'F'));
