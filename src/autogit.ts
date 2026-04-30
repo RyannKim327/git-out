@@ -1,27 +1,16 @@
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+/**
+ * Return a random integer between `min` and `max`, inclusive.
+ */
+function randomInt(min: number, max: number): number {
+  // Math.random() → [0, 1)
+  // Multiply by (max - min + 1) → [0, max - min + 1)
+  // floor to get an integer in [0, max - min]
+  // Shift by min to get the desired range
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+/* Example */
+console.log(randomInt(5, 15)); // might print 7, 12, 15, …
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min; // [min, max)
 }
-console.log(factorialIterative(5));   // 120
-console.log(factorialIterative(0));   // 1
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n === 0 || n === 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-
-  let result = 1n;          // `n` suffix makes it a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(50).toString());
-// 304140932655... (the full 50! value)
