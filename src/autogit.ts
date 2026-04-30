@@ -1,72 +1,58 @@
-// A single node in a singly linked list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
+/** A very simple binary‑tree node. */
+export class TreeNode<T = unknown> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-// The queue itself
-export class Queue<T> {
-  private head: Node<T> | null = null; // front of the queue
-  private tail: Node<T> | null = null; // back of the queue
-  private _size = 0;
+/**
+ * Returns the maximum depth of a binary tree.
+ * Depth is counted in nodes, not edges.
+ *
+ * @param root The root node of the tree (or null for an empty tree).
+ * @returns an integer ≥ 0.
+ */
+export function maxDepth<T>(root: TreeNode<T> | null): number {
+  // recursion is the cleanest here
+  if (!root) return 0; // leaf’s child contributes 0
 
-  /** Adds a value to the back of the queue. */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
+  const leftDepth = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-    if (this.tail) {
-      // Pre‑existing queue – link the new node after the old tail
-      this.tail.next = newNode;
-    } else {
-      // Empty queue – new node becomes the head
-      this.head = newNode;
+  // current node adds 1 to the greater of two sub‑depths
+  return 1 + (leftDepth > rightDepth ? leftDepth : rightDepth);
+}
+// Build a tiny tree:
+//       a
+//      / \
+//     b   c
+//    /
+//   d
+const root = new TreeNode('a',
+  new TreeNode('b',
+    new TreeNode('d')
+  ),
+  new TreeNode('c')
+);
+
+console.log(maxDepth(root)); // → 3
+export function maxDepthBFS<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  const queue: TreeNode<T>[] = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    // All nodes in this `for` loop belong to the same level.
+    const levelSize = queue.length;
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
-
-    // In either case, the new node is the new tail
-    this.tail = newNode;
-    this._size += 1;
+    depth++; // finished one level
   }
-
-  /** Removes and returns the value at the front of the queue. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Queue is empty
-
-    const value = this.head.value;
-    this.head = this.head.next;   // Advance the head
-
-    // If the queue became empty, clear the tail too
-    if (!this.head) this.tail = null;
-
-    this._size -= 1;
-    return value;
-  }
-
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** How many items are in the queue? */
-  size(): number {
-    return this._size;
-  }
+  return depth;
 }
-const q = new Queue<number>();
-
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());  // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());   // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue(); // removes 30
-
-console.log(q.isEmpty()); // true
