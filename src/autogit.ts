@@ -1,64 +1,52 @@
 /**
- * Very permissive yet useful email pattern.
+ * Find the longest common subsequence between two strings.
  *
- *  - No whitespace
- *  - At least one character before and after the @
- *  - Requires a dot‑separated domain part
- *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
- *
- * The pattern is intentionally simple: it catches the majority of mistakes while
- * avoiding needless complexity that can cost performance or readability.
+ * @param a First string.
+ * @param b Second string.
+ * @returns The LCS string (empty if there is none).
  */
-export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function longestCommonSubsequence(a: string, b: string): string {
+  const n = a.length
+  const m = b.length
 
-/**
- * Strict RFC‑5322 compliant-ish pattern.  
- *  - Handles quoted local‑part, escaped characters, and domain literals.
- *  - Still keeps things readable by splitting the regex into small parts.
- *
- * Use this only if you need the extra validation and can afford a slightly slower check.
- */
-export const strictEmailRE = new RegExp(
-  // Local part (quoted or unquoted)
-  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
-  // Domain part (letters, digits, hyphens, dots)
-  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
-  '$'
-);
+  // 1‑based DP table, size (n+1) × (m+1)
+  const dp: number[][] = Array.from({ length: n + 1 }, () =>
+    Array(m + 1).fill(0)
+  )
 
-/**
- * Helper that returns `true` if the input matches *either* pattern.
- *
- * @param email Email string to validate.
- * @returns `true` when the string looks like a valid email address.
- */
-export function isValidEmail(email: string): boolean {
-  // Trim first – most forms send untrimmed values.
-  const trimmed = email.trim();
-  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
+  // Build the DP table
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1])
+      }
+    }
+  }
+
+  // Reconstruct the LCS from the table
+  let i = n
+  let j = m
+  const lcs: string[] = []
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      lcs.push(a[i - 1]) // characters match – part of LCS
+      i--
+      j--
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--
+    } else {
+      j--
+    }
+  }
+
+  return lcs.reverse().join("")
 }
-import { isValidEmail } from './emailValidator';
+import { longestCommonSubsequence } from "./lcs"
 
-const test = 'user.name+tag@sub.domain.co.uk';
+const s1 = "AGGTAB"
+const s2 = "GXTXAYB"
 
-if (isValidEmail(test)) {
-  console.log(`"${test}" passes the regex test`);
-} else {
-  console.log(`"${test}" is definitely not a valid email`);
-}
-const cases = [
-  'simple@example.com',
-  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
-  'very.unusual.@.example.com',
-  'disposable.style.email.with+symbol@example.com',
-  '"much.more unusual"@example.com',
-  'admin@mailserver1',                 // missing TLD
-  'example@localhost',                 // often allowed in dev env
-  'plainaddress',
-  'email.@example.com',
-  '@missing-local.org',
-  'user@.invalid.com',
-  'huge‑domain‑name‑that‑really‑long.com',
-];
-
-cases.forEach(e => console.log(e, isValidEmail(e)));
+console.log(longestCommonSubsequence(s1, s2)) // → "GTAB"
