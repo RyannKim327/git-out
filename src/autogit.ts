@@ -1,38 +1,79 @@
-// A minimal Node interface for a singly–linked list
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+/**
+ * Merge two sorted sub‑arrays into one sorted array.
+ * `left` and `right` must already be sorted.
+ * Returns a new sorted array.
+ */
+function merge<T>(
+  left: T[],
+  right: T[],
+  compare: (a: T, b: T) => number
+): T[] {
+  const result: T[] = [];
+  let i = 0; // index for left
+  let j = 0; // index for right
+
+  while (i < left.length && j < right.length) {
+    // If left[i] <= right[j] according to the compare function,
+    // push left[i] into the result and advance i
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i]);
+      i++;
+    } else {
+      result.push(right[j]);
+      j++;
+    }
+  }
+
+  // Append any remaining elements.
+  // Only one of the following while loops will actually run.
+  while (i < left.length) {
+    result.push(left[i]);
+    i++;
+  }
+  while (j < right.length) {
+    result.push(right[j]);
+    j++;
+  }
+
+  return result;
 }
 
 /**
- * Detects whether the list rooted at `head` contains a cycle.
- * @returns true if a cycle is found, otherwise false.
+ * Recursively divides the array and merges the sorted halves.
+ * `compare` should return:
+ *   < 0 if a < b
+ *   0  if a === b
+ *   > 0 if a > b
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // ∅ → no nodes → no cycle
-  if (!head) return false;
+export function mergeSort<T>(
+  array: T[],
+  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): T[] {
+  if (array.length <= 1) return array; // Base case: already sorted
 
-  let slow: ListNode<T> | null = head;      // moves 1 step per loop
-  let fast: ListNode<T> | null = head;      // moves 2 steps per loop
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // safe–because slow starts at head
-    fast = fast.next.next;      // fast may skip over a null
-    if (slow === fast) return true;   // they met → cycle
-  }
-
-  return false;                 // fast reached the end → no cycle
+  return merge(left, right, compare);
 }
-// Building a list: 1 → 2 → 3 → 4 → 5 → (back to 3)
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-node5.next = node3;   // close the loop
+// Sort numbers
+const nums = [8, 3, 5, 1, 9, 0];
+const sortedNums = mergeSort(nums);
+// -> [0, 1, 3, 5, 8, 9]
 
-console.log(hasCycle(node1)); // → true
+// Sort strings alphabetically
+const words = ["pear", "apple", "banana"];
+const sortedWords = mergeSort(words);
+// -> ["apple", "banana", "pear"]
 
-// Remove the loop to confirm the detector sees no cycle
-node5.next = null;
-console.log(hasCycle(node1)); // → false
+// Sort objects by a property
+type Person = { name: string; age: number };
+const people: Person[] = [
+  { name: "Charlie", age: 25 },
+  { name: "Alice", age: 30 },
+  { name: "Bob", age: 20 },
+];
+
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+// -> [{name:"Bob", age:20}, {name:"Charlie", age:25}, {name:"Alice", age:30}]
