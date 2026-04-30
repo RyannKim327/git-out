@@ -1,33 +1,40 @@
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
+// rock-paper-scissors.ts
+import * as readline from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
+
+const rl = readline.createInterface({
+  input: stdin,
+  output: stdout,
+});
+
+async function play() {
+  console.log('Rock, Paper, Scissors!');
+  const human = (await rl.question('Your move (rock/paper/scissors): ')).trim().toLowerCase();
+
+  const options = ['rock', 'paper', 'scissors'] as const;
+  const comp = options[Math.floor(Math.random() * options.length)];
+
+  console.log(`\nComputer chose: ${comp}\n`);
+
+  const result =
+    human === comp
+      ? "It's a tie."
+      : (human === 'rock' && comp === 'scissors') ||
+        (human === 'paper' && comp === 'rock') ||
+        (human === 'scissors' && comp === 'paper')
+      ? 'You win!'
+      : 'You lose!';
+
+  console.log(result);
+  rl.close();
 }
 
-function middle<T>(head: Node<T> | null): Node<T> | null {
-  if (!head) return null;           // empty list
+play();
+# 1. Install TypeScript locally (if you haven’t already)
+npm install -D typescript
 
-  let slow: Node<T> | null = head;
-  let fast: Node<T> | null = head;
+# 2. Compile the file
+npx tsc rock-paper-scissors.ts --lib es2023,dom
 
-  // Move `fast` twice as fast as `slow`.
-  // When `fast` reaches the end, `slow` will be at the middle.
-  while (fast && fast.next) {
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
-
-  return slow; // this node is the middle
-}
-while (fast && fast.next) {
-  slow = slow!.next!;
-  fast = fast.next?.next ?? null;
-}
-
-// after loop, `slow` is still the first middle;
-slow = slow?.next ?? null;      // move to the second middle
-const list = new Node(1,
-  new Node(2,
-    new Node(3,
-      new Node(4,
-        new Node(5)))));
-
-console.log(middle(list)?.value); // 3
+# 3. Execute the compiled JS
+node rock-paper-scissors.js
