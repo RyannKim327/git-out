@@ -1,55 +1,80 @@
-/**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
- */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
-
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
-  }
+// The node structure we’ll be working with.
+export class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-import { Stack } from './Stack';
+/**
+ * Reverse a singly linked list.
+ *
+ * @param head The head node (or `null` if the list is empty).
+ * @returns The new head after reversal.
+ */
+export function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;   // Will become the new tail
+  let curr: ListNode<T> | null = head;   // The node we’re currently visiting
 
-const stack = new Stack<number>();
+  while (curr !== null) {
+    const nextNode = curr.next; // remember where we’re headed
+    curr.next = prev;           // flip the direction
+    prev = curr;                // move prev forward
+    curr = nextNode;            // move curr forward
+  }
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+  // When curr is null, prev is the new head.
+  return prev;
+}
+/**
+ * Reverse using recursion (not advisable for huge lists).
+ * Works nicely for small or medium lists.
+ */
+export function reverseRecursively<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: empty list or single element
+  if (!head || !head.next) {
+    return head;
+  }
 
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
+  // Recursively reverse the rest of the list
+  const newHead = reverseRecursively(head.next);
 
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
+  // After the deeper call finishes, head is the *last* node we visited
+  // So we need to attach the current head to the end of the reversed part.
+  head.next.next = head;
+  head.next = null;      // break the original link
 
-stack.clear();
-console.log(stack.isEmpty()); // true
+  return newHead;        // propagate the new head up the stack
+}
+// Helper to convert array ➜ linked list ➜ array (for easy verification)
+function arrayToList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null;
+  let tail: ListNode<T> | null = null;
+
+  for (const val of arr) {
+    const node = new ListNode(val);
+    if (!head) head = node;
+    else if (tail) tail.next = node;
+    tail = node;
+  }
+  return head;
+}
+
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const result: T[] = [];
+  for (let node = head; node; node = node.next) result.push(node.val);
+  return result;
+}
+
+// Demo
+const list = arrayToList([1, 2, 3, 4, 5]);
+console.log('Original →', listToArray(list));
+console.log('Iterative →', listToArray(reverseLinkedList(list)));
+Original → [ 1, 2, 3, 4, 5 ]
+Iterative → [ 5, 4, 3, 2, 1 ]
+function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev = null, curr = head;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+  return prev;
+}
