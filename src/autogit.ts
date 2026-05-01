@@ -1,25 +1,34 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
-  }
-  return count;
-}
-function countCharRegex(str: string, target: string): number {
-  // Escape special regex chars in the target
-  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const matches = str.match(new RegExp(escaped, 'g'));
-  return matches ? matches.length : 0;
-}
-function countCharSplit(str: string, target: string): number {
-  // Splitting on the target gives you one more element than the number of matches
-  return str.split(target).length - 1;
-}
-const s = 'hello world, hello universe!';
-console.log(countChar(s, 'l'));          // 3
-console.log(countCharRegex(s, 'l'));    // 3
-console.log(countCharSplit(s, 'l'));    // 3
+// fetch-posts.ts
+import axios, { AxiosResponse } from 'axios';
 
-console.log(countChar(s, ' '));          // 3
-console.log(countCharRegex(s, ' '));    // 3
-console.log(countCharSplit(s, ' '));    // 3
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
+
+async function fetchPosts(): Promise<Post[]> {
+  const url = 'https://jsonplaceholder.typicode.com/posts';
+  const response: AxiosResponse<Post[]> = await axios.get(url);
+  return response.data;
+}
+
+async function main() {
+  try {
+    const posts = await fetchPosts();
+    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
+  } catch (err) {
+    console.error('Failed to fetch posts:', err);
+  }
+}
+
+main();
+# 1️⃣  Install dependencies
+npm install axios
+
+# 2️⃣  Compile to JavaScript
+tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
+
+# 3️⃣  Execute
+node fetch-posts.js
