@@ -1,31 +1,79 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-    if (!s1 || !s2) return '';
+/**
+ * Edge list representation – maps a node id to an array of neighbour ids.
+ */
+type AdjacencyList<T> = Record<string, T[]>;
 
-    const m = s1.length, n = s2.length;
-    // one‑dimensional DP (only the previous row is needed)
-    const dp = new Array(n + 1).fill(0);
-    let maxLen = 0;          // longest length seen so far
-    let endIdxS1 = 0;        // index where that longest ends in s1
+/**
+ * A simple helper that maps a node to its “depth” from one end of the search.
+ */
+type Visited<T> = Record<string, number>;
 
-    for (let i = 1; i <= m; i++) {
-        // iterate j from right to left so the current row doesn't overwrite the
-        // values we still need from the previous row
-        for (let j = n; j >= 1; j--) {
-            if (s1[i - 1] === s2[j - 1]) {
-                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
-                if (dp[j] > maxLen) {
-                    maxLen = dp[j];
-                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
-                }
-            } else {
-                dp[j] = 0;
-            }
-        }
+/**
+ * Bidirectional BFS.
+ *
+ * @param graph   The graph, keyed by string id, pointing to an array of neighbour ids.
+ * @param start   The id of the start node.
+ * @param target  The id of the target node.
+ * @returns The length of the shortest path, or -1 if no path exists.
+ */
+export function bidirectionalBfs<T extends string>(
+  graph: AdjacencyList<T>,
+  start: T,
+  target: T
+): number {
+  if (start === target) return 0;
+
+  // Two frontiers: one growing from start, one from target
+  let frontierStart = new Set([start]);
+  let frontierTarget = new Set([target]);
+
+  // Book‑keeping maps: node → distance from its originating side
+  const visitedStart: Visited<T> = { [start]: 0 };
+  const visitedTarget: Visited<T> = { [target]: 0 };
+
+  let distance = 0; // overall layers explored
+
+  while (frontierStart.size && frontierTarget.size) {
+    // Always expand the smaller frontier first
+    if (frontierStart.size > frontierTarget.size) {
+      [frontierStart, frontierTarget] = [frontierTarget, frontierStart];
+      [visitedStart, visitedTarget] = [visitedTarget, visitedStart];
     }
 
-    // Extract slice from s1 using the remembered end index and length
-    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
-}
+    const nextFrontier = new Set<T>();
 
-// Quick demo
-console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
+    for (const node of frontierStart) {
+      const neighbours = graph[node] ?? [];
+
+      for (const neighbour of neighbours) {
+        // If the other search has already hit this node, we’re done
+        if (visitedTarget.hasOwnProperty(neighbour)) {
+          return visitedStart[node] + 1 + visitedTarget[neighbour];
+        }
+
+        // New node, add to the next layer and record distance
+        if (!visitedStart.hasOwnProperty(neighbour)) {
+          visitedStart[neighbour] = visitedStart[node] + 1;
+          nextFrontier.add(neighbour);
+        }
+      }
+    }
+
+    frontierStart = nextFrontier;
+    distance += 1;
+  }
+
+  // No intersection found
+  return -1;
+}
+const graph = {
+  a: ['b', 'c'],
+  b: ['a', 'd', 'e'],
+  c: ['a', 'f'],
+  d: ['b'],
+  e: ['b', 'f'],
+  f: ['c', 'e'],
+} as const; // type inference: “as const” locks the keys
+
+console.log(bidirectionalBfs(graph, 'a', 'f')); // → 3 (a‑b‑e‑f or a‑c‑f)
+console.log(bidirectionalBfs(graph, 'a', 'x')); // → -1 (x not in graph)
