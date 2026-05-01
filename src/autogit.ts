@@ -1,34 +1,74 @@
-// fetch-posts.ts
-import axios, { AxiosResponse } from 'axios';
+/**
+ * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
+ * lps[i] is the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+function buildLps(pattern: string): number[] {
+  const lps: number[] = new Array(pattern.length).fill(0);
+  let length = 0;                 // length of the previous longest prefix‑suffix
+  let i = 1;                      // we start from the second character
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
-
-async function fetchPosts(): Promise<Post[]> {
-  const url = 'https://jsonplaceholder.typicode.com/posts';
-  const response: AxiosResponse<Post[]> = await axios.get(url);
-  return response.data;
-}
-
-async function main() {
-  try {
-    const posts = await fetchPosts();
-    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
-  } catch (err) {
-    console.error('Failed to fetch posts:', err);
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous potential prefix
+        length = lps[length - 1];
+        // note: we do **not** increment i here
+      } else {
+        // no match at all; lps[i] stays 0
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
+
+  return lps;
 }
 
-main();
-# 1️⃣  Install dependencies
-npm install axios
+/**
+ * KMP search: returns the index of the first occurrence of the pattern in the text,
+ * or -1 if the pattern is absent.
+ */
+function kmpSearch(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;              // trivial match
+  if (text.length < pattern.length) return -1;     // cannot match
 
-# 2️⃣  Compile to JavaScript
-tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
+  const lps = buildLps(pattern);
+  let tIdx = 0;      // index into text
+  let pIdx = 0;      // index into pattern
 
-# 3️⃣  Execute
-node fetch-posts.js
+  while (tIdx < text.length) {
+    if (pattern[pIdx] === text[tIdx]) {
+      tIdx++;
+      pIdx++;
+
+      // full match
+      if (pIdx === pattern.length) {
+        return tIdx - pIdx;   // return starting index
+      }
+    } else {
+      if (pIdx !== 0) {
+        // skip comparisons by using the lps table
+        pIdx = lps[pIdx - 1];
+      } else {
+        tIdx++;
+      }
+    }
+  }
+
+  return -1; // not found
+}
+
+/* ---------- Example usage ---------- */
+const txt = "abxabcabcaby";
+const pat = "abcaby";
+
+const idx = kmpSearch(txt, pat);
+console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
+console.assert(kmpSearch("hello world", "world") === 6);
+console.assert(kmpSearch("hello world", "bye")    === -1);
+console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
