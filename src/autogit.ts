@@ -1,80 +1,52 @@
-// The node structure we’ll be working with.
-export class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
 /**
- * Reverse a singly linked list.
- *
- * @param head The head node (or `null` if the list is empty).
- * @returns The new head after reversal.
+ * Binary search for a sorted array.  
+ * @param arr  The sorted array (or array‑like object).
+ * @param target  The value you’re looking for.
+ * @param low   Optional starting index (default 0).
+ * @param high  Optional ending index (default arr.length – 1).
+ * @returns index of target if found, otherwise -1.
  */
-export function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;   // Will become the new tail
-  let curr: ListNode<T> | null = head;   // The node we’re currently visiting
+export function binarySearch<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    while (low <= high) {
+        // guard against overflow – works with big ints as well
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
 
-  while (curr !== null) {
-    const nextNode = curr.next; // remember where we’re headed
-    curr.next = prev;           // flip the direction
-    prev = curr;                // move prev forward
-    curr = nextNode;            // move curr forward
-  }
+        if (midVal === target) {
+            return mid;
+        }
 
-  // When curr is null, prev is the new head.
-  return prev;
+        // Type narrowing: if T is string we still compare interger‑wise
+        if (midVal < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return -1; // not found
 }
-/**
- * Reverse using recursion (not advisable for huge lists).
- * Works nicely for small or medium lists.
- */
-export function reverseRecursively<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: empty list or single element
-  if (!head || !head.next) {
-    return head;
-  }
+import { binarySearch } from "./binary-search.ts";
 
-  // Recursively reverse the rest of the list
-  const newHead = reverseRecursively(head.next);
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearch(nums, 7));   // => 3
+console.log(binarySearch(nums, 4));   // => -1
+export function binarySearchRec<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    if (low > high) return -1;
 
-  // After the deeper call finishes, head is the *last* node we visited
-  // So we need to attach the current head to the end of the reversed part.
-  head.next.next = head;
-  head.next = null;      // break the original link
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
 
-  return newHead;        // propagate the new head up the stack
-}
-// Helper to convert array ➜ linked list ➜ array (for easy verification)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  let tail: ListNode<T> | null = null;
-
-  for (const val of arr) {
-    const node = new ListNode(val);
-    if (!head) head = node;
-    else if (tail) tail.next = node;
-    tail = node;
-  }
-  return head;
-}
-
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const result: T[] = [];
-  for (let node = head; node; node = node.next) result.push(node.val);
-  return result;
-}
-
-// Demo
-const list = arrayToList([1, 2, 3, 4, 5]);
-console.log('Original →', listToArray(list));
-console.log('Iterative →', listToArray(reverseLinkedList(list)));
-Original → [ 1, 2, 3, 4, 5 ]
-Iterative → [ 5, 4, 3, 2, 1 ]
-function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev = null, curr = head;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-  return prev;
+    if (midVal === target) return mid;
+    if (midVal < target) return binarySearchRec(arr, target, mid + 1, high);
+    return binarySearchRec(arr, target, low, mid - 1);
 }
