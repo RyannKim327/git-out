@@ -1,32 +1,16 @@
 /**
- * Count how many times a whole word appears in a text.
- *
- * @param text   The text to search in.
- * @param word   The word you’re looking for.
- * @param caseSensitive Set to `true` if you want case‑sensitive matches.
- * @returns The number of non‑overlapping occurrences.
+ * Return true iff `s` reads the same forwards and backwards.
+ * The function runs in O(n) time and O(1) auxiliary space.
+ * 
+ * If you need a case–insensitive or “ignoring non‑alpha‑numeric”
+ * version, simply adjust the comparison operations accordingly.
  */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  caseSensitive: boolean = false
-): number {
-  // Escape any regex metacharacters that could be in the word.
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  // Build a regex that matches the word with word‑boundaries.
-  // \b ensures we don’t count “the” inside “there”.
-  const flags = caseSensitive ? 'g' : 'gi';
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
-
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
-}
-console.log(countWordOccurrences('Hello world, hello again.', 'hello')); // 2
-console.log(countWordOccurrences('Batman & batman! Batman?', 'batman')); // 1 (case‑sensitive)
-console.log(countWordOccurrences('The cat in the cathedral.', 'cat')); // 2
-function countBySplit(text: string, word: string, caseSensitive = false) {
-  const flags = caseSensitive ? '' : 'i';
-  const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, flags);
-  return text.split(regex).length - 1;
+function isPalindrome(s: string): boolean {
+  const n = s.length;
+  // Two‑pointer scan from the ends toward the centre.
+  for (let i = 0, j = n - 1; i < j; i++, j--) {
+    // Direct character comparison – no new arrays, no string slicing.
+    if (s.charAt(i) !== s.charAt(j)) return false;
+  }
+  return true;
 }
