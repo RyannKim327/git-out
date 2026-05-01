@@ -1,47 +1,51 @@
-/**
- * Return the median of two sorted arrays (ascending order).
- *
- * @param nums1 first sorted array
- * @param nums2 second sorted array
- * @return median value (number or natural fractional)
- */
-export function medianOfTwoSortedArrays(nums1: number[], nums2: number[]): number {
-  const [A, B] = nums1.length <= nums2.length ? [nums1, nums2] : [nums2, nums1];
-  const m = A.length, n = B.length;
-  const halfLen = Math.floor((m + n + 1) / 2);
+function areAnagrams(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s
+      .replace(/[^a-zA-Z0-9]/g, "") // strip non‑alphanumerics
+      .toLowerCase();               // ignore case
 
-  // Binary‑search over A to find the correct partition
-  let low = 0, high = m;
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);          // partition of A
-    const j = halfLen - i;                           // partition of B
+  const na = normalize(a);
+  const nb = normalize(b);
+  if (na.length !== nb.length) return false;
 
-    const Aleft  = i === 0 ? Number.NEGATIVE_INFINITY : A[i - 1];
-    const Aright = i === m ? Number.POSITIVE_INFINITY : A[i];
-    const Bleft  = j === 0 ? Number.NEGATIVE_INFINITY : B[j - 1];
-    const Bright = j === n ? Number.POSITIVE_INFINITY : B[j];
-
-    // Correct partition?
-    if (Aleft <= Bright && Bleft <= Aright) {
-      // Odd combined length → median is max(left side)
-      // Even combined length → median is average of max(left) and min(right)
-      if ((m + n) % 2 === 1) {
-        return Math.max(Aleft, Bleft);
-      } else {
-        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
-      }
-    } else if (Aleft > Bright) {
-      // Need to move left in A
-      high = i - 1;
-    } else {
-      // Need to move right in A
-      low = i + 1;
-    }
+  // Count frequencies
+  const freq = new Map<string, number>();
+  for (const ch of na) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  throw new Error("Inputs are not sorted or arrays are empty");
-}
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
+  for (const ch of nb) {
+    const count = (freq.get(ch) ?? 0) - 1;
+    if (count < 0) return false;   // more of ch in nb than in a
+    if (count === 0) freq.delete(ch);
+    else freq.set(ch, count);
+  }
 
-console.log(medianOfTwoSortedArrays(arr1, arr2)); // → 8
+  return freq.size === 0;
+}
+function areAnagramsSort(a: string, b: string): boolean {
+  const normalize = (s: string) =>
+    s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
+  const na = normalize(a).split("").sort().join("");
+  const nb = normalize(b).split("").sort().join("");
+
+  return na === nb;
+}
+console.assert(areAnagrams("Dormitory", "dirty room") === true);
+console.assert(areAnagrams("Hello", "Olelh") === true);
+console.assert(areAnagrams("Cats", "Acting") === false);
+function containsAnagram(s: string, minLength = 2): boolean {
+  const chars = s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const seen = new Set<string>();
+
+  for (let i = 0; i < chars.length; i++) {
+    for (let j = i + minLength; j <= chars.length; j++) {
+      const sub = chars.slice(i, j);
+      const key = sub.split("").sort().join("");
+      if (seen.has(key)) return true;
+      seen.add(key);
+    }
+  }
+  return false;
+}
