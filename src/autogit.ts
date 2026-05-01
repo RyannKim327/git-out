@@ -1,62 +1,72 @@
-/**
- * Generic Shell Sort.
- *
- * @param arr   The array to sort in‑place.
- * @param cmp   Optional comparator.  Returns a negative number if a < b,
- *              zero if a == b, positive if a > b.
- * @returns     The sorted array (same reference as input).
- *
- * @example
- *   const nums = [9, 5, 1, 4, 3];
- *   shellSort(nums);          // [1,3,4,5,9]
- *
- *   const nameList = ['Zoe', 'Alice', 'Bob'];
- *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
- */
-function shellSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+// A single node in a singly linked list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
+}
 
-  // Default comparator uses JavaScript's < and > operators.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+// The queue itself
+export class Queue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // back of the queue
+  private _size = 0;
 
-  // Classic Shell sequence: n/2, n/4, …, 1
-  let gap = Math.floor(len / 2);
-  while (gap > 0) {
-    // For each shift positions, perform an insertion sort on the sub‑array
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
+  /** Adds a value to the back of the queue. */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
 
-      // Shift elements of the sub‑array that are greater than temp
-      // rightward by one position.
-      while (j >= gap && compare(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-
-      arr[j] = temp;
+    if (this.tail) {
+      // Pre‑existing queue – link the new node after the old tail
+      this.tail.next = newNode;
+    } else {
+      // Empty queue – new node becomes the head
+      this.head = newNode;
     }
 
-    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
+    // In either case, the new node is the new tail
+    this.tail = newNode;
+    this._size += 1;
   }
 
-  return arr;
+  /** Removes and returns the value at the front of the queue. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Queue is empty
+
+    const value = this.head.value;
+    this.head = this.head.next;   // Advance the head
+
+    // If the queue became empty, clear the tail too
+    if (!this.head) this.tail = null;
+
+    this._size -= 1;
+    return value;
+  }
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** How many items are in the queue? */
+  size(): number {
+    return this._size;
+  }
 }
-const data = [22, 45, 12, 8, 4, 30, 6];
-console.log('Before:', data);
+const q = new Queue<number>();
 
-shellSort(data);
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-console.log('After:', data);
-Before: [22,45,12,8,4,30,6]
-After: [4,6,8,12,22,30,45]
+console.log(q.peek());  // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());   // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue(); // removes 30
+
+console.log(q.isEmpty()); // true
