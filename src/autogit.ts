@@ -1,57 +1,25 @@
-/**
- * Interpolation Search
- * --------------------
- * @param arr  A sorted array of numbers (ascending).
- * @param key  The value you're looking for.
- * @returns    Index of key in arr, or −1 if key is absent.
- *
- * Complexity:
- *  * Best‑case: O(log log N)  (when data is uniformly distributed)
- *  * Worst‑case: O(N)         (when data is heavily skewed)
- *
- * Note: Behaviour for non‑numeric or unsorted input is undefined.
- */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
-
-  let low = 0;
-  let high = arr.length - 1;
-
-  // Keep the loop going while the search space is valid.
-  while (
-    low <= high &&
-    key >= arr[low] &&
-    key <= arr[high]
-  ) {
-    // Guard against a zero division when arr[low] === arr[high].
-    if (arr[low] === arr[high]) {
-      // All remaining elements are equal; pick the first one.
-      return arr[low] === key ? low : -1;
-    }
-
-    // Estimate the probable position of key.
-    const pos =
-      low +
-      Math.floor(
-        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-      );
-
-    // We found the key.
-    if (arr[pos] === key) {
-      return pos;
-    }
-
-    // Update boundaries based on comparison.
-    if (arr[pos] < key) {
-      low = pos + 1;     // key is in the right sub‑array
-    } else {
-      high = pos - 1;    // key is in the left sub‑array
-    }
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
   }
-
-  // If we exit the loop, key isn't present.
-  return -1;
+  return count;
 }
-const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
-console.log(interpolationSearch(data, 9));   // → 4
-console.log(interpolationSearch(data, 4));   // → -1
+function countCharRegex(str: string, target: string): number {
+  // Escape special regex chars in the target
+  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matches = str.match(new RegExp(escaped, 'g'));
+  return matches ? matches.length : 0;
+}
+function countCharSplit(str: string, target: string): number {
+  // Splitting on the target gives you one more element than the number of matches
+  return str.split(target).length - 1;
+}
+const s = 'hello world, hello universe!';
+console.log(countChar(s, 'l'));          // 3
+console.log(countCharRegex(s, 'l'));    // 3
+console.log(countCharSplit(s, 'l'));    // 3
+
+console.log(countChar(s, ' '));          // 3
+console.log(countCharRegex(s, ' '));    // 3
+console.log(countCharSplit(s, ' '));    // 3
