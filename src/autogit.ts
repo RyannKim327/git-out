@@ -1,55 +1,35 @@
-/**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
- */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;          // Not enough values
 
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
-  }
+  const sorted = [...arr].sort((a, b) => b - a); // descending
+  return sorted[1];
 }
-import { Stack } from './Stack';
+function secondLargestLinear(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-const stack = new Stack<number>();
+  let max = -Infinity;
+  let second = -Infinity;
 
-stack.push(10);
-stack.push(20);
-stack.push(30);
+  for (const val of arr) {
+    if (val > max) {
+      second = max;
+      max = val;
+    } else if (val > second && val < max) {
+      second = val;
+    }
+  }
 
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
-
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+  return second === -Infinity ? null : second;
+}
+export function findSecondLargest(arr: number[]): number | null
+export function findSecondLargestLinear(arr: number[]): number | null
+[
+  { arr: [5, 1, 4, 3], expected: 4 },
+  { arr: [5, 5, 3], expected: 3 },
+  { arr: [5, 5, 5], expected: null },
+  { arr: [], expected: null },
+  { arr: [10], expected: null }
+].forEach(({arr, expected}, i) => {
+  const res = findSecondLargestLinear(arr);
+  console.assert(res === expected, `case ${i} failed: got ${res}`);
+});
