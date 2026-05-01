@@ -1,74 +1,96 @@
-/**
- * Computes the LPS (Longest Prefix–Suffix) table for a pattern.
- * lps[i] is the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
- */
-function buildLps(pattern: string): number[] {
-  const lps: number[] = new Array(pattern.length).fill(0);
-  let length = 0;                 // length of the previous longest prefix‑suffix
-  let i = 1;                      // we start from the second character
+/* ---------- 1️⃣  Types & helpers ------------------------------------ */
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous potential prefix
-        length = lps[length - 1];
-        // note: we do **not** increment i here
-      } else {
-        // no match at all; lps[i] stays 0
-        lps[i] = 0;
-        i++;
+type Edge = {
+  /** source vertex */
+  u: number;
+  /** destination vertex */
+  v: number;
+  /** edge weight */
+  w: number;
+};
+
+interface Result {
+  /** distance from the source to every vertex */
+  dist: number[];
+  /** immediately‑prev vertex on the shortest path, or null if unreachable */
+  prev: (number | null)[];
+  /** did we spot a negative‑weight cycle? */
+  hasNegativeCycle: boolean;
+}
+
+/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): Result {
+  const dist = new Array<number>(vertexCount).fill(Infinity);
+  const prev = new Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relaxes every edge V‑1 times
+  for (let iter = 0; iter < vertexCount - 1; ++iter) {
+    let updated = false;
+
+    for (const { u, v, w } of edges) {
+      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        updated = true;
       }
+    }
+
+    // Stop early if nothing changed
+    if (!updated) break;
+  }
+
+  // 2️⃣ Detect negative‑weight cycles:
+  let hasNegativeCycle = false;
+  for (const { u, v, w } of edges) {
+    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      break;
     }
   }
 
-  return lps;
+  return { dist, prev, hasNegativeCycle };
 }
 
-/**
- * KMP search: returns the index of the first occurrence of the pattern in the text,
- * or -1 if the pattern is absent.
- */
-function kmpSearch(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;              // trivial match
-  if (text.length < pattern.length) return -1;     // cannot match
+/* ---------- 3️⃣  Example usage ------------------------------------ */
 
-  const lps = buildLps(pattern);
-  let tIdx = 0;      // index into text
-  let pIdx = 0;      // index into pattern
+const edges: Edge[] = [
+  { u: 0, v: 1, w: 4 },
+  { u: 0, v: 2, w: 5 },
+  { u: 1, v: 2, w: -3 },
+  { u: 1, v: 3, w: 2 },
+  { u: 2, v: 3, w: 4 },
+  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
+];
 
-  while (tIdx < text.length) {
-    if (pattern[pIdx] === text[tIdx]) {
-      tIdx++;
-      pIdx++;
+const vertexCount = 4;
+const source = 0;
 
-      // full match
-      if (pIdx === pattern.length) {
-        return tIdx - pIdx;   // return starting index
-      }
-    } else {
-      if (pIdx !== 0) {
-        // skip comparisons by using the lps table
-        pIdx = lps[pIdx - 1];
-      } else {
-        tIdx++;
-      }
-    }
+const result = bellmanFord(vertexCount, edges, source);
+
+console.log('Distances:', result.dist);
+console.log('Prev:' , result.prev);
+console.log(
+  'Negative cycle detected:',
+  result.hasNegativeCycle ? 'Yes' : 'No'
+);
+
+// If you want to reconstruct a path to a target vertex:
+function reconstructPath(prev: (number | null)[], target: number) {
+  const path: number[] = [];
+  let current: number | null = target;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = prev[current];
   }
-
-  return -1; // not found
+  return path;
 }
 
-/* ---------- Example usage ---------- */
-const txt = "abxabcabcaby";
-const pat = "abcaby";
-
-const idx = kmpSearch(txt, pat);
-console.log(idx); // prints 6 (the position where "abcaby" starts in txt)
-console.assert(kmpSearch("hello world", "world") === 6);
-console.assert(kmpSearch("hello world", "bye")    === -1);
-console.assert(kmpSearch("aaaaa", "aa")          === 0); // returns the first match
+console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
