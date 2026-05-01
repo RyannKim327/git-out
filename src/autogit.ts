@@ -1,69 +1,62 @@
-interface ListNode {
-  val: number | string | any;   // whatever type you’re storing
-  next?: ListNode | null;
-}
-function reverse(head: ListNode | null): ListNode | null {
-  let prev: ListNode | null = null;
-  let cur = head;
+/**
+ * Generic Shell Sort.
+ *
+ * @param arr   The array to sort in‑place.
+ * @param cmp   Optional comparator.  Returns a negative number if a < b,
+ *              zero if a == b, positive if a > b.
+ * @returns     The sorted array (same reference as input).
+ *
+ * @example
+ *   const nums = [9, 5, 1, 4, 3];
+ *   shellSort(nums);          // [1,3,4,5,9]
+ *
+ *   const nameList = ['Zoe', 'Alice', 'Bob'];
+ *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
+ */
+function shellSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  while (cur) {
-    const next = cur.next;   // keep the next node
-    cur.next = prev;         // reverse the pointer
-    prev = cur;              // move prev forward
-    cur = next;              // move cur forward
-  }
+  // Default comparator uses JavaScript's < and > operators.
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-  return prev; // new head
-}
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
-  
-  // --- find middle with fast/slow pointers ---
-  let slow = head;
-  let fast = head;
-  
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next!;
-  }
-  
-  // For odd‑length lists, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-  
-  // --- reverse the second half ---
-  const secondHalfStart = reverse(slow);
-  
-  // --- compare first half and reversed second half ---
-  let p1 = head;
-  let p2 = secondHalfStart;
-  let result = true;
-  
-  while (result && p2) {           // p2 is shorter or equal to p1
-    if (p1!.val !== p2.val) result = false;
-    p1 = p1!.next!;
-    p2 = p2.next!;
-  }
-  
-  // If you want the original list preserved, reverse the second half again:
-  // reverse(secondHalfStart);
-  
-  return result;
-}
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string | any)[] = [];
-  let cur = head;
+  // Classic Shell sequence: n/2, n/4, …, 1
+  let gap = Math.floor(len / 2);
+  while (gap > 0) {
+    // For each shift positions, perform an insertion sort on the sub‑array
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
 
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
+      // Shift elements of the sub‑array that are greater than temp
+      // rightward by one position.
+      while (j >= gap && compare(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+
+      arr[j] = temp;
+    }
+
+    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
   }
 
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) return false;
-    cur = cur.next;
-  }
-  return true;
+  return arr;
 }
+const data = [22, 45, 12, 8, 4, 30, 6];
+console.log('Before:', data);
+
+shellSort(data);
+
+console.log('After:', data);
+Before: [22,45,12,8,4,30,6]
+After: [4,6,8,12,22,30,45]
