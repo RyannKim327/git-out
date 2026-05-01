@@ -1,40 +1,34 @@
-// rock-paper-scissors.ts
-import * as readline from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
+// fetch-posts.ts
+import axios, { AxiosResponse } from 'axios';
 
-const rl = readline.createInterface({
-  input: stdin,
-  output: stdout,
-});
-
-async function play() {
-  console.log('Rock, Paper, Scissors!');
-  const human = (await rl.question('Your move (rock/paper/scissors): ')).trim().toLowerCase();
-
-  const options = ['rock', 'paper', 'scissors'] as const;
-  const comp = options[Math.floor(Math.random() * options.length)];
-
-  console.log(`\nComputer chose: ${comp}\n`);
-
-  const result =
-    human === comp
-      ? "It's a tie."
-      : (human === 'rock' && comp === 'scissors') ||
-        (human === 'paper' && comp === 'rock') ||
-        (human === 'scissors' && comp === 'paper')
-      ? 'You win!'
-      : 'You lose!';
-
-  console.log(result);
-  rl.close();
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-play();
-# 1. Install TypeScript locally (if you haven’t already)
-npm install -D typescript
+async function fetchPosts(): Promise<Post[]> {
+  const url = 'https://jsonplaceholder.typicode.com/posts';
+  const response: AxiosResponse<Post[]> = await axios.get(url);
+  return response.data;
+}
 
-# 2. Compile the file
-npx tsc rock-paper-scissors.ts --lib es2023,dom
+async function main() {
+  try {
+    const posts = await fetchPosts();
+    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
+  } catch (err) {
+    console.error('Failed to fetch posts:', err);
+  }
+}
 
-# 3. Execute the compiled JS
-node rock-paper-scissors.js
+main();
+# 1️⃣  Install dependencies
+npm install axios
+
+# 2️⃣  Compile to JavaScript
+tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
+
+# 3️⃣  Execute
+node fetch-posts.js
