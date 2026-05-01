@@ -1,38 +1,57 @@
-// A minimal Node interface for a singly–linked list
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-
 /**
- * Detects whether the list rooted at `head` contains a cycle.
- * @returns true if a cycle is found, otherwise false.
+ * Interpolation Search
+ * --------------------
+ * @param arr  A sorted array of numbers (ascending).
+ * @param key  The value you're looking for.
+ * @returns    Index of key in arr, or −1 if key is absent.
+ *
+ * Complexity:
+ *  * Best‑case: O(log log N)  (when data is uniformly distributed)
+ *  * Worst‑case: O(N)         (when data is heavily skewed)
+ *
+ * Note: Behaviour for non‑numeric or unsorted input is undefined.
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // ∅ → no nodes → no cycle
-  if (!head) return false;
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  let slow: ListNode<T> | null = head;      // moves 1 step per loop
-  let fast: ListNode<T> | null = head;      // moves 2 steps per loop
+  let low = 0;
+  let high = arr.length - 1;
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // safe–because slow starts at head
-    fast = fast.next.next;      // fast may skip over a null
-    if (slow === fast) return true;   // they met → cycle
+  // Keep the loop going while the search space is valid.
+  while (
+    low <= high &&
+    key >= arr[low] &&
+    key <= arr[high]
+  ) {
+    // Guard against a zero division when arr[low] === arr[high].
+    if (arr[low] === arr[high]) {
+      // All remaining elements are equal; pick the first one.
+      return arr[low] === key ? low : -1;
+    }
+
+    // Estimate the probable position of key.
+    const pos =
+      low +
+      Math.floor(
+        ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+      );
+
+    // We found the key.
+    if (arr[pos] === key) {
+      return pos;
+    }
+
+    // Update boundaries based on comparison.
+    if (arr[pos] < key) {
+      low = pos + 1;     // key is in the right sub‑array
+    } else {
+      high = pos - 1;    // key is in the left sub‑array
+    }
   }
 
-  return false;                 // fast reached the end → no cycle
+  // If we exit the loop, key isn't present.
+  return -1;
 }
-// Building a list: 1 → 2 → 3 → 4 → 5 → (back to 3)
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-node5.next = node3;   // close the loop
-
-console.log(hasCycle(node1)); // → true
-
-// Remove the loop to confirm the detector sees no cycle
-node5.next = null;
-console.log(hasCycle(node1)); // → false
+const data = [1, 3, 5, 7, 9, 11, 13, 15, 17];
+console.log(interpolationSearch(data, 9));   // → 4
+console.log(interpolationSearch(data, 4));   // → -1
