@@ -1,92 +1,55 @@
 /**
- * Longest Increasing Subsequence – O(n²) DP
- * @param a   input array of numbers
- * @returns   length of LIS
+ * A classic LIFO stack backed by an array.
+ * @template T The type stored in the stack.
  */
-function lisLengthDP(a: number[]): number {
-  const n = a.length;
-  if (n === 0) return 0;
+export class Stack<T> {
+  // The internal storage array – keep it private.
+  private items: T[] = [];
 
-  const dp = new Array(n).fill(1);   // each element itself
-
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-      }
-    }
+  /** Push a value onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  return Math.max(...dp);
+  /** Remove and return the top value. Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  /** Return the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  /** Return how many items are currently in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Simple truthy check for emptiness. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** (Optional) Clear all items from the stack. */
+  clear(): void {
+    this.items.length = 0; // Fastest way to empty an array
+  }
 }
-console.log(lisLengthDP([10, 9, 2, 5, 3, 7, 101, 18])); // 4  (2,3,7,101)
-/**
- * Longest Increasing Subsequence – O(n log n)
- * @param a   input array of numbers
- * @returns   length of LIS
- */
-function lisLengthNLogN(a: number[]): number {
-  const tails: number[] = [];
+import { Stack } from './Stack';
 
-  for (const x of a) {
-    // Binary search: find the first index in tails where tails[idx] >= x
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
+const stack = new Stack<number>();
 
-    // left is the position to replace
-    tails[left] = x;
-  }
+stack.push(10);
+stack.push(20);
+stack.push(30);
 
-  return tails.length;
-}
-console.log(lisLengthNLogN([10, 9, 2, 5, 3, 7, 101, 18])); // 4
-function lis(a: number[]): number[] {
-  const n = a.length;
-  if (n === 0) return [];
+console.log(stack.size());  // 3
+console.log(stack.peek());  // 30
 
-  const tails: { val: number; idx: number }[] = [];
-  const prev: number[] = new Array(n).fill(-1);
+console.log(stack.pop());   // 30
+console.log(stack.pop());   // 20
+console.log(stack.isEmpty()); // false
 
-  for (let i = 0; i < n; i++) {
-    const x = a[i];
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid].val < x) left = mid + 1;
-      else right = mid;
-    }
-
-    const idx = left > 0 ? tails[left - 1].idx : -1;
-    prev[i] = idx;
-
-    const entry = { val: x, idx: i };
-    if (left === tails.length) tails.push(entry);
-    else tails[left] = entry; // keep minimal tail
-  }
-
-  // Reconstruct sequence
-  const seq: number[] = [];
-  let curr = tails[tails.length - 1].idx;
-  while (curr !== -1) {
-    seq.push(a[curr]);
-    curr = prev[curr];
-  }
-  return seq.reverse();
-}
-
-console.log(lis([10, 9, 2, 5, 3, 7, 101, 18])); // [2, 3, 7, 101]
-const arr = Array.from({ length: 200_000 }, (_, i) => Math.floor(Math.random() * 1_000_000));
-
-console.time('DP');
-lisLengthDP(arr);
-console.timeEnd('DP');
-
-console.time('NlogN');
-lisLengthNLogN(arr);
-console.timeEnd('NlogN');
+stack.clear();
+console.log(stack.isEmpty()); // true
