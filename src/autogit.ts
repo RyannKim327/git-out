@@ -1,55 +1,47 @@
 /**
- * A classic LIFO stack backed by an array.
- * @template T The type stored in the stack.
+ * Return the median of two sorted arrays (ascending order).
+ *
+ * @param nums1 first sorted array
+ * @param nums2 second sorted array
+ * @return median value (number or natural fractional)
  */
-export class Stack<T> {
-  // The internal storage array – keep it private.
-  private items: T[] = [];
+export function medianOfTwoSortedArrays(nums1: number[], nums2: number[]): number {
+  const [A, B] = nums1.length <= nums2.length ? [nums1, nums2] : [nums2, nums1];
+  const m = A.length, n = B.length;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  /** Push a value onto the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
+  // Binary‑search over A to find the correct partition
+  let low = 0, high = m;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);          // partition of A
+    const j = halfLen - i;                           // partition of B
+
+    const Aleft  = i === 0 ? Number.NEGATIVE_INFINITY : A[i - 1];
+    const Aright = i === m ? Number.POSITIVE_INFINITY : A[i];
+    const Bleft  = j === 0 ? Number.NEGATIVE_INFINITY : B[j - 1];
+    const Bright = j === n ? Number.POSITIVE_INFINITY : B[j];
+
+    // Correct partition?
+    if (Aleft <= Bright && Bleft <= Aright) {
+      // Odd combined length → median is max(left side)
+      // Even combined length → median is average of max(left) and min(right)
+      if ((m + n) % 2 === 1) {
+        return Math.max(Aleft, Bleft);
+      } else {
+        return (Math.max(Aleft, Bleft) + Math.min(Aright, Bright)) / 2;
+      }
+    } else if (Aleft > Bright) {
+      // Need to move left in A
+      high = i - 1;
+    } else {
+      // Need to move right in A
+      low = i + 1;
+    }
   }
 
-  /** Remove and return the top value. Returns undefined if the stack is empty. */
-  pop(): T | undefined {
-    return this.items.pop();
-  }
-
-  /** Return the top value without removing it. */
-  peek(): T | undefined {
-    return this.items[this.items.length - 1];
-  }
-
-  /** Return how many items are currently in the stack. */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Simple truthy check for emptiness. */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** (Optional) Clear all items from the stack. */
-  clear(): void {
-    this.items.length = 0; // Fastest way to empty an array
-  }
+  throw new Error("Inputs are not sorted or arrays are empty");
 }
-import { Stack } from './Stack';
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
 
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.size());  // 3
-console.log(stack.peek());  // 30
-
-console.log(stack.pop());   // 30
-console.log(stack.pop());   // 20
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+console.log(medianOfTwoSortedArrays(arr1, arr2)); // → 8
