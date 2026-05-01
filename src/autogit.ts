@@ -1,18 +1,40 @@
-const numbers = [12, -5, 7, 42, 3.9];
+// rock-paper-scissors.ts
+import * as readline from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
 
-// 1️⃣ Spice it up with the spread operator (`Math.max`)
-const maxUsingMath = Math.max(...numbers);
-console.log('maxUsingMath →', maxUsingMath); // 42
+const rl = readline.createInterface({
+  input: stdin,
+  output: stdout,
+});
 
-// 2️⃣ Stack‑overflow‑safe – you don’t want to blow the argument limit
-const maxUsingReduce = numbers.reduce((max, n) => (n > max ? n : max), -Infinity);
-console.log('maxUsingReduce →', maxUsingReduce); // 42
+async function play() {
+  console.log('Rock, Paper, Scissors!');
+  const human = (await rl.question('Your move (rock/paper/scissors): ')).trim().toLowerCase();
 
-// 3️⃣ Old‑school loop (great for huge arrays)
-let maxOldSchool = -Infinity;
-for (const n of numbers) {
-  if (n > maxOldSchool) maxOldSchool = n;
+  const options = ['rock', 'paper', 'scissors'] as const;
+  const comp = options[Math.floor(Math.random() * options.length)];
+
+  console.log(`\nComputer chose: ${comp}\n`);
+
+  const result =
+    human === comp
+      ? "It's a tie."
+      : (human === 'rock' && comp === 'scissors') ||
+        (human === 'paper' && comp === 'rock') ||
+        (human === 'scissors' && comp === 'paper')
+      ? 'You win!'
+      : 'You lose!';
+
+  console.log(result);
+  rl.close();
 }
-console.log('maxOldSchool →', maxOldSchool); // 42
-const bigNumbers = new Float64Array([1.5, 2.3, 0.0, 9.1]);
-const maxFloat = Math.max(...bigNumbers); // works, but may still hit the limit
+
+play();
+# 1. Install TypeScript locally (if you haven’t already)
+npm install -D typescript
+
+# 2. Compile the file
+npx tsc rock-paper-scissors.ts --lib es2023,dom
+
+# 3. Execute the compiled JS
+node rock-paper-scissors.js
