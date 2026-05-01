@@ -1,96 +1,55 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
+/**
+ * A classic LIFO stack backed by an array.
+ * @template T The type stored in the stack.
+ */
+export class Stack<T> {
+  // The internal storage array – keep it private.
+  private items: T[] = [];
 
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
-
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
-}
-
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
-
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
-
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
-      }
-    }
-
-    // Stop early if nothing changed
-    if (!updated) break;
+  /** Push a value onto the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
-    }
+  /** Remove and return the top value. Returns undefined if the stack is empty. */
+  pop(): T | undefined {
+    return this.items.pop();
   }
 
-  return { dist, prev, hasNegativeCycle };
-}
-
-/* ---------- 3️⃣  Example usage ------------------------------------ */
-
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
-
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
+  /** Return the top value without removing it. */
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
   }
-  return path;
-}
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+  /** Return how many items are currently in the stack. */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Simple truthy check for emptiness. */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** (Optional) Clear all items from the stack. */
+  clear(): void {
+    this.items.length = 0; // Fastest way to empty an array
+  }
+}
+import { Stack } from './Stack';
+
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.size());  // 3
+console.log(stack.peek());  // 30
+
+console.log(stack.pop());   // 30
+console.log(stack.pop());   // 20
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
