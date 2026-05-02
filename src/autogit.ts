@@ -1,96 +1,73 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
-
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
-
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
+// ── List node -----------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+// ── Intersection finder ------------------------------------
+function intersect<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
+  // 1. Count nodes in each list
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
 
-  dist[source] = 0;
-
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
-
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
-      }
-    }
-
-    // Stop early if nothing changed
-    if (!updated) break;
+  // 2. Make the heads point to the same distance from the end
+  let ptrA: ListNode<T> | null = headA;
+  let ptrB: ListNode<T> | null = headB;
+  if (lenA > lenB) {
+    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
+  } else {
+    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
   }
 
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
-    }
+  // 3. Move together until we hit the common node (by reference)
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA;
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
   }
 
-  return { dist, prev, hasNegativeCycle };
+  return null;          // no intersection
 }
 
-/* ---------- 3️⃣  Example usage ------------------------------------ */
-
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
-
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+  while (cur) {
+    ++len;
+    cur = cur.next;
   }
-  return path;
+  return len;
 }
+// shared tail: 5 → 6
+const tail = new ListNode(5, new ListNode(6));
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+// list A: 1 → 2 → 3 → (shared)
+const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
+
+// list B: 9 → (shared)
+const b = new ListNode(9, tail);
+
+const intersectNode = intersect(a, b);
+console.log(intersectNode?.val); // 5
+function intersectUsingSet<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;
+    cur = cur.next;
+  }
+  return null;
+}
