@@ -1,32 +1,16 @@
 /**
- * Count how many times a whole word appears in a text.
+ * Returns the mean (average) of a numeric array.
  *
- * @param text   The text to search in.
- * @param word   The word you’re looking for.
- * @param caseSensitive Set to `true` if you want case‑sensitive matches.
- * @returns The number of non‑overlapping occurrences.
+ * @param values – an array of numbers
+ * @returns the arithmetic mean, or NaN if the array is empty
  */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  caseSensitive: boolean = false
-): number {
-  // Escape any regex metacharacters that could be in the word.
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function mean(values: readonly number[]): number {
+  if (values.length === 0) return NaN;
 
-  // Build a regex that matches the word with word‑boundaries.
-  // \b ensures we don’t count “the” inside “there”.
-  const flags = caseSensitive ? 'g' : 'gi';
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  const total = values.reduce((sum, v) => sum + v, 0);
+  return total / values.length;
+}
+const scores = [78, 92, 85, 67, 90];
+console.log(mean(scores)); // → 84.4
 
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
-}
-console.log(countWordOccurrences('Hello world, hello again.', 'hello')); // 2
-console.log(countWordOccurrences('Batman & batman! Batman?', 'batman')); // 1 (case‑sensitive)
-console.log(countWordOccurrences('The cat in the cathedral.', 'cat')); // 2
-function countBySplit(text: string, word: string, caseSensitive = false) {
-  const flags = caseSensitive ? '' : 'i';
-  const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, flags);
-  return text.split(regex).length - 1;
-}
+console.log(mean([])); // → NaN
