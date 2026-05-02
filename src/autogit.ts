@@ -1,92 +1,81 @@
 /**
- * Longest Increasing Subsequence – O(n²) DP
- * @param a   input array of numbers
- * @returns   length of LIS
+ * A very generic tree node interface.
+ * `children` can be empty, allowing the node to be a leaf.
  */
-function lisLengthDP(a: number[]): number {
-  const n = a.length;
-  if (n === 0) return 0;
+interface TreeNode<T = unknown> {
+  /** Whatever payload you want to store. */
+  value: T
 
-  const dp = new Array(n).fill(1);   // each element itself
+  /** Children of this node – an empty array represents a leaf. */
+  children?: TreeNode<T>[]
+}
 
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
+/**
+ * Depth‑Limited Search (DFS) – recursive version.
+ *
+ * @param root   The node from which the search starts.
+ * @param target A predicate that decides whether the node we are looking for
+ *               was found.
+ * @param limit  The maximum depth (0 → only the root, 1 → root + its children, …).
+ * @param depth  Current depth – the caller should omit it.
+ * @returns The first matching node, or undefined if none is found within the limit.
+ */
+export function depthLimitedSearchRecursive<T>(
+  root: TreeNode<T>,
+  target: (node: TreeNode<T>) => boolean,
+  limit: number,
+  depth = 0
+): TreeNode<T> | undefined {
+  // If the depth exceeds the limit, stop exploring this branch
+  if (depth > limit) return undefined
+
+  if (target(root)) return root
+
+  if (!root.children) return undefined
+
+  for (const child of root.children) {
+    const hit = depthLimitedSearchRecursive(child, target, limit, depth + 1)
+    if (hit) return hit
+  }
+
+  return undefined
+}
+export function depthLimitedSearch<T>(
+  root: TreeNode<T>,
+  target: (node: TreeNode<T>) => boolean,
+  limit: number
+): TreeNode<T> | undefined {
+  // Stack entries hold the node and its depth
+  type StackEntry = { node: TreeNode<T>; depth: number }
+  const stack: StackEntry[] = [{ node: root, depth: 0 }]
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!
+
+    if (target(node)) return node
+    if (depth === limit) continue           // don't push children deeper than the limit
+
+    // push children in reverse order so that the leftmost child is processed first
+    if (node.children) {
+      for (let i = node.children.length - 1; i >= 0; i--) {
+        stack.push({ node: node.children[i], depth: depth + 1 })
       }
     }
   }
 
-  return Math.max(...dp);
+  return undefined
 }
-console.log(lisLengthDP([10, 9, 2, 5, 3, 7, 101, 18])); // 4  (2,3,7,101)
-/**
- * Longest Increasing Subsequence – O(n log n)
- * @param a   input array of numbers
- * @returns   length of LIS
- */
-function lisLengthNLogN(a: number[]): number {
-  const tails: number[] = [];
-
-  for (const x of a) {
-    // Binary search: find the first index in tails where tails[idx] >= x
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    // left is the position to replace
-    tails[left] = x;
-  }
-
-  return tails.length;
-}
-console.log(lisLengthNLogN([10, 9, 2, 5, 3, 7, 101, 18])); // 4
-function lis(a: number[]): number[] {
-  const n = a.length;
-  if (n === 0) return [];
-
-  const tails: { val: number; idx: number }[] = [];
-  const prev: number[] = new Array(n).fill(-1);
-
-  for (let i = 0; i < n; i++) {
-    const x = a[i];
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid].val < x) left = mid + 1;
-      else right = mid;
-    }
-
-    const idx = left > 0 ? tails[left - 1].idx : -1;
-    prev[i] = idx;
-
-    const entry = { val: x, idx: i };
-    if (left === tails.length) tails.push(entry);
-    else tails[left] = entry; // keep minimal tail
-  }
-
-  // Reconstruct sequence
-  const seq: number[] = [];
-  let curr = tails[tails.length - 1].idx;
-  while (curr !== -1) {
-    seq.push(a[curr]);
-    curr = prev[curr];
-  }
-  return seq.reverse();
+// Example tree (int values)
+const tree: TreeNode<number> = {
+  value: 1,
+  children: [
+    { value: 2, children: [{ value: 4 }, { value: 5 }] },
+    { value: 3, children: [{ value: 6 }, { value: 7 }] }
+  ]
 }
 
-console.log(lis([10, 9, 2, 5, 3, 7, 101, 18])); // [2, 3, 7, 101]
-const arr = Array.from({ length: 200_000 }, (_, i) => Math.floor(Math.random() * 1_000_000));
+// Find the node with value 5, but never look deeper than depth 2
+const target = (n: TreeNode<number>) => n.value === 5
+const found = depthLimitedSearch(tree, target, 2)
 
-console.time('DP');
-lisLengthDP(arr);
-console.timeEnd('DP');
-
-console.time('NlogN');
-lisLengthNLogN(arr);
-console.timeEnd('NlogN');
+console.log(found?.value)   // prints 5
