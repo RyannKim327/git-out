@@ -1,81 +1,102 @@
 /**
- * A very generic tree node interface.
- * `children` can be empty, allowing the node to be a leaf.
+ * The shift table used by BMH.
+ * Key: a character (string of length 1)
+ * Value: how many positions to move the pattern to the right
  */
-interface TreeNode<T = unknown> {
-  /** Whatever payload you want to store. */
-  value: T
-
-  /** Children of this node – an empty array represents a leaf. */
-  children?: TreeNode<T>[]
-}
+type BadCharTable = Record<string, number>;
 
 /**
- * Depth‑Limited Search (DFS) – recursive version.
+ * Build the bad‑character shift table from the pattern.
  *
- * @param root   The node from which the search starts.
- * @param target A predicate that decides whether the node we are looking for
- *               was found.
- * @param limit  The maximum depth (0 → only the root, 1 → root + its children, …).
- * @param depth  Current depth – the caller should omit it.
- * @returns The first matching node, or undefined if none is found within the limit.
+ * @param pattern – the pattern we are looking for
+ * @returns an object mapping each character to its shift value
  */
-export function depthLimitedSearchRecursive<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number,
-  depth = 0
-): TreeNode<T> | undefined {
-  // If the depth exceeds the limit, stop exploring this branch
-  if (depth > limit) return undefined
+function buildBadCharTable(pattern: string): BadCharTable {
+  const table: BadCharTable = {};
+  const lastIdx = pattern.length - 1;
 
-  if (target(root)) return root
-
-  if (!root.children) return undefined
-
-  for (const child of root.children) {
-    const hit = depthLimitedSearchRecursive(child, target, limit, depth + 1)
-    if (hit) return hit
+  // Initialize all characters to the full length (worst case)
+  for (let i = 0; i < lastIdx; i++) {
+    const c = pattern[i];
+    // The shift is the distance from the current position to the last character
+    table[c] = lastIdx - i;
   }
-
-  return undefined
+  // Characters that don't appear in the pattern keep the full length shift.
+  // (In JavaScript the property will simply be missing, which we interpret as
+  // the default value `pattern.length` later.)
+  return table;
 }
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number
-): TreeNode<T> | undefined {
-  // Stack entries hold the node and its depth
-  type StackEntry = { node: TreeNode<T>; depth: number }
-  const stack: StackEntry[] = [{ node: root, depth: 0 }]
+/**
+ * Find all indices where `pattern` occurs in `text` (0‑based).
+ *
+ * @param text – the string we’re scanning
+ * @param pattern – the pattern we’re looking for
+ * @returns an array of starting indices; empty if none
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  if (pattern.empty) return [];
+  if (pattern.length > text.length) return [];
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
+  let i = m - 1;          // index in `text` aligned with pattern's last char
 
-    if (target(node)) return node
-    if (depth === limit) continue           // don't push children deeper than the limit
+  while (i < n) {
+    // Compare pattern from right to left
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
+    }
 
-    // push children in reverse order so that the leftmost child is processed first
-    if (node.children) {
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 })
-      }
+    // Full match
+    if (j < 0) {
+      result.push(i - m + 1);
+      // Move past the matched window (next search starts after the match)
+      i += 1;
+    } else {
+      // Mismatch: determine how far we can shift
+      const badChar = text[i];
+      const shift = table[badChar] ?? m; // if missing, shift by full length
+      i += shift;
     }
   }
-
-  return undefined
+  return result;
 }
-// Example tree (int values)
-const tree: TreeNode<number> = {
-  value: 1,
-  children: [
-    { value: 2, children: [{ value: 4 }, { value: 5 }] },
-    { value: 3, children: [{ value: 6 }, { value: 7 }] }
-  ]
+/**
+ * Return the index of the first occurrence of `pattern` in `text`,
+ * or -1 if it doesn’t exist.
+ */
+export function bmhSearchFirst(text: string, pattern: string): number {
+  if (pattern.empty) return 0;
+  if (pattern.length > text.length) return -1;
+
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  let i = m - 1;
+
+  while (i < n) {
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
+    }
+    if (j < 0) {
+      return i - m + 1;
+    }
+    const badChar = text[i];
+    const shift = table[badChar] ?? m;
+    i += shift;
+  }
+  return -1;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-// Find the node with value 5, but never look deeper than depth 2
-const target = (n: TreeNode<number>) => n.value === 5
-const found = depthLimitedSearch(tree, target, 2)
+console.log(bmhSearch(text, pattern));       // [0, 7]
+console.log(bmhSearchFirst(text, pattern));  // 0
 
-console.log(found?.value)   // prints 5
+// Non‑existent pattern
+console.log(bmhSearch("hello", "world"));     // []
+console.log(bmhSearchFirst("hello", "world")); // -1
