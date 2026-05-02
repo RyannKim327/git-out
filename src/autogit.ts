@@ -1,18 +1,28 @@
-const numbers = [12, -5, 7, 42, 3.9];
+/**
+ * Convert a decimal number (base‑10) into a binary string.
+ *
+ * Works for both positive and negative integers.
+ * If you need a signed‑bit representation (e.g., 32‑bit), adjust the `bits` argument.
+ */
+function decimalToBinary(num: number, bits?: number): string {
+  // Handles NaN, Infinity, -Infinity
+  if (!Number.isFinite(num)) {
+    throw new RangeError('Input must be a finite number');
+  }
 
-// 1️⃣ Spice it up with the spread operator (`Math.max`)
-const maxUsingMath = Math.max(...numbers);
-console.log('maxUsingMath →', maxUsingMath); // 42
+  // Quick built‑in path for normal integers/small numbers
+  if (!bits) {
+    return num.toString(2);
+  }
 
-// 2️⃣ Stack‑overflow‑safe – you don’t want to blow the argument limit
-const maxUsingReduce = numbers.reduce((max, n) => (n > max ? n : max), -Infinity);
-console.log('maxUsingReduce →', maxUsingReduce); // 42
-
-// 3️⃣ Old‑school loop (great for huge arrays)
-let maxOldSchool = -Infinity;
-for (const n of numbers) {
-  if (n > maxOldSchool) maxOldSchool = n;
+  // For fixed‑width binary (two's complement)
+  // e.g., decimalToBinary(-1, 8) → "11111111"
+  const mask = (1 << bits) - 1;
+  return (num & mask).toString(2).padStart(bits, '0');
 }
-console.log('maxOldSchool →', maxOldSchool); // 42
-const bigNumbers = new Float64Array([1.5, 2.3, 0.0, 9.1]);
-const maxFloat = Math.max(...bigNumbers); // works, but may still hit the limit
+
+/* Examples */
+console.log(decimalToBinary(10));           // "1010"
+console.log(decimalToBinary(-5));          // "-101"
+// 8‑bit representation
+console.log(decimalToBinary(-5, 8));        // "11111011"
