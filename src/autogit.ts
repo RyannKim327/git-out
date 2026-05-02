@@ -1,49 +1,78 @@
-/**
- * Checks if an array of numbers is in ascending order.
- */
-function isSorted(arr: number[]): boolean {
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i - 1] > arr[i]) return false;
-  }
-  return true;
+// ───────────────────── Graph Types ───────────────────────────────────────
+type NodeId = string | number;          // anything that can be compared with ===
+interface AdjList {
+  // nodeId -> array of neighbor nodeIds
+  [key: string]: NodeId[];
 }
 
-/**
- * Randomly shuffles an array in place using Fisher‑Yates.
- */
-function shuffleInPlace<T>(arr: T[]): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
+// ───────────────────── BFS Implementation ────────────────────────────────
+function bfs(
+  graph: AdjList,
+  start: NodeId,
+  visit: (node: NodeId) => void = () => {}
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
 
-/**
- * A “random sort”—shuffle until the array is sorted.
- *
- * The function is deliberately small and intentionally slow.
- * Good for teaching randomness, not for production work.
- */
-export function completelyRandomSort<T extends number>(arr: T[]): T[] {
-  // Work on a copy so the original stays untouched.
-  const working = [...arr];
+  visited.add(start);
+  queue.push(start);
 
-  // Keep an iteration counter for demonstration.
-  let attempts = 0;
+  while (queue.length > 0) {
+    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
 
-  // Guard against accidentally running forever on empty or single‑element arrays.
-  if (working.length <= 1) return working;
+    visit(current);        // optional callback that may do whatever you want
+    order.push(current);
 
-  while (!isSorted(working)) {
-    shuffleInPlace(working);
-    attempts++;
-    // Optional: print progress every 1000 attempts (comment this out in tight loops).
-    // if (attempts % 1000 === 0) console.log(`Still sorting… attempt #${attempts}`);
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        queue.push(neigh);
+      }
+    }
   }
 
-  console.log(`Sorted after ${attempts} random shuffles!`);
-  return working;
+  return order;           // return traversal order if you need it
 }
-const data = [42, 7, 13, 2, 27];
-const sorted = completelyRandomSort(data);
-console.log(sorted); // → [2, 7, 13, 27, 42]
+
+// ───────────────────── Example Usage ──────────────────────────────────────
+const exampleGraph: AdjList = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
+
+const traversal = bfs(exampleGraph, 'A');
+console.log('BFS order:', traversal);
+// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+
+// If you only care about distances from the start node:
+function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
+  const distances = new Map<NodeId, number>();
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+
+  visited.add(start);
+  distances.set(start, 0);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        distances.set(neigh, distances.get(current)! + 1);
+        queue.push(neigh);
+      }
+    }
+  }
+
+  return distances;
+}
+
+const dists = bfsDistances(exampleGraph, 'A');
+console.log('Distances from A:', Object.fromEntries(dists.entries()));
+// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
