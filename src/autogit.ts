@@ -1,87 +1,96 @@
-type Comparator<K> = (a: K, b: K) => number; // <0 a<b, 0 a==b, >0 a>b
-class BTreeNode<K> {
-  keys: K[] = [];
-  children: BTreeNode<K>[] = [];
-  leaf: boolean;
+/* ---------- 1️⃣  Types & helpers ------------------------------------ */
 
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
+type Edge = {
+  /** source vertex */
+  u: number;
+  /** destination vertex */
+  v: number;
+  /** edge weight */
+  w: number;
+};
+
+interface Result {
+  /** distance from the source to every vertex */
+  dist: number[];
+  /** immediately‑prev vertex on the shortest path, or null if unreachable */
+  prev: (number | null)[];
+  /** did we spot a negative‑weight cycle? */
+  hasNegativeCycle: boolean;
 }
-export class BTree<K> {
-  private root!: BTreeNode<K>;
-  private readonly t: number;              // minimum degree
-  private readonly cmp: Comparator<K>;
 
-  constructor(t: number, cmp: Comparator<K>) {
-    if (t < 2) throw new Error('BTree minimum degree must be at least 2');
-    this.t = t;
-    this.cmp = cmp;
-    this.root = new BTreeNode<K>(true);
-  }
-  search(key: K, node?: BTreeNode<K>): BTreeNode<K> | null {
-    node ??= this.root;
-    let i = 0;
-    while (i < node.keys.length && this.cmp(key, node.keys[i]) > 0) i++;
+/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
 
-    if (i < node.keys.length && this.cmp(key, node.keys[i]) === 0) {
-      return node;                                       // found
-    }
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): Result {
+  const dist = new Array<number>(vertexCount).fill(Infinity);
+  const prev = new Array<number | null>(vertexCount).fill(null);
 
-    if (node.leaf) return null;                          // not found
-    return this.search(key, node.children[i]);           // recurse
-  }
-  private splitChild(x: BTreeNode<K>, i: number): void {
-    const y = x.children[i];
-    const z = new BTreeNode<K>(y.leaf);
-    const t = this.t;
+  dist[source] = 0;
 
-    // Transfer the upper half of y's keys to z
-    z.keys = y.keys.splice(t, t - 1);
+  // 1️⃣ Relaxes every edge V‑1 times
+  for (let iter = 0; iter < vertexCount - 1; ++iter) {
+    let updated = false;
 
-    // If y is not a leaf, pull the corresponding children
-    if (!y.leaf) {
-      z.children = y.children.splice(t, t);
-    }
-
-    // Insert z as y's sibling
-    x.children.splice(i + 1, 0, z);
-    // Move y's median key up into x
-    x.keys.splice(i, 0, y.keys.splice(t - 1, 1)[0]!);
-  }
-  insert(key: K): void {
-    const r = this.root;
-    if (r.keys.length === 2 * this.t - 1) {           // root full → split
-      const s = new BTreeNode<K>(false);
-      s.children.push(r);
-      this.splitChild(s, 0);
-      this.root = s;
-      this._insertNonFull(s, key);
-    } else {
-      this._insertNonFull(r, key);
-    }
-  }
-
-  private _insertNonFull(x: BTreeNode<K>, key: K): void {
-    let i = x.keys.length - 1;
-    if (x.leaf) {                                    // insert directly
-      // Find slot for key
-      while (i >= 0 && this.cmp(key, x.keys[i]) < 0) i--;
-      x.keys.splice(i + 1, 0, key);
-    } else {                                          // descend
-      while (i >= 0 && this.cmp(key, x.keys[i]) < 0) i--;
-      i++;                                            // child index
-      const child = x.children[i];
-      if (child.keys.length === 2 * this.t - 1) {     // full child → split
-        this.splitChild(x, i);
-        if (this.cmp(key, x.keys[i]) > 0) i++;        // key goes right of median
+    for (const { u, v, w } of edges) {
+      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        updated = true;
       }
-      this._insertNonFull(x.children[i], key);
+    }
+
+    // Stop early if nothing changed
+    if (!updated) break;
+  }
+
+  // 2️⃣ Detect negative‑weight cycles:
+  let hasNegativeCycle = false;
+  for (const { u, v, w } of edges) {
+    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      break;
     }
   }
-const cmp = (a: number, b: number) => a - b;
-const tree = new BTree<number>(3, cmp);          // t = 3, 2t‑1 = 5 keys per node
 
-[10, 20, 5, 6, 12, 30, 7, 17].forEach(k => tree.insert(k));
+  return { dist, prev, hasNegativeCycle };
+}
 
-console.log(tree.search(6));   // node containing 
+/* ---------- 3️⃣  Example usage ------------------------------------ */
+
+const edges: Edge[] = [
+  { u: 0, v: 1, w: 4 },
+  { u: 0, v: 2, w: 5 },
+  { u: 1, v: 2, w: -3 },
+  { u: 1, v: 3, w: 2 },
+  { u: 2, v: 3, w: 4 },
+  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
+];
+
+const vertexCount = 4;
+const source = 0;
+
+const result = bellmanFord(vertexCount, edges, source);
+
+console.log('Distances:', result.dist);
+console.log('Prev:' , result.prev);
+console.log(
+  'Negative cycle detected:',
+  result.hasNegativeCycle ? 'Yes' : 'No'
+);
+
+// If you want to reconstruct a path to a target vertex:
+function reconstructPath(prev: (number | null)[], target: number) {
+  const path: number[] = [];
+  let current: number | null = target;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = prev[current];
+  }
+  return path;
+}
+
+console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
