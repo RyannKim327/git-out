@@ -1,62 +1,38 @@
 /**
- * Generic Shell Sort.
- *
- * @param arr   The array to sort in‑place.
- * @param cmp   Optional comparator.  Returns a negative number if a < b,
- *              zero if a == b, positive if a > b.
- * @returns     The sorted array (same reference as input).
- *
- * @example
- *   const nums = [9, 5, 1, 4, 3];
- *   shellSort(nums);          // [1,3,4,5,9]
- *
- *   const nameList = ['Zoe', 'Alice', 'Bob'];
- *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
+ * Counting sort for an array of non‑negative integers.
+ * @param arr - The array to sort.
+ * @param maxVal - (Optional) Max value in the input. If omitted, it’s derived from the data.
+ * @returns a new sorted array.
  */
-function shellSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+export function countingSort(arr: number[], maxVal?: number): number[] {
+  if (arr.length === 0) return [];
 
-  // Default comparator uses JavaScript's < and > operators.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+  // 1️⃣ Determine the maximum value (or use the supplied one)
+  const max = maxVal ?? Math.max(...arr);
 
-  // Classic Shell sequence: n/2, n/4, …, 1
-  let gap = Math.floor(len / 2);
-  while (gap > 0) {
-    // For each shift positions, perform an insertion sort on the sub‑array
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-
-      // Shift elements of the sub‑array that are greater than temp
-      // rightward by one position.
-      while (j >= gap && compare(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-
-      arr[j] = temp;
-    }
-
-    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
+  // 2️⃣ Frequency table
+  const count: number[] = new Array(max + 1).fill(0);
+  for (const num of arr) {
+    if (num < 0) throw new Error('Counting sort in this version expects non‑negative numbers');
+    count[num] += 1;
   }
 
-  return arr;
+  // 3️⃣ Build the result
+  const result: number[] = [];
+  for (let value = 0; value <= max; value++) {
+    const qty = count[value];
+    for (let i = 0; i < qty; i++) {
+      result.push(value);
+    }
+  }
+
+  return result;
 }
-const data = [22, 45, 12, 8, 4, 30, 6];
-console.log('Before:', data);
+import { countingSort } from './countingSort';
 
-shellSort(data);
-
-console.log('After:', data);
-Before: [22,45,12,8,4,30,6]
-After: [4,6,8,12,22,30,45]
+const data = [12, 4, 1, 12, 7, 7, 4, 4, 0];
+const sorted = countingSort(data);
+console.log(sorted); // [0, 1, 4, 4, 4, 7, 7, 12, 12]
+if (data.reduce((acc, cur, i) => acc && cur >= data[i - 1], true)) {
+  return data.slice();
+}
