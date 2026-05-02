@@ -1,36 +1,33 @@
-/**
- * Is `s` a palindrome?
- *
- * @param s           – the string to test
- * @param options     – optional tweaks:
- *          ignoreCase    – true → 'A' and 'a' are the same
- *          ignoreSpaces  – true → ' ' are ignored
- *          ignoreNonAlnum – true → anything that doesn’t match /[A-Za-z0-9]/ is dropped
- */
-function isPalindrome(
-    s: string,
-    options: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-    let { ignoreCase, ignoreSpaces, ignoreNonAlnum } = options;
+// Node >=18 or any modern browser
+// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
 
-    // 1. Normalise
-    if (ignoreCase) s = s.toLowerCase();
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-    // 2. Strip unwanted characters
-    if (ignoreSpaces) s = s.replace(/\s+/g, '');
-    if (ignoreNonAlnum) s = s.replace(/[^a-z0-9]/gi, '');
+async function fetchPost(id = 1): Promise<Post> {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
 
-    // 3. Compare to its reverse
-    const rev = s.split('').reverse().join('');
-    return s === rev;
+  if (!res.ok) {
+    // Throwing includes the HTTP status for downstream handling
+    throw new Error(`Unexpected status ${res.status}`);
+  }
+
+  // Telling TS that the JSON shapes like our Post type
+  const data = await res.json() as Post;
+  return data;
 }
-console.log(isPalindrome("radar"));                 // true
-console.log(isPalindrome("Radar"));                 // false
-console.log(isPalindrome("Radar", { ignoreCase: true })); // true
 
-console.log(isPalindrome("A man, a plan, a canal: Panama",
-                          { ignoreCase: true, ignoreNonAlnum: true })); // true
-function isPlainPalindrome(s: string): boolean {
-    const rev = s.split('').reverse().join('');
-    return s === rev;
-}
+(async () => {
+  try {
+    const post = await fetchPost(42);  // change the ID if you like
+    console.log('🚀 Post fetched:');
+    console.log(`Title: ${post.title}`);
+    console.log(`Body: ${post.body.slice(0, 70)}…`);
+  } catch (err) {
+    console.error('❌ Fetch failed:', err);
+  }
+})();
