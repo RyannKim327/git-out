@@ -1,92 +1,36 @@
 /**
- * Longest Increasing Subsequence – O(n²) DP
- * @param a   input array of numbers
- * @returns   length of LIS
+ * Is `s` a palindrome?
+ *
+ * @param s           – the string to test
+ * @param options     – optional tweaks:
+ *          ignoreCase    – true → 'A' and 'a' are the same
+ *          ignoreSpaces  – true → ' ' are ignored
+ *          ignoreNonAlnum – true → anything that doesn’t match /[A-Za-z0-9]/ is dropped
  */
-function lisLengthDP(a: number[]): number {
-  const n = a.length;
-  if (n === 0) return 0;
+function isPalindrome(
+    s: string,
+    options: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+    let { ignoreCase, ignoreSpaces, ignoreNonAlnum } = options;
 
-  const dp = new Array(n).fill(1);   // each element itself
+    // 1. Normalise
+    if (ignoreCase) s = s.toLowerCase();
 
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-      }
-    }
-  }
+    // 2. Strip unwanted characters
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignoreNonAlnum) s = s.replace(/[^a-z0-9]/gi, '');
 
-  return Math.max(...dp);
+    // 3. Compare to its reverse
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
-console.log(lisLengthDP([10, 9, 2, 5, 3, 7, 101, 18])); // 4  (2,3,7,101)
-/**
- * Longest Increasing Subsequence – O(n log n)
- * @param a   input array of numbers
- * @returns   length of LIS
- */
-function lisLengthNLogN(a: number[]): number {
-  const tails: number[] = [];
+console.log(isPalindrome("radar"));                 // true
+console.log(isPalindrome("Radar"));                 // false
+console.log(isPalindrome("Radar", { ignoreCase: true })); // true
 
-  for (const x of a) {
-    // Binary search: find the first index in tails where tails[idx] >= x
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    // left is the position to replace
-    tails[left] = x;
-  }
-
-  return tails.length;
+console.log(isPalindrome("A man, a plan, a canal: Panama",
+                          { ignoreCase: true, ignoreNonAlnum: true })); // true
+function isPlainPalindrome(s: string): boolean {
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
-console.log(lisLengthNLogN([10, 9, 2, 5, 3, 7, 101, 18])); // 4
-function lis(a: number[]): number[] {
-  const n = a.length;
-  if (n === 0) return [];
-
-  const tails: { val: number; idx: number }[] = [];
-  const prev: number[] = new Array(n).fill(-1);
-
-  for (let i = 0; i < n; i++) {
-    const x = a[i];
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid].val < x) left = mid + 1;
-      else right = mid;
-    }
-
-    const idx = left > 0 ? tails[left - 1].idx : -1;
-    prev[i] = idx;
-
-    const entry = { val: x, idx: i };
-    if (left === tails.length) tails.push(entry);
-    else tails[left] = entry; // keep minimal tail
-  }
-
-  // Reconstruct sequence
-  const seq: number[] = [];
-  let curr = tails[tails.length - 1].idx;
-  while (curr !== -1) {
-    seq.push(a[curr]);
-    curr = prev[curr];
-  }
-  return seq.reverse();
-}
-
-console.log(lis([10, 9, 2, 5, 3, 7, 101, 18])); // [2, 3, 7, 101]
-const arr = Array.from({ length: 200_000 }, (_, i) => Math.floor(Math.random() * 1_000_000));
-
-console.time('DP');
-lisLengthDP(arr);
-console.timeEnd('DP');
-
-console.time('NlogN');
-lisLengthNLogN(arr);
-console.timeEnd('NlogN');
