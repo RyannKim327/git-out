@@ -1,16 +1,46 @@
-/**
- * Returns the mean (average) of a numeric array.
- *
- * @param values – an array of numbers
- * @returns the arithmetic mean, or NaN if the array is empty
- */
-function mean(values: readonly number[]): number {
-  if (values.length === 0) return NaN;
+type AnagramOpts = {
+  /** treat 'A' the same as 'a' */
+  caseSensitive?: boolean;
+  /** ignore all whitespace (spaces, tabs, newlines) */
+  ignoreSpaces?: boolean;
+};
 
-  const total = values.reduce((sum, v) => sum + v, 0);
-  return total / values.length;
+function areAnagrams(a: string, b: string, opts?: AnagramOpts): boolean {
+  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
+
+  // Helper to clean a string according to the options
+  const clean = (s: string) =>
+    (!caseSensitive ? s.toLowerCase() : s)
+      .split('')
+      .filter(ch => !(ignoreSpaces && /\s/.test(ch)))
+      .sort()   // sort alphabetically
+      .join('');
+
+  return clean(a) === clean(b);
 }
-const scores = [78, 92, 85, 67, 90];
-console.log(mean(scores)); // → 84.4
+console.log(areAnagrams('Listen', 'Silent'));          // true (case‑insensitive)
+console.log(areAnagrams('Listen', 'Silent', {caseSensitive: true})); // false
+console.log(areAnagrams('conversation', 'voices rant on', {ignoreSpaces: true})); // true
+function areAnagramsFast(a: string, b: string, opts?: AnagramOpts): boolean {
+  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
 
-console.log(mean([])); // → NaN
+  const buildMap = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = (!caseSensitive ? ch.toLowerCase() : ch);
+      if (ignoreSpaces && /\s/.test(key)) continue;
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return map;
+  };
+
+  const mapA = buildMap(a);
+  const mapB = buildMap(b);
+
+  if (mapA.size !== mapB.size) return false;
+
+  for (const [k, v] of mapA.entries()) {
+    if (mapB.get(k) !== v) return false;
+  }
+  return true;
+}
