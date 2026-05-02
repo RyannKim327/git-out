@@ -1,36 +1,16 @@
 /**
- * Is `s` a palindrome?
- *
- * @param s           – the string to test
- * @param options     – optional tweaks:
- *          ignoreCase    – true → 'A' and 'a' are the same
- *          ignoreSpaces  – true → ' ' are ignored
- *          ignoreNonAlnum – true → anything that doesn’t match /[A-Za-z0-9]/ is dropped
+ * Return a random integer between `min` and `max`, inclusive.
  */
-function isPalindrome(
-    s: string,
-    options: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean } = {}
-): boolean {
-    let { ignoreCase, ignoreSpaces, ignoreNonAlnum } = options;
-
-    // 1. Normalise
-    if (ignoreCase) s = s.toLowerCase();
-
-    // 2. Strip unwanted characters
-    if (ignoreSpaces) s = s.replace(/\s+/g, '');
-    if (ignoreNonAlnum) s = s.replace(/[^a-z0-9]/gi, '');
-
-    // 3. Compare to its reverse
-    const rev = s.split('').reverse().join('');
-    return s === rev;
+function randomInt(min: number, max: number): number {
+  // Math.random() → [0, 1)
+  // Multiply by (max - min + 1) → [0, max - min + 1)
+  // floor to get an integer in [0, max - min]
+  // Shift by min to get the desired range
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-console.log(isPalindrome("radar"));                 // true
-console.log(isPalindrome("Radar"));                 // false
-console.log(isPalindrome("Radar", { ignoreCase: true })); // true
 
-console.log(isPalindrome("A man, a plan, a canal: Panama",
-                          { ignoreCase: true, ignoreNonAlnum: true })); // true
-function isPlainPalindrome(s: string): boolean {
-    const rev = s.split('').reverse().join('');
-    return s === rev;
+/* Example */
+console.log(randomInt(5, 15)); // might print 7, 12, 15, …
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min; // [min, max)
 }
