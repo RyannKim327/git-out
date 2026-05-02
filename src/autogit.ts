@@ -1,119 +1,51 @@
-/* ---------- Node ---------------------------------------------------------------- */
-export interface TrieNode {
-  /** true when this node represents the last letter of a stored word */
-  isWord: boolean;
-  /** arbitrary data that you may associate with a complete word */
-  value?: any; // ≡ string | number | …, keep it generic
-  /** mapping of next characters → child node */
-  children: Map<string, TrieNode>;
-}
+// Basic node definition – feel free to swap in your own
+class TreeNode<T = number> {
+  val: T
+  left: TreeNode<T> | null = null
+  right: TreeNode<T> | null = null
 
-/* ---------- Builder ---------------------------------------------------------------- */
-export class Trie {
-  readonly root: TrieNode;
-
-  constructor() {
-    this.root = { isWord: false, children: new Map() };
-  }
-
-  /* ----- basic helpers ----------------------------------------------------------- */
-
-  /** adds a word to the trie, optionally tagging it with a value */
-  insert(word: string, value?: any): void {
-    let node = this.root;
-    for (const ch of word) {
-      let next = node.children.get(ch);
-      if (!next) {
-        next = { isWord: false, children: new Map() };
-        node.children.set(ch, next);
-      }
-      node = next;
-    }
-    node.isWord = true;
-    node.value = value;
-  }
-
-  /** true if the exact word exists */
-  search(word: string): boolean {
-    return this._findNode(word)?.isWord ?? false;
-  }
-
-  /** true if any word starts with this prefix */
-  startsWith(prefix: string): boolean {
-    return this._findNode(prefix) !== undefined;
-  }
-
-  /** returns the node that matches the longest shared prefix; undefined if none match */
-  private _findNode(str: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of str) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /* ----- advanced helpers ------------------------------------------------------- */
-
-  /** returns the value stored for a word, if any */
-  get(word: string): any | undefined {
-    return this._findNode(word)?.value;
-  }
-
-  /** removes a word, optionally cleaning up orphaned nodes */
-  delete(word: string): boolean {
-    // stack will hold (node, charFromParent) pairs so we can backtrack
-    const stack: Array<[TrieNode, string]> = [];
-    let node = this.root;
-
-    for (const ch of word) {
-      const next = node.children.get(ch);
-      if (!next) return false; // word not found
-      stack.push([node, ch]);
-      node = next;
-    }
-
-    if (!node.isWord) return false; // word not found as a complete entry
-
-    node.isWord = false;
-    node.value = undefined;
-
-    /* prune nodes that became useless (no children and not a word) */
-    for (let i = stack.length - 1; i >= 0; i--) {
-      const [parent, ch] = stack[i];
-      const child = parent.children.get(ch)!;
-      if (child.isWord || child.children.size) break; // can't prune further
-      parent.children.delete(ch);
-    }
-    return true;
-  }
-
-  /** yields all words that start with the given prefix, useful for auto‑complete */
-  *wordsWithPrefix(prefix: string = ''): IterableIterator<string> {
-    const node = this._findNode(prefix);
-    if (!node) return;
-
-    const stack: Array<[TrieNode, string]> = [[node, prefix]];
-
-    while (stack.length) {
-      const [cur, acc] = stack.pop()!;
-      if (cur.isWord) yield acc;
-      for (const [ch, child] of cur.children.entries()) {
-        stack.push([child, acc + ch]);
-      }
-    }
+  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
+    this.val = val
+    if (left) this.left = left
+    if (right) this.right = right
   }
 }
 
-/* ---------- Usage example -------------------------------------------------------- */
-const trie = new Trie();
-trie.insert('apple', 42);
-trie.insert('app', 7);
-trie.insert('banana');
+/**
+ * Returns the diameter of the tree rooted at `root`.
+ * If the tree is empty, the diameter is 0.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0
 
-console.log(trie.search('app')); // true
-console.log(trie.startsWith('ba')); // true
-console.log(trie.get('apple')); // 42
-for (const w of trie.wordsWithPrefix('app')) console.log(w); // app, apple
-trie.delete('app');
-console.log(trie.search('app')); // false
+  /**
+   * Helper that returns the height (in nodes) of the subtree.
+   * While unwinding recursion, we update the maximum diameter.
+   */
+  function height(node: TreeNode | null): number {
+    if (!node) return 0
+
+    const leftHeight = height(node.left)
+    const rightHeight = height(node.right)
+
+    // Path that goes through this node = leftHeight + rightHeight
+    const localDiameter = leftHeight + rightHeight
+
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter
+
+    // Height is max child height plus this node
+    return Math.max(leftHeight, rightHeight) + 1
+  }
+
+  height(root)
+  return maxDiameter   // edge‑count diameter
+}
+
+/* ---------- quick test ---------- */
+const tree = new TreeNode(
+  1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
+)
+
+console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
