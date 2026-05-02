@@ -1,78 +1,40 @@
-// ───────────────────── Graph Types ───────────────────────────────────────
-type NodeId = string | number;          // anything that can be compared with ===
-interface AdjList {
-  // nodeId -> array of neighbor nodeIds
-  [key: string]: NodeId[];
-}
+/**
+ * Compute n! recursively.
+ *
+ * Handles:
+ *   - n >= 0   → valid
+ *   - n < 0    → throws (factorial is undefined for negatives)
+ *
+ * Returns a number if the result fits in a JavaScript number,
+ * otherwise returns a BigInt to avoid overflow.
+ */
+export function factorial(n: number | bigint): number | bigint {
+  // Normalize input to a bigint for exact arithmetic
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
 
-// ───────────────────── BFS Implementation ────────────────────────────────
-function bfs(
-  graph: AdjList,
-  start: NodeId,
-  visit: (node: NodeId) => void = () => {}
-): NodeId[] {
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
-
-  visited.add(start);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
-
-    visit(current);        // optional callback that may do whatever you want
-    order.push(current);
-
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        queue.push(neigh);
-      }
-    }
+  if (bigN < 0n) {
+    throw new Error('Factorial is defined only for non‑negative integers.');
   }
 
-  return order;           // return traversal order if you need it
-}
+  // Base case: 0! = 1 and 1! = 1
+  if (bigN <= 1n) return 1n;
 
-// ───────────────────── Example Usage ──────────────────────────────────────
-const exampleGraph: AdjList = {
-  A: ['B', 'C'],
-  B: ['A', 'D', 'E'],
-  C: ['A', 'F'],
-  D: ['B'],
-  E: ['B', 'F'],
-  F: ['C', 'E'],
-};
+  // Recursive step
+  const product = bigN * factorial(bigN - 1n);
 
-const traversal = bfs(exampleGraph, 'A');
-console.log('BFS order:', traversal);
-// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
-
-// If you only care about distances from the start node:
-function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
-  const distances = new Map<NodeId, number>();
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-
-  visited.add(start);
-  distances.set(start, 0);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        distances.set(neigh, distances.get(current)! + 1);
-        queue.push(neigh);
-      }
-    }
+  // Return a standard Number when it’s mathematically safe
+  // (anything that fits within 2^53‑1).
+  if (product <= BigInt(Number.MAX_SAFE_INTEGER)) {
+    return Number(product);
   }
 
-  return distances;
+  // Otherwise keep it as a BigInt.
+  return product;
 }
+import { factorial } from './factorial';
 
-const dists = bfsDistances(exampleGraph, 'A');
-console.log('Distances from A:', Object.fromEntries(dists.entries()));
-// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
+console.log(factorial(5));   // 120          (returns a number)
+console.log(factorial(20));  // 2432902008176640000  (returns a number)
+console.log(factorial(50));  // BigInt(304140932...)
+// if you prefer a string for extremely large results:
+console.log(factorial(50).toString());
