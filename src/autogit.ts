@@ -1,79 +1,43 @@
 /**
- * Merge two sorted sub‑arrays into one sorted array.
- * `left` and `right` must already be sorted.
- * Returns a new sorted array.
+ * Returns true if n is a prime number, false otherwise.
+ *
+ * Numbers less than 2 are not prime by definition.
+ * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
+ * After that only numbers of the form 6k ± 1 can be prime.
  */
-function merge<T>(
-  left: T[],
-  right: T[],
-  compare: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0; // index for left
-  let j = 0; // index for right
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1, and negatives are not prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
 
-  while (i < left.length && j < right.length) {
-    // If left[i] <= right[j] according to the compare function,
-    // push left[i] into the result and advance i
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i]);
-      i++;
-    } else {
-      result.push(right[j]);
-      j++;
-    }
+  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
 
-  // Append any remaining elements.
-  // Only one of the following while loops will actually run.
-  while (i < left.length) {
-    result.push(left[i]);
-    i++;
-  }
-  while (j < right.length) {
-    result.push(right[j]);
-    j++;
-  }
-
-  return result;
+  return true;
 }
+[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
+  console.log(`${num} → ${isPrime(num)}`));
+1 → false
+2 → true
+3 → true
+4 → false
+5 → true
+16 → false
+17 → true
+19 → true
+20 → false
+23 → true
+24 → false
+29 → true
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-/**
- * Recursively divides the array and merges the sorted halves.
- * `compare` should return:
- *   < 0 if a < b
- *   0  if a === b
- *   > 0 if a > b
- */
-export function mergeSort<T>(
-  array: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array; // Base case: already sorted
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+  }
+  return true;
 }
-// Sort numbers
-const nums = [8, 3, 5, 1, 9, 0];
-const sortedNums = mergeSort(nums);
-// -> [0, 1, 3, 5, 8, 9]
-
-// Sort strings alphabetically
-const words = ["pear", "apple", "banana"];
-const sortedWords = mergeSort(words);
-// -> ["apple", "banana", "pear"]
-
-// Sort objects by a property
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Charlie", age: 25 },
-  { name: "Alice", age: 30 },
-  { name: "Bob", age: 20 },
-];
-
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// -> [{name:"Bob", age:20}, {name:"Charlie", age:25}, {name:"Alice", age:30}]
