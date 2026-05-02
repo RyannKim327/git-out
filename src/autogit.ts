@@ -1,43 +1,67 @@
 /**
- * Returns true if n is a prime number, false otherwise.
+ * In‑place quicksort.
  *
- * Numbers less than 2 are not prime by definition.
- * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
- * After that only numbers of the form 6k ± 1 can be prime.
+ * @param arr  The array to sort
+ * @param cmp  Optional comparator: (a,b) => number.
+ *             If omitted, the default comparison uses the built‑in
+ *             < , == , > operators (works for strings, numbers, etc.).
+ * @returns    The same array reference, now sorted
  */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1, and negatives are not prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
+export function quickSort<T>(
+    arr: T[],
+    cmp?: (a: T, b: T) => number
+): T[] {
+    // Default comparator for primitives
+    const defaultCmp = (a: T, b: T): number => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    };
 
-  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
+    const compare = cmp ?? defaultCmp;
 
-  return true;
+    // Lomuto partition: pivot is the last element
+    const partition = (lo: number, hi: number): number => {
+        const pivot = arr[hi];
+        let i = lo;            // place for the next smaller element
+        for (let j = lo; j < hi; j++) {
+            if (compare(arr[j], pivot) <= 0) {
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+                i++;
+            }
+        }
+        // put pivot in its final place
+        [arr[i], arr[hi]] = [arr[hi], arr[i]];
+        return i;
+    };
+
+    const quick = (lo: number, hi: number): void => {
+        if (lo < hi) {
+            const p = partition(lo, hi);
+            quick(lo, p - 1);
+            quick(p + 1, hi);
+        }
+    };
+
+    quick(0, arr.length - 1);
+    return arr;
 }
-[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
-  console.log(`${num} → ${isPrime(num)}`));
-1 → false
-2 → true
-3 → true
-4 → false
-5 → true
-16 → false
-17 → true
-19 → true
-20 → false
-23 → true
-24 → false
-29 → true
-export function isPrimeBigInt(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
+// Numbers – default comparison works
+const nums = [5, 3, 8, 4, 2];
+quickSort(nums);
+console.log(nums); // [2, 3, 4, 5, 8]
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
-}
+// Strings – default comparison is lexicographic
+const words = ['banana', 'apple', 'cherry'];
+quickSort(words);
+console.log(words); // ['apple', 'banana', 'cherry']
+
+// Custom comparator (descending)
+interface Person { name: string; age: number; }
+const people: Person[] = [
+    { name: 'Eve', age: 29 },
+    { name: 'Bob', age: 42 },
+    { name: 'Alice', age: 35 }
+];
+quickSort(people, (a, b) => b.age - a.age); // sort by age descending
+console.log(people);
