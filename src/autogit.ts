@@ -1,60 +1,36 @@
-// bubbleSort.ts
-
-export type Comparator<T> = (a: T, b: T) => number;
-
 /**
- * Sorts an array in place using the Bubble Sort algorithm.
+ * Is `s` a palindrome?
  *
- * @param arr    — The array to sort. It will be modified directly.
- * @param cmp    — Optional comparator. If omitted, number comparison is used.
- *
- * @returns      — The sorted array (same reference as the input).
+ * @param s           – the string to test
+ * @param options     – optional tweaks:
+ *          ignoreCase    – true → 'A' and 'a' are the same
+ *          ignoreSpaces  – true → ' ' are ignored
+ *          ignoreNonAlnum – true → anything that doesn’t match /[A-Za-z0-9]/ is dropped
  */
-export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
-  const n = arr.length;
-  if (n < 2) return arr;          // nothing to do
+function isPalindrome(
+    s: string,
+    options: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+    let { ignoreCase, ignoreSpaces, ignoreNonAlnum } = options;
 
-  // Traditional outer loop: run n‑1 passes
-  for (let pass = 0; pass < n - 1; pass++) {
-    let swapped = false;
+    // 1. Normalise
+    if (ignoreCase) s = s.toLowerCase();
 
-    // Inner loop: compare adjacent elements
-    for (let i = 0; i < n - 1 - pass; i++) {
-      if (cmp(arr[i], arr[i + 1]) > 0) {
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
-        swapped = true;
-      }
-    }
+    // 2. Strip unwanted characters
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignoreNonAlnum) s = s.replace(/[^a-z0-9]/gi, '');
 
-    // If we made no swaps this pass, the array is sorted
-    if (!swapped) break;
-  }
-
-  return arr;
+    // 3. Compare to its reverse
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
+console.log(isPalindrome("radar"));                 // true
+console.log(isPalindrome("Radar"));                 // false
+console.log(isPalindrome("Radar", { ignoreCase: true })); // true
 
-/** Default numeric comparator */
-function defaultCmp(a: number, b: number): number {
-  return a - b;
+console.log(isPalindrome("A man, a plan, a canal: Panama",
+                          { ignoreCase: true, ignoreNonAlnum: true })); // true
+function isPlainPalindrome(s: string): boolean {
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
-import { bubbleSort } from './bubbleSort';
-
-const numbers = [5, 2, 9, 1, 5, 6];
-bubbleSort(numbers);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-
-// Custom comparator – strings, case‑insensitive
-const strings = ['Banana', 'apple', 'Cherry'];
-bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(strings); // ['apple', 'Banana', 'Cherry']
-
-// Sorting objects
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Ali', age: 30 },
-  { name: 'Beth', age: 24 },
-  { name: 'Carl', age: 38 },
-];
-bubbleSort(people, (p, q) => p.age - q.age);
-console.log(people);
-// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
