@@ -1,48 +1,16 @@
 /**
- * Return the longest common prefix of an array of strings.
- *
- * @param strs - The strings to investigate.
- * @returns The common prefix (empty string if there is none, or if the array is empty).
+ * Return a random integer between `min` and `max`, inclusive.
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
-
-  // Start with the first string as the provisional prefix
-  let prefix = strs[0];
-
-  // Stop as soon as prefix becomes empty – nothing more to find
-  for (let i = 1; i < strs.length && prefix.length; i++) {
-    const current = strs[i];
-    let j = 0;
-
-    // Compare char‑by‑char until a mismatch is detected
-    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-      j++;
-    }
-
-    // Update prefix to the matched portion
-    prefix = prefix.substring(0, j);
-  }
-
-  return prefix;
+function randomInt(min: number, max: number): number {
+  // Math.random() → [0, 1)
+  // Multiply by (max - min + 1) → [0, max - min + 1)
+  // floor to get an integer in [0, max - min]
+  // Shift by min to get the desired range
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-const words = ["flower","flow","flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
 
-const mixed = ["dog","racecar","car"];
-console.log(longestCommonPrefix(mixed)); // → ""
-
-const emptyCases: string[] = [];
-console.log(longestCommonPrefix(emptyCases)); // → ""
-export function lcpVertical(strs: string[]): string {
-  if (!strs.length) return "";
-  for (let i = 0; i < strs[0].length; i++) {
-    const char = strs[0][i];
-    for (let j = 1; j < strs.length; j++) {
-      if (i >= strs[j].length || strs[j][i] !== char) {
-        return strs[0].substring(0, i);
-      }
-    }
-  }
-  return strs[0];
+/* Example */
+console.log(randomInt(5, 15)); // might print 7, 12, 15, …
+function randomFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min; // [min, max)
 }
