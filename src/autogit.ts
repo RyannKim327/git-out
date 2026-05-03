@@ -1,51 +1,33 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
+// Node >=18 or any modern browser
+// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
 
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
-  }
-}
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-/**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
- */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
+async function fetchPost(id = 1): Promise<Post> {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
 
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
-
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
-
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
-
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
+  if (!res.ok) {
+    // Throwing includes the HTTP status for downstream handling
+    throw new Error(`Unexpected status ${res.status}`);
   }
 
-  height(root)
-  return maxDiameter   // edge‑count diameter
+  // Telling TS that the JSON shapes like our Post type
+  const data = await res.json() as Post;
+  return data;
 }
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
-
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+(async () => {
+  try {
+    const post = await fetchPost(42);  // change the ID if you like
+    console.log('🚀 Post fetched:');
+    console.log(`Title: ${post.title}`);
+    console.log(`Body: ${post.body.slice(0, 70)}…`);
+  } catch (err) {
+    console.error('❌ Fetch failed:', err);
+  }
+})();
