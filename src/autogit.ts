@@ -1,48 +1,66 @@
-/**
- * Return the longest common prefix of an array of strings.
- *
- * @param strs - The strings to investigate.
- * @returns The common prefix (empty string if there is none, or if the array is empty).
- */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return "";
-
-  // Start with the first string as the provisional prefix
-  let prefix = strs[0];
-
-  // Stop as soon as prefix becomes empty – nothing more to find
-  for (let i = 1; i < strs.length && prefix.length; i++) {
-    const current = strs[i];
-    let j = 0;
-
-    // Compare char‑by‑char until a mismatch is detected
-    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
-      j++;
-    }
-
-    // Update prefix to the matched portion
-    prefix = prefix.substring(0, j);
-  }
-
-  return prefix;
+// A standard binary‑tree node definition
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-const words = ["flower","flow","flight"];
-console.log(longestCommonPrefix(words)); // → "fl"
+0                     if root is null
+1                     if root has no children
+count(left) + count(right)   otherwise
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                    // Empty tree
 
-const mixed = ["dog","racecar","car"];
-console.log(longestCommonPrefix(mixed)); // → ""
+  // No children → it’s a leaf!
+  if (!root.left && !root.right) return 1;
 
-const emptyCases: string[] = [];
-console.log(longestCommonPrefix(emptyCases)); // → ""
-export function lcpVertical(strs: string[]): string {
-  if (!strs.length) return "";
-  for (let i = 0; i < strs[0].length; i++) {
-    const char = strs[0][i];
-    for (let j = 1; j < strs.length; j++) {
-      if (i >= strs[j].length || strs[j][i] !== char) {
-        return strs[0].substring(0, i);
-      }
+  // Walk the two sub‑trees and add their leaf counts
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+const tree = new TreeNode(1,
+             new TreeNode(2, new TreeNode(4), null),
+             new TreeNode(3, null, new TreeNode(5))
+          );
+
+console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  let leafCount = 0;
+  const stack: (TreeNode<T> | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
+
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // push children onto stack; order doesn’t matter
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
     }
   }
-  return strs[0];
+
+  return leafCount;
+}
+function getLeafValues<T>(root: TreeNode<T> | null): T[] {
+  const leaves: T[] = [];
+
+  if (!root) return leaves;
+
+  const stack: (TreeNode<T> | null)[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
+
+    if (!node.left && !node.right) leaves.push(node.val);
+    else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+
+  return leaves;
 }
