@@ -1,27 +1,35 @@
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;          // Not enough values
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
+  const sorted = [...arr].sort((a, b) => b - a); // descending
+  return sorted[1];
 }
-console.log(factorialIterative(5));   // 120
-console.log(factorialIterative(0));   // 1
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n === 0 || n === 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+function secondLargestLinear(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-  let result = 1n;          // `n` suffix makes it a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const val of arr) {
+    if (val > max) {
+      second = max;
+      max = val;
+    } else if (val > second && val < max) {
+      second = val;
+    }
   }
-  return result;
+
+  return second === -Infinity ? null : second;
 }
-console.log(factorialBigInt(50).toString());
-// 304140932655... (the full 50! value)
+export function findSecondLargest(arr: number[]): number | null
+export function findSecondLargestLinear(arr: number[]): number | null
+[
+  { arr: [5, 1, 4, 3], expected: 4 },
+  { arr: [5, 5, 3], expected: 3 },
+  { arr: [5, 5, 5], expected: null },
+  { arr: [], expected: null },
+  { arr: [10], expected: null }
+].forEach(({arr, expected}, i) => {
+  const res = findSecondLargestLinear(arr);
+  console.assert(res === expected, `case ${i} failed: got ${res}`);
+});
