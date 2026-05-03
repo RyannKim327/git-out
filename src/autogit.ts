@@ -1,69 +1,72 @@
-// simple-api-call.ts
-/**
- * A minimal example of calling a REST API in Node.js with TypeScript.
- * Requires Node 18+ (fetch is built‑in). If you need older Node, use
- * node‑fetch or axios instead.
- */
-
-import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
-
-// 1️⃣  Define the shape of the JSON we expect back:
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+// A single node in a singly linked list
+class Node<T> {
+  constructor(public value: T, public next: Node<T> | null = null) {}
 }
 
-// 2️⃣  Utility to guard for non‑2xx HTTP codes:
-function checkStatus(response: Response): Response {
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  return response;
-}
+// The queue itself
+export class Queue<T> {
+  private head: Node<T> | null = null; // front of the queue
+  private tail: Node<T> | null = null; // back of the queue
+  private _size = 0;
 
-// 3️⃣  The async function that does the fetching:
-async function fetchPost(postId: number): Promise<Post> {
-  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+  /** Adds a value to the back of the queue. */
+  enqueue(value: T): void {
+    const newNode = new Node(value);
 
-  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
-  const options: RequestInit = {
-    method: 'GET',
-    headers: { 'Accept': 'application/json' },
-    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
-  };
+    if (this.tail) {
+      // Pre‑existing queue – link the new node after the old tail
+      this.tail.next = newNode;
+    } else {
+      // Empty queue – new node becomes the head
+      this.head = newNode;
+    }
 
-  const response = await fetch(url, options);
-  checkStatus(response);
-
-  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
-  const data = (await response.json()) as Post;
-
-  // Non‑strict guard: ensure required keys exist
-  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
-    throw new Error('Malformed data');
+    // In either case, the new node is the new tail
+    this.tail = newNode;
+    this._size += 1;
   }
 
-  return data;
-}
+  /** Removes and returns the value at the front of the queue. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined; // Queue is empty
 
-// 4️⃣  Drive the example: fetch a single post and log it.
-(async () => {
-  try {
-    const post = await fetchPost(1);
-    console.log('Fetched post:', post);
-  } catch (err) {
-    console.error('Something went wrong:', err);
+    const value = this.head.value;
+    this.head = this.head.next;   // Advance the head
+
+    // If the queue became empty, clear the tail too
+    if (!this.head) this.tail = null;
+
+    this._size -= 1;
+    return value;
   }
-})();
-{
-  "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "strict": true,
-    "outDir": "./dist"
-  },
-  "include": ["simple-api-call.ts"]
+
+  /** Peek at the front without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** How many items are in the queue? */
+  size(): number {
+    return this._size;
+  }
 }
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());  // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size());   // 1
+console.log(q.isEmpty()); // false
+
+q.dequeue(); // removes 30
+
+console.log(q.isEmpty()); // true
