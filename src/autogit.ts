@@ -1,51 +1,49 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
-
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
-  }
-}
-
 /**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
+ * Returns the maximum sum of any contiguous sub‑array.
+ * If all numbers are negative, the result is the largest (least negative) number.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
+function maxSubarraySum(arr: number[]): number {
+    if (arr.length === 0) throw new Error('Array must contain at least one element');
 
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
+    let currentSum = arr[0];
+    let bestSum = arr[0];
 
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
+    // We start from index 1 because the first element was already handled
+    for (let i = 1; i < arr.length; i++) {
+        // Either extend the previous sub‑array or start anew at arr[i]
+        currentSum = Math.max(arr[i], currentSum + arr[i]);
 
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
+        // Update global best if we found a better one
+        bestSum = Math.max(bestSum, currentSum);
+    }
 
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
-  }
-
-  height(root)
-  return maxDiameter   // edge‑count diameter
+    return bestSum;
 }
+const data = [−2, −3, 4, −1, −2, 1, 5, −3];
+console.log(maxSubarraySum(data)); // 7
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
+// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
+function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
+    let currentSum = arr[0];
+    let bestSum = arr[0];
+    let tempStart = 0;
+    let bestStart = 0;
+    let bestEnd = 0;
 
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+    for (let i = 1; i < arr.length; i++) {
+        if (currentSum + arr[i] >= arr[i]) {
+            currentSum += arr[i];
+        } else {
+            currentSum = arr[i];
+            tempStart = i;
+        }
+
+        if (currentSum > bestSum) {
+            bestSum = currentSum;
+            bestStart = tempStart;
+            bestEnd = i;
+        }
+    }
+
+    return { sum: bestSum, start: bestStart, end: bestEnd };
+}
