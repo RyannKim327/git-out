@@ -1,33 +1,69 @@
-// Node >=18 or any modern browser
-// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
-
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
-
-async function fetchPost(id = 1): Promise<Post> {
-  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
-
-  if (!res.ok) {
-    // Throwing includes the HTTP status for downstream handling
-    throw new Error(`Unexpected status ${res.status}`);
-  }
-
-  // Telling TS that the JSON shapes like our Post type
-  const data = await res.json() as Post;
-  return data;
+interface ListNode {
+  val: number | string | any;   // whatever type you’re storing
+  next?: ListNode | null;
 }
+function reverse(head: ListNode | null): ListNode | null {
+  let prev: ListNode | null = null;
+  let cur = head;
 
-(async () => {
-  try {
-    const post = await fetchPost(42);  // change the ID if you like
-    console.log('🚀 Post fetched:');
-    console.log(`Title: ${post.title}`);
-    console.log(`Body: ${post.body.slice(0, 70)}…`);
-  } catch (err) {
-    console.error('❌ Fetch failed:', err);
+  while (cur) {
+    const next = cur.next;   // keep the next node
+    cur.next = prev;         // reverse the pointer
+    prev = cur;              // move prev forward
+    cur = next;              // move cur forward
   }
-})();
+
+  return prev; // new head
+}
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
+  
+  // --- find middle with fast/slow pointers ---
+  let slow = head;
+  let fast = head;
+  
+  while (fast && fast.next) {
+    slow = slow.next!;
+    fast = fast.next.next!;
+  }
+  
+  // For odd‑length lists, skip the middle node
+  if (fast) {
+    slow = slow.next!;
+  }
+  
+  // --- reverse the second half ---
+  const secondHalfStart = reverse(slow);
+  
+  // --- compare first half and reversed second half ---
+  let p1 = head;
+  let p2 = secondHalfStart;
+  let result = true;
+  
+  while (result && p2) {           // p2 is shorter or equal to p1
+    if (p1!.val !== p2.val) result = false;
+    p1 = p1!.next!;
+    p2 = p2.next!;
+  }
+  
+  // If you want the original list preserved, reverse the second half again:
+  // reverse(secondHalfStart);
+  
+  return result;
+}
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string | any)[] = [];
+  let cur = head;
+
+  while (cur) {
+    stack.push(cur.val);
+    cur = cur.next;
+  }
+
+  cur = head;
+  while (cur) {
+    if (cur.val !== stack.pop()) return false;
+    cur = cur.next;
+  }
+  return true;
+}
