@@ -1,72 +1,78 @@
-// A single node in a singly linked list
-class Node<T> {
-  constructor(public value: T, public next: Node<T> | null = null) {}
-}
+/**
+ * A very small, self‑contained topological‑sort utility.
+ *
+ * Users should supply a directed graph in adjacency‑list form:
+ *
+ *   const g = new Map<string, Set<string>>();
+ *   g.set('A', new Set(['B', 'C']));
+ *   g.set('B', new Set(['D']));
+ *   g.set('C', new Set(['D']));
+ *   g.set('D', new Set());
+ *
+ * Call `topologicalSort(g)` and receive an array in an order that
+ * satisfies all dependencies. If a cycle is detected the function
+ * throws an Error describing the nodes that loop.
+ */
 
-// The queue itself
-export class Queue<T> {
-  private head: Node<T> | null = null; // front of the queue
-  private tail: Node<T> | null = null; // back of the queue
-  private _size = 0;
+type Graph<ID> = Map<ID, Set<ID>>;
 
-  /** Adds a value to the back of the queue. */
-  enqueue(value: T): void {
-    const newNode = new Node(value);
+/**
+ * Detects a directed cycle in a graph by trying a Kahn‑style removal.
+ */
+function topologicalSort<ID>(graph: Graph<ID>): ID[] {
+  // 1. Make a copy of indegree counts
+  const indegree = new Map<ID, number>();
 
-    if (this.tail) {
-      // Pre‑existing queue – link the new node after the old tail
-      this.tail.next = newNode;
-    } else {
-      // Empty queue – new node becomes the head
-      this.head = newNode;
+  // Walk the graph once to count in‑edges
+  for (const [node, edges] of graph.entries()) {
+    // Ensure every node in the map has an indegree entry
+    if (!indegree.has(node)) indegree.set(node, 0);
+    for (const neigh of edges) {
+      indegree.set(neigh, (indegree.get(neigh) ?? 0) + 1);
+      // If neighbour hasn't appeared as a key yet, make sure it has a set entry
+      if (!graph.has(neigh) && !indegree.has(neigh)) indegree.set(neigh, 0);
     }
-
-    // In either case, the new node is the new tail
-    this.tail = newNode;
-    this._size += 1;
   }
 
-  /** Removes and returns the value at the front of the queue. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined; // Queue is empty
+  // 2. Queue of nodes with no incoming edges
+  const queue: ID[] = [];
+  for (const [node, num] of indegree.entries())
+    if (num === 0) queue.push(node);
 
-    const value = this.head.value;
-    this.head = this.head.next;   // Advance the head
+  const result: ID[] = [];
 
-    // If the queue became empty, clear the tail too
-    if (!this.head) this.tail = null;
+  // 3. Repeatedly pop a zero‑in‑degree node, append to result
+  //    and “remove” its outgoing edges
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
 
-    this._size -= 1;
-    return value;
+    const outgoing = graph.get(node) ?? new Set();
+    for (const neigh of outgoing) {
+      // decrement indegree; if it goes to 0 push to queue
+      const newIndeg = (indegree.get(neigh) ?? 0) - 1;
+      indegree.set(neigh, newIndeg);
+      if (newIndeg === 0) queue.push(neigh);
+    }
   }
 
-  /** Peek at the front without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
+  // 4. If we didn't visit all nodes → a cycle exists
+  if (result.length !== indegree.size) {
+    const cycleNodes = [...indegree.keys()].filter(n => !result.includes(n));
+    throw new Error(
+      `Graph has a cycle involving ${cycleNodes.map(String).join(', ')}`,
+    );
   }
 
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** How many items are in the queue? */
-  size(): number {
-    return this._size;
-  }
+  return result;
 }
-const q = new Queue<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+/* ---------- demo ---------- */
+const example = new Map<string, Set<string>>([
+  ['A', new Set(['B', 'C'])],
+  ['B', new Set(['D'])],
+  ['C', new Set(['D'])],
+  ['D', new Set()],
+]);
 
-console.log(q.peek());  // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size());   // 1
-console.log(q.isEmpty()); // false
-
-q.dequeue(); // removes 30
-
-console.log(q.isEmpty()); // true
+console.log(topologicalSort(example)); // → ['A', 'B', 'C', 'D'] or ['A', 'C', 'B', 'D'], etc.
