@@ -1,66 +1,51 @@
-// A standard binary‑tree node definition
+// Basic node definition – feel free to swap in your own
 class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+  val: T
+  left: TreeNode<T> | null = null
+  right: TreeNode<T> | null = null
+
+  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
+    this.val = val
+    if (left) this.left = left
+    if (right) this.right = right
+  }
 }
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
+/**
+ * Returns the diameter of the tree rooted at `root`.
+ * If the tree is empty, the diameter is 0.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0
 
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+  /**
+   * Helper that returns the height (in nodes) of the subtree.
+   * While unwinding recursion, we update the maximum diameter.
+   */
+  function height(node: TreeNode | null): number {
+    if (!node) return 0
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+    const leftHeight = height(node.left)
+    const rightHeight = height(node.right)
 
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
+    // Path that goes through this node = leftHeight + rightHeight
+    const localDiameter = leftHeight + rightHeight
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter
 
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+    // Height is max child height plus this node
+    return Math.max(leftHeight, rightHeight) + 1
   }
 
-  return leafCount;
+  height(root)
+  return maxDiameter   // edge‑count diameter
 }
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
 
-  if (!root) return leaves;
+/* ---------- quick test ---------- */
+const tree = new TreeNode(
+  1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
+)
 
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return leaves;
-}
+console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
