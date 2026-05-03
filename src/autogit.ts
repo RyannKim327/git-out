@@ -1,54 +1,171 @@
-/**
- * Iterative (bottom‑up) merge sort.
- * @param arr The array to be sorted (in‑place).
- * @returns The sorted array – same reference as the input.
- */
-function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1) return arr;          // nothing to do
+// ------------------------------------------------------------
+//  1️⃣  Types / data structures
+// ------------------------------------------------------------
+export type ID = string | number;
 
-  const n = arr.length;
-  const temp: T[] = new Array(n);           // temporary buffer for merging
+// Location on a grid (for the example)
+export interface Point {
+  x: number;
+  y: number;
+  toString(): string;           // stringify for use as Map keys
+}
 
-  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
-  for (let width = 1; width < n; width *= 2) {
-    // left is the start of the first run in a pair
-    for (let left = 0; left < n; left += 2 * width) {
-      const mid   = Math.min(left + width, n);        // first run ends
-      const right = Math.min(left + 2 * width, n);    // second run ends
+export class PointImpl implements Point {
+  constructor(public x: number, public y: number) {}
+  toString() { return `${this.x},${this.y}`; }
 
-      // merge [left, mid) and [mid, right) into temp
-      let i = left,      // index in first run
-          j = mid,       // index in second run
-          k = left;      // index in temp
+  // For the priority queue we need a score
+  distanceTo(other: Point) {
+    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
+  }
+}
 
-      while (i < mid && j < right) {
-        // Use compareFn if supplied, else default <>
-        const cmp = compareFn
-          ? compareFn(arr[i], arr[j])
-          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
-        
-        if (cmp <= 0) {
-          temp[k++] = arr[i++];
-        } else {
-          temp[k++] = arr[j++];
-        }
+// Edge connects two nodes with a weight (default = 1)
+export interface Edge<T> {
+  from: T;
+  to: T;
+  weight: number;
+  cost?: number;          // will be filled later
+}
+
+export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
+
+// ------------------------------------------------------------
+//  2️⃣  Binary‑heap priority queue (min‑heap)
+// ------------------------------------------------------------
+class HeapNode<T> {
+  constructor(public key: number, public value: T) {}
+}
+
+export class PriorityQueue<T> {
+  private heap: HeapNode<T>[] = [];
+
+  get size() { return this.heap.length; }
+  empty() { return this.size === 0; }
+
+  push(key: number, value: T) {
+    this.heap.push(new HeapNode(key, value));
+    this.bubbleUp(this.size - 1);
+  }
+  pop(): HeapNode<T> | undefined {
+    if (this.empty()) return;
+    const top = this.heap[0];
+    const last = this.heap.pop()!;
+    if (!this.empty()) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(i: number) {
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.heap[p].key <= this.heap[i].key) break;
+      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+      i = p;
+    }
+  }
+  private bubbleDown(i: number) {
+    const n = this.size;
+    while (true) {
+      let l = (i << 1) + 1, r = l + 1, smallest = i;
+      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
+      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
+      if (smallest === i) break;
+      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+      i = smallest;
+    }
+  }
+}
+
+// ------------------------------------------------------------
+//  3️⃣  AStar implementation
+// ------------------------------------------------------------
+export interface AStarOptions<T> {
+  graph: Graph<T>;
+  heuristic: (a: T, b: T) => number;
+  start: T;
+  goal: T;
+}
+
+export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
+  const { graph, heuristic, start, goal } = opts;
+
+  const open = new PriorityQueue<T>();
+  open.push(0, start);
+
+  const cameFrom = new Map<T, T | null>();
+  const gScore = new Map<T, number>();
+
+  cameFrom.set(start, null);
+  gScore.set(start, 0);
+
+  while (!open.empty()) {
+    const node = open.pop()!;
+    const u = node.value;
+
+    if (u === goal) {
+      // reconstruct
+      const path: T[] = [];
+      let cur: T | null = u;
+      while (cur !== null) {
+        path.push(cur);
+        cur = cameFrom.get(cur) ?? null;
       }
+      path.reverse();
+      return { path, cost: gScore.get(u)! };
+    }
 
-      // copy any remaining items from the first run
-      while (i < mid) temp[k++] = arr[i++];
-      // copy any remaining items from the second run
-      while (j < right) temp[k++] = arr[j++];
+    for (const edge of graph.get(u) ?? []) {
+      const v = edge.to;
+      const tentativeG = gScore.get(u)! + edge.weight;
 
-      // copy the merged part back into the original array
-      for (let p = left; p < right; p++) {
-        arr[p] = temp[p];
+      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
+        cameFrom.set(v, u);
+        gScore.set(v, tentativeG);
+
+        const f = tentativeG + heuristic(v, goal);
+        open.push(f, v);
       }
     }
   }
 
-  return arr;
+  return null; // no path
 }
-const numbers = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(numbers);
-console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
-mergeSortIterative(list, (a, b) => a.age - b.age);
+
+// ------------------------------------------------------------
+//  4️⃣  Example – 4×4 grid with obstacles
+// ------------------------------------------------------------
+function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
+  const graph = new Map<Point, Edge<Point>[]>();
+
+  const dirs = [
+    [0, -1], [1, 0], [0, 1], [-1, 0],
+  ];
+
+  for (let y = 0; y < height; ++y) {
+    for (let x = 0; x < width; ++x) {
+      const p = new PointImpl(x, y);
+      if (walls.has(p.toString())) continue;
+
+      const neighbours: Edge<Point>[] = [];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const q = new PointImpl(nx, ny);
+        if (walls.has(q.toString())) continue;
+        neighbours.push({ from: p, to: q, weight: 1 });
+      }
+      graph.set(p, neighbours);
+    }
+  }
+
+  return graph;
+}
+
+export async function main() {
+  const width = 4, height = 4;
+  const walls = new Set<string>([
+    new PointImpl(1, 1).toString(),
+    new PointImpl(2, 1).
