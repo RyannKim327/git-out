@@ -1,35 +1,16 @@
-// A minimal node definition
-interface TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
-}
-
-// Recursive helper that treats the tree as an expression tree
-function sumTree(node: TreeNode<number> | null): number {
-  if (!node) return 0;                // nothing here – contributes nothing
-  return node.value + sumTree(node.left) + sumTree(node.right);
-}
-const root: TreeNode<number> = {
-  value: 10,
-  left: { value: 5, left: null, right: null },
-  right: { value: -3, left: null, right: null },
-};
-
-console.log(sumTree(root)); // 12
-function sumTreeIterative(root: TreeNode<number> | null): number {
-  if (!root) return 0;
-
-  let sum = 0;
-  const stack: TreeNode<number>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value;
-
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
+/**
+ * Return true iff `s` reads the same forwards and backwards.
+ * The function runs in O(n) time and O(1) auxiliary space.
+ * 
+ * If you need a case–insensitive or “ignoring non‑alpha‑numeric”
+ * version, simply adjust the comparison operations accordingly.
+ */
+function isPalindrome(s: string): boolean {
+  const n = s.length;
+  // Two‑pointer scan from the ends toward the centre.
+  for (let i = 0, j = n - 1; i < j; i++, j--) {
+    // Direct character comparison – no new arrays, no string slicing.
+    if (s.charAt(i) !== s.charAt(j)) return false;
   }
-
-  return sum;
+  return true;
 }
