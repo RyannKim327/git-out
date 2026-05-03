@@ -1,54 +1,101 @@
+function kthSmallest<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+
+  // make a shallow copy so the caller's array stays untouched
+  const copy = [...arr];
+  copy.sort(cmp);
+  return copy[k - 1];
+}
 /**
- * Return the first non‑repeating character, or `null` if every character repeats.
- *
- * @example
- * firstNonRepeating('abacabad') // => 'c'
+ * Returns the k-th smallest element (1‑indexed) in `arr`.
+ * Modifies the array in place (no extra array allocation).
  */
-export function firstNonRepeating(str: string): string | null {
-  // 1️⃣ Pass: count each character
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+function quickSelect<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  return select(arr, 0, arr.length - 1, k - 1);
+
+  function partition(lo: number, hi: number): number {
+    const pivotIdx = Math.floor((lo + hi) / 2);
+    const pivot = arr[pivotIdx];
+    // move pivot to the end
+    [arr[pivotIdx], arr[hi]] = [arr[hi], arr[pivotIdx]];
+
+    let store = lo;
+    for (let i = lo; i < hi; i++) {
+      if (cmp(arr[i], pivot) < 0) {
+        [arr[i], arr[store]] = [arr[store], arr[i]];
+        store++;
+      }
+    }
+    // put pivot back in its final place
+    [arr[store], arr[hi]] = [arr[hi], arr[store]];
+    return store;
   }
 
-  // 2️⃣ Pass: find the first character that appears only once
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;
+  function select(lo: number, hi: number, targetIdx: number): T {
+    if (lo === hi) return arr[lo];
+    const pivotIdx = partition(lo, hi);
+    if (pivotIdx === targetIdx) {
+      return arr[pivotIdx];
+    } else if (pivotIdx > targetIdx) {
+      return select(lo, pivotIdx - 1, targetIdx);
+    } else {
+      return select(pivotIdx + 1, hi, targetIdx);
+    }
+  }
+}
+class BinaryHeap<T> {
+  constructor(private cmp: (a: T | null, b: T | null) => number) {}
+  private heap: (T | null)[] = [null];          // 1‑indexed
+
+  get size() { return this.heap.length - 1; }
+
+  push(val: T) {
+    this.heap.push(val);
+    this.bubbleUp(this.size);
+  }
+
+  pop(): T | null {
+    if (this.size === 0) return null;
+    const ret = this.heap[1];
+    this.heap[1] = this.heap.pop()!;
+    this.bubbleDown(1);
+    return ret;
+  }
+
+  peek(): T | null {
+    return this.size ? this.heap[1] : null;
+  }
+
+  private bubbleUp(i: number) {
+    while (i > 1) {
+      const p = Math.floor(i / 2);
+      if (this.cmp(this.heap[i]!, this.heap[p]!) < 0) {
+        [this.heap[i], this.heap[p]] = [this.heap[p], this.heap[i]];
+        i = p;
+      } else break;
     }
   }
 
-  return null; // all characters repeat
-}
-export function firstNonRepeatingAscii(str: string): string | null {
-  const count = new Int32Array(128); // index 0–127
-
-  for (const ch of str) {
-    count[ch.charCodeAt(0)]++;
-  }
-
-  for (const ch of str) {
-    if (count[ch.charCodeAt(0)] === 1) {
-      return ch;
+  private bubbleDown(i: number) {
+    while (true) {
+      const l = i * 2, r = l + 1;
+      let smallest = i;
+      if (l <= this.size && this.cmp(this.heap[l]!, this.heap[smallest]!) < 0) smallest = l;
+      if (r <= this.size && this.cmp(this.heap[r]!, this.heap[smallest]!) < 0) smallest = r;
+      if (smallest !== i) {
+        [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+        i = smallest;
+      } else break;
     }
   }
-
-  return null;
 }
-export const firstNonRepeatingFunctional = (str: string): string | null =>
-  [...str]
-    .reduce((acc, ch) => {
-      if (!acc.count.has(ch)) acc.count.set(ch, 0);
-      acc.count.set(ch, acc.count.get(ch)! + 1);
-      return acc;
-    }, { count: new Map<string, number>() })
-    // Rest of the string is still needed to find the first unique
-    ?.count
-    ?.entries()
-    ?.find(([, cnt]) => cnt === 1)?.[0] ?? null;
-import { firstNonRepeating } from './your-file';
 
-console.assert(firstNonRepeating('abacabad') === 'c');
-console.assert(firstNonRepeating('aabbcc') === null);
-console.assert(firstNonRepeating('') === null);
-console.assert(firstNonRepeating('😀😃😃😀😄') === '😄'); // emoji demo
+function kthSmallestHeap<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const heap = new BinaryHeap<T>((a, b) => cmp(a, b));
+  for (const v of arr) heap.push(v);
+  // pop k-1 times to discard smaller elements
+  for (let i = 0; i < k - 1; i++) heap.pop();
+  return heap.peek() as T;
+}
