@@ -1,51 +1,62 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
+/* ------------------------------------------------------------
+   Heap‑sort in TypeScript
+   ------------------------------------------------------------ */
 
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
-  }
+/**
+ * Build a max‑heap in place.
+ * `heapSize` is the number of elements to consider from the start of `arr`.
+ */
+function heapify<T>(arr: T[], heapSize: number, i: number, cmp: (a: T, b: T) => number) {
+    const left  = 2 * i + 1;
+    const right = 2 * i + 2;
+    let largest = i;
+
+    if (left  < heapSize && cmp(arr[left],  arr[largest]) > 0) largest = left;
+    if (right < heapSize && cmp(arr[right], arr[largest]) > 0) largest = right;
+
+    if (largest !== i) {
+        [arr[i], arr[largest]] = [arr[largest], arr[i]];
+        heapify(arr, heapSize, largest, cmp);
+    }
 }
 
 /**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
+ * Transform an array into a heap.  O(n) time.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
-
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
-
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
-
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
-
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
-  }
-
-  height(root)
-  return maxDiameter   // edge‑count diameter
+function buildHeap<T>(arr: T[], cmp: (a: T, b: T) => number) {
+    const heapSize = arr.length;
+    for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+        heapify(arr, heapSize, i, cmp);
+    }
 }
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
+/**
+ * Heap‑sort: sorts `arr` in place and returns it.
+ * Default comparison is numeric ascending order.
+ */
+export function heapSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+    const compare = cmp ?? ((a, b) => (a as any) - (b as any));
 
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+    // 1️⃣ build max‑heap
+    buildHeap(arr, compare);
+
+    // 2️⃣ repeatedly extract the max and rebuild heap
+    let heapSize = arr.length;
+    for (let i = arr.length - 1; i > 0; i--) {
+        // put current max (root) at the end
+        [arr[0], arr[i]] = [arr[i], arr[0]];
+        heapSize--;
+
+        // restore heap property on the reduced heap
+        heapify(arr, heapSize, 0, compare);
+    }
+
+    return arr;
+}
+const numbers = [5, 3, 8, 4, 1, 7, 2];
+heapSort(numbers);
+console.log(numbers); // → [1, 2, 3, 4, 5, 7, 8]
+interface Person { name: string; age: number }
+
+// Sort by age ascending
+heapSort(people, (a, b) => a.age - b.age);
