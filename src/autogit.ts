@@ -1,62 +1,35 @@
-/**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
- */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;          // Not enough values
+
+  const sorted = [...arr].sort((a, b) => b - a); // descending
+  return sorted[1];
 }
-/**
- * Return the n‑th node from the end of the list.
- *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
- */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
-  }
+function secondLargestLinear(arr: number[]): number | null {
+  if (arr.length < 2) return null;
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
+  let max = -Infinity;
+  let second = -Infinity;
 
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
+  for (const val of arr) {
+    if (val > max) {
+      second = max;
+      max = val;
+    } else if (val > second && val < max) {
+      second = val;
     }
-    fast = fast.next
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
-  }
-
-  return slow
+  return second === -Infinity ? null : second;
 }
-import { ListNode, nthFromEnd } from './linkedListHelpers'
-
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
-}
-
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
-
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
-
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+export function findSecondLargest(arr: number[]): number | null
+export function findSecondLargestLinear(arr: number[]): number | null
+[
+  { arr: [5, 1, 4, 3], expected: 4 },
+  { arr: [5, 5, 3], expected: 3 },
+  { arr: [5, 5, 5], expected: null },
+  { arr: [], expected: null },
+  { arr: [10], expected: null }
+].forEach(({arr, expected}, i) => {
+  const res = findSecondLargestLinear(arr);
+  console.assert(res === expected, `case ${i} failed: got ${res}`);
+});
