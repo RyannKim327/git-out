@@ -1,51 +1,64 @@
-// Basic node definition – feel free to swap in your own
-class TreeNode<T = number> {
-  val: T
-  left: TreeNode<T> | null = null
-  right: TreeNode<T> | null = null
-
-  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
-    this.val = val
-    if (left) this.left = left
-    if (right) this.right = right
-  }
-}
+/**
+ * Very permissive yet useful email pattern.
+ *
+ *  - No whitespace
+ *  - At least one character before and after the @
+ *  - Requires a dot‑separated domain part
+ *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
+ *
+ * The pattern is intentionally simple: it catches the majority of mistakes while
+ * avoiding needless complexity that can cost performance or readability.
+ */
+export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Returns the diameter of the tree rooted at `root`.
- * If the tree is empty, the diameter is 0.
+ * Strict RFC‑5322 compliant-ish pattern.  
+ *  - Handles quoted local‑part, escaped characters, and domain literals.
+ *  - Still keeps things readable by splitting the regex into small parts.
+ *
+ * Use this only if you need the extra validation and can afford a slightly slower check.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0
+export const strictEmailRE = new RegExp(
+  // Local part (quoted or unquoted)
+  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
+  // Domain part (letters, digits, hyphens, dots)
+  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
+  '$'
+);
 
-  /**
-   * Helper that returns the height (in nodes) of the subtree.
-   * While unwinding recursion, we update the maximum diameter.
-   */
-  function height(node: TreeNode | null): number {
-    if (!node) return 0
-
-    const leftHeight = height(node.left)
-    const rightHeight = height(node.right)
-
-    // Path that goes through this node = leftHeight + rightHeight
-    const localDiameter = leftHeight + rightHeight
-
-    if (localDiameter > maxDiameter) maxDiameter = localDiameter
-
-    // Height is max child height plus this node
-    return Math.max(leftHeight, rightHeight) + 1
-  }
-
-  height(root)
-  return maxDiameter   // edge‑count diameter
+/**
+ * Helper that returns `true` if the input matches *either* pattern.
+ *
+ * @param email Email string to validate.
+ * @returns `true` when the string looks like a valid email address.
+ */
+export function isValidEmail(email: string): boolean {
+  // Trim first – most forms send untrimmed values.
+  const trimmed = email.trim();
+  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
 }
+import { isValidEmail } from './emailValidator';
 
-/* ---------- quick test ---------- */
-const tree = new TreeNode(
-  1,
-  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
-  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
-)
+const test = 'user.name+tag@sub.domain.co.uk';
 
-console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
+if (isValidEmail(test)) {
+  console.log(`"${test}" passes the regex test`);
+} else {
+  console.log(`"${test}" is definitely not a valid email`);
+}
+const cases = [
+  'simple@example.com',
+  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
+  'very.unusual.@.example.com',
+  'disposable.style.email.with+symbol@example.com',
+  '"much.more unusual"@example.com',
+  'admin@mailserver1',                 // missing TLD
+  'example@localhost',                 // often allowed in dev env
+  'plainaddress',
+  'email.@example.com',
+  '@missing-local.org',
+  'user@.invalid.com',
+  'huge‑domain‑name‑that‑really‑long.com',
+];
+
+cases.forEach(e => console.log(e, isValidEmail(e)));
