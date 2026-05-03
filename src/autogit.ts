@@ -1,43 +1,52 @@
 /**
- * Returns true if n is a prime number, false otherwise.
- *
- * Numbers less than 2 are not prime by definition.
- * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
- * After that only numbers of the form 6k ± 1 can be prime.
+ * Binary search for a sorted array.  
+ * @param arr  The sorted array (or array‑like object).
+ * @param target  The value you’re looking for.
+ * @param low   Optional starting index (default 0).
+ * @param high  Optional ending index (default arr.length – 1).
+ * @returns index of target if found, otherwise -1.
  */
-export function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1, and negatives are not prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
+export function binarySearch<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    while (low <= high) {
+        // guard against overflow – works with big ints as well
+        const mid = Math.floor((low + high) / 2);
+        const midVal = arr[mid];
 
-  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
+        if (midVal === target) {
+            return mid;
+        }
 
-  return true;
+        // Type narrowing: if T is string we still compare interger‑wise
+        if (midVal < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return -1; // not found
 }
-[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
-  console.log(`${num} → ${isPrime(num)}`));
-1 → false
-2 → true
-3 → true
-4 → false
-5 → true
-16 → false
-17 → true
-19 → true
-20 → false
-23 → true
-24 → false
-29 → true
-export function isPrimeBigInt(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
+import { binarySearch } from "./binary-search.ts";
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
+const nums = [1, 3, 5, 7, 9, 11, 13];
+console.log(binarySearch(nums, 7));   // => 3
+console.log(binarySearch(nums, 4));   // => -1
+export function binarySearchRec<T extends number | string>(
+    arr: ArrayLike<T>,
+    target: T,
+    low: number = 0,
+    high: number = arr.length - 1
+): number {
+    if (low > high) return -1;
+
+    const mid = Math.floor((low + high) / 2);
+    const midVal = arr[mid];
+
+    if (midVal === target) return mid;
+    if (midVal < target) return binarySearchRec(arr, target, mid + 1, high);
+    return binarySearchRec(arr, target, low, mid - 1);
 }
