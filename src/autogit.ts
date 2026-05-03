@@ -1,42 +1,46 @@
-/**
- * Returns the largest prime factor of n.
- *
- * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
- */
-export function largestPrimeFactor(n: number | bigint): number | bigint {
-    if (n <= 1) throw new Error('n must be > 1');
+type AnagramOpts = {
+  /** treat 'A' the same as 'a' */
+  caseSensitive?: boolean;
+  /** ignore all whitespace (spaces, tabs, newlines) */
+  ignoreSpaces?: boolean;
+};
 
-    // Work with BigInt for arbitrary precision
-    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
-    let maxFactor: bigint = 1n;
+function areAnagrams(a: string, b: string, opts?: AnagramOpts): boolean {
+  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
 
-    // Handle factor 2 separately
-    while (num % 2n === 0n) {
-        maxFactor = 2n;
-        num /= 2n;
-    }
+  // Helper to clean a string according to the options
+  const clean = (s: string) =>
+    (!caseSensitive ? s.toLowerCase() : s)
+      .split('')
+      .filter(ch => !(ignoreSpaces && /\s/.test(ch)))
+      .sort()   // sort alphabetically
+      .join('');
 
-    // Now num is odd – we only need to check odd divisors
-    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
-        while (num % divisor === 0n) {
-            maxFactor = divisor;
-            num /= divisor;
-        }
-    }
-
-    // If anything is left, it's a prime larger than any divisor we tried
-    if (num > 1n) maxFactor = num;
-
-    // Return a native number if the input was a number and the result fits
-    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
-        return Number(maxFactor);
-    }
-    return maxFactor;
+  return clean(a) === clean(b);
 }
-console.log(largestPrimeFactor(28));          // 7
-console.log(largestPrimeFactor(91));          // 13
-console.log(largestPrimeFactor(600851475143));// 6857
+console.log(areAnagrams('Listen', 'Silent'));          // true (case‑insensitive)
+console.log(areAnagrams('Listen', 'Silent', {caseSensitive: true})); // false
+console.log(areAnagrams('conversation', 'voices rant on', {ignoreSpaces: true})); // true
+function areAnagramsFast(a: string, b: string, opts?: AnagramOpts): boolean {
+  const { caseSensitive = false, ignoreSpaces = false } = opts ?? {};
 
-// With a BigInt (e.g. a 100‑digit number)
-const huge = BigInt('123456789123456789123456789');
-console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
+  const buildMap = (s: string) => {
+    const map = new Map<string, number>();
+    for (const ch of s) {
+      const key = (!caseSensitive ? ch.toLowerCase() : ch);
+      if (ignoreSpaces && /\s/.test(key)) continue;
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return map;
+  };
+
+  const mapA = buildMap(a);
+  const mapB = buildMap(b);
+
+  if (mapA.size !== mapB.size) return false;
+
+  for (const [k, v] of mapA.entries()) {
+    if (mapB.get(k) !== v) return false;
+  }
+  return true;
+}
