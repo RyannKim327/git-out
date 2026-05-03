@@ -1,49 +1,67 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array.
- * If all numbers are negative, the result is the largest (least negative) number.
+ * In‑place quicksort.
+ *
+ * @param arr  The array to sort
+ * @param cmp  Optional comparator: (a,b) => number.
+ *             If omitted, the default comparison uses the built‑in
+ *             < , == , > operators (works for strings, numbers, etc.).
+ * @returns    The same array reference, now sorted
  */
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) throw new Error('Array must contain at least one element');
+export function quickSort<T>(
+    arr: T[],
+    cmp?: (a: T, b: T) => number
+): T[] {
+    // Default comparator for primitives
+    const defaultCmp = (a: T, b: T): number => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    };
 
-    let currentSum = arr[0];
-    let bestSum = arr[0];
+    const compare = cmp ?? defaultCmp;
 
-    // We start from index 1 because the first element was already handled
-    for (let i = 1; i < arr.length; i++) {
-        // Either extend the previous sub‑array or start anew at arr[i]
-        currentSum = Math.max(arr[i], currentSum + arr[i]);
-
-        // Update global best if we found a better one
-        bestSum = Math.max(bestSum, currentSum);
-    }
-
-    return bestSum;
-}
-const data = [−2, −3, 4, −1, −2, 1, 5, −3];
-console.log(maxSubarraySum(data)); // 7
-
-// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
-function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
-    let currentSum = arr[0];
-    let bestSum = arr[0];
-    let tempStart = 0;
-    let bestStart = 0;
-    let bestEnd = 0;
-
-    for (let i = 1; i < arr.length; i++) {
-        if (currentSum + arr[i] >= arr[i]) {
-            currentSum += arr[i];
-        } else {
-            currentSum = arr[i];
-            tempStart = i;
+    // Lomuto partition: pivot is the last element
+    const partition = (lo: number, hi: number): number => {
+        const pivot = arr[hi];
+        let i = lo;            // place for the next smaller element
+        for (let j = lo; j < hi; j++) {
+            if (compare(arr[j], pivot) <= 0) {
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+                i++;
+            }
         }
+        // put pivot in its final place
+        [arr[i], arr[hi]] = [arr[hi], arr[i]];
+        return i;
+    };
 
-        if (currentSum > bestSum) {
-            bestSum = currentSum;
-            bestStart = tempStart;
-            bestEnd = i;
+    const quick = (lo: number, hi: number): void => {
+        if (lo < hi) {
+            const p = partition(lo, hi);
+            quick(lo, p - 1);
+            quick(p + 1, hi);
         }
-    }
+    };
 
-    return { sum: bestSum, start: bestStart, end: bestEnd };
+    quick(0, arr.length - 1);
+    return arr;
 }
+// Numbers – default comparison works
+const nums = [5, 3, 8, 4, 2];
+quickSort(nums);
+console.log(nums); // [2, 3, 4, 5, 8]
+
+// Strings – default comparison is lexicographic
+const words = ['banana', 'apple', 'cherry'];
+quickSort(words);
+console.log(words); // ['apple', 'banana', 'cherry']
+
+// Custom comparator (descending)
+interface Person { name: string; age: number; }
+const people: Person[] = [
+    { name: 'Eve', age: 29 },
+    { name: 'Bob', age: 42 },
+    { name: 'Alice', age: 35 }
+];
+quickSort(people, (a, b) => b.age - a.age); // sort by age descending
+console.log(people);
