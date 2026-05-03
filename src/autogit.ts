@@ -1,35 +1,36 @@
-function secondLargest(arr: number[]): number | null {
-  if (arr.length < 2) return null;          // Not enough values
+/**
+ * Is `s` a palindrome?
+ *
+ * @param s           – the string to test
+ * @param options     – optional tweaks:
+ *          ignoreCase    – true → 'A' and 'a' are the same
+ *          ignoreSpaces  – true → ' ' are ignored
+ *          ignoreNonAlnum – true → anything that doesn’t match /[A-Za-z0-9]/ is dropped
+ */
+function isPalindrome(
+    s: string,
+    options: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+    let { ignoreCase, ignoreSpaces, ignoreNonAlnum } = options;
 
-  const sorted = [...arr].sort((a, b) => b - a); // descending
-  return sorted[1];
+    // 1. Normalise
+    if (ignoreCase) s = s.toLowerCase();
+
+    // 2. Strip unwanted characters
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignoreNonAlnum) s = s.replace(/[^a-z0-9]/gi, '');
+
+    // 3. Compare to its reverse
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
-function secondLargestLinear(arr: number[]): number | null {
-  if (arr.length < 2) return null;
+console.log(isPalindrome("radar"));                 // true
+console.log(isPalindrome("Radar"));                 // false
+console.log(isPalindrome("Radar", { ignoreCase: true })); // true
 
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const val of arr) {
-    if (val > max) {
-      second = max;
-      max = val;
-    } else if (val > second && val < max) {
-      second = val;
-    }
-  }
-
-  return second === -Infinity ? null : second;
+console.log(isPalindrome("A man, a plan, a canal: Panama",
+                          { ignoreCase: true, ignoreNonAlnum: true })); // true
+function isPlainPalindrome(s: string): boolean {
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
-export function findSecondLargest(arr: number[]): number | null
-export function findSecondLargestLinear(arr: number[]): number | null
-[
-  { arr: [5, 1, 4, 3], expected: 4 },
-  { arr: [5, 5, 3], expected: 3 },
-  { arr: [5, 5, 5], expected: null },
-  { arr: [], expected: null },
-  { arr: [10], expected: null }
-].forEach(({arr, expected}, i) => {
-  const res = findSecondLargestLinear(arr);
-  console.assert(res === expected, `case ${i} failed: got ${res}`);
-});
