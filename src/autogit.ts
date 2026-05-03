@@ -1,57 +1,54 @@
 /**
- * Returns the index of `target` inside the sorted array `arr`,
- * or -1 if the target is not present.
- *
- * @param arr     Sorted numerical array (ascending order)
- * @param target  Value to find
+ * Iterative (bottom‑up) merge sort.
+ * @param arr The array to be sorted (in‑place).
+ * @returns The sorted array – same reference as the input.
  */
-export function fibonacciSearch(arr: readonly number[], target: number): number {
+function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1) return arr;          // nothing to do
+
   const n = arr.length;
+  const temp: T[] = new Array(n);           // temporary buffer for merging
 
-  // (1) Generate the smallest Fibonacci number ≥ n
-  let fibMMinus2 = 0; // F(m-2)
-  let fibMMinus1 = 1; // F(m-1)
-  let fibM = fibMMinus2 + fibMMinus1; // F(m)
+  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
+  for (let width = 1; width < n; width *= 2) {
+    // left is the start of the first run in a pair
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid   = Math.min(left + width, n);        // first run ends
+      const right = Math.min(left + 2 * width, n);    // second run ends
 
-  while (fibM < n) {
-    fibMMinus2 = fibMMinus1;
-    fibMMinus1 = fibM;
-    fibM = fibMMinus1 + fibMMinus2;
-  }
+      // merge [left, mid) and [mid, right) into temp
+      let i = left,      // index in first run
+          j = mid,       // index in second run
+          k = left;      // index in temp
 
-  // (2) Marks the eliminated range from front
-  let offset = -1;
+      while (i < mid && j < right) {
+        // Use compareFn if supplied, else default <>
+        const cmp = compareFn
+          ? compareFn(arr[i], arr[j])
+          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
+        
+        if (cmp <= 0) {
+          temp[k++] = arr[i++];
+        } else {
+          temp[k++] = arr[j++];
+        }
+      }
 
-  // (3) While there are elements to inspect
-  while (fibM > 1) {
-    // Check the index. Do not go beyond the array bounds.
-    const i = Math.min(offset + fibMMinus2, n - 1);
+      // copy any remaining items from the first run
+      while (i < mid) temp[k++] = arr[i++];
+      // copy any remaining items from the second run
+      while (j < right) temp[k++] = arr[j++];
 
-    if (arr[i] < target) {
-      // Move three Fibonacci variables one step closer to the end
-      fibM = fibMMinus1;
-      fibMMinus1 = fibMMinus2;
-      fibMMinus2 = fibM - fibMMinus1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move the Fibonacci window two steps back
-      fibM = fibMMinus2;
-      fibMMinus1 = fibMMinus1 - fibMMinus2;
-      fibMMinus2 = fibM - fibMMinus1;
-    } else {
-      return i; // Found
+      // copy the merged part back into the original array
+      for (let p = left; p < right; p++) {
+        arr[p] = temp[p];
+      }
     }
   }
 
-  // (4) If the last element is the target
-  if (fibMMinus1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
-
-  // Not found
-  return -1;
+  return arr;
 }
-const sorted = [1, 3, 5, 7, 9, 12, 15, 18, 21, 24, 30];
-
-console.log(fibonacciSearch(sorted, 15)); // → 6
-console.log(fibonacciSearch(sorted, 4));  // → -1
+const numbers = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(numbers);
+console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
+mergeSortIterative(list, (a, b) => a.age - b.age);
