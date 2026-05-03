@@ -1,69 +1,69 @@
-interface ListNode {
-  val: number | string | any;   // whatever type you’re storing
-  next?: ListNode | null;
+// simple-api-call.ts
+/**
+ * A minimal example of calling a REST API in Node.js with TypeScript.
+ * Requires Node 18+ (fetch is built‑in). If you need older Node, use
+ * node‑fetch or axios instead.
+ */
+
+import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
+
+// 1️⃣  Define the shape of the JSON we expect back:
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-function reverse(head: ListNode | null): ListNode | null {
-  let prev: ListNode | null = null;
-  let cur = head;
 
-  while (cur) {
-    const next = cur.next;   // keep the next node
-    cur.next = prev;         // reverse the pointer
-    prev = cur;              // move prev forward
-    cur = next;              // move cur forward
+// 2️⃣  Utility to guard for non‑2xx HTTP codes:
+function checkStatus(response: Response): Response {
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-
-  return prev; // new head
+  return response;
 }
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → automatically a palindrome
-  
-  // --- find middle with fast/slow pointers ---
-  let slow = head;
-  let fast = head;
-  
-  while (fast && fast.next) {
-    slow = slow.next!;
-    fast = fast.next.next!;
+
+// 3️⃣  The async function that does the fetching:
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+
+  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
+  const options: RequestInit = {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
+  };
+
+  const response = await fetch(url, options);
+  checkStatus(response);
+
+  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
+  const data = (await response.json()) as Post;
+
+  // Non‑strict guard: ensure required keys exist
+  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
+    throw new Error('Malformed data');
   }
-  
-  // For odd‑length lists, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-  
-  // --- reverse the second half ---
-  const secondHalfStart = reverse(slow);
-  
-  // --- compare first half and reversed second half ---
-  let p1 = head;
-  let p2 = secondHalfStart;
-  let result = true;
-  
-  while (result && p2) {           // p2 is shorter or equal to p1
-    if (p1!.val !== p2.val) result = false;
-    p1 = p1!.next!;
-    p2 = p2.next!;
-  }
-  
-  // If you want the original list preserved, reverse the second half again:
-  // reverse(secondHalfStart);
-  
-  return result;
+
+  return data;
 }
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string | any)[] = [];
-  let cur = head;
 
-  while (cur) {
-    stack.push(cur.val);
-    cur = cur.next;
+// 4️⃣  Drive the example: fetch a single post and log it.
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log('Fetched post:', post);
+  } catch (err) {
+    console.error('Something went wrong:', err);
   }
-
-  cur = head;
-  while (cur) {
-    if (cur.val !== stack.pop()) return false;
-    cur = cur.next;
-  }
-  return true;
+})();
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "./dist"
+  },
+  "include": ["simple-api-call.ts"]
 }
