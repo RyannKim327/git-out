@@ -1,60 +1,44 @@
-// bubbleSort.ts
-
-export type Comparator<T> = (a: T, b: T) => number;
-
 /**
- * Sorts an array in place using the Bubble Sort algorithm.
+ * In‑place Selection Sort.
  *
- * @param arr    — The array to sort. It will be modified directly.
- * @param cmp    — Optional comparator. If omitted, number comparison is used.
- *
- * @returns      — The sorted array (same reference as the input).
+ * @param arr   The array to sort.
+ * @param cmp   Optional comparison function.
+ *              Should return a negative number if a < b,
+ *              zero if a === b, and positive if a > b.
  */
-export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+function selectionSort<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+): void {
   const n = arr.length;
-  if (n < 2) return arr;          // nothing to do
 
-  // Traditional outer loop: run n‑1 passes
-  for (let pass = 0; pass < n - 1; pass++) {
-    let swapped = false;
+  for (let i = 0; i < n - 1; i++) {
+    // Assume the minimum is at i.
+    let minIndex = i;
 
-    // Inner loop: compare adjacent elements
-    for (let i = 0; i < n - 1 - pass; i++) {
-      if (cmp(arr[i], arr[i + 1]) > 0) {
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
-        swapped = true;
+    // Search for the true minimum in the unsorted part.
+    for (let j = i + 1; j < n; j++) {
+      if (cmp(arr[j], arr[minIndex]) < 0) {
+        minIndex = j;
       }
     }
 
-    // If we made no swaps this pass, the array is sorted
-    if (!swapped) break;
+    // If minIndex changed, swap the two values.
+    if (minIndex !== i) {
+      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
+    }
   }
-
-  return arr;
 }
-
-/** Default numeric comparator */
-function defaultCmp(a: number, b: number): number {
-  return a - b;
-}
-import { bubbleSort } from './bubbleSort';
-
-const numbers = [5, 2, 9, 1, 5, 6];
-bubbleSort(numbers);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-
-// Custom comparator – strings, case‑insensitive
-const strings = ['Banana', 'apple', 'Cherry'];
-bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(strings); // ['apple', 'Banana', 'Cherry']
-
-// Sorting objects
+const nums = [64, 25, 12, 22, 11];
+selectionSort(nums);
+console.log(nums); // [11, 12, 22, 25, 64]
 interface Person { name: string; age: number }
+
 const people: Person[] = [
-  { name: 'Ali', age: 30 },
-  { name: 'Beth', age: 24 },
-  { name: 'Carl', age: 38 },
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 25 },
+  { name: 'Charlie', age: 35 }
 ];
-bubbleSort(people, (p, q) => p.age - q.age);
+
+selectionSort(people, (p1, p2) => p1.age - p2.age);
 console.log(people);
-// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
