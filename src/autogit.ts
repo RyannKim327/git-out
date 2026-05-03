@@ -1,55 +1,54 @@
 /**
- * Return true if `s` is a palindrome.
- *
- * @param s      The string to test.
- * @param opts   Optional flags:
- *   - ignoreCase:   Treat uppercase and lowercase the same.
- *   - ignorePunct:  Strip everything that's not a letter or number.
- *
- * @example
- * isPalindrome('A man, a plan, a canal: Panama'); // → true
+ * Iterative (bottom‑up) merge sort.
+ * @param arr The array to be sorted (in‑place).
+ * @returns The sorted array – same reference as the input.
  */
-function isPalindrome(
-  s: string,
-  opts: { ignoreCase?: boolean; ignorePunct?: boolean } = {}
-): boolean {
-  const { ignoreCase = false, ignorePunct = false } = opts;
+function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1) return arr;          // nothing to do
 
-  let cleaned = s;
+  const n = arr.length;
+  const temp: T[] = new Array(n);           // temporary buffer for merging
 
-  if (ignorePunct) {
-    // Keep letters and digits only.
-    cleaned = cleaned.replace(/[^A-Za-z0-9]/g, '');
-  }
+  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
+  for (let width = 1; width < n; width *= 2) {
+    // left is the start of the first run in a pair
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid   = Math.min(left + width, n);        // first run ends
+      const right = Math.min(left + 2 * width, n);    // second run ends
 
-  if (ignoreCase) {
-    cleaned = cleaned.toLowerCase();
-  }
+      // merge [left, mid) and [mid, right) into temp
+      let i = left,      // index in first run
+          j = mid,       // index in second run
+          k = left;      // index in temp
 
-  // Quick fail for empty string – you can decide if you want to treat it as palindrome.
-  if (cleaned.length === 0) return true;
+      while (i < mid && j < right) {
+        // Use compareFn if supplied, else default <>
+        const cmp = compareFn
+          ? compareFn(arr[i], arr[j])
+          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
+        
+        if (cmp <= 0) {
+          temp[k++] = arr[i++];
+        } else {
+          temp[k++] = arr[j++];
+        }
+      }
 
-  // Compare from both ends without building a reversed copy.
-  let left = 0;
-  let right = cleaned.length - 1;
+      // copy any remaining items from the first run
+      while (i < mid) temp[k++] = arr[i++];
+      // copy any remaining items from the second run
+      while (j < right) temp[k++] = arr[j++];
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
+      // copy the merged part back into the original array
+      for (let p = left; p < right; p++) {
+        arr[p] = temp[p];
+      }
     }
-    left++;
-    right--;
   }
 
-  return true;
+  return arr;
 }
-console.log(isPalindrome('racecar')); // true
-console.log(isPalindrome('RaceCar')); // false (case‑sensitive)
-console.log(isPalindrome('RaceCar', { ignoreCase: true })); // true
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // false
-console.log(
-  isPalindrome('A man, a plan, a canal: Panama', {
-    ignoreCase: true,
-    ignorePunct: true,
-  })
-); // true
+const numbers = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(numbers);
+console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
+mergeSortIterative(list, (a, b) => a.age - b.age);
