@@ -1,33 +1,31 @@
-// Node >=18 or any modern browser
-// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
+function longestCommonSubstring(s1: string, s2: string): string {
+    if (!s1 || !s2) return '';
 
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
+    const m = s1.length, n = s2.length;
+    // one‑dimensional DP (only the previous row is needed)
+    const dp = new Array(n + 1).fill(0);
+    let maxLen = 0;          // longest length seen so far
+    let endIdxS1 = 0;        // index where that longest ends in s1
 
-async function fetchPost(id = 1): Promise<Post> {
-  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
+    for (let i = 1; i <= m; i++) {
+        // iterate j from right to left so the current row doesn't overwrite the
+        // values we still need from the previous row
+        for (let j = n; j >= 1; j--) {
+            if (s1[i - 1] === s2[j - 1]) {
+                dp[j] = dp[j - 1] + 1;   // extend the matching suffix
+                if (dp[j] > maxLen) {
+                    maxLen = dp[j];
+                    endIdxS1 = i;       // end in s1 (i-1 is *current* char)
+                }
+            } else {
+                dp[j] = 0;
+            }
+        }
+    }
 
-  if (!res.ok) {
-    // Throwing includes the HTTP status for downstream handling
-    throw new Error(`Unexpected status ${res.status}`);
-  }
-
-  // Telling TS that the JSON shapes like our Post type
-  const data = await res.json() as Post;
-  return data;
+    // Extract slice from s1 using the remembered end index and length
+    return maxLen > 0 ? s1.slice(endIdxS1 - maxLen, endIdxS1) : '';
 }
 
-(async () => {
-  try {
-    const post = await fetchPost(42);  // change the ID if you like
-    console.log('🚀 Post fetched:');
-    console.log(`Title: ${post.title}`);
-    console.log(`Body: ${post.body.slice(0, 70)}…`);
-  } catch (err) {
-    console.error('❌ Fetch failed:', err);
-  }
-})();
+// Quick demo
+console.log(longestCommonSubstring('abcdef', 'zbcdefg')); // → "bcdef"
