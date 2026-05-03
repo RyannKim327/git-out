@@ -1,57 +1,51 @@
-function removeItem<T>(arr: T[], item: T): void {
-  const idx = arr.indexOf(item);      // first occurrence
-  if (idx !== -1) {
-    arr.splice(idx, 1);               // mutate the original array
+// Basic node definition – feel free to swap in your own
+class TreeNode<T = number> {
+  val: T
+  left: TreeNode<T> | null = null
+  right: TreeNode<T> | null = null
+
+  constructor(val: T, left?: TreeNode<T>, right?: TreeNode<T>) {
+    this.val = val
+    if (left) this.left = left
+    if (right) this.right = right
   }
 }
-function removed<T>(arr: T[], item: T): T[] {
-  return arr.filter(x => x !== item); // keeps unchanged items
-}
-function removeAt<T>(arr: T[], idx: number): void {
-  if (idx >= 0 && idx < arr.length) {
-    arr.splice(idx, 1);
-  }
-}
-const set = new Set(arr);   // unique elements
-set.delete(item);           // removes it if present
-const newArr = [...set];    // back to an array
-type RemoveOptions = {
-  /** If true, only remove the first matching element */
-  firstOnly?: boolean;
-};
 
-function remove<T>(
-  arr: T[],
-  itemOrIdx: T | number,
-  options: RemoveOptions = {}
-): T[] {
-  const { firstOnly = false } = options;
+/**
+ * Returns the diameter of the tree rooted at `root`.
+ * If the tree is empty, the diameter is 0.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0
 
-  // Remove by index
-  if (typeof itemOrIdx === 'number') {
-    const idx = itemOrIdx;
-    if (idx >= 0 && idx < arr.length) {
-      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
-    }
-    return arr;
+  /**
+   * Helper that returns the height (in nodes) of the subtree.
+   * While unwinding recursion, we update the maximum diameter.
+   */
+  function height(node: TreeNode | null): number {
+    if (!node) return 0
+
+    const leftHeight = height(node.left)
+    const rightHeight = height(node.right)
+
+    // Path that goes through this node = leftHeight + rightHeight
+    const localDiameter = leftHeight + rightHeight
+
+    if (localDiameter > maxDiameter) maxDiameter = localDiameter
+
+    // Height is max child height plus this node
+    return Math.max(leftHeight, rightHeight) + 1
   }
 
-  // Remove by value
-  const item = itemOrIdx as T;
-  const idx = arr.indexOf(item);
-
-  if (idx === -1) return arr; // nothing to do
-
-  if (firstOnly) {
-    // fast path: mutate in place
-    arr.splice(idx, 1);
-    return arr;
-  }
-
-  // immutable: create a new array
-  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+  height(root)
+  return maxDiameter   // edge‑count diameter
 }
-let nums = [1, 2, 3, 2, 4];
-remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
-remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
-remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
+
+/* ---------- quick test ---------- */
+const tree = new TreeNode(
+  1,
+  new TreeNode(2, new TreeNode(4), new TreeNode(5)),
+  new TreeNode(3, null, new TreeNode(6, new TreeNode(7), null))
+)
+
+console.log(diameterOfBinaryTree(tree)) // → 5 (path 4‑2‑1‑3‑6‑7)
