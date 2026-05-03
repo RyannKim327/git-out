@@ -1,67 +1,60 @@
+// bubbleSort.ts
+
+export type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * In‑place quicksort.
+ * Sorts an array in place using the Bubble Sort algorithm.
  *
- * @param arr  The array to sort
- * @param cmp  Optional comparator: (a,b) => number.
- *             If omitted, the default comparison uses the built‑in
- *             < , == , > operators (works for strings, numbers, etc.).
- * @returns    The same array reference, now sorted
+ * @param arr    — The array to sort. It will be modified directly.
+ * @param cmp    — Optional comparator. If omitted, number comparison is used.
+ *
+ * @returns      — The sorted array (same reference as the input).
  */
-export function quickSort<T>(
-    arr: T[],
-    cmp?: (a: T, b: T) => number
-): T[] {
-    // Default comparator for primitives
-    const defaultCmp = (a: T, b: T): number => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-    };
+export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;          // nothing to do
 
-    const compare = cmp ?? defaultCmp;
+  // Traditional outer loop: run n‑1 passes
+  for (let pass = 0; pass < n - 1; pass++) {
+    let swapped = false;
 
-    // Lomuto partition: pivot is the last element
-    const partition = (lo: number, hi: number): number => {
-        const pivot = arr[hi];
-        let i = lo;            // place for the next smaller element
-        for (let j = lo; j < hi; j++) {
-            if (compare(arr[j], pivot) <= 0) {
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-                i++;
-            }
-        }
-        // put pivot in its final place
-        [arr[i], arr[hi]] = [arr[hi], arr[i]];
-        return i;
-    };
+    // Inner loop: compare adjacent elements
+    for (let i = 0; i < n - 1 - pass; i++) {
+      if (cmp(arr[i], arr[i + 1]) > 0) {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
+        swapped = true;
+      }
+    }
 
-    const quick = (lo: number, hi: number): void => {
-        if (lo < hi) {
-            const p = partition(lo, hi);
-            quick(lo, p - 1);
-            quick(p + 1, hi);
-        }
-    };
+    // If we made no swaps this pass, the array is sorted
+    if (!swapped) break;
+  }
 
-    quick(0, arr.length - 1);
-    return arr;
+  return arr;
 }
-// Numbers – default comparison works
-const nums = [5, 3, 8, 4, 2];
-quickSort(nums);
-console.log(nums); // [2, 3, 4, 5, 8]
 
-// Strings – default comparison is lexicographic
-const words = ['banana', 'apple', 'cherry'];
-quickSort(words);
-console.log(words); // ['apple', 'banana', 'cherry']
+/** Default numeric comparator */
+function defaultCmp(a: number, b: number): number {
+  return a - b;
+}
+import { bubbleSort } from './bubbleSort';
 
-// Custom comparator (descending)
-interface Person { name: string; age: number; }
+const numbers = [5, 2, 9, 1, 5, 6];
+bubbleSort(numbers);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+
+// Custom comparator – strings, case‑insensitive
+const strings = ['Banana', 'apple', 'Cherry'];
+bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(strings); // ['apple', 'Banana', 'Cherry']
+
+// Sorting objects
+interface Person { name: string; age: number }
 const people: Person[] = [
-    { name: 'Eve', age: 29 },
-    { name: 'Bob', age: 42 },
-    { name: 'Alice', age: 35 }
+  { name: 'Ali', age: 30 },
+  { name: 'Beth', age: 24 },
+  { name: 'Carl', age: 38 },
 ];
-quickSort(people, (a, b) => b.age - a.age); // sort by age descending
+bubbleSort(people, (p, q) => p.age - q.age);
 console.log(people);
+// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
