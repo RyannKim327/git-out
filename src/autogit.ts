@@ -1,18 +1,55 @@
-// 1. Remove whitespace from the ends – trim()
-const raw = "   some text   ";
-const trimmed = raw.trim();          // "some text"
+/**
+ * Return true if `s` is a palindrome.
+ *
+ * @param s      The string to test.
+ * @param opts   Optional flags:
+ *   - ignoreCase:   Treat uppercase and lowercase the same.
+ *   - ignorePunct:  Strip everything that's not a letter or number.
+ *
+ * @example
+ * isPalindrome('A man, a plan, a canal: Panama'); // → true
+ */
+function isPalindrome(
+  s: string,
+  opts: { ignoreCase?: boolean; ignorePunct?: boolean } = {}
+): boolean {
+  const { ignoreCase = false, ignorePunct = false } = opts;
 
-// 2. Remove whitespace everywhere in the string
-const raw2 = "  some text  with  spaces ";
-const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
+  let cleaned = s;
 
-// 3. Remove all *outside* whitespace but keep internal spaces
-const raw3 = "   some text with  internal   spaces   ";
-const keepInternal = raw3.trim();           // "some text with  internal   spaces"
+  if (ignorePunct) {
+    // Keep letters and digits only.
+    cleaned = cleaned.replace(/[^A-Za-z0-9]/g, '');
+  }
 
-// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
-const raw4 = "line1\n  line2\t";
-const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
+  if (ignoreCase) {
+    cleaned = cleaned.toLowerCase();
+  }
 
-// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
-const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
+  // Quick fail for empty string – you can decide if you want to treat it as palindrome.
+  if (cleaned.length === 0) return true;
+
+  // Compare from both ends without building a reversed copy.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
+    }
+    left++;
+    right--;
+  }
+
+  return true;
+}
+console.log(isPalindrome('racecar')); // true
+console.log(isPalindrome('RaceCar')); // false (case‑sensitive)
+console.log(isPalindrome('RaceCar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // false
+console.log(
+  isPalindrome('A man, a plan, a canal: Panama', {
+    ignoreCase: true,
+    ignorePunct: true,
+  })
+); // true
