@@ -1,73 +1,18 @@
-// ── List node -----------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+// 1. Remove whitespace from the ends – trim()
+const raw = "   some text   ";
+const trimmed = raw.trim();          // "some text"
 
-// ── Intersection finder ------------------------------------
-function intersect<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
+// 2. Remove whitespace everywhere in the string
+const raw2 = "  some text  with  spaces ";
+const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
 
-  // 1. Count nodes in each list
-  const lenA = getLength(headA);
-  const lenB = getLength(headB);
+// 3. Remove all *outside* whitespace but keep internal spaces
+const raw3 = "   some text with  internal   spaces   ";
+const keepInternal = raw3.trim();           // "some text with  internal   spaces"
 
-  // 2. Make the heads point to the same distance from the end
-  let ptrA: ListNode<T> | null = headA;
-  let ptrB: ListNode<T> | null = headB;
-  if (lenA > lenB) {
-    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
-  } else {
-    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
-  }
+// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
+const raw4 = "line1\n  line2\t";
+const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
 
-  // 3. Move together until we hit the common node (by reference)
-  while (ptrA && ptrB) {
-    if (ptrA === ptrB) return ptrA;
-    ptrA = ptrA.next;
-    ptrB = ptrB.next;
-  }
-
-  return null;          // no intersection
-}
-
-function getLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-  while (cur) {
-    ++len;
-    cur = cur.next;
-  }
-  return len;
-}
-// shared tail: 5 → 6
-const tail = new ListNode(5, new ListNode(6));
-
-// list A: 1 → 2 → 3 → (shared)
-const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
-
-// list B: 9 → (shared)
-const b = new ListNode(9, tail);
-
-const intersectNode = intersect(a, b);
-console.log(intersectNode?.val); // 5
-function intersectUsingSet<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
-  }
-
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;
-    cur = cur.next;
-  }
-  return null;
-}
+// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
+const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
