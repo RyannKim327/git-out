@@ -1,16 +1,15 @@
-function reverseString(str: string): string {
-  return str.split('').reverse().join('');
-}
+/**
+ * Return the arithmetic mean of an array of numbers.
+ * @param values – the numbers to average
+ * @returns the mean, or `null` if the array is empty
+ */
+function mean(values: number[]): number | null {
+  if (values.length === 0) return null;
 
-console.log(reverseString('hello')); // "olleh"
-function reverseStringManual(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
+  const total = values.reduce((sum, v) => sum + v, 0);
+  return total / values.length;
 }
+const grades = [88, 92, 76, 81, 95];
 
-console.log(reverseStringManual('world')); // "dlrow"
-console.assert(reverseString('abc') === 'cba');
-console.assert(reverseStringManual('abc') === 'cba');
+console.log(mean(grades)); // 86
+console.log(mean([]));     // null
