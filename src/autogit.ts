@@ -1,17 +1,27 @@
-const original = [1, 2, 3, 4, 5];
-
-// If you don’t mind mutating the original array:
-original.reverse();          // original is now [5, 4, 3, 2, 1]
-
-// If you want a fresh array and keep the original intact:
-const reversed = [...original].reverse();   // reversed is [5, 4, 3, 2, 1]
-const reversed = original.reduce(
-  (acc, cur) => [cur, ...acc] as typeof original,
-  [] as typeof original
-);
-// reversed is [5, 4, 3, 2, 1]
-const reversed: typeof original = [];
-for (let i = original.length - 1; i >= 0; i--) {
-  reversed.push(original[i]);
+/**
+ * Remove all vowels (a, e, i, o, u) from a string.
+ * Case‑insensitive and works for ASCII‑only vowels.
+ */
+function removeVowels(str: string): string {
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
-// reversed is [5, 4, 3, 2, 1]
+
+// Example
+console.log(removeVowels('Hello, World!')); // Hll, Wrld!
+function removeVowelsIncludingY(str: string): string {
+  return str.replace(/[aeiouyAEIOUY]/g, '');
+}
+function removeAnyLatinVowel(str: string): string {
+  // Matches any letter in the Latin script that is a vowel
+  return str.replace(/\p{Script=Latin}\p{Vowel}/gu, '');
+}
+function removeVowelsLoop(str: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  let result = '';
+  for (const ch of str) {
+    if (!vowels.has(ch)) {
+      result += ch;
+    }
+  }
+  return result;
+}
