@@ -1,171 +1,83 @@
-// ------------------------------------------------------------
-//  1️⃣  Types / data structures
-// ------------------------------------------------------------
-export type ID = string | number;
+/**
+ * A directed graph is expected to be an object where each key is a node
+ * id (string) and the value is an array of neighbouring node ids.
+ * Example:
+ *   const graph = {
+ *     a: ['b', 'c'],
+ *     b: ['c'],
+ *     c: ['a', 'd'],
+ *     d: ['e'],
+ *     e: []
+ *   };
+ */
+type Graph = Record<string, string[]>;
 
-// Location on a grid (for the example)
-export interface Point {
-  x: number;
-  y: number;
-  toString(): string;           // stringify for use as Map keys
-}
+/**
+ * Tarjan’s SCC algorithm.
+ *
+ * @param graph – adjacency list representation of the directed graph
+ * @returns array of SCCs, each itself an array of node ids
+ */
+export function tarjanSCC(graph: Graph): string[][] {
+  const indexMap = new Map<string, number>();
+  const lowLinkMap = new Map<string, number>();
+  const onStack = new Set<string>();
 
-export class PointImpl implements Point {
-  constructor(public x: number, public y: number) {}
-  toString() { return `${this.x},${this.y}`; }
+  const stack: string[] = [];
+  let idx = 0;
+  const sccs: string[][] = [];
 
-  // For the priority queue we need a score
-  distanceTo(other: Point) {
-    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
-  }
-}
+  const strongConnect = (node: string) => {
+    // Set the depth index for this node to the smallest unused index
+    indexMap.set(node, idx);
+    lowLinkMap.set(node, idx);
+    idx++;
 
-// Edge connects two nodes with a weight (default = 1)
-export interface Edge<T> {
-  from: T;
-  to: T;
-  weight: number;
-  cost?: number;          // will be filled later
-}
+    stack.push(node);
+    onStack.add(node);
 
-export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
-
-// ------------------------------------------------------------
-//  2️⃣  Binary‑heap priority queue (min‑heap)
-// ------------------------------------------------------------
-class HeapNode<T> {
-  constructor(public key: number, public value: T) {}
-}
-
-export class PriorityQueue<T> {
-  private heap: HeapNode<T>[] = [];
-
-  get size() { return this.heap.length; }
-  empty() { return this.size === 0; }
-
-  push(key: number, value: T) {
-    this.heap.push(new HeapNode(key, value));
-    this.bubbleUp(this.size - 1);
-  }
-  pop(): HeapNode<T> | undefined {
-    if (this.empty()) return;
-    const top = this.heap[0];
-    const last = this.heap.pop()!;
-    if (!this.empty()) {
-      this.heap[0] = last;
-      this.bubbleDown(0);
-    }
-    return top;
-  }
-
-  private bubbleUp(i: number) {
-    while (i > 0) {
-      const p = (i - 1) >> 1;
-      if (this.heap[p].key <= this.heap[i].key) break;
-      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
-      i = p;
-    }
-  }
-  private bubbleDown(i: number) {
-    const n = this.size;
-    while (true) {
-      let l = (i << 1) + 1, r = l + 1, smallest = i;
-      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
-      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
-      if (smallest === i) break;
-      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
-      i = smallest;
-    }
-  }
-}
-
-// ------------------------------------------------------------
-//  3️⃣  AStar implementation
-// ------------------------------------------------------------
-export interface AStarOptions<T> {
-  graph: Graph<T>;
-  heuristic: (a: T, b: T) => number;
-  start: T;
-  goal: T;
-}
-
-export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
-  const { graph, heuristic, start, goal } = opts;
-
-  const open = new PriorityQueue<T>();
-  open.push(0, start);
-
-  const cameFrom = new Map<T, T | null>();
-  const gScore = new Map<T, number>();
-
-  cameFrom.set(start, null);
-  gScore.set(start, 0);
-
-  while (!open.empty()) {
-    const node = open.pop()!;
-    const u = node.value;
-
-    if (u === goal) {
-      // reconstruct
-      const path: T[] = [];
-      let cur: T | null = u;
-      while (cur !== null) {
-        path.push(cur);
-        cur = cameFrom.get(cur) ?? null;
-      }
-      path.reverse();
-      return { path, cost: gScore.get(u)! };
-    }
-
-    for (const edge of graph.get(u) ?? []) {
-      const v = edge.to;
-      const tentativeG = gScore.get(u)! + edge.weight;
-
-      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
-        cameFrom.set(v, u);
-        gScore.set(v, tentativeG);
-
-        const f = tentativeG + heuristic(v, goal);
-        open.push(f, v);
+    // Consider successors of node
+    for (const succ of graph[node] ?? []) {
+      if (!indexMap.has(succ)) {
+        // Successor has not yet been visited – recurse on it
+        strongConnect(succ);
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // Successor is in stack → node is in the same SCC
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
       }
     }
-  }
 
-  return null; // no path
-}
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap.get(node) === indexMap.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  };
 
-// ------------------------------------------------------------
-//  4️⃣  Example – 4×4 grid with obstacles
-// ------------------------------------------------------------
-function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
-  const graph = new Map<Point, Edge<Point>[]>();
-
-  const dirs = [
-    [0, -1], [1, 0], [0, 1], [-1, 0],
-  ];
-
-  for (let y = 0; y < height; ++y) {
-    for (let x = 0; x < width; ++x) {
-      const p = new PointImpl(x, y);
-      if (walls.has(p.toString())) continue;
-
-      const neighbours: Edge<Point>[] = [];
-      for (const [dx, dy] of dirs) {
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        const q = new PointImpl(nx, ny);
-        if (walls.has(q.toString())) continue;
-        neighbours.push({ from: p, to: q, weight: 1 });
-      }
-      graph.set(p, neighbours);
+  // Call the recursion for each node (in any order)
+  for (const node of Object.keys(graph)) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
     }
   }
 
-  return graph;
+  return sccs;
 }
+const graph: Graph = {
+  a: ['b'],
+  b: ['c'],
+  c: ['a', 'd'],
+  d: ['e'],
+  e: ['f'],
+  f: ['d']
+};
 
-export async function main() {
-  const width = 4, height = 4;
-  const walls = new Set<string>([
-    new PointImpl(1, 1).toString(),
-    new PointImpl(2, 1).
+console.log(tarjanSCC(graph));
+// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
