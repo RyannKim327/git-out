@@ -1,70 +1,40 @@
-// random-cron.ts
-// ----------
-// Requires:
-//   npm install node-cron
-//   npm install --save-dev @types/node-cron   (optional if you want type safety)
-// ----------
-import cron from 'node-cron';
-
 /**
- * Handy helper that returns a random integer in [min, max] inclusive.
+ * Compute n! recursively.
+ *
+ * Handles:
+ *   - n >= 0   → valid
+ *   - n < 0    → throws (factorial is undefined for negatives)
+ *
+ * Returns a number if the result fits in a JavaScript number,
+ * otherwise returns a BigInt to avoid overflow.
  */
-function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+export function factorial(n: number | bigint): number | bigint {
+  // Normalize input to a bigint for exact arithmetic
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+
+  if (bigN < 0n) {
+    throw new Error('Factorial is defined only for non‑negative integers.');
+  }
+
+  // Base case: 0! = 1 and 1! = 1
+  if (bigN <= 1n) return 1n;
+
+  // Recursive step
+  const product = bigN * factorial(bigN - 1n);
+
+  // Return a standard Number when it’s mathematically safe
+  // (anything that fits within 2^53‑1).
+  if (product <= BigInt(Number.MAX_SAFE_INTEGER)) {
+    return Number(product);
+  }
+
+  // Otherwise keep it as a BigInt.
+  return product;
 }
+import { factorial } from './factorial';
 
-/**
- * A tiny random “quote” pool. Feel free to replace these with your own.
- */
-const QUOTES: string[] = [
-  "Do not wait to strike till the iron is hot; but make it hot by striking.",
-  "All that we see or seem is but a dream within a dream.",
-  "Noise is bliss when you’re chasing a dream.",
-  "In the middle of difficulty lies opportunity.",
-  "The only limit to our realization of tomorrow is our doubts about today."
-];
-
-/**
- * Pick a random quote from `QUOTES`.
- */
-function getRandomQuote(): string {
-  const idx = randInt(0, QUOTES.length - 1);
-  return QUOTES[idx];
-}
-
-/**
- * Pick a random time (hour/minute) so that the job will fire at a different
- * spot each day. These are UTC values in the cron string.
- */
-function generateRandomCronExpr(): string {
-  const hour = randInt(0, 23);
-  const minute = randInt(0, 59);
-  // e.g. "14 3 * * *" → 3:14 AM UTC every day
-  return `${minute} ${hour} * * *`;
-}
-
-/**
- * Launch a cron job that runs at the generated random time.
- */
-function scheduleDailyQuote() {
-  const cronExpr = generateRandomCronExpr();
-  console.log(`Scheduling daily quote at *${cronExpr}* (UTC).`);
-
-  cron.schedule(cronExpr, () => {
-    const msg = getRandomQuote();
-    const time = new Date().toISOString();
-    console.log(`[${time}] Random quote: ${msg}`);
-  });
-}
-
-scheduleDailyQuote();
-# 1. Install deps
-npm install --save node-cron
-# Optional typings
-npm install --save-dev @types/node-cron
-
-# 2. Compile (if you’re using tsc)
-tsc random-cron.ts
-
-# 3. Run
-node random-cron.js
+console.log(factorial(5));   // 120          (returns a number)
+console.log(factorial(20));  // 2432902008176640000  (returns a number)
+console.log(factorial(50));  // BigInt(304140932...)
+// if you prefer a string for extremely large results:
+console.log(factorial(50).toString());
