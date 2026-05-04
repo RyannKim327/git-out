@@ -1,64 +1,171 @@
-/**
- * A directed graph represented by an adjacency list.
- * Each node is identified by a string (you can swap to number / symbol if you want).
- */
-type Graph = Record<string, string[]>;
+// ------------------------------------------------------------
+//  1️⃣  Types / data structures
+// ------------------------------------------------------------
+export type ID = string | number;
 
-/**
- * Returns an array of nodes in a topological order.
- *
- * Throws if the graph contains a cycle (i.e. cannot be sorted).
- */
-export function topologicalSort(graph: Graph): string[] {
-  // 1. Compute indegree for every node.
-  const indegree: Record<string, number> = {};
-  const nodes: string[] = Object.keys(graph);
-
-  nodes.forEach(node => (indegree[node] = 0));
-
-  nodes.forEach(node =>
-    graph[node].forEach(neighbor => {
-      if (indegree[neighbor] === undefined) {
-        indegree[neighbor] = 0; // in case a node has no outgoing edges but appears as a target
-      }
-      indegree[neighbor] += 1;
-    })
-  );
-
-  // 2. Start with all nodes that have indegree 0.
-  const queue: string[] = nodes.filter(node => indegree[node] === 0);
-  const order: string[] = [];
-
-  // 3. Repeatedly take a node out of the queue,
-  //    append it to order, and subtract 1 from
-  //    the indegree of each of its neighbours.
-  while (queue.length > 0) {
-    const current = queue.shift() as string; // safe because we know queue isn't empty
-    order.push(current);
-
-    graph[current].forEach(next => {
-      indegree[next] -= 1;
-      if (indegree[next] === 0) {
-        queue.push(next);
-      }
-    });
-  }
-
-  // 4. If we were able to visit every node, the graph is a DAG.
-  if (order.length !== Object.keys(indegree).length) {
-    throw new Error('Graph has at least one cycle – topological sort impossible');
-  }
-
-  return order;
+// Location on a grid (for the example)
+export interface Point {
+  x: number;
+  y: number;
+  toString(): string;           // stringify for use as Map keys
 }
-const sampleGraph: Graph = {
-  a: ['b', 'c'],
-  b: ['d'],
-  c: ['d'],
-  d: [],          // d has no outgoing edges
-  e: ['a', 'f'],  // e is another root
-  f: []
-};
 
-console.log(topologicalSort(sampleGraph));
-// → [ 'e', 'a', 'b', 'c', 'd', 'f' ]  (one valid topological ordering)
+export class PointImpl implements Point {
+  constructor(public x: number, public y: number) {}
+  toString() { return `${this.x},${this.y}`; }
+
+  // For the priority queue we need a score
+  distanceTo(other: Point) {
+    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
+  }
+}
+
+// Edge connects two nodes with a weight (default = 1)
+export interface Edge<T> {
+  from: T;
+  to: T;
+  weight: number;
+  cost?: number;          // will be filled later
+}
+
+export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
+
+// ------------------------------------------------------------
+//  2️⃣  Binary‑heap priority queue (min‑heap)
+// ------------------------------------------------------------
+class HeapNode<T> {
+  constructor(public key: number, public value: T) {}
+}
+
+export class PriorityQueue<T> {
+  private heap: HeapNode<T>[] = [];
+
+  get size() { return this.heap.length; }
+  empty() { return this.size === 0; }
+
+  push(key: number, value: T) {
+    this.heap.push(new HeapNode(key, value));
+    this.bubbleUp(this.size - 1);
+  }
+  pop(): HeapNode<T> | undefined {
+    if (this.empty()) return;
+    const top = this.heap[0];
+    const last = this.heap.pop()!;
+    if (!this.empty()) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(i: number) {
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.heap[p].key <= this.heap[i].key) break;
+      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+      i = p;
+    }
+  }
+  private bubbleDown(i: number) {
+    const n = this.size;
+    while (true) {
+      let l = (i << 1) + 1, r = l + 1, smallest = i;
+      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
+      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
+      if (smallest === i) break;
+      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+      i = smallest;
+    }
+  }
+}
+
+// ------------------------------------------------------------
+//  3️⃣  AStar implementation
+// ------------------------------------------------------------
+export interface AStarOptions<T> {
+  graph: Graph<T>;
+  heuristic: (a: T, b: T) => number;
+  start: T;
+  goal: T;
+}
+
+export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
+  const { graph, heuristic, start, goal } = opts;
+
+  const open = new PriorityQueue<T>();
+  open.push(0, start);
+
+  const cameFrom = new Map<T, T | null>();
+  const gScore = new Map<T, number>();
+
+  cameFrom.set(start, null);
+  gScore.set(start, 0);
+
+  while (!open.empty()) {
+    const node = open.pop()!;
+    const u = node.value;
+
+    if (u === goal) {
+      // reconstruct
+      const path: T[] = [];
+      let cur: T | null = u;
+      while (cur !== null) {
+        path.push(cur);
+        cur = cameFrom.get(cur) ?? null;
+      }
+      path.reverse();
+      return { path, cost: gScore.get(u)! };
+    }
+
+    for (const edge of graph.get(u) ?? []) {
+      const v = edge.to;
+      const tentativeG = gScore.get(u)! + edge.weight;
+
+      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
+        cameFrom.set(v, u);
+        gScore.set(v, tentativeG);
+
+        const f = tentativeG + heuristic(v, goal);
+        open.push(f, v);
+      }
+    }
+  }
+
+  return null; // no path
+}
+
+// ------------------------------------------------------------
+//  4️⃣  Example – 4×4 grid with obstacles
+// ------------------------------------------------------------
+function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
+  const graph = new Map<Point, Edge<Point>[]>();
+
+  const dirs = [
+    [0, -1], [1, 0], [0, 1], [-1, 0],
+  ];
+
+  for (let y = 0; y < height; ++y) {
+    for (let x = 0; x < width; ++x) {
+      const p = new PointImpl(x, y);
+      if (walls.has(p.toString())) continue;
+
+      const neighbours: Edge<Point>[] = [];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const q = new PointImpl(nx, ny);
+        if (walls.has(q.toString())) continue;
+        neighbours.push({ from: p, to: q, weight: 1 });
+      }
+      graph.set(p, neighbours);
+    }
+  }
+
+  return graph;
+}
+
+export async function main() {
+  const width = 4, height = 4;
+  const walls = new Set<string>([
+    new PointImpl(1, 1).toString(),
+    new PointImpl(2, 1).
