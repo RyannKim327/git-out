@@ -1,44 +1,78 @@
-// Count the occurrences of the digit at `exp` (1, 10, 100, …)
-function countingSortByDigit(arr: number[], exp: number): number[] {
-  const n = arr.length;
-  const output = new Array(n);
-  const count = new Array(10).fill(0); // base 10
-
-  // 1. Count digit occurrences
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
-  }
-
-  // 2. Accumulate counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array (reverse traversal for stability)
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    output[count[digit] - 1] = arr[i];
-    count[digit] -= 1;
-  }
-
-  return output;
+// ───────────────────── Graph Types ───────────────────────────────────────
+type NodeId = string | number;          // anything that can be compared with ===
+interface AdjList {
+  // nodeId -> array of neighbor nodeIds
+  [key: string]: NodeId[];
 }
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
 
-  // Find the maximum number to know how many digits we need
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
+// ───────────────────── BFS Implementation ────────────────────────────────
+function bfs(
+  graph: AdjList,
+  start: NodeId,
+  visit: (node: NodeId) => void = () => {}
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
+
+  visited.add(start);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
+
+    visit(current);        // optional callback that may do whatever you want
+    order.push(current);
+
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        queue.push(neigh);
+      }
+    }
   }
 
-  // Start with the least‑significant digit (exp = 1, 10, 100, …)
-  for (let exp = 1; max / exp >= 1; exp *= 10) {
-    arr = countingSortByDigit(arr, exp);
-  }
-
-  return arr;
+  return order;           // return traversal order if you need it
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
+
+// ───────────────────── Example Usage ──────────────────────────────────────
+const exampleGraph: AdjList = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
+
+const traversal = bfs(exampleGraph, 'A');
+console.log('BFS order:', traversal);
+// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+
+// If you only care about distances from the start node:
+function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
+  const distances = new Map<NodeId, number>();
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+
+  visited.add(start);
+  distances.set(start, 0);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        distances.set(neigh, distances.get(current)! + 1);
+        queue.push(neigh);
+      }
+    }
+  }
+
+  return distances;
+}
+
+const dists = bfsDistances(exampleGraph, 'A');
+console.log('Distances from A:', Object.fromEntries(dists.entries()));
+// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
