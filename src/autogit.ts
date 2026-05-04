@@ -1,18 +1,18 @@
-const numbers = [12, -5, 7, 42, 3.9];
+// 1. Remove whitespace from the ends – trim()
+const raw = "   some text   ";
+const trimmed = raw.trim();          // "some text"
 
-// 1️⃣ Spice it up with the spread operator (`Math.max`)
-const maxUsingMath = Math.max(...numbers);
-console.log('maxUsingMath →', maxUsingMath); // 42
+// 2. Remove whitespace everywhere in the string
+const raw2 = "  some text  with  spaces ";
+const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
 
-// 2️⃣ Stack‑overflow‑safe – you don’t want to blow the argument limit
-const maxUsingReduce = numbers.reduce((max, n) => (n > max ? n : max), -Infinity);
-console.log('maxUsingReduce →', maxUsingReduce); // 42
+// 3. Remove all *outside* whitespace but keep internal spaces
+const raw3 = "   some text with  internal   spaces   ";
+const keepInternal = raw3.trim();           // "some text with  internal   spaces"
 
-// 3️⃣ Old‑school loop (great for huge arrays)
-let maxOldSchool = -Infinity;
-for (const n of numbers) {
-  if (n > maxOldSchool) maxOldSchool = n;
-}
-console.log('maxOldSchool →', maxOldSchool); // 42
-const bigNumbers = new Float64Array([1.5, 2.3, 0.0, 9.1]);
-const maxFloat = Math.max(...bigNumbers); // works, but may still hit the limit
+// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
+const raw4 = "line1\n  line2\t";
+const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
+
+// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
+const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
