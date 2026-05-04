@@ -1,44 +1,39 @@
 /**
- * In‑place Selection Sort.
+ * Insertion sort – O(n²) average‑case (stable, in‑place)
  *
- * @param arr   The array to sort.
- * @param cmp   Optional comparison function.
- *              Should return a negative number if a < b,
- *              zero if a === b, and positive if a > b.
+ * @param arr       The array to be sorted
+ * @param compareFn Optional comparison callback.  If omitted, natural ordering
+ *                  (a <= b) is used.  The callback should return
+ *                  <0 when a < b, 0 when a === b, >0 when a > b.
  */
-function selectionSort<T>(
+export function insertionSort<T>(
   arr: T[],
-  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
+  compareFn?: (a: T, b: T) => number
 ): void {
-  const n = arr.length;
+  // fall back to natural ordering for primitives
+  if (!compareFn) {
+    compareFn = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+  }
 
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the minimum is at i.
-    let minIndex = i;
+  // start from the second element – the first element is a 1‑item sorted slice
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-    // Search for the true minimum in the unsorted part.
-    for (let j = i + 1; j < n; j++) {
-      if (cmp(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
+    // move elements that are greater than `key` one position to the right
+    while (j >= 0 && compareFn(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
 
-    // If minIndex changed, swap the two values.
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
+    // place `key` after the element just smaller than it
+    arr[j + 1] = key;
   }
 }
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
-interface Person { name: string; age: number }
+const numbers = [8, 3, 5, 4, 7, 1, 9, 2];
+insertionSort(numbers);
+console.log(numbers); // [1, 2, 3, 4, 5, 7, 8, 9]
 
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 25 },
-  { name: 'Charlie', age: 35 }
-];
-
-selectionSort(people, (p1, p2) => p1.age - p2.age);
-console.log(people);
+const words = ['banana', 'apple', 'cherry', 'date'];
+insertionSort(words, (a, b) => a.localeCompare(b));
+console.log(words); // ["apple", "banana", "cherry", "date"]
