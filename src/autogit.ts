@@ -1,66 +1,64 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
 }
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
+const foo = [1, 2, 3, 4];
+const bar = [3, 4, 5, 6];
+console.log(intersection(foo, bar)); // [3, 4]
+function intersectionSorted<T>(a: T[], b: T[]): T[] {
+  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
+  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
+  const res: T[] = [];
+  let i = 0, j = 0;
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
-
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
-
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) {
-      leafCount++;
+  while (i < sortedA.length && j < sortedB.length) {
+    if (sortedA[i] === sortedB[j]) {
+      res.push(sortedA[i]); i++; j++;
+    } else if (sortedA[i] < sortedB[j]) {
+      i++;
     } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+      j++;
     }
   }
-
-  return leafCount;
+  return res;
 }
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
+function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const seen = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
+function intersectionBy<T, K>(
+  a: T[],
+  b: T[],
+  keyFn: (item: T) => K
+): T[] {
+  const setB = new Set(b.map(keyFn));
+  return a.filter(x => setB.has(keyFn(x)));
+}
+const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
+const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
 
-  if (!root) return leaves;
+console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
+const common = a.filter(v => b.includes(v));
+type KeyFn<T, K> = (item: T) => K;
 
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
+// Fastest for primitives
+export function intersection<T>(a: T[], b: T[]): T[] {
+  const set = new Set(b);
+  return a.filter(x => set.has(x));
+}
 
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
+// Preserve order, unique results
+export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
 
-  return leaves;
+// For objects or custom equality
+export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
+  const set = new Set(b.map(keyFn));
+  return a.filter(x => set.has(keyFn(x)));
 }
