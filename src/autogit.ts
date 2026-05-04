@@ -1,138 +1,55 @@
-// ──────────────────────────────────────────────────────────────────────
-// 1️⃣  Node definition
-// ──────────────────────────────────────────────────────────────────────
+/**
+ * Return true if `s` is a palindrome.
+ *
+ * @param s      The string to test.
+ * @param opts   Optional flags:
+ *   - ignoreCase:   Treat uppercase and lowercase the same.
+ *   - ignorePunct:  Strip everything that's not a letter or number.
+ *
+ * @example
+ * isPalindrome('A man, a plan, a canal: Panama'); // → true
+ */
+function isPalindrome(
+  s: string,
+  opts: { ignoreCase?: boolean; ignorePunct?: boolean } = {}
+): boolean {
+  const { ignoreCase = false, ignorePunct = false } = opts;
 
-export class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+  let cleaned = s;
+
+  if (ignorePunct) {
+    // Keep letters and digits only.
+    cleaned = cleaned.replace(/[^A-Za-z0-9]/g, '');
+  }
+
+  if (ignoreCase) {
+    cleaned = cleaned.toLowerCase();
+  }
+
+  // Quick fail for empty string – you can decide if you want to treat it as palindrome.
+  if (cleaned.length === 0) return true;
+
+  // Compare from both ends without building a reversed copy.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
+    }
+    left++;
+    right--;
+  }
+
+  return true;
 }
-
-// ──────────────────────────────────────────────────────────────────────
-// 2️⃣  Binary‑Search‑Tree
-// ──────────────────────────────────────────────────────────────────────
-
-export class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-
-  /* ----------------------------------------------------------------- */
-  // basic insertion – assumes no duplicates
-  /* ----------------------------------------------------------------- */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let node: TreeNode<T> | null = this.root;
-    while (node) {
-      if (value < node.value) {
-        if (!node.left) {
-          node.left = newNode;
-          break;
-        }
-        node = node.left;
-      } else {
-        if (!node.right) {
-          node.right = newNode;
-          break;
-        }
-        node = node.right;
-      }
-    }
-  }
-
-  /* ----------------------------------------------------------------- */
-  // find a value – returns the node or null
-  /* ----------------------------------------------------------------- */
-  find(value: T): TreeNode<T> | null {
-    let node = this.root;
-    while (node) {
-      if (value === node.value) return node;
-      node = value < node.value ? node.left : node.right;
-    }
-    return null;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // In‑order traversal – returns array of values sorted (for BST)
-  /* ----------------------------------------------------------------- */
-  inorder(): T[] {
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [];
-    let node = this.root;
-
-    while (stack.length || node) {
-      while (node) {
-        stack.push(node);
-        node = node.left!;
-      }
-      node = stack.pop()!;
-      result.push(node.value);
-      node = node.right!;
-    }
-
-    return result;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // Pre‑order (root, left, right)
-  /* ----------------------------------------------------------------- */
-  preorder(): T[] {
-    if (!this.root) return [];
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [this.root];
-
-    while (stack.length) {
-      const node = stack.pop()!;
-      result.push(node.value);
-
-      // push right first so left is processed first
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
-    }
-
-    return result;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // Post‑order (left, right, root) – iterative with two stacks
-  /* ----------------------------------------------------------------- */
-  postorder(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
-
-    const stack1: TreeNode<T>[] = [this.root];
-    const stack2: TreeNode<T>[] = [];
-
-    while (stack1.length) {
-      const node = stack1.pop()!;
-      stack2.push(node);
-
-      if (node.left) stack1.push(node.left);
-      if (node.right) stack1.push(node.right);
-    }
-
-    while (stack2.length) {
-      result.push(stack2.pop()!.value);
-    }
-
-    return result;
-  }
-}
-import { BinarySearchTree } from "./bst";
-
-const bst = new BinarySearchTree<number>();
-
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
-
-console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
-console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
-console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
-
-console.log("Find 5:", bst.find(5)?.value);          // 5
-console.log("Find 20:", bst.find(20));               // null
+console.log(isPalindrome('racecar')); // true
+console.log(isPalindrome('RaceCar')); // false (case‑sensitive)
+console.log(isPalindrome('RaceCar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // false
+console.log(
+  isPalindrome('A man, a plan, a canal: Panama', {
+    ignoreCase: true,
+    ignorePunct: true,
+  })
+); // true
