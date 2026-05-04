@@ -1,81 +1,147 @@
-/**
- * A very generic tree node interface.
- * `children` can be empty, allowing the node to be a leaf.
- */
-interface TreeNode<T = unknown> {
-  /** Whatever payload you want to store. */
-  value: T
+/* ------------------------------------------------------------
+   A tiny bidirectional BFS implementation
+   ------------------------------------------------------------ */
 
-  /** Children of this node – an empty array represents a leaf. */
-  children?: TreeNode<T>[]
+type NodeId = string | number;
+
+// A node in an undirected graph.
+interface GraphNode<T> {
+  id: NodeId;             // unique hashable identifier
+  val: T;                 // payload you care about
+  neighbors: NodeId[];    // adjacent node ids
 }
 
+// Helper: build a hash map (id → node) for quick lookup
+function indexNodes<T>(nodes: GraphNode<T>[]): Map<NodeId, GraphNode<T>> {
+  const map = new Map<NodeId, GraphNode<T>>();
+  for (const node of nodes) map.set(node.id, node);
+  return map;
+}
+
+// ------------------------------------------------------------
+
 /**
- * Depth‑Limited Search (DFS) – recursive version.
+ * Bidirectional search between `startId` and `goalId`.
  *
- * @param root   The node from which the search starts.
- * @param target A predicate that decides whether the node we are looking for
- *               was found.
- * @param limit  The maximum depth (0 → only the root, 1 → root + its children, …).
- * @param depth  Current depth – the caller should omit it.
- * @returns The first matching node, or undefined if none is found within the limit.
+ * @param nodes          array of all nodes in the graph
+ * @param startId       id of the starting node
+ * @param goalId        id of the target node
+ * @returns              array of node ids representing the shortest path,
+ *                       or `null` if no path exists
  */
-export function depthLimitedSearchRecursive<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number,
-  depth = 0
-): TreeNode<T> | undefined {
-  // If the depth exceeds the limit, stop exploring this branch
-  if (depth > limit) return undefined
+export function biBfs<T>(
+  nodes: GraphNode<T>[],
+  startId: NodeId,
+  goalId: NodeId
+): NodeId[] | null {
+  if (startId === goalId) return [startId];
 
-  if (target(root)) return root
+  const lookup = indexNodes(nodes);
 
-  if (!root.children) return undefined
+  // Frontier queues for each direction
+  const frontierStart: NodeId[] = [startId];
+  const frontierGoal: NodeId[]   = [goalId];
 
-  for (const child of root.children) {
-    const hit = depthLimitedSearchRecursive(child, target, limit, depth + 1)
-    if (hit) return hit
-  }
+  // Visited maps: id → predecessor id (to reconstruct)
+  const predStart = new Map<NodeId, NodeId | null>();
+  const predGoal  = new Map<NodeId, NodeId | null>();
 
-  return undefined
-}
-export function depthLimitedSearch<T>(
-  root: TreeNode<T>,
-  target: (node: TreeNode<T>) => boolean,
-  limit: number
-): TreeNode<T> | undefined {
-  // Stack entries hold the node and its depth
-  type StackEntry = { node: TreeNode<T>; depth: number }
-  const stack: StackEntry[] = [{ node: root, depth: 0 }]
+  predStart.set(startId, null);
+  predGoal.set(goalId, null);
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!
+  // Visited sets to decide intersection
+  const visitedStart = new Set<NodeId>([startId]);
+  const visitedGoal  = new Set<NodeId>([goalId]);
 
-    if (target(node)) return node
-    if (depth === limit) continue           // don't push children deeper than the limit
+  while (frontierStart.length && frontierGoal.length) {
+    // Expand the smaller frontier to keep the search balanced
+    const expandStart = frontierStart.length <= frontierGoal.length;
+    const currentFrontier = expandStart ? frontierStart : frontierGoal;
+    const currentVisited = expandStart ? visitedStart : visitedGoal;
+    const otherVisited = expandStart ? visitedGoal : visitedStart;
+    const currentPred = expandStart ? predStart : predGoal;
+    const otherPred = expandStart ? predGoal : predStart;
+    const direction = expandStart ? 'start' : 'goal';
 
-    // push children in reverse order so that the leftmost child is processed first
-    if (node.children) {
-      for (let i = node.children.length - 1; i >= 0; i--) {
-        stack.push({ node: node.children[i], depth: depth + 1 })
+    // Pull the next batch of nodes (classic BFS layer)
+    const nextLayer: NodeId[] = [];
+    for (const nodeId of currentFrontier) {
+      const node = lookup.get(nodeId)!;
+      for (const neighId of node.neighbors) {
+        if (currentVisited.has(neighId)) continue;
+
+        // Mark visited and store predecessor
+        currentVisited.add(neighId);
+        currentPred.set(neighId, nodeId);
+        nextLayer.push(neighId);
+
+        // If the other side has already seen this neighbor, we’re done
+        if (otherVisited.has(neighId)) {
+          // Build the full path
+          return buildPath(
+            neighId,
+            predStart,
+            predGoal,
+            startId,
+            goalId,
+            direction === 'start'
+          );
+        }
       }
     }
+
+    // Replace frontier with the newly generated layer
+    if (expandStart) frontierStart.length = 0; else frontierGoal.length = 0;
+    if (expandStart) frontierStart.push(...nextLayer); else frontierGoal.push(...nextLayer);
   }
 
-  return undefined
-}
-// Example tree (int values)
-const tree: TreeNode<number> = {
-  value: 1,
-  children: [
-    { value: 2, children: [{ value: 4 }, { value: 5 }] },
-    { value: 3, children: [{ value: 6 }, { value: 7 }] }
-  ]
+  // No meeting point found
+  return null;
 }
 
-// Find the node with value 5, but never look deeper than depth 2
-const target = (n: TreeNode<number>) => n.value === 5
-const found = depthLimitedSearch(tree, target, 2)
+/** Reconstruct path once the two searches meet at `meetId`. */
+function buildPath(
+  meetId: NodeId,
+  predStart: Map<NodeId, NodeId | null>,
+  predGoal: Map<NodeId, NodeId | null>,
+  startId: NodeId,
+  goalId: NodeId,
+  fromStart: boolean
+): NodeId[] {
+  const path: NodeId[] = [];
 
-console.log(found?.value)   // prints 5
+  // Walk back from the meeting point to the start
+  let cur: NodeId | null = meetId;
+  while (cur !== null) {
+    path.unshift(cur);
+    cur = predStart.get(cur) ?? null;
+  }
+
+  // Walk forward from the meeting point to the goal
+  cur = predGoal.get(meetId) ?? null;
+  while (cur !== null) {
+    path.push(cur);
+    cur = predGoal.get(cur) ?? null;
+  }
+
+  // Connect start and goal if they weren't directly the meet point
+  if (path[0] !== startId) path.unshift(startId);
+  if (path[path.length - 1] !== goalId) path.push(goalId);
+
+  return path;
+}
+
+// ------------------------------------------------------------
+// Demo usage ---------------------------------------------------
+
+const graph: GraphNode<number>[] = [
+  { id: 1, val: 1, neighbors: [2, 5] },
+  { id: 2, val: 2, neighbors: [1, 3] },
+  { id: 3, val: 3, neighbors: [2, 4] },
+  { id: 4, val: 4, neighbors: [3] },
+  { id: 5, val: 5, neighbors: [1, 6] },
+  { id: 6, val: 6, neighbors: [5] },
+];
+
+const path = biBfs(graph, 1, 4);
+console.log(path); // [1, 2, 3, 4]
