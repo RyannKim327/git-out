@@ -1,78 +1,66 @@
-// ───────────────────── Graph Types ───────────────────────────────────────
-type NodeId = string | number;          // anything that can be compared with ===
-interface AdjList {
-  // nodeId -> array of neighbor nodeIds
-  [key: string]: NodeId[];
+// A standard binary‑tree node definition
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
+0                     if root is null
+1                     if root has no children
+count(left) + count(right)   otherwise
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                    // Empty tree
 
-// ───────────────────── BFS Implementation ────────────────────────────────
-function bfs(
-  graph: AdjList,
-  start: NodeId,
-  visit: (node: NodeId) => void = () => {}
-): NodeId[] {
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
+  // No children → it’s a leaf!
+  if (!root.left && !root.right) return 1;
 
-  visited.add(start);
-  queue.push(start);
+  // Walk the two sub‑trees and add their leaf counts
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+const tree = new TreeNode(1,
+             new TreeNode(2, new TreeNode(4), null),
+             new TreeNode(3, null, new TreeNode(5))
+          );
 
-  while (queue.length > 0) {
-    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
+console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
 
-    visit(current);        // optional callback that may do whatever you want
-    order.push(current);
+  let leafCount = 0;
+  const stack: (TreeNode<T> | null)[] = [root];
 
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        queue.push(neigh);
-      }
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
+
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // push children onto stack; order doesn’t matter
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
     }
   }
 
-  return order;           // return traversal order if you need it
+  return leafCount;
 }
+function getLeafValues<T>(root: TreeNode<T> | null): T[] {
+  const leaves: T[] = [];
 
-// ───────────────────── Example Usage ──────────────────────────────────────
-const exampleGraph: AdjList = {
-  A: ['B', 'C'],
-  B: ['A', 'D', 'E'],
-  C: ['A', 'F'],
-  D: ['B'],
-  E: ['B', 'F'],
-  F: ['C', 'E'],
-};
+  if (!root) return leaves;
 
-const traversal = bfs(exampleGraph, 'A');
-console.log('BFS order:', traversal);
-// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+  const stack: (TreeNode<T> | null)[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
 
-// If you only care about distances from the start node:
-function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
-  const distances = new Map<NodeId, number>();
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-
-  visited.add(start);
-  distances.set(start, 0);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        distances.set(neigh, distances.get(current)! + 1);
-        queue.push(neigh);
-      }
+    if (!node.left && !node.right) leaves.push(node.val);
+    else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
     }
   }
 
-  return distances;
+  return leaves;
 }
-
-const dists = bfsDistances(exampleGraph, 'A');
-console.log('Distances from A:', Object.fromEntries(dists.entries()));
-// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
