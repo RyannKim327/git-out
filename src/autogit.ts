@@ -1,10 +1,9 @@
-function reverseWords(str: string): string {
-  // 1️⃣  Trim leading/trailing spaces
-  // 2️⃣  Split on any amount of whitespace
-  // 3️⃣  Reverse the array
-  // 4️⃣  Join back with a single space
-  return str.trim().split(/\s+/).reverse().join(' ');
-}
-console.log(reverseWords("  the quick   brown fox  "));
-// → "fox brown quick the"
-const r = (s: string) => s.trim().split(/\s+/).reverse().join(' ');
+const str = "  123   ";
+
+const num1 = Number(str);            // 123
+const num2 = +'123';                 // 123
+const num3 = parseInt(str, 10);      // 123
+const num4 = parseFloat('123.45');   // 123.45
+const num5 = str * 1;                // 123
+
+console.log([num1, num2, num3, num4, num5]); // [123, 123, 123, 123.45, 123]
