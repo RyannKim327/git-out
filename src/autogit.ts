@@ -1,32 +1,60 @@
+// bubbleSort.ts
+
+export type Comparator<T> = (a: T, b: T) => number;
+
 /**
- * Count how many times a whole word appears in a text.
+ * Sorts an array in place using the Bubble Sort algorithm.
  *
- * @param text   The text to search in.
- * @param word   The word you’re looking for.
- * @param caseSensitive Set to `true` if you want case‑sensitive matches.
- * @returns The number of non‑overlapping occurrences.
+ * @param arr    — The array to sort. It will be modified directly.
+ * @param cmp    — Optional comparator. If omitted, number comparison is used.
+ *
+ * @returns      — The sorted array (same reference as the input).
  */
-export function countWordOccurrences(
-  text: string,
-  word: string,
-  caseSensitive: boolean = false
-): number {
-  // Escape any regex metacharacters that could be in the word.
-  const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
+  const n = arr.length;
+  if (n < 2) return arr;          // nothing to do
 
-  // Build a regex that matches the word with word‑boundaries.
-  // \b ensures we don’t count “the” inside “there”.
-  const flags = caseSensitive ? 'g' : 'gi';
-  const regex = new RegExp(`\\b${escapedWord}\\b`, flags);
+  // Traditional outer loop: run n‑1 passes
+  for (let pass = 0; pass < n - 1; pass++) {
+    let swapped = false;
 
-  const matches = text.match(regex);
-  return matches?.length ?? 0;
+    // Inner loop: compare adjacent elements
+    for (let i = 0; i < n - 1 - pass; i++) {
+      if (cmp(arr[i], arr[i + 1]) > 0) {
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
+        swapped = true;
+      }
+    }
+
+    // If we made no swaps this pass, the array is sorted
+    if (!swapped) break;
+  }
+
+  return arr;
 }
-console.log(countWordOccurrences('Hello world, hello again.', 'hello')); // 2
-console.log(countWordOccurrences('Batman & batman! Batman?', 'batman')); // 1 (case‑sensitive)
-console.log(countWordOccurrences('The cat in the cathedral.', 'cat')); // 2
-function countBySplit(text: string, word: string, caseSensitive = false) {
-  const flags = caseSensitive ? '' : 'i';
-  const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, flags);
-  return text.split(regex).length - 1;
+
+/** Default numeric comparator */
+function defaultCmp(a: number, b: number): number {
+  return a - b;
 }
+import { bubbleSort } from './bubbleSort';
+
+const numbers = [5, 2, 9, 1, 5, 6];
+bubbleSort(numbers);
+console.log(numbers); // [1, 2, 5, 5, 6, 9]
+
+// Custom comparator – strings, case‑insensitive
+const strings = ['Banana', 'apple', 'Cherry'];
+bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+console.log(strings); // ['apple', 'Banana', 'Cherry']
+
+// Sorting objects
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: 'Ali', age: 30 },
+  { name: 'Beth', age: 24 },
+  { name: 'Carl', age: 38 },
+];
+bubbleSort(people, (p, q) => p.age - q.age);
+console.log(people);
+// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
