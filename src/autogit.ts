@@ -1,83 +1,46 @@
 /**
- * A directed graph is expected to be an object where each key is a node
- * id (string) and the value is an array of neighbouring node ids.
- * Example:
- *   const graph = {
- *     a: ['b', 'c'],
- *     b: ['c'],
- *     c: ['a', 'd'],
- *     d: ['e'],
- *     e: []
- *   };
+ * Returns the majority element of a non‑empty array
+ * or null if no majority exists.
  */
-type Graph = Record<string, string[]>;
+function majorityElement(nums: number[]): number | null {
+  let candidate: number | null = null;
+  let count = 0;
 
-/**
- * Tarjan’s SCC algorithm.
- *
- * @param graph – adjacency list representation of the directed graph
- * @returns array of SCCs, each itself an array of node ids
- */
-export function tarjanSCC(graph: Graph): string[][] {
-  const indexMap = new Map<string, number>();
-  const lowLinkMap = new Map<string, number>();
-  const onStack = new Set<string>();
-
-  const stack: string[] = [];
-  let idx = 0;
-  const sccs: string[][] = [];
-
-  const strongConnect = (node: string) => {
-    // Set the depth index for this node to the smallest unused index
-    indexMap.set(node, idx);
-    lowLinkMap.set(node, idx);
-    idx++;
-
-    stack.push(node);
-    onStack.add(node);
-
-    // Consider successors of node
-    for (const succ of graph[node] ?? []) {
-      if (!indexMap.has(succ)) {
-        // Successor has not yet been visited – recurse on it
-        strongConnect(succ);
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // Successor is in stack → node is in the same SCC
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
-      }
-    }
-
-    // If node is a root node, pop the stack and generate an SCC
-    if (lowLinkMap.get(node) === indexMap.get(node)) {
-      const scc: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== node);
-      sccs.push(scc);
-    }
-  };
-
-  // Call the recursion for each node (in any order)
-  for (const node of Object.keys(graph)) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
+  // 1️⃣ first pass – find a candidate
+  for (const x of nums) {
+    if (count === 0) {
+      candidate = x;
+      count = 1;
+    } else if (x === candidate) {
+      count++;
+    } else {
+      count--;
     }
   }
 
-  return sccs;
-}
-const graph: Graph = {
-  a: ['b'],
-  b: ['c'],
-  c: ['a', 'd'],
-  d: ['e'],
-  e: ['f'],
-  f: ['d']
-};
+  // 2️⃣ optional second pass – verify the candidate
+  if (candidate !== null) {
+    count = 0;
+    for (const x of nums) if (x === candidate) count++;
 
-console.log(tarjanSCC(graph));
-// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
+    return count > Math.floor(nums.length / 2) ? candidate : null;
+  }
+
+  return null;
+}
+const arr = [1, 2, 3, 1, 1];
+console.log(majorityElement(arr)); // 1
+
+const noMajority = [1, 2, 3, 4];
+console.log(majorityElement(noMajority)); // null
+function majorityWithMap(nums: number[]): number | null {
+  const freq = new Map<number, number>();
+  const half = Math.floor(nums.length / 2);
+
+  for (const x of nums) {
+    const newCount = (freq.get(x) || 0) + 1;
+    freq.set(x, newCount);
+    if (newCount > half) return x;
+  }
+  return null;
+}
