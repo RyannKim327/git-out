@@ -1,33 +1,78 @@
-/**
- * Returns true if the array is in strictly ascending order.
- * For non‑strict (allowing equal elements) change the comparison accordingly.
- */
-export function isSortedAscending<T>(arr: Array<T>): boolean {
-  for (let i = 1; i < arr.length; ++i) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-compare
-    if (arr[i] < arr[i - 1]) {
-      return false;
+// ───────────────────── Graph Types ───────────────────────────────────────
+type NodeId = string | number;          // anything that can be compared with ===
+interface AdjList {
+  // nodeId -> array of neighbor nodeIds
+  [key: string]: NodeId[];
+}
+
+// ───────────────────── BFS Implementation ────────────────────────────────
+function bfs(
+  graph: AdjList,
+  start: NodeId,
+  visit: (node: NodeId) => void = () => {}
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
+
+  visited.add(start);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
+
+    visit(current);        // optional callback that may do whatever you want
+    order.push(current);
+
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        queue.push(neigh);
+      }
     }
   }
-  return true;
+
+  return order;           // return traversal order if you need it
 }
-export function isSortedAscendingAllowEqual<T>(arr: Array<T>): boolean {
-  for (let i = 1; i < arr.length; ++i) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-compare
-    if (arr[i] < arr[i - 1]) {
-      return false;
+
+// ───────────────────── Example Usage ──────────────────────────────────────
+const exampleGraph: AdjList = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
+
+const traversal = bfs(exampleGraph, 'A');
+console.log('BFS order:', traversal);
+// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+
+// If you only care about distances from the start node:
+function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
+  const distances = new Map<NodeId, number>();
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+
+  visited.add(start);
+  distances.set(start, 0);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        distances.set(neigh, distances.get(current)! + 1);
+        queue.push(neigh);
+      }
     }
   }
-  return true;
+
+  return distances;
 }
-console.log(isSortedAscending([1, 2, 3]));          // true
-console.log(isSortedAscending([1, 2, 2]));          // false (strict)
-console.log(isSortedAscending([1, 2, 2], true));    // true if you pass a flag to allow equal
-console.log(isSortedAscending(['a', 'b', 'c']));   // true
-console.log(isSortedAscending([3, 2, 1]));          // false
-export function isSortedAscending<T>(arr: Array<T>, cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)): boolean {
-  for (let i = 1; i < arr.length; ++i) {
-    if (cmp(arr[i], arr[i - 1]) < 0) return false;
-  }
-  return true;
-}
+
+const dists = bfsDistances(exampleGraph, 'A');
+console.log('Distances from A:', Object.fromEntries(dists.entries()));
+// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
