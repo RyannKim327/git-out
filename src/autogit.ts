@@ -1,42 +1,73 @@
-/**
- * Returns the largest prime factor of n.
- *
- * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
- */
-export function largestPrimeFactor(n: number | bigint): number | bigint {
-    if (n <= 1) throw new Error('n must be > 1');
-
-    // Work with BigInt for arbitrary precision
-    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
-    let maxFactor: bigint = 1n;
-
-    // Handle factor 2 separately
-    while (num % 2n === 0n) {
-        maxFactor = 2n;
-        num /= 2n;
-    }
-
-    // Now num is odd – we only need to check odd divisors
-    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
-        while (num % divisor === 0n) {
-            maxFactor = divisor;
-            num /= divisor;
-        }
-    }
-
-    // If anything is left, it's a prime larger than any divisor we tried
-    if (num > 1n) maxFactor = num;
-
-    // Return a native number if the input was a number and the result fits
-    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
-        return Number(maxFactor);
-    }
-    return maxFactor;
+// ── List node -----------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-console.log(largestPrimeFactor(28));          // 7
-console.log(largestPrimeFactor(91));          // 13
-console.log(largestPrimeFactor(600851475143));// 6857
 
-// With a BigInt (e.g. a 100‑digit number)
-const huge = BigInt('123456789123456789123456789');
-console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
+// ── Intersection finder ------------------------------------
+function intersect<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
+
+  // 1. Count nodes in each list
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
+
+  // 2. Make the heads point to the same distance from the end
+  let ptrA: ListNode<T> | null = headA;
+  let ptrB: ListNode<T> | null = headB;
+  if (lenA > lenB) {
+    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
+  } else {
+    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
+  }
+
+  // 3. Move together until we hit the common node (by reference)
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA;
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
+  }
+
+  return null;          // no intersection
+}
+
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+  while (cur) {
+    ++len;
+    cur = cur.next;
+  }
+  return len;
+}
+// shared tail: 5 → 6
+const tail = new ListNode(5, new ListNode(6));
+
+// list A: 1 → 2 → 3 → (shared)
+const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
+
+// list B: 9 → (shared)
+const b = new ListNode(9, tail);
+
+const intersectNode = intersect(a, b);
+console.log(intersectNode?.val); // 5
+function intersectUsingSet<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;
+    cur = cur.next;
+  }
+  return null;
+}
