@@ -1,16 +1,18 @@
-/**
- * Return a random integer between `min` and `max`, inclusive.
- */
-function randomInt(min: number, max: number): number {
-  // Math.random() → [0, 1)
-  // Multiply by (max - min + 1) → [0, max - min + 1)
-  // floor to get an integer in [0, max - min]
-  // Shift by min to get the desired range
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+const numbers = [12, -5, 7, 42, 3.9];
 
-/* Example */
-console.log(randomInt(5, 15)); // might print 7, 12, 15, …
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // [min, max)
+// 1️⃣ Spice it up with the spread operator (`Math.max`)
+const maxUsingMath = Math.max(...numbers);
+console.log('maxUsingMath →', maxUsingMath); // 42
+
+// 2️⃣ Stack‑overflow‑safe – you don’t want to blow the argument limit
+const maxUsingReduce = numbers.reduce((max, n) => (n > max ? n : max), -Infinity);
+console.log('maxUsingReduce →', maxUsingReduce); // 42
+
+// 3️⃣ Old‑school loop (great for huge arrays)
+let maxOldSchool = -Infinity;
+for (const n of numbers) {
+  if (n > maxOldSchool) maxOldSchool = n;
 }
+console.log('maxOldSchool →', maxOldSchool); // 42
+const bigNumbers = new Float64Array([1.5, 2.3, 0.0, 9.1]);
+const maxFloat = Math.max(...bigNumbers); // works, but may still hit the limit
