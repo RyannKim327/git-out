@@ -1,62 +1,57 @@
-/**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
- */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
-}
-/**
- * Return the n‑th node from the end of the list.
- *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
- */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
+function removeItem<T>(arr: T[], item: T): void {
+  const idx = arr.indexOf(item);      // first occurrence
+  if (idx !== -1) {
+    arr.splice(idx, 1);               // mutate the original array
   }
+}
+function removed<T>(arr: T[], item: T): T[] {
+  return arr.filter(x => x !== item); // keeps unchanged items
+}
+function removeAt<T>(arr: T[], idx: number): void {
+  if (idx >= 0 && idx < arr.length) {
+    arr.splice(idx, 1);
+  }
+}
+const set = new Set(arr);   // unique elements
+set.delete(item);           // removes it if present
+const newArr = [...set];    // back to an array
+type RemoveOptions = {
+  /** If true, only remove the first matching element */
+  firstOnly?: boolean;
+};
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
+function remove<T>(
+  arr: T[],
+  itemOrIdx: T | number,
+  options: RemoveOptions = {}
+): T[] {
+  const { firstOnly = false } = options;
 
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
+  // Remove by index
+  if (typeof itemOrIdx === 'number') {
+    const idx = itemOrIdx;
+    if (idx >= 0 && idx < arr.length) {
+      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
     }
-    fast = fast.next
+    return arr;
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
+  // Remove by value
+  const item = itemOrIdx as T;
+  const idx = arr.indexOf(item);
+
+  if (idx === -1) return arr; // nothing to do
+
+  if (firstOnly) {
+    // fast path: mutate in place
+    arr.splice(idx, 1);
+    return arr;
   }
 
-  return slow
+  // immutable: create a new array
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
 }
-import { ListNode, nthFromEnd } from './linkedListHelpers'
-
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
-}
-
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
-
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
-
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+let nums = [1, 2, 3, 2, 4];
+remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
+remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
+remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
