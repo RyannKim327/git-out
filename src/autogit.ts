@@ -1,60 +1,62 @@
-// bubbleSort.ts
-
-export type Comparator<T> = (a: T, b: T) => number;
-
 /**
- * Sorts an array in place using the Bubble Sort algorithm.
+ * Generic Shell Sort.
  *
- * @param arr    — The array to sort. It will be modified directly.
- * @param cmp    — Optional comparator. If omitted, number comparison is used.
+ * @param arr   The array to sort in‑place.
+ * @param cmp   Optional comparator.  Returns a negative number if a < b,
+ *              zero if a == b, positive if a > b.
+ * @returns     The sorted array (same reference as input).
  *
- * @returns      — The sorted array (same reference as the input).
+ * @example
+ *   const nums = [9, 5, 1, 4, 3];
+ *   shellSort(nums);          // [1,3,4,5,9]
+ *
+ *   const nameList = ['Zoe', 'Alice', 'Bob'];
+ *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
  */
-export function bubbleSort<T>(arr: T[], cmp: Comparator<T> = defaultCmp): T[] {
-  const n = arr.length;
-  if (n < 2) return arr;          // nothing to do
+function shellSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  // Traditional outer loop: run n‑1 passes
-  for (let pass = 0; pass < n - 1; pass++) {
-    let swapped = false;
+  // Default comparator uses JavaScript's < and > operators.
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-    // Inner loop: compare adjacent elements
-    for (let i = 0; i < n - 1 - pass; i++) {
-      if (cmp(arr[i], arr[i + 1]) > 0) {
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]; // swap
-        swapped = true;
+  // Classic Shell sequence: n/2, n/4, …, 1
+  let gap = Math.floor(len / 2);
+  while (gap > 0) {
+    // For each shift positions, perform an insertion sort on the sub‑array
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+
+      // Shift elements of the sub‑array that are greater than temp
+      // rightward by one position.
+      while (j >= gap && compare(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
       }
+
+      arr[j] = temp;
     }
 
-    // If we made no swaps this pass, the array is sorted
-    if (!swapped) break;
+    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
   }
 
   return arr;
 }
+const data = [22, 45, 12, 8, 4, 30, 6];
+console.log('Before:', data);
 
-/** Default numeric comparator */
-function defaultCmp(a: number, b: number): number {
-  return a - b;
-}
-import { bubbleSort } from './bubbleSort';
+shellSort(data);
 
-const numbers = [5, 2, 9, 1, 5, 6];
-bubbleSort(numbers);
-console.log(numbers); // [1, 2, 5, 5, 6, 9]
-
-// Custom comparator – strings, case‑insensitive
-const strings = ['Banana', 'apple', 'Cherry'];
-bubbleSort(strings, (a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-console.log(strings); // ['apple', 'Banana', 'Cherry']
-
-// Sorting objects
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: 'Ali', age: 30 },
-  { name: 'Beth', age: 24 },
-  { name: 'Carl', age: 38 },
-];
-bubbleSort(people, (p, q) => p.age - q.age);
-console.log(people);
-// [{ name: 'Beth', age: 24 }, { name: 'Ali', age: 30 }, { name: 'Carl', age: 38 }]
+console.log('After:', data);
+Before: [22,45,12,8,4,30,6]
+After: [4,6,8,12,22,30,45]
