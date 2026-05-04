@@ -1,62 +1,138 @@
-/**
- * Generic Shell Sort.
- *
- * @param arr   The array to sort in‑place.
- * @param cmp   Optional comparator.  Returns a negative number if a < b,
- *              zero if a == b, positive if a > b.
- * @returns     The sorted array (same reference as input).
- *
- * @example
- *   const nums = [9, 5, 1, 4, 3];
- *   shellSort(nums);          // [1,3,4,5,9]
- *
- *   const nameList = ['Zoe', 'Alice', 'Bob'];
- *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
- */
-function shellSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+// ──────────────────────────────────────────────────────────────────────
+// 1️⃣  Node definition
+// ──────────────────────────────────────────────────────────────────────
 
-  // Default comparator uses JavaScript's < and > operators.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+export class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
 
-  // Classic Shell sequence: n/2, n/4, …, 1
-  let gap = Math.floor(len / 2);
-  while (gap > 0) {
-    // For each shift positions, perform an insertion sort on the sub‑array
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
+// ──────────────────────────────────────────────────────────────────────
+// 2️⃣  Binary‑Search‑Tree
+// ──────────────────────────────────────────────────────────────────────
 
-      // Shift elements of the sub‑array that are greater than temp
-      // rightward by one position.
-      while (j >= gap && compare(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
+export class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-      arr[j] = temp;
+  /* ----------------------------------------------------------------- */
+  // basic insertion – assumes no duplicates
+  /* ----------------------------------------------------------------- */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+
+    if (!this.root) {
+      this.root = newNode;
+      return;
     }
 
-    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
+    let node: TreeNode<T> | null = this.root;
+    while (node) {
+      if (value < node.value) {
+        if (!node.left) {
+          node.left = newNode;
+          break;
+        }
+        node = node.left;
+      } else {
+        if (!node.right) {
+          node.right = newNode;
+          break;
+        }
+        node = node.right;
+      }
+    }
   }
 
-  return arr;
+  /* ----------------------------------------------------------------- */
+  // find a value – returns the node or null
+  /* ----------------------------------------------------------------- */
+  find(value: T): TreeNode<T> | null {
+    let node = this.root;
+    while (node) {
+      if (value === node.value) return node;
+      node = value < node.value ? node.left : node.right;
+    }
+    return null;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // In‑order traversal – returns array of values sorted (for BST)
+  /* ----------------------------------------------------------------- */
+  inorder(): T[] {
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [];
+    let node = this.root;
+
+    while (stack.length || node) {
+      while (node) {
+        stack.push(node);
+        node = node.left!;
+      }
+      node = stack.pop()!;
+      result.push(node.value);
+      node = node.right!;
+    }
+
+    return result;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // Pre‑order (root, left, right)
+  /* ----------------------------------------------------------------- */
+  preorder(): T[] {
+    if (!this.root) return [];
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [this.root];
+
+    while (stack.length) {
+      const node = stack.pop()!;
+      result.push(node.value);
+
+      // push right first so left is processed first
+      if (node.right) stack.push(node.right);
+      if (node.left) stack.push(node.left);
+    }
+
+    return result;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // Post‑order (left, right, root) – iterative with two stacks
+  /* ----------------------------------------------------------------- */
+  postorder(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
+
+    const stack1: TreeNode<T>[] = [this.root];
+    const stack2: TreeNode<T>[] = [];
+
+    while (stack1.length) {
+      const node = stack1.pop()!;
+      stack2.push(node);
+
+      if (node.left) stack1.push(node.left);
+      if (node.right) stack1.push(node.right);
+    }
+
+    while (stack2.length) {
+      result.push(stack2.pop()!.value);
+    }
+
+    return result;
+  }
 }
-const data = [22, 45, 12, 8, 4, 30, 6];
-console.log('Before:', data);
+import { BinarySearchTree } from "./bst";
 
-shellSort(data);
+const bst = new BinarySearchTree<number>();
 
-console.log('After:', data);
-Before: [22,45,12,8,4,30,6]
-After: [4,6,8,12,22,30,45]
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
+console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
+console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
+
+console.log("Find 5:", bst.find(5)?.value);          // 5
+console.log("Find 20:", bst.find(20));               // null
