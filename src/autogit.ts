@@ -1,34 +1,33 @@
-// fetch-posts.ts
-import axios, { AxiosResponse } from 'axios';
-
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
-
-async function fetchPosts(): Promise<Post[]> {
-  const url = 'https://jsonplaceholder.typicode.com/posts';
-  const response: AxiosResponse<Post[]> = await axios.get(url);
-  return response.data;
-}
-
-async function main() {
-  try {
-    const posts = await fetchPosts();
-    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
-  } catch (err) {
-    console.error('Failed to fetch posts:', err);
+/**
+ * Returns true if the array is in strictly ascending order.
+ * For non‑strict (allowing equal elements) change the comparison accordingly.
+ */
+export function isSortedAscending<T>(arr: Array<T>): boolean {
+  for (let i = 1; i < arr.length; ++i) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-compare
+    if (arr[i] < arr[i - 1]) {
+      return false;
+    }
   }
+  return true;
 }
-
-main();
-# 1️⃣  Install dependencies
-npm install axios
-
-# 2️⃣  Compile to JavaScript
-tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
-
-# 3️⃣  Execute
-node fetch-posts.js
+export function isSortedAscendingAllowEqual<T>(arr: Array<T>): boolean {
+  for (let i = 1; i < arr.length; ++i) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-compare
+    if (arr[i] < arr[i - 1]) {
+      return false;
+    }
+  }
+  return true;
+}
+console.log(isSortedAscending([1, 2, 3]));          // true
+console.log(isSortedAscending([1, 2, 2]));          // false (strict)
+console.log(isSortedAscending([1, 2, 2], true));    // true if you pass a flag to allow equal
+console.log(isSortedAscending(['a', 'b', 'c']));   // true
+console.log(isSortedAscending([3, 2, 1]));          // false
+export function isSortedAscending<T>(arr: Array<T>, cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)): boolean {
+  for (let i = 1; i < arr.length; ++i) {
+    if (cmp(arr[i], arr[i - 1]) < 0) return false;
+  }
+  return true;
+}
