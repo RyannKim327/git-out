@@ -1,44 +1,38 @@
-// Count the occurrences of the digit at `exp` (1, 10, 100, …)
-function countingSortByDigit(arr: number[], exp: number): number[] {
-  const n = arr.length;
-  const output = new Array(n);
-  const count = new Array(10).fill(0); // base 10
-
-  // 1. Count digit occurrences
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
-  }
-
-  // 2. Accumulate counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array (reverse traversal for stability)
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    output[count[digit] - 1] = arr[i];
-    count[digit] -= 1;
-  }
-
-  return output;
+// A minimal Node interface for a singly–linked list
+interface ListNode<T> {
+  value: T;
+  next: ListNode<T> | null;
 }
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
 
-  // Find the maximum number to know how many digits we need
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
+/**
+ * Detects whether the list rooted at `head` contains a cycle.
+ * @returns true if a cycle is found, otherwise false.
+ */
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  // ∅ → no nodes → no cycle
+  if (!head) return false;
+
+  let slow: ListNode<T> | null = head;      // moves 1 step per loop
+  let fast: ListNode<T> | null = head;      // moves 2 steps per loop
+
+  while (fast && fast.next) {
+    slow = slow!.next;          // safe–because slow starts at head
+    fast = fast.next.next;      // fast may skip over a null
+    if (slow === fast) return true;   // they met → cycle
   }
 
-  // Start with the least‑significant digit (exp = 1, 10, 100, …)
-  for (let exp = 1; max / exp >= 1; exp *= 10) {
-    arr = countingSortByDigit(arr, exp);
-  }
-
-  return arr;
+  return false;                 // fast reached the end → no cycle
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
+// Building a list: 1 → 2 → 3 → 4 → 5 → (back to 3)
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+node5.next = node3;   // close the loop
+
+console.log(hasCycle(node1)); // → true
+
+// Remove the loop to confirm the detector sees no cycle
+node5.next = null;
+console.log(hasCycle(node1)); // → false
