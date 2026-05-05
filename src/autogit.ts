@@ -1,38 +1,62 @@
-// A minimal Node interface for a singly–linked list
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
-}
-
 /**
- * Detects whether the list rooted at `head` contains a cycle.
- * @returns true if a cycle is found, otherwise false.
+ * Generic Shell Sort.
+ *
+ * @param arr   The array to sort in‑place.
+ * @param cmp   Optional comparator.  Returns a negative number if a < b,
+ *              zero if a == b, positive if a > b.
+ * @returns     The sorted array (same reference as input).
+ *
+ * @example
+ *   const nums = [9, 5, 1, 4, 3];
+ *   shellSort(nums);          // [1,3,4,5,9]
+ *
+ *   const nameList = ['Zoe', 'Alice', 'Bob'];
+ *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
  */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // ∅ → no nodes → no cycle
-  if (!head) return false;
+function shellSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-  let slow: ListNode<T> | null = head;      // moves 1 step per loop
-  let fast: ListNode<T> | null = head;      // moves 2 steps per loop
+  // Default comparator uses JavaScript's < and > operators.
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // safe–because slow starts at head
-    fast = fast.next.next;      // fast may skip over a null
-    if (slow === fast) return true;   // they met → cycle
+  // Classic Shell sequence: n/2, n/4, …, 1
+  let gap = Math.floor(len / 2);
+  while (gap > 0) {
+    // For each shift positions, perform an insertion sort on the sub‑array
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+
+      // Shift elements of the sub‑array that are greater than temp
+      // rightward by one position.
+      while (j >= gap && compare(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+
+      arr[j] = temp;
+    }
+
+    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
   }
 
-  return false;                 // fast reached the end → no cycle
+  return arr;
 }
-// Building a list: 1 → 2 → 3 → 4 → 5 → (back to 3)
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-node5.next = node3;   // close the loop
+const data = [22, 45, 12, 8, 4, 30, 6];
+console.log('Before:', data);
 
-console.log(hasCycle(node1)); // → true
+shellSort(data);
 
-// Remove the loop to confirm the detector sees no cycle
-node5.next = null;
-console.log(hasCycle(node1)); // → false
+console.log('After:', data);
+Before: [22,45,12,8,4,30,6]
+After: [4,6,8,12,22,30,45]
