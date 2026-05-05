@@ -1,68 +1,48 @@
-/*  stack.ts  */
-export class Stack<T> {
-  // The raw array that stores everything.
-  private readonly items: T[] = [];
+/**
+ * Return the longest common prefix of an array of strings.
+ *
+ * @param strs - The strings to investigate.
+ * @returns The common prefix (empty string if there is none, or if the array is empty).
+ */
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  /** Push a value onto the stack. Complexity: O(1). */
-  push(item: T): void {
-    this.items.push(item);
-  }
+  // Start with the first string as the provisional prefix
+  let prefix = strs[0];
 
-  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot pop from an empty stack');
+  // Stop as soon as prefix becomes empty – nothing more to find
+  for (let i = 1; i < strs.length && prefix.length; i++) {
+    const current = strs[i];
+    let j = 0;
+
+    // Compare char‑by‑char until a mismatch is detected
+    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
+      j++;
     }
-    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
+
+    // Update prefix to the matched portion
+    prefix = prefix.substring(0, j);
   }
 
-  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot peek at an empty stack');
-    }
-    return this.items[this.items.length - 1];
-  }
-
-  /** True if the stack has no elements. Complexity: O(1). */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Number of items currently stored. Complexity: O(1). */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything. Complexity: O(1) (just resets reference). */
-  clear(): void {
-    this.items.length = 0;
-  }
+  return prefix;
 }
-import { Stack } from './stack';
+const words = ["flower","flow","flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
 
-const numStack = new Stack<number>();
+const mixed = ["dog","racecar","car"];
+console.log(longestCommonPrefix(mixed)); // → ""
 
-numStack.push(1);
-numStack.push(2);
-numStack.push(3);
-
-console.log(numStack.peek());   // 3
-console.log(numStack.pop());    // 3
-console.log(numStack.size());   // 2
-console.log(numStack.isEmpty()); // false
-
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class Stack<T> {
-  private readonly items: T[] = [];
-  constructor(private readonly capacity = Infinity) {}
-
-  push(item: T): void {
-    if (this.items.length >= this.capacity) {
-      throw new Error('Stack overflow: cannot push beyond capacity');
+const emptyCases: string[] = [];
+console.log(longestCommonPrefix(emptyCases)); // → ""
+export function lcpVertical(strs: string[]): string {
+  if (!strs.length) return "";
+  for (let i = 0; i < strs[0].length; i++) {
+    const char = strs[0][i];
+    for (let j = 1; j < strs.length; j++) {
+      if (i >= strs[j].length || strs[j][i] !== char) {
+        return strs[0].substring(0, i);
+      }
     }
-    this.items.push(item);
   }
-  /* … rest of the class unchanged … */
+  return strs[0];
 }
