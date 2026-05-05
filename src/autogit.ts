@@ -1,45 +1,54 @@
-// 1. Basic list node definition
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Iterative (bottom‑up) merge sort.
+ * @param arr The array to be sorted (in‑place).
+ * @returns The sorted array – same reference as the input.
+ */
+function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1) return arr;          // nothing to do
 
-// 2. Utility: build a linked list from an array
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null;
+  const n = arr.length;
+  const temp: T[] = new Array(n);           // temporary buffer for merging
 
-  const head = new ListNode(values[0]);
-  let current = head;
-  for (let i = 1; i < values.length; i++) {
-    current.next = new ListNode(values[i]);
-    current = current.next;
+  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
+  for (let width = 1; width < n; width *= 2) {
+    // left is the start of the first run in a pair
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid   = Math.min(left + width, n);        // first run ends
+      const right = Math.min(left + 2 * width, n);    // second run ends
+
+      // merge [left, mid) and [mid, right) into temp
+      let i = left,      // index in first run
+          j = mid,       // index in second run
+          k = left;      // index in temp
+
+      while (i < mid && j < right) {
+        // Use compareFn if supplied, else default <>
+        const cmp = compareFn
+          ? compareFn(arr[i], arr[j])
+          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
+        
+        if (cmp <= 0) {
+          temp[k++] = arr[i++];
+        } else {
+          temp[k++] = arr[j++];
+        }
+      }
+
+      // copy any remaining items from the first run
+      while (i < mid) temp[k++] = arr[i++];
+      // copy any remaining items from the second run
+      while (j < right) temp[k++] = arr[j++];
+
+      // copy the merged part back into the original array
+      for (let p = left; p < right; p++) {
+        arr[p] = temp[p];
+      }
+    }
   }
-  return head;
+
+  return arr;
 }
-
-// 3. Find the middle node – fast/slow pointer
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  while (fast && fast.next) {      // stop when fast can't advance two steps
-    slow = slow.next!;             // safe because previous check guarantees truthy
-    fast = fast.next.next!;
-  }
-
-  return slow;                     // slow is at the middle
-}
-
-// Demo
-const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
-const oddHead = buildList(arr);
-console.log(getMiddle(oddHead)?.val); // 3
-
-const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
-const evenHead = buildList(evenArr);
-console.log(getMiddle(evenHead)?.val); // 20
-while (fast && fast.next && fast.next.next) {
-  slow = slow.next!;
-  fast = fast.next.next!;
-}
+const numbers = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(numbers);
+console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
+mergeSortIterative(list, (a, b) => a.age - b.age);
