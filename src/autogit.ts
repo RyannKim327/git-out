@@ -1,60 +1,57 @@
-/**
- * Finds the Longest Common Subsequence (LCS) of two strings.
- *
- * @param a – first string
- * @param b – second string
- * @returns an object `{ length, seq }`
- *   * `length` – length of the LCS
- *   * `seq`    – the LCS string itself (empty if none)
- */
-export function lcs(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
-
-  /* 1. Build DP table:  (m+1) × (n+1) */
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    Array(n + 1).fill(0)
-  );
-
-  for (let i = 1; i <= m; i++) {
-    const ca = a[i - 1];
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        ca === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
-    }
+function removeItem<T>(arr: T[], item: T): void {
+  const idx = arr.indexOf(item);      // first occurrence
+  if (idx !== -1) {
+    arr.splice(idx, 1);               // mutate the original array
   }
-
-  /* 2. Back‑track to recover the sequence */
-  let i = m,
-    j = n,
-    seqArr: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seqArr.push(a[i - 1]); // match – add to subsequence
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
-  }
-
-  // The string is built backwards, so reverse it
-  const seq = seqArr.reverse().join('');
-  return { length: dp[m][n], seq };
 }
-const prev: number[] = Array(n + 1).fill(0);
-const curr: number[] = Array(n + 1);
-for (let i = 1; i <= m; i++) {
-  curr[0] = 0;
-  for (let j = 1; j <= n; j++) {
-    curr[j] =
-      a[i - 1] === b[j - 1]
-        ? prev[j - 1] + 1
-        : Math.max(prev[j], curr[j - 1]);
-  }
-  // swap
-  [prev, curr] = [curr, prev];
+function removed<T>(arr: T[], item: T): T[] {
+  return arr.filter(x => x !== item); // keeps unchanged items
 }
+function removeAt<T>(arr: T[], idx: number): void {
+  if (idx >= 0 && idx < arr.length) {
+    arr.splice(idx, 1);
+  }
+}
+const set = new Set(arr);   // unique elements
+set.delete(item);           // removes it if present
+const newArr = [...set];    // back to an array
+type RemoveOptions = {
+  /** If true, only remove the first matching element */
+  firstOnly?: boolean;
+};
+
+function remove<T>(
+  arr: T[],
+  itemOrIdx: T | number,
+  options: RemoveOptions = {}
+): T[] {
+  const { firstOnly = false } = options;
+
+  // Remove by index
+  if (typeof itemOrIdx === 'number') {
+    const idx = itemOrIdx;
+    if (idx >= 0 && idx < arr.length) {
+      return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+    }
+    return arr;
+  }
+
+  // Remove by value
+  const item = itemOrIdx as T;
+  const idx = arr.indexOf(item);
+
+  if (idx === -1) return arr; // nothing to do
+
+  if (firstOnly) {
+    // fast path: mutate in place
+    arr.splice(idx, 1);
+    return arr;
+  }
+
+  // immutable: create a new array
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
+let nums = [1, 2, 3, 2, 4];
+remove(nums, 2);          // → [1, 3, 2, 4]   (removes first 2)
+remove(nums, 2, {firstOnly: false}); // → [1, 3, 4] (all 2s)
+remove(nums, 2, {firstOnly: true});  // -> removes the first 2, mutates the same array
