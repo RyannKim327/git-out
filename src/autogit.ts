@@ -1,35 +1,48 @@
-// 1️⃣ Base & height
-export function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0)
-    throw new Error('Base and height must be positive numbers.');
-  return (base * height) / 2;
+/**
+ * Return the longest common prefix of an array of strings.
+ *
+ * @param strs - The strings to investigate.
+ * @returns The common prefix (empty string if there is none, or if the array is empty).
+ */
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
+
+  // Start with the first string as the provisional prefix
+  let prefix = strs[0];
+
+  // Stop as soon as prefix becomes empty – nothing more to find
+  for (let i = 1; i < strs.length && prefix.length; i++) {
+    const current = strs[i];
+    let j = 0;
+
+    // Compare char‑by‑char until a mismatch is detected
+    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
+      j++;
+    }
+
+    // Update prefix to the matched portion
+    prefix = prefix.substring(0, j);
+  }
+
+  return prefix;
 }
+const words = ["flower","flow","flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
 
-// 2️⃣ Heron’s formula (three sides)
-export function areaHeron(a: number, b: number, c: number): number {
-  // Validate that the sides can form a triangle
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error('Side lengths must be positive numbers.');
+const mixed = ["dog","racecar","car"];
+console.log(longestCommonPrefix(mixed)); // → ""
+
+const emptyCases: string[] = [];
+console.log(longestCommonPrefix(emptyCases)); // → ""
+export function lcpVertical(strs: string[]): string {
+  if (!strs.length) return "";
+  for (let i = 0; i < strs[0].length; i++) {
+    const char = strs[0][i];
+    for (let j = 1; j < strs.length; j++) {
+      if (i >= strs[j].length || strs[j][i] !== char) {
+        return strs[0].substring(0, i);
+      }
+    }
   }
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not satisfy the triangle inequality.');
-  }
-
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-  // area might be NaN if the vertices are collinear (area close to 0)
-  if (areaSquared < 0) {
-    throw new Error('Computed area squared is negative – check your side lengths.');
-  }
-
-  return Math.sqrt(areaSquared);
+  return strs[0];
 }
-// Base & height
-const tri1 = areaBaseHeight(10, 4); // 20
-
-// Heron’s formula
-const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
-
-console.log(`Base/Height area: ${tri1}`);
-console.log(`Heron area: ${tri2}`);
