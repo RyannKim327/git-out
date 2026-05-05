@@ -1,49 +1,33 @@
-/**
- * Returns the maximum sum of any contiguous sub‑array.
- * If all numbers are negative, the result is the largest (least negative) number.
- */
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) throw new Error('Array must contain at least one element');
+// Node >=18 or any modern browser
+// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
 
-    let currentSum = arr[0];
-    let bestSum = arr[0];
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-    // We start from index 1 because the first element was already handled
-    for (let i = 1; i < arr.length; i++) {
-        // Either extend the previous sub‑array or start anew at arr[i]
-        currentSum = Math.max(arr[i], currentSum + arr[i]);
+async function fetchPost(id = 1): Promise<Post> {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
 
-        // Update global best if we found a better one
-        bestSum = Math.max(bestSum, currentSum);
-    }
+  if (!res.ok) {
+    // Throwing includes the HTTP status for downstream handling
+    throw new Error(`Unexpected status ${res.status}`);
+  }
 
-    return bestSum;
+  // Telling TS that the JSON shapes like our Post type
+  const data = await res.json() as Post;
+  return data;
 }
-const data = [−2, −3, 4, −1, −2, 1, 5, −3];
-console.log(maxSubarraySum(data)); // 7
 
-// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
-function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
-    let currentSum = arr[0];
-    let bestSum = arr[0];
-    let tempStart = 0;
-    let bestStart = 0;
-    let bestEnd = 0;
-
-    for (let i = 1; i < arr.length; i++) {
-        if (currentSum + arr[i] >= arr[i]) {
-            currentSum += arr[i];
-        } else {
-            currentSum = arr[i];
-            tempStart = i;
-        }
-
-        if (currentSum > bestSum) {
-            bestSum = currentSum;
-            bestStart = tempStart;
-            bestEnd = i;
-        }
-    }
-
-    return { sum: bestSum, start: bestStart, end: bestEnd };
-}
+(async () => {
+  try {
+    const post = await fetchPost(42);  // change the ID if you like
+    console.log('🚀 Post fetched:');
+    console.log(`Title: ${post.title}`);
+    console.log(`Body: ${post.body.slice(0, 70)}…`);
+  } catch (err) {
+    console.error('❌ Fetch failed:', err);
+  }
+})();
