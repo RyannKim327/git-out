@@ -1,35 +1,69 @@
-function secondLargest(arr: number[]): number | null {
-  if (arr.length < 2) return null;          // Not enough values
+// simple-api-call.ts
+/**
+ * A minimal example of calling a REST API in Node.js with TypeScript.
+ * Requires Node 18+ (fetch is built‑in). If you need older Node, use
+ * node‑fetch or axios instead.
+ */
 
-  const sorted = [...arr].sort((a, b) => b - a); // descending
-  return sorted[1];
+import type { RequestInit, Response } from 'node-fetch'; // Node type hint, optional
+
+// 1️⃣  Define the shape of the JSON we expect back:
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-function secondLargestLinear(arr: number[]): number | null {
-  if (arr.length < 2) return null;
 
-  let max = -Infinity;
-  let second = -Infinity;
+// 2️⃣  Utility to guard for non‑2xx HTTP codes:
+function checkStatus(response: Response): Response {
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  return response;
+}
 
-  for (const val of arr) {
-    if (val > max) {
-      second = max;
-      max = val;
-    } else if (val > second && val < max) {
-      second = val;
-    }
+// 3️⃣  The async function that does the fetching:
+async function fetchPost(postId: number): Promise<Post> {
+  const url = `https://jsonplaceholder.typicode.com/posts/${postId}`;
+
+  // Optional: you can pass a custom RequestInit if you need headers, method, etc.
+  const options: RequestInit = {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    // If you want a timeout... (Node 18+ JSON‑placeholder only accepts GET)
+  };
+
+  const response = await fetch(url, options);
+  checkStatus(response);
+
+  // The `response.json()` call is typed as `any`. We cast it to our Post interface.
+  const data = (await response.json()) as Post;
+
+  // Non‑strict guard: ensure required keys exist
+  if (typeof data.id !== 'number' || typeof data.title !== 'string') {
+    throw new Error('Malformed data');
   }
 
-  return second === -Infinity ? null : second;
+  return data;
 }
-export function findSecondLargest(arr: number[]): number | null
-export function findSecondLargestLinear(arr: number[]): number | null
-[
-  { arr: [5, 1, 4, 3], expected: 4 },
-  { arr: [5, 5, 3], expected: 3 },
-  { arr: [5, 5, 5], expected: null },
-  { arr: [], expected: null },
-  { arr: [10], expected: null }
-].forEach(({arr, expected}, i) => {
-  const res = findSecondLargestLinear(arr);
-  console.assert(res === expected, `case ${i} failed: got ${res}`);
-});
+
+// 4️⃣  Drive the example: fetch a single post and log it.
+(async () => {
+  try {
+    const post = await fetchPost(1);
+    console.log('Fetched post:', post);
+  } catch (err) {
+    console.error('Something went wrong:', err);
+  }
+})();
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "./dist"
+  },
+  "include": ["simple-api-call.ts"]
+}
