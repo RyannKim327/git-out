@@ -1,33 +1,35 @@
-// Node >=18 or any modern browser
-// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
-
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
-
-async function fetchPost(id = 1): Promise<Post> {
-  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
-
-  if (!res.ok) {
-    // Throwing includes the HTTP status for downstream handling
-    throw new Error(`Unexpected status ${res.status}`);
-  }
-
-  // Telling TS that the JSON shapes like our Post type
-  const data = await res.json() as Post;
-  return data;
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
 }
 
-(async () => {
-  try {
-    const post = await fetchPost(42);  // change the ID if you like
-    console.log('🚀 Post fetched:');
-    console.log(`Title: ${post.title}`);
-    console.log(`Body: ${post.body.slice(0, 70)}…`);
-  } catch (err) {
-    console.error('❌ Fetch failed:', err);
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
   }
-})();
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
+  }
+
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
+
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
+  }
+
+  return Math.sqrt(areaSquared);
+}
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
+
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
