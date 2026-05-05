@@ -1,18 +1,27 @@
-const s = "42";
+function stringLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
+  }
+  return count;
+}
+function stringLength(str: string): number {
+  let index = 0;
+  while (true) {
+    // if the index is beyond the end, we’re done
+    if (str.charAt(index) === '') break;
+    index++;
+  }
+  return index;
+}
+function stringLength(str: string): number {
+  return str === '' ? 0 : 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  let count = 0;
+  [...str].forEach(() => count++);
+  return count;
+}
+const msg = 'Hello 🌍!';
 
-// 1️⃣  Simple integer
-const num1 = Number(s);     // 42
-const num2 = +"42";         // 42
-
-// 2️⃣  Parse with a specific radix (base)
-const hex = parseInt("FF", 16);   // 255
-const oct = parseInt("10", 8);    // 8
-
-// 3️⃣  Floating‑point
-const floatVal = Number.parseFloat("3.14"); // 3.14
-
-// 4️⃣  BigInt
-const big = BigInt("12345678901234567890");
-
-// 5️⃣  Handling bad input
-const bad = Number("not a number"); // NaN
+console.log(stringLength(msg)); // 8  (H,e,l,l,o,space,🌍,!)
