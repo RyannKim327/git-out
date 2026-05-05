@@ -1,18 +1,35 @@
-function reverseSimple(str: string): string {
-  return str.split('').reverse().join('');
+function secondLargest(arr: number[]): number | null {
+  if (arr.length < 2) return null;          // Not enough values
+
+  const sorted = [...arr].sort((a, b) => b - a); // descending
+  return sorted[1];
 }
-console.log(reverseSimple('hello')); // "olleh"
-function reverseWithSpread(str: string): string {
-  return [...str].reverse().join('');
-}
-function reverseManual(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
+function secondLargestLinear(arr: number[]): number | null {
+  if (arr.length < 2) return null;
+
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const val of arr) {
+    if (val > max) {
+      second = max;
+      max = val;
+    } else if (val > second && val < max) {
+      second = val;
+    }
   }
-  return result;
+
+  return second === -Infinity ? null : second;
 }
-function reverseUnicode(str: string): string {
-  return Array.from(str).reverse().join('');
-}
-console.log(reverseUnicode('👩‍👧‍👦')); // 👦🏽‍👧‍👩
+export function findSecondLargest(arr: number[]): number | null
+export function findSecondLargestLinear(arr: number[]): number | null
+[
+  { arr: [5, 1, 4, 3], expected: 4 },
+  { arr: [5, 5, 3], expected: 3 },
+  { arr: [5, 5, 5], expected: null },
+  { arr: [], expected: null },
+  { arr: [10], expected: null }
+].forEach(({arr, expected}, i) => {
+  const res = findSecondLargestLinear(arr);
+  console.assert(res === expected, `case ${i} failed: got ${res}`);
+});
