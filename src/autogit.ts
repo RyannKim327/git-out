@@ -1,18 +1,62 @@
-// 1. Remove whitespace from the ends – trim()
-const raw = "   some text   ";
-const trimmed = raw.trim();          // "some text"
+/**
+ * A conventional singly–linked list node.
+ * The value is generic so you can store anything.
+ */
+export interface ListNode<T = number> {
+  value: T
+  next: ListNode<T> | null
+}
+/**
+ * Return the n‑th node from the end of the list.
+ *
+ * @param head  the head node of the list
+ * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
+ * @returns the ListNode that is n places from the end,
+ *          or `null` if the list has fewer than n items.
+ */
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  if (n <= 0) {
+    throw new Error('n must be a positive integer');
+  }
 
-// 2. Remove whitespace everywhere in the string
-const raw2 = "  some text  with  spaces ";
-const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
 
-// 3. Remove all *outside* whitespace but keep internal spaces
-const raw3 = "   some text with  internal   spaces   ";
-const keepInternal = raw3.trim();           // "some text with  internal   spaces"
+  // Move `fast` n nodes ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) {
+      // The list is shorter than n.
+      return null
+    }
+    fast = fast.next
+  }
 
-// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
-const raw4 = "line1\n  line2\t";
-const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next // `slow` cannot be null here.
+  }
 
-// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
-const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
+  return slow
+}
+import { ListNode, nthFromEnd } from './linkedListHelpers'
+
+// Build a quick sample list: 1 → 2 → 3 → 4 → 5
+let head: ListNode<number> | null = { value: 1, next: null }
+let cur = head
+for (let i = 2; i <= 5; i++) {
+  cur!.next = { value: i, next: null }
+  cur = cur.next
+}
+
+// 1st from the end → 5
+console.log(nthFromEnd(head, 1)!.value) // 5
+
+// 3rd from the end → 3
+console.log(nthFromEnd(head, 3)!.value) // 3
+
+// 6th from the end → null (list too short)
+console.log(nthFromEnd(head, 6)) // null
