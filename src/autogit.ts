@@ -1,62 +1,57 @@
 /**
- * Generic Shell Sort.
+ * Returns the index of `target` inside the sorted array `arr`,
+ * or -1 if the target is not present.
  *
- * @param arr   The array to sort in‑place.
- * @param cmp   Optional comparator.  Returns a negative number if a < b,
- *              zero if a == b, positive if a > b.
- * @returns     The sorted array (same reference as input).
- *
- * @example
- *   const nums = [9, 5, 1, 4, 3];
- *   shellSort(nums);          // [1,3,4,5,9]
- *
- *   const nameList = ['Zoe', 'Alice', 'Bob'];
- *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
+ * @param arr     Sorted numerical array (ascending order)
+ * @param target  Value to find
  */
-function shellSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
+export function fibonacciSearch(arr: readonly number[], target: number): number {
+  const n = arr.length;
 
-  // Default comparator uses JavaScript's < and > operators.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
+  // (1) Generate the smallest Fibonacci number ≥ n
+  let fibMMinus2 = 0; // F(m-2)
+  let fibMMinus1 = 1; // F(m-1)
+  let fibM = fibMMinus2 + fibMMinus1; // F(m)
 
-  // Classic Shell sequence: n/2, n/4, …, 1
-  let gap = Math.floor(len / 2);
-  while (gap > 0) {
-    // For each shift positions, perform an insertion sort on the sub‑array
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-
-      // Shift elements of the sub‑array that are greater than temp
-      // rightward by one position.
-      while (j >= gap && compare(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-
-      arr[j] = temp;
-    }
-
-    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
+  while (fibM < n) {
+    fibMMinus2 = fibMMinus1;
+    fibMMinus1 = fibM;
+    fibM = fibMMinus1 + fibMMinus2;
   }
 
-  return arr;
+  // (2) Marks the eliminated range from front
+  let offset = -1;
+
+  // (3) While there are elements to inspect
+  while (fibM > 1) {
+    // Check the index. Do not go beyond the array bounds.
+    const i = Math.min(offset + fibMMinus2, n - 1);
+
+    if (arr[i] < target) {
+      // Move three Fibonacci variables one step closer to the end
+      fibM = fibMMinus1;
+      fibMMinus1 = fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move the Fibonacci window two steps back
+      fibM = fibMMinus2;
+      fibMMinus1 = fibMMinus1 - fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+    } else {
+      return i; // Found
+    }
+  }
+
+  // (4) If the last element is the target
+  if (fibMMinus1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  // Not found
+  return -1;
 }
-const data = [22, 45, 12, 8, 4, 30, 6];
-console.log('Before:', data);
+const sorted = [1, 3, 5, 7, 9, 12, 15, 18, 21, 24, 30];
 
-shellSort(data);
-
-console.log('After:', data);
-Before: [22,45,12,8,4,30,6]
-After: [4,6,8,12,22,30,45]
+console.log(fibonacciSearch(sorted, 15)); // → 6
+console.log(fibonacciSearch(sorted, 4));  // → -1
