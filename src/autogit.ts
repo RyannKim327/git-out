@@ -1,49 +1,40 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array.
- * If all numbers are negative, the result is the largest (least negative) number.
+ * Interpolation Search – O(log log n) average, O(n) worst.
+ *
+ * @param arr   Sorted array of numbers (ascending order)
+ * @param key   Value to locate
+ * @returns     Index of `key` in `arr`, or -1 if absent
  */
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) throw new Error('Array must contain at least one element');
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-    let currentSum = arr[0];
-    let bestSum = arr[0];
+  let low = 0;
+  let high = arr.length - 1;
 
-    // We start from index 1 because the first element was already handled
-    for (let i = 1; i < arr.length; i++) {
-        // Either extend the previous sub‑array or start anew at arr[i]
-        currentSum = Math.max(arr[i], currentSum + arr[i]);
-
-        // Update global best if we found a better one
-        bestSum = Math.max(bestSum, currentSum);
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high]
+    if (arr[low] === arr[high]) {
+      return arr[low] === key ? low : -1;
     }
 
-    return bestSum;
-}
-const data = [−2, −3, 4, −1, −2, 1, 5, −3];
-console.log(maxSubarraySum(data)); // 7
+    // Estimation formula
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
 
-// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
-function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
-    let currentSum = arr[0];
-    let bestSum = arr[0];
-    let tempStart = 0;
-    let bestStart = 0;
-    let bestEnd = 0;
-
-    for (let i = 1; i < arr.length; i++) {
-        if (currentSum + arr[i] >= arr[i]) {
-            currentSum += arr[i];
-        } else {
-            currentSum = arr[i];
-            tempStart = i;
-        }
-
-        if (currentSum > bestSum) {
-            bestSum = currentSum;
-            bestStart = tempStart;
-            bestEnd = i;
-        }
+    const val = arr[pos];
+    if (val === key) {
+      return pos;               // Key found
     }
+    if (val < key) {
+      low = pos + 1;             // Search upper segment
+    } else {
+      high = pos - 1;            // Search lower segment
+    }
+  }
 
-    return { sum: bestSum, start: bestStart, end: bestEnd };
+  return -1; // Not found
 }
+const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
+console.log(interpolationSearch(sorted, 31)); // → 6
+console.log(interpolationSearch(sorted, 10)); // → -1
