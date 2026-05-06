@@ -1,96 +1,138 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
+// ──────────────────────────────────────────────────────────────────────
+// 1️⃣  Node definition
+// ──────────────────────────────────────────────────────────────────────
 
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
-
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
+export class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+// ──────────────────────────────────────────────────────────────────────
+// 2️⃣  Binary‑Search‑Tree
+// ──────────────────────────────────────────────────────────────────────
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
+export class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-  dist[source] = 0;
+  /* ----------------------------------------------------------------- */
+  // basic insertion – assumes no duplicates
+  /* ----------------------------------------------------------------- */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
 
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
 
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
+    let node: TreeNode<T> | null = this.root;
+    while (node) {
+      if (value < node.value) {
+        if (!node.left) {
+          node.left = newNode;
+          break;
+        }
+        node = node.left;
+      } else {
+        if (!node.right) {
+          node.right = newNode;
+          break;
+        }
+        node = node.right;
       }
     }
-
-    // Stop early if nothing changed
-    if (!updated) break;
   }
 
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
+  /* ----------------------------------------------------------------- */
+  // find a value – returns the node or null
+  /* ----------------------------------------------------------------- */
+  find(value: T): TreeNode<T> | null {
+    let node = this.root;
+    while (node) {
+      if (value === node.value) return node;
+      node = value < node.value ? node.left : node.right;
     }
+    return null;
   }
 
-  return { dist, prev, hasNegativeCycle };
-}
+  /* ----------------------------------------------------------------- */
+  // In‑order traversal – returns array of values sorted (for BST)
+  /* ----------------------------------------------------------------- */
+  inorder(): T[] {
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [];
+    let node = this.root;
 
-/* ---------- 3️⃣  Example usage ------------------------------------ */
+    while (stack.length || node) {
+      while (node) {
+        stack.push(node);
+        node = node.left!;
+      }
+      node = stack.pop()!;
+      result.push(node.value);
+      node = node.right!;
+    }
 
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
-
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
+    return result;
   }
-  return path;
-}
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+  /* ----------------------------------------------------------------- */
+  // Pre‑order (root, left, right)
+  /* ----------------------------------------------------------------- */
+  preorder(): T[] {
+    if (!this.root) return [];
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [this.root];
+
+    while (stack.length) {
+      const node = stack.pop()!;
+      result.push(node.value);
+
+      // push right first so left is processed first
+      if (node.right) stack.push(node.right);
+      if (node.left) stack.push(node.left);
+    }
+
+    return result;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // Post‑order (left, right, root) – iterative with two stacks
+  /* ----------------------------------------------------------------- */
+  postorder(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
+
+    const stack1: TreeNode<T>[] = [this.root];
+    const stack2: TreeNode<T>[] = [];
+
+    while (stack1.length) {
+      const node = stack1.pop()!;
+      stack2.push(node);
+
+      if (node.left) stack1.push(node.left);
+      if (node.right) stack1.push(node.right);
+    }
+
+    while (stack2.length) {
+      result.push(stack2.pop()!.value);
+    }
+
+    return result;
+  }
+}
+import { BinarySearchTree } from "./bst";
+
+const bst = new BinarySearchTree<number>();
+
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
+console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
+console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
+
+console.log("Find 5:", bst.find(5)?.value);          // 5
+console.log("Find 20:", bst.find(20));               // null
