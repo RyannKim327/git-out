@@ -1,73 +1,49 @@
-// ── List node -----------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Returns the maximum sum of any contiguous sub‑array.
+ * If all numbers are negative, the result is the largest (least negative) number.
+ */
+function maxSubarraySum(arr: number[]): number {
+    if (arr.length === 0) throw new Error('Array must contain at least one element');
+
+    let currentSum = arr[0];
+    let bestSum = arr[0];
+
+    // We start from index 1 because the first element was already handled
+    for (let i = 1; i < arr.length; i++) {
+        // Either extend the previous sub‑array or start anew at arr[i]
+        currentSum = Math.max(arr[i], currentSum + arr[i]);
+
+        // Update global best if we found a better one
+        bestSum = Math.max(bestSum, currentSum);
+    }
+
+    return bestSum;
 }
+const data = [−2, −3, 4, −1, −2, 1, 5, −3];
+console.log(maxSubarraySum(data)); // 7
 
-// ── Intersection finder ------------------------------------
-function intersect<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
+// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
+function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
+    let currentSum = arr[0];
+    let bestSum = arr[0];
+    let tempStart = 0;
+    let bestStart = 0;
+    let bestEnd = 0;
 
-  // 1. Count nodes in each list
-  const lenA = getLength(headA);
-  const lenB = getLength(headB);
+    for (let i = 1; i < arr.length; i++) {
+        if (currentSum + arr[i] >= arr[i]) {
+            currentSum += arr[i];
+        } else {
+            currentSum = arr[i];
+            tempStart = i;
+        }
 
-  // 2. Make the heads point to the same distance from the end
-  let ptrA: ListNode<T> | null = headA;
-  let ptrB: ListNode<T> | null = headB;
-  if (lenA > lenB) {
-    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
-  } else {
-    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
-  }
+        if (currentSum > bestSum) {
+            bestSum = currentSum;
+            bestStart = tempStart;
+            bestEnd = i;
+        }
+    }
 
-  // 3. Move together until we hit the common node (by reference)
-  while (ptrA && ptrB) {
-    if (ptrA === ptrB) return ptrA;
-    ptrA = ptrA.next;
-    ptrB = ptrB.next;
-  }
-
-  return null;          // no intersection
-}
-
-function getLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-  while (cur) {
-    ++len;
-    cur = cur.next;
-  }
-  return len;
-}
-// shared tail: 5 → 6
-const tail = new ListNode(5, new ListNode(6));
-
-// list A: 1 → 2 → 3 → (shared)
-const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
-
-// list B: 9 → (shared)
-const b = new ListNode(9, tail);
-
-const intersectNode = intersect(a, b);
-console.log(intersectNode?.val); // 5
-function intersectUsingSet<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
-  }
-
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;
-    cur = cur.next;
-  }
-  return null;
+    return { sum: bestSum, start: bestStart, end: bestEnd };
 }
