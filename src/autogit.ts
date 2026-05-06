@@ -1,16 +1,16 @@
 /**
- * Return a random integer between `min` and `max`, inclusive.
+ * Return true iff `s` reads the same forwards and backwards.
+ * The function runs in O(n) time and O(1) auxiliary space.
+ * 
+ * If you need a case–insensitive or “ignoring non‑alpha‑numeric”
+ * version, simply adjust the comparison operations accordingly.
  */
-function randomInt(min: number, max: number): number {
-  // Math.random() → [0, 1)
-  // Multiply by (max - min + 1) → [0, max - min + 1)
-  // floor to get an integer in [0, max - min]
-  // Shift by min to get the desired range
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/* Example */
-console.log(randomInt(5, 15)); // might print 7, 12, 15, …
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // [min, max)
+function isPalindrome(s: string): boolean {
+  const n = s.length;
+  // Two‑pointer scan from the ends toward the centre.
+  for (let i = 0, j = n - 1; i < j; i++, j--) {
+    // Direct character comparison – no new arrays, no string slicing.
+    if (s.charAt(i) !== s.charAt(j)) return false;
+  }
+  return true;
 }
