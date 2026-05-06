@@ -1,66 +1,73 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+// ── List node -----------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
+// ── Intersection finder ------------------------------------
+function intersect<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
 
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+  // 1. Count nodes in each list
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+  // 2. Make the heads point to the same distance from the end
+  let ptrA: ListNode<T> | null = headA;
+  let ptrB: ListNode<T> | null = headB;
+  if (lenA > lenB) {
+    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
+  } else {
+    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
   }
 
-  return leafCount;
-}
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
-
-  if (!root) return leaves;
-
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+  // 3. Move together until we hit the common node (by reference)
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA;
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
   }
 
-  return leaves;
+  return null;          // no intersection
+}
+
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+  while (cur) {
+    ++len;
+    cur = cur.next;
+  }
+  return len;
+}
+// shared tail: 5 → 6
+const tail = new ListNode(5, new ListNode(6));
+
+// list A: 1 → 2 → 3 → (shared)
+const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
+
+// list B: 9 → (shared)
+const b = new ListNode(9, tail);
+
+const intersectNode = intersect(a, b);
+console.log(intersectNode?.val); // 5
+function intersectUsingSet<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;
+    cur = cur.next;
+  }
+  return null;
 }
