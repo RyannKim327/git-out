@@ -1,169 +1,70 @@
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree for any type T that can be compared via a comparator
-   ────────────────────────────────────────────────────────────────────── */
+// random-cron.ts
+// ----------
+// Requires:
+//   npm install node-cron
+//   npm install --save-dev @types/node-cron   (optional if you want type safety)
+// ----------
+import cron from 'node-cron';
 
-interface Node<T> {
-  value: T;
-  left?: Node<T>;
-  right?: Node<T>;
-  height: number;           // height of the subtree rooted at this node
+/**
+ * Handy helper that returns a random integer in [min, max] inclusive.
+ */
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-type Comparator<T> = (a: T, b: T) => number;
+/**
+ * A tiny random “quote” pool. Feel free to replace these with your own.
+ */
+const QUOTES: string[] = [
+  "Do not wait to strike till the iron is hot; but make it hot by striking.",
+  "All that we see or seem is but a dream within a dream.",
+  "Noise is bliss when you’re chasing a dream.",
+  "In the middle of difficulty lies opportunity.",
+  "The only limit to our realization of tomorrow is our doubts about today."
+];
 
-/* ──────────────────────────────────────────────────────────────────────
-   Binary‑search‑tree helper: node height, balance factor, update
-   ────────────────────────────────────────────────────────────────────── */
-
-function nodeHeight<T>(n: Node<T> | undefined): number {
-  return n ? n.height : 0;
+/**
+ * Pick a random quote from `QUOTES`.
+ */
+function getRandomQuote(): string {
+  const idx = randInt(0, QUOTES.length - 1);
+  return QUOTES[idx];
 }
 
-function balanceFactor<T>(n: Node<T> | undefined): number {
-  return n ? nodeHeight(n.left) - nodeHeight(n.right) : 0;
+/**
+ * Pick a random time (hour/minute) so that the job will fire at a different
+ * spot each day. These are UTC values in the cron string.
+ */
+function generateRandomCronExpr(): string {
+  const hour = randInt(0, 23);
+  const minute = randInt(0, 59);
+  // e.g. "14 3 * * *" → 3:14 AM UTC every day
+  return `${minute} ${hour} * * *`;
 }
 
-function updateHeight<T>(n: Node<T>): void {
-  n.height = 1 + Math.max(nodeHeight(n.left), nodeHeight(n.right));
+/**
+ * Launch a cron job that runs at the generated random time.
+ */
+function scheduleDailyQuote() {
+  const cronExpr = generateRandomCronExpr();
+  console.log(`Scheduling daily quote at *${cronExpr}* (UTC).`);
+
+  cron.schedule(cronExpr, () => {
+    const msg = getRandomQuote();
+    const time = new Date().toISOString();
+    console.log(`[${time}] Random quote: ${msg}`);
+  });
 }
 
-/* ──────────────────────────────────────────────────────────────────────
-   Rotations
-   ────────────────────────────────────────────────────────────────────── */
+scheduleDailyQuote();
+# 1. Install deps
+npm install --save node-cron
+# Optional typings
+npm install --save-dev @types/node-cron
 
-function rotateRight<T>(y: Node<T>): Node<T> {
-  const x = y.left!;
-  const T2 = x.right;
+# 2. Compile (if you’re using tsc)
+tsc random-cron.ts
 
-  // Rotation
-  x.right = y;
-  y.left = T2;
-
-  // Update heights
-  updateHeight(y);
-  updateHeight(x);
-  return x;                  // new root
-}
-
-function rotateLeft<T>(x: Node<T>): Node<T> {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // Rotation
-  y.left = x;
-  x.right = T2;
-
-  // Update heights
-  updateHeight(x);
-  updateHeight(y);
-  return y;                  // new root
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   Rebalance a node
-   ────────────────────────────────────────────────────────────────────── */
-
-function rebalance<T>(node: Node<T>): Node<T> {
-  updateHeight(node);
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (balanceFactor(node.left) < 0) {
-      node.left = rotateLeft(node.left!);
-    }
-    return rotateRight(node);
-  }
-
-  // Right heavy
-  if (bf < -1) {
-    if (balanceFactor(node.right) > 0) {
-      node.right = rotateRight(node.right!);
-    }
-    return rotateLeft(node);
-  }
-
-  return node;   // already balanced
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree class
-   ────────────────────────────────────────────────────────────────────── */
-
-export class AVLTree<T> {
-  private root?: Node<T>;
-  private readonly compare: Comparator<T>;
-
-  constructor(compareFn: Comparator<T>) {
-    this.compare = compareFn;
-  }
-
-  /* ── PUBLIC API ───────────────────────────────────────────────────── */
-
-  insert(value: T): void {
-    this.root = this._insert(this.root, value);
-  }
-
-  delete(value: T): void {
-    this.root = this._delete(this.root, value);
-  }
-
-  find(value: T): Node<T> | undefined {
-    return this._find(this.root, value);
-  }
-
-  /** In‑order traversal – handy for visualising the tree */
-  inOrder(): T[] {
-    const res: T[] = [];
-    this._inOrder(this.root, res);
-    return res;
-  }
-
-  /** Return raw root – useful for debugging */
-  getRoot(): Node<T> | undefined {
-    return this.root;
-  }
-
-  /* ── INTERNAL IMPLEMENTATION ─────────────────────────────────────── */
-
-  private _insert(node: Node<T> | undefined, value: T): Node<T> {
-    if (!node) return { value, height: 1 };           // new leaf
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) node.left  = this._insert(node.left,  value);
-    else if (cmp > 0) node.right = this._insert(node.right, value);
-    else return node;                                 // ignore duplicates
-
-    return rebalance(node);
-  }
-
-  private _find(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-    const cmp = this.compare(value, node.value);
-    if (cmp === 0) return node;
-    return cmp < 0 ? this._find(node.left,  value) : this._find(node.right, value);
-  }
-
-  private _inOrder(node: Node<T> | undefined, out: T[]): void {
-    if (!node) return;
-    this._inOrder(node.left, out);
-    out.push(node.value);
-    this._inOrder(node.right, out);
-  }
-
-  /** Delete and rebalance */
-  private _delete(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) {
-      node.left = this._delete(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._delete(node.right, value);
-    } else {
-      // node to delete found
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // Two children: use in‑order predecessor (max of left subtree)
-      const maxLeft = this._max
+# 3. Run
+node random-cron.js
