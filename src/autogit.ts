@@ -1,16 +1,35 @@
-/**
- * Return true iff `s` reads the same forwards and backwards.
- * The function runs in O(n) time and O(1) auxiliary space.
- * 
- * If you need a case–insensitive or “ignoring non‑alpha‑numeric”
- * version, simply adjust the comparison operations accordingly.
- */
-function isPalindrome(s: string): boolean {
-  const n = s.length;
-  // Two‑pointer scan from the ends toward the centre.
-  for (let i = 0, j = n - 1; i < j; i++, j--) {
-    // Direct character comparison – no new arrays, no string slicing.
-    if (s.charAt(i) !== s.charAt(j)) return false;
-  }
-  return true;
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
 }
+
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
+  }
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
+  }
+
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
+
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
+  }
+
+  return Math.sqrt(areaSquared);
+}
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
+
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
