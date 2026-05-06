@@ -1,138 +1,138 @@
-// ──────────────────────────────────────────────────────────────────────
-// 1️⃣  Node definition
-// ──────────────────────────────────────────────────────────────────────
+/** The two colours that a node can be. */
+enum Color { RED, BLACK }
 
-export class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+/** Sentinel that represents all NIL leaves. It is shared by every
+ *  subtree so that we never have to check for `null` – the tree knows
+ *  that `NIL` is a perfectly black node with no actual key/value. */
+const NIL = new class {
+    color = Color.BLACK
+    left: this | null = null
+    right: this | null = null
+    parent: this | null = null
+    // Sentinel never carries real payload
+} as any
+
+/** A node in the tree.  We keep the children *always* defined as
+ *  `RBNode` so that the rest of the code never has to deal with `null`s. */
+class RBNode<TKey, TValue> {
+    left: RBNode<TKey, TValue>
+    right: RBNode<TKey, TValue>
+    parent: RBNode<TKey, TValue>
+    color: Color
+
+    constructor(
+        public key: TKey,
+        public value: TValue,
+        color: Color = Color.RED,
+        parent: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
+    ) {
+        this.left = NIL as RBNode<TKey, TValue>
+        this.right = NIL as RBNode<TKey, TValue>
+        this.parent = parent
+        this.color = color
+    }
 }
+class RedBlackTree<TKey, TValue> {
+    private root: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
 
-// ──────────────────────────────────────────────────────────────────────
-// 2️⃣  Binary‑Search‑Tree
-// ──────────────────────────────────────────────────────────────────────
+    /* ---------- Public API ---------- */
 
-export class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
+    /** Insert a key/value pair.  If the key already exists, its value
+     *  is overwritten. */
+    insert(key: TKey, value: TValue): void {
+        const newNode = new RBNode(key, value)
+        let y = NIL as RBNode<TKey, TValue>
+        let x = this.root
 
-  /* ----------------------------------------------------------------- */
-  // basic insertion – assumes no duplicates
-  /* ----------------------------------------------------------------- */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let node: TreeNode<T> | null = this.root;
-    while (node) {
-      if (value < node.value) {
-        if (!node.left) {
-          node.left = newNode;
-          break;
+        // --- 1. Standard BST insertion to find the parent --- //
+        while (x !== NIL) {
+            y = x
+            if (key < x.key) {          // assuming TKey is number/string
+                x = x.left
+            } else if (key > x.key) {
+                x = x.right
+            } else {                     // key already exists → replace
+                x.value = value
+                return
+            }
         }
-        node = node.left;
-      } else {
-        if (!node.right) {
-          node.right = newNode;
-          break;
+
+        newNode.parent = y
+        if (y === NIL) {
+            this.root = newNode
+        } else if (key < y.key) {
+            y.left = newNode
+        } else {
+            y.right = newNode
         }
-        node = node.right;
-      }
-    }
-  }
+        newNode.left = NIL
+        newNode.right = NIL
+        newNode.color = Color.RED
 
-  /* ----------------------------------------------------------------- */
-  // find a value – returns the node or null
-  /* ----------------------------------------------------------------- */
-  find(value: T): TreeNode<T> | null {
-    let node = this.root;
-    while (node) {
-      if (value === node.value) return node;
-      node = value < node.value ? node.left : node.right;
-    }
-    return null;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // In‑order traversal – returns array of values sorted (for BST)
-  /* ----------------------------------------------------------------- */
-  inorder(): T[] {
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [];
-    let node = this.root;
-
-    while (stack.length || node) {
-      while (node) {
-        stack.push(node);
-        node = node.left!;
-      }
-      node = stack.pop()!;
-      result.push(node.value);
-      node = node.right!;
+        // --- 2. Fix the tree to restore rbt properties --- //
+        this.fixInsert(newNode)
     }
 
-    return result;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // Pre‑order (root, left, right)
-  /* ----------------------------------------------------------------- */
-  preorder(): T[] {
-    if (!this.root) return [];
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [this.root];
-
-    while (stack.length) {
-      const node = stack.pop()!;
-      result.push(node.value);
-
-      // push right first so left is processed first
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
+    /** Return the value for a key, or `undefined`. */
+    get(key: TKey): TValue | undefined {
+        const node = this.search(key)
+        return node ? node.value : undefined
     }
 
-    return result;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // Post‑order (left, right, root) – iterative with two stacks
-  /* ----------------------------------------------------------------- */
-  postorder(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
-
-    const stack1: TreeNode<T>[] = [this.root];
-    const stack2: TreeNode<T>[] = [];
-
-    while (stack1.length) {
-      const node = stack1.pop()!;
-      stack2.push(node);
-
-      if (node.left) stack1.push(node.left);
-      if (node.right) stack1.push(node.right);
+    /** Delete a key if it exists; otherwise do nothing. */
+    delete(key: TKey): void {
+        const node = this.search(key)
+        if (!node) return
+        this.deleteNode(node)
     }
 
-    while (stack2.length) {
-      result.push(stack2.pop()!.value);
+    /** In‑order traversal – useful for debugging or debugging. */
+    inorder(f: (k: TKey, v: TValue) => void): void {
+        const walk = (node: RBNode<TKey, TValue>) => {
+            if (node === NIL) return
+            walk(node.left)
+            f(node.key, node.value)
+            walk(node.right)
+        }
+        walk(this.root)
     }
 
-    return result;
-  }
-}
-import { BinarySearchTree } from "./bst";
+    /* ---------- Private helpers ---------- */
 
-const bst = new BinarySearchTree<number>();
+    /** Helper to walk down the tree and find a node by key. */
+    private search(key: TKey): RBNode<TKey, TValue> | null {
+        let node = this.root
+        while (node !== NIL) {
+            if (key < node.key) node = node.left
+            else if (key > node.key) node = node.right
+            else return node
+        }
+        return null
+    }
 
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+    /* Rotations – keep the tree balanced if you’re playing with your own
+     * recursive helper.  They are basically a graft + replace.*
+     */
 
-console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
-console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
-console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
+    private leftRotate(x: RBNode<TKey, TValue>): void {
+        const y = x.right
+        x.right = y.left
+        if (y.left !== NIL) y.left.parent = x
 
-console.log("Find 5:", bst.find(5)?.value);          // 5
-console.log("Find 20:", bst.find(20));               // null
+        y.parent = x.parent
+        if (x.parent === NIL) this.root = y
+        else if (x === x.parent.left) x.parent.left = y
+        else x.parent.right = y
+
+        y.left = x
+        x.parent = y
+    }
+
+    private rightRotate(y: RBNode<TKey, TValue>): void {
+        const x = y.left
+        y.left = x.right
+        if (x.right !== NIL) x.right.parent = y
+
+        x.parent = y.parent
+        if (y.parent === NIL) this.root = x
+        else if (y === y.parent.left) y.parent.left = x
