@@ -1,64 +1,48 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
-}
-const foo = [1, 2, 3, 4];
-const bar = [3, 4, 5, 6];
-console.log(intersection(foo, bar)); // [3, 4]
-function intersectionSorted<T>(a: T[], b: T[]): T[] {
-  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
-  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
-  const res: T[] = [];
-  let i = 0, j = 0;
+/**
+ * Return the longest common prefix of an array of strings.
+ *
+ * @param strs - The strings to investigate.
+ * @returns The common prefix (empty string if there is none, or if the array is empty).
+ */
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return "";
 
-  while (i < sortedA.length && j < sortedB.length) {
-    if (sortedA[i] === sortedB[j]) {
-      res.push(sortedA[i]); i++; j++;
-    } else if (sortedA[i] < sortedB[j]) {
-      i++;
-    } else {
+  // Start with the first string as the provisional prefix
+  let prefix = strs[0];
+
+  // Stop as soon as prefix becomes empty – nothing more to find
+  for (let i = 1; i < strs.length && prefix.length; i++) {
+    const current = strs[i];
+    let j = 0;
+
+    // Compare char‑by‑char until a mismatch is detected
+    while (j < prefix.length && j < current.length && prefix[j] === current[j]) {
       j++;
     }
+
+    // Update prefix to the matched portion
+    prefix = prefix.substring(0, j);
   }
-  return res;
-}
-function uniqueIntersection<T>(a: T[], b: T[]): T[] {
-  const seen = new Set(b);
-  const out = new Set<T>();
-  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
-  return [...out];
-}
-function intersectionBy<T, K>(
-  a: T[],
-  b: T[],
-  keyFn: (item: T) => K
-): T[] {
-  const setB = new Set(b.map(keyFn));
-  return a.filter(x => setB.has(keyFn(x)));
-}
-const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
-const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
 
-console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
-const common = a.filter(v => b.includes(v));
-type KeyFn<T, K> = (item: T) => K;
-
-// Fastest for primitives
-export function intersection<T>(a: T[], b: T[]): T[] {
-  const set = new Set(b);
-  return a.filter(x => set.has(x));
+  return prefix;
 }
+const words = ["flower","flow","flight"];
+console.log(longestCommonPrefix(words)); // → "fl"
 
-// Preserve order, unique results
-export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  const out = new Set<T>();
-  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
-  return [...out];
-}
+const mixed = ["dog","racecar","car"];
+console.log(longestCommonPrefix(mixed)); // → ""
 
-// For objects or custom equality
-export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
-  const set = new Set(b.map(keyFn));
-  return a.filter(x => set.has(keyFn(x)));
+const emptyCases: string[] = [];
+console.log(longestCommonPrefix(emptyCases)); // → ""
+export function lcpVertical(strs: string[]): string {
+  if (!strs.length) return "";
+  for (let i = 0; i < strs[0].length; i++) {
+    const char = strs[0][i];
+    for (let j = 1; j < strs.length; j++) {
+      if (i >= strs[j].length || strs[j][i] !== char) {
+        return strs[0].substring(0, i);
+      }
+    }
+  }
+  return strs[0];
 }
