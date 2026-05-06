@@ -1,50 +1,43 @@
-const unique = (arr: readonly any[]) => [...new Set(arr)];
+/**
+ * Random‑pivot QuickSort
+ *
+ * @param data - array of numbers to sort in place
+ * @returns the sorted array
+ */
+function randomQuickSort(data: number[]): number[] {
+  // Helper that actually does the work, using indices so the call stack is shallow.
+  function sort(left: number, right: number) {
+    if (left >= right) return;
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(unique(numbers)); // [1, 2, 3, 4]
-function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
-  const seen = new Set<any>();
-  return arr.filter(item => {
-    const k = item[key];
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+    // Pick a random index between left and right (inclusive)
+    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    // Swap pivot with the last element – easier partitioning
+    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
+    const pivot = data[right];
+
+    let i = left - 1; // elements ≤ pivot will be to the left of i
+
+    for (let j = left; j < right; j++) {
+      if (data[j] <= pivot) {
+        i++;
+        [data[i], data[j]] = [data[j], data[i]];
+      }
+    }
+
+    // place pivot after the last smaller element
+    const finalPivotPos = i + 1;
+    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
+
+    // Recurse on each partition
+    sort(left, finalPivotPos - 1);
+    sort(finalPivotPos + 1, right);
+  }
+
+  sort(0, data.length - 1);
+  return data;
 }
 
-const people = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 1, name: 'Ada' },
-  { id: 3, name: 'Ken' }
-];
-
-console.log(uniqBy(people, 'id'));
-/*
-[
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 3, name: 'Ken' }
-]
-*/
-import uniqWith from 'lodash/uniqWith';
-import isEqual from 'lodash/isEqual';
-
-const dupObjs = [
-  { a: 1, b: 2 },
-  { a: 1, b: 2 },
-  { a: 3, b: 4 }
-];
-
-console.log(uniqWith(dupObjs, isEqual));
-// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
-const unique = (arr: readonly any[]) =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
-
-console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
-const uniq = (arr: readonly any[]) => [...new Set(arr)];
-// or for objects by key
-const uniqByKey = (arr: readonly any[], key: string) => {
-  const seen = new Set();
-  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
-};
+/* --- demo ------------------------------------ */
+const arr = [5, 2, 9, 1, 5, 6];
+console.log('original:', arr);
+console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
