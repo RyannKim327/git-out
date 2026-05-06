@@ -1,61 +1,96 @@
-/**
- * Recursive binary search.
- * @param data  A sorted array of comparable items.
- * @param target The value we’re looking for.
- * @param low   The lowest index (inclusive) of the current search window.
- * @param high  The highest index (exclusive) of the current search window.
- * @returns The index of `target` in `data`, or -1 if not found.
- */
-function binarySearchRecursive<T>(
-  data: T[],
-  target: T,
-  low: number = 0,
-  high: number = data.length
-): number {
-  // Base case: no more elements left
-  if (low >= high) return -1;
+/* ---------- 1️⃣  Types & helpers ------------------------------------ */
 
-  // Middle index (floor division)
-  const mid = Math.floor((low + high) / 2);
-  const midVal = data[mid];
+type Edge = {
+  /** source vertex */
+  u: number;
+  /** destination vertex */
+  v: number;
+  /** edge weight */
+  w: number;
+};
 
-  // Compare: adjust the comparison operator (#) based on how you want to order T.
-  // For numbers and strings this works out of the box. If you have a custom type,
-  // supply a comparator instead of using `===` and `<`.
-  if (midVal === target) {
-    return mid;
-  } else if (midVal < target) {
-    // target is in the right half
-    return binarySearchRecursive(data, target, mid + 1, high);
-  } else {
-    // target is in the left half
-    return binarySearchRecursive(data, target, low, mid);
+interface Result {
+  /** distance from the source to every vertex */
+  dist: number[];
+  /** immediately‑prev vertex on the shortest path, or null if unreachable */
+  prev: (number | null)[];
+  /** did we spot a negative‑weight cycle? */
+  hasNegativeCycle: boolean;
+}
+
+/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): Result {
+  const dist = new Array<number>(vertexCount).fill(Infinity);
+  const prev = new Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relaxes every edge V‑1 times
+  for (let iter = 0; iter < vertexCount - 1; ++iter) {
+    let updated = false;
+
+    for (const { u, v, w } of edges) {
+      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        updated = true;
+      }
+    }
+
+    // Stop early if nothing changed
+    if (!updated) break;
   }
+
+  // 2️⃣ Detect negative‑weight cycles:
+  let hasNegativeCycle = false;
+  for (const { u, v, w } of edges) {
+    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, prev, hasNegativeCycle };
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-console.log(binarySearchRecursive(sorted, 7));  // → 3
-console.log(binarySearchRecursive(sorted, 2));  // → -1
-function binarySearchRecursiveCmp<T>(
-  data: T[],
-  target: T,
-  cmp: (a: T, b: T) => number,
-  low: number = 0,
-  high: number = data.length
-): number {
-  if (low >= high) return -1;
+/* ---------- 3️⃣  Example usage ------------------------------------ */
 
-  const mid = Math.floor((low + high) / 2);
-  const midVal = data[mid];
-  const order = cmp(midVal, target);
+const edges: Edge[] = [
+  { u: 0, v: 1, w: 4 },
+  { u: 0, v: 2, w: 5 },
+  { u: 1, v: 2, w: -3 },
+  { u: 1, v: 3, w: 2 },
+  { u: 2, v: 3, w: 4 },
+  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
+];
 
-  if (order === 0) return mid;
-  if (order < 0) return binarySearchRecursiveCmp(data, target, cmp, mid + 1, high);
-  return binarySearchRecursiveCmp(data, target, cmp, low, mid);
+const vertexCount = 4;
+const source = 0;
+
+const result = bellmanFord(vertexCount, edges, source);
+
+console.log('Distances:', result.dist);
+console.log('Prev:' , result.prev);
+console.log(
+  'Negative cycle detected:',
+  result.hasNegativeCycle ? 'Yes' : 'No'
+);
+
+// If you want to reconstruct a path to a target vertex:
+function reconstructPath(prev: (number | null)[], target: number) {
+  const path: number[] = [];
+  let current: number | null = target;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = prev[current];
+  }
+  return path;
 }
-interface Player { name: string; score: number }
-const players: Player[] = [ {name:"A", score:10}, {name:"B", score:20}, {name:"C", score:30} ];
 
-const cmp = (a: Player, b: Player) => a.score - b.score;
-const idx = binarySearchRecursiveCmp(players, {name:"X", score:20}, cmp);
-console.log(idx); // 1
+console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
