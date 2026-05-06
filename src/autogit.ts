@@ -1,100 +1,64 @@
-class LinkedList<T> implements Iterable<T> {
-  private head: Node<T> | null = null;
-  private tail: Node<T> | null = null;
-  private length = 0;
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
+}
+const foo = [1, 2, 3, 4];
+const bar = [3, 4, 5, 6];
+console.log(intersection(foo, bar)); // [3, 4]
+function intersectionSorted<T>(a: T[], b: T[]): T[] {
+  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
+  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
+  const res: T[] = [];
+  let i = 0, j = 0;
 
-  push(value: T): void { /* … */ }
-  pop(): T | undefined { /* … */ }
-  unshift(value: T): void { /* … */ }
-  shift(): T | undefined { /* … */ }
-  get(index: number): T | undefined { /* … */ }
-  set(index: number, value: T): boolean { /* … */ }
-  insert(index: number, value: T): boolean { /* … */ }
-  remove(index: number): T | undefined { /* … */ }
-  clear(): void { /* … */ }
-  toArray(): T[] { /* … */ }
-
-  [Symbol.iterator](): Iterator<T> { /* … */ }
-}
-// Simple singly‑linked node
-class Node<T> {
-  constructor(
-    public readonly value: T,
-    public next: Node<T> | null = null
-  ) {}
-}
-class LinkedList<T> implements Iterable<T> {
-  private head: Node<T> | null = null; // first node
-  private tail: Node<T> | null = null; // last
-  private length = 0;
-}
-constructor(iterable?: Iterable<T>) {
-  if (iterable) {
-    for (const item of iterable) this.push(item);
+  while (i < sortedA.length && j < sortedB.length) {
+    if (sortedA[i] === sortedB[j]) {
+      res.push(sortedA[i]); i++; j++;
+    } else if (sortedA[i] < sortedB[j]) {
+      i++;
+    } else {
+      j++;
+    }
   }
+  return res;
 }
-private _getNode(index: number): Node<T> | null {
-  if (index < 0 || index >= this.length) return null;
-  let curr = this.head;
-  for (let i = 0; i < index; i++) curr = curr!.next;
-  return curr;
+function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const seen = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
+  return [...out];
 }
-push(value: T): void {
-  const node = new Node(value);
-  if (!this.head) {            // first item
-    this.head = this.tail = node;
-  } else {
-    this.tail!.next = node;    // append
-    this.tail = node;
-  }
-  this.length++;
+function intersectionBy<T, K>(
+  a: T[],
+  b: T[],
+  keyFn: (item: T) => K
+): T[] {
+  const setB = new Set(b.map(keyFn));
+  return a.filter(x => setB.has(keyFn(x)));
 }
-pop(): T | undefined {
-  if (!this.head) return undefined;
+const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
+const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
 
-  const lastVal = this.tail!.value;
+console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
+const common = a.filter(v => b.includes(v));
+type KeyFn<T, K> = (item: T) => K;
 
-  if (this.head === this.tail) {    // only one node
-    this.head = this.tail = null;
-  } else {
-    // find the node before tail
-    let curr = this.head;
-    while (curr.next !== this.tail) curr = curr.next!;
-    curr.next = null;
-    this.tail = curr;
-  }
+// Fastest for primitives
+export function intersection<T>(a: T[], b: T[]): T[] {
+  const set = new Set(b);
+  return a.filter(x => set.has(x));
+}
 
-  this.length--;
-  return lastVal;
+// Preserve order, unique results
+export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
+  return [...out];
 }
-unshift(value: T): void {
-  const node = new Node(value, this.head);
-  this.head = node;
-  if (!this.tail) this.tail = node; // list was empty
-  this.length++;
-}
-shift(): T | undefined {
-  if (!this.head) return undefined;
-  const val = this.head.value;
-  this.head = this.head.next;
-  if (!this.head) this.tail = null; // list became empty
-  this.length--;
-  return val;
-}
-get(index: number): T | undefined {
-  const node = this._getNode(index);
-  return node ? node.value : undefined;
-}
-set(index: number, value: T): boolean {
-  const node = this._getNode(index);
-  if (!node) return false;
-  node.value = value;
-  return true;
-}
-insert(index: number, value: T): boolean {
-  if (index < 0 || index > this.length) return false;
-  if (index === 0) return (this.unshift(value), true);
-  if (index === this.length) return (this.push(value), true);
 
-  const prev = this._getNode(index - 1)!;
-  const node = new Node(value,
+// For objects or custom equality
+export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
+  const set = new Set(b.map(keyFn));
+  return a.filter(x => set.has(keyFn(x)));
+}
