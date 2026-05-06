@@ -1,42 +1,62 @@
 /**
- * Returns the largest prime factor of n.
+ * Generic Shell Sort.
  *
- * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
+ * @param arr   The array to sort in‑place.
+ * @param cmp   Optional comparator.  Returns a negative number if a < b,
+ *              zero if a == b, positive if a > b.
+ * @returns     The sorted array (same reference as input).
+ *
+ * @example
+ *   const nums = [9, 5, 1, 4, 3];
+ *   shellSort(nums);          // [1,3,4,5,9]
+ *
+ *   const nameList = ['Zoe', 'Alice', 'Bob'];
+ *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
  */
-export function largestPrimeFactor(n: number | bigint): number | bigint {
-    if (n <= 1) throw new Error('n must be > 1');
+function shellSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
 
-    // Work with BigInt for arbitrary precision
-    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
-    let maxFactor: bigint = 1n;
+  // Default comparator uses JavaScript's < and > operators.
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
 
-    // Handle factor 2 separately
-    while (num % 2n === 0n) {
-        maxFactor = 2n;
-        num /= 2n;
+  // Classic Shell sequence: n/2, n/4, …, 1
+  let gap = Math.floor(len / 2);
+  while (gap > 0) {
+    // For each shift positions, perform an insertion sort on the sub‑array
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+
+      // Shift elements of the sub‑array that are greater than temp
+      // rightward by one position.
+      while (j >= gap && compare(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+
+      arr[j] = temp;
     }
 
-    // Now num is odd – we only need to check odd divisors
-    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
-        while (num % divisor === 0n) {
-            maxFactor = divisor;
-            num /= divisor;
-        }
-    }
+    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
+  }
 
-    // If anything is left, it's a prime larger than any divisor we tried
-    if (num > 1n) maxFactor = num;
-
-    // Return a native number if the input was a number and the result fits
-    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
-        return Number(maxFactor);
-    }
-    return maxFactor;
+  return arr;
 }
-console.log(largestPrimeFactor(28));          // 7
-console.log(largestPrimeFactor(91));          // 13
-console.log(largestPrimeFactor(600851475143));// 6857
+const data = [22, 45, 12, 8, 4, 30, 6];
+console.log('Before:', data);
 
-// With a BigInt (e.g. a 100‑digit number)
-const huge = BigInt('123456789123456789123456789');
-console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
+shellSort(data);
+
+console.log('After:', data);
+Before: [22,45,12,8,4,30,6]
+After: [4,6,8,12,22,30,45]
