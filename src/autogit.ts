@@ -1,35 +1,42 @@
-// 1️⃣ Base & height
-export function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0)
-    throw new Error('Base and height must be positive numbers.');
-  return (base * height) / 2;
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr     Sorted array to search
+ * @param target  Value to find
+ * @param lessThan Comparator that returns true if  a < b
+ * @returns Index of the target or -1 if not found
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  lessThan: (a: T, b: T) => boolean
+): number {
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high) {
+    // middle index – use bit‑shifting to avoid overflow
+    const mid = (low + high) >> 1;
+    const midVal = arr[mid];
+
+    if (lessThan(target, midVal)) {
+      high = mid - 1; // target is in the left half
+    } else if (lessThan(midVal, target)) {
+      low = mid + 1; // target is in the right half
+    } else {
+      return mid; // found
+    }
+  }
+
+  return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11];
 
-// 2️⃣ Heron’s formula (three sides)
-export function areaHeron(a: number, b: number, c: number): number {
-  // Validate that the sides can form a triangle
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error('Side lengths must be positive numbers.');
-  }
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not satisfy the triangle inequality.');
-  }
+// simple number comparison
+const index = binarySearch(nums, 7, (a, b) => a < b);
+console.log(index); // 3
 
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-  // area might be NaN if the vertices are collinear (area close to 0)
-  if (areaSquared < 0) {
-    throw new Error('Computed area squared is negative – check your side lengths.');
-  }
-
-  return Math.sqrt(areaSquared);
-}
-// Base & height
-const tri1 = areaBaseHeight(10, 4); // 20
-
-// Heron’s formula
-const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
-
-console.log(`Base/Height area: ${tri1}`);
-console.log(`Heron area: ${tri2}`);
+// with strings
+const words = ['apple', 'banana', 'cherry', 'date'];
+const idx = binarySearch(words, 'cherry', (a, b) => a < b);
+console.log(idx); // 2
