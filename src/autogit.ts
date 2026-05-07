@@ -1,62 +1,50 @@
-/* ------------------------------------------------------------
-   Heap‑sort in TypeScript
-   ------------------------------------------------------------ */
+const unique = (arr: readonly any[]) => [...new Set(arr)];
 
-/**
- * Build a max‑heap in place.
- * `heapSize` is the number of elements to consider from the start of `arr`.
- */
-function heapify<T>(arr: T[], heapSize: number, i: number, cmp: (a: T, b: T) => number) {
-    const left  = 2 * i + 1;
-    const right = 2 * i + 2;
-    let largest = i;
-
-    if (left  < heapSize && cmp(arr[left],  arr[largest]) > 0) largest = left;
-    if (right < heapSize && cmp(arr[right], arr[largest]) > 0) largest = right;
-
-    if (largest !== i) {
-        [arr[i], arr[largest]] = [arr[largest], arr[i]];
-        heapify(arr, heapSize, largest, cmp);
-    }
+const numbers = [1, 2, 3, 2, 4, 1];
+console.log(unique(numbers)); // [1, 2, 3, 4]
+function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
+  const seen = new Set<any>();
+  return arr.filter(item => {
+    const k = item[key];
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
-/**
- * Transform an array into a heap.  O(n) time.
- */
-function buildHeap<T>(arr: T[], cmp: (a: T, b: T) => number) {
-    const heapSize = arr.length;
-    for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-        heapify(arr, heapSize, i, cmp);
-    }
-}
+const people = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 1, name: 'Ada' },
+  { id: 3, name: 'Ken' }
+];
 
-/**
- * Heap‑sort: sorts `arr` in place and returns it.
- * Default comparison is numeric ascending order.
- */
-export function heapSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const compare = cmp ?? ((a, b) => (a as any) - (b as any));
+console.log(uniqBy(people, 'id'));
+/*
+[
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 3, name: 'Ken' }
+]
+*/
+import uniqWith from 'lodash/uniqWith';
+import isEqual from 'lodash/isEqual';
 
-    // 1️⃣ build max‑heap
-    buildHeap(arr, compare);
+const dupObjs = [
+  { a: 1, b: 2 },
+  { a: 1, b: 2 },
+  { a: 3, b: 4 }
+];
 
-    // 2️⃣ repeatedly extract the max and rebuild heap
-    let heapSize = arr.length;
-    for (let i = arr.length - 1; i > 0; i--) {
-        // put current max (root) at the end
-        [arr[0], arr[i]] = [arr[i], arr[0]];
-        heapSize--;
+console.log(uniqWith(dupObjs, isEqual));
+// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
+const unique = (arr: readonly any[]) =>
+  arr.filter((value, index, self) => self.indexOf(value) === index);
 
-        // restore heap property on the reduced heap
-        heapify(arr, heapSize, 0, compare);
-    }
-
-    return arr;
-}
-const numbers = [5, 3, 8, 4, 1, 7, 2];
-heapSort(numbers);
-console.log(numbers); // → [1, 2, 3, 4, 5, 7, 8]
-interface Person { name: string; age: number }
-
-// Sort by age ascending
-heapSort(people, (a, b) => a.age - b.age);
+console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
+const uniq = (arr: readonly any[]) => [...new Set(arr)];
+// or for objects by key
+const uniqByKey = (arr: readonly any[], key: string) => {
+  const seen = new Set();
+  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
+};
