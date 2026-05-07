@@ -1,171 +1,96 @@
-// ------------------------------------------------------------
-//  1️⃣  Types / data structures
-// ------------------------------------------------------------
-export type ID = string | number;
+/* ---------- 1️⃣  Types & helpers ------------------------------------ */
 
-// Location on a grid (for the example)
-export interface Point {
-  x: number;
-  y: number;
-  toString(): string;           // stringify for use as Map keys
+type Edge = {
+  /** source vertex */
+  u: number;
+  /** destination vertex */
+  v: number;
+  /** edge weight */
+  w: number;
+};
+
+interface Result {
+  /** distance from the source to every vertex */
+  dist: number[];
+  /** immediately‑prev vertex on the shortest path, or null if unreachable */
+  prev: (number | null)[];
+  /** did we spot a negative‑weight cycle? */
+  hasNegativeCycle: boolean;
 }
 
-export class PointImpl implements Point {
-  constructor(public x: number, public y: number) {}
-  toString() { return `${this.x},${this.y}`; }
+/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
 
-  // For the priority queue we need a score
-  distanceTo(other: Point) {
-    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
-  }
-}
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): Result {
+  const dist = new Array<number>(vertexCount).fill(Infinity);
+  const prev = new Array<number | null>(vertexCount).fill(null);
 
-// Edge connects two nodes with a weight (default = 1)
-export interface Edge<T> {
-  from: T;
-  to: T;
-  weight: number;
-  cost?: number;          // will be filled later
-}
+  dist[source] = 0;
 
-export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
+  // 1️⃣ Relaxes every edge V‑1 times
+  for (let iter = 0; iter < vertexCount - 1; ++iter) {
+    let updated = false;
 
-// ------------------------------------------------------------
-//  2️⃣  Binary‑heap priority queue (min‑heap)
-// ------------------------------------------------------------
-class HeapNode<T> {
-  constructor(public key: number, public value: T) {}
-}
-
-export class PriorityQueue<T> {
-  private heap: HeapNode<T>[] = [];
-
-  get size() { return this.heap.length; }
-  empty() { return this.size === 0; }
-
-  push(key: number, value: T) {
-    this.heap.push(new HeapNode(key, value));
-    this.bubbleUp(this.size - 1);
-  }
-  pop(): HeapNode<T> | undefined {
-    if (this.empty()) return;
-    const top = this.heap[0];
-    const last = this.heap.pop()!;
-    if (!this.empty()) {
-      this.heap[0] = last;
-      this.bubbleDown(0);
-    }
-    return top;
-  }
-
-  private bubbleUp(i: number) {
-    while (i > 0) {
-      const p = (i - 1) >> 1;
-      if (this.heap[p].key <= this.heap[i].key) break;
-      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
-      i = p;
-    }
-  }
-  private bubbleDown(i: number) {
-    const n = this.size;
-    while (true) {
-      let l = (i << 1) + 1, r = l + 1, smallest = i;
-      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
-      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
-      if (smallest === i) break;
-      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
-      i = smallest;
-    }
-  }
-}
-
-// ------------------------------------------------------------
-//  3️⃣  AStar implementation
-// ------------------------------------------------------------
-export interface AStarOptions<T> {
-  graph: Graph<T>;
-  heuristic: (a: T, b: T) => number;
-  start: T;
-  goal: T;
-}
-
-export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
-  const { graph, heuristic, start, goal } = opts;
-
-  const open = new PriorityQueue<T>();
-  open.push(0, start);
-
-  const cameFrom = new Map<T, T | null>();
-  const gScore = new Map<T, number>();
-
-  cameFrom.set(start, null);
-  gScore.set(start, 0);
-
-  while (!open.empty()) {
-    const node = open.pop()!;
-    const u = node.value;
-
-    if (u === goal) {
-      // reconstruct
-      const path: T[] = [];
-      let cur: T | null = u;
-      while (cur !== null) {
-        path.push(cur);
-        cur = cameFrom.get(cur) ?? null;
-      }
-      path.reverse();
-      return { path, cost: gScore.get(u)! };
-    }
-
-    for (const edge of graph.get(u) ?? []) {
-      const v = edge.to;
-      const tentativeG = gScore.get(u)! + edge.weight;
-
-      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
-        cameFrom.set(v, u);
-        gScore.set(v, tentativeG);
-
-        const f = tentativeG + heuristic(v, goal);
-        open.push(f, v);
+    for (const { u, v, w } of edges) {
+      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        updated = true;
       }
     }
+
+    // Stop early if nothing changed
+    if (!updated) break;
   }
 
-  return null; // no path
-}
-
-// ------------------------------------------------------------
-//  4️⃣  Example – 4×4 grid with obstacles
-// ------------------------------------------------------------
-function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
-  const graph = new Map<Point, Edge<Point>[]>();
-
-  const dirs = [
-    [0, -1], [1, 0], [0, 1], [-1, 0],
-  ];
-
-  for (let y = 0; y < height; ++y) {
-    for (let x = 0; x < width; ++x) {
-      const p = new PointImpl(x, y);
-      if (walls.has(p.toString())) continue;
-
-      const neighbours: Edge<Point>[] = [];
-      for (const [dx, dy] of dirs) {
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        const q = new PointImpl(nx, ny);
-        if (walls.has(q.toString())) continue;
-        neighbours.push({ from: p, to: q, weight: 1 });
-      }
-      graph.set(p, neighbours);
+  // 2️⃣ Detect negative‑weight cycles:
+  let hasNegativeCycle = false;
+  for (const { u, v, w } of edges) {
+    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      break;
     }
   }
 
-  return graph;
+  return { dist, prev, hasNegativeCycle };
 }
 
-export async function main() {
-  const width = 4, height = 4;
-  const walls = new Set<string>([
-    new PointImpl(1, 1).toString(),
-    new PointImpl(2, 1).
+/* ---------- 3️⃣  Example usage ------------------------------------ */
+
+const edges: Edge[] = [
+  { u: 0, v: 1, w: 4 },
+  { u: 0, v: 2, w: 5 },
+  { u: 1, v: 2, w: -3 },
+  { u: 1, v: 3, w: 2 },
+  { u: 2, v: 3, w: 4 },
+  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
+];
+
+const vertexCount = 4;
+const source = 0;
+
+const result = bellmanFord(vertexCount, edges, source);
+
+console.log('Distances:', result.dist);
+console.log('Prev:' , result.prev);
+console.log(
+  'Negative cycle detected:',
+  result.hasNegativeCycle ? 'Yes' : 'No'
+);
+
+// If you want to reconstruct a path to a target vertex:
+function reconstructPath(prev: (number | null)[], target: number) {
+  const path: number[] = [];
+  let current: number | null = target;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = prev[current];
+  }
+  return path;
+}
+
+console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
