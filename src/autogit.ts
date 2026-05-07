@@ -1,44 +1,92 @@
 /**
- * In‑place insertion sort.
- *
- * @param arr  The array to sort.  It will be mutated.
- * @param compare Optional comparison function.  If omitted, the default
- *                 JavaScript `<` operator is used (suitable for numbers,
- *                 strings, etc.).
- * @returns The sorted array (same reference as the input).
+ * Longest Increasing Subsequence – O(n²) DP
+ * @param a   input array of numbers
+ * @returns   length of LIS
  */
-export function insertionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  if (arr.length < 2) return arr;          // already sorted
+function lisLengthDP(a: number[]): number {
+  const n = a.length;
+  if (n === 0) return 0;
 
-  // Default comparer: a < b => -1, a > b => +1, else 0
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+  const dp = new Array(n).fill(1);   // each element itself
 
-  // Start from the second element – the first is trivially sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Move elements that are greater than key one position ahead.
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  for (let i = 1; i < n; i++) {
+    for (let j = 0; j < i; j++) {
+      if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+      }
     }
-
-    // Place key after the element just smaller than it.
-    arr[j + 1] = key;
   }
 
-  return arr;
+  return Math.max(...dp);
 }
-const nums = [8, 3, 5, 1, 9, 6];
-console.log(insertionSort(nums)); // [1, 3, 5, 6, 8, 9]
+console.log(lisLengthDP([10, 9, 2, 5, 3, 7, 101, 18])); // 4  (2,3,7,101)
+/**
+ * Longest Increasing Subsequence – O(n log n)
+ * @param a   input array of numbers
+ * @returns   length of LIS
+ */
+function lisLengthNLogN(a: number[]): number {
+  const tails: number[] = [];
 
-const words = ['pear', 'apple', 'orange'];
-console.log(insertionSort(words)); // ['apple', 'orange', 'pear']
+  for (const x of a) {
+    // Binary search: find the first index in tails where tails[idx] >= x
+    let left = 0;
+    let right = tails.length;
+    while (left < right) {
+      const mid = (left + right) >>> 1;
+      if (tails[mid] < x) left = mid + 1;
+      else right = mid;
+    }
 
-// Custom comparator (reverse order for numbers)
-console.log(insertionSort([4, 1, 7, 3], (a, b) => b - a));
-// [7, 4, 3, 1]
+    // left is the position to replace
+    tails[left] = x;
+  }
+
+  return tails.length;
+}
+console.log(lisLengthNLogN([10, 9, 2, 5, 3, 7, 101, 18])); // 4
+function lis(a: number[]): number[] {
+  const n = a.length;
+  if (n === 0) return [];
+
+  const tails: { val: number; idx: number }[] = [];
+  const prev: number[] = new Array(n).fill(-1);
+
+  for (let i = 0; i < n; i++) {
+    const x = a[i];
+    let left = 0;
+    let right = tails.length;
+    while (left < right) {
+      const mid = (left + right) >>> 1;
+      if (tails[mid].val < x) left = mid + 1;
+      else right = mid;
+    }
+
+    const idx = left > 0 ? tails[left - 1].idx : -1;
+    prev[i] = idx;
+
+    const entry = { val: x, idx: i };
+    if (left === tails.length) tails.push(entry);
+    else tails[left] = entry; // keep minimal tail
+  }
+
+  // Reconstruct sequence
+  const seq: number[] = [];
+  let curr = tails[tails.length - 1].idx;
+  while (curr !== -1) {
+    seq.push(a[curr]);
+    curr = prev[curr];
+  }
+  return seq.reverse();
+}
+
+console.log(lis([10, 9, 2, 5, 3, 7, 101, 18])); // [2, 3, 7, 101]
+const arr = Array.from({ length: 200_000 }, (_, i) => Math.floor(Math.random() * 1_000_000));
+
+console.time('DP');
+lisLengthDP(arr);
+console.timeEnd('DP');
+
+console.time('NlogN');
+lisLengthNLogN(arr);
+console.timeEnd('NlogN');
