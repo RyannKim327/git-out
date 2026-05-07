@@ -1,128 +1,83 @@
-type Comparator<T> = (a: T, b: T) => number;
+/**
+ * A directed graph is expected to be an object where each key is a node
+ * id (string) and the value is an array of neighbouring node ids.
+ * Example:
+ *   const graph = {
+ *     a: ['b', 'c'],
+ *     b: ['c'],
+ *     c: ['a', 'd'],
+ *     d: ['e'],
+ *     e: []
+ *   };
+ */
+type Graph = Record<string, string[]>;
 
-interface BSTNode<T> {
-  value: T;
-  left: BSTNode<T> | null;
-  right: BSTNode<T> | null;
-}
-class BinarySearchTree<T> {
-  private root: BSTNode<T> | null = null;
-  private readonly compare: Comparator<T>;
+/**
+ * Tarjan’s SCC algorithm.
+ *
+ * @param graph – adjacency list representation of the directed graph
+ * @returns array of SCCs, each itself an array of node ids
+ */
+export function tarjanSCC(graph: Graph): string[][] {
+  const indexMap = new Map<string, number>();
+  const lowLinkMap = new Map<string, number>();
+  const onStack = new Set<string>();
 
-  constructor(compareFn: Comparator<T>) {
-    this.compare = compareFn;
-  }
+  const stack: string[] = [];
+  let idx = 0;
+  const sccs: string[][] = [];
 
-  /* ---------- Public API ---------- */
+  const strongConnect = (node: string) => {
+    // Set the depth index for this node to the smallest unused index
+    indexMap.set(node, idx);
+    lowLinkMap.set(node, idx);
+    idx++;
 
-  insert(value: T): void {
-    this.root = this._insert(this.root, value);
-  }
+    stack.push(node);
+    onStack.add(node);
 
-  find(value: T): T | null {
-    const node = this._find(this.root, value);
-    return node ? node.value : null;
-  }
-
-  delete(value: T): void {
-    this.root = this._delete(this.root, value);
-  }
-
-  // In‑order walk: returns the keys sorted ascending
-  inorder(): T[] {
-    const out: T[] = [];
-    this._inorder(this.root, out);
-    return out;
-  }
-
-  // Optional helpers
-  preorder(): T[] { /* … */ }
-  postorder(): T[] { /* … */ }
-}
-private _insert(node: BSTNode<T> | null, value: T): BSTNode<T> {
-  if (!node) return { value, left: null, right: null };
-
-  const cmp = this.compare(value, node.value);
-  if (cmp < 0) {
-    node.left = this._insert(node.left, value);
-  } else if (cmp > 0) {
-    node.right = this._insert(node.right, value);
-  } // duplicate values are ignored
-
-  return node;
-}
-
-private _find(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
-  if (!node) return null;
-
-  const cmp = this.compare(value, node.value);
-  if (cmp === 0) return node;
-  return cmp < 0 ? this._find(node.left, value) : this._find(node.right, value);
-}
-private _delete(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
-  if (!node) return null;
-
-  const cmp = this.compare(value, node.value);
-  if (cmp < 0) {
-    node.left = this._delete(node.left, value);
-  } else if (cmp > 0) {
-    node.right = this._delete(node.right, value);
-  } else {
-    // node to delete found
-    if (!node.left) return node.right;          // only right child or none
-    if (!node.right) return node.left;          // only left child
-
-    // two children: find the in‑order successor (smallest on right)
-    const succ = this._minNode(node.right)!;
-    node.value = succ.value;                   // replace value
-    node.right = this._delete(node.right, succ.value); // delete successor
-  }
-  return node;
-}
-
-private _minNode(node: BSTNode<T>): BSTNode<T> | null {
-  while (node.left) node = node.left;
-  return node;
-}
-private _inorder(node: BSTNode<T> | null, out: T[]): void {
-  if (!node) return;
-  this._inorder(node.left, out);
-  out.push(node.value);
-  this._inorder(node.right, out);
-}
-
-// You can add preorder/postorder in the same style if you need them.
-const compareNumbers = (a: number, b: number) => a - b;
-
-const bst = new BinarySearchTree<number>(compareNumbers);
-
-bst.insert(10);
-bst.insert(5);
-bst.insert(15);
-bst.insert(3);
-bst.insert(7);
-
-console.log("inorder:", bst.inorder());   // [3,5,7,10,15]
-console.log("find 7:", bst.find(7));      // 7
-console.log("find 99:", bst.find(99));    // null
-
-bst.delete(5);
-console.log("after delete 5:", bst.inorder()); // [3,7,10,15]
-*inorderIter(): Generator<T> {
-  const stack: BSTNode<T>[] = [];
-  let current = this.root;
-
-  while (stack.length || current) {
-    while (current) {
-      stack.push(current);
-      current = current.left!;
+    // Consider successors of node
+    for (const succ of graph[node] ?? []) {
+      if (!indexMap.has(succ)) {
+        // Successor has not yet been visited – recurse on it
+        strongConnect(succ);
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // Successor is in stack → node is in the same SCC
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+      }
     }
 
-    current = stack.pop()!;
-    yield current.value;
-    current = current.right!;
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap.get(node) === indexMap.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  };
+
+  // Call the recursion for each node (in any order)
+  for (const node of Object.keys(graph)) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
   }
+
+  return sccs;
 }
-for (const val of bst.inorderIter()) {
-  console.log(val);
-}
+const graph: Graph = {
+  a: ['b'],
+  b: ['c'],
+  c: ['a', 'd'],
+  d: ['e'],
+  e: ['f'],
+  f: ['d']
+};
+
+console.log(tarjanSCC(graph));
+// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
