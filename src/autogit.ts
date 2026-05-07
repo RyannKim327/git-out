@@ -1,96 +1,45 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
-
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
-
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
+// 1. Basic list node definition
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+// 2. Utility: build a linked list from an array
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null;
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
-
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
-      }
-    }
-
-    // Stop early if nothing changed
-    if (!updated) break;
+  const head = new ListNode(values[0]);
+  let current = head;
+  for (let i = 1; i < values.length; i++) {
+    current.next = new ListNode(values[i]);
+    current = current.next;
   }
-
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegativeCycle };
+  return head;
 }
 
-/* ---------- 3️⃣  Example usage ------------------------------------ */
+// 3. Find the middle node – fast/slow pointer
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
 
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
+  let slow = head;
+  let fast = head;
 
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
+  while (fast && fast.next) {      // stop when fast can't advance two steps
+    slow = slow.next!;             // safe because previous check guarantees truthy
+    fast = fast.next.next!;
   }
-  return path;
+
+  return slow;                     // slow is at the middle
 }
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+// Demo
+const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
+const oddHead = buildList(arr);
+console.log(getMiddle(oddHead)?.val); // 3
+
+const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
+const evenHead = buildList(evenArr);
+console.log(getMiddle(evenHead)?.val); // 20
+while (fast && fast.next && fast.next.next) {
+  slow = slow.next!;
+  fast = fast.next.next!;
+}
