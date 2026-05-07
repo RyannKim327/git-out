@@ -1,37 +1,25 @@
-const original = [1, 2, 3, 4];
-
-const filtered = original.filter(n => n !== 3); // [1, 2, 4]
-const arr = [1, 2, 3, 4, 3];
-
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
-}
-const arr = ['a', 'b', 'c', 'd'];
-arr.splice(2, 1); // removes element at index 2
-// arr is now ['a', 'b', 'd']
-function removeItem<T>(arr: T[], item: T): T[] {
-  const idx = arr.indexOf(item);
-  if (idx !== -1) {
-    const copy = [...arr];
-    copy.splice(idx, 1);
-    return copy;
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
   }
-  return arr;
+  return count;
 }
+function countCharRegex(str: string, target: string): number {
+  // Escape special regex chars in the target
+  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matches = str.match(new RegExp(escaped, 'g'));
+  return matches ? matches.length : 0;
+}
+function countCharSplit(str: string, target: string): number {
+  // Splitting on the target gives you one more element than the number of matches
+  return str.split(target).length - 1;
+}
+const s = 'hello world, hello universe!';
+console.log(countChar(s, 'l'));          // 3
+console.log(countCharRegex(s, 'l'));    // 3
+console.log(countCharSplit(s, 'l'));    // 3
 
-const nums = [7, 8, 9];
-const updated = removeItem(nums, 8); // [7, 9]
-type Item = { id: number; name: string };
-
-const items: Item[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Carol' }
-];
-
-const withoutBob = items.filter(item => item.id !== 2);
-// smallest change, clean and declarative
-const unique = new Set([1, 2, 3, 4]); // Set<number>
-unique.delete(3); // removes 3
-const arr = [...unique]; // back to an array if needed
+console.log(countChar(s, ' '));          // 3
+console.log(countCharRegex(s, ' '));    // 3
+console.log(countCharSplit(s, ' '));    // 3
