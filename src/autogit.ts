@@ -1,16 +1,62 @@
 /**
- * Return a random integer between `min` and `max`, inclusive.
+ * A conventional singly–linked list node.
+ * The value is generic so you can store anything.
  */
-function randomInt(min: number, max: number): number {
-  // Math.random() → [0, 1)
-  // Multiply by (max - min + 1) → [0, max - min + 1)
-  // floor to get an integer in [0, max - min]
-  // Shift by min to get the desired range
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+export interface ListNode<T = number> {
+  value: T
+  next: ListNode<T> | null
+}
+/**
+ * Return the n‑th node from the end of the list.
+ *
+ * @param head  the head node of the list
+ * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
+ * @returns the ListNode that is n places from the end,
+ *          or `null` if the list has fewer than n items.
+ */
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  if (n <= 0) {
+    throw new Error('n must be a positive integer');
+  }
+
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
+
+  // Move `fast` n nodes ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) {
+      // The list is shorter than n.
+      return null
+    }
+    fast = fast.next
+  }
+
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next // `slow` cannot be null here.
+  }
+
+  return slow
+}
+import { ListNode, nthFromEnd } from './linkedListHelpers'
+
+// Build a quick sample list: 1 → 2 → 3 → 4 → 5
+let head: ListNode<number> | null = { value: 1, next: null }
+let cur = head
+for (let i = 2; i <= 5; i++) {
+  cur!.next = { value: i, next: null }
+  cur = cur.next
 }
 
-/* Example */
-console.log(randomInt(5, 15)); // might print 7, 12, 15, …
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // [min, max)
-}
+// 1st from the end → 5
+console.log(nthFromEnd(head, 1)!.value) // 5
+
+// 3rd from the end → 3
+console.log(nthFromEnd(head, 3)!.value) // 3
+
+// 6th from the end → null (list too short)
+console.log(nthFromEnd(head, 6)) // null
