@@ -1,68 +1,70 @@
-/*  stack.ts  */
-export class Stack<T> {
-  // The raw array that stores everything.
-  private readonly items: T[] = [];
-
-  /** Push a value onto the stack. Complexity: O(1). */
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot pop from an empty stack');
-    }
-    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
-  }
-
-  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot peek at an empty stack');
-    }
-    return this.items[this.items.length - 1];
-  }
-
-  /** True if the stack has no elements. Complexity: O(1). */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Number of items currently stored. Complexity: O(1). */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything. Complexity: O(1) (just resets reference). */
-  clear(): void {
-    this.items.length = 0;
-  }
+export interface TreeNode<T> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-import { Stack } from './stack';
 
-const numStack = new Stack<number>();
+/**
+ * Returns the diameter (max number of edges on any path)
+ * of a binary tree rooted at `root`.
+ */
+export function diameter<T>(root: TreeNode<T> | undefined): number {
+  let maxDia = 0;
 
-numStack.push(1);
-numStack.push(2);
-numStack.push(3);
+  function depth(node?: TreeNode<T>): number {
+    if (!node) return 0;
+    const left  = depth(node.left);
+    const right = depth(node.right);
 
-console.log(numStack.peek());   // 3
-console.log(numStack.pop());    // 3
-console.log(numStack.size());   // 2
-console.log(numStack.isEmpty()); // false
+    // path that goes through this node
+    maxDia = Math.max(maxDia, left + right);
 
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class Stack<T> {
-  private readonly items: T[] = [];
-  constructor(private readonly capacity = Infinity) {}
-
-  push(item: T): void {
-    if (this.items.length >= this.capacity) {
-      throw new Error('Stack overflow: cannot push beyond capacity');
-    }
-    this.items.push(item);
+    // height of this subtree
+    return Math.max(left, right) + 1;
   }
-  /* … rest of the class unchanged … */
+
+  depth(root);
+  return maxDia;
+}
+function makeTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //          \   / \
+  //           4 5   6
+  //              \
+  //               7
+  return {
+    val: 1,
+    left: { val: 2, right: { val: 4 } },
+    right: {
+      val: 3,
+      left: { val: 5, right: { val: 7 } },
+      right: { val: 6 }
+    }
+  };
+}
+
+console.log(diameter(makeTree())); // outputs 5
+export function diameterIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;
+  const stack: Array<{ node: TreeNode<T>; visited: boolean }> = [{ node: root, visited: false }];
+  const heights = new Map<TreeNode<T>, number>();
+  let maxDia = 0;
+
+  while (stack.length) {
+    const { node, visited } = stack.pop()!;
+    if (visited) {
+      const lh = heights.get(node.left) ?? 0;
+      const rh = heights.get(node.right) ?? 0;
+      maxDia = Math.max(maxDia, lh + rh);
+      heights.set(node, Math.max(lh, rh) + 1);
+    } else {
+      stack.push({ node, visited: true });
+      if (node.right) stack.push({ node: node.right, visited: false });
+      if (node.left)  stack.push({ node: node.left,  visited: false });
+    }
+  }
+
+  return maxDia;
 }
