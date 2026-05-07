@@ -1,76 +1,44 @@
-// ---------------------------------------------------
-// Queue implemented with a singly linked list
-// ---------------------------------------------------
-class Queue<T> {
-  // ------- internal node type -------
-  private static class Node<U> {
-    constructor(public value: U, public next?: Queue.Node<U>) {}
-  }
+/**
+ * In‑place insertion sort.
+ *
+ * @param arr  The array to sort.  It will be mutated.
+ * @param compare Optional comparison function.  If omitted, the default
+ *                 JavaScript `<` operator is used (suitable for numbers,
+ *                 strings, etc.).
+ * @returns The sorted array (same reference as the input).
+ */
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  if (arr.length < 2) return arr;          // already sorted
 
-  // ------- private fields -------
-  private head?: typeof Queue.Node<any>; // points to the first element
-  private tail?: typeof Queue.Node<any>; // points to the last element
-  private _size = 0;
+  // Default comparer: a < b => -1, a > b => +1, else 0
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // ------- public methods -------
+  // Start from the second element – the first is trivially sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  /** Insert a new element at the tail. */
-  enqueue(value: T): void {
-    const newNode = new Queue.Node(value);
-    if (!this.tail) {
-      // The queue is empty.
-      this.head = this.tail = newNode;
-    } else {
-      this.tail.next = newNode;
-      this.tail = newNode;
+    // Move elements that are greater than key one position ahead.
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-    this._size++;
+
+    // Place key after the element just smaller than it.
+    arr[j + 1] = key;
   }
 
-  /** Remove and return the element at the head. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;          // empty queue
-    const removed = this.head.value;           // capture value
-    this.head = this.head.next;                // advance head
-    if (!this.head) this.tail = undefined;     // became empty
-    this._size--;
-    return removed;
-  }
-
-  /** Peek at the head without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Number of items currently in the queue. */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  // Optional: allow `for..of` iteration over the queue
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next(): IteratorResult<T> {
-        if (!current) return { done: true, value: undefined };
-        const value = current.value;
-        current = current.next;
-        return { done: false, value };
-      },
-    };
-  }
+  return arr;
 }
-const q = new Queue<number>();
+const nums = [8, 3, 5, 1, 9, 6];
+console.log(insertionSort(nums)); // [1, 3, 5, 6, 8, 9]
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+const words = ['pear', 'apple', 'orange'];
+console.log(insertionSort(words)); // ['apple', 'orange', 'pear']
 
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log([...q]); // [20, 30]
+// Custom comparator (reverse order for numbers)
+console.log(insertionSort([4, 1, 7, 3], (a, b) => b - a));
+// [7, 4, 3, 1]
