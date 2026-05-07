@@ -1,64 +1,62 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
+/**
+ * A conventional singly–linked list node.
+ * The value is generic so you can store anything.
+ */
+export interface ListNode<T = number> {
+  value: T
+  next: ListNode<T> | null
 }
-const foo = [1, 2, 3, 4];
-const bar = [3, 4, 5, 6];
-console.log(intersection(foo, bar)); // [3, 4]
-function intersectionSorted<T>(a: T[], b: T[]): T[] {
-  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
-  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
-  const res: T[] = [];
-  let i = 0, j = 0;
-
-  while (i < sortedA.length && j < sortedB.length) {
-    if (sortedA[i] === sortedB[j]) {
-      res.push(sortedA[i]); i++; j++;
-    } else if (sortedA[i] < sortedB[j]) {
-      i++;
-    } else {
-      j++;
-    }
+/**
+ * Return the n‑th node from the end of the list.
+ *
+ * @param head  the head node of the list
+ * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
+ * @returns the ListNode that is n places from the end,
+ *          or `null` if the list has fewer than n items.
+ */
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  if (n <= 0) {
+    throw new Error('n must be a positive integer');
   }
-  return res;
-}
-function uniqueIntersection<T>(a: T[], b: T[]): T[] {
-  const seen = new Set(b);
-  const out = new Set<T>();
-  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
-  return [...out];
-}
-function intersectionBy<T, K>(
-  a: T[],
-  b: T[],
-  keyFn: (item: T) => K
-): T[] {
-  const setB = new Set(b.map(keyFn));
-  return a.filter(x => setB.has(keyFn(x)));
-}
-const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
-const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
 
-console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
-const common = a.filter(v => b.includes(v));
-type KeyFn<T, K> = (item: T) => K;
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
 
-// Fastest for primitives
-export function intersection<T>(a: T[], b: T[]): T[] {
-  const set = new Set(b);
-  return a.filter(x => set.has(x));
+  // Move `fast` n nodes ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) {
+      // The list is shorter than n.
+      return null
+    }
+    fast = fast.next
+  }
+
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next // `slow` cannot be null here.
+  }
+
+  return slow
 }
+import { ListNode, nthFromEnd } from './linkedListHelpers'
 
-// Preserve order, unique results
-export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  const out = new Set<T>();
-  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
-  return [...out];
+// Build a quick sample list: 1 → 2 → 3 → 4 → 5
+let head: ListNode<number> | null = { value: 1, next: null }
+let cur = head
+for (let i = 2; i <= 5; i++) {
+  cur!.next = { value: i, next: null }
+  cur = cur.next
 }
 
-// For objects or custom equality
-export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
-  const set = new Set(b.map(keyFn));
-  return a.filter(x => set.has(keyFn(x)));
-}
+// 1st from the end → 5
+console.log(nthFromEnd(head, 1)!.value) // 5
+
+// 3rd from the end → 3
+console.log(nthFromEnd(head, 3)!.value) // 3
+
+// 6th from the end → null (list too short)
+console.log(nthFromEnd(head, 6)) // null
