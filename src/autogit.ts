@@ -1,62 +1,64 @@
 /**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
+ * A directed graph represented by an adjacency list.
+ * Each node is identified by a string (you can swap to number / symbol if you want).
  */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
-}
+type Graph = Record<string, string[]>;
+
 /**
- * Return the n‑th node from the end of the list.
+ * Returns an array of nodes in a topological order.
  *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
+ * Throws if the graph contains a cycle (i.e. cannot be sorted).
  */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
+export function topologicalSort(graph: Graph): string[] {
+  // 1. Compute indegree for every node.
+  const indegree: Record<string, number> = {};
+  const nodes: string[] = Object.keys(graph);
+
+  nodes.forEach(node => (indegree[node] = 0));
+
+  nodes.forEach(node =>
+    graph[node].forEach(neighbor => {
+      if (indegree[neighbor] === undefined) {
+        indegree[neighbor] = 0; // in case a node has no outgoing edges but appears as a target
+      }
+      indegree[neighbor] += 1;
+    })
+  );
+
+  // 2. Start with all nodes that have indegree 0.
+  const queue: string[] = nodes.filter(node => indegree[node] === 0);
+  const order: string[] = [];
+
+  // 3. Repeatedly take a node out of the queue,
+  //    append it to order, and subtract 1 from
+  //    the indegree of each of its neighbours.
+  while (queue.length > 0) {
+    const current = queue.shift() as string; // safe because we know queue isn't empty
+    order.push(current);
+
+    graph[current].forEach(next => {
+      indegree[next] -= 1;
+      if (indegree[next] === 0) {
+        queue.push(next);
+      }
+    });
   }
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
-
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
-    }
-    fast = fast.next
+  // 4. If we were able to visit every node, the graph is a DAG.
+  if (order.length !== Object.keys(indegree).length) {
+    throw new Error('Graph has at least one cycle – topological sort impossible');
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
-  }
-
-  return slow
+  return order;
 }
-import { ListNode, nthFromEnd } from './linkedListHelpers'
+const sampleGraph: Graph = {
+  a: ['b', 'c'],
+  b: ['d'],
+  c: ['d'],
+  d: [],          // d has no outgoing edges
+  e: ['a', 'f'],  // e is another root
+  f: []
+};
 
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
-}
-
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
-
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
-
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+console.log(topologicalSort(sampleGraph));
+// → [ 'e', 'a', 'b', 'c', 'd', 'f' ]  (one valid topological ordering)
