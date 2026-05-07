@@ -1,74 +1,76 @@
-// src/utils/http.ts
-import { knownFolders, File } from '@nativescript/core';
+// ---------------------------------------------------
+// Queue implemented with a singly linked list
+// ---------------------------------------------------
+class Queue<T> {
+  // ------- internal node type -------
+  private static class Node<U> {
+    constructor(public value: U, public next?: Queue.Node<U>) {}
+  }
 
-// ──────────────────────────────────────────────────────────────────
-// Step 1 – A friendly async helper that does the fetch
-// ──────────────────────────────────────────────────────────────────
-export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  // ------- private fields -------
+  private head?: typeof Queue.Node<any>; // points to the first element
+  private tail?: typeof Queue.Node<any>; // points to the last element
+  private _size = 0;
 
-  try {
-    const resp = await fetch(url, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        // add any custom headers you need
-      },
-    });
+  // ------- public methods -------
 
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
+  /** Insert a new element at the tail. */
+  enqueue(value: T): void {
+    const newNode = new Queue.Node(value);
+    if (!this.tail) {
+      // The queue is empty.
+      this.head = this.tail = newNode;
+    } else {
+      this.tail.next = newNode;
+      this.tail = newNode;
     }
+    this._size++;
+  }
 
-    const json = await resp.json() as T;
-    return json;
-  } finally {
-    clearTimeout(id);
+  /** Remove and return the element at the head. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;          // empty queue
+    const removed = this.head.value;           // capture value
+    this.head = this.head.next;                // advance head
+    if (!this.head) this.tail = undefined;     // became empty
+    this._size--;
+    return removed;
+  }
+
+  /** Peek at the head without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items currently in the queue. */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  // Optional: allow `for..of` iteration over the queue
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next(): IteratorResult<T> {
+        if (!current) return { done: true, value: undefined };
+        const value = current.value;
+        current = current.next;
+        return { done: false, value };
+      },
+    };
   }
 }
+const q = new Queue<number>();
 
-// ──────────────────────────────────────────────────────────────────
-// Step 2 – Call it from an Android Activity / Page, e.g.
-// ──────────────────────────────────────────────────────────────────
-export async function demoFetch() {
-  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-  try {
-    const data = await getJson<any>(apiUrl);
-    console.log('Data received:', data);
-
-    // If you want to touch the UI, do it on the UI thread
-    // (in NativeScript you can simply update a component property,
-    // or use a dispatcher if you’re outside a component)
-  } catch (err) {
-    console.error('fetch error:', err);
-    // In an Android UI you might show a toast:
-    const Toast = android.widget.Toast;
-    const ctx = android.content.Context;
-    const activity = /** get the current activity from your page **/;
-    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
-  }
-}
-
-/*
-  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
-
-  import { demoFetch } from '~/utils/http';
-
-  export function pageLoaded(args) {
-    demoFetch();
-  }
-*/
-const HttpGetTask = android.os.AsyncTask.extend({
-  doInBackground: function (params) {
-    try {
-      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
-      const conn = url.openConnection() as java.net.HttpURLConnection;
-      conn.setRequestMethod('GET');
-      conn.setConnectTimeout(5000);
-      conn.setReadTimeout(5000);
-
-      const reader = new java.io.BufferedReader(
-
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log([...q]); // [20, 30]
