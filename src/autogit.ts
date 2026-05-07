@@ -1,55 +1,68 @@
-/**
- * Return true if `s` is a palindrome.
- *
- * @param s      The string to test.
- * @param opts   Optional flags:
- *   - ignoreCase:   Treat uppercase and lowercase the same.
- *   - ignorePunct:  Strip everything that's not a letter or number.
- *
- * @example
- * isPalindrome('A man, a plan, a canal: Panama'); // → true
- */
-function isPalindrome(
-  s: string,
-  opts: { ignoreCase?: boolean; ignorePunct?: boolean } = {}
-): boolean {
-  const { ignoreCase = false, ignorePunct = false } = opts;
+/*  stack.ts  */
+export class Stack<T> {
+  // The raw array that stores everything.
+  private readonly items: T[] = [];
 
-  let cleaned = s;
-
-  if (ignorePunct) {
-    // Keep letters and digits only.
-    cleaned = cleaned.replace(/[^A-Za-z0-9]/g, '');
+  /** Push a value onto the stack. Complexity: O(1). */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  if (ignoreCase) {
-    cleaned = cleaned.toLowerCase();
-  }
-
-  // Quick fail for empty string – you can decide if you want to treat it as palindrome.
-  if (cleaned.length === 0) return true;
-
-  // Compare from both ends without building a reversed copy.
-  let left = 0;
-  let right = cleaned.length - 1;
-
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
+  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot pop from an empty stack');
     }
-    left++;
-    right--;
+    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
   }
 
-  return true;
+  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot peek at an empty stack');
+    }
+    return this.items[this.items.length - 1];
+  }
+
+  /** True if the stack has no elements. Complexity: O(1). */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Number of items currently stored. Complexity: O(1). */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clear everything. Complexity: O(1) (just resets reference). */
+  clear(): void {
+    this.items.length = 0;
+  }
 }
-console.log(isPalindrome('racecar')); // true
-console.log(isPalindrome('RaceCar')); // false (case‑sensitive)
-console.log(isPalindrome('RaceCar', { ignoreCase: true })); // true
-console.log(isPalindrome('A man, a plan, a canal: Panama')); // false
-console.log(
-  isPalindrome('A man, a plan, a canal: Panama', {
-    ignoreCase: true,
-    ignorePunct: true,
-  })
-); // true
+import { Stack } from './stack';
+
+const numStack = new Stack<number>();
+
+numStack.push(1);
+numStack.push(2);
+numStack.push(3);
+
+console.log(numStack.peek());   // 3
+console.log(numStack.pop());    // 3
+console.log(numStack.size());   // 2
+console.log(numStack.isEmpty()); // false
+
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class Stack<T> {
+  private readonly items: T[] = [];
+  constructor(private readonly capacity = Infinity) {}
+
+  push(item: T): void {
+    if (this.items.length >= this.capacity) {
+      throw new Error('Stack overflow: cannot push beyond capacity');
+    }
+    this.items.push(item);
+  }
+  /* … rest of the class unchanged … */
+}
