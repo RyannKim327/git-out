@@ -1,92 +1,37 @@
-/**
- * Longest Increasing Subsequence – O(n²) DP
- * @param a   input array of numbers
- * @returns   length of LIS
- */
-function lisLengthDP(a: number[]): number {
-  const n = a.length;
-  if (n === 0) return 0;
+const original = [1, 2, 3, 4];
 
-  const dp = new Array(n).fill(1);   // each element itself
+const filtered = original.filter(n => n !== 3); // [1, 2, 4]
+const arr = [1, 2, 3, 4, 3];
 
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-      }
-    }
-  }
-
-  return Math.max(...dp);
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
 }
-console.log(lisLengthDP([10, 9, 2, 5, 3, 7, 101, 18])); // 4  (2,3,7,101)
-/**
- * Longest Increasing Subsequence – O(n log n)
- * @param a   input array of numbers
- * @returns   length of LIS
- */
-function lisLengthNLogN(a: number[]): number {
-  const tails: number[] = [];
-
-  for (const x of a) {
-    // Binary search: find the first index in tails where tails[idx] >= x
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
-    }
-
-    // left is the position to replace
-    tails[left] = x;
+const arr = ['a', 'b', 'c', 'd'];
+arr.splice(2, 1); // removes element at index 2
+// arr is now ['a', 'b', 'd']
+function removeItem<T>(arr: T[], item: T): T[] {
+  const idx = arr.indexOf(item);
+  if (idx !== -1) {
+    const copy = [...arr];
+    copy.splice(idx, 1);
+    return copy;
   }
-
-  return tails.length;
-}
-console.log(lisLengthNLogN([10, 9, 2, 5, 3, 7, 101, 18])); // 4
-function lis(a: number[]): number[] {
-  const n = a.length;
-  if (n === 0) return [];
-
-  const tails: { val: number; idx: number }[] = [];
-  const prev: number[] = new Array(n).fill(-1);
-
-  for (let i = 0; i < n; i++) {
-    const x = a[i];
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid].val < x) left = mid + 1;
-      else right = mid;
-    }
-
-    const idx = left > 0 ? tails[left - 1].idx : -1;
-    prev[i] = idx;
-
-    const entry = { val: x, idx: i };
-    if (left === tails.length) tails.push(entry);
-    else tails[left] = entry; // keep minimal tail
-  }
-
-  // Reconstruct sequence
-  const seq: number[] = [];
-  let curr = tails[tails.length - 1].idx;
-  while (curr !== -1) {
-    seq.push(a[curr]);
-    curr = prev[curr];
-  }
-  return seq.reverse();
+  return arr;
 }
 
-console.log(lis([10, 9, 2, 5, 3, 7, 101, 18])); // [2, 3, 7, 101]
-const arr = Array.from({ length: 200_000 }, (_, i) => Math.floor(Math.random() * 1_000_000));
+const nums = [7, 8, 9];
+const updated = removeItem(nums, 8); // [7, 9]
+type Item = { id: number; name: string };
 
-console.time('DP');
-lisLengthDP(arr);
-console.timeEnd('DP');
+const items: Item[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Carol' }
+];
 
-console.time('NlogN');
-lisLengthNLogN(arr);
-console.timeEnd('NlogN');
+const withoutBob = items.filter(item => item.id !== 2);
+// smallest change, clean and declarative
+const unique = new Set([1, 2, 3, 4]); // Set<number>
+unique.delete(3); // removes 3
+const arr = [...unique]; // back to an array if needed
