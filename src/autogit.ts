@@ -1,44 +1,43 @@
-// Count the occurrences of the digit at `exp` (1, 10, 100, …)
-function countingSortByDigit(arr: number[], exp: number): number[] {
-  const n = arr.length;
-  const output = new Array(n);
-  const count = new Array(10).fill(0); // base 10
+/**
+ * Returns true if n is a prime number, false otherwise.
+ *
+ * Numbers less than 2 are not prime by definition.
+ * 2 and 3 are the only even / odd primes that break the 6‑k±1 pattern.
+ * After that only numbers of the form 6k ± 1 can be prime.
+ */
+export function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1, and negatives are not prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate obvious composites
 
-  // 1. Count digit occurrences
-  for (let i = 0; i < n; i++) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    count[digit] += 1;
+  // test divisors up to √n; step by 6 to skip multiples of 2 and 3
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
 
-  // 2. Accumulate counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3. Build the output array (reverse traversal for stability)
-  for (let i = n - 1; i >= 0; i--) {
-    const digit = Math.floor(arr[i] / exp) % 10;
-    output[count[digit] - 1] = arr[i];
-    count[digit] -= 1;
-  }
-
-  return output;
+  return true;
 }
-export function radixSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+[1, 2, 3, 4, 5, 16, 17, 19, 20, 23, 24, 29].forEach(num =>
+  console.log(`${num} → ${isPrime(num)}`));
+1 → false
+2 → true
+3 → true
+4 → false
+5 → true
+16 → false
+17 → true
+19 → true
+20 → false
+23 → true
+24 → false
+29 → true
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  // Find the maximum number to know how many digits we need
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    if (arr[i] > max) max = arr[i];
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
   }
-
-  // Start with the least‑significant digit (exp = 1, 10, 100, …)
-  for (let exp = 1; max / exp >= 1; exp *= 10) {
-    arr = countingSortByDigit(arr, exp);
-  }
-
-  return arr;
+  return true;
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted)); // [2, 24, 45, 66, 75, 90, 170, 802]
