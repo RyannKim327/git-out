@@ -1,56 +1,171 @@
-/**
- * Bubble‑sort a mutable array.
- *
- * @param arr   The array to sort.  It will be reordered in‑place.
- * @param cmp   Optional comparators.  If omitted, the default
- *              `> / <` operators are used for primitive values.
- *
- * @returns The sorted array (the same reference that was passed in).
- *
- * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
- * sorted (but we still make one full pass to check that).
- */
-export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr;          // Already sorted
+// ------------------------------------------------------------
+//  1️⃣  Types / data structures
+// ------------------------------------------------------------
+export type ID = string | number;
 
-    // Default comparator for primitive values (numbers, strings, etc.)
-    const compare = cmp ?? ((a: T, b: T) => {
-        if (a > b) return 1;
-        if (a < b) return -1;
-        return 0;
-    });
+// Location on a grid (for the example)
+export interface Point {
+  x: number;
+  y: number;
+  toString(): string;           // stringify for use as Map keys
+}
 
-    let swapped: boolean;
+export class PointImpl implements Point {
+  constructor(public x: number, public y: number) {}
+  toString() { return `${this.x},${this.y}`; }
 
-    // One full outer loop pass guarantees sortedness,
-    // but we abort early if no swaps occur in a pass.
-    for (let i = 0; i < n; i++) {
-        swapped = false;
+  // For the priority queue we need a score
+  distanceTo(other: Point) {
+    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
+  }
+}
 
-        // After i iterations of the outer loop, the largest i elements
-        // are bubbled to the end, so we don't need to touch them.
-        for (let j = 0; j < n - i - 1; j++) {
-            if (compare(arr[j], arr[j + 1]) > 0) {
-                // Swap
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                swapped = true;
-            }
-        }
+// Edge connects two nodes with a weight (default = 1)
+export interface Edge<T> {
+  from: T;
+  to: T;
+  weight: number;
+  cost?: number;          // will be filled later
+}
 
-        // If we made no swaps during this pass, array is sorted.
-        if (!swapped) break;
+export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
+
+// ------------------------------------------------------------
+//  2️⃣  Binary‑heap priority queue (min‑heap)
+// ------------------------------------------------------------
+class HeapNode<T> {
+  constructor(public key: number, public value: T) {}
+}
+
+export class PriorityQueue<T> {
+  private heap: HeapNode<T>[] = [];
+
+  get size() { return this.heap.length; }
+  empty() { return this.size === 0; }
+
+  push(key: number, value: T) {
+    this.heap.push(new HeapNode(key, value));
+    this.bubbleUp(this.size - 1);
+  }
+  pop(): HeapNode<T> | undefined {
+    if (this.empty()) return;
+    const top = this.heap[0];
+    const last = this.heap.pop()!;
+    if (!this.empty()) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(i: number) {
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.heap[p].key <= this.heap[i].key) break;
+      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+      i = p;
+    }
+  }
+  private bubbleDown(i: number) {
+    const n = this.size;
+    while (true) {
+      let l = (i << 1) + 1, r = l + 1, smallest = i;
+      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
+      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
+      if (smallest === i) break;
+      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+      i = smallest;
+    }
+  }
+}
+
+// ------------------------------------------------------------
+//  3️⃣  AStar implementation
+// ------------------------------------------------------------
+export interface AStarOptions<T> {
+  graph: Graph<T>;
+  heuristic: (a: T, b: T) => number;
+  start: T;
+  goal: T;
+}
+
+export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
+  const { graph, heuristic, start, goal } = opts;
+
+  const open = new PriorityQueue<T>();
+  open.push(0, start);
+
+  const cameFrom = new Map<T, T | null>();
+  const gScore = new Map<T, number>();
+
+  cameFrom.set(start, null);
+  gScore.set(start, 0);
+
+  while (!open.empty()) {
+    const node = open.pop()!;
+    const u = node.value;
+
+    if (u === goal) {
+      // reconstruct
+      const path: T[] = [];
+      let cur: T | null = u;
+      while (cur !== null) {
+        path.push(cur);
+        cur = cameFrom.get(cur) ?? null;
+      }
+      path.reverse();
+      return { path, cost: gScore.get(u)! };
     }
 
-    return arr;
+    for (const edge of graph.get(u) ?? []) {
+      const v = edge.to;
+      const tentativeG = gScore.get(u)! + edge.weight;
+
+      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
+        cameFrom.set(v, u);
+        gScore.set(v, tentativeG);
+
+        const f = tentativeG + heuristic(v, goal);
+        open.push(f, v);
+      }
+    }
+  }
+
+  return null; // no path
 }
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
 
-// Sorting strings
-const words = ["apple", "banana", "cherry", "date"];
-console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
+// ------------------------------------------------------------
+//  4️⃣  Example – 4×4 grid with obstacles
+// ------------------------------------------------------------
+function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
+  const graph = new Map<Point, Edge<Point>[]>();
 
-// Custom comparator (descending order)
-bubbleSort(nums, (a, b) => b - a);
-console.log(nums); // → [90,64,34,25,22,12,11]
+  const dirs = [
+    [0, -1], [1, 0], [0, 1], [-1, 0],
+  ];
+
+  for (let y = 0; y < height; ++y) {
+    for (let x = 0; x < width; ++x) {
+      const p = new PointImpl(x, y);
+      if (walls.has(p.toString())) continue;
+
+      const neighbours: Edge<Point>[] = [];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const q = new PointImpl(nx, ny);
+        if (walls.has(q.toString())) continue;
+        neighbours.push({ from: p, to: q, weight: 1 });
+      }
+      graph.set(p, neighbours);
+    }
+  }
+
+  return graph;
+}
+
+export async function main() {
+  const width = 4, height = 4;
+  const walls = new Set<string>([
+    new PointImpl(1, 1).toString(),
+    new PointImpl(2, 1).
