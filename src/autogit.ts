@@ -1,54 +1,33 @@
 /**
- * Return the first non‑repeating character, or `null` if every character repeats.
- *
- * @example
- * firstNonRepeating('abacabad') // => 'c'
+ * Returns true if the array is in strictly ascending order.
+ * For non‑strict (allowing equal elements) change the comparison accordingly.
  */
-export function firstNonRepeating(str: string): string | null {
-  // 1️⃣ Pass: count each character
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Pass: find the first character that appears only once
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;
+export function isSortedAscending<T>(arr: Array<T>): boolean {
+  for (let i = 1; i < arr.length; ++i) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-compare
+    if (arr[i] < arr[i - 1]) {
+      return false;
     }
   }
-
-  return null; // all characters repeat
+  return true;
 }
-export function firstNonRepeatingAscii(str: string): string | null {
-  const count = new Int32Array(128); // index 0–127
-
-  for (const ch of str) {
-    count[ch.charCodeAt(0)]++;
-  }
-
-  for (const ch of str) {
-    if (count[ch.charCodeAt(0)] === 1) {
-      return ch;
+export function isSortedAscendingAllowEqual<T>(arr: Array<T>): boolean {
+  for (let i = 1; i < arr.length; ++i) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-compare
+    if (arr[i] < arr[i - 1]) {
+      return false;
     }
   }
-
-  return null;
+  return true;
 }
-export const firstNonRepeatingFunctional = (str: string): string | null =>
-  [...str]
-    .reduce((acc, ch) => {
-      if (!acc.count.has(ch)) acc.count.set(ch, 0);
-      acc.count.set(ch, acc.count.get(ch)! + 1);
-      return acc;
-    }, { count: new Map<string, number>() })
-    // Rest of the string is still needed to find the first unique
-    ?.count
-    ?.entries()
-    ?.find(([, cnt]) => cnt === 1)?.[0] ?? null;
-import { firstNonRepeating } from './your-file';
-
-console.assert(firstNonRepeating('abacabad') === 'c');
-console.assert(firstNonRepeating('aabbcc') === null);
-console.assert(firstNonRepeating('') === null);
-console.assert(firstNonRepeating('😀😃😃😀😄') === '😄'); // emoji demo
+console.log(isSortedAscending([1, 2, 3]));          // true
+console.log(isSortedAscending([1, 2, 2]));          // false (strict)
+console.log(isSortedAscending([1, 2, 2], true));    // true if you pass a flag to allow equal
+console.log(isSortedAscending(['a', 'b', 'c']));   // true
+console.log(isSortedAscending([3, 2, 1]));          // false
+export function isSortedAscending<T>(arr: Array<T>, cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)): boolean {
+  for (let i = 1; i < arr.length; ++i) {
+    if (cmp(arr[i], arr[i - 1]) < 0) return false;
+  }
+  return true;
+}
