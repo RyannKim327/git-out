@@ -1,62 +1,55 @@
 /**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
- */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
-}
-/**
- * Return the n‑th node from the end of the list.
+ * Return true if `s` is a palindrome.
  *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
+ * @param s      The string to test.
+ * @param opts   Optional flags:
+ *   - ignoreCase:   Treat uppercase and lowercase the same.
+ *   - ignorePunct:  Strip everything that's not a letter or number.
+ *
+ * @example
+ * isPalindrome('A man, a plan, a canal: Panama'); // → true
  */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
+function isPalindrome(
+  s: string,
+  opts: { ignoreCase?: boolean; ignorePunct?: boolean } = {}
+): boolean {
+  const { ignoreCase = false, ignorePunct = false } = opts;
+
+  let cleaned = s;
+
+  if (ignorePunct) {
+    // Keep letters and digits only.
+    cleaned = cleaned.replace(/[^A-Za-z0-9]/g, '');
   }
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
+  if (ignoreCase) {
+    cleaned = cleaned.toLowerCase();
+  }
 
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
+  // Quick fail for empty string – you can decide if you want to treat it as palindrome.
+  if (cleaned.length === 0) return true;
+
+  // Compare from both ends without building a reversed copy.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
     }
-    fast = fast.next
+    left++;
+    right--;
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
-  }
-
-  return slow
+  return true;
 }
-import { ListNode, nthFromEnd } from './linkedListHelpers'
-
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
-}
-
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
-
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
-
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+console.log(isPalindrome('racecar')); // true
+console.log(isPalindrome('RaceCar')); // false (case‑sensitive)
+console.log(isPalindrome('RaceCar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // false
+console.log(
+  isPalindrome('A man, a plan, a canal: Panama', {
+    ignoreCase: true,
+    ignorePunct: true,
+  })
+); // true
