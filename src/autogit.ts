@@ -1,92 +1,54 @@
 /**
- * Longest Increasing Subsequence – O(n²) DP
- * @param a   input array of numbers
- * @returns   length of LIS
+ * Return the first non‑repeating character, or `null` if every character repeats.
+ *
+ * @example
+ * firstNonRepeating('abacabad') // => 'c'
  */
-function lisLengthDP(a: number[]): number {
-  const n = a.length;
-  if (n === 0) return 0;
+export function firstNonRepeating(str: string): string | null {
+  // 1️⃣ Pass: count each character
+  const freq = new Map<string, number>();
+  for (const ch of str) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-  const dp = new Array(n).fill(1);   // each element itself
-
-  for (let i = 1; i < n; i++) {
-    for (let j = 0; j < i; j++) {
-      if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-      }
+  // 2️⃣ Pass: find the first character that appears only once
+  for (const ch of str) {
+    if (freq.get(ch) === 1) {
+      return ch;
     }
   }
 
-  return Math.max(...dp);
+  return null; // all characters repeat
 }
-console.log(lisLengthDP([10, 9, 2, 5, 3, 7, 101, 18])); // 4  (2,3,7,101)
-/**
- * Longest Increasing Subsequence – O(n log n)
- * @param a   input array of numbers
- * @returns   length of LIS
- */
-function lisLengthNLogN(a: number[]): number {
-  const tails: number[] = [];
+export function firstNonRepeatingAscii(str: string): string | null {
+  const count = new Int32Array(128); // index 0–127
 
-  for (const x of a) {
-    // Binary search: find the first index in tails where tails[idx] >= x
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid] < x) left = mid + 1;
-      else right = mid;
+  for (const ch of str) {
+    count[ch.charCodeAt(0)]++;
+  }
+
+  for (const ch of str) {
+    if (count[ch.charCodeAt(0)] === 1) {
+      return ch;
     }
-
-    // left is the position to replace
-    tails[left] = x;
   }
 
-  return tails.length;
+  return null;
 }
-console.log(lisLengthNLogN([10, 9, 2, 5, 3, 7, 101, 18])); // 4
-function lis(a: number[]): number[] {
-  const n = a.length;
-  if (n === 0) return [];
+export const firstNonRepeatingFunctional = (str: string): string | null =>
+  [...str]
+    .reduce((acc, ch) => {
+      if (!acc.count.has(ch)) acc.count.set(ch, 0);
+      acc.count.set(ch, acc.count.get(ch)! + 1);
+      return acc;
+    }, { count: new Map<string, number>() })
+    // Rest of the string is still needed to find the first unique
+    ?.count
+    ?.entries()
+    ?.find(([, cnt]) => cnt === 1)?.[0] ?? null;
+import { firstNonRepeating } from './your-file';
 
-  const tails: { val: number; idx: number }[] = [];
-  const prev: number[] = new Array(n).fill(-1);
-
-  for (let i = 0; i < n; i++) {
-    const x = a[i];
-    let left = 0;
-    let right = tails.length;
-    while (left < right) {
-      const mid = (left + right) >>> 1;
-      if (tails[mid].val < x) left = mid + 1;
-      else right = mid;
-    }
-
-    const idx = left > 0 ? tails[left - 1].idx : -1;
-    prev[i] = idx;
-
-    const entry = { val: x, idx: i };
-    if (left === tails.length) tails.push(entry);
-    else tails[left] = entry; // keep minimal tail
-  }
-
-  // Reconstruct sequence
-  const seq: number[] = [];
-  let curr = tails[tails.length - 1].idx;
-  while (curr !== -1) {
-    seq.push(a[curr]);
-    curr = prev[curr];
-  }
-  return seq.reverse();
-}
-
-console.log(lis([10, 9, 2, 5, 3, 7, 101, 18])); // [2, 3, 7, 101]
-const arr = Array.from({ length: 200_000 }, (_, i) => Math.floor(Math.random() * 1_000_000));
-
-console.time('DP');
-lisLengthDP(arr);
-console.timeEnd('DP');
-
-console.time('NlogN');
-lisLengthNLogN(arr);
-console.timeEnd('NlogN');
+console.assert(firstNonRepeating('abacabad') === 'c');
+console.assert(firstNonRepeating('aabbcc') === null);
+console.assert(firstNonRepeating('') === null);
+console.assert(firstNonRepeating('😀😃😃😀😄') === '😄'); // emoji demo
