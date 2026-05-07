@@ -1,73 +1,117 @@
-/* 1️⃣  A node in a graph  */
-interface Node<T = unknown> {
-  /* Something that identifies the node (e.g. a string key) */
-  id: string;
-  /* The value that the node holds – may be anything you need */
-  value: T;
-}
-
-/* 2️⃣  How the graph is stored  */
-type AdjacencyList<T = unknown> = Record<string, Node<T>[]>;
 /**
- * Run a breadth‑first search on a graph until the target is found *or*
- * the specified maximum depth is reached.
- *
- * @param startId     – ID of the node you start from
- * @param targetId    – ID of the node you’re looking for
- * @param graph       – adjacency list representing the graph
- * @param maxDepth    – maximum breadth level to explore (0 means only the start node)
- * @returns            – distance (depth) from start to target, or -1 if not found within limit
+ * Boyer–Moore search – Typescript implementation
+ * ------------------------------------------------
+ * O(m + n) preprocessing  (m = pattern length, n = text length)
+ * O(n/m) expected search time (in practice, very fast)
  */
-export function breadthLimitedBFS<T>(
-  startId: string,
-  targetId: string,
-  graph: AdjacencyList<T>,
-  maxDepth: number
-): number {
-  // Edge‑case: “start” may already be the target.
-  if (startId === targetId) return 0;
-  if (maxDepth < 1) return -1; // cannot go further than the start node.
 
-  // 3️⃣  Classic BFS ingredients
-  const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
-  const visited = new Set<string>([startId]);
+export class BoyerMoore {
+  /** Pattern to look for */
+  private readonly pat: string;
+  /** Length of the pattern */
+  private readonly m: number;
+  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
+  private readonly badChar: number[];
+  /** Good‑suffix shift table */
+  private readonly goodSuffix: number[];
 
-  while (queue.length) {
-    const { id, depth } = queue.shift()!;
+  constructor(pattern: string) {
+    if (!pattern.length) throw new Error("Pattern must not be empty");
+    this.pat = pattern;
+    this.m = pattern.length;
 
-    // Stop expanding beyond the user‑supplied depth limit.
-    if (depth === maxDepth) continue;
-
-    const neighbors = graph[id] ?? [];
-    for (const neighbor of neighbors) {
-      if (visited.has(neighbor.id)) continue;
-      if (neighbor.id === targetId) return depth + 1; // found
-
-      visited.add(neighbor.id);
-      queue.push({ id: neighbor.id, depth: depth + 1 });
-    }
+    this.badChar = this.buildBadCharTable();
+    this.goodSuffix = this.buildGoodSuffixTable();
   }
 
-  // Not found within the depth bound.
-  return -1;
-}
-// Sample graph: a small directed graph
-const graph: AdjacencyList<number> = {
-  A: [{ id: 'B', value: 2 }, { id: 'C', value: 3 }],
-  B: [{ id: 'D', value: 4 }],
-  C: [{ id: 'D', value: 4 }, { id: 'E', value: 5 }],
-  D: [],
-  E: [{ id: 'F', value: 6 }],
-  F: []
-};
+  /* --------------------------------------------- */
+  /* ===========  PRE‑PROCESSING  ================= */
+  /* --------------------------------------------- */
 
-const distance = breadthLimitedBFS('A', 'F', graph, 2);
-console.log(distance); // prints 3? Actually depth 3 would exceed maxDepth 2, so it returns -1
-// try a larger depth
-console.log(breadthLimitedBFS('A', 'F', graph, 3)); // prints 3 (A→C→E→F)
-breadthLimitedBFS(
-  startId: string,
-  targetId: string,
-  graph: AdjacencyList<T>,
-  maxDepth: number
-): number
+  /** Build a table indexed by character code (fast array look‑ups). */
+  private buildBadCharTable(): number[] {
+    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
+    for (let i = 0; i < this.m - 1; i++) {
+      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
+    }
+    return SHIFT;
+  }
+
+  /** Build the good‑suffix table (two parts: border and suffix arrays). */
+  private buildGoodSuffixTable(): number[] {
+    const r = this.m;
+    const suffix = new Array(r + 1).fill(0);
+    const border = new Array(r + 1).fill(0);
+
+    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
+    let j = r;
+    let k = 0;
+    suffix[r] = r;
+    for (let i = r - 1; i >= 0; i--) {
+      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
+        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
+        k = border[k];
+      }
+      k++;
+      suffix[i] = k;
+    }
+
+    // Step 2 – compute border[] (largest border for each prefix length)
+    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
+
+    // Step 3 – fill goodSuffix[] using borders
+    const good = new Array(r).fill(r);
+    let jMax = 0;
+    for (let i = r - 1; i >= 0; i--) {
+      if (suffix[i] === 0) continue;
+      while (jMax + 1 <= r - i - 1) {
+        if (good[jMax] === r) good[jMax] = r - i - 1;
+        jMax++;
+      }
+    }
+    // For the remaining positions that have no suffix match
+    for (let i = 0; i < r; i++) {
+      if (good[i] === r) good[i] = r - border[i];
+    }
+
+    return good;
+  }
+
+  /* --------------------------------------------- */
+  /* ===========       SEARCH        ============= */
+  /* --------------------------------------------- */
+
+  /**
+   * Find the first occurrence of the pattern in `text`.
+   * @returns index of first match or -1 if not found.
+   */
+  public search(text: string): number {
+    const n = text.length;
+    let s = 0;               // shift of the pattern
+
+    while (s <= n - this.m) {
+      let j = this.m - 1;
+
+      // Step 4 – compare from right to left
+      while (j >= 0 && this.pat[j] === text[s + j]) j--;
+
+      if (j < 0) return s;  // match found
+
+      // compute shifts
+      const badShift = this.badChar[text.charCodeAt(s + j)];
+      const goodShift = this.goodSuffix[j];
+      s += Math.max(badShift, goodShift);
+    }
+    return -1;              // not found
+  }
+
+  /* --------------------------------------------- */
+  /* ===========  EXAMPLE USAGE  =============== */
+  /* --------------------------------------------- */
+}
+
+// Example usage:
+const bm = new BoyerMoore("needle");
+const txt = "haystack needle haystack inside needlesea";
+const idx = bm.search(txt);
+console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
