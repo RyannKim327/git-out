@@ -1,35 +1,36 @@
-// 1️⃣ Base & height
-export function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0)
-    throw new Error('Base and height must be positive numbers.');
-  return (base * height) / 2;
+/**
+ * Is `s` a palindrome?
+ *
+ * @param s           – the string to test
+ * @param options     – optional tweaks:
+ *          ignoreCase    – true → 'A' and 'a' are the same
+ *          ignoreSpaces  – true → ' ' are ignored
+ *          ignoreNonAlnum – true → anything that doesn’t match /[A-Za-z0-9]/ is dropped
+ */
+function isPalindrome(
+    s: string,
+    options: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+    let { ignoreCase, ignoreSpaces, ignoreNonAlnum } = options;
+
+    // 1. Normalise
+    if (ignoreCase) s = s.toLowerCase();
+
+    // 2. Strip unwanted characters
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignoreNonAlnum) s = s.replace(/[^a-z0-9]/gi, '');
+
+    // 3. Compare to its reverse
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
+console.log(isPalindrome("radar"));                 // true
+console.log(isPalindrome("Radar"));                 // false
+console.log(isPalindrome("Radar", { ignoreCase: true })); // true
 
-// 2️⃣ Heron’s formula (three sides)
-export function areaHeron(a: number, b: number, c: number): number {
-  // Validate that the sides can form a triangle
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error('Side lengths must be positive numbers.');
-  }
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not satisfy the triangle inequality.');
-  }
-
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-  // area might be NaN if the vertices are collinear (area close to 0)
-  if (areaSquared < 0) {
-    throw new Error('Computed area squared is negative – check your side lengths.');
-  }
-
-  return Math.sqrt(areaSquared);
+console.log(isPalindrome("A man, a plan, a canal: Panama",
+                          { ignoreCase: true, ignoreNonAlnum: true })); // true
+function isPlainPalindrome(s: string): boolean {
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
-// Base & height
-const tri1 = areaBaseHeight(10, 4); // 20
-
-// Heron’s formula
-const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
-
-console.log(`Base/Height area: ${tri1}`);
-console.log(`Heron area: ${tri2}`);
