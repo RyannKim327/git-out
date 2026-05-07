@@ -1,79 +1,74 @@
-/**
- * Merge two sorted sub‑arrays into one sorted array.
- * `left` and `right` must already be sorted.
- * Returns a new sorted array.
- */
-function merge<T>(
-  left: T[],
-  right: T[],
-  compare: (a: T, b: T) => number
-): T[] {
-  const result: T[] = [];
-  let i = 0; // index for left
-  let j = 0; // index for right
+// src/utils/http.ts
+import { knownFolders, File } from '@nativescript/core';
 
-  while (i < left.length && j < right.length) {
-    // If left[i] <= right[j] according to the compare function,
-    // push left[i] into the result and advance i
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i]);
-      i++;
-    } else {
-      result.push(right[j]);
-      j++;
+// ──────────────────────────────────────────────────────────────────
+// Step 1 – A friendly async helper that does the fetch
+// ──────────────────────────────────────────────────────────────────
+export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        // add any custom headers you need
+      },
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
     }
-  }
 
-  // Append any remaining elements.
-  // Only one of the following while loops will actually run.
-  while (i < left.length) {
-    result.push(left[i]);
-    i++;
+    const json = await resp.json() as T;
+    return json;
+  } finally {
+    clearTimeout(id);
   }
-  while (j < right.length) {
-    result.push(right[j]);
-    j++;
-  }
-
-  return result;
 }
 
-/**
- * Recursively divides the array and merges the sorted halves.
- * `compare` should return:
- *   < 0 if a < b
- *   0  if a === b
- *   > 0 if a > b
- */
-export function mergeSort<T>(
-  array: T[],
-  compare: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): T[] {
-  if (array.length <= 1) return array; // Base case: already sorted
+// ──────────────────────────────────────────────────────────────────
+// Step 2 – Call it from an Android Activity / Page, e.g.
+// ──────────────────────────────────────────────────────────────────
+export async function demoFetch() {
+  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
 
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
+  try {
+    const data = await getJson<any>(apiUrl);
+    console.log('Data received:', data);
 
-  return merge(left, right, compare);
+    // If you want to touch the UI, do it on the UI thread
+    // (in NativeScript you can simply update a component property,
+    // or use a dispatcher if you’re outside a component)
+  } catch (err) {
+    console.error('fetch error:', err);
+    // In an Android UI you might show a toast:
+    const Toast = android.widget.Toast;
+    const ctx = android.content.Context;
+    const activity = /** get the current activity from your page **/;
+    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
+  }
 }
-// Sort numbers
-const nums = [8, 3, 5, 1, 9, 0];
-const sortedNums = mergeSort(nums);
-// -> [0, 1, 3, 5, 8, 9]
 
-// Sort strings alphabetically
-const words = ["pear", "apple", "banana"];
-const sortedWords = mergeSort(words);
-// -> ["apple", "banana", "pear"]
+/*
+  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
 
-// Sort objects by a property
-type Person = { name: string; age: number };
-const people: Person[] = [
-  { name: "Charlie", age: 25 },
-  { name: "Alice", age: 30 },
-  { name: "Bob", age: 20 },
-];
+  import { demoFetch } from '~/utils/http';
 
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
-// -> [{name:"Bob", age:20}, {name:"Charlie", age:25}, {name:"Alice", age:30}]
+  export function pageLoaded(args) {
+    demoFetch();
+  }
+*/
+const HttpGetTask = android.os.AsyncTask.extend({
+  doInBackground: function (params) {
+    try {
+      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
+      const conn = url.openConnection() as java.net.HttpURLConnection;
+      conn.setRequestMethod('GET');
+      conn.setConnectTimeout(5000);
+      conn.setReadTimeout(5000);
+
+      const reader = new java.io.BufferedReader(
+
