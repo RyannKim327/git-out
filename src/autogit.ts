@@ -1,49 +1,54 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array.
- * If all numbers are negative, the result is the largest (least negative) number.
+ * Iterative (bottom‑up) merge sort.
+ * @param arr The array to be sorted (in‑place).
+ * @returns The sorted array – same reference as the input.
  */
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) throw new Error('Array must contain at least one element');
+function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1) return arr;          // nothing to do
 
-    let currentSum = arr[0];
-    let bestSum = arr[0];
+  const n = arr.length;
+  const temp: T[] = new Array(n);           // temporary buffer for merging
 
-    // We start from index 1 because the first element was already handled
-    for (let i = 1; i < arr.length; i++) {
-        // Either extend the previous sub‑array or start anew at arr[i]
-        currentSum = Math.max(arr[i], currentSum + arr[i]);
+  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
+  for (let width = 1; width < n; width *= 2) {
+    // left is the start of the first run in a pair
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid   = Math.min(left + width, n);        // first run ends
+      const right = Math.min(left + 2 * width, n);    // second run ends
 
-        // Update global best if we found a better one
-        bestSum = Math.max(bestSum, currentSum);
-    }
+      // merge [left, mid) and [mid, right) into temp
+      let i = left,      // index in first run
+          j = mid,       // index in second run
+          k = left;      // index in temp
 
-    return bestSum;
-}
-const data = [−2, −3, 4, −1, −2, 1, 5, −3];
-console.log(maxSubarraySum(data)); // 7
-
-// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
-function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
-    let currentSum = arr[0];
-    let bestSum = arr[0];
-    let tempStart = 0;
-    let bestStart = 0;
-    let bestEnd = 0;
-
-    for (let i = 1; i < arr.length; i++) {
-        if (currentSum + arr[i] >= arr[i]) {
-            currentSum += arr[i];
+      while (i < mid && j < right) {
+        // Use compareFn if supplied, else default <>
+        const cmp = compareFn
+          ? compareFn(arr[i], arr[j])
+          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
+        
+        if (cmp <= 0) {
+          temp[k++] = arr[i++];
         } else {
-            currentSum = arr[i];
-            tempStart = i;
+          temp[k++] = arr[j++];
         }
+      }
 
-        if (currentSum > bestSum) {
-            bestSum = currentSum;
-            bestStart = tempStart;
-            bestEnd = i;
-        }
+      // copy any remaining items from the first run
+      while (i < mid) temp[k++] = arr[i++];
+      // copy any remaining items from the second run
+      while (j < right) temp[k++] = arr[j++];
+
+      // copy the merged part back into the original array
+      for (let p = left; p < right; p++) {
+        arr[p] = temp[p];
+      }
     }
+  }
 
-    return { sum: bestSum, start: bestStart, end: bestEnd };
+  return arr;
 }
+const numbers = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(numbers);
+console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
+mergeSortIterative(list, (a, b) => a.age - b.age);
