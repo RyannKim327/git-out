@@ -1,83 +1,56 @@
 /**
- * A directed graph is expected to be an object where each key is a node
- * id (string) and the value is an array of neighbouring node ids.
- * Example:
- *   const graph = {
- *     a: ['b', 'c'],
- *     b: ['c'],
- *     c: ['a', 'd'],
- *     d: ['e'],
- *     e: []
- *   };
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Tarjan’s SCC algorithm.
+ * Bubble‑sort a mutable array.
  *
- * @param graph – adjacency list representation of the directed graph
- * @returns array of SCCs, each itself an array of node ids
+ * @param arr   The array to sort.  It will be reordered in‑place.
+ * @param cmp   Optional comparators.  If omitted, the default
+ *              `> / <` operators are used for primitive values.
+ *
+ * @returns The sorted array (the same reference that was passed in).
+ *
+ * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
+ * sorted (but we still make one full pass to check that).
  */
-export function tarjanSCC(graph: Graph): string[][] {
-  const indexMap = new Map<string, number>();
-  const lowLinkMap = new Map<string, number>();
-  const onStack = new Set<string>();
+export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+    const n = arr.length;
+    if (n <= 1) return arr;          // Already sorted
 
-  const stack: string[] = [];
-  let idx = 0;
-  const sccs: string[][] = [];
+    // Default comparator for primitive values (numbers, strings, etc.)
+    const compare = cmp ?? ((a: T, b: T) => {
+        if (a > b) return 1;
+        if (a < b) return -1;
+        return 0;
+    });
 
-  const strongConnect = (node: string) => {
-    // Set the depth index for this node to the smallest unused index
-    indexMap.set(node, idx);
-    lowLinkMap.set(node, idx);
-    idx++;
+    let swapped: boolean;
 
-    stack.push(node);
-    onStack.add(node);
+    // One full outer loop pass guarantees sortedness,
+    // but we abort early if no swaps occur in a pass.
+    for (let i = 0; i < n; i++) {
+        swapped = false;
 
-    // Consider successors of node
-    for (const succ of graph[node] ?? []) {
-      if (!indexMap.has(succ)) {
-        // Successor has not yet been visited – recurse on it
-        strongConnect(succ);
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // Successor is in stack → node is in the same SCC
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
-      }
+        // After i iterations of the outer loop, the largest i elements
+        // are bubbled to the end, so we don't need to touch them.
+        for (let j = 0; j < n - i - 1; j++) {
+            if (compare(arr[j], arr[j + 1]) > 0) {
+                // Swap
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                swapped = true;
+            }
+        }
+
+        // If we made no swaps during this pass, array is sorted.
+        if (!swapped) break;
     }
 
-    // If node is a root node, pop the stack and generate an SCC
-    if (lowLinkMap.get(node) === indexMap.get(node)) {
-      const scc: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== node);
-      sccs.push(scc);
-    }
-  };
-
-  // Call the recursion for each node (in any order)
-  for (const node of Object.keys(graph)) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
-    }
-  }
-
-  return sccs;
+    return arr;
 }
-const graph: Graph = {
-  a: ['b'],
-  b: ['c'],
-  c: ['a', 'd'],
-  d: ['e'],
-  e: ['f'],
-  f: ['d']
-};
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
 
-console.log(tarjanSCC(graph));
-// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
+// Sorting strings
+const words = ["apple", "banana", "cherry", "date"];
+console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
+
+// Custom comparator (descending order)
+bubbleSort(nums, (a, b) => b - a);
+console.log(nums); // → [90,64,34,25,22,12,11]
