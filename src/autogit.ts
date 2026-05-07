@@ -1,70 +1,76 @@
-export interface TreeNode<T> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-
-/**
- * Returns the diameter (max number of edges on any path)
- * of a binary tree rooted at `root`.
- */
-export function diameter<T>(root: TreeNode<T> | undefined): number {
-  let maxDia = 0;
-
-  function depth(node?: TreeNode<T>): number {
-    if (!node) return 0;
-    const left  = depth(node.left);
-    const right = depth(node.right);
-
-    // path that goes through this node
-    maxDia = Math.max(maxDia, left + right);
-
-    // height of this subtree
-    return Math.max(left, right) + 1;
+// ---------------------------------------------------
+// Queue implemented with a singly linked list
+// ---------------------------------------------------
+class Queue<T> {
+  // ------- internal node type -------
+  private static class Node<U> {
+    constructor(public value: U, public next?: Queue.Node<U>) {}
   }
 
-  depth(root);
-  return maxDia;
-}
-function makeTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //          \   / \
-  //           4 5   6
-  //              \
-  //               7
-  return {
-    val: 1,
-    left: { val: 2, right: { val: 4 } },
-    right: {
-      val: 3,
-      left: { val: 5, right: { val: 7 } },
-      right: { val: 6 }
-    }
-  };
-}
+  // ------- private fields -------
+  private head?: typeof Queue.Node<any>; // points to the first element
+  private tail?: typeof Queue.Node<any>; // points to the last element
+  private _size = 0;
 
-console.log(diameter(makeTree())); // outputs 5
-export function diameterIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;
-  const stack: Array<{ node: TreeNode<T>; visited: boolean }> = [{ node: root, visited: false }];
-  const heights = new Map<TreeNode<T>, number>();
-  let maxDia = 0;
+  // ------- public methods -------
 
-  while (stack.length) {
-    const { node, visited } = stack.pop()!;
-    if (visited) {
-      const lh = heights.get(node.left) ?? 0;
-      const rh = heights.get(node.right) ?? 0;
-      maxDia = Math.max(maxDia, lh + rh);
-      heights.set(node, Math.max(lh, rh) + 1);
+  /** Insert a new element at the tail. */
+  enqueue(value: T): void {
+    const newNode = new Queue.Node(value);
+    if (!this.tail) {
+      // The queue is empty.
+      this.head = this.tail = newNode;
     } else {
-      stack.push({ node, visited: true });
-      if (node.right) stack.push({ node: node.right, visited: false });
-      if (node.left)  stack.push({ node: node.left,  visited: false });
+      this.tail.next = newNode;
+      this.tail = newNode;
     }
+    this._size++;
   }
 
-  return maxDia;
+  /** Remove and return the element at the head. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;          // empty queue
+    const removed = this.head.value;           // capture value
+    this.head = this.head.next;                // advance head
+    if (!this.head) this.tail = undefined;     // became empty
+    this._size--;
+    return removed;
+  }
+
+  /** Peek at the head without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items currently in the queue. */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  // Optional: allow `for..of` iteration over the queue
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next(): IteratorResult<T> {
+        if (!current) return { done: true, value: undefined };
+        const value = current.value;
+        current = current.next;
+        return { done: false, value };
+      },
+    };
+  }
 }
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log([...q]); // [20, 30]
