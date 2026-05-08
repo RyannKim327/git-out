@@ -1,70 +1,70 @@
-export interface TreeNode<T> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+// random-cron.ts
+// ----------
+// Requires:
+//   npm install node-cron
+//   npm install --save-dev @types/node-cron   (optional if you want type safety)
+// ----------
+import cron from 'node-cron';
+
+/**
+ * Handy helper that returns a random integer in [min, max] inclusive.
+ */
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 /**
- * Returns the diameter (max number of edges on any path)
- * of a binary tree rooted at `root`.
+ * A tiny random “quote” pool. Feel free to replace these with your own.
  */
-export function diameter<T>(root: TreeNode<T> | undefined): number {
-  let maxDia = 0;
+const QUOTES: string[] = [
+  "Do not wait to strike till the iron is hot; but make it hot by striking.",
+  "All that we see or seem is but a dream within a dream.",
+  "Noise is bliss when you’re chasing a dream.",
+  "In the middle of difficulty lies opportunity.",
+  "The only limit to our realization of tomorrow is our doubts about today."
+];
 
-  function depth(node?: TreeNode<T>): number {
-    if (!node) return 0;
-    const left  = depth(node.left);
-    const right = depth(node.right);
-
-    // path that goes through this node
-    maxDia = Math.max(maxDia, left + right);
-
-    // height of this subtree
-    return Math.max(left, right) + 1;
-  }
-
-  depth(root);
-  return maxDia;
-}
-function makeTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //          \   / \
-  //           4 5   6
-  //              \
-  //               7
-  return {
-    val: 1,
-    left: { val: 2, right: { val: 4 } },
-    right: {
-      val: 3,
-      left: { val: 5, right: { val: 7 } },
-      right: { val: 6 }
-    }
-  };
+/**
+ * Pick a random quote from `QUOTES`.
+ */
+function getRandomQuote(): string {
+  const idx = randInt(0, QUOTES.length - 1);
+  return QUOTES[idx];
 }
 
-console.log(diameter(makeTree())); // outputs 5
-export function diameterIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;
-  const stack: Array<{ node: TreeNode<T>; visited: boolean }> = [{ node: root, visited: false }];
-  const heights = new Map<TreeNode<T>, number>();
-  let maxDia = 0;
-
-  while (stack.length) {
-    const { node, visited } = stack.pop()!;
-    if (visited) {
-      const lh = heights.get(node.left) ?? 0;
-      const rh = heights.get(node.right) ?? 0;
-      maxDia = Math.max(maxDia, lh + rh);
-      heights.set(node, Math.max(lh, rh) + 1);
-    } else {
-      stack.push({ node, visited: true });
-      if (node.right) stack.push({ node: node.right, visited: false });
-      if (node.left)  stack.push({ node: node.left,  visited: false });
-    }
-  }
-
-  return maxDia;
+/**
+ * Pick a random time (hour/minute) so that the job will fire at a different
+ * spot each day. These are UTC values in the cron string.
+ */
+function generateRandomCronExpr(): string {
+  const hour = randInt(0, 23);
+  const minute = randInt(0, 59);
+  // e.g. "14 3 * * *" → 3:14 AM UTC every day
+  return `${minute} ${hour} * * *`;
 }
+
+/**
+ * Launch a cron job that runs at the generated random time.
+ */
+function scheduleDailyQuote() {
+  const cronExpr = generateRandomCronExpr();
+  console.log(`Scheduling daily quote at *${cronExpr}* (UTC).`);
+
+  cron.schedule(cronExpr, () => {
+    const msg = getRandomQuote();
+    const time = new Date().toISOString();
+    console.log(`[${time}] Random quote: ${msg}`);
+  });
+}
+
+scheduleDailyQuote();
+# 1. Install deps
+npm install --save node-cron
+# Optional typings
+npm install --save-dev @types/node-cron
+
+# 2. Compile (if you’re using tsc)
+tsc random-cron.ts
+
+# 3. Run
+node random-cron.js
