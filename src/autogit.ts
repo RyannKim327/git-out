@@ -1,66 +1,56 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
+/**
+ * Bubble‑sort a mutable array.
+ *
+ * @param arr   The array to sort.  It will be reordered in‑place.
+ * @param cmp   Optional comparators.  If omitted, the default
+ *              `> / <` operators are used for primitive values.
+ *
+ * @returns The sorted array (the same reference that was passed in).
+ *
+ * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
+ * sorted (but we still make one full pass to check that).
+ */
+export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+    const n = arr.length;
+    if (n <= 1) return arr;          // Already sorted
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
+    // Default comparator for primitive values (numbers, strings, etc.)
+    const compare = cmp ?? ((a: T, b: T) => {
+        if (a > b) return 1;
+        if (a < b) return -1;
+        return 0;
+    });
 
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+    let swapped: boolean;
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+    // One full outer loop pass guarantees sortedness,
+    // but we abort early if no swaps occur in a pass.
+    for (let i = 0; i < n; i++) {
+        swapped = false;
 
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
+        // After i iterations of the outer loop, the largest i elements
+        // are bubbled to the end, so we don't need to touch them.
+        for (let j = 0; j < n - i - 1; j++) {
+            if (compare(arr[j], arr[j + 1]) > 0) {
+                // Swap
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                swapped = true;
+            }
+        }
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+        // If we made no swaps during this pass, array is sorted.
+        if (!swapped) break;
     }
-  }
 
-  return leafCount;
+    return arr;
 }
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
 
-  if (!root) return leaves;
+// Sorting strings
+const words = ["apple", "banana", "cherry", "date"];
+console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
 
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return leaves;
-}
+// Custom comparator (descending order)
+bubbleSort(nums, (a, b) => b - a);
+console.log(nums); // → [90,64,34,25,22,12,11]
