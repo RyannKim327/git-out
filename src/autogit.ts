@@ -1,56 +1,139 @@
-/**
- * Bubble‑sort a mutable array.
- *
- * @param arr   The array to sort.  It will be reordered in‑place.
- * @param cmp   Optional comparators.  If omitted, the default
- *              `> / <` operators are used for primitive values.
- *
- * @returns The sorted array (the same reference that was passed in).
- *
- * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
- * sorted (but we still make one full pass to check that).
- */
-export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr;          // Already sorted
+type Node = string | number;
 
-    // Default comparator for primitive values (numbers, strings, etc.)
-    const compare = cmp ?? ((a: T, b: T) => {
-        if (a > b) return 1;
-        if (a < b) return -1;
-        return 0;
-    });
-
-    let swapped: boolean;
-
-    // One full outer loop pass guarantees sortedness,
-    // but we abort early if no swaps occur in a pass.
-    for (let i = 0; i < n; i++) {
-        swapped = false;
-
-        // After i iterations of the outer loop, the largest i elements
-        // are bubbled to the end, so we don't need to touch them.
-        for (let j = 0; j < n - i - 1; j++) {
-            if (compare(arr[j], arr[j + 1]) > 0) {
-                // Swap
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                swapped = true;
-            }
-        }
-
-        // If we made no swaps during this pass, array is sorted.
-        if (!swapped) break;
-    }
-
-    return arr;
+interface Edge {
+  to: Node;
+  weight: number;
 }
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
 
-// Sorting strings
-const words = ["apple", "banana", "cherry", "date"];
-console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
+type Graph = Map<Node, Edge[]>;         // adjacency list
+function buildGraph(edges: Array<[Node, Node, number]>): Graph {
+  const graph: Graph = new Map();
+  for (const [u, v, w] of edges) {
+    if (!graph.has(u)) graph.set(u, []);
+    graph.get(u)!.push({ to: v, weight: w });
 
-// Custom comparator (descending order)
-bubbleSort(nums, (a, b) => b - a);
-console.log(nums); // → [90,64,34,25,22,12,11]
+    // For an undirected graph, repeat the reverse edge:
+    // if (!graph.has(v)) graph.set(v, []);
+    // graph.get(v)!.push({ to: u, weight: w });
+  }
+  return graph;
+}
+class MinHeap<T> {
+  private data: { key: number; value: T }[] = [];
+
+  insert(key: number, value: T) {
+    this.data.push({ key, value });
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  extractMin(): { key: number; value: T } | undefined {
+    if (!this.data.length) return undefined;
+    const min = this.data[0];
+    const end = this.data.pop()!;
+    if (this.data.length) {
+      this.data[0] = end;
+      this.bubbleDown(0);
+    }
+    return min;
+  }
+
+  private bubbleUp(idx: number) {
+    const element = this.data[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (element.key >= parent.key) break;
+      this.data[idx] = parent;
+      this.data[parentIdx] = element;
+      idx = parentIdx;
+    }
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.data.length;
+    const element = this.data[idx];
+    while (true) {
+      let leftIdx = idx * 2 + 1;
+      let rightIdx = idx * 2 + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (left.key < element.key) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        if (
+          (swapIdx === null && right.key < element.key) ||
+          (swapIdx !== null && right.key < this.data[swapIdx].key)
+        )
+          swapIdx = rightIdx;
+      }
+
+      if (swapIdx === null) break;
+      this.data[idx] = this.data[swapIdx];
+      this.data[swapIdx] = element;
+      idx = swapIdx;
+    }
+  }
+
+  get size() { return this.data.length; }
+}
+/**
+ * Computes shortest-path distances from `source` to all reachable nodes.
+ *
+ * @param graph  Adjacency list of the graph
+ * @param source The starting vertex
+ * @returns Map from each vertex to its shortest distance from the source
+ */
+function dijkstra(graph: Graph, source: Node): Map<Node, number> {
+  const dist = new Map<Node, number>();
+  const heap = new MinHeap<Node>();
+
+  // initialise: distance to source is 0, all others are +∞
+  for (const node of graph.keys()) {
+    const initial = node === source ? 0 : Infinity;
+    dist.set(node, initial);
+    heap.insert(initial, node);
+  }
+
+  while (heap.size > 0) {
+    const { key: d, value: u } = heap.extractMin()!;
+    // Skip entries that are stale because a shorter path was already processed
+    if (d > dist.get(u)!) continue;
+
+    for (const edge of graph.get(u)!) {
+      const alt = d + edge.weight;
+      if (alt < dist.get(edge.to)!) {
+        dist.set(edge.to, alt);
+        heap.insert(alt, edge.to);
+      }
+    }
+  }
+
+  return dist;
+}
+const edges: Array<[Node, Node, number]> = [
+  ['A', 'B', 5],
+  ['A', 'C', 2],
+  ['B', 'C', 1],
+  ['B', 'D', 2],
+  ['C', 'D', 3],
+  ['C', 'E', 1],
+  ['D', 'E', 2],
+  ['D', 'F', 1],
+  ['E', 'F', 4]
+];
+
+const graph = buildGraph(edges);
+
+const distances = dijkstra(graph, 'A');
+
+for (const node of graph.keys()) {
+  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
+}
+Distance from A to A: 0
+Distance from A to B: 4
+Distance from A to C: 2
+Distance from A to D: 5
+
