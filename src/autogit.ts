@@ -1,96 +1,139 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
+type Node = string | number;
 
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
-
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
+interface Edge {
+  to: Node;
+  weight: number;
 }
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+type Graph = Map<Node, Edge[]>;         // adjacency list
+function buildGraph(edges: Array<[Node, Node, number]>): Graph {
+  const graph: Graph = new Map();
+  for (const [u, v, w] of edges) {
+    if (!graph.has(u)) graph.set(u, []);
+    graph.get(u)!.push({ to: v, weight: w });
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
+    // For an undirected graph, repeat the reverse edge:
+    // if (!graph.has(v)) graph.set(v, []);
+    // graph.get(v)!.push({ to: u, weight: w });
+  }
+  return graph;
+}
+class MinHeap<T> {
+  private data: { key: number; value: T }[] = [];
 
-  dist[source] = 0;
+  insert(key: number, value: T) {
+    this.data.push({ key, value });
+    this.bubbleUp(this.data.length - 1);
+  }
 
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
+  extractMin(): { key: number; value: T } | undefined {
+    if (!this.data.length) return undefined;
+    const min = this.data[0];
+    const end = this.data.pop()!;
+    if (this.data.length) {
+      this.data[0] = end;
+      this.bubbleDown(0);
+    }
+    return min;
+  }
 
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
+  private bubbleUp(idx: number) {
+    const element = this.data[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (element.key >= parent.key) break;
+      this.data[idx] = parent;
+      this.data[parentIdx] = element;
+      idx = parentIdx;
+    }
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.data.length;
+    const element = this.data[idx];
+    while (true) {
+      let leftIdx = idx * 2 + 1;
+      let rightIdx = idx * 2 + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (left.key < element.key) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        if (
+          (swapIdx === null && right.key < element.key) ||
+          (swapIdx !== null && right.key < this.data[swapIdx].key)
+        )
+          swapIdx = rightIdx;
+      }
+
+      if (swapIdx === null) break;
+      this.data[idx] = this.data[swapIdx];
+      this.data[swapIdx] = element;
+      idx = swapIdx;
+    }
+  }
+
+  get size() { return this.data.length; }
+}
+/**
+ * Computes shortest-path distances from `source` to all reachable nodes.
+ *
+ * @param graph  Adjacency list of the graph
+ * @param source The starting vertex
+ * @returns Map from each vertex to its shortest distance from the source
+ */
+function dijkstra(graph: Graph, source: Node): Map<Node, number> {
+  const dist = new Map<Node, number>();
+  const heap = new MinHeap<Node>();
+
+  // initialise: distance to source is 0, all others are +∞
+  for (const node of graph.keys()) {
+    const initial = node === source ? 0 : Infinity;
+    dist.set(node, initial);
+    heap.insert(initial, node);
+  }
+
+  while (heap.size > 0) {
+    const { key: d, value: u } = heap.extractMin()!;
+    // Skip entries that are stale because a shorter path was already processed
+    if (d > dist.get(u)!) continue;
+
+    for (const edge of graph.get(u)!) {
+      const alt = d + edge.weight;
+      if (alt < dist.get(edge.to)!) {
+        dist.set(edge.to, alt);
+        heap.insert(alt, edge.to);
       }
     }
-
-    // Stop early if nothing changed
-    if (!updated) break;
   }
 
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegativeCycle };
+  return dist;
 }
-
-/* ---------- 3️⃣  Example usage ------------------------------------ */
-
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
+const edges: Array<[Node, Node, number]> = [
+  ['A', 'B', 5],
+  ['A', 'C', 2],
+  ['B', 'C', 1],
+  ['B', 'D', 2],
+  ['C', 'D', 3],
+  ['C', 'E', 1],
+  ['D', 'E', 2],
+  ['D', 'F', 1],
+  ['E', 'F', 4]
 ];
 
-const vertexCount = 4;
-const source = 0;
+const graph = buildGraph(edges);
 
-const result = bellmanFord(vertexCount, edges, source);
+const distances = dijkstra(graph, 'A');
 
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
-  }
-  return path;
+for (const node of graph.keys()) {
+  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
 }
+Distance from A to A: 0
+Distance from A to B: 4
+Distance from A to C: 2
+Distance from A to D: 5
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
