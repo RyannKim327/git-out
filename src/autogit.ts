@@ -1,45 +1,56 @@
-dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
-if s1[i] === s2[j]
-    dp[i][j] = dp[i‑1][j‑1] + 1
-else
-    dp[i][j] = 0
 /**
- * Returns the longest common substring of two strings.
- * If there are multiple substrings of the same maximal length,
- * the first one encountered is returned.
+ * Bubble‑sort a mutable array.
+ *
+ * @param arr   The array to sort.  It will be reordered in‑place.
+ * @param cmp   Optional comparators.  If omitted, the default
+ *              `> / <` operators are used for primitive values.
+ *
+ * @returns The sorted array (the same reference that was passed in).
+ *
+ * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
+ * sorted (but we still make one full pass to check that).
  */
-function longestCommonSubstring(a: string, b: string): string {
-    if (!a || !b) return "";
+export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+    const n = arr.length;
+    if (n <= 1) return arr;          // Already sorted
 
-    const n = a.length;
-    const m = b.length;
+    // Default comparator for primitive values (numbers, strings, etc.)
+    const compare = cmp ?? ((a: T, b: T) => {
+        if (a > b) return 1;
+        if (a < b) return -1;
+        return 0;
+    });
 
-    // Use a 1‑D array to hold the previous row of DP values.
-    let prev = new Array(m + 1).fill(0);
-    let curr = new Array(m + 1).fill(0);
+    let swapped: boolean;
 
-    let bestLen = 0;
-    let bestEndIdxInA = 0; // index in `a` where the best substring ends
+    // One full outer loop pass guarantees sortedness,
+    // but we abort early if no swaps occur in a pass.
+    for (let i = 0; i < n; i++) {
+        swapped = false;
 
-    for (let i = 1; i <= n; i++) {
-        for (let j = 1; j <= m; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                curr[j] = prev[j - 1] + 1;
-                if (curr[j] > bestLen) {
-                    bestLen = curr[j];
-                    bestEndIdxInA = i;
-                }
-            } else {
-                curr[j] = 0;
+        // After i iterations of the outer loop, the largest i elements
+        // are bubbled to the end, so we don't need to touch them.
+        for (let j = 0; j < n - i - 1; j++) {
+            if (compare(arr[j], arr[j + 1]) > 0) {
+                // Swap
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                swapped = true;
             }
         }
-        // swap references for the next iteration
-        [prev, curr] = [curr, prev];
+
+        // If we made no swaps during this pass, array is sorted.
+        if (!swapped) break;
     }
 
-    if (bestLen === 0) return "";
-    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
+    return arr;
 }
-console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
-console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
-console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
+
+// Sorting strings
+const words = ["apple", "banana", "cherry", "date"];
+console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
+
+// Custom comparator (descending order)
+bubbleSort(nums, (a, b) => b - a);
+console.log(nums); // → [90,64,34,25,22,12,11]
