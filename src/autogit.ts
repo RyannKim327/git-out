@@ -1,138 +1,68 @@
-// ──────────────────────────────────────────────────────────────────────
-// 1️⃣  Node definition
-// ──────────────────────────────────────────────────────────────────────
+/*  stack.ts  */
+export class Stack<T> {
+  // The raw array that stores everything.
+  private readonly items: T[] = [];
 
-export class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// 2️⃣  Binary‑Search‑Tree
-// ──────────────────────────────────────────────────────────────────────
-
-export class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-
-  /* ----------------------------------------------------------------- */
-  // basic insertion – assumes no duplicates
-  /* ----------------------------------------------------------------- */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let node: TreeNode<T> | null = this.root;
-    while (node) {
-      if (value < node.value) {
-        if (!node.left) {
-          node.left = newNode;
-          break;
-        }
-        node = node.left;
-      } else {
-        if (!node.right) {
-          node.right = newNode;
-          break;
-        }
-        node = node.right;
-      }
-    }
+  /** Push a value onto the stack. Complexity: O(1). */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  /* ----------------------------------------------------------------- */
-  // find a value – returns the node or null
-  /* ----------------------------------------------------------------- */
-  find(value: T): TreeNode<T> | null {
-    let node = this.root;
-    while (node) {
-      if (value === node.value) return node;
-      node = value < node.value ? node.left : node.right;
+  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot pop from an empty stack');
     }
-    return null;
+    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
   }
 
-  /* ----------------------------------------------------------------- */
-  // In‑order traversal – returns array of values sorted (for BST)
-  /* ----------------------------------------------------------------- */
-  inorder(): T[] {
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [];
-    let node = this.root;
-
-    while (stack.length || node) {
-      while (node) {
-        stack.push(node);
-        node = node.left!;
-      }
-      node = stack.pop()!;
-      result.push(node.value);
-      node = node.right!;
+  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot peek at an empty stack');
     }
-
-    return result;
+    return this.items[this.items.length - 1];
   }
 
-  /* ----------------------------------------------------------------- */
-  // Pre‑order (root, left, right)
-  /* ----------------------------------------------------------------- */
-  preorder(): T[] {
-    if (!this.root) return [];
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [this.root];
-
-    while (stack.length) {
-      const node = stack.pop()!;
-      result.push(node.value);
-
-      // push right first so left is processed first
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
-    }
-
-    return result;
+  /** True if the stack has no elements. Complexity: O(1). */
+  isEmpty(): boolean {
+    return this.items.length === 0;
   }
 
-  /* ----------------------------------------------------------------- */
-  // Post‑order (left, right, root) – iterative with two stacks
-  /* ----------------------------------------------------------------- */
-  postorder(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
+  /** Number of items currently stored. Complexity: O(1). */
+  size(): number {
+    return this.items.length;
+  }
 
-    const stack1: TreeNode<T>[] = [this.root];
-    const stack2: TreeNode<T>[] = [];
-
-    while (stack1.length) {
-      const node = stack1.pop()!;
-      stack2.push(node);
-
-      if (node.left) stack1.push(node.left);
-      if (node.right) stack1.push(node.right);
-    }
-
-    while (stack2.length) {
-      result.push(stack2.pop()!.value);
-    }
-
-    return result;
+  /** Clear everything. Complexity: O(1) (just resets reference). */
+  clear(): void {
+    this.items.length = 0;
   }
 }
-import { BinarySearchTree } from "./bst";
+import { Stack } from './stack';
 
-const bst = new BinarySearchTree<number>();
+const numStack = new Stack<number>();
 
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+numStack.push(1);
+numStack.push(2);
+numStack.push(3);
 
-console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
-console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
-console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
+console.log(numStack.peek());   // 3
+console.log(numStack.pop());    // 3
+console.log(numStack.size());   // 2
+console.log(numStack.isEmpty()); // false
 
-console.log("Find 5:", bst.find(5)?.value);          // 5
-console.log("Find 20:", bst.find(20));               // null
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class Stack<T> {
+  private readonly items: T[] = [];
+  constructor(private readonly capacity = Infinity) {}
+
+  push(item: T): void {
+    if (this.items.length >= this.capacity) {
+      throw new Error('Stack overflow: cannot push beyond capacity');
+    }
+    this.items.push(item);
+  }
+  /* … rest of the class unchanged … */
+}
