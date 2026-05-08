@@ -1,98 +1,78 @@
-// ──────────────────────────────────────────────────────────────────────
-// Utility types
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * A generic search node that holds a state and the depth of that state in the search tree.
- */
-interface SearchNode<T> {
-  state: T;
-  depth: number;
+// ───────────────────── Graph Types ───────────────────────────────────────
+type NodeId = string | number;          // anything that can be compared with ===
+interface AdjList {
+  // nodeId -> array of neighbor nodeIds
+  [key: string]: NodeId[];
 }
 
-/**
- * The contract that the caller must satisfy in order to perform a search.
- */
-export interface SearchProblem<T> {
-  /** Returns true if the supplied state is a goal state. */
-  isGoal: (state: T) => boolean;
+// ───────────────────── BFS Implementation ────────────────────────────────
+function bfs(
+  graph: AdjList,
+  start: NodeId,
+  visit: (node: NodeId) => void = () => {}
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
 
-  /** Returns an array of successor states for the supplied state. */
-  getChildren: (state: T) => T[];
+  visited.add(start);
+  queue.push(start);
 
-  /** The maximum depth that the search may travel. */
-  limit: number;
-}
+  while (queue.length > 0) {
+    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
 
-// ──────────────────────────────────────────────────────────────────────
-// Depth‑limited search – iterative version
-// ──────────────────────────────────────────────────────────────────────
+    visit(current);        // optional callback that may do whatever you want
+    order.push(current);
 
-/**
- * Performs a depth‑limited DFS iteratively.
- *
- * @param start The initial state from which the search starts.
- * @param problem An object containing `isGoal`, `getChildren` and `limit`.
- * @returns The goal state if found, otherwise `null`.
- */
-export function depthLimitedSearch<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T | null {
-  const { isGoal, getChildren, limit } = problem;
-
-  // Stack for DFS (push / pop from the end).
-  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
-
-  while (stack.length) {
-    const { state, depth } = stack.pop()!;
-
-    if (isGoal(state)) {
-      return state;            // Goal found.
-    }
-
-    // Don't expand deeper than the limit.
-    if (depth < limit) {
-      // Push children in reverse order if you care about visit order.
-      for (const child of getChildren(state)) {
-        stack.push({ state: child, depth: depth + 1 });
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        queue.push(neigh);
       }
     }
   }
 
-  // Exhausted the stack without finding a goal.
-  return null;
-}
-export interface SearchNodeWithParent<T> {
-  state: T;
-  depth: number;
-  parent?: T;   // Optional – undefined for the root node.
+  return order;           // return traversal order if you need it
 }
 
-export function depthLimitedSearchWithPath<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T[] | null {
-  const { isGoal, getChildren, limit } = problem;
-  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
+// ───────────────────── Example Usage ──────────────────────────────────────
+const exampleGraph: AdjList = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
 
-  while (stack.length) {
-    const current = stack.pop()!;
-    const { state, depth, parent } = current;
+const traversal = bfs(exampleGraph, 'A');
+console.log('BFS order:', traversal);
+// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
 
-    if (isGoal(state)) {
-      // Walk back up through parents to build the path.
-      const path: T[] = [state];
-      let p = parent;
-      while (p) {
-        path.push(p);
-        // No direct way to retrieve the parent of ‘p’ without a map.
-        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
-        // Here we simply return the goal state.
-        break;
+// If you only care about distances from the start node:
+function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
+  const distances = new Map<NodeId, number>();
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+
+  visited.add(start);
+  distances.set(start, 0);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        distances.set(neigh, distances.get(current)! + 1);
+        queue.push(neigh);
       }
-      return path.reverse();
     }
+  }
 
-    if (depth < limit) {
-      for (const child of get
+  return distances;
+}
+
+const dists = bfsDistances(exampleGraph, 'A');
+console.log('Distances from A:', Object.fromEntries(dists.entries()));
+// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
