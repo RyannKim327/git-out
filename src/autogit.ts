@@ -1,101 +1,117 @@
-function kthSmallest<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  // make a shallow copy so the caller's array stays untouched
-  const copy = [...arr];
-  copy.sort(cmp);
-  return copy[k - 1];
-}
 /**
- * Returns the k-th smallest element (1‑indexed) in `arr`.
- * Modifies the array in place (no extra array allocation).
+ * Boyer–Moore search – Typescript implementation
+ * ------------------------------------------------
+ * O(m + n) preprocessing  (m = pattern length, n = text length)
+ * O(n/m) expected search time (in practice, very fast)
  */
-function quickSelect<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  return select(arr, 0, arr.length - 1, k - 1);
 
-  function partition(lo: number, hi: number): number {
-    const pivotIdx = Math.floor((lo + hi) / 2);
-    const pivot = arr[pivotIdx];
-    // move pivot to the end
-    [arr[pivotIdx], arr[hi]] = [arr[hi], arr[pivotIdx]];
+export class BoyerMoore {
+  /** Pattern to look for */
+  private readonly pat: string;
+  /** Length of the pattern */
+  private readonly m: number;
+  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
+  private readonly badChar: number[];
+  /** Good‑suffix shift table */
+  private readonly goodSuffix: number[];
 
-    let store = lo;
-    for (let i = lo; i < hi; i++) {
-      if (cmp(arr[i], pivot) < 0) {
-        [arr[i], arr[store]] = [arr[store], arr[i]];
-        store++;
+  constructor(pattern: string) {
+    if (!pattern.length) throw new Error("Pattern must not be empty");
+    this.pat = pattern;
+    this.m = pattern.length;
+
+    this.badChar = this.buildBadCharTable();
+    this.goodSuffix = this.buildGoodSuffixTable();
+  }
+
+  /* --------------------------------------------- */
+  /* ===========  PRE‑PROCESSING  ================= */
+  /* --------------------------------------------- */
+
+  /** Build a table indexed by character code (fast array look‑ups). */
+  private buildBadCharTable(): number[] {
+    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
+    for (let i = 0; i < this.m - 1; i++) {
+      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
+    }
+    return SHIFT;
+  }
+
+  /** Build the good‑suffix table (two parts: border and suffix arrays). */
+  private buildGoodSuffixTable(): number[] {
+    const r = this.m;
+    const suffix = new Array(r + 1).fill(0);
+    const border = new Array(r + 1).fill(0);
+
+    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
+    let j = r;
+    let k = 0;
+    suffix[r] = r;
+    for (let i = r - 1; i >= 0; i--) {
+      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
+        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
+        k = border[k];
+      }
+      k++;
+      suffix[i] = k;
+    }
+
+    // Step 2 – compute border[] (largest border for each prefix length)
+    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
+
+    // Step 3 – fill goodSuffix[] using borders
+    const good = new Array(r).fill(r);
+    let jMax = 0;
+    for (let i = r - 1; i >= 0; i--) {
+      if (suffix[i] === 0) continue;
+      while (jMax + 1 <= r - i - 1) {
+        if (good[jMax] === r) good[jMax] = r - i - 1;
+        jMax++;
       }
     }
-    // put pivot back in its final place
-    [arr[store], arr[hi]] = [arr[hi], arr[store]];
-    return store;
-  }
-
-  function select(lo: number, hi: number, targetIdx: number): T {
-    if (lo === hi) return arr[lo];
-    const pivotIdx = partition(lo, hi);
-    if (pivotIdx === targetIdx) {
-      return arr[pivotIdx];
-    } else if (pivotIdx > targetIdx) {
-      return select(lo, pivotIdx - 1, targetIdx);
-    } else {
-      return select(pivotIdx + 1, hi, targetIdx);
+    // For the remaining positions that have no suffix match
+    for (let i = 0; i < r; i++) {
+      if (good[i] === r) good[i] = r - border[i];
     }
-  }
-}
-class BinaryHeap<T> {
-  constructor(private cmp: (a: T | null, b: T | null) => number) {}
-  private heap: (T | null)[] = [null];          // 1‑indexed
 
-  get size() { return this.heap.length - 1; }
-
-  push(val: T) {
-    this.heap.push(val);
-    this.bubbleUp(this.size);
+    return good;
   }
 
-  pop(): T | null {
-    if (this.size === 0) return null;
-    const ret = this.heap[1];
-    this.heap[1] = this.heap.pop()!;
-    this.bubbleDown(1);
-    return ret;
-  }
+  /* --------------------------------------------- */
+  /* ===========       SEARCH        ============= */
+  /* --------------------------------------------- */
 
-  peek(): T | null {
-    return this.size ? this.heap[1] : null;
-  }
+  /**
+   * Find the first occurrence of the pattern in `text`.
+   * @returns index of first match or -1 if not found.
+   */
+  public search(text: string): number {
+    const n = text.length;
+    let s = 0;               // shift of the pattern
 
-  private bubbleUp(i: number) {
-    while (i > 1) {
-      const p = Math.floor(i / 2);
-      if (this.cmp(this.heap[i]!, this.heap[p]!) < 0) {
-        [this.heap[i], this.heap[p]] = [this.heap[p], this.heap[i]];
-        i = p;
-      } else break;
+    while (s <= n - this.m) {
+      let j = this.m - 1;
+
+      // Step 4 – compare from right to left
+      while (j >= 0 && this.pat[j] === text[s + j]) j--;
+
+      if (j < 0) return s;  // match found
+
+      // compute shifts
+      const badShift = this.badChar[text.charCodeAt(s + j)];
+      const goodShift = this.goodSuffix[j];
+      s += Math.max(badShift, goodShift);
     }
+    return -1;              // not found
   }
 
-  private bubbleDown(i: number) {
-    while (true) {
-      const l = i * 2, r = l + 1;
-      let smallest = i;
-      if (l <= this.size && this.cmp(this.heap[l]!, this.heap[smallest]!) < 0) smallest = l;
-      if (r <= this.size && this.cmp(this.heap[r]!, this.heap[smallest]!) < 0) smallest = r;
-      if (smallest !== i) {
-        [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
-        i = smallest;
-      } else break;
-    }
-  }
+  /* --------------------------------------------- */
+  /* ===========  EXAMPLE USAGE  =============== */
+  /* --------------------------------------------- */
 }
 
-function kthSmallestHeap<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const heap = new BinaryHeap<T>((a, b) => cmp(a, b));
-  for (const v of arr) heap.push(v);
-  // pop k-1 times to discard smaller elements
-  for (let i = 0; i < k - 1; i++) heap.pop();
-  return heap.peek() as T;
-}
+// Example usage:
+const bm = new BoyerMoore("needle");
+const txt = "haystack needle haystack inside needlesea";
+const idx = bm.search(txt);
+console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
