@@ -1,96 +1,102 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
+/**
+ * The shift table used by BMH.
+ * Key: a character (string of length 1)
+ * Value: how many positions to move the pattern to the right
+ */
+type BadCharTable = Record<string, number>;
 
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
+/**
+ * Build the bad‑character shift table from the pattern.
+ *
+ * @param pattern – the pattern we are looking for
+ * @returns an object mapping each character to its shift value
+ */
+function buildBadCharTable(pattern: string): BadCharTable {
+  const table: BadCharTable = {};
+  const lastIdx = pattern.length - 1;
 
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
+  // Initialize all characters to the full length (worst case)
+  for (let i = 0; i < lastIdx; i++) {
+    const c = pattern[i];
+    // The shift is the distance from the current position to the last character
+    table[c] = lastIdx - i;
+  }
+  // Characters that don't appear in the pattern keep the full length shift.
+  // (In JavaScript the property will simply be missing, which we interpret as
+  // the default value `pattern.length` later.)
+  return table;
 }
+/**
+ * Find all indices where `pattern` occurs in `text` (0‑based).
+ *
+ * @param text – the string we’re scanning
+ * @param pattern – the pattern we’re looking for
+ * @returns an array of starting indices; empty if none
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  if (pattern.empty) return [];
+  if (pattern.length > text.length) return [];
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
+  let i = m - 1;          // index in `text` aligned with pattern's last char
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
-
-  dist[source] = 0;
-
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
-
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
-      }
+  while (i < n) {
+    // Compare pattern from right to left
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
     }
 
-    // Stop early if nothing changed
-    if (!updated) break;
-  }
-
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
+    // Full match
+    if (j < 0) {
+      result.push(i - m + 1);
+      // Move past the matched window (next search starts after the match)
+      i += 1;
+    } else {
+      // Mismatch: determine how far we can shift
+      const badChar = text[i];
+      const shift = table[badChar] ?? m; // if missing, shift by full length
+      i += shift;
     }
   }
-
-  return { dist, prev, hasNegativeCycle };
+  return result;
 }
+/**
+ * Return the index of the first occurrence of `pattern` in `text`,
+ * or -1 if it doesn’t exist.
+ */
+export function bmhSearchFirst(text: string, pattern: string): number {
+  if (pattern.empty) return 0;
+  if (pattern.length > text.length) return -1;
 
-/* ---------- 3️⃣  Example usage ------------------------------------ */
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  let i = m - 1;
 
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
-
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
+  while (i < n) {
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
+    }
+    if (j < 0) {
+      return i - m + 1;
+    }
+    const badChar = text[i];
+    const shift = table[badChar] ?? m;
+    i += shift;
   }
-  return path;
+  return -1;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+console.log(bmhSearch(text, pattern));       // [0, 7]
+console.log(bmhSearchFirst(text, pattern));  // 0
+
+// Non‑existent pattern
+console.log(bmhSearch("hello", "world"));     // []
+console.log(bmhSearchFirst("hello", "world")); // -1
