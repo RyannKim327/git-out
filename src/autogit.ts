@@ -1,18 +1,42 @@
-const numbers = [12, -5, 7, 42, 3.9];
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr     Sorted array to search
+ * @param target  Value to find
+ * @param lessThan Comparator that returns true if  a < b
+ * @returns Index of the target or -1 if not found
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  lessThan: (a: T, b: T) => boolean
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-// 1️⃣ Spice it up with the spread operator (`Math.max`)
-const maxUsingMath = Math.max(...numbers);
-console.log('maxUsingMath →', maxUsingMath); // 42
+  while (low <= high) {
+    // middle index – use bit‑shifting to avoid overflow
+    const mid = (low + high) >> 1;
+    const midVal = arr[mid];
 
-// 2️⃣ Stack‑overflow‑safe – you don’t want to blow the argument limit
-const maxUsingReduce = numbers.reduce((max, n) => (n > max ? n : max), -Infinity);
-console.log('maxUsingReduce →', maxUsingReduce); // 42
+    if (lessThan(target, midVal)) {
+      high = mid - 1; // target is in the left half
+    } else if (lessThan(midVal, target)) {
+      low = mid + 1; // target is in the right half
+    } else {
+      return mid; // found
+    }
+  }
 
-// 3️⃣ Old‑school loop (great for huge arrays)
-let maxOldSchool = -Infinity;
-for (const n of numbers) {
-  if (n > maxOldSchool) maxOldSchool = n;
+  return -1; // not found
 }
-console.log('maxOldSchool →', maxOldSchool); // 42
-const bigNumbers = new Float64Array([1.5, 2.3, 0.0, 9.1]);
-const maxFloat = Math.max(...bigNumbers); // works, but may still hit the limit
+const nums = [1, 3, 5, 7, 9, 11];
+
+// simple number comparison
+const index = binarySearch(nums, 7, (a, b) => a < b);
+console.log(index); // 3
+
+// with strings
+const words = ['apple', 'banana', 'cherry', 'date'];
+const idx = binarySearch(words, 'cherry', (a, b) => a < b);
+console.log(idx); // 2
