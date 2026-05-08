@@ -1,34 +1,27 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
-  }
+/**
+ * Remove all vowels (a, e, i, o, u) from a string.
+ * Case‑insensitive and works for ASCII‑only vowels.
+ */
+function removeVowels(str: string): string {
+  return str.replace(/[aeiouAEIOU]/g, '');
 }
 
-function maxDepth(root: TreeNode | null): number {
-  if (root === null) return 0;           // base case: empty subtree
-  const leftDepth  = maxDepth(root.left);   // depth of left subtree
-  const rightDepth = maxDepth(root.right);  // depth of right subtree
-  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
+// Example
+console.log(removeVowels('Hello, World!')); // Hll, Wrld!
+function removeVowelsIncludingY(str: string): string {
+  return str.replace(/[aeiouyAEIOUY]/g, '');
 }
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
-  let max = 0;
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+function removeAnyLatinVowel(str: string): string {
+  // Matches any letter in the Latin script that is a vowel
+  return str.replace(/\p{Script=Latin}\p{Vowel}/gu, '');
+}
+function removeVowelsLoop(str: string): string {
+  const vowels = new Set('aeiouAEIOU');
+  let result = '';
+  for (const ch of str) {
+    if (!vowels.has(ch)) {
+      result += ch;
+    }
   }
-
-  return max;
+  return result;
 }
