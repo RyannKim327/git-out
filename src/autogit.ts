@@ -1,35 +1,98 @@
-// 1️⃣ Base & height
-export function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0)
-    throw new Error('Base and height must be positive numbers.');
-  return (base * height) / 2;
+// ──────────────────────────────────────────────────────────────────────
+// Utility types
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * A generic search node that holds a state and the depth of that state in the search tree.
+ */
+interface SearchNode<T> {
+  state: T;
+  depth: number;
 }
 
-// 2️⃣ Heron’s formula (three sides)
-export function areaHeron(a: number, b: number, c: number): number {
-  // Validate that the sides can form a triangle
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error('Side lengths must be positive numbers.');
-  }
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not satisfy the triangle inequality.');
-  }
+/**
+ * The contract that the caller must satisfy in order to perform a search.
+ */
+export interface SearchProblem<T> {
+  /** Returns true if the supplied state is a goal state. */
+  isGoal: (state: T) => boolean;
 
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const areaSquared = s * (s - a) * (s - b) * (s - c);
+  /** Returns an array of successor states for the supplied state. */
+  getChildren: (state: T) => T[];
 
-  // area might be NaN if the vertices are collinear (area close to 0)
-  if (areaSquared < 0) {
-    throw new Error('Computed area squared is negative – check your side lengths.');
-  }
-
-  return Math.sqrt(areaSquared);
+  /** The maximum depth that the search may travel. */
+  limit: number;
 }
-// Base & height
-const tri1 = areaBaseHeight(10, 4); // 20
 
-// Heron’s formula
-const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+// ──────────────────────────────────────────────────────────────────────
+// Depth‑limited search – iterative version
+// ──────────────────────────────────────────────────────────────────────
 
-console.log(`Base/Height area: ${tri1}`);
-console.log(`Heron area: ${tri2}`);
+/**
+ * Performs a depth‑limited DFS iteratively.
+ *
+ * @param start The initial state from which the search starts.
+ * @param problem An object containing `isGoal`, `getChildren` and `limit`.
+ * @returns The goal state if found, otherwise `null`.
+ */
+export function depthLimitedSearch<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T | null {
+  const { isGoal, getChildren, limit } = problem;
+
+  // Stack for DFS (push / pop from the end).
+  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const { state, depth } = stack.pop()!;
+
+    if (isGoal(state)) {
+      return state;            // Goal found.
+    }
+
+    // Don't expand deeper than the limit.
+    if (depth < limit) {
+      // Push children in reverse order if you care about visit order.
+      for (const child of getChildren(state)) {
+        stack.push({ state: child, depth: depth + 1 });
+      }
+    }
+  }
+
+  // Exhausted the stack without finding a goal.
+  return null;
+}
+export interface SearchNodeWithParent<T> {
+  state: T;
+  depth: number;
+  parent?: T;   // Optional – undefined for the root node.
+}
+
+export function depthLimitedSearchWithPath<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T[] | null {
+  const { isGoal, getChildren, limit } = problem;
+  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const current = stack.pop()!;
+    const { state, depth, parent } = current;
+
+    if (isGoal(state)) {
+      // Walk back up through parents to build the path.
+      const path: T[] = [state];
+      let p = parent;
+      while (p) {
+        path.push(p);
+        // No direct way to retrieve the parent of ‘p’ without a map.
+        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
+        // Here we simply return the goal state.
+        break;
+      }
+      return path.reverse();
+    }
+
+    if (depth < limit) {
+      for (const child of get
