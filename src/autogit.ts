@@ -1,38 +1,84 @@
-/**
- * Counting sort for an array of non‑negative integers.
- * @param arr - The array to sort.
- * @param maxVal - (Optional) Max value in the input. If omitted, it’s derived from the data.
- * @returns a new sorted array.
- */
-export function countingSort(arr: number[], maxVal?: number): number[] {
-  if (arr.length === 0) return [];
+// 1️⃣  Interfaces ----------------------------------------------------
+interface State {
+  // Unique identifier that helps us spot already‑visited nodes.
+  id: string | number;
 
-  // 1️⃣ Determine the maximum value (or use the supplied one)
-  const max = maxVal ?? Math.max(...arr);
+  // Return all children reachable from this state.
+  getChildren(): State[];
 
-  // 2️⃣ Frequency table
-  const count: number[] = new Array(max + 1).fill(0);
-  for (const num of arr) {
-    if (num < 0) throw new Error('Counting sort in this version expects non‑negative numbers');
-    count[num] += 1;
-  }
-
-  // 3️⃣ Build the result
-  const result: number[] = [];
-  for (let value = 0; value <= max; value++) {
-    const qty = count[value];
-    for (let i = 0; i < qty; i++) {
-      result.push(value);
-    }
-  }
-
-  return result;
+  // For demo purposes, we also expose a pretty‑print.
+  toString?(): string;
 }
-import { countingSort } from './countingSort';
 
-const data = [12, 4, 1, 12, 7, 7, 4, 4, 0];
-const sorted = countingSort(data);
-console.log(sorted); // [0, 1, 4, 4, 4, 7, 7, 12, 12]
-if (data.reduce((acc, cur, i) => acc && cur >= data[i - 1], true)) {
-  return data.slice();
+type GoalFn<T extends State> = (s: T) => boolean;
+
+// 2️⃣  The recursive DLS ----------------------------------------------
+function depthLimitedSearch<T extends State>(
+  node: T,
+  goal: GoalFn<T>,
+  limit: number,
+  visited = new Set<T | string | number>()
+): T | null {
+  // Depth exceeded → give up.
+  if (limit < 0) return null;
+
+  // Safe‑guard against cycles: if this node already saw, skip it.
+  if (visited.has(node.id)) return null;
+
+  // Mark the node as visited for this path.
+  visited.add(node.id);
+
+  // Goal found.
+  if (goal(node)) return node;
+
+  // Explore children.
+  for (const child of node.getChildren()) {
+    const result = depthLimitedSearch(child, goal, limit - 1, visited);
+    if (result !== null) return result;
+  }
+
+  // Nothing found → backtrack.
+  return null;
+}
+class GridCell implements State {
+  constructor(
+    public x: number,
+    public y: number,
+    public goal = false
+  ) {}
+
+  get id() { return `${this.x},${this.y}`; }
+
+  getChildren(): State[] {
+    const dirs = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ];
+    return dirs
+      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
+      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
+  }
+
+  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
+}
+
+// Simple goal: bottom‑right corner.
+const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
+
+const start = new GridCell(0, 0);
+const result = depthLimitedSearch(start, goalFn, 4);
+
+console.log(result?.toString() ?? 'No solution within depth 4');
+function iterativeDeepeningDFS<T extends State>(
+  start: T,
+  goal: GoalFn<T>,
+  maxLimit: number
+): T | null {
+  for (let l = 0; l <= maxLimit; l++) {
+    const res = depthLimitedSearch(start, goal, l);
+    if (res !== null) return res;      // Found a goal
+  }
+  return null;                        // Still no goal within maxLimit
 }
