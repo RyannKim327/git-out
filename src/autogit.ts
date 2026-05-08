@@ -1,139 +1,35 @@
-type Node = string | number;
-
-interface Edge {
-  to: Node;
-  weight: number;
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
 }
 
-type Graph = Map<Node, Edge[]>;         // adjacency list
-function buildGraph(edges: Array<[Node, Node, number]>): Graph {
-  const graph: Graph = new Map();
-  for (const [u, v, w] of edges) {
-    if (!graph.has(u)) graph.set(u, []);
-    graph.get(u)!.push({ to: v, weight: w });
-
-    // For an undirected graph, repeat the reverse edge:
-    // if (!graph.has(v)) graph.set(v, []);
-    // graph.get(v)!.push({ to: u, weight: w });
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
   }
-  return graph;
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
+  }
+
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
+
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
+  }
+
+  return Math.sqrt(areaSquared);
 }
-class MinHeap<T> {
-  private data: { key: number; value: T }[] = [];
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
 
-  insert(key: number, value: T) {
-    this.data.push({ key, value });
-    this.bubbleUp(this.data.length - 1);
-  }
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
 
-  extractMin(): { key: number; value: T } | undefined {
-    if (!this.data.length) return undefined;
-    const min = this.data[0];
-    const end = this.data.pop()!;
-    if (this.data.length) {
-      this.data[0] = end;
-      this.bubbleDown(0);
-    }
-    return min;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.data[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.data[parentIdx];
-      if (element.key >= parent.key) break;
-      this.data[idx] = parent;
-      this.data[parentIdx] = element;
-      idx = parentIdx;
-    }
-  }
-
-  private bubbleDown(idx: number) {
-    const length = this.data.length;
-    const element = this.data[idx];
-    while (true) {
-      let leftIdx = idx * 2 + 1;
-      let rightIdx = idx * 2 + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        const left = this.data[leftIdx];
-        if (left.key < element.key) swapIdx = leftIdx;
-      }
-      if (rightIdx < length) {
-        const right = this.data[rightIdx];
-        if (
-          (swapIdx === null && right.key < element.key) ||
-          (swapIdx !== null && right.key < this.data[swapIdx].key)
-        )
-          swapIdx = rightIdx;
-      }
-
-      if (swapIdx === null) break;
-      this.data[idx] = this.data[swapIdx];
-      this.data[swapIdx] = element;
-      idx = swapIdx;
-    }
-  }
-
-  get size() { return this.data.length; }
-}
-/**
- * Computes shortest-path distances from `source` to all reachable nodes.
- *
- * @param graph  Adjacency list of the graph
- * @param source The starting vertex
- * @returns Map from each vertex to its shortest distance from the source
- */
-function dijkstra(graph: Graph, source: Node): Map<Node, number> {
-  const dist = new Map<Node, number>();
-  const heap = new MinHeap<Node>();
-
-  // initialise: distance to source is 0, all others are +∞
-  for (const node of graph.keys()) {
-    const initial = node === source ? 0 : Infinity;
-    dist.set(node, initial);
-    heap.insert(initial, node);
-  }
-
-  while (heap.size > 0) {
-    const { key: d, value: u } = heap.extractMin()!;
-    // Skip entries that are stale because a shorter path was already processed
-    if (d > dist.get(u)!) continue;
-
-    for (const edge of graph.get(u)!) {
-      const alt = d + edge.weight;
-      if (alt < dist.get(edge.to)!) {
-        dist.set(edge.to, alt);
-        heap.insert(alt, edge.to);
-      }
-    }
-  }
-
-  return dist;
-}
-const edges: Array<[Node, Node, number]> = [
-  ['A', 'B', 5],
-  ['A', 'C', 2],
-  ['B', 'C', 1],
-  ['B', 'D', 2],
-  ['C', 'D', 3],
-  ['C', 'E', 1],
-  ['D', 'E', 2],
-  ['D', 'F', 1],
-  ['E', 'F', 4]
-];
-
-const graph = buildGraph(edges);
-
-const distances = dijkstra(graph, 'A');
-
-for (const node of graph.keys()) {
-  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
-}
-Distance from A to A: 0
-Distance from A to B: 4
-Distance from A to C: 2
-Distance from A to D: 5
-
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
