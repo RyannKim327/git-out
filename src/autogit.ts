@@ -1,96 +1,98 @@
-/* ---------- 1️⃣  Types & helpers ------------------------------------ */
+/**
+ * Comparator signature: (a, b) => boolean
+ * Should return true if `a` has higher priority than `b`
+ * (i.e. `a` should come *before* `b` in the heap order).
+ */
+type Comparator<T> = (a: T, b: T) => boolean;
 
-type Edge = {
-  /** source vertex */
-  u: number;
-  /** destination vertex */
-  v: number;
-  /** edge weight */
-  w: number;
-};
+export class PriorityQueue<T> {
+  /** Encoded binary‑heap */
+  private items: T[] = [];
 
-interface Result {
-  /** distance from the source to every vertex */
-  dist: number[];
-  /** immediately‑prev vertex on the shortest path, or null if unreachable */
-  prev: (number | null)[];
-  /** did we spot a negative‑weight cycle? */
-  hasNegativeCycle: boolean;
-}
+  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
 
-/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+  /* ---------- Properties ---------- */
 
-function bellmanFord(
-  vertexCount: number,
-  edges: Edge[],
-  source: number
-): Result {
-  const dist = new Array<number>(vertexCount).fill(Infinity);
-  const prev = new Array<number | null>(vertexCount).fill(null);
+  get size(): number { return this.items.length; }
+  get isEmpty(): boolean { return this.items.length === 0; }
 
-  dist[source] = 0;
+  /* ---------- Queries ---------- */
 
-  // 1️⃣ Relaxes every edge V‑1 times
-  for (let iter = 0; iter < vertexCount - 1; ++iter) {
-    let updated = false;
+  peek(): T | undefined { return this.items[0]; }
 
-    for (const { u, v, w } of edges) {
-      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        prev[v] = u;
-        updated = true;
+  /* ---------- Mutations ---------- */
+
+  push(item: T): void {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (this.isEmpty) return undefined;
+
+    const top = this.items[0];
+    const last = this.items.pop()!; // array isn't empty
+
+    if (!this.isEmpty) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+
+    return top;
+  }
+
+  /* ---------- Internals ---------- */
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (this.comparator(this.items[idx], this.items[parentIdx])) {
+        this.swap(idx, parentIdx);
+        idx = parentIdx;
+      } else {
+        break;
       }
     }
-
-    // Stop early if nothing changed
-    if (!updated) break;
   }
 
-  // 2️⃣ Detect negative‑weight cycles:
-  let hasNegativeCycle = false;
-  for (const { u, v, w } of edges) {
-    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
-      hasNegativeCycle = true;
-      break;
+  private bubbleDown(idx: number): void {
+    const length = this.items.length;
+    while (true) {
+      const left = idx * 2 + 1;
+      const right = left + 1;
+      let smallest = idx;
+
+      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
+        smallest = left;
+      }
+      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
+        smallest = right;
+      }
+
+      if (smallest !== idx) {
+        this.swap(idx, smallest);
+        idx = smallest;
+      } else {
+        break;
+      }
     }
   }
 
-  return { dist, prev, hasNegativeCycle };
-}
-
-/* ---------- 3️⃣  Example usage ------------------------------------ */
-
-const edges: Edge[] = [
-  { u: 0, v: 1, w: 4 },
-  { u: 0, v: 2, w: 5 },
-  { u: 1, v: 2, w: -3 },
-  { u: 1, v: 3, w: 2 },
-  { u: 2, v: 3, w: 4 },
-  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
-];
-
-const vertexCount = 4;
-const source = 0;
-
-const result = bellmanFord(vertexCount, edges, source);
-
-console.log('Distances:', result.dist);
-console.log('Prev:' , result.prev);
-console.log(
-  'Negative cycle detected:',
-  result.hasNegativeCycle ? 'Yes' : 'No'
-);
-
-// If you want to reconstruct a path to a target vertex:
-function reconstructPath(prev: (number | null)[], target: number) {
-  const path: number[] = [];
-  let current: number | null = target;
-
-  while (current !== null) {
-    path.unshift(current);
-    current = prev[current];
+  private swap(i: number, j: number): void {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
   }
-  return path;
+}
+const maxHeap = new PriorityQueue<number>((a, b) => a > b);
+interface Task {
+  priority: number;     // smaller number → higher priority
+  description: string;
 }
 
-console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
+const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
+
+[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
+
+while (!pq.isEmpty) {
+  console.log(pq.pop()); // prints: 1, 3, 5, 8
+}
