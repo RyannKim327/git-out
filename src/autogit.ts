@@ -1,71 +1,30 @@
-/**
- * Build the longest–prefix‑suffix (LPS) array for the pattern.
- *
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- *           which is also a suffix of that substring.
- * Complexity: O(m), m = pattern.length
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps = new Array<number>(m).fill(0);
-  let length = 0;               // length of the previous longest prefix suffix
-  let i = 1;
+// Generic helper that works for any type that supports the < operator
+function isSortedAscending<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
+  // If a comparator isn’t supplied, fall back to the default "<" | ">" comparison.
+  // This works for numbers, strings, Dates, etc.
+  const cmp = comparator ?? ((a: any, b: any) => a < b);
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous candidate
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+  // Walk through the array once and bail out on the first violation.
+  for (let i = 1; i < arr.length; i++) {
+    // cmp(a, b) should be true for an ascending array.
+    // For numbers, that means a < b; you could allow equality by `%=` or `<=`.
+    if (!cmp(arr[i-1], arr[i])) {
+      // The pair is out of order – the array isn’t sorted.
+      return false;
     }
   }
-
-  return lps;
+  return true;          // All pairs were in the correct order.
 }
+const nums = [1, 3, 3, 7, 12];
+console.log(isSortedAscending(nums));      // true
 
-/**
- * KMP search: return all start positions where pattern occurs in text.
- * Complexity: O(n + m), n = text.length, m = pattern.length
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const lps = buildLPS(pattern);
-
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < n) {
-    if (pattern[j] === text[i]) {
-      i++;
-      j++;
-    }
-
-    if (j === m) {
-      // full match found – record start index
-      positions.push(i - j);
-      j = lps[j - 1]; // allow for overlapping matches
-    } else if (i < n && pattern[j] !== text[i]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
-  }
-
-  return positions;
+const people = [
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 27 },
+];
+console.log(isSortedAscending(people, (x, y) => x.age < y.age)); // false
+function isSortedCompare<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
+  const sorted = [...arr].sort((a,b)=> (comparator ? (comparator(a,b)?-1:1) : a < b ? -1 : 1));
+  return JSON.stringify(sorted) === JSON.stringify(arr);
 }
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
-
-const occ = kmpSearch(txt, pat);
-console.log(occ); // → [10]
+const isSorted = (a: number[]) => a.every((v, i, l) => i === 0 || l[i-1] <= v);
