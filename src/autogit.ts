@@ -1,84 +1,73 @@
-// 1️⃣  Interfaces ----------------------------------------------------
-interface State {
-  // Unique identifier that helps us spot already‑visited nodes.
-  id: string | number;
-
-  // Return all children reachable from this state.
-  getChildren(): State[];
-
-  // For demo purposes, we also expose a pretty‑print.
-  toString?(): string;
+/* 1️⃣  A node in a graph  */
+interface Node<T = unknown> {
+  /* Something that identifies the node (e.g. a string key) */
+  id: string;
+  /* The value that the node holds – may be anything you need */
+  value: T;
 }
 
-type GoalFn<T extends State> = (s: T) => boolean;
+/* 2️⃣  How the graph is stored  */
+type AdjacencyList<T = unknown> = Record<string, Node<T>[]>;
+/**
+ * Run a breadth‑first search on a graph until the target is found *or*
+ * the specified maximum depth is reached.
+ *
+ * @param startId     – ID of the node you start from
+ * @param targetId    – ID of the node you’re looking for
+ * @param graph       – adjacency list representing the graph
+ * @param maxDepth    – maximum breadth level to explore (0 means only the start node)
+ * @returns            – distance (depth) from start to target, or -1 if not found within limit
+ */
+export function breadthLimitedBFS<T>(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number {
+  // Edge‑case: “start” may already be the target.
+  if (startId === targetId) return 0;
+  if (maxDepth < 1) return -1; // cannot go further than the start node.
 
-// 2️⃣  The recursive DLS ----------------------------------------------
-function depthLimitedSearch<T extends State>(
-  node: T,
-  goal: GoalFn<T>,
-  limit: number,
-  visited = new Set<T | string | number>()
-): T | null {
-  // Depth exceeded → give up.
-  if (limit < 0) return null;
+  // 3️⃣  Classic BFS ingredients
+  const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
+  const visited = new Set<string>([startId]);
 
-  // Safe‑guard against cycles: if this node already saw, skip it.
-  if (visited.has(node.id)) return null;
+  while (queue.length) {
+    const { id, depth } = queue.shift()!;
 
-  // Mark the node as visited for this path.
-  visited.add(node.id);
+    // Stop expanding beyond the user‑supplied depth limit.
+    if (depth === maxDepth) continue;
 
-  // Goal found.
-  if (goal(node)) return node;
+    const neighbors = graph[id] ?? [];
+    for (const neighbor of neighbors) {
+      if (visited.has(neighbor.id)) continue;
+      if (neighbor.id === targetId) return depth + 1; // found
 
-  // Explore children.
-  for (const child of node.getChildren()) {
-    const result = depthLimitedSearch(child, goal, limit - 1, visited);
-    if (result !== null) return result;
+      visited.add(neighbor.id);
+      queue.push({ id: neighbor.id, depth: depth + 1 });
+    }
   }
 
-  // Nothing found → backtrack.
-  return null;
+  // Not found within the depth bound.
+  return -1;
 }
-class GridCell implements State {
-  constructor(
-    public x: number,
-    public y: number,
-    public goal = false
-  ) {}
+// Sample graph: a small directed graph
+const graph: AdjacencyList<number> = {
+  A: [{ id: 'B', value: 2 }, { id: 'C', value: 3 }],
+  B: [{ id: 'D', value: 4 }],
+  C: [{ id: 'D', value: 4 }, { id: 'E', value: 5 }],
+  D: [],
+  E: [{ id: 'F', value: 6 }],
+  F: []
+};
 
-  get id() { return `${this.x},${this.y}`; }
-
-  getChildren(): State[] {
-    const dirs = [
-      [0, 1],
-      [1, 0],
-      [0, -1],
-      [-1, 0],
-    ];
-    return dirs
-      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
-      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
-  }
-
-  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
-}
-
-// Simple goal: bottom‑right corner.
-const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
-
-const start = new GridCell(0, 0);
-const result = depthLimitedSearch(start, goalFn, 4);
-
-console.log(result?.toString() ?? 'No solution within depth 4');
-function iterativeDeepeningDFS<T extends State>(
-  start: T,
-  goal: GoalFn<T>,
-  maxLimit: number
-): T | null {
-  for (let l = 0; l <= maxLimit; l++) {
-    const res = depthLimitedSearch(start, goal, l);
-    if (res !== null) return res;      // Found a goal
-  }
-  return null;                        // Still no goal within maxLimit
-}
+const distance = breadthLimitedBFS('A', 'F', graph, 2);
+console.log(distance); // prints 3? Actually depth 3 would exceed maxDepth 2, so it returns -1
+// try a larger depth
+console.log(breadthLimitedBFS('A', 'F', graph, 3)); // prints 3 (A→C→E→F)
+breadthLimitedBFS(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number
