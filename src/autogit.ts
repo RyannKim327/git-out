@@ -1,34 +1,34 @@
-// fetch-posts.ts
-import axios, { AxiosResponse } from 'axios';
-
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+// One‑way (singly) list node
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
+function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-async function fetchPosts(): Promise<Post[]> {
-  const url = 'https://jsonplaceholder.typicode.com/posts';
-  const response: AxiosResponse<Post[]> = await axios.get(url);
-  return response.data;
-}
-
-async function main() {
-  try {
-    const posts = await fetchPosts();
-    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
-  } catch (err) {
-    console.error('Failed to fetch posts:', err);
+  while (curr) {
+    const next = curr.next;   // keep the next node
+    curr.next = prev;         // reverse the link
+    prev = curr;              // advance prev
+    curr = next;              // advance curr
   }
+
+  return prev;                // new head of the reversed list
 }
+function reverseRec<T>(
+  node: ListNode<T> | null,
+  prev: ListNode<T> | null = null
+): ListNode<T> | null {
+  if (!node) return prev;      // end reached – prev is the new head
 
-main();
-# 1️⃣  Install dependencies
-npm install axios
+  const next = node.next;      // hold next
+  node.next = prev;            // reverse pointer
+  return reverseRec(next, node); // recurse
+}
+// 1 → 2 → 3 → null
+let head = new ListNode(1);
+head.next = new ListNode(2, new ListNode(3));
 
-# 2️⃣  Compile to JavaScript
-tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
+head = reverseLinkedList(head);
 
-# 3️⃣  Execute
-node fetch-posts.js
+// head now points to 3 → 2 → 1 → null
