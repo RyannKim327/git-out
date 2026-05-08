@@ -1,38 +1,34 @@
-// A minimal Node interface for a singly–linked list
-interface ListNode<T> {
-  value: T;
-  next: ListNode<T> | null;
+// fetch-posts.ts
+import axios, { AxiosResponse } from 'axios';
+
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-/**
- * Detects whether the list rooted at `head` contains a cycle.
- * @returns true if a cycle is found, otherwise false.
- */
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // ∅ → no nodes → no cycle
-  if (!head) return false;
+async function fetchPosts(): Promise<Post[]> {
+  const url = 'https://jsonplaceholder.typicode.com/posts';
+  const response: AxiosResponse<Post[]> = await axios.get(url);
+  return response.data;
+}
 
-  let slow: ListNode<T> | null = head;      // moves 1 step per loop
-  let fast: ListNode<T> | null = head;      // moves 2 steps per loop
-
-  while (fast && fast.next) {
-    slow = slow!.next;          // safe–because slow starts at head
-    fast = fast.next.next;      // fast may skip over a null
-    if (slow === fast) return true;   // they met → cycle
+async function main() {
+  try {
+    const posts = await fetchPosts();
+    posts.forEach((p) => console.log(`[${p.id}] ${p.title}`));
+  } catch (err) {
+    console.error('Failed to fetch posts:', err);
   }
-
-  return false;                 // fast reached the end → no cycle
 }
-// Building a list: 1 → 2 → 3 → 4 → 5 → (back to 3)
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-node5.next = node3;   // close the loop
 
-console.log(hasCycle(node1)); // → true
+main();
+# 1️⃣  Install dependencies
+npm install axios
 
-// Remove the loop to confirm the detector sees no cycle
-node5.next = null;
-console.log(hasCycle(node1)); // → false
+# 2️⃣  Compile to JavaScript
+tsc fetch-posts.ts  # or use ts-node to avoid compiling a separate step
+
+# 3️⃣  Execute
+node fetch-posts.js
