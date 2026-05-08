@@ -1,10 +1,27 @@
-// 1. `includes` – ES6 and newer
-const myString = "Hello, TypeScript!";
-const hasSub = myString.includes("TypeScript"); // true
+function stringLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
+  }
+  return count;
+}
+function stringLength(str: string): number {
+  let index = 0;
+  while (true) {
+    // if the index is beyond the end, we’re done
+    if (str.charAt(index) === '') break;
+    index++;
+  }
+  return index;
+}
+function stringLength(str: string): number {
+  return str === '' ? 0 : 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  let count = 0;
+  [...str].forEach(() => count++);
+  return count;
+}
+const msg = 'Hello 🌍!';
 
-// 2. `indexOf` – works everywhere
-const hasSubAlt = myString.indexOf("TypeScript") !== -1; // also true
-
-// 3. Regular expression (useful for case‑insensitive or pattern matching)
-const hasRegex = /typescript/i.test(myString); // true because /i makes it case‑insensitive
-const hasIgnoreCase = myString.toLowerCase().includes("typescript");
+console.log(stringLength(msg)); // 8  (H,e,l,l,o,space,🌍,!)
