@@ -1,22 +1,98 @@
-/**
- * Return true if n is prime, false otherwise.
- *
- * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
- * For bigger integers you’d need BigInt and, better yet, a probabilistic test
- * (Miller‑Rabin, etc.).
- */
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
+// ──────────────────────────────────────────────────────────────────────
+// Utility types
+// ──────────────────────────────────────────────────────────────────────
 
-  // From here we only need to test numbers of the form 6k ± 1
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 5; i <= limit; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-  return true;
+/**
+ * A generic search node that holds a state and the depth of that state in the search tree.
+ */
+interface SearchNode<T> {
+  state: T;
+  depth: number;
 }
-console.log(isPrime(11));          // true
-console.log(isPrime(12));          // false
-console.log(isPrime(1_000_003));   // true (1 M+‑prime)
+
+/**
+ * The contract that the caller must satisfy in order to perform a search.
+ */
+export interface SearchProblem<T> {
+  /** Returns true if the supplied state is a goal state. */
+  isGoal: (state: T) => boolean;
+
+  /** Returns an array of successor states for the supplied state. */
+  getChildren: (state: T) => T[];
+
+  /** The maximum depth that the search may travel. */
+  limit: number;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Depth‑limited search – iterative version
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Performs a depth‑limited DFS iteratively.
+ *
+ * @param start The initial state from which the search starts.
+ * @param problem An object containing `isGoal`, `getChildren` and `limit`.
+ * @returns The goal state if found, otherwise `null`.
+ */
+export function depthLimitedSearch<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T | null {
+  const { isGoal, getChildren, limit } = problem;
+
+  // Stack for DFS (push / pop from the end).
+  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const { state, depth } = stack.pop()!;
+
+    if (isGoal(state)) {
+      return state;            // Goal found.
+    }
+
+    // Don't expand deeper than the limit.
+    if (depth < limit) {
+      // Push children in reverse order if you care about visit order.
+      for (const child of getChildren(state)) {
+        stack.push({ state: child, depth: depth + 1 });
+      }
+    }
+  }
+
+  // Exhausted the stack without finding a goal.
+  return null;
+}
+export interface SearchNodeWithParent<T> {
+  state: T;
+  depth: number;
+  parent?: T;   // Optional – undefined for the root node.
+}
+
+export function depthLimitedSearchWithPath<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T[] | null {
+  const { isGoal, getChildren, limit } = problem;
+  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const current = stack.pop()!;
+    const { state, depth, parent } = current;
+
+    if (isGoal(state)) {
+      // Walk back up through parents to build the path.
+      const path: T[] = [state];
+      let p = parent;
+      while (p) {
+        path.push(p);
+        // No direct way to retrieve the parent of ‘p’ without a map.
+        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
+        // Here we simply return the goal state.
+        break;
+      }
+      return path.reverse();
+    }
+
+    if (depth < limit) {
+      for (const child of get
