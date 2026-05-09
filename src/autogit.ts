@@ -1,38 +1,64 @@
-/**
- * Counting sort for an array of non‑negative integers.
- * @param arr - The array to sort.
- * @param maxVal - (Optional) Max value in the input. If omitted, it’s derived from the data.
- * @returns a new sorted array.
- */
-export function countingSort(arr: number[], maxVal?: number): number[] {
-  if (arr.length === 0) return [];
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
+}
+const foo = [1, 2, 3, 4];
+const bar = [3, 4, 5, 6];
+console.log(intersection(foo, bar)); // [3, 4]
+function intersectionSorted<T>(a: T[], b: T[]): T[] {
+  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
+  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
+  const res: T[] = [];
+  let i = 0, j = 0;
 
-  // 1️⃣ Determine the maximum value (or use the supplied one)
-  const max = maxVal ?? Math.max(...arr);
-
-  // 2️⃣ Frequency table
-  const count: number[] = new Array(max + 1).fill(0);
-  for (const num of arr) {
-    if (num < 0) throw new Error('Counting sort in this version expects non‑negative numbers');
-    count[num] += 1;
-  }
-
-  // 3️⃣ Build the result
-  const result: number[] = [];
-  for (let value = 0; value <= max; value++) {
-    const qty = count[value];
-    for (let i = 0; i < qty; i++) {
-      result.push(value);
+  while (i < sortedA.length && j < sortedB.length) {
+    if (sortedA[i] === sortedB[j]) {
+      res.push(sortedA[i]); i++; j++;
+    } else if (sortedA[i] < sortedB[j]) {
+      i++;
+    } else {
+      j++;
     }
   }
-
-  return result;
+  return res;
 }
-import { countingSort } from './countingSort';
+function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const seen = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
+function intersectionBy<T, K>(
+  a: T[],
+  b: T[],
+  keyFn: (item: T) => K
+): T[] {
+  const setB = new Set(b.map(keyFn));
+  return a.filter(x => setB.has(keyFn(x)));
+}
+const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
+const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
 
-const data = [12, 4, 1, 12, 7, 7, 4, 4, 0];
-const sorted = countingSort(data);
-console.log(sorted); // [0, 1, 4, 4, 4, 7, 7, 12, 12]
-if (data.reduce((acc, cur, i) => acc && cur >= data[i - 1], true)) {
-  return data.slice();
+console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
+const common = a.filter(v => b.includes(v));
+type KeyFn<T, K> = (item: T) => K;
+
+// Fastest for primitives
+export function intersection<T>(a: T[], b: T[]): T[] {
+  const set = new Set(b);
+  return a.filter(x => set.has(x));
+}
+
+// Preserve order, unique results
+export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
+
+// For objects or custom equality
+export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
+  const set = new Set(b.map(keyFn));
+  return a.filter(x => set.has(keyFn(x)));
 }
