@@ -1,49 +1,64 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array.
- * If all numbers are negative, the result is the largest (least negative) number.
+ * A directed graph represented by an adjacency list.
+ * Each node is identified by a string (you can swap to number / symbol if you want).
  */
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) throw new Error('Array must contain at least one element');
+type Graph = Record<string, string[]>;
 
-    let currentSum = arr[0];
-    let bestSum = arr[0];
+/**
+ * Returns an array of nodes in a topological order.
+ *
+ * Throws if the graph contains a cycle (i.e. cannot be sorted).
+ */
+export function topologicalSort(graph: Graph): string[] {
+  // 1. Compute indegree for every node.
+  const indegree: Record<string, number> = {};
+  const nodes: string[] = Object.keys(graph);
 
-    // We start from index 1 because the first element was already handled
-    for (let i = 1; i < arr.length; i++) {
-        // Either extend the previous sub‑array or start anew at arr[i]
-        currentSum = Math.max(arr[i], currentSum + arr[i]);
+  nodes.forEach(node => (indegree[node] = 0));
 
-        // Update global best if we found a better one
-        bestSum = Math.max(bestSum, currentSum);
-    }
+  nodes.forEach(node =>
+    graph[node].forEach(neighbor => {
+      if (indegree[neighbor] === undefined) {
+        indegree[neighbor] = 0; // in case a node has no outgoing edges but appears as a target
+      }
+      indegree[neighbor] += 1;
+    })
+  );
 
-    return bestSum;
+  // 2. Start with all nodes that have indegree 0.
+  const queue: string[] = nodes.filter(node => indegree[node] === 0);
+  const order: string[] = [];
+
+  // 3. Repeatedly take a node out of the queue,
+  //    append it to order, and subtract 1 from
+  //    the indegree of each of its neighbours.
+  while (queue.length > 0) {
+    const current = queue.shift() as string; // safe because we know queue isn't empty
+    order.push(current);
+
+    graph[current].forEach(next => {
+      indegree[next] -= 1;
+      if (indegree[next] === 0) {
+        queue.push(next);
+      }
+    });
+  }
+
+  // 4. If we were able to visit every node, the graph is a DAG.
+  if (order.length !== Object.keys(indegree).length) {
+    throw new Error('Graph has at least one cycle – topological sort impossible');
+  }
+
+  return order;
 }
-const data = [−2, −3, 4, −1, −2, 1, 5, −3];
-console.log(maxSubarraySum(data)); // 7
+const sampleGraph: Graph = {
+  a: ['b', 'c'],
+  b: ['d'],
+  c: ['d'],
+  d: [],          // d has no outgoing edges
+  e: ['a', 'f'],  // e is another root
+  f: []
+};
 
-// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
-function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
-    let currentSum = arr[0];
-    let bestSum = arr[0];
-    let tempStart = 0;
-    let bestStart = 0;
-    let bestEnd = 0;
-
-    for (let i = 1; i < arr.length; i++) {
-        if (currentSum + arr[i] >= arr[i]) {
-            currentSum += arr[i];
-        } else {
-            currentSum = arr[i];
-            tempStart = i;
-        }
-
-        if (currentSum > bestSum) {
-            bestSum = currentSum;
-            bestStart = tempStart;
-            bestEnd = i;
-        }
-    }
-
-    return { sum: bestSum, start: bestStart, end: bestEnd };
-}
+console.log(topologicalSort(sampleGraph));
+// → [ 'e', 'a', 'b', 'c', 'd', 'f' ]  (one valid topological ordering)
