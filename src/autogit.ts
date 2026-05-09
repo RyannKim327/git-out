@@ -1,64 +1,96 @@
-/**
- * A directed graph represented by an adjacency list.
- * Each node is identified by a string (you can swap to number / symbol if you want).
- */
-type Graph = Record<string, string[]>;
+/* ---------- 1️⃣  Types & helpers ------------------------------------ */
 
-/**
- * Returns an array of nodes in a topological order.
- *
- * Throws if the graph contains a cycle (i.e. cannot be sorted).
- */
-export function topologicalSort(graph: Graph): string[] {
-  // 1. Compute indegree for every node.
-  const indegree: Record<string, number> = {};
-  const nodes: string[] = Object.keys(graph);
-
-  nodes.forEach(node => (indegree[node] = 0));
-
-  nodes.forEach(node =>
-    graph[node].forEach(neighbor => {
-      if (indegree[neighbor] === undefined) {
-        indegree[neighbor] = 0; // in case a node has no outgoing edges but appears as a target
-      }
-      indegree[neighbor] += 1;
-    })
-  );
-
-  // 2. Start with all nodes that have indegree 0.
-  const queue: string[] = nodes.filter(node => indegree[node] === 0);
-  const order: string[] = [];
-
-  // 3. Repeatedly take a node out of the queue,
-  //    append it to order, and subtract 1 from
-  //    the indegree of each of its neighbours.
-  while (queue.length > 0) {
-    const current = queue.shift() as string; // safe because we know queue isn't empty
-    order.push(current);
-
-    graph[current].forEach(next => {
-      indegree[next] -= 1;
-      if (indegree[next] === 0) {
-        queue.push(next);
-      }
-    });
-  }
-
-  // 4. If we were able to visit every node, the graph is a DAG.
-  if (order.length !== Object.keys(indegree).length) {
-    throw new Error('Graph has at least one cycle – topological sort impossible');
-  }
-
-  return order;
-}
-const sampleGraph: Graph = {
-  a: ['b', 'c'],
-  b: ['d'],
-  c: ['d'],
-  d: [],          // d has no outgoing edges
-  e: ['a', 'f'],  // e is another root
-  f: []
+type Edge = {
+  /** source vertex */
+  u: number;
+  /** destination vertex */
+  v: number;
+  /** edge weight */
+  w: number;
 };
 
-console.log(topologicalSort(sampleGraph));
-// → [ 'e', 'a', 'b', 'c', 'd', 'f' ]  (one valid topological ordering)
+interface Result {
+  /** distance from the source to every vertex */
+  dist: number[];
+  /** immediately‑prev vertex on the shortest path, or null if unreachable */
+  prev: (number | null)[];
+  /** did we spot a negative‑weight cycle? */
+  hasNegativeCycle: boolean;
+}
+
+/* ---------- 2️⃣  Bellman‑Ford implementation ----------------------- */
+
+function bellmanFord(
+  vertexCount: number,
+  edges: Edge[],
+  source: number
+): Result {
+  const dist = new Array<number>(vertexCount).fill(Infinity);
+  const prev = new Array<number | null>(vertexCount).fill(null);
+
+  dist[source] = 0;
+
+  // 1️⃣ Relaxes every edge V‑1 times
+  for (let iter = 0; iter < vertexCount - 1; ++iter) {
+    let updated = false;
+
+    for (const { u, v, w } of edges) {
+      if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        prev[v] = u;
+        updated = true;
+      }
+    }
+
+    // Stop early if nothing changed
+    if (!updated) break;
+  }
+
+  // 2️⃣ Detect negative‑weight cycles:
+  let hasNegativeCycle = false;
+  for (const { u, v, w } of edges) {
+    if (dist[u] !== Infinity && dist[u] + w < dist[v]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, prev, hasNegativeCycle };
+}
+
+/* ---------- 3️⃣  Example usage ------------------------------------ */
+
+const edges: Edge[] = [
+  { u: 0, v: 1, w: 4 },
+  { u: 0, v: 2, w: 5 },
+  { u: 1, v: 2, w: -3 },
+  { u: 1, v: 3, w: 2 },
+  { u: 2, v: 3, w: 4 },
+  { u: 3, v: 1, w: -7 }, // Adding a negative cycle edge
+];
+
+const vertexCount = 4;
+const source = 0;
+
+const result = bellmanFord(vertexCount, edges, source);
+
+console.log('Distances:', result.dist);
+console.log('Prev:' , result.prev);
+console.log(
+  'Negative cycle detected:',
+  result.hasNegativeCycle ? 'Yes' : 'No'
+);
+
+// If you want to reconstruct a path to a target vertex:
+function reconstructPath(prev: (number | null)[], target: number) {
+  const path: number[] = [];
+  let current: number | null = target;
+
+  while (current !== null) {
+    path.unshift(current);
+    current = prev[current];
+  }
+  return path;
+}
+
+console.log('Path 0 → 3:', reconstructPath(result.prev, 3));
