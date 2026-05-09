@@ -1,64 +1,66 @@
-/**
- * A directed graph represented by an adjacency list.
- * Each node is identified by a string (you can swap to number / symbol if you want).
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Returns an array of nodes in a topological order.
- *
- * Throws if the graph contains a cycle (i.e. cannot be sorted).
- */
-export function topologicalSort(graph: Graph): string[] {
-  // 1. Compute indegree for every node.
-  const indegree: Record<string, number> = {};
-  const nodes: string[] = Object.keys(graph);
-
-  nodes.forEach(node => (indegree[node] = 0));
-
-  nodes.forEach(node =>
-    graph[node].forEach(neighbor => {
-      if (indegree[neighbor] === undefined) {
-        indegree[neighbor] = 0; // in case a node has no outgoing edges but appears as a target
-      }
-      indegree[neighbor] += 1;
-    })
-  );
-
-  // 2. Start with all nodes that have indegree 0.
-  const queue: string[] = nodes.filter(node => indegree[node] === 0);
-  const order: string[] = [];
-
-  // 3. Repeatedly take a node out of the queue,
-  //    append it to order, and subtract 1 from
-  //    the indegree of each of its neighbours.
-  while (queue.length > 0) {
-    const current = queue.shift() as string; // safe because we know queue isn't empty
-    order.push(current);
-
-    graph[current].forEach(next => {
-      indegree[next] -= 1;
-      if (indegree[next] === 0) {
-        queue.push(next);
-      }
-    });
-  }
-
-  // 4. If we were able to visit every node, the graph is a DAG.
-  if (order.length !== Object.keys(indegree).length) {
-    throw new Error('Graph has at least one cycle – topological sort impossible');
-  }
-
-  return order;
+// A standard binary‑tree node definition
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-const sampleGraph: Graph = {
-  a: ['b', 'c'],
-  b: ['d'],
-  c: ['d'],
-  d: [],          // d has no outgoing edges
-  e: ['a', 'f'],  // e is another root
-  f: []
-};
+0                     if root is null
+1                     if root has no children
+count(left) + count(right)   otherwise
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                    // Empty tree
 
-console.log(topologicalSort(sampleGraph));
-// → [ 'e', 'a', 'b', 'c', 'd', 'f' ]  (one valid topological ordering)
+  // No children → it’s a leaf!
+  if (!root.left && !root.right) return 1;
+
+  // Walk the two sub‑trees and add their leaf counts
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+const tree = new TreeNode(1,
+             new TreeNode(2, new TreeNode(4), null),
+             new TreeNode(3, null, new TreeNode(5))
+          );
+
+console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  let leafCount = 0;
+  const stack: (TreeNode<T> | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
+
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // push children onto stack; order doesn’t matter
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+
+  return leafCount;
+}
+function getLeafValues<T>(root: TreeNode<T> | null): T[] {
+  const leaves: T[] = [];
+
+  if (!root) return leaves;
+
+  const stack: (TreeNode<T> | null)[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
+
+    if (!node.left && !node.right) leaves.push(node.val);
+    else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+
+  return leaves;
+}
