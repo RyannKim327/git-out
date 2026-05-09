@@ -1,33 +1,78 @@
-// Node >=18 or any modern browser
-// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
-
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
-
-async function fetchPost(id = 1): Promise<Post> {
-  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
-
-  if (!res.ok) {
-    // Throwing includes the HTTP status for downstream handling
-    throw new Error(`Unexpected status ${res.status}`);
-  }
-
-  // Telling TS that the JSON shapes like our Post type
-  const data = await res.json() as Post;
-  return data;
+// ───────────────────── Graph Types ───────────────────────────────────────
+type NodeId = string | number;          // anything that can be compared with ===
+interface AdjList {
+  // nodeId -> array of neighbor nodeIds
+  [key: string]: NodeId[];
 }
 
-(async () => {
-  try {
-    const post = await fetchPost(42);  // change the ID if you like
-    console.log('🚀 Post fetched:');
-    console.log(`Title: ${post.title}`);
-    console.log(`Body: ${post.body.slice(0, 70)}…`);
-  } catch (err) {
-    console.error('❌ Fetch failed:', err);
+// ───────────────────── BFS Implementation ────────────────────────────────
+function bfs(
+  graph: AdjList,
+  start: NodeId,
+  visit: (node: NodeId) => void = () => {}
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
+
+  visited.add(start);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
+
+    visit(current);        // optional callback that may do whatever you want
+    order.push(current);
+
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        queue.push(neigh);
+      }
+    }
   }
-})();
+
+  return order;           // return traversal order if you need it
+}
+
+// ───────────────────── Example Usage ──────────────────────────────────────
+const exampleGraph: AdjList = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
+
+const traversal = bfs(exampleGraph, 'A');
+console.log('BFS order:', traversal);
+// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+
+// If you only care about distances from the start node:
+function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
+  const distances = new Map<NodeId, number>();
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+
+  visited.add(start);
+  distances.set(start, 0);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        distances.set(neigh, distances.get(current)! + 1);
+        queue.push(neigh);
+      }
+    }
+  }
+
+  return distances;
+}
+
+const dists = bfsDistances(exampleGraph, 'A');
+console.log('Distances from A:', Object.fromEntries(dists.entries()));
+// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
