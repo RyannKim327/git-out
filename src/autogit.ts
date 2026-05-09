@@ -1,76 +1,42 @@
-// ---------------------------------------------------
-// Queue implemented with a singly linked list
-// ---------------------------------------------------
-class Queue<T> {
-  // ------- internal node type -------
-  private static class Node<U> {
-    constructor(public value: U, public next?: Queue.Node<U>) {}
-  }
+/**
+ * Returns the largest prime factor of n.
+ *
+ * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
+ */
+export function largestPrimeFactor(n: number | bigint): number | bigint {
+    if (n <= 1) throw new Error('n must be > 1');
 
-  // ------- private fields -------
-  private head?: typeof Queue.Node<any>; // points to the first element
-  private tail?: typeof Queue.Node<any>; // points to the last element
-  private _size = 0;
+    // Work with BigInt for arbitrary precision
+    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
+    let maxFactor: bigint = 1n;
 
-  // ------- public methods -------
-
-  /** Insert a new element at the tail. */
-  enqueue(value: T): void {
-    const newNode = new Queue.Node(value);
-    if (!this.tail) {
-      // The queue is empty.
-      this.head = this.tail = newNode;
-    } else {
-      this.tail.next = newNode;
-      this.tail = newNode;
+    // Handle factor 2 separately
+    while (num % 2n === 0n) {
+        maxFactor = 2n;
+        num /= 2n;
     }
-    this._size++;
-  }
 
-  /** Remove and return the element at the head. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;          // empty queue
-    const removed = this.head.value;           // capture value
-    this.head = this.head.next;                // advance head
-    if (!this.head) this.tail = undefined;     // became empty
-    this._size--;
-    return removed;
-  }
+    // Now num is odd – we only need to check odd divisors
+    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
+        while (num % divisor === 0n) {
+            maxFactor = divisor;
+            num /= divisor;
+        }
+    }
 
-  /** Peek at the head without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
+    // If anything is left, it's a prime larger than any divisor we tried
+    if (num > 1n) maxFactor = num;
 
-  /** Number of items currently in the queue. */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  // Optional: allow `for..of` iteration over the queue
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next(): IteratorResult<T> {
-        if (!current) return { done: true, value: undefined };
-        const value = current.value;
-        current = current.next;
-        return { done: false, value };
-      },
-    };
-  }
+    // Return a native number if the input was a number and the result fits
+    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
+        return Number(maxFactor);
+    }
+    return maxFactor;
 }
-const q = new Queue<number>();
+console.log(largestPrimeFactor(28));          // 7
+console.log(largestPrimeFactor(91));          // 13
+console.log(largestPrimeFactor(600851475143));// 6857
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log([...q]); // [20, 30]
+// With a BigInt (e.g. a 100‑digit number)
+const huge = BigInt('123456789123456789123456789');
+console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
