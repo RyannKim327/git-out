@@ -1,128 +1,73 @@
-type Comparator<T> = (a: T, b: T) => number;
-
-interface BSTNode<T> {
-  value: T;
-  left: BSTNode<T> | null;
-  right: BSTNode<T> | null;
-}
-class BinarySearchTree<T> {
-  private root: BSTNode<T> | null = null;
-  private readonly compare: Comparator<T>;
-
-  constructor(compareFn: Comparator<T>) {
-    this.compare = compareFn;
-  }
-
-  /* ---------- Public API ---------- */
-
-  insert(value: T): void {
-    this.root = this._insert(this.root, value);
-  }
-
-  find(value: T): T | null {
-    const node = this._find(this.root, value);
-    return node ? node.value : null;
-  }
-
-  delete(value: T): void {
-    this.root = this._delete(this.root, value);
-  }
-
-  // In‑order walk: returns the keys sorted ascending
-  inorder(): T[] {
-    const out: T[] = [];
-    this._inorder(this.root, out);
-    return out;
-  }
-
-  // Optional helpers
-  preorder(): T[] { /* … */ }
-  postorder(): T[] { /* … */ }
-}
-private _insert(node: BSTNode<T> | null, value: T): BSTNode<T> {
-  if (!node) return { value, left: null, right: null };
-
-  const cmp = this.compare(value, node.value);
-  if (cmp < 0) {
-    node.left = this._insert(node.left, value);
-  } else if (cmp > 0) {
-    node.right = this._insert(node.right, value);
-  } // duplicate values are ignored
-
-  return node;
+// ── List node -----------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-private _find(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
-  if (!node) return null;
+// ── Intersection finder ------------------------------------
+function intersect<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
 
-  const cmp = this.compare(value, node.value);
-  if (cmp === 0) return node;
-  return cmp < 0 ? this._find(node.left, value) : this._find(node.right, value);
-}
-private _delete(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
-  if (!node) return null;
+  // 1. Count nodes in each list
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
 
-  const cmp = this.compare(value, node.value);
-  if (cmp < 0) {
-    node.left = this._delete(node.left, value);
-  } else if (cmp > 0) {
-    node.right = this._delete(node.right, value);
+  // 2. Make the heads point to the same distance from the end
+  let ptrA: ListNode<T> | null = headA;
+  let ptrB: ListNode<T> | null = headB;
+  if (lenA > lenB) {
+    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
   } else {
-    // node to delete found
-    if (!node.left) return node.right;          // only right child or none
-    if (!node.right) return node.left;          // only left child
-
-    // two children: find the in‑order successor (smallest on right)
-    const succ = this._minNode(node.right)!;
-    node.value = succ.value;                   // replace value
-    node.right = this._delete(node.right, succ.value); // delete successor
+    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
   }
-  return node;
-}
 
-private _minNode(node: BSTNode<T>): BSTNode<T> | null {
-  while (node.left) node = node.left;
-  return node;
-}
-private _inorder(node: BSTNode<T> | null, out: T[]): void {
-  if (!node) return;
-  this._inorder(node.left, out);
-  out.push(node.value);
-  this._inorder(node.right, out);
-}
-
-// You can add preorder/postorder in the same style if you need them.
-const compareNumbers = (a: number, b: number) => a - b;
-
-const bst = new BinarySearchTree<number>(compareNumbers);
-
-bst.insert(10);
-bst.insert(5);
-bst.insert(15);
-bst.insert(3);
-bst.insert(7);
-
-console.log("inorder:", bst.inorder());   // [3,5,7,10,15]
-console.log("find 7:", bst.find(7));      // 7
-console.log("find 99:", bst.find(99));    // null
-
-bst.delete(5);
-console.log("after delete 5:", bst.inorder()); // [3,7,10,15]
-*inorderIter(): Generator<T> {
-  const stack: BSTNode<T>[] = [];
-  let current = this.root;
-
-  while (stack.length || current) {
-    while (current) {
-      stack.push(current);
-      current = current.left!;
-    }
-
-    current = stack.pop()!;
-    yield current.value;
-    current = current.right!;
+  // 3. Move together until we hit the common node (by reference)
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA;
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
   }
+
+  return null;          // no intersection
 }
-for (const val of bst.inorderIter()) {
-  console.log(val);
+
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+  while (cur) {
+    ++len;
+    cur = cur.next;
+  }
+  return len;
+}
+// shared tail: 5 → 6
+const tail = new ListNode(5, new ListNode(6));
+
+// list A: 1 → 2 → 3 → (shared)
+const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
+
+// list B: 9 → (shared)
+const b = new ListNode(9, tail);
+
+const intersectNode = intersect(a, b);
+console.log(intersectNode?.val); // 5
+function intersectUsingSet<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;
+    cur = cur.next;
+  }
+  return null;
 }
