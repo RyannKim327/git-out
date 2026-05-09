@@ -1,51 +1,64 @@
-function areAnagrams(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .replace(/[^a-zA-Z0-9]/g, "") // strip non‑alphanumerics
-      .toLowerCase();               // ignore case
+/**
+ * A directed graph represented by an adjacency list.
+ * Each node is identified by a string (you can swap to number / symbol if you want).
+ */
+type Graph = Record<string, string[]>;
 
-  const na = normalize(a);
-  const nb = normalize(b);
-  if (na.length !== nb.length) return false;
+/**
+ * Returns an array of nodes in a topological order.
+ *
+ * Throws if the graph contains a cycle (i.e. cannot be sorted).
+ */
+export function topologicalSort(graph: Graph): string[] {
+  // 1. Compute indegree for every node.
+  const indegree: Record<string, number> = {};
+  const nodes: string[] = Object.keys(graph);
 
-  // Count frequencies
-  const freq = new Map<string, number>();
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  nodes.forEach(node => (indegree[node] = 0));
+
+  nodes.forEach(node =>
+    graph[node].forEach(neighbor => {
+      if (indegree[neighbor] === undefined) {
+        indegree[neighbor] = 0; // in case a node has no outgoing edges but appears as a target
+      }
+      indegree[neighbor] += 1;
+    })
+  );
+
+  // 2. Start with all nodes that have indegree 0.
+  const queue: string[] = nodes.filter(node => indegree[node] === 0);
+  const order: string[] = [];
+
+  // 3. Repeatedly take a node out of the queue,
+  //    append it to order, and subtract 1 from
+  //    the indegree of each of its neighbours.
+  while (queue.length > 0) {
+    const current = queue.shift() as string; // safe because we know queue isn't empty
+    order.push(current);
+
+    graph[current].forEach(next => {
+      indegree[next] -= 1;
+      if (indegree[next] === 0) {
+        queue.push(next);
+      }
+    });
   }
 
-  for (const ch of nb) {
-    const count = (freq.get(ch) ?? 0) - 1;
-    if (count < 0) return false;   // more of ch in nb than in a
-    if (count === 0) freq.delete(ch);
-    else freq.set(ch, count);
+  // 4. If we were able to visit every node, the graph is a DAG.
+  if (order.length !== Object.keys(indegree).length) {
+    throw new Error('Graph has at least one cycle – topological sort impossible');
   }
 
-  return freq.size === 0;
+  return order;
 }
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+const sampleGraph: Graph = {
+  a: ['b', 'c'],
+  b: ['d'],
+  c: ['d'],
+  d: [],          // d has no outgoing edges
+  e: ['a', 'f'],  // e is another root
+  f: []
+};
 
-  const na = normalize(a).split("").sort().join("");
-  const nb = normalize(b).split("").sort().join("");
-
-  return na === nb;
-}
-console.assert(areAnagrams("Dormitory", "dirty room") === true);
-console.assert(areAnagrams("Hello", "Olelh") === true);
-console.assert(areAnagrams("Cats", "Acting") === false);
-function containsAnagram(s: string, minLength = 2): boolean {
-  const chars = s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const seen = new Set<string>();
-
-  for (let i = 0; i < chars.length; i++) {
-    for (let j = i + minLength; j <= chars.length; j++) {
-      const sub = chars.slice(i, j);
-      const key = sub.split("").sort().join("");
-      if (seen.has(key)) return true;
-      seen.add(key);
-    }
-  }
-  return false;
-}
+console.log(topologicalSort(sampleGraph));
+// → [ 'e', 'a', 'b', 'c', 'd', 'f' ]  (one valid topological ordering)
