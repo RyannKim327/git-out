@@ -1,25 +1,45 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
-  }
-  return count;
+// 1. Basic list node definition
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-function countCharRegex(str: string, target: string): number {
-  // Escape special regex chars in the target
-  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const matches = str.match(new RegExp(escaped, 'g'));
-  return matches ? matches.length : 0;
-}
-function countCharSplit(str: string, target: string): number {
-  // Splitting on the target gives you one more element than the number of matches
-  return str.split(target).length - 1;
-}
-const s = 'hello world, hello universe!';
-console.log(countChar(s, 'l'));          // 3
-console.log(countCharRegex(s, 'l'));    // 3
-console.log(countCharSplit(s, 'l'));    // 3
 
-console.log(countChar(s, ' '));          // 3
-console.log(countCharRegex(s, ' '));    // 3
-console.log(countCharSplit(s, ' '));    // 3
+// 2. Utility: build a linked list from an array
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null;
+
+  const head = new ListNode(values[0]);
+  let current = head;
+  for (let i = 1; i < values.length; i++) {
+    current.next = new ListNode(values[i]);
+    current = current.next;
+  }
+  return head;
+}
+
+// 3. Find the middle node – fast/slow pointer
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {      // stop when fast can't advance two steps
+    slow = slow.next!;             // safe because previous check guarantees truthy
+    fast = fast.next.next!;
+  }
+
+  return slow;                     // slow is at the middle
+}
+
+// Demo
+const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
+const oddHead = buildList(arr);
+console.log(getMiddle(oddHead)?.val); // 3
+
+const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
+const evenHead = buildList(evenArr);
+console.log(getMiddle(evenHead)?.val); // 20
+while (fast && fast.next && fast.next.next) {
+  slow = slow.next!;
+  fast = fast.next.next!;
+}
