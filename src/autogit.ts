@@ -1,98 +1,73 @@
-// ──────────────────────────────────────────────────────────────────────
-// Utility types
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * A generic search node that holds a state and the depth of that state in the search tree.
- */
-interface SearchNode<T> {
-  state: T;
-  depth: number;
+// ── List node -----------------------------------------------
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-/**
- * The contract that the caller must satisfy in order to perform a search.
- */
-export interface SearchProblem<T> {
-  /** Returns true if the supplied state is a goal state. */
-  isGoal: (state: T) => boolean;
+// ── Intersection finder ------------------------------------
+function intersect<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  if (!headA || !headB) return null;
 
-  /** Returns an array of successor states for the supplied state. */
-  getChildren: (state: T) => T[];
+  // 1. Count nodes in each list
+  const lenA = getLength(headA);
+  const lenB = getLength(headB);
 
-  /** The maximum depth that the search may travel. */
-  limit: number;
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// Depth‑limited search – iterative version
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * Performs a depth‑limited DFS iteratively.
- *
- * @param start The initial state from which the search starts.
- * @param problem An object containing `isGoal`, `getChildren` and `limit`.
- * @returns The goal state if found, otherwise `null`.
- */
-export function depthLimitedSearch<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T | null {
-  const { isGoal, getChildren, limit } = problem;
-
-  // Stack for DFS (push / pop from the end).
-  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
-
-  while (stack.length) {
-    const { state, depth } = stack.pop()!;
-
-    if (isGoal(state)) {
-      return state;            // Goal found.
-    }
-
-    // Don't expand deeper than the limit.
-    if (depth < limit) {
-      // Push children in reverse order if you care about visit order.
-      for (const child of getChildren(state)) {
-        stack.push({ state: child, depth: depth + 1 });
-      }
-    }
+  // 2. Make the heads point to the same distance from the end
+  let ptrA: ListNode<T> | null = headA;
+  let ptrB: ListNode<T> | null = headB;
+  if (lenA > lenB) {
+    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
+  } else {
+    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
   }
 
-  // Exhausted the stack without finding a goal.
+  // 3. Move together until we hit the common node (by reference)
+  while (ptrA && ptrB) {
+    if (ptrA === ptrB) return ptrA;
+    ptrA = ptrA.next;
+    ptrB = ptrB.next;
+  }
+
+  return null;          // no intersection
+}
+
+function getLength<T>(head: ListNode<T> | null): number {
+  let len = 0;
+  let cur = head;
+  while (cur) {
+    ++len;
+    cur = cur.next;
+  }
+  return len;
+}
+// shared tail: 5 → 6
+const tail = new ListNode(5, new ListNode(6));
+
+// list A: 1 → 2 → 3 → (shared)
+const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
+
+// list B: 9 → (shared)
+const b = new ListNode(9, tail);
+
+const intersectNode = intersect(a, b);
+console.log(intersectNode?.val); // 5
+function intersectUsingSet<T>(
+  headA: ListNode<T> | null,
+  headB: ListNode<T> | null
+): ListNode<T> | null {
+  const seen = new Set<ListNode<T>>();
+  let cur = headA;
+  while (cur) {
+    seen.add(cur);
+    cur = cur.next;
+  }
+
+  cur = headB;
+  while (cur) {
+    if (seen.has(cur)) return cur;
+    cur = cur.next;
+  }
   return null;
 }
-export interface SearchNodeWithParent<T> {
-  state: T;
-  depth: number;
-  parent?: T;   // Optional – undefined for the root node.
-}
-
-export function depthLimitedSearchWithPath<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T[] | null {
-  const { isGoal, getChildren, limit } = problem;
-  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
-
-  while (stack.length) {
-    const current = stack.pop()!;
-    const { state, depth, parent } = current;
-
-    if (isGoal(state)) {
-      // Walk back up through parents to build the path.
-      const path: T[] = [state];
-      let p = parent;
-      while (p) {
-        path.push(p);
-        // No direct way to retrieve the parent of ‘p’ without a map.
-        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
-        // Here we simply return the goal state.
-        break;
-      }
-      return path.reverse();
-    }
-
-    if (depth < limit) {
-      for (const child of get
