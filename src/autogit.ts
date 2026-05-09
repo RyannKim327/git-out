@@ -1,50 +1,70 @@
+export interface TreeNode<T> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+
 /**
- * Returns n! for a positive integer n (or 0).
- * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
+ * Returns the diameter (max number of edges on any path)
+ * of a binary tree rooted at `root`.
  */
-export function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers');
+export function diameter<T>(root: TreeNode<T> | undefined): number {
+  let maxDia = 0;
+
+  function depth(node?: TreeNode<T>): number {
+    if (!node) return 0;
+    const left  = depth(node.left);
+    const right = depth(node.right);
+
+    // path that goes through this node
+    maxDia = Math.max(maxDia, left + right);
+
+    // height of this subtree
+    return Math.max(left, right) + 1;
   }
-  // 0! = 1, and the recursion base case covers that
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-console.log(factorialRecursive(5)); // 120
-console.log(factorialRecursive(0)); // 1
-export function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  depth(root);
+  return maxDia;
+}
+function makeTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //          \   / \
+  //           4 5   6
+  //              \
+  //               7
+  return {
+    val: 1,
+    left: { val: 2, right: { val: 4 } },
+    right: {
+      val: 3,
+      left: { val: 5, right: { val: 7 } },
+      right: { val: 6 }
+    }
+  };
+}
+
+console.log(diameter(makeTree())); // outputs 5
+export function diameterIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;
+  const stack: Array<{ node: TreeNode<T>; visited: boolean }> = [{ node: root, visited: false }];
+  const heights = new Map<TreeNode<T>, number>();
+  let maxDia = 0;
+
+  while (stack.length) {
+    const { node, visited } = stack.pop()!;
+    if (visited) {
+      const lh = heights.get(node.left) ?? 0;
+      const rh = heights.get(node.right) ?? 0;
+      maxDia = Math.max(maxDia, lh + rh);
+      heights.set(node, Math.max(lh, rh) + 1);
+    } else {
+      stack.push({ node, visited: true });
+      if (node.right) stack.push({ node: node.right, visited: false });
+      if (node.left)  stack.push({ node: node.left,  visited: false });
+    }
   }
-  return result;
-}
-export function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  let result = 1n; // BigInt literal
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
-  }
-  return result;
-}
-console.log(factorialBigInt(20).toString()); // "2432902008176640000"
-console.log(factorialBigInt(100).toString()); // 158‑digit number
-const memo = new Map<number, number | bigint>();
-
-export function factorialMemo(n: number, useBigInt = false): number | bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n <= 1) return useBigInt ? 1n : 1;
-
-  const key = n;
-  if (memo.has(key)) return memo.get(key)!;
-
-  const res = useBigInt
-    ? BigInt(n) * factorialMemo(n - 1, true)
-    : n * factorialMemo(n - 1, false);
-
-  memo.set(key, res);
-  return res;
+  return maxDia;
 }
