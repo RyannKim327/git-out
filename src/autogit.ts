@@ -1,68 +1,51 @@
-// ──────────────────────────────────────────────────────────────
-// 1️⃣  Imports & type definitions
-// ──────────────────────────────────────────────────────────────
-import fetch from 'node-fetch'; // npm i node-fetch@2
-// If you’re in a browser environment just drop the import line
-// and use the native `fetch` API.
+/**
+ * Radix sort for non‑negative integers.
+ * @param arr  –   array of numbers to sort
+ * @returns    –   a new sorted array (the input is unchanged)
+ */
+export function radixSort(arr: number[]): number[] {
+  if (!Array.isArray(arr) || arr.length === 0) return [];
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+  // 1. Find the maximum value to know how many digits we need
+  const max = Math.max(...arr);
+  const base = 10;                     // decimal digits
+  const maxDigits = Math.floor(Math.log10(max)) + 1;
 
-// ──────────────────────────────────────────────────────────────
-// 2️⃣  The async loader
-// ──────────────────────────────────────────────────────────────
-async function fetchPosts(apiUrl: string): Promise<Post[]> {
-  // A quick sanity check – you don’t want to send an empty string.
-  if (!apiUrl.trim()) {
-    throw new Error('API URL cannot be empty');
+  // 2. Work on a copy so we don't mutate the original array
+  let output = [...arr];
+  let digitPlace = 1;   // 1, 10, 100, …
+
+  for (let d = 0; d < maxDigits; d++) {
+    // 3. Counting sort for the current digit
+    const count = new Array(base).fill(0);
+
+    // Count occurrences of each digit
+    for (const num of output) {
+      const digit = Math.floor((num / digitPlace) % base);
+      count[digit]++;
+    }
+
+    // Make count[i] contain the actual position of this digit
+    for (let i = 1; i < base; i++) {
+      count[i] += count[i - 1];
+    }
+
+    // 4. Build the output array from the end to maintain stability
+    const temp = new Array(output.length);
+    for (let i = output.length - 1; i >= 0; i--) {
+      const num = output[i];
+      const digit = Math.floor((num / digitPlace) % base);
+      const idx = --count[digit];
+      temp[idx] = num;
+    }
+
+    // After moving all numbers, we’ll sort by the next digit
+    output = temp;
+    digitPlace *= base;
   }
 
-  const res = await fetch(apiUrl, {
-    // JSON is the common output. Adjust headers if your API
-    // requires authentication or special content‑type.
-    headers: {
-      Accept: 'application/json',
-    },
-    // A generous timeout – network latency can be unpredictable.
-    timeout: 10_000,
-  });
-
-  if (!res.ok) {
-    // Throw an error with the HTTP status so callers can catch it.
-    throw new Error(`Network response was not OK (${res.status})`);
-  }
-
-  // We’ve decided the result is an array of posts. 
-  // Narrow it to Post[] for full type safety.
-  const data = (await res.json()) as Post[];
-
-  return data;
+  return output;
 }
-
-// ──────────────────────────────────────────────────────────────
-// 3️⃣  Entry point – usage example
-// ──────────────────────────────────────────────────────────────
-async function main() {
-  try {
-    // This is a free JSON placeholder service that offers fake blog posts.
-    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
-
-    // Just log the first 3 for brevity
-    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
-    posts.slice(0, 3).forEach((p, i) => {
-      console.log(`\nPost #${i + 1}`);
-      console.log(`ID: ${p.id}`);
-      console.log(`Title: ${p.title}`);
-      console.log(`Body: ${p.body.slice(0, 60)}…`);
-    });
-  } catch (err) {
-    // A simple error handler – plug in your own logger if needed.
-    console.error('❌ Failed to fetch posts:', err);
-  }
-}
-
-main();
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSort(unsorted));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
