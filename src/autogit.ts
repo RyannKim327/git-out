@@ -1,128 +1,117 @@
-type AdjList = Map<number, Set<number>>;
+/**
+ * Boyer–Moore search – Typescript implementation
+ * ------------------------------------------------
+ * O(m + n) preprocessing  (m = pattern length, n = text length)
+ * O(n/m) expected search time (in practice, very fast)
+ */
 
-class Graph {
-  private adj = new Map<number, Set<number>>();
+export class BoyerMoore {
+  /** Pattern to look for */
+  private readonly pat: string;
+  /** Length of the pattern */
+  private readonly m: number;
+  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
+  private readonly badChar: number[];
+  /** Good‑suffix shift table */
+  private readonly goodSuffix: number[];
 
-  addEdge(u: number, v: number, directed = false): void {
-    if (!this.adj.has(u)) this.adj.set(u, new Set());
-    this.adj.get(u)!.add(v);
-    if (!directed) {
-      if (!this.adj.has(v)) this.adj.set(v, new Set());
-      this.adj.get(v)!.add(u);
+  constructor(pattern: string) {
+    if (!pattern.length) throw new Error("Pattern must not be empty");
+    this.pat = pattern;
+    this.m = pattern.length;
+
+    this.badChar = this.buildBadCharTable();
+    this.goodSuffix = this.buildGoodSuffixTable();
+  }
+
+  /* --------------------------------------------- */
+  /* ===========  PRE‑PROCESSING  ================= */
+  /* --------------------------------------------- */
+
+  /** Build a table indexed by character code (fast array look‑ups). */
+  private buildBadCharTable(): number[] {
+    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
+    for (let i = 0; i < this.m - 1; i++) {
+      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
     }
+    return SHIFT;
   }
 
-  getNeighbors(v: number): Set<number> {
-    return this.adj.get(v) ?? new Set();
-  }
+  /** Build the good‑suffix table (two parts: border and suffix arrays). */
+  private buildGoodSuffixTable(): number[] {
+    const r = this.m;
+    const suffix = new Array(r + 1).fill(0);
+    const border = new Array(r + 1).fill(0);
 
-  // helper: list all vertices (useful for disconnected graphs)
-  vertices(): IterableIterator<number> {
-    return this.adj.keys();
-  }
-}
-const g = new Graph();
-g.addEdge(0, 1);
-g.addEdge(0, 2);
-g.addEdge(1, 2);
-g.addEdge(1, 3);
-g.addEdge(3, 4);
-function dfsRecursive(
-  graph: Graph,
-  start: number,
-  visited = new Set<number>(),
-  action?: (node: number) => void
-): void {
-  visited.add(start);
-  action?.(start);
-
-  for (const nb of graph.getNeighbors(start)) {
-    if (!visited.has(nb)) {
-      dfsRecursive(graph, nb, visited, action);
-    }
-  }
-}
-dfsRecursive(g, 0, undefined, console.log);
-// output: 0, 1, 2, 3, 4 (order may vary)
-function dfsIterative(
-  graph: Graph,
-  start: number,
-  action?: (node: number) => void
-): void {
-  const stack: number[] = [start];
-  const visited = new Set<number>();
-
-  while (stack.length) {
-    const v = stack.pop()!; // `!` known to be non‑null
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    action?.(v);
-
-    // push neighbors reverse order if you want LIFO order same as recursion
-    for (const nb of [...graph.getNeighbors(v)].reverse()) {
-      if (!visited.has(nb)) stack.push(nb);
-    }
-  }
-}
-dfsIterative(g, 0, console.log);
-// same output as before
-function hasCycle(graph: Graph): boolean {
-  const visited = new Set<number>();
-  const stack = new Set<number>();
-
-  function visit(v: number): boolean {
-    if (stack.has(v)) return true;      // back‑edge found
-    if (visited.has(v)) return false;    // already seen, no cycle on this path
-
-    visited.add(v);
-    stack.add(v);
-
-    for (const nb of graph.getNeighbors(v)) {
-      if (visit(nb)) return true;
+    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
+    let j = r;
+    let k = 0;
+    suffix[r] = r;
+    for (let i = r - 1; i >= 0; i--) {
+      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
+        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
+        k = border[k];
+      }
+      k++;
+      suffix[i] = k;
     }
 
-    stack.delete(v);
-    return false;
-  }
+    // Step 2 – compute border[] (largest border for each prefix length)
+    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
 
-  for (const v of graph.vertices()) if (visit(v)) return true;
-  return false;
-}
-function dfsWithOrders(
-  graph: Graph,
-  start: number,
-  pre?: (node: number) => void,
-  post?: (node: number) => void,
-  visited = new Set<number>()
-) {
-  visited.add(start);
-  pre?.(start);
-  for (const nb of graph.getNeighbors(start)) {
-    if (!visited.has(nb)) dfsWithOrders(graph, nb, pre, post, visited);
-  }
-  post?.(start);
-}
-function connectedComponents(graph: Graph): number[][] {
-  const visited = new Set<number>();
-  const components: number[][] = [];
-
-  function explore(v: number, comp: number[]) {
-    visited.add(v);
-    comp.push(v);
-    for (const nb of graph.getNeighbors(v)) {
-      if (!visited.has(nb)) explore(nb, comp);
+    // Step 3 – fill goodSuffix[] using borders
+    const good = new Array(r).fill(r);
+    let jMax = 0;
+    for (let i = r - 1; i >= 0; i--) {
+      if (suffix[i] === 0) continue;
+      while (jMax + 1 <= r - i - 1) {
+        if (good[jMax] === r) good[jMax] = r - i - 1;
+        jMax++;
+      }
     }
+    // For the remaining positions that have no suffix match
+    for (let i = 0; i < r; i++) {
+      if (good[i] === r) good[i] = r - border[i];
+    }
+
+    return good;
   }
 
-  for (const v of graph.vertices()) {
-    if (!visited.has(v)) {
-      const comp: number[] = [];
-      explore(v, comp);
-      components.push(comp);
+  /* --------------------------------------------- */
+  /* ===========       SEARCH        ============= */
+  /* --------------------------------------------- */
+
+  /**
+   * Find the first occurrence of the pattern in `text`.
+   * @returns index of first match or -1 if not found.
+   */
+  public search(text: string): number {
+    const n = text.length;
+    let s = 0;               // shift of the pattern
+
+    while (s <= n - this.m) {
+      let j = this.m - 1;
+
+      // Step 4 – compare from right to left
+      while (j >= 0 && this.pat[j] === text[s + j]) j--;
+
+      if (j < 0) return s;  // match found
+
+      // compute shifts
+      const badShift = this.badChar[text.charCodeAt(s + j)];
+      const goodShift = this.goodSuffix[j];
+      s += Math.max(badShift, goodShift);
     }
+    return -1;              // not found
   }
-  return components;
+
+  /* --------------------------------------------- */
+  /* ===========  EXAMPLE USAGE  =============== */
+  /* --------------------------------------------- */
 }
-npm i -D typescript ts-node
-npx ts-node dfs.ts
+
+// Example usage:
+const bm = new BoyerMoore("needle");
+const txt = "haystack needle haystack inside needlesea";
+const idx = bm.search(txt);
+console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
