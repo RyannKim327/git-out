@@ -1,18 +1,83 @@
-// 1. Remove whitespace from the ends – trim()
-const raw = "   some text   ";
-const trimmed = raw.trim();          // "some text"
+/**
+ * A directed graph is expected to be an object where each key is a node
+ * id (string) and the value is an array of neighbouring node ids.
+ * Example:
+ *   const graph = {
+ *     a: ['b', 'c'],
+ *     b: ['c'],
+ *     c: ['a', 'd'],
+ *     d: ['e'],
+ *     e: []
+ *   };
+ */
+type Graph = Record<string, string[]>;
 
-// 2. Remove whitespace everywhere in the string
-const raw2 = "  some text  with  spaces ";
-const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
+/**
+ * Tarjan’s SCC algorithm.
+ *
+ * @param graph – adjacency list representation of the directed graph
+ * @returns array of SCCs, each itself an array of node ids
+ */
+export function tarjanSCC(graph: Graph): string[][] {
+  const indexMap = new Map<string, number>();
+  const lowLinkMap = new Map<string, number>();
+  const onStack = new Set<string>();
 
-// 3. Remove all *outside* whitespace but keep internal spaces
-const raw3 = "   some text with  internal   spaces   ";
-const keepInternal = raw3.trim();           // "some text with  internal   spaces"
+  const stack: string[] = [];
+  let idx = 0;
+  const sccs: string[][] = [];
 
-// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
-const raw4 = "line1\n  line2\t";
-const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
+  const strongConnect = (node: string) => {
+    // Set the depth index for this node to the smallest unused index
+    indexMap.set(node, idx);
+    lowLinkMap.set(node, idx);
+    idx++;
 
-// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
-const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
+    stack.push(node);
+    onStack.add(node);
+
+    // Consider successors of node
+    for (const succ of graph[node] ?? []) {
+      if (!indexMap.has(succ)) {
+        // Successor has not yet been visited – recurse on it
+        strongConnect(succ);
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // Successor is in stack → node is in the same SCC
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+      }
+    }
+
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap.get(node) === indexMap.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  };
+
+  // Call the recursion for each node (in any order)
+  for (const node of Object.keys(graph)) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
+  }
+
+  return sccs;
+}
+const graph: Graph = {
+  a: ['b'],
+  b: ['c'],
+  c: ['a', 'd'],
+  d: ['e'],
+  e: ['f'],
+  f: ['d']
+};
+
+console.log(tarjanSCC(graph));
+// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
