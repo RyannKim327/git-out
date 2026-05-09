@@ -1,66 +1,74 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
+// src/utils/http.ts
+import { knownFolders, File } from '@nativescript/core';
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
+// ──────────────────────────────────────────────────────────────────
+// Step 1 – A friendly async helper that does the fetch
+// ──────────────────────────────────────────────────────────────────
+export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
 
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        // add any custom headers you need
+      },
+    });
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
-
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
     }
+
+    const json = await resp.json() as T;
+    return json;
+  } finally {
+    clearTimeout(id);
   }
-
-  return leafCount;
 }
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
 
-  if (!root) return leaves;
+// ──────────────────────────────────────────────────────────────────
+// Step 2 – Call it from an Android Activity / Page, e.g.
+// ──────────────────────────────────────────────────────────────────
+export async function demoFetch() {
+  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
 
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
+  try {
+    const data = await getJson<any>(apiUrl);
+    console.log('Data received:', data);
 
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
+    // If you want to touch the UI, do it on the UI thread
+    // (in NativeScript you can simply update a component property,
+    // or use a dispatcher if you’re outside a component)
+  } catch (err) {
+    console.error('fetch error:', err);
+    // In an Android UI you might show a toast:
+    const Toast = android.widget.Toast;
+    const ctx = android.content.Context;
+    const activity = /** get the current activity from your page **/;
+    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
   }
-
-  return leaves;
 }
+
+/*
+  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
+
+  import { demoFetch } from '~/utils/http';
+
+  export function pageLoaded(args) {
+    demoFetch();
+  }
+*/
+const HttpGetTask = android.os.AsyncTask.extend({
+  doInBackground: function (params) {
+    try {
+      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
+      const conn = url.openConnection() as java.net.HttpURLConnection;
+      conn.setRequestMethod('GET');
+      conn.setConnectTimeout(5000);
+      conn.setReadTimeout(5000);
+
+      const reader = new java.io.BufferedReader(
+
