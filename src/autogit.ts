@@ -1,25 +1,68 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
-  }
-  return count;
-}
-function countCharRegex(str: string, target: string): number {
-  // Escape special regex chars in the target
-  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const matches = str.match(new RegExp(escaped, 'g'));
-  return matches ? matches.length : 0;
-}
-function countCharSplit(str: string, target: string): number {
-  // Splitting on the target gives you one more element than the number of matches
-  return str.split(target).length - 1;
-}
-const s = 'hello world, hello universe!';
-console.log(countChar(s, 'l'));          // 3
-console.log(countCharRegex(s, 'l'));    // 3
-console.log(countCharSplit(s, 'l'));    // 3
+// ──────────────────────────────────────────────────────────────
+// 1️⃣  Imports & type definitions
+// ──────────────────────────────────────────────────────────────
+import fetch from 'node-fetch'; // npm i node-fetch@2
+// If you’re in a browser environment just drop the import line
+// and use the native `fetch` API.
 
-console.log(countChar(s, ' '));          // 3
-console.log(countCharRegex(s, ' '));    // 3
-console.log(countCharSplit(s, ' '));    // 3
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
+
+// ──────────────────────────────────────────────────────────────
+// 2️⃣  The async loader
+// ──────────────────────────────────────────────────────────────
+async function fetchPosts(apiUrl: string): Promise<Post[]> {
+  // A quick sanity check – you don’t want to send an empty string.
+  if (!apiUrl.trim()) {
+    throw new Error('API URL cannot be empty');
+  }
+
+  const res = await fetch(apiUrl, {
+    // JSON is the common output. Adjust headers if your API
+    // requires authentication or special content‑type.
+    headers: {
+      Accept: 'application/json',
+    },
+    // A generous timeout – network latency can be unpredictable.
+    timeout: 10_000,
+  });
+
+  if (!res.ok) {
+    // Throw an error with the HTTP status so callers can catch it.
+    throw new Error(`Network response was not OK (${res.status})`);
+  }
+
+  // We’ve decided the result is an array of posts. 
+  // Narrow it to Post[] for full type safety.
+  const data = (await res.json()) as Post[];
+
+  return data;
+}
+
+// ──────────────────────────────────────────────────────────────
+// 3️⃣  Entry point – usage example
+// ──────────────────────────────────────────────────────────────
+async function main() {
+  try {
+    // This is a free JSON placeholder service that offers fake blog posts.
+    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
+
+    // Just log the first 3 for brevity
+    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
+    posts.slice(0, 3).forEach((p, i) => {
+      console.log(`\nPost #${i + 1}`);
+      console.log(`ID: ${p.id}`);
+      console.log(`Title: ${p.title}`);
+      console.log(`Body: ${p.body.slice(0, 60)}…`);
+    });
+  } catch (err) {
+    // A simple error handler – plug in your own logger if needed.
+    console.error('❌ Failed to fetch posts:', err);
+  }
+}
+
+main();
