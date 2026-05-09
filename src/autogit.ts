@@ -1,106 +1,138 @@
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+// ──────────────────────────────────────────────────────────────────────
+// 1️⃣  Node definition
+// ──────────────────────────────────────────────────────────────────────
 
-  // 1️⃣ Find the middle (fast/slow trick)
-  let slow = head, fast = head, prev: ListNode | null = null;
-  while (fast && fast.next) {
-    // 2️⃣ Reverse the first half while we’re at it
-    let nxt = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nxt;
-
-    fast = fast.next.next;
-  }
-
-  // 3️⃣ If odd number of nodes skip the middle one
-  if (fast) slow = slow.next;
-
-  // 4️⃣ Compare the two halves
-  let p1 = prev, p2 = slow;
-  while (p1 && p2) {
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-  return true;
-}
-interface ListNode {
-  val: number | string;      // whatever you want to store
-  next?: ListNode | null;    // `next` is optional to support the “end” of the list
-}
-/**
- * Returns true if the singly linked list is a palindrome.
- *
- * @param head - The head node of the linked list (or null).
- */
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → palindrome
-
-  let slow = head;
-  let fast = head;
-  let prev: ListNode | null = null; // will become the head of the reversed first half
-
-  // Step 1 & 2: find middle, reverse first half
-  while (fast && fast.next) {
-    // Reverse the link for `slow`'s current node
-    const nextNode = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nextNode;
-
-    fast = fast.next.next;
-  }
-
-  // Step 3: if odd length, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-
-  // Step 4: compare nodes from the two halves
-  let firstHalf = prev;
-  let secondHalf = slow;
-  while (firstHalf && secondHalf) {
-    if (firstHalf.val !== secondHalf.val) return false;
-    firstHalf = firstHalf.next!;
-    secondHalf = secondHalf.next!;
-  }
-
-  return true;
-}
-// Helper to create a list from an array
-function fromArray(arr: (number | string)[]): ListNode | null {
-  if (!arr.length) return null;
-  const head: ListNode = { val: arr[0] };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { val: arr[i] };
-    current = current.next;
-  }
-  return head;
+export class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
 
-console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
-console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string)[] = [];
-  let fast = head;
-  let slow = head;
+// ──────────────────────────────────────────────────────────────────────
+// 2️⃣  Binary‑Search‑Tree
+// ──────────────────────────────────────────────────────────────────────
 
-  // Push first half onto stack
-  while (fast && fast.next) {
-    stack.push(slow!.val);
-    slow = slow!.next!;
-    fast = fast.next.next;
+export class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+
+  /* ----------------------------------------------------------------- */
+  // basic insertion – assumes no duplicates
+  /* ----------------------------------------------------------------- */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
+
+    let node: TreeNode<T> | null = this.root;
+    while (node) {
+      if (value < node.value) {
+        if (!node.left) {
+          node.left = newNode;
+          break;
+        }
+        node = node.left;
+      } else {
+        if (!node.right) {
+          node.right = newNode;
+          break;
+        }
+        node = node.right;
+      }
+    }
   }
 
-  // Skip middle element for odd length
-  if (fast) slow = slow!.next!;
-
-  // Compare the rest with stack
-  while (slow) {
-    if (stack.pop() !== slow.val) return false;
-    slow = slow.next;
+  /* ----------------------------------------------------------------- */
+  // find a value – returns the node or null
+  /* ----------------------------------------------------------------- */
+  find(value: T): TreeNode<T> | null {
+    let node = this.root;
+    while (node) {
+      if (value === node.value) return node;
+      node = value < node.value ? node.left : node.right;
+    }
+    return null;
   }
-  return true;
+
+  /* ----------------------------------------------------------------- */
+  // In‑order traversal – returns array of values sorted (for BST)
+  /* ----------------------------------------------------------------- */
+  inorder(): T[] {
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [];
+    let node = this.root;
+
+    while (stack.length || node) {
+      while (node) {
+        stack.push(node);
+        node = node.left!;
+      }
+      node = stack.pop()!;
+      result.push(node.value);
+      node = node.right!;
+    }
+
+    return result;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // Pre‑order (root, left, right)
+  /* ----------------------------------------------------------------- */
+  preorder(): T[] {
+    if (!this.root) return [];
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [this.root];
+
+    while (stack.length) {
+      const node = stack.pop()!;
+      result.push(node.value);
+
+      // push right first so left is processed first
+      if (node.right) stack.push(node.right);
+      if (node.left) stack.push(node.left);
+    }
+
+    return result;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // Post‑order (left, right, root) – iterative with two stacks
+  /* ----------------------------------------------------------------- */
+  postorder(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
+
+    const stack1: TreeNode<T>[] = [this.root];
+    const stack2: TreeNode<T>[] = [];
+
+    while (stack1.length) {
+      const node = stack1.pop()!;
+      stack2.push(node);
+
+      if (node.left) stack1.push(node.left);
+      if (node.right) stack1.push(node.right);
+    }
+
+    while (stack2.length) {
+      result.push(stack2.pop()!.value);
+    }
+
+    return result;
+  }
 }
+import { BinarySearchTree } from "./bst";
+
+const bst = new BinarySearchTree<number>();
+
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
+console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
+console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
+
+console.log("Find 5:", bst.find(5)?.value);          // 5
+console.log("Find 20:", bst.find(20));               // null
