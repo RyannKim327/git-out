@@ -1,106 +1,57 @@
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1️⃣ Find the middle (fast/slow trick)
-  let slow = head, fast = head, prev: ListNode | null = null;
-  while (fast && fast.next) {
-    // 2️⃣ Reverse the first half while we’re at it
-    let nxt = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nxt;
-
-    fast = fast.next.next;
-  }
-
-  // 3️⃣ If odd number of nodes skip the middle one
-  if (fast) slow = slow.next;
-
-  // 4️⃣ Compare the two halves
-  let p1 = prev, p2 = slow;
-  while (p1 && p2) {
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-  return true;
-}
-interface ListNode {
-  val: number | string;      // whatever you want to store
-  next?: ListNode | null;    // `next` is optional to support the “end” of the list
-}
 /**
- * Returns true if the singly linked list is a palindrome.
+ * Returns the index of `target` inside the sorted array `arr`,
+ * or -1 if the target is not present.
  *
- * @param head - The head node of the linked list (or null).
+ * @param arr     Sorted numerical array (ascending order)
+ * @param target  Value to find
  */
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+export function fibonacciSearch(arr: readonly number[], target: number): number {
+  const n = arr.length;
 
-  let slow = head;
-  let fast = head;
-  let prev: ListNode | null = null; // will become the head of the reversed first half
+  // (1) Generate the smallest Fibonacci number ≥ n
+  let fibMMinus2 = 0; // F(m-2)
+  let fibMMinus1 = 1; // F(m-1)
+  let fibM = fibMMinus2 + fibMMinus1; // F(m)
 
-  // Step 1 & 2: find middle, reverse first half
-  while (fast && fast.next) {
-    // Reverse the link for `slow`'s current node
-    const nextNode = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nextNode;
-
-    fast = fast.next.next;
+  while (fibM < n) {
+    fibMMinus2 = fibMMinus1;
+    fibMMinus1 = fibM;
+    fibM = fibMMinus1 + fibMMinus2;
   }
 
-  // Step 3: if odd length, skip the middle node
-  if (fast) {
-    slow = slow.next!;
+  // (2) Marks the eliminated range from front
+  let offset = -1;
+
+  // (3) While there are elements to inspect
+  while (fibM > 1) {
+    // Check the index. Do not go beyond the array bounds.
+    const i = Math.min(offset + fibMMinus2, n - 1);
+
+    if (arr[i] < target) {
+      // Move three Fibonacci variables one step closer to the end
+      fibM = fibMMinus1;
+      fibMMinus1 = fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move the Fibonacci window two steps back
+      fibM = fibMMinus2;
+      fibMMinus1 = fibMMinus1 - fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+    } else {
+      return i; // Found
+    }
   }
 
-  // Step 4: compare nodes from the two halves
-  let firstHalf = prev;
-  let secondHalf = slow;
-  while (firstHalf && secondHalf) {
-    if (firstHalf.val !== secondHalf.val) return false;
-    firstHalf = firstHalf.next!;
-    secondHalf = secondHalf.next!;
+  // (4) If the last element is the target
+  if (fibMMinus1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
   }
 
-  return true;
+  // Not found
+  return -1;
 }
-// Helper to create a list from an array
-function fromArray(arr: (number | string)[]): ListNode | null {
-  if (!arr.length) return null;
-  const head: ListNode = { val: arr[0] };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { val: arr[i] };
-    current = current.next;
-  }
-  return head;
-}
+const sorted = [1, 3, 5, 7, 9, 12, 15, 18, 21, 24, 30];
 
-console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
-console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string)[] = [];
-  let fast = head;
-  let slow = head;
-
-  // Push first half onto stack
-  while (fast && fast.next) {
-    stack.push(slow!.val);
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
-
-  // Skip middle element for odd length
-  if (fast) slow = slow!.next!;
-
-  // Compare the rest with stack
-  while (slow) {
-    if (stack.pop() !== slow.val) return false;
-    slow = slow.next;
-  }
-  return true;
-}
+console.log(fibonacciSearch(sorted, 15)); // → 6
+console.log(fibonacciSearch(sorted, 4));  // → -1
