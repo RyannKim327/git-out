@@ -1,70 +1,64 @@
-export interface TreeNode<T> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
+/**
+ * Very permissive yet useful email pattern.
+ *
+ *  - No whitespace
+ *  - At least one character before and after the @
+ *  - Requires a dot‑separated domain part
+ *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
+ *
+ * The pattern is intentionally simple: it catches the majority of mistakes while
+ * avoiding needless complexity that can cost performance or readability.
+ */
+export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Returns the diameter (max number of edges on any path)
- * of a binary tree rooted at `root`.
+ * Strict RFC‑5322 compliant-ish pattern.  
+ *  - Handles quoted local‑part, escaped characters, and domain literals.
+ *  - Still keeps things readable by splitting the regex into small parts.
+ *
+ * Use this only if you need the extra validation and can afford a slightly slower check.
  */
-export function diameter<T>(root: TreeNode<T> | undefined): number {
-  let maxDia = 0;
+export const strictEmailRE = new RegExp(
+  // Local part (quoted or unquoted)
+  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
+  // Domain part (letters, digits, hyphens, dots)
+  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
+  '$'
+);
 
-  function depth(node?: TreeNode<T>): number {
-    if (!node) return 0;
-    const left  = depth(node.left);
-    const right = depth(node.right);
-
-    // path that goes through this node
-    maxDia = Math.max(maxDia, left + right);
-
-    // height of this subtree
-    return Math.max(left, right) + 1;
-  }
-
-  depth(root);
-  return maxDia;
+/**
+ * Helper that returns `true` if the input matches *either* pattern.
+ *
+ * @param email Email string to validate.
+ * @returns `true` when the string looks like a valid email address.
+ */
+export function isValidEmail(email: string): boolean {
+  // Trim first – most forms send untrimmed values.
+  const trimmed = email.trim();
+  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
 }
-function makeTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //          \   / \
-  //           4 5   6
-  //              \
-  //               7
-  return {
-    val: 1,
-    left: { val: 2, right: { val: 4 } },
-    right: {
-      val: 3,
-      left: { val: 5, right: { val: 7 } },
-      right: { val: 6 }
-    }
-  };
+import { isValidEmail } from './emailValidator';
+
+const test = 'user.name+tag@sub.domain.co.uk';
+
+if (isValidEmail(test)) {
+  console.log(`"${test}" passes the regex test`);
+} else {
+  console.log(`"${test}" is definitely not a valid email`);
 }
+const cases = [
+  'simple@example.com',
+  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
+  'very.unusual.@.example.com',
+  'disposable.style.email.with+symbol@example.com',
+  '"much.more unusual"@example.com',
+  'admin@mailserver1',                 // missing TLD
+  'example@localhost',                 // often allowed in dev env
+  'plainaddress',
+  'email.@example.com',
+  '@missing-local.org',
+  'user@.invalid.com',
+  'huge‑domain‑name‑that‑really‑long.com',
+];
 
-console.log(diameter(makeTree())); // outputs 5
-export function diameterIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;
-  const stack: Array<{ node: TreeNode<T>; visited: boolean }> = [{ node: root, visited: false }];
-  const heights = new Map<TreeNode<T>, number>();
-  let maxDia = 0;
-
-  while (stack.length) {
-    const { node, visited } = stack.pop()!;
-    if (visited) {
-      const lh = heights.get(node.left) ?? 0;
-      const rh = heights.get(node.right) ?? 0;
-      maxDia = Math.max(maxDia, lh + rh);
-      heights.set(node, Math.max(lh, rh) + 1);
-    } else {
-      stack.push({ node, visited: true });
-      if (node.right) stack.push({ node: node.right, visited: false });
-      if (node.left)  stack.push({ node: node.left,  visited: false });
-    }
-  }
-
-  return maxDia;
-}
+cases.forEach(e => console.log(e, isValidEmail(e)));
