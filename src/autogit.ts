@@ -1,60 +1,83 @@
 /**
- * Finds the Longest Common Subsequence (LCS) of two strings.
- *
- * @param a – first string
- * @param b – second string
- * @returns an object `{ length, seq }`
- *   * `length` – length of the LCS
- *   * `seq`    – the LCS string itself (empty if none)
+ * A directed graph is expected to be an object where each key is a node
+ * id (string) and the value is an array of neighbouring node ids.
+ * Example:
+ *   const graph = {
+ *     a: ['b', 'c'],
+ *     b: ['c'],
+ *     c: ['a', 'd'],
+ *     d: ['e'],
+ *     e: []
+ *   };
  */
-export function lcs(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+type Graph = Record<string, string[]>;
 
-  /* 1. Build DP table:  (m+1) × (n+1) */
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    Array(n + 1).fill(0)
-  );
+/**
+ * Tarjan’s SCC algorithm.
+ *
+ * @param graph – adjacency list representation of the directed graph
+ * @returns array of SCCs, each itself an array of node ids
+ */
+export function tarjanSCC(graph: Graph): string[][] {
+  const indexMap = new Map<string, number>();
+  const lowLinkMap = new Map<string, number>();
+  const onStack = new Set<string>();
 
-  for (let i = 1; i <= m; i++) {
-    const ca = a[i - 1];
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        ca === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const stack: string[] = [];
+  let idx = 0;
+  const sccs: string[][] = [];
+
+  const strongConnect = (node: string) => {
+    // Set the depth index for this node to the smallest unused index
+    indexMap.set(node, idx);
+    lowLinkMap.set(node, idx);
+    idx++;
+
+    stack.push(node);
+    onStack.add(node);
+
+    // Consider successors of node
+    for (const succ of graph[node] ?? []) {
+      if (!indexMap.has(succ)) {
+        // Successor has not yet been visited – recurse on it
+        strongConnect(succ);
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // Successor is in stack → node is in the same SCC
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+      }
+    }
+
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap.get(node) === indexMap.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  };
+
+  // Call the recursion for each node (in any order)
+  for (const node of Object.keys(graph)) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
     }
   }
 
-  /* 2. Back‑track to recover the sequence */
-  let i = m,
-    j = n,
-    seqArr: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seqArr.push(a[i - 1]); // match – add to subsequence
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
-  }
-
-  // The string is built backwards, so reverse it
-  const seq = seqArr.reverse().join('');
-  return { length: dp[m][n], seq };
+  return sccs;
 }
-const prev: number[] = Array(n + 1).fill(0);
-const curr: number[] = Array(n + 1);
-for (let i = 1; i <= m; i++) {
-  curr[0] = 0;
-  for (let j = 1; j <= n; j++) {
-    curr[j] =
-      a[i - 1] === b[j - 1]
-        ? prev[j - 1] + 1
-        : Math.max(prev[j], curr[j - 1]);
-  }
-  // swap
-  [prev, curr] = [curr, prev];
-}
+const graph: Graph = {
+  a: ['b'],
+  b: ['c'],
+  c: ['a', 'd'],
+  d: ['e'],
+  e: ['f'],
+  f: ['d']
+};
+
+console.log(tarjanSCC(graph));
+// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
