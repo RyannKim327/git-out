@@ -1,42 +1,60 @@
 /**
- * Returns the largest prime factor of n.
+ * Finds the Longest Common Subsequence (LCS) of two strings.
  *
- * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
+ * @param a – first string
+ * @param b – second string
+ * @returns an object `{ length, seq }`
+ *   * `length` – length of the LCS
+ *   * `seq`    – the LCS string itself (empty if none)
  */
-export function largestPrimeFactor(n: number | bigint): number | bigint {
-    if (n <= 1) throw new Error('n must be > 1');
+export function lcs(a: string, b: string) {
+  const m = a.length;
+  const n = b.length;
 
-    // Work with BigInt for arbitrary precision
-    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
-    let maxFactor: bigint = 1n;
+  /* 1. Build DP table:  (m+1) × (n+1) */
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    Array(n + 1).fill(0)
+  );
 
-    // Handle factor 2 separately
-    while (num % 2n === 0n) {
-        maxFactor = 2n;
-        num /= 2n;
+  for (let i = 1; i <= m; i++) {
+    const ca = a[i - 1];
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] =
+        ca === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
+  }
 
-    // Now num is odd – we only need to check odd divisors
-    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
-        while (num % divisor === 0n) {
-            maxFactor = divisor;
-            num /= divisor;
-        }
+  /* 2. Back‑track to recover the sequence */
+  let i = m,
+    j = n,
+    seqArr: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seqArr.push(a[i - 1]); // match – add to subsequence
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
     }
+  }
 
-    // If anything is left, it's a prime larger than any divisor we tried
-    if (num > 1n) maxFactor = num;
-
-    // Return a native number if the input was a number and the result fits
-    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
-        return Number(maxFactor);
-    }
-    return maxFactor;
+  // The string is built backwards, so reverse it
+  const seq = seqArr.reverse().join('');
+  return { length: dp[m][n], seq };
 }
-console.log(largestPrimeFactor(28));          // 7
-console.log(largestPrimeFactor(91));          // 13
-console.log(largestPrimeFactor(600851475143));// 6857
-
-// With a BigInt (e.g. a 100‑digit number)
-const huge = BigInt('123456789123456789123456789');
-console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
+const prev: number[] = Array(n + 1).fill(0);
+const curr: number[] = Array(n + 1);
+for (let i = 1; i <= m; i++) {
+  curr[0] = 0;
+  for (let j = 1; j <= n; j++) {
+    curr[j] =
+      a[i - 1] === b[j - 1]
+        ? prev[j - 1] + 1
+        : Math.max(prev[j], curr[j - 1]);
+  }
+  // swap
+  [prev, curr] = [curr, prev];
+}
