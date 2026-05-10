@@ -1,64 +1,37 @@
-function intersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(x => setB.has(x));
-}
-const foo = [1, 2, 3, 4];
-const bar = [3, 4, 5, 6];
-console.log(intersection(foo, bar)); // [3, 4]
-function intersectionSorted<T>(a: T[], b: T[]): T[] {
-  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
-  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
-  const res: T[] = [];
-  let i = 0, j = 0;
+const original = [1, 2, 3, 4];
 
-  while (i < sortedA.length && j < sortedB.length) {
-    if (sortedA[i] === sortedB[j]) {
-      res.push(sortedA[i]); i++; j++;
-    } else if (sortedA[i] < sortedB[j]) {
-      i++;
-    } else {
-      j++;
-    }
+const filtered = original.filter(n => n !== 3); // [1, 2, 4]
+const arr = [1, 2, 3, 4, 3];
+
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
+}
+const arr = ['a', 'b', 'c', 'd'];
+arr.splice(2, 1); // removes element at index 2
+// arr is now ['a', 'b', 'd']
+function removeItem<T>(arr: T[], item: T): T[] {
+  const idx = arr.indexOf(item);
+  if (idx !== -1) {
+    const copy = [...arr];
+    copy.splice(idx, 1);
+    return copy;
   }
-  return res;
-}
-function uniqueIntersection<T>(a: T[], b: T[]): T[] {
-  const seen = new Set(b);
-  const out = new Set<T>();
-  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
-  return [...out];
-}
-function intersectionBy<T, K>(
-  a: T[],
-  b: T[],
-  keyFn: (item: T) => K
-): T[] {
-  const setB = new Set(b.map(keyFn));
-  return a.filter(x => setB.has(keyFn(x)));
-}
-const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
-const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
-
-console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
-const common = a.filter(v => b.includes(v));
-type KeyFn<T, K> = (item: T) => K;
-
-// Fastest for primitives
-export function intersection<T>(a: T[], b: T[]): T[] {
-  const set = new Set(b);
-  return a.filter(x => set.has(x));
+  return arr;
 }
 
-// Preserve order, unique results
-export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  const out = new Set<T>();
-  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
-  return [...out];
-}
+const nums = [7, 8, 9];
+const updated = removeItem(nums, 8); // [7, 9]
+type Item = { id: number; name: string };
 
-// For objects or custom equality
-export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
-  const set = new Set(b.map(keyFn));
-  return a.filter(x => set.has(keyFn(x)));
-}
+const items: Item[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Carol' }
+];
+
+const withoutBob = items.filter(item => item.id !== 2);
+// smallest change, clean and declarative
+const unique = new Set([1, 2, 3, 4]); // Set<number>
+unique.delete(3); // removes 3
+const arr = [...unique]; // back to an array if needed
