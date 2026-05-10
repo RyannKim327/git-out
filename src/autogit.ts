@@ -1,83 +1,45 @@
-/**
- * A directed graph is expected to be an object where each key is a node
- * id (string) and the value is an array of neighbouring node ids.
- * Example:
- *   const graph = {
- *     a: ['b', 'c'],
- *     b: ['c'],
- *     c: ['a', 'd'],
- *     d: ['e'],
- *     e: []
- *   };
- */
-type Graph = Record<string, string[]>;
+// 1. Basic list node definition
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 
-/**
- * Tarjan’s SCC algorithm.
- *
- * @param graph – adjacency list representation of the directed graph
- * @returns array of SCCs, each itself an array of node ids
- */
-export function tarjanSCC(graph: Graph): string[][] {
-  const indexMap = new Map<string, number>();
-  const lowLinkMap = new Map<string, number>();
-  const onStack = new Set<string>();
+// 2. Utility: build a linked list from an array
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null;
 
-  const stack: string[] = [];
-  let idx = 0;
-  const sccs: string[][] = [];
+  const head = new ListNode(values[0]);
+  let current = head;
+  for (let i = 1; i < values.length; i++) {
+    current.next = new ListNode(values[i]);
+    current = current.next;
+  }
+  return head;
+}
 
-  const strongConnect = (node: string) => {
-    // Set the depth index for this node to the smallest unused index
-    indexMap.set(node, idx);
-    lowLinkMap.set(node, idx);
-    idx++;
+// 3. Find the middle node – fast/slow pointer
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
 
-    stack.push(node);
-    onStack.add(node);
+  let slow = head;
+  let fast = head;
 
-    // Consider successors of node
-    for (const succ of graph[node] ?? []) {
-      if (!indexMap.has(succ)) {
-        // Successor has not yet been visited – recurse on it
-        strongConnect(succ);
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // Successor is in stack → node is in the same SCC
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
-      }
-    }
-
-    // If node is a root node, pop the stack and generate an SCC
-    if (lowLinkMap.get(node) === indexMap.get(node)) {
-      const scc: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== node);
-      sccs.push(scc);
-    }
-  };
-
-  // Call the recursion for each node (in any order)
-  for (const node of Object.keys(graph)) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
-    }
+  while (fast && fast.next) {      // stop when fast can't advance two steps
+    slow = slow.next!;             // safe because previous check guarantees truthy
+    fast = fast.next.next!;
   }
 
-  return sccs;
+  return slow;                     // slow is at the middle
 }
-const graph: Graph = {
-  a: ['b'],
-  b: ['c'],
-  c: ['a', 'd'],
-  d: ['e'],
-  e: ['f'],
-  f: ['d']
-};
 
-console.log(tarjanSCC(graph));
-// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
+// Demo
+const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
+const oddHead = buildList(arr);
+console.log(getMiddle(oddHead)?.val); // 3
+
+const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
+const evenHead = buildList(evenArr);
+console.log(getMiddle(evenHead)?.val); // 20
+while (fast && fast.next && fast.next.next) {
+  slow = slow.next!;
+  fast = fast.next.next!;
+}
