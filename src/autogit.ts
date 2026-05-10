@@ -1,71 +1,25 @@
-/**
- * Build the longest–prefix‑suffix (LPS) array for the pattern.
- *
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- *           which is also a suffix of that substring.
- * Complexity: O(m), m = pattern.length
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps = new Array<number>(m).fill(0);
-  let length = 0;               // length of the previous longest prefix suffix
-  let i = 1;
-
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous candidate
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+function countChar(str: string, target: string): number {
+  let count = 0;
+  for (const ch of str) {
+    if (ch === target) count++;
   }
-
-  return lps;
+  return count;
 }
-
-/**
- * KMP search: return all start positions where pattern occurs in text.
- * Complexity: O(n + m), n = text.length, m = pattern.length
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const lps = buildLPS(pattern);
-
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < n) {
-    if (pattern[j] === text[i]) {
-      i++;
-      j++;
-    }
-
-    if (j === m) {
-      // full match found – record start index
-      positions.push(i - j);
-      j = lps[j - 1]; // allow for overlapping matches
-    } else if (i < n && pattern[j] !== text[i]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
-  }
-
-  return positions;
+function countCharRegex(str: string, target: string): number {
+  // Escape special regex chars in the target
+  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matches = str.match(new RegExp(escaped, 'g'));
+  return matches ? matches.length : 0;
 }
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
+function countCharSplit(str: string, target: string): number {
+  // Splitting on the target gives you one more element than the number of matches
+  return str.split(target).length - 1;
+}
+const s = 'hello world, hello universe!';
+console.log(countChar(s, 'l'));          // 3
+console.log(countCharRegex(s, 'l'));    // 3
+console.log(countCharSplit(s, 'l'));    // 3
 
-const occ = kmpSearch(txt, pat);
-console.log(occ); // → [10]
+console.log(countChar(s, ' '));          // 3
+console.log(countCharRegex(s, ' '));    // 3
+console.log(countCharSplit(s, ' '));    // 3
