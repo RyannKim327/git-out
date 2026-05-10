@@ -1,61 +1,43 @@
 /**
- * Merge‑sort for an array of T.
+ * Random‑pivot QuickSort
  *
- * @param array      – the array to sort (mutated in‑place)
- * @param compareFn – optional comparator (a, b) => number
- *                    (neg: < a, 0: equal, pos: > a)
- * @returns the sorted array (same reference as the input)
+ * @param data - array of numbers to sort in place
+ * @returns the sorted array
  */
-export function mergeSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  // Base case: a single element is already sorted.
-  if (array.length <= 1) return array;
+function randomQuickSort(data: number[]): number[] {
+  // Helper that actually does the work, using indices so the call stack is shallow.
+  function sort(left: number, right: number) {
+    if (left >= right) return;
 
-  // Split the array in half.
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
+    // Pick a random index between left and right (inclusive)
+    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    // Swap pivot with the last element – easier partitioning
+    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
+    const pivot = data[right];
 
-  // Recursively sort each half then merge them.
-  mergeSort(left, compareFn);
-  mergeSort(right, compareFn);
-  merge(array, left, right, compareFn);
-  return array;               // return the same array reference
-}
+    let i = left - 1; // elements ≤ pivot will be to the left of i
 
-/**
- * Merge the two sorted halves back into `out`.
- */
-function merge<T>(
-  out: T[],
-  left: T[],
-  right: T[],
-  compareFn: (a: T, b: T) => number
-) {
-  let i = 0, j = 0, k = 0;
-  while (i < left.length && j < right.length) {
-    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
-    else out[k++] = right[j++];
+    for (let j = left; j < right; j++) {
+      if (data[j] <= pivot) {
+        i++;
+        [data[i], data[j]] = [data[j], data[i]];
+      }
+    }
+
+    // place pivot after the last smaller element
+    const finalPivotPos = i + 1;
+    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
+
+    // Recurse on each partition
+    sort(left, finalPivotPos - 1);
+    sort(finalPivotPos + 1, right);
   }
-  // Copy any remaining items.
-  while (i < left.length) out[k++] = left[i++];
-  while (j < right.length) out[k++] = right[j++];
+
+  sort(0, data.length - 1);
+  return data;
 }
 
-/**
- * Default comparator for numbers or strings.
- */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSort(nums);            // in‑place sort
-console.log(nums);          // [5, 7, 23, 32, 34, 62]
-
-// With a custom comparator (e.g., reverse order)
-mergeSort(nums, (a, b) => b - a);
-console.log(nums);          // [62, 34, 32, 23, 7, 5]
+/* --- demo ------------------------------------ */
+const arr = [5, 2, 9, 1, 5, 6];
+console.log('original:', arr);
+console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
