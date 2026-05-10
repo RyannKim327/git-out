@@ -1,45 +1,57 @@
-dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
-if s1[i] === s2[j]
-    dp[i][j] = dp[i‑1][j‑1] + 1
-else
-    dp[i][j] = 0
 /**
- * Returns the longest common substring of two strings.
- * If there are multiple substrings of the same maximal length,
- * the first one encountered is returned.
+ * Returns the index of `target` inside the sorted array `arr`,
+ * or -1 if the target is not present.
+ *
+ * @param arr     Sorted numerical array (ascending order)
+ * @param target  Value to find
  */
-function longestCommonSubstring(a: string, b: string): string {
-    if (!a || !b) return "";
+export function fibonacciSearch(arr: readonly number[], target: number): number {
+  const n = arr.length;
 
-    const n = a.length;
-    const m = b.length;
+  // (1) Generate the smallest Fibonacci number ≥ n
+  let fibMMinus2 = 0; // F(m-2)
+  let fibMMinus1 = 1; // F(m-1)
+  let fibM = fibMMinus2 + fibMMinus1; // F(m)
 
-    // Use a 1‑D array to hold the previous row of DP values.
-    let prev = new Array(m + 1).fill(0);
-    let curr = new Array(m + 1).fill(0);
+  while (fibM < n) {
+    fibMMinus2 = fibMMinus1;
+    fibMMinus1 = fibM;
+    fibM = fibMMinus1 + fibMMinus2;
+  }
 
-    let bestLen = 0;
-    let bestEndIdxInA = 0; // index in `a` where the best substring ends
+  // (2) Marks the eliminated range from front
+  let offset = -1;
 
-    for (let i = 1; i <= n; i++) {
-        for (let j = 1; j <= m; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                curr[j] = prev[j - 1] + 1;
-                if (curr[j] > bestLen) {
-                    bestLen = curr[j];
-                    bestEndIdxInA = i;
-                }
-            } else {
-                curr[j] = 0;
-            }
-        }
-        // swap references for the next iteration
-        [prev, curr] = [curr, prev];
+  // (3) While there are elements to inspect
+  while (fibM > 1) {
+    // Check the index. Do not go beyond the array bounds.
+    const i = Math.min(offset + fibMMinus2, n - 1);
+
+    if (arr[i] < target) {
+      // Move three Fibonacci variables one step closer to the end
+      fibM = fibMMinus1;
+      fibMMinus1 = fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move the Fibonacci window two steps back
+      fibM = fibMMinus2;
+      fibMMinus1 = fibMMinus1 - fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+    } else {
+      return i; // Found
     }
+  }
 
-    if (bestLen === 0) return "";
-    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
+  // (4) If the last element is the target
+  if (fibMMinus1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  // Not found
+  return -1;
 }
-console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
-console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
-console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
+const sorted = [1, 3, 5, 7, 9, 12, 15, 18, 21, 24, 30];
+
+console.log(fibonacciSearch(sorted, 15)); // → 6
+console.log(fibonacciSearch(sorted, 4));  // → -1
