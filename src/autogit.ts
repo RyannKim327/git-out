@@ -1,45 +1,38 @@
-dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
-if s1[i] === s2[j]
-    dp[i][j] = dp[i‑1][j‑1] + 1
-else
-    dp[i][j] = 0
 /**
- * Returns the longest common substring of two strings.
- * If there are multiple substrings of the same maximal length,
- * the first one encountered is returned.
+ * Recursive binary search.
+ *
+ * @param data   Sorted array to search in.
+ * @param target Value you’re looking for.
+ * @param compare Optional comparator – defaults to numeric or lexical.
+ * @param left   Left index of the current sub‑array (internal use).
+ * @param right  Right index of the current sub‑array (internal use).
+ * @returns Index of the target or -1 if not found.
  */
-function longestCommonSubstring(a: string, b: string): string {
-    if (!a || !b) return "";
+function binarySearch<T>(
+  data: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => ((a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0),
+  left: number = 0,
+  right: number = data.length - 1
+): number {
+  if (left > right) return -1;                 // base case: empty window
 
-    const n = a.length;
-    const m = b.length;
+  const mid = Math.floor((left + right) / 2);
+  const cmp = compare(target, data[mid]);
 
-    // Use a 1‑D array to hold the previous row of DP values.
-    let prev = new Array(m + 1).fill(0);
-    let curr = new Array(m + 1).fill(0);
-
-    let bestLen = 0;
-    let bestEndIdxInA = 0; // index in `a` where the best substring ends
-
-    for (let i = 1; i <= n; i++) {
-        for (let j = 1; j <= m; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                curr[j] = prev[j - 1] + 1;
-                if (curr[j] > bestLen) {
-                    bestLen = curr[j];
-                    bestEndIdxInA = i;
-                }
-            } else {
-                curr[j] = 0;
-            }
-        }
-        // swap references for the next iteration
-        [prev, curr] = [curr, prev];
-    }
-
-    if (bestLen === 0) return "";
-    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
+  if (cmp === 0) return mid;                   // found
+  if (cmp < 0) return binarySearch(data, target, compare, left, mid - 1);
+  return binarySearch(data, target, compare, mid + 1, right);
 }
-console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
-console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
-console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
+// numeric, already sorted
+const nums = [3, 7, 12, 18, 26, 42, 57];
+const idx1 = binarySearch(nums, 18);   // → 3
+const idx2 = binarySearch(nums, 5);    // → -1
+
+// string, case‑insensitive
+const words = ["apple", "banana", "cherry", "date"];
+const idx3 = binarySearch(
+  words,
+  "CHERRY",
+  (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+); // → 2
