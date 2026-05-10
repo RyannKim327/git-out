@@ -1,117 +1,76 @@
-/**
- * Boyer–Moore search – Typescript implementation
- * ------------------------------------------------
- * O(m + n) preprocessing  (m = pattern length, n = text length)
- * O(n/m) expected search time (in practice, very fast)
- */
-
-export class BoyerMoore {
-  /** Pattern to look for */
-  private readonly pat: string;
-  /** Length of the pattern */
-  private readonly m: number;
-  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
-  private readonly badChar: number[];
-  /** Good‑suffix shift table */
-  private readonly goodSuffix: number[];
-
-  constructor(pattern: string) {
-    if (!pattern.length) throw new Error("Pattern must not be empty");
-    this.pat = pattern;
-    this.m = pattern.length;
-
-    this.badChar = this.buildBadCharTable();
-    this.goodSuffix = this.buildGoodSuffixTable();
+// ---------------------------------------------------
+// Queue implemented with a singly linked list
+// ---------------------------------------------------
+class Queue<T> {
+  // ------- internal node type -------
+  private static class Node<U> {
+    constructor(public value: U, public next?: Queue.Node<U>) {}
   }
 
-  /* --------------------------------------------- */
-  /* ===========  PRE‑PROCESSING  ================= */
-  /* --------------------------------------------- */
+  // ------- private fields -------
+  private head?: typeof Queue.Node<any>; // points to the first element
+  private tail?: typeof Queue.Node<any>; // points to the last element
+  private _size = 0;
 
-  /** Build a table indexed by character code (fast array look‑ups). */
-  private buildBadCharTable(): number[] {
-    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
-    for (let i = 0; i < this.m - 1; i++) {
-      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
+  // ------- public methods -------
+
+  /** Insert a new element at the tail. */
+  enqueue(value: T): void {
+    const newNode = new Queue.Node(value);
+    if (!this.tail) {
+      // The queue is empty.
+      this.head = this.tail = newNode;
+    } else {
+      this.tail.next = newNode;
+      this.tail = newNode;
     }
-    return SHIFT;
+    this._size++;
   }
 
-  /** Build the good‑suffix table (two parts: border and suffix arrays). */
-  private buildGoodSuffixTable(): number[] {
-    const r = this.m;
-    const suffix = new Array(r + 1).fill(0);
-    const border = new Array(r + 1).fill(0);
-
-    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
-    let j = r;
-    let k = 0;
-    suffix[r] = r;
-    for (let i = r - 1; i >= 0; i--) {
-      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
-        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
-        k = border[k];
-      }
-      k++;
-      suffix[i] = k;
-    }
-
-    // Step 2 – compute border[] (largest border for each prefix length)
-    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
-
-    // Step 3 – fill goodSuffix[] using borders
-    const good = new Array(r).fill(r);
-    let jMax = 0;
-    for (let i = r - 1; i >= 0; i--) {
-      if (suffix[i] === 0) continue;
-      while (jMax + 1 <= r - i - 1) {
-        if (good[jMax] === r) good[jMax] = r - i - 1;
-        jMax++;
-      }
-    }
-    // For the remaining positions that have no suffix match
-    for (let i = 0; i < r; i++) {
-      if (good[i] === r) good[i] = r - border[i];
-    }
-
-    return good;
+  /** Remove and return the element at the head. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;          // empty queue
+    const removed = this.head.value;           // capture value
+    this.head = this.head.next;                // advance head
+    if (!this.head) this.tail = undefined;     // became empty
+    this._size--;
+    return removed;
   }
 
-  /* --------------------------------------------- */
-  /* ===========       SEARCH        ============= */
-  /* --------------------------------------------- */
-
-  /**
-   * Find the first occurrence of the pattern in `text`.
-   * @returns index of first match or -1 if not found.
-   */
-  public search(text: string): number {
-    const n = text.length;
-    let s = 0;               // shift of the pattern
-
-    while (s <= n - this.m) {
-      let j = this.m - 1;
-
-      // Step 4 – compare from right to left
-      while (j >= 0 && this.pat[j] === text[s + j]) j--;
-
-      if (j < 0) return s;  // match found
-
-      // compute shifts
-      const badShift = this.badChar[text.charCodeAt(s + j)];
-      const goodShift = this.goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
-    return -1;              // not found
+  /** Peek at the head without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
   }
 
-  /* --------------------------------------------- */
-  /* ===========  EXAMPLE USAGE  =============== */
-  /* --------------------------------------------- */
+  /** Number of items currently in the queue. */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  // Optional: allow `for..of` iteration over the queue
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next(): IteratorResult<T> {
+        if (!current) return { done: true, value: undefined };
+        const value = current.value;
+        current = current.next;
+        return { done: false, value };
+      },
+    };
+  }
 }
+const q = new Queue<number>();
 
-// Example usage:
-const bm = new BoyerMoore("needle");
-const txt = "haystack needle haystack inside needlesea";
-const idx = bm.search(txt);
-console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log([...q]); // [20, 30]
