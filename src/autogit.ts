@@ -1,43 +1,50 @@
 /**
- * Random‑pivot QuickSort
- *
- * @param data - array of numbers to sort in place
- * @returns the sorted array
+ * Returns n! for a positive integer n (or 0).
+ * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
  */
-function randomQuickSort(data: number[]): number[] {
-  // Helper that actually does the work, using indices so the call stack is shallow.
-  function sort(left: number, right: number) {
-    if (left >= right) return;
-
-    // Pick a random index between left and right (inclusive)
-    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-    // Swap pivot with the last element – easier partitioning
-    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
-    const pivot = data[right];
-
-    let i = left - 1; // elements ≤ pivot will be to the left of i
-
-    for (let j = left; j < right; j++) {
-      if (data[j] <= pivot) {
-        i++;
-        [data[i], data[j]] = [data[j], data[i]];
-      }
-    }
-
-    // place pivot after the last smaller element
-    const finalPivotPos = i + 1;
-    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
-
-    // Recurse on each partition
-    sort(left, finalPivotPos - 1);
-    sort(finalPivotPos + 1, right);
+export function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error('Factorial is only defined for non‑negative integers');
   }
-
-  sort(0, data.length - 1);
-  return data;
+  // 0! = 1, and the recursion base case covers that
+  if (n <= 1) return 1;
+  return n * factorialRecursive(n - 1);
 }
+console.log(factorialRecursive(5)); // 120
+console.log(factorialRecursive(0)); // 1
+export function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-/* --- demo ------------------------------------ */
-const arr = [5, 2, 9, 1, 5, 6];
-console.log('original:', arr);
-console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+export function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+
+  let result = 1n; // BigInt literal
+  for (let i = 2; i <= n; i++) {
+    result *= BigInt(i);
+  }
+  return result;
+}
+console.log(factorialBigInt(20).toString()); // "2432902008176640000"
+console.log(factorialBigInt(100).toString()); // 158‑digit number
+const memo = new Map<number, number | bigint>();
+
+export function factorialMemo(n: number, useBigInt = false): number | bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n <= 1) return useBigInt ? 1n : 1;
+
+  const key = n;
+  if (memo.has(key)) return memo.get(key)!;
+
+  const res = useBigInt
+    ? BigInt(n) * factorialMemo(n - 1, true)
+    : n * factorialMemo(n - 1, false);
+
+  memo.set(key, res);
+  return res;
+}
