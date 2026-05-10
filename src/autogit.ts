@@ -1,35 +1,70 @@
-// A minimal node definition
-interface TreeNode<T> {
-  value: T;
-  left: TreeNode<T> | null;
-  right: TreeNode<T> | null;
+export interface TreeNode<T> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-// Recursive helper that treats the tree as an expression tree
-function sumTree(node: TreeNode<number> | null): number {
-  if (!node) return 0;                // nothing here – contributes nothing
-  return node.value + sumTree(node.left) + sumTree(node.right);
-}
-const root: TreeNode<number> = {
-  value: 10,
-  left: { value: 5, left: null, right: null },
-  right: { value: -3, left: null, right: null },
-};
+/**
+ * Returns the diameter (max number of edges on any path)
+ * of a binary tree rooted at `root`.
+ */
+export function diameter<T>(root: TreeNode<T> | undefined): number {
+  let maxDia = 0;
 
-console.log(sumTree(root)); // 12
-function sumTreeIterative(root: TreeNode<number> | null): number {
-  if (!root) return 0;
+  function depth(node?: TreeNode<T>): number {
+    if (!node) return 0;
+    const left  = depth(node.left);
+    const right = depth(node.right);
 
-  let sum = 0;
-  const stack: TreeNode<number>[] = [root];
+    // path that goes through this node
+    maxDia = Math.max(maxDia, left + right);
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value;
-
-    if (node.left) stack.push(node.left);
-    if (node.right) stack.push(node.right);
+    // height of this subtree
+    return Math.max(left, right) + 1;
   }
 
-  return sum;
+  depth(root);
+  return maxDia;
+}
+function makeTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //          \   / \
+  //           4 5   6
+  //              \
+  //               7
+  return {
+    val: 1,
+    left: { val: 2, right: { val: 4 } },
+    right: {
+      val: 3,
+      left: { val: 5, right: { val: 7 } },
+      right: { val: 6 }
+    }
+  };
+}
+
+console.log(diameter(makeTree())); // outputs 5
+export function diameterIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;
+  const stack: Array<{ node: TreeNode<T>; visited: boolean }> = [{ node: root, visited: false }];
+  const heights = new Map<TreeNode<T>, number>();
+  let maxDia = 0;
+
+  while (stack.length) {
+    const { node, visited } = stack.pop()!;
+    if (visited) {
+      const lh = heights.get(node.left) ?? 0;
+      const rh = heights.get(node.right) ?? 0;
+      maxDia = Math.max(maxDia, lh + rh);
+      heights.set(node, Math.max(lh, rh) + 1);
+    } else {
+      stack.push({ node, visited: true });
+      if (node.right) stack.push({ node: node.right, visited: false });
+      if (node.left)  stack.push({ node: node.left,  visited: false });
+    }
+  }
+
+  return maxDia;
 }
