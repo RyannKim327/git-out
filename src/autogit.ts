@@ -1,73 +1,62 @@
-// ── List node -----------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Generic Shell Sort.
+ *
+ * @param arr   The array to sort in‑place.
+ * @param cmp   Optional comparator.  Returns a negative number if a < b,
+ *              zero if a == b, positive if a > b.
+ * @returns     The sorted array (same reference as input).
+ *
+ * @example
+ *   const nums = [9, 5, 1, 4, 3];
+ *   shellSort(nums);          // [1,3,4,5,9]
+ *
+ *   const nameList = ['Zoe', 'Alice', 'Bob'];
+ *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
+ */
+function shellSort<T>(
+  arr: T[],
+  cmp?: (a: T, b: T) => number
+): T[] {
+  const len = arr.length;
+  if (len < 2) return arr;          // already sorted
+
+  // Default comparator uses JavaScript's < and > operators.
+  const compare = cmp
+    ? cmp
+    : (a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      };
+
+  // Classic Shell sequence: n/2, n/4, …, 1
+  let gap = Math.floor(len / 2);
+  while (gap > 0) {
+    // For each shift positions, perform an insertion sort on the sub‑array
+    for (let i = gap; i < len; i++) {
+      const temp = arr[i];
+      let j = i;
+
+      // Shift elements of the sub‑array that are greater than temp
+      // rightward by one position.
+      while (j >= gap && compare(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+
+      arr[j] = temp;
+    }
+
+    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
+  }
+
+  return arr;
 }
+const data = [22, 45, 12, 8, 4, 30, 6];
+console.log('Before:', data);
 
-// ── Intersection finder ------------------------------------
-function intersect<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
+shellSort(data);
 
-  // 1. Count nodes in each list
-  const lenA = getLength(headA);
-  const lenB = getLength(headB);
-
-  // 2. Make the heads point to the same distance from the end
-  let ptrA: ListNode<T> | null = headA;
-  let ptrB: ListNode<T> | null = headB;
-  if (lenA > lenB) {
-    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
-  } else {
-    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
-  }
-
-  // 3. Move together until we hit the common node (by reference)
-  while (ptrA && ptrB) {
-    if (ptrA === ptrB) return ptrA;
-    ptrA = ptrA.next;
-    ptrB = ptrB.next;
-  }
-
-  return null;          // no intersection
-}
-
-function getLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-  while (cur) {
-    ++len;
-    cur = cur.next;
-  }
-  return len;
-}
-// shared tail: 5 → 6
-const tail = new ListNode(5, new ListNode(6));
-
-// list A: 1 → 2 → 3 → (shared)
-const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
-
-// list B: 9 → (shared)
-const b = new ListNode(9, tail);
-
-const intersectNode = intersect(a, b);
-console.log(intersectNode?.val); // 5
-function intersectUsingSet<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
-  }
-
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;
-    cur = cur.next;
-  }
-  return null;
-}
+console.log('After:', data);
+Before: [22,45,12,8,4,30,6]
+After: [4,6,8,12,22,30,45]
