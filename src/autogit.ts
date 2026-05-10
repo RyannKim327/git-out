@@ -1,13 +1,20 @@
-// 1. The classic + operator
-const a = "Hello";
-const b = "world!";
-const c = a + " " + b;   // "Hello world!"
+/**
+ * Return the first character that appears more than once in `s`.
+ * If no character repeats, returns `undefined`.
+ */
+function firstRepeated<T extends string>(s: T): T | undefined {
+  const seen = new Set<string>();
 
-// 2. Template literals (better for readability, especially with variables)
-const d = `${a} ${b}`;   // "Hello world!"
-const firstName = "Ada";
-const lastName = "Lovelace";
-const greeting = `Good morning, ${firstName} ${lastName}!`; // Good morning, Ada Lovelace!
-const a: string | null = null;
-const b = "world!";
-const result = `${a ?? ""}${b}`;  // avoids “nullworld!”
+  for (const ch of s) {
+    // if we've already seen this char, it's the first repeat
+    if (seen.has(ch)) return ch as T;
+
+    seen.add(ch);
+  }
+
+  return undefined;   // no repeats
+}
+console.log(firstRepeated('abcd'));        // undefined  (no repeat)
+console.log(firstRepeated('abca'));        // 'a'        (first repeat)
+console.log(firstRepeated('aabbcc'));      // 'a'        (even though 'b' repeats later, 'a' is first)
+console.log(firstRepeated('noisy'));       // undefined
