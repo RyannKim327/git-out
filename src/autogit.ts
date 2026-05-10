@@ -1,30 +1,42 @@
-// Generic helper that works for any type that supports the < operator
-function isSortedAscending<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
-  // If a comparator isn’t supplied, fall back to the default "<" | ">" comparison.
-  // This works for numbers, strings, Dates, etc.
-  const cmp = comparator ?? ((a: any, b: any) => a < b);
+/**
+ * Returns the largest prime factor of n.
+ *
+ * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
+ */
+export function largestPrimeFactor(n: number | bigint): number | bigint {
+    if (n <= 1) throw new Error('n must be > 1');
 
-  // Walk through the array once and bail out on the first violation.
-  for (let i = 1; i < arr.length; i++) {
-    // cmp(a, b) should be true for an ascending array.
-    // For numbers, that means a < b; you could allow equality by `%=` or `<=`.
-    if (!cmp(arr[i-1], arr[i])) {
-      // The pair is out of order – the array isn’t sorted.
-      return false;
+    // Work with BigInt for arbitrary precision
+    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
+    let maxFactor: bigint = 1n;
+
+    // Handle factor 2 separately
+    while (num % 2n === 0n) {
+        maxFactor = 2n;
+        num /= 2n;
     }
-  }
-  return true;          // All pairs were in the correct order.
-}
-const nums = [1, 3, 3, 7, 12];
-console.log(isSortedAscending(nums));      // true
 
-const people = [
-  { name: 'Alice', age: 34 },
-  { name: 'Bob', age: 27 },
-];
-console.log(isSortedAscending(people, (x, y) => x.age < y.age)); // false
-function isSortedCompare<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
-  const sorted = [...arr].sort((a,b)=> (comparator ? (comparator(a,b)?-1:1) : a < b ? -1 : 1));
-  return JSON.stringify(sorted) === JSON.stringify(arr);
+    // Now num is odd – we only need to check odd divisors
+    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
+        while (num % divisor === 0n) {
+            maxFactor = divisor;
+            num /= divisor;
+        }
+    }
+
+    // If anything is left, it's a prime larger than any divisor we tried
+    if (num > 1n) maxFactor = num;
+
+    // Return a native number if the input was a number and the result fits
+    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
+        return Number(maxFactor);
+    }
+    return maxFactor;
 }
-const isSorted = (a: number[]) => a.every((v, i, l) => i === 0 || l[i-1] <= v);
+console.log(largestPrimeFactor(28));          // 7
+console.log(largestPrimeFactor(91));          // 13
+console.log(largestPrimeFactor(600851475143));// 6857
+
+// With a BigInt (e.g. a 100‑digit number)
+const huge = BigInt('123456789123456789123456789');
+console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
