@@ -1,139 +1,147 @@
-type Node = string | number;
+/* ------------------------------------------------------------
+   A tiny bidirectional BFS implementation
+   ------------------------------------------------------------ */
 
-interface Edge {
-  to: Node;
-  weight: number;
+type NodeId = string | number;
+
+// A node in an undirected graph.
+interface GraphNode<T> {
+  id: NodeId;             // unique hashable identifier
+  val: T;                 // payload you care about
+  neighbors: NodeId[];    // adjacent node ids
 }
 
-type Graph = Map<Node, Edge[]>;         // adjacency list
-function buildGraph(edges: Array<[Node, Node, number]>): Graph {
-  const graph: Graph = new Map();
-  for (const [u, v, w] of edges) {
-    if (!graph.has(u)) graph.set(u, []);
-    graph.get(u)!.push({ to: v, weight: w });
-
-    // For an undirected graph, repeat the reverse edge:
-    // if (!graph.has(v)) graph.set(v, []);
-    // graph.get(v)!.push({ to: u, weight: w });
-  }
-  return graph;
+// Helper: build a hash map (id → node) for quick lookup
+function indexNodes<T>(nodes: GraphNode<T>[]): Map<NodeId, GraphNode<T>> {
+  const map = new Map<NodeId, GraphNode<T>>();
+  for (const node of nodes) map.set(node.id, node);
+  return map;
 }
-class MinHeap<T> {
-  private data: { key: number; value: T }[] = [];
 
-  insert(key: number, value: T) {
-    this.data.push({ key, value });
-    this.bubbleUp(this.data.length - 1);
-  }
+// ------------------------------------------------------------
 
-  extractMin(): { key: number; value: T } | undefined {
-    if (!this.data.length) return undefined;
-    const min = this.data[0];
-    const end = this.data.pop()!;
-    if (this.data.length) {
-      this.data[0] = end;
-      this.bubbleDown(0);
-    }
-    return min;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.data[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.data[parentIdx];
-      if (element.key >= parent.key) break;
-      this.data[idx] = parent;
-      this.data[parentIdx] = element;
-      idx = parentIdx;
-    }
-  }
-
-  private bubbleDown(idx: number) {
-    const length = this.data.length;
-    const element = this.data[idx];
-    while (true) {
-      let leftIdx = idx * 2 + 1;
-      let rightIdx = idx * 2 + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        const left = this.data[leftIdx];
-        if (left.key < element.key) swapIdx = leftIdx;
-      }
-      if (rightIdx < length) {
-        const right = this.data[rightIdx];
-        if (
-          (swapIdx === null && right.key < element.key) ||
-          (swapIdx !== null && right.key < this.data[swapIdx].key)
-        )
-          swapIdx = rightIdx;
-      }
-
-      if (swapIdx === null) break;
-      this.data[idx] = this.data[swapIdx];
-      this.data[swapIdx] = element;
-      idx = swapIdx;
-    }
-  }
-
-  get size() { return this.data.length; }
-}
 /**
- * Computes shortest-path distances from `source` to all reachable nodes.
+ * Bidirectional search between `startId` and `goalId`.
  *
- * @param graph  Adjacency list of the graph
- * @param source The starting vertex
- * @returns Map from each vertex to its shortest distance from the source
+ * @param nodes          array of all nodes in the graph
+ * @param startId       id of the starting node
+ * @param goalId        id of the target node
+ * @returns              array of node ids representing the shortest path,
+ *                       or `null` if no path exists
  */
-function dijkstra(graph: Graph, source: Node): Map<Node, number> {
-  const dist = new Map<Node, number>();
-  const heap = new MinHeap<Node>();
+export function biBfs<T>(
+  nodes: GraphNode<T>[],
+  startId: NodeId,
+  goalId: NodeId
+): NodeId[] | null {
+  if (startId === goalId) return [startId];
 
-  // initialise: distance to source is 0, all others are +∞
-  for (const node of graph.keys()) {
-    const initial = node === source ? 0 : Infinity;
-    dist.set(node, initial);
-    heap.insert(initial, node);
-  }
+  const lookup = indexNodes(nodes);
 
-  while (heap.size > 0) {
-    const { key: d, value: u } = heap.extractMin()!;
-    // Skip entries that are stale because a shorter path was already processed
-    if (d > dist.get(u)!) continue;
+  // Frontier queues for each direction
+  const frontierStart: NodeId[] = [startId];
+  const frontierGoal: NodeId[]   = [goalId];
 
-    for (const edge of graph.get(u)!) {
-      const alt = d + edge.weight;
-      if (alt < dist.get(edge.to)!) {
-        dist.set(edge.to, alt);
-        heap.insert(alt, edge.to);
+  // Visited maps: id → predecessor id (to reconstruct)
+  const predStart = new Map<NodeId, NodeId | null>();
+  const predGoal  = new Map<NodeId, NodeId | null>();
+
+  predStart.set(startId, null);
+  predGoal.set(goalId, null);
+
+  // Visited sets to decide intersection
+  const visitedStart = new Set<NodeId>([startId]);
+  const visitedGoal  = new Set<NodeId>([goalId]);
+
+  while (frontierStart.length && frontierGoal.length) {
+    // Expand the smaller frontier to keep the search balanced
+    const expandStart = frontierStart.length <= frontierGoal.length;
+    const currentFrontier = expandStart ? frontierStart : frontierGoal;
+    const currentVisited = expandStart ? visitedStart : visitedGoal;
+    const otherVisited = expandStart ? visitedGoal : visitedStart;
+    const currentPred = expandStart ? predStart : predGoal;
+    const otherPred = expandStart ? predGoal : predStart;
+    const direction = expandStart ? 'start' : 'goal';
+
+    // Pull the next batch of nodes (classic BFS layer)
+    const nextLayer: NodeId[] = [];
+    for (const nodeId of currentFrontier) {
+      const node = lookup.get(nodeId)!;
+      for (const neighId of node.neighbors) {
+        if (currentVisited.has(neighId)) continue;
+
+        // Mark visited and store predecessor
+        currentVisited.add(neighId);
+        currentPred.set(neighId, nodeId);
+        nextLayer.push(neighId);
+
+        // If the other side has already seen this neighbor, we’re done
+        if (otherVisited.has(neighId)) {
+          // Build the full path
+          return buildPath(
+            neighId,
+            predStart,
+            predGoal,
+            startId,
+            goalId,
+            direction === 'start'
+          );
+        }
       }
     }
+
+    // Replace frontier with the newly generated layer
+    if (expandStart) frontierStart.length = 0; else frontierGoal.length = 0;
+    if (expandStart) frontierStart.push(...nextLayer); else frontierGoal.push(...nextLayer);
   }
 
-  return dist;
+  // No meeting point found
+  return null;
 }
-const edges: Array<[Node, Node, number]> = [
-  ['A', 'B', 5],
-  ['A', 'C', 2],
-  ['B', 'C', 1],
-  ['B', 'D', 2],
-  ['C', 'D', 3],
-  ['C', 'E', 1],
-  ['D', 'E', 2],
-  ['D', 'F', 1],
-  ['E', 'F', 4]
+
+/** Reconstruct path once the two searches meet at `meetId`. */
+function buildPath(
+  meetId: NodeId,
+  predStart: Map<NodeId, NodeId | null>,
+  predGoal: Map<NodeId, NodeId | null>,
+  startId: NodeId,
+  goalId: NodeId,
+  fromStart: boolean
+): NodeId[] {
+  const path: NodeId[] = [];
+
+  // Walk back from the meeting point to the start
+  let cur: NodeId | null = meetId;
+  while (cur !== null) {
+    path.unshift(cur);
+    cur = predStart.get(cur) ?? null;
+  }
+
+  // Walk forward from the meeting point to the goal
+  cur = predGoal.get(meetId) ?? null;
+  while (cur !== null) {
+    path.push(cur);
+    cur = predGoal.get(cur) ?? null;
+  }
+
+  // Connect start and goal if they weren't directly the meet point
+  if (path[0] !== startId) path.unshift(startId);
+  if (path[path.length - 1] !== goalId) path.push(goalId);
+
+  return path;
+}
+
+// ------------------------------------------------------------
+// Demo usage ---------------------------------------------------
+
+const graph: GraphNode<number>[] = [
+  { id: 1, val: 1, neighbors: [2, 5] },
+  { id: 2, val: 2, neighbors: [1, 3] },
+  { id: 3, val: 3, neighbors: [2, 4] },
+  { id: 4, val: 4, neighbors: [3] },
+  { id: 5, val: 5, neighbors: [1, 6] },
+  { id: 6, val: 6, neighbors: [5] },
 ];
 
-const graph = buildGraph(edges);
-
-const distances = dijkstra(graph, 'A');
-
-for (const node of graph.keys()) {
-  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
-}
-Distance from A to A: 0
-Distance from A to B: 4
-Distance from A to C: 2
-Distance from A to D: 5
-
+const path = biBfs(graph, 1, 4);
+console.log(path); // [1, 2, 3, 4]
