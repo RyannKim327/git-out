@@ -1,62 +1,64 @@
-/**
- * Generic Shell Sort.
- *
- * @param arr   The array to sort in‑place.
- * @param cmp   Optional comparator.  Returns a negative number if a < b,
- *              zero if a == b, positive if a > b.
- * @returns     The sorted array (same reference as input).
- *
- * @example
- *   const nums = [9, 5, 1, 4, 3];
- *   shellSort(nums);          // [1,3,4,5,9]
- *
- *   const nameList = ['Zoe', 'Alice', 'Bob'];
- *   shellSort(nameList, (a, b) => a.localeCompare(b)); // ['Alice','Bob','Zoe']
- */
-function shellSort<T>(
-  arr: T[],
-  cmp?: (a: T, b: T) => number
-): T[] {
-  const len = arr.length;
-  if (len < 2) return arr;          // already sorted
-
-  // Default comparator uses JavaScript's < and > operators.
-  const compare = cmp
-    ? cmp
-    : (a: T, b: T) => {
-        if (a < b) return -1;
-        if (a > b) return 1;
-        return 0;
-      };
-
-  // Classic Shell sequence: n/2, n/4, …, 1
-  let gap = Math.floor(len / 2);
-  while (gap > 0) {
-    // For each shift positions, perform an insertion sort on the sub‑array
-    for (let i = gap; i < len; i++) {
-      const temp = arr[i];
-      let j = i;
-
-      // Shift elements of the sub‑array that are greater than temp
-      // rightward by one position.
-      while (j >= gap && compare(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-
-      arr[j] = temp;
-    }
-
-    gap = Math.floor(gap / 2); // Reduce the gap for the next pass.
-  }
-
-  return arr;
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
 }
-const data = [22, 45, 12, 8, 4, 30, 6];
-console.log('Before:', data);
+const foo = [1, 2, 3, 4];
+const bar = [3, 4, 5, 6];
+console.log(intersection(foo, bar)); // [3, 4]
+function intersectionSorted<T>(a: T[], b: T[]): T[] {
+  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
+  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
+  const res: T[] = [];
+  let i = 0, j = 0;
 
-shellSort(data);
+  while (i < sortedA.length && j < sortedB.length) {
+    if (sortedA[i] === sortedB[j]) {
+      res.push(sortedA[i]); i++; j++;
+    } else if (sortedA[i] < sortedB[j]) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  return res;
+}
+function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const seen = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
+function intersectionBy<T, K>(
+  a: T[],
+  b: T[],
+  keyFn: (item: T) => K
+): T[] {
+  const setB = new Set(b.map(keyFn));
+  return a.filter(x => setB.has(keyFn(x)));
+}
+const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
+const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
 
-console.log('After:', data);
-Before: [22,45,12,8,4,30,6]
-After: [4,6,8,12,22,30,45]
+console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
+const common = a.filter(v => b.includes(v));
+type KeyFn<T, K> = (item: T) => K;
+
+// Fastest for primitives
+export function intersection<T>(a: T[], b: T[]): T[] {
+  const set = new Set(b);
+  return a.filter(x => set.has(x));
+}
+
+// Preserve order, unique results
+export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
+
+// For objects or custom equality
+export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
+  const set = new Set(b.map(keyFn));
+  return a.filter(x => set.has(keyFn(x)));
+}
