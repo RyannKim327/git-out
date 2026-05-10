@@ -1,138 +1,68 @@
-// ──────────────────────────────────────────────────────────────────────
-// 1️⃣  Node definition
-// ──────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
+// 1️⃣  Imports & type definitions
+// ──────────────────────────────────────────────────────────────
+import fetch from 'node-fetch'; // npm i node-fetch@2
+// If you’re in a browser environment just drop the import line
+// and use the native `fetch` API.
 
-export class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// 2️⃣  Binary‑Search‑Tree
-// ──────────────────────────────────────────────────────────────────────
-
-export class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-
-  /* ----------------------------------------------------------------- */
-  // basic insertion – assumes no duplicates
-  /* ----------------------------------------------------------------- */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let node: TreeNode<T> | null = this.root;
-    while (node) {
-      if (value < node.value) {
-        if (!node.left) {
-          node.left = newNode;
-          break;
-        }
-        node = node.left;
-      } else {
-        if (!node.right) {
-          node.right = newNode;
-          break;
-        }
-        node = node.right;
-      }
-    }
+// ──────────────────────────────────────────────────────────────
+// 2️⃣  The async loader
+// ──────────────────────────────────────────────────────────────
+async function fetchPosts(apiUrl: string): Promise<Post[]> {
+  // A quick sanity check – you don’t want to send an empty string.
+  if (!apiUrl.trim()) {
+    throw new Error('API URL cannot be empty');
   }
 
-  /* ----------------------------------------------------------------- */
-  // find a value – returns the node or null
-  /* ----------------------------------------------------------------- */
-  find(value: T): TreeNode<T> | null {
-    let node = this.root;
-    while (node) {
-      if (value === node.value) return node;
-      node = value < node.value ? node.left : node.right;
-    }
-    return null;
+  const res = await fetch(apiUrl, {
+    // JSON is the common output. Adjust headers if your API
+    // requires authentication or special content‑type.
+    headers: {
+      Accept: 'application/json',
+    },
+    // A generous timeout – network latency can be unpredictable.
+    timeout: 10_000,
+  });
+
+  if (!res.ok) {
+    // Throw an error with the HTTP status so callers can catch it.
+    throw new Error(`Network response was not OK (${res.status})`);
   }
 
-  /* ----------------------------------------------------------------- */
-  // In‑order traversal – returns array of values sorted (for BST)
-  /* ----------------------------------------------------------------- */
-  inorder(): T[] {
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [];
-    let node = this.root;
+  // We’ve decided the result is an array of posts. 
+  // Narrow it to Post[] for full type safety.
+  const data = (await res.json()) as Post[];
 
-    while (stack.length || node) {
-      while (node) {
-        stack.push(node);
-        node = node.left!;
-      }
-      node = stack.pop()!;
-      result.push(node.value);
-      node = node.right!;
-    }
+  return data;
+}
 
-    return result;
-  }
+// ──────────────────────────────────────────────────────────────
+// 3️⃣  Entry point – usage example
+// ──────────────────────────────────────────────────────────────
+async function main() {
+  try {
+    // This is a free JSON placeholder service that offers fake blog posts.
+    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
 
-  /* ----------------------------------------------------------------- */
-  // Pre‑order (root, left, right)
-  /* ----------------------------------------------------------------- */
-  preorder(): T[] {
-    if (!this.root) return [];
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [this.root];
-
-    while (stack.length) {
-      const node = stack.pop()!;
-      result.push(node.value);
-
-      // push right first so left is processed first
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
-    }
-
-    return result;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // Post‑order (left, right, root) – iterative with two stacks
-  /* ----------------------------------------------------------------- */
-  postorder(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
-
-    const stack1: TreeNode<T>[] = [this.root];
-    const stack2: TreeNode<T>[] = [];
-
-    while (stack1.length) {
-      const node = stack1.pop()!;
-      stack2.push(node);
-
-      if (node.left) stack1.push(node.left);
-      if (node.right) stack1.push(node.right);
-    }
-
-    while (stack2.length) {
-      result.push(stack2.pop()!.value);
-    }
-
-    return result;
+    // Just log the first 3 for brevity
+    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
+    posts.slice(0, 3).forEach((p, i) => {
+      console.log(`\nPost #${i + 1}`);
+      console.log(`ID: ${p.id}`);
+      console.log(`Title: ${p.title}`);
+      console.log(`Body: ${p.body.slice(0, 60)}…`);
+    });
+  } catch (err) {
+    // A simple error handler – plug in your own logger if needed.
+    console.error('❌ Failed to fetch posts:', err);
   }
 }
-import { BinarySearchTree } from "./bst";
 
-const bst = new BinarySearchTree<number>();
-
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
-
-console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
-console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
-console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
-
-console.log("Find 5:", bst.find(5)?.value);          // 5
-console.log("Find 20:", bst.find(20));               // null
+main();
