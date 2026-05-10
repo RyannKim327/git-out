@@ -1,50 +1,76 @@
-/**
- * Returns n! for a positive integer n (or 0).
- * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
- */
-export function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers');
+// ---------------------------------------------------
+// Queue implemented with a singly linked list
+// ---------------------------------------------------
+class Queue<T> {
+  // ------- internal node type -------
+  private static class Node<U> {
+    constructor(public value: U, public next?: Queue.Node<U>) {}
   }
-  // 0! = 1, and the recursion base case covers that
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-console.log(factorialRecursive(5)); // 120
-console.log(factorialRecursive(0)); // 1
-export function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  // ------- private fields -------
+  private head?: typeof Queue.Node<any>; // points to the first element
+  private tail?: typeof Queue.Node<any>; // points to the last element
+  private _size = 0;
+
+  // ------- public methods -------
+
+  /** Insert a new element at the tail. */
+  enqueue(value: T): void {
+    const newNode = new Queue.Node(value);
+    if (!this.tail) {
+      // The queue is empty.
+      this.head = this.tail = newNode;
+    } else {
+      this.tail.next = newNode;
+      this.tail = newNode;
+    }
+    this._size++;
   }
-  return result;
-}
-export function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  let result = 1n; // BigInt literal
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
+  /** Remove and return the element at the head. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;          // empty queue
+    const removed = this.head.value;           // capture value
+    this.head = this.head.next;                // advance head
+    if (!this.head) this.tail = undefined;     // became empty
+    this._size--;
+    return removed;
   }
-  return result;
+
+  /** Peek at the head without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items currently in the queue. */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  // Optional: allow `for..of` iteration over the queue
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next(): IteratorResult<T> {
+        if (!current) return { done: true, value: undefined };
+        const value = current.value;
+        current = current.next;
+        return { done: false, value };
+      },
+    };
+  }
 }
-console.log(factorialBigInt(20).toString()); // "2432902008176640000"
-console.log(factorialBigInt(100).toString()); // 158‑digit number
-const memo = new Map<number, number | bigint>();
+const q = new Queue<number>();
 
-export function factorialMemo(n: number, useBigInt = false): number | bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n <= 1) return useBigInt ? 1n : 1;
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-  const key = n;
-  if (memo.has(key)) return memo.get(key)!;
-
-  const res = useBigInt
-    ? BigInt(n) * factorialMemo(n - 1, true)
-    : n * factorialMemo(n - 1, false);
-
-  memo.set(key, res);
-  return res;
-}
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log([...q]); // [20, 30]
