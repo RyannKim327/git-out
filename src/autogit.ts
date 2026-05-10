@@ -1,40 +1,62 @@
 /**
- * Interpolation Search – O(log log n) average, O(n) worst.
- *
- * @param arr   Sorted array of numbers (ascending order)
- * @param key   Value to locate
- * @returns     Index of `key` in `arr`, or -1 if absent
+ * A conventional singly–linked list node.
+ * The value is generic so you can store anything.
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
-
-  let low = 0;
-  let high = arr.length - 1;
-
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high]
-    if (arr[low] === arr[high]) {
-      return arr[low] === key ? low : -1;
-    }
-
-    // Estimation formula
-    const pos = low + Math.floor(
-      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-    );
-
-    const val = arr[pos];
-    if (val === key) {
-      return pos;               // Key found
-    }
-    if (val < key) {
-      low = pos + 1;             // Search upper segment
-    } else {
-      high = pos - 1;            // Search lower segment
-    }
+export interface ListNode<T = number> {
+  value: T
+  next: ListNode<T> | null
+}
+/**
+ * Return the n‑th node from the end of the list.
+ *
+ * @param head  the head node of the list
+ * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
+ * @returns the ListNode that is n places from the end,
+ *          or `null` if the list has fewer than n items.
+ */
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  if (n <= 0) {
+    throw new Error('n must be a positive integer');
   }
 
-  return -1; // Not found
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
+
+  // Move `fast` n nodes ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) {
+      // The list is shorter than n.
+      return null
+    }
+    fast = fast.next
+  }
+
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next // `slow` cannot be null here.
+  }
+
+  return slow
 }
-const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
-console.log(interpolationSearch(sorted, 31)); // → 6
-console.log(interpolationSearch(sorted, 10)); // → -1
+import { ListNode, nthFromEnd } from './linkedListHelpers'
+
+// Build a quick sample list: 1 → 2 → 3 → 4 → 5
+let head: ListNode<number> | null = { value: 1, next: null }
+let cur = head
+for (let i = 2; i <= 5; i++) {
+  cur!.next = { value: i, next: null }
+  cur = cur.next
+}
+
+// 1st from the end → 5
+console.log(nthFromEnd(head, 1)!.value) // 5
+
+// 3rd from the end → 3
+console.log(nthFromEnd(head, 3)!.value) // 3
+
+// 6th from the end → null (list too short)
+console.log(nthFromEnd(head, 6)) // null
