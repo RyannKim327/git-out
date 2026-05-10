@@ -1,66 +1,45 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
+dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
+if s1[i] === s2[j]
+    dp[i][j] = dp[i‑1][j‑1] + 1
+else
+    dp[i][j] = 0
+/**
+ * Returns the longest common substring of two strings.
+ * If there are multiple substrings of the same maximal length,
+ * the first one encountered is returned.
+ */
+function longestCommonSubstring(a: string, b: string): string {
+    if (!a || !b) return "";
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
+    const n = a.length;
+    const m = b.length;
 
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+    // Use a 1‑D array to hold the previous row of DP values.
+    let prev = new Array(m + 1).fill(0);
+    let curr = new Array(m + 1).fill(0);
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+    let bestLen = 0;
+    let bestEndIdxInA = 0; // index in `a` where the best substring ends
 
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= m; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                curr[j] = prev[j - 1] + 1;
+                if (curr[j] > bestLen) {
+                    bestLen = curr[j];
+                    bestEndIdxInA = i;
+                }
+            } else {
+                curr[j] = 0;
+            }
+        }
+        // swap references for the next iteration
+        [prev, curr] = [curr, prev];
     }
-  }
 
-  return leafCount;
+    if (bestLen === 0) return "";
+    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
 }
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
-
-  if (!root) return leaves;
-
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return leaves;
-}
+console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
+console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
+console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
