@@ -1,42 +1,18 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr     Sorted array to search
- * @param target  Value to find
- * @param lessThan Comparator that returns true if  a < b
- * @returns Index of the target or -1 if not found
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  lessThan: (a: T, b: T) => boolean
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+const s = "42";
 
-  while (low <= high) {
-    // middle index – use bit‑shifting to avoid overflow
-    const mid = (low + high) >> 1;
-    const midVal = arr[mid];
+// 1️⃣  Simple integer
+const num1 = Number(s);     // 42
+const num2 = +"42";         // 42
 
-    if (lessThan(target, midVal)) {
-      high = mid - 1; // target is in the left half
-    } else if (lessThan(midVal, target)) {
-      low = mid + 1; // target is in the right half
-    } else {
-      return mid; // found
-    }
-  }
+// 2️⃣  Parse with a specific radix (base)
+const hex = parseInt("FF", 16);   // 255
+const oct = parseInt("10", 8);    // 8
 
-  return -1; // not found
-}
-const nums = [1, 3, 5, 7, 9, 11];
+// 3️⃣  Floating‑point
+const floatVal = Number.parseFloat("3.14"); // 3.14
 
-// simple number comparison
-const index = binarySearch(nums, 7, (a, b) => a < b);
-console.log(index); // 3
+// 4️⃣  BigInt
+const big = BigInt("12345678901234567890");
 
-// with strings
-const words = ['apple', 'banana', 'cherry', 'date'];
-const idx = binarySearch(words, 'cherry', (a, b) => a < b);
-console.log(idx); // 2
+// 5️⃣  Handling bad input
+const bad = Number("not a number"); // NaN
