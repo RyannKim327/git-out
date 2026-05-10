@@ -1,139 +1,106 @@
-type Node = string | number;
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-interface Edge {
-  to: Node;
-  weight: number;
+  // 1️⃣ Find the middle (fast/slow trick)
+  let slow = head, fast = head, prev: ListNode | null = null;
+  while (fast && fast.next) {
+    // 2️⃣ Reverse the first half while we’re at it
+    let nxt = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nxt;
+
+    fast = fast.next.next;
+  }
+
+  // 3️⃣ If odd number of nodes skip the middle one
+  if (fast) slow = slow.next;
+
+  // 4️⃣ Compare the two halves
+  let p1 = prev, p2 = slow;
+  while (p1 && p2) {
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+  return true;
 }
-
-type Graph = Map<Node, Edge[]>;         // adjacency list
-function buildGraph(edges: Array<[Node, Node, number]>): Graph {
-  const graph: Graph = new Map();
-  for (const [u, v, w] of edges) {
-    if (!graph.has(u)) graph.set(u, []);
-    graph.get(u)!.push({ to: v, weight: w });
-
-    // For an undirected graph, repeat the reverse edge:
-    // if (!graph.has(v)) graph.set(v, []);
-    // graph.get(v)!.push({ to: u, weight: w });
-  }
-  return graph;
-}
-class MinHeap<T> {
-  private data: { key: number; value: T }[] = [];
-
-  insert(key: number, value: T) {
-    this.data.push({ key, value });
-    this.bubbleUp(this.data.length - 1);
-  }
-
-  extractMin(): { key: number; value: T } | undefined {
-    if (!this.data.length) return undefined;
-    const min = this.data[0];
-    const end = this.data.pop()!;
-    if (this.data.length) {
-      this.data[0] = end;
-      this.bubbleDown(0);
-    }
-    return min;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.data[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.data[parentIdx];
-      if (element.key >= parent.key) break;
-      this.data[idx] = parent;
-      this.data[parentIdx] = element;
-      idx = parentIdx;
-    }
-  }
-
-  private bubbleDown(idx: number) {
-    const length = this.data.length;
-    const element = this.data[idx];
-    while (true) {
-      let leftIdx = idx * 2 + 1;
-      let rightIdx = idx * 2 + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        const left = this.data[leftIdx];
-        if (left.key < element.key) swapIdx = leftIdx;
-      }
-      if (rightIdx < length) {
-        const right = this.data[rightIdx];
-        if (
-          (swapIdx === null && right.key < element.key) ||
-          (swapIdx !== null && right.key < this.data[swapIdx].key)
-        )
-          swapIdx = rightIdx;
-      }
-
-      if (swapIdx === null) break;
-      this.data[idx] = this.data[swapIdx];
-      this.data[swapIdx] = element;
-      idx = swapIdx;
-    }
-  }
-
-  get size() { return this.data.length; }
+interface ListNode {
+  val: number | string;      // whatever you want to store
+  next?: ListNode | null;    // `next` is optional to support the “end” of the list
 }
 /**
- * Computes shortest-path distances from `source` to all reachable nodes.
+ * Returns true if the singly linked list is a palindrome.
  *
- * @param graph  Adjacency list of the graph
- * @param source The starting vertex
- * @returns Map from each vertex to its shortest distance from the source
+ * @param head - The head node of the linked list (or null).
  */
-function dijkstra(graph: Graph, source: Node): Map<Node, number> {
-  const dist = new Map<Node, number>();
-  const heap = new MinHeap<Node>();
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → palindrome
 
-  // initialise: distance to source is 0, all others are +∞
-  for (const node of graph.keys()) {
-    const initial = node === source ? 0 : Infinity;
-    dist.set(node, initial);
-    heap.insert(initial, node);
+  let slow = head;
+  let fast = head;
+  let prev: ListNode | null = null; // will become the head of the reversed first half
+
+  // Step 1 & 2: find middle, reverse first half
+  while (fast && fast.next) {
+    // Reverse the link for `slow`'s current node
+    const nextNode = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nextNode;
+
+    fast = fast.next.next;
   }
 
-  while (heap.size > 0) {
-    const { key: d, value: u } = heap.extractMin()!;
-    // Skip entries that are stale because a shorter path was already processed
-    if (d > dist.get(u)!) continue;
-
-    for (const edge of graph.get(u)!) {
-      const alt = d + edge.weight;
-      if (alt < dist.get(edge.to)!) {
-        dist.set(edge.to, alt);
-        heap.insert(alt, edge.to);
-      }
-    }
+  // Step 3: if odd length, skip the middle node
+  if (fast) {
+    slow = slow.next!;
   }
 
-  return dist;
+  // Step 4: compare nodes from the two halves
+  let firstHalf = prev;
+  let secondHalf = slow;
+  while (firstHalf && secondHalf) {
+    if (firstHalf.val !== secondHalf.val) return false;
+    firstHalf = firstHalf.next!;
+    secondHalf = secondHalf.next!;
+  }
+
+  return true;
 }
-const edges: Array<[Node, Node, number]> = [
-  ['A', 'B', 5],
-  ['A', 'C', 2],
-  ['B', 'C', 1],
-  ['B', 'D', 2],
-  ['C', 'D', 3],
-  ['C', 'E', 1],
-  ['D', 'E', 2],
-  ['D', 'F', 1],
-  ['E', 'F', 4]
-];
-
-const graph = buildGraph(edges);
-
-const distances = dijkstra(graph, 'A');
-
-for (const node of graph.keys()) {
-  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
+// Helper to create a list from an array
+function fromArray(arr: (number | string)[]): ListNode | null {
+  if (!arr.length) return null;
+  const head: ListNode = { val: arr[0] };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { val: arr[i] };
+    current = current.next;
+  }
+  return head;
 }
-Distance from A to A: 0
-Distance from A to B: 4
-Distance from A to C: 2
-Distance from A to D: 5
 
+console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
+console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string)[] = [];
+  let fast = head;
+  let slow = head;
+
+  // Push first half onto stack
+  while (fast && fast.next) {
+    stack.push(slow!.val);
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
+
+  // Skip middle element for odd length
+  if (fast) slow = slow!.next!;
+
+  // Compare the rest with stack
+  while (slow) {
+    if (stack.pop() !== slow.val) return false;
+    slow = slow.next;
+  }
+  return true;
+}
