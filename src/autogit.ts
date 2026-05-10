@@ -1,46 +1,64 @@
 /**
- * Returns the majority element of a non‑empty array
- * or null if no majority exists.
+ * Very permissive yet useful email pattern.
+ *
+ *  - No whitespace
+ *  - At least one character before and after the @
+ *  - Requires a dot‑separated domain part
+ *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
+ *
+ * The pattern is intentionally simple: it catches the majority of mistakes while
+ * avoiding needless complexity that can cost performance or readability.
  */
-function majorityElement(nums: number[]): number | null {
-  let candidate: number | null = null;
-  let count = 0;
+export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // 1️⃣ first pass – find a candidate
-  for (const x of nums) {
-    if (count === 0) {
-      candidate = x;
-      count = 1;
-    } else if (x === candidate) {
-      count++;
-    } else {
-      count--;
-    }
-  }
+/**
+ * Strict RFC‑5322 compliant-ish pattern.  
+ *  - Handles quoted local‑part, escaped characters, and domain literals.
+ *  - Still keeps things readable by splitting the regex into small parts.
+ *
+ * Use this only if you need the extra validation and can afford a slightly slower check.
+ */
+export const strictEmailRE = new RegExp(
+  // Local part (quoted or unquoted)
+  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
+  // Domain part (letters, digits, hyphens, dots)
+  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
+  '$'
+);
 
-  // 2️⃣ optional second pass – verify the candidate
-  if (candidate !== null) {
-    count = 0;
-    for (const x of nums) if (x === candidate) count++;
-
-    return count > Math.floor(nums.length / 2) ? candidate : null;
-  }
-
-  return null;
+/**
+ * Helper that returns `true` if the input matches *either* pattern.
+ *
+ * @param email Email string to validate.
+ * @returns `true` when the string looks like a valid email address.
+ */
+export function isValidEmail(email: string): boolean {
+  // Trim first – most forms send untrimmed values.
+  const trimmed = email.trim();
+  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
 }
-const arr = [1, 2, 3, 1, 1];
-console.log(majorityElement(arr)); // 1
+import { isValidEmail } from './emailValidator';
 
-const noMajority = [1, 2, 3, 4];
-console.log(majorityElement(noMajority)); // null
-function majorityWithMap(nums: number[]): number | null {
-  const freq = new Map<number, number>();
-  const half = Math.floor(nums.length / 2);
+const test = 'user.name+tag@sub.domain.co.uk';
 
-  for (const x of nums) {
-    const newCount = (freq.get(x) || 0) + 1;
-    freq.set(x, newCount);
-    if (newCount > half) return x;
-  }
-  return null;
+if (isValidEmail(test)) {
+  console.log(`"${test}" passes the regex test`);
+} else {
+  console.log(`"${test}" is definitely not a valid email`);
 }
+const cases = [
+  'simple@example.com',
+  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
+  'very.unusual.@.example.com',
+  'disposable.style.email.with+symbol@example.com',
+  '"much.more unusual"@example.com',
+  'admin@mailserver1',                 // missing TLD
+  'example@localhost',                 // often allowed in dev env
+  'plainaddress',
+  'email.@example.com',
+  '@missing-local.org',
+  'user@.invalid.com',
+  'huge‑domain‑name‑that‑really‑long.com',
+];
+
+cases.forEach(e => console.log(e, isValidEmail(e)));
