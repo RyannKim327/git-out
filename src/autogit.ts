@@ -1,66 +1,35 @@
-// A standard binary‑tree node definition
-class TreeNode<T = number> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
-0                     if root is null
-1                     if root has no children
-count(left) + count(right)   otherwise
-function countLeaves<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;                    // Empty tree
+/*  0001‑random‑ts‑with‑input.ts  */
 
-  // No children → it’s a leaf!
-  if (!root.left && !root.right) return 1;
+import * as readline from 'node:readline';
 
-  // Walk the two sub‑trees and add their leaf counts
-  return countLeaves(root.left) + countLeaves(root.right);
-}
-const tree = new TreeNode(1,
-             new TreeNode(2, new TreeNode(4), null),
-             new TreeNode(3, null, new TreeNode(5))
-          );
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
-function countLeavesIter<T>(root: TreeNode<T> | null): number {
-  if (!root) return 0;
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
 
-  let leafCount = 0;
-  const stack: (TreeNode<T> | null)[] = [root];
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) {
-      leafCount++;
-    } else {
-      // push children onto stack; order doesn’t matter
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return leafCount;
-}
-function getLeafValues<T>(root: TreeNode<T> | null): T[] {
-  const leaves: T[] = [];
-
-  if (!root) return leaves;
-
-  const stack: (TreeNode<T> | null)[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node) continue;
-
-    if (!node.left && !node.right) leaves.push(node.val);
-    else {
-      if (node.right) stack.push(node.right);
-      if (node.left)  stack.push(node.left);
-    }
-  }
-
-  return leaves;
-}
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
