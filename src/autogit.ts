@@ -1,18 +1,46 @@
-// 1. Remove whitespace from the ends – trim()
-const raw = "   some text   ";
-const trimmed = raw.trim();          // "some text"
+/**
+ * Returns the majority element of a non‑empty array
+ * or null if no majority exists.
+ */
+function majorityElement(nums: number[]): number | null {
+  let candidate: number | null = null;
+  let count = 0;
 
-// 2. Remove whitespace everywhere in the string
-const raw2 = "  some text  with  spaces ";
-const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
+  // 1️⃣ first pass – find a candidate
+  for (const x of nums) {
+    if (count === 0) {
+      candidate = x;
+      count = 1;
+    } else if (x === candidate) {
+      count++;
+    } else {
+      count--;
+    }
+  }
 
-// 3. Remove all *outside* whitespace but keep internal spaces
-const raw3 = "   some text with  internal   spaces   ";
-const keepInternal = raw3.trim();           // "some text with  internal   spaces"
+  // 2️⃣ optional second pass – verify the candidate
+  if (candidate !== null) {
+    count = 0;
+    for (const x of nums) if (x === candidate) count++;
 
-// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
-const raw4 = "line1\n  line2\t";
-const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
+    return count > Math.floor(nums.length / 2) ? candidate : null;
+  }
 
-// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
-const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
+  return null;
+}
+const arr = [1, 2, 3, 1, 1];
+console.log(majorityElement(arr)); // 1
+
+const noMajority = [1, 2, 3, 4];
+console.log(majorityElement(noMajority)); // null
+function majorityWithMap(nums: number[]): number | null {
+  const freq = new Map<number, number>();
+  const half = Math.floor(nums.length / 2);
+
+  for (const x of nums) {
+    const newCount = (freq.get(x) || 0) + 1;
+    freq.set(x, newCount);
+    if (newCount > half) return x;
+  }
+  return null;
+}
