@@ -1,25 +1,66 @@
-function countChar(str: string, target: string): number {
-  let count = 0;
-  for (const ch of str) {
-    if (ch === target) count++;
-  }
-  return count;
+// A standard binary‑tree node definition
+class TreeNode<T = number> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-function countCharRegex(str: string, target: string): number {
-  // Escape special regex chars in the target
-  const escaped = target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const matches = str.match(new RegExp(escaped, 'g'));
-  return matches ? matches.length : 0;
-}
-function countCharSplit(str: string, target: string): number {
-  // Splitting on the target gives you one more element than the number of matches
-  return str.split(target).length - 1;
-}
-const s = 'hello world, hello universe!';
-console.log(countChar(s, 'l'));          // 3
-console.log(countCharRegex(s, 'l'));    // 3
-console.log(countCharSplit(s, 'l'));    // 3
+0                     if root is null
+1                     if root has no children
+count(left) + count(right)   otherwise
+function countLeaves<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;                    // Empty tree
 
-console.log(countChar(s, ' '));          // 3
-console.log(countCharRegex(s, ' '));    // 3
-console.log(countCharSplit(s, ' '));    // 3
+  // No children → it’s a leaf!
+  if (!root.left && !root.right) return 1;
+
+  // Walk the two sub‑trees and add their leaf counts
+  return countLeaves(root.left) + countLeaves(root.right);
+}
+const tree = new TreeNode(1,
+             new TreeNode(2, new TreeNode(4), null),
+             new TreeNode(3, null, new TreeNode(5))
+          );
+
+console.log(countLeaves(tree)); // → 3  (nodes 4, 3, 5)
+function countLeavesIter<T>(root: TreeNode<T> | null): number {
+  if (!root) return 0;
+
+  let leafCount = 0;
+  const stack: (TreeNode<T> | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
+
+    if (!node.left && !node.right) {
+      leafCount++;
+    } else {
+      // push children onto stack; order doesn’t matter
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+
+  return leafCount;
+}
+function getLeafValues<T>(root: TreeNode<T> | null): T[] {
+  const leaves: T[] = [];
+
+  if (!root) return leaves;
+
+  const stack: (TreeNode<T> | null)[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node) continue;
+
+    if (!node.left && !node.right) leaves.push(node.val);
+    else {
+      if (node.right) stack.push(node.right);
+      if (node.left)  stack.push(node.left);
+    }
+  }
+
+  return leaves;
+}
