@@ -1,68 +1,76 @@
-/*  stack.ts  */
-export class Stack<T> {
-  // The raw array that stores everything.
-  private readonly items: T[] = [];
-
-  /** Push a value onto the stack. Complexity: O(1). */
-  push(item: T): void {
-    this.items.push(item);
+// ---------------------------------------------------
+// Queue implemented with a singly linked list
+// ---------------------------------------------------
+class Queue<T> {
+  // ------- internal node type -------
+  private static class Node<U> {
+    constructor(public value: U, public next?: Queue.Node<U>) {}
   }
 
-  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot pop from an empty stack');
+  // ------- private fields -------
+  private head?: typeof Queue.Node<any>; // points to the first element
+  private tail?: typeof Queue.Node<any>; // points to the last element
+  private _size = 0;
+
+  // ------- public methods -------
+
+  /** Insert a new element at the tail. */
+  enqueue(value: T): void {
+    const newNode = new Queue.Node(value);
+    if (!this.tail) {
+      // The queue is empty.
+      this.head = this.tail = newNode;
+    } else {
+      this.tail.next = newNode;
+      this.tail = newNode;
     }
-    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
+    this._size++;
   }
 
-  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot peek at an empty stack');
-    }
-    return this.items[this.items.length - 1];
+  /** Remove and return the element at the head. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;          // empty queue
+    const removed = this.head.value;           // capture value
+    this.head = this.head.next;                // advance head
+    if (!this.head) this.tail = undefined;     // became empty
+    this._size--;
+    return removed;
   }
 
-  /** True if the stack has no elements. Complexity: O(1). */
-  isEmpty(): boolean {
-    return this.items.length === 0;
+  /** Peek at the head without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
   }
 
-  /** Number of items currently stored. Complexity: O(1). */
+  /** Number of items currently in the queue. */
   size(): number {
-    return this.items.length;
+    return this._size;
   }
 
-  /** Clear everything. Complexity: O(1) (just resets reference). */
-  clear(): void {
-    this.items.length = 0;
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  // Optional: allow `for..of` iteration over the queue
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next(): IteratorResult<T> {
+        if (!current) return { done: true, value: undefined };
+        const value = current.value;
+        current = current.next;
+        return { done: false, value };
+      },
+    };
   }
 }
-import { Stack } from './stack';
+const q = new Queue<number>();
 
-const numStack = new Stack<number>();
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-numStack.push(1);
-numStack.push(2);
-numStack.push(3);
-
-console.log(numStack.peek());   // 3
-console.log(numStack.pop());    // 3
-console.log(numStack.size());   // 2
-console.log(numStack.isEmpty()); // false
-
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class Stack<T> {
-  private readonly items: T[] = [];
-  constructor(private readonly capacity = Infinity) {}
-
-  push(item: T): void {
-    if (this.items.length >= this.capacity) {
-      throw new Error('Stack overflow: cannot push beyond capacity');
-    }
-    this.items.push(item);
-  }
-  /* … rest of the class unchanged … */
-}
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log([...q]); // [20, 30]
