@@ -1,50 +1,36 @@
-const unique = (arr: readonly any[]) => [...new Set(arr)];
+/**
+ * Is `s` a palindrome?
+ *
+ * @param s           – the string to test
+ * @param options     – optional tweaks:
+ *          ignoreCase    – true → 'A' and 'a' are the same
+ *          ignoreSpaces  – true → ' ' are ignored
+ *          ignoreNonAlnum – true → anything that doesn’t match /[A-Za-z0-9]/ is dropped
+ */
+function isPalindrome(
+    s: string,
+    options: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+    let { ignoreCase, ignoreSpaces, ignoreNonAlnum } = options;
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(unique(numbers)); // [1, 2, 3, 4]
-function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
-  const seen = new Set<any>();
-  return arr.filter(item => {
-    const k = item[key];
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+    // 1. Normalise
+    if (ignoreCase) s = s.toLowerCase();
+
+    // 2. Strip unwanted characters
+    if (ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (ignoreNonAlnum) s = s.replace(/[^a-z0-9]/gi, '');
+
+    // 3. Compare to its reverse
+    const rev = s.split('').reverse().join('');
+    return s === rev;
 }
+console.log(isPalindrome("radar"));                 // true
+console.log(isPalindrome("Radar"));                 // false
+console.log(isPalindrome("Radar", { ignoreCase: true })); // true
 
-const people = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 1, name: 'Ada' },
-  { id: 3, name: 'Ken' }
-];
-
-console.log(uniqBy(people, 'id'));
-/*
-[
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 3, name: 'Ken' }
-]
-*/
-import uniqWith from 'lodash/uniqWith';
-import isEqual from 'lodash/isEqual';
-
-const dupObjs = [
-  { a: 1, b: 2 },
-  { a: 1, b: 2 },
-  { a: 3, b: 4 }
-];
-
-console.log(uniqWith(dupObjs, isEqual));
-// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
-const unique = (arr: readonly any[]) =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
-
-console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
-const uniq = (arr: readonly any[]) => [...new Set(arr)];
-// or for objects by key
-const uniqByKey = (arr: readonly any[], key: string) => {
-  const seen = new Set();
-  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
-};
+console.log(isPalindrome("A man, a plan, a canal: Panama",
+                          { ignoreCase: true, ignoreNonAlnum: true })); // true
+function isPlainPalindrome(s: string): boolean {
+    const rev = s.split('').reverse().join('');
+    return s === rev;
+}
