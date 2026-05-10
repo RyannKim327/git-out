@@ -1,68 +1,44 @@
-// ──────────────────────────────────────────────────────────────
-// 1️⃣  Imports & type definitions
-// ──────────────────────────────────────────────────────────────
-import fetch from 'node-fetch'; // npm i node-fetch@2
-// If you’re in a browser environment just drop the import line
-// and use the native `fetch` API.
+/**
+ * In‑place insertion sort.
+ *
+ * @param arr  The array to sort.  It will be mutated.
+ * @param compare Optional comparison function.  If omitted, the default
+ *                 JavaScript `<` operator is used (suitable for numbers,
+ *                 strings, etc.).
+ * @returns The sorted array (same reference as the input).
+ */
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  if (arr.length < 2) return arr;          // already sorted
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+  // Default comparer: a < b => -1, a > b => +1, else 0
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-// ──────────────────────────────────────────────────────────────
-// 2️⃣  The async loader
-// ──────────────────────────────────────────────────────────────
-async function fetchPosts(apiUrl: string): Promise<Post[]> {
-  // A quick sanity check – you don’t want to send an empty string.
-  if (!apiUrl.trim()) {
-    throw new Error('API URL cannot be empty');
+  // Start from the second element – the first is trivially sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // Move elements that are greater than key one position ahead.
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place key after the element just smaller than it.
+    arr[j + 1] = key;
   }
 
-  const res = await fetch(apiUrl, {
-    // JSON is the common output. Adjust headers if your API
-    // requires authentication or special content‑type.
-    headers: {
-      Accept: 'application/json',
-    },
-    // A generous timeout – network latency can be unpredictable.
-    timeout: 10_000,
-  });
-
-  if (!res.ok) {
-    // Throw an error with the HTTP status so callers can catch it.
-    throw new Error(`Network response was not OK (${res.status})`);
-  }
-
-  // We’ve decided the result is an array of posts. 
-  // Narrow it to Post[] for full type safety.
-  const data = (await res.json()) as Post[];
-
-  return data;
+  return arr;
 }
+const nums = [8, 3, 5, 1, 9, 6];
+console.log(insertionSort(nums)); // [1, 3, 5, 6, 8, 9]
 
-// ──────────────────────────────────────────────────────────────
-// 3️⃣  Entry point – usage example
-// ──────────────────────────────────────────────────────────────
-async function main() {
-  try {
-    // This is a free JSON placeholder service that offers fake blog posts.
-    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
+const words = ['pear', 'apple', 'orange'];
+console.log(insertionSort(words)); // ['apple', 'orange', 'pear']
 
-    // Just log the first 3 for brevity
-    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
-    posts.slice(0, 3).forEach((p, i) => {
-      console.log(`\nPost #${i + 1}`);
-      console.log(`ID: ${p.id}`);
-      console.log(`Title: ${p.title}`);
-      console.log(`Body: ${p.body.slice(0, 60)}…`);
-    });
-  } catch (err) {
-    // A simple error handler – plug in your own logger if needed.
-    console.error('❌ Failed to fetch posts:', err);
-  }
-}
-
-main();
+// Custom comparator (reverse order for numbers)
+console.log(insertionSort([4, 1, 7, 3], (a, b) => b - a));
+// [7, 4, 3, 1]
