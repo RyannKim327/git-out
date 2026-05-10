@@ -1,60 +1,30 @@
-/**
- * Finds the Longest Common Subsequence (LCS) of two strings.
- *
- * @param a – first string
- * @param b – second string
- * @returns an object `{ length, seq }`
- *   * `length` – length of the LCS
- *   * `seq`    – the LCS string itself (empty if none)
- */
-export function lcs(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+// Generic helper that works for any type that supports the < operator
+function isSortedAscending<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
+  // If a comparator isn’t supplied, fall back to the default "<" | ">" comparison.
+  // This works for numbers, strings, Dates, etc.
+  const cmp = comparator ?? ((a: any, b: any) => a < b);
 
-  /* 1. Build DP table:  (m+1) × (n+1) */
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    Array(n + 1).fill(0)
-  );
-
-  for (let i = 1; i <= m; i++) {
-    const ca = a[i - 1];
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        ca === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  // Walk through the array once and bail out on the first violation.
+  for (let i = 1; i < arr.length; i++) {
+    // cmp(a, b) should be true for an ascending array.
+    // For numbers, that means a < b; you could allow equality by `%=` or `<=`.
+    if (!cmp(arr[i-1], arr[i])) {
+      // The pair is out of order – the array isn’t sorted.
+      return false;
     }
   }
-
-  /* 2. Back‑track to recover the sequence */
-  let i = m,
-    j = n,
-    seqArr: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seqArr.push(a[i - 1]); // match – add to subsequence
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
-  }
-
-  // The string is built backwards, so reverse it
-  const seq = seqArr.reverse().join('');
-  return { length: dp[m][n], seq };
+  return true;          // All pairs were in the correct order.
 }
-const prev: number[] = Array(n + 1).fill(0);
-const curr: number[] = Array(n + 1);
-for (let i = 1; i <= m; i++) {
-  curr[0] = 0;
-  for (let j = 1; j <= n; j++) {
-    curr[j] =
-      a[i - 1] === b[j - 1]
-        ? prev[j - 1] + 1
-        : Math.max(prev[j], curr[j - 1]);
-  }
-  // swap
-  [prev, curr] = [curr, prev];
+const nums = [1, 3, 3, 7, 12];
+console.log(isSortedAscending(nums));      // true
+
+const people = [
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 27 },
+];
+console.log(isSortedAscending(people, (x, y) => x.age < y.age)); // false
+function isSortedCompare<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
+  const sorted = [...arr].sort((a,b)=> (comparator ? (comparator(a,b)?-1:1) : a < b ? -1 : 1));
+  return JSON.stringify(sorted) === JSON.stringify(arr);
 }
+const isSorted = (a: number[]) => a.every((v, i, l) => i === 0 || l[i-1] <= v);
