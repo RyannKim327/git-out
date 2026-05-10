@@ -1,73 +1,38 @@
-// ── List node -----------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Recursive binary search.
+ *
+ * @param data   Sorted array to search in.
+ * @param target Value you’re looking for.
+ * @param compare Optional comparator – defaults to numeric or lexical.
+ * @param left   Left index of the current sub‑array (internal use).
+ * @param right  Right index of the current sub‑array (internal use).
+ * @returns Index of the target or -1 if not found.
+ */
+function binarySearch<T>(
+  data: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => ((a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0),
+  left: number = 0,
+  right: number = data.length - 1
+): number {
+  if (left > right) return -1;                 // base case: empty window
+
+  const mid = Math.floor((left + right) / 2);
+  const cmp = compare(target, data[mid]);
+
+  if (cmp === 0) return mid;                   // found
+  if (cmp < 0) return binarySearch(data, target, compare, left, mid - 1);
+  return binarySearch(data, target, compare, mid + 1, right);
 }
+// numeric, already sorted
+const nums = [3, 7, 12, 18, 26, 42, 57];
+const idx1 = binarySearch(nums, 18);   // → 3
+const idx2 = binarySearch(nums, 5);    // → -1
 
-// ── Intersection finder ------------------------------------
-function intersect<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
-
-  // 1. Count nodes in each list
-  const lenA = getLength(headA);
-  const lenB = getLength(headB);
-
-  // 2. Make the heads point to the same distance from the end
-  let ptrA: ListNode<T> | null = headA;
-  let ptrB: ListNode<T> | null = headB;
-  if (lenA > lenB) {
-    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
-  } else {
-    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
-  }
-
-  // 3. Move together until we hit the common node (by reference)
-  while (ptrA && ptrB) {
-    if (ptrA === ptrB) return ptrA;
-    ptrA = ptrA.next;
-    ptrB = ptrB.next;
-  }
-
-  return null;          // no intersection
-}
-
-function getLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-  while (cur) {
-    ++len;
-    cur = cur.next;
-  }
-  return len;
-}
-// shared tail: 5 → 6
-const tail = new ListNode(5, new ListNode(6));
-
-// list A: 1 → 2 → 3 → (shared)
-const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
-
-// list B: 9 → (shared)
-const b = new ListNode(9, tail);
-
-const intersectNode = intersect(a, b);
-console.log(intersectNode?.val); // 5
-function intersectUsingSet<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
-  }
-
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;
-    cur = cur.next;
-  }
-  return null;
-}
+// string, case‑insensitive
+const words = ["apple", "banana", "cherry", "date"];
+const idx3 = binarySearch(
+  words,
+  "CHERRY",
+  (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+); // → 2
