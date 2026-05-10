@@ -1,73 +1,42 @@
-// ── List node -----------------------------------------------
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr     Sorted array to search
+ * @param target  Value to find
+ * @param lessThan Comparator that returns true if  a < b
+ * @returns Index of the target or -1 if not found
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  lessThan: (a: T, b: T) => boolean
+): number {
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high) {
+    // middle index – use bit‑shifting to avoid overflow
+    const mid = (low + high) >> 1;
+    const midVal = arr[mid];
+
+    if (lessThan(target, midVal)) {
+      high = mid - 1; // target is in the left half
+    } else if (lessThan(midVal, target)) {
+      low = mid + 1; // target is in the right half
+    } else {
+      return mid; // found
+    }
+  }
+
+  return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11];
 
-// ── Intersection finder ------------------------------------
-function intersect<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  if (!headA || !headB) return null;
+// simple number comparison
+const index = binarySearch(nums, 7, (a, b) => a < b);
+console.log(index); // 3
 
-  // 1. Count nodes in each list
-  const lenA = getLength(headA);
-  const lenB = getLength(headB);
-
-  // 2. Make the heads point to the same distance from the end
-  let ptrA: ListNode<T> | null = headA;
-  let ptrB: ListNode<T> | null = headB;
-  if (lenA > lenB) {
-    for (let i = 0; i < lenA - lenB; ++i) ptrA = ptrA!.next!;
-  } else {
-    for (let i = 0; i < lenB - lenA; ++i) ptrB = ptrB!.next!;
-  }
-
-  // 3. Move together until we hit the common node (by reference)
-  while (ptrA && ptrB) {
-    if (ptrA === ptrB) return ptrA;
-    ptrA = ptrA.next;
-    ptrB = ptrB.next;
-  }
-
-  return null;          // no intersection
-}
-
-function getLength<T>(head: ListNode<T> | null): number {
-  let len = 0;
-  let cur = head;
-  while (cur) {
-    ++len;
-    cur = cur.next;
-  }
-  return len;
-}
-// shared tail: 5 → 6
-const tail = new ListNode(5, new ListNode(6));
-
-// list A: 1 → 2 → 3 → (shared)
-const a = new ListNode(1, new ListNode(2, new ListNode(3, tail)));
-
-// list B: 9 → (shared)
-const b = new ListNode(9, tail);
-
-const intersectNode = intersect(a, b);
-console.log(intersectNode?.val); // 5
-function intersectUsingSet<T>(
-  headA: ListNode<T> | null,
-  headB: ListNode<T> | null
-): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
-  let cur = headA;
-  while (cur) {
-    seen.add(cur);
-    cur = cur.next;
-  }
-
-  cur = headB;
-  while (cur) {
-    if (seen.has(cur)) return cur;
-    cur = cur.next;
-  }
-  return null;
-}
+// with strings
+const words = ['apple', 'banana', 'cherry', 'date'];
+const idx = binarySearch(words, 'cherry', (a, b) => a < b);
+console.log(idx); // 2
