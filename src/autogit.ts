@@ -1,38 +1,60 @@
 /**
- * Recursive binary search.
+ * Finds the Longest Common Subsequence (LCS) of two strings.
  *
- * @param data   Sorted array to search in.
- * @param target Value you’re looking for.
- * @param compare Optional comparator – defaults to numeric or lexical.
- * @param left   Left index of the current sub‑array (internal use).
- * @param right  Right index of the current sub‑array (internal use).
- * @returns Index of the target or -1 if not found.
+ * @param a – first string
+ * @param b – second string
+ * @returns an object `{ length, seq }`
+ *   * `length` – length of the LCS
+ *   * `seq`    – the LCS string itself (empty if none)
  */
-function binarySearch<T>(
-  data: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => ((a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0),
-  left: number = 0,
-  right: number = data.length - 1
-): number {
-  if (left > right) return -1;                 // base case: empty window
+export function lcs(a: string, b: string) {
+  const m = a.length;
+  const n = b.length;
 
-  const mid = Math.floor((left + right) / 2);
-  const cmp = compare(target, data[mid]);
+  /* 1. Build DP table:  (m+1) × (n+1) */
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    Array(n + 1).fill(0)
+  );
 
-  if (cmp === 0) return mid;                   // found
-  if (cmp < 0) return binarySearch(data, target, compare, left, mid - 1);
-  return binarySearch(data, target, compare, mid + 1, right);
+  for (let i = 1; i <= m; i++) {
+    const ca = a[i - 1];
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] =
+        ca === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+
+  /* 2. Back‑track to recover the sequence */
+  let i = m,
+    j = n,
+    seqArr: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      seqArr.push(a[i - 1]); // match – add to subsequence
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--; // move up
+    } else {
+      j--; // move left
+    }
+  }
+
+  // The string is built backwards, so reverse it
+  const seq = seqArr.reverse().join('');
+  return { length: dp[m][n], seq };
 }
-// numeric, already sorted
-const nums = [3, 7, 12, 18, 26, 42, 57];
-const idx1 = binarySearch(nums, 18);   // → 3
-const idx2 = binarySearch(nums, 5);    // → -1
-
-// string, case‑insensitive
-const words = ["apple", "banana", "cherry", "date"];
-const idx3 = binarySearch(
-  words,
-  "CHERRY",
-  (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
-); // → 2
+const prev: number[] = Array(n + 1).fill(0);
+const curr: number[] = Array(n + 1);
+for (let i = 1; i <= m; i++) {
+  curr[0] = 0;
+  for (let j = 1; j <= n; j++) {
+    curr[j] =
+      a[i - 1] === b[j - 1]
+        ? prev[j - 1] + 1
+        : Math.max(prev[j], curr[j - 1]);
+  }
+  // swap
+  [prev, curr] = [curr, prev];
+}
