@@ -1,49 +1,28 @@
 /**
- * Returns the maximum sum of any contiguous sub‑array.
- * If all numbers are negative, the result is the largest (least negative) number.
+ * Convert a decimal number (base‑10) into a binary string.
+ *
+ * Works for both positive and negative integers.
+ * If you need a signed‑bit representation (e.g., 32‑bit), adjust the `bits` argument.
  */
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) throw new Error('Array must contain at least one element');
+function decimalToBinary(num: number, bits?: number): string {
+  // Handles NaN, Infinity, -Infinity
+  if (!Number.isFinite(num)) {
+    throw new RangeError('Input must be a finite number');
+  }
 
-    let currentSum = arr[0];
-    let bestSum = arr[0];
+  // Quick built‑in path for normal integers/small numbers
+  if (!bits) {
+    return num.toString(2);
+  }
 
-    // We start from index 1 because the first element was already handled
-    for (let i = 1; i < arr.length; i++) {
-        // Either extend the previous sub‑array or start anew at arr[i]
-        currentSum = Math.max(arr[i], currentSum + arr[i]);
-
-        // Update global best if we found a better one
-        bestSum = Math.max(bestSum, currentSum);
-    }
-
-    return bestSum;
+  // For fixed‑width binary (two's complement)
+  // e.g., decimalToBinary(-1, 8) → "11111111"
+  const mask = (1 << bits) - 1;
+  return (num & mask).toString(2).padStart(bits, '0');
 }
-const data = [−2, −3, 4, −1, −2, 1, 5, −3];
-console.log(maxSubarraySum(data)); // 7
 
-// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
-function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
-    let currentSum = arr[0];
-    let bestSum = arr[0];
-    let tempStart = 0;
-    let bestStart = 0;
-    let bestEnd = 0;
-
-    for (let i = 1; i < arr.length; i++) {
-        if (currentSum + arr[i] >= arr[i]) {
-            currentSum += arr[i];
-        } else {
-            currentSum = arr[i];
-            tempStart = i;
-        }
-
-        if (currentSum > bestSum) {
-            bestSum = currentSum;
-            bestStart = tempStart;
-            bestEnd = i;
-        }
-    }
-
-    return { sum: bestSum, start: bestStart, end: bestEnd };
-}
+/* Examples */
+console.log(decimalToBinary(10));           // "1010"
+console.log(decimalToBinary(-5));          // "-101"
+// 8‑bit representation
+console.log(decimalToBinary(-5, 8));        // "11111011"
