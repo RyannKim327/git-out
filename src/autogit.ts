@@ -1,40 +1,100 @@
-/**
- * Interpolation Search – O(log log n) average, O(n) worst.
- *
- * @param arr   Sorted array of numbers (ascending order)
- * @param key   Value to locate
- * @returns     Index of `key` in `arr`, or -1 if absent
- */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null;
+  private tail: Node<T> | null = null;
+  private length = 0;
 
-  let low = 0;
-  let high = arr.length - 1;
+  push(value: T): void { /* … */ }
+  pop(): T | undefined { /* … */ }
+  unshift(value: T): void { /* … */ }
+  shift(): T | undefined { /* … */ }
+  get(index: number): T | undefined { /* … */ }
+  set(index: number, value: T): boolean { /* … */ }
+  insert(index: number, value: T): boolean { /* … */ }
+  remove(index: number): T | undefined { /* … */ }
+  clear(): void { /* … */ }
+  toArray(): T[] { /* … */ }
 
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high]
-    if (arr[low] === arr[high]) {
-      return arr[low] === key ? low : -1;
-    }
+  [Symbol.iterator](): Iterator<T> { /* … */ }
+}
+// Simple singly‑linked node
+class Node<T> {
+  constructor(
+    public readonly value: T,
+    public next: Node<T> | null = null
+  ) {}
+}
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null; // first node
+  private tail: Node<T> | null = null; // last
+  private length = 0;
+}
+constructor(iterable?: Iterable<T>) {
+  if (iterable) {
+    for (const item of iterable) this.push(item);
+  }
+}
+private _getNode(index: number): Node<T> | null {
+  if (index < 0 || index >= this.length) return null;
+  let curr = this.head;
+  for (let i = 0; i < index; i++) curr = curr!.next;
+  return curr;
+}
+push(value: T): void {
+  const node = new Node(value);
+  if (!this.head) {            // first item
+    this.head = this.tail = node;
+  } else {
+    this.tail!.next = node;    // append
+    this.tail = node;
+  }
+  this.length++;
+}
+pop(): T | undefined {
+  if (!this.head) return undefined;
 
-    // Estimation formula
-    const pos = low + Math.floor(
-      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-    );
+  const lastVal = this.tail!.value;
 
-    const val = arr[pos];
-    if (val === key) {
-      return pos;               // Key found
-    }
-    if (val < key) {
-      low = pos + 1;             // Search upper segment
-    } else {
-      high = pos - 1;            // Search lower segment
-    }
+  if (this.head === this.tail) {    // only one node
+    this.head = this.tail = null;
+  } else {
+    // find the node before tail
+    let curr = this.head;
+    while (curr.next !== this.tail) curr = curr.next!;
+    curr.next = null;
+    this.tail = curr;
   }
 
-  return -1; // Not found
+  this.length--;
+  return lastVal;
 }
-const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
-console.log(interpolationSearch(sorted, 31)); // → 6
-console.log(interpolationSearch(sorted, 10)); // → -1
+unshift(value: T): void {
+  const node = new Node(value, this.head);
+  this.head = node;
+  if (!this.tail) this.tail = node; // list was empty
+  this.length++;
+}
+shift(): T | undefined {
+  if (!this.head) return undefined;
+  const val = this.head.value;
+  this.head = this.head.next;
+  if (!this.head) this.tail = null; // list became empty
+  this.length--;
+  return val;
+}
+get(index: number): T | undefined {
+  const node = this._getNode(index);
+  return node ? node.value : undefined;
+}
+set(index: number, value: T): boolean {
+  const node = this._getNode(index);
+  if (!node) return false;
+  node.value = value;
+  return true;
+}
+insert(index: number, value: T): boolean {
+  if (index < 0 || index > this.length) return false;
+  if (index === 0) return (this.unshift(value), true);
+  if (index === this.length) return (this.push(value), true);
+
+  const prev = this._getNode(index - 1)!;
+  const node = new Node(value,
