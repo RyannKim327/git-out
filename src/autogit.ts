@@ -1,58 +1,128 @@
-/**
- * Computes the prefix function (failure table) of a pattern.
- * pi[i] = the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
- */
-function buildPrefixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const pi: number[] = Array(m).fill(0);
-  let k = 0;   // mismatch counter
+type Comparator<T> = (a: T, b: T) => number;
 
-  for (let i = 1; i < m; i++) {
-    // fall back until we either hit a match or k == 0
-    while (k > 0 && pattern[i] !== pattern[k]) {
-      k = pi[k - 1];
-    }
-    if (pattern[i] === pattern[k]) k++;
-    pi[i] = k;
-  }
-  return pi;
+interface BSTNode<T> {
+  value: T;
+  left: BSTNode<T> | null;
+  right: BSTNode<T> | null;
 }
+class BinarySearchTree<T> {
+  private root: BSTNode<T> | null = null;
+  private readonly compare: Comparator<T>;
 
-/**
- * KMP search – returns the starting indices of all matches of `needle`
- * inside `haystack`.  Does *exact* matching (no regex features).
- */
-export function kmpSearch(haystack: string, needle: string): number[] {
-  const n = haystack.length;
-  const m = needle.length;
-  if (m === 0) return [];          // nothing to find
-  if (m > n) return [];            // can't fit
-
-  const pi = buildPrefixTable(needle);
-  const matches: number[] = [];
-  let j = 0;                        // current index in needle
-
-  for (let i = 0; i < n; i++) {
-    // if mismatch, fall back using pi until match or j == 0
-    while (j > 0 && haystack[i] !== needle[j]) {
-      j = pi[j - 1];
-    }
-    if (haystack[i] === needle[j]) j++;
-
-    // full match found
-    if (j === m) {
-      matches.push(i - m + 1);
-      j = pi[j - 1];   // allow overlaps
-    }
+  constructor(compareFn: Comparator<T>) {
+    this.compare = compareFn;
   }
 
-  return matches;
-}
-const txt = "ababcabcababc";
-const pat = "abc";
+  /* ---------- Public API ---------- */
 
-console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
-function contains(haystack: string, needle: string) {
-  return haystack.indexOf(needle) !== -1;
+  insert(value: T): void {
+    this.root = this._insert(this.root, value);
+  }
+
+  find(value: T): T | null {
+    const node = this._find(this.root, value);
+    return node ? node.value : null;
+  }
+
+  delete(value: T): void {
+    this.root = this._delete(this.root, value);
+  }
+
+  // In‑order walk: returns the keys sorted ascending
+  inorder(): T[] {
+    const out: T[] = [];
+    this._inorder(this.root, out);
+    return out;
+  }
+
+  // Optional helpers
+  preorder(): T[] { /* … */ }
+  postorder(): T[] { /* … */ }
+}
+private _insert(node: BSTNode<T> | null, value: T): BSTNode<T> {
+  if (!node) return { value, left: null, right: null };
+
+  const cmp = this.compare(value, node.value);
+  if (cmp < 0) {
+    node.left = this._insert(node.left, value);
+  } else if (cmp > 0) {
+    node.right = this._insert(node.right, value);
+  } // duplicate values are ignored
+
+  return node;
+}
+
+private _find(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
+  if (!node) return null;
+
+  const cmp = this.compare(value, node.value);
+  if (cmp === 0) return node;
+  return cmp < 0 ? this._find(node.left, value) : this._find(node.right, value);
+}
+private _delete(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
+  if (!node) return null;
+
+  const cmp = this.compare(value, node.value);
+  if (cmp < 0) {
+    node.left = this._delete(node.left, value);
+  } else if (cmp > 0) {
+    node.right = this._delete(node.right, value);
+  } else {
+    // node to delete found
+    if (!node.left) return node.right;          // only right child or none
+    if (!node.right) return node.left;          // only left child
+
+    // two children: find the in‑order successor (smallest on right)
+    const succ = this._minNode(node.right)!;
+    node.value = succ.value;                   // replace value
+    node.right = this._delete(node.right, succ.value); // delete successor
+  }
+  return node;
+}
+
+private _minNode(node: BSTNode<T>): BSTNode<T> | null {
+  while (node.left) node = node.left;
+  return node;
+}
+private _inorder(node: BSTNode<T> | null, out: T[]): void {
+  if (!node) return;
+  this._inorder(node.left, out);
+  out.push(node.value);
+  this._inorder(node.right, out);
+}
+
+// You can add preorder/postorder in the same style if you need them.
+const compareNumbers = (a: number, b: number) => a - b;
+
+const bst = new BinarySearchTree<number>(compareNumbers);
+
+bst.insert(10);
+bst.insert(5);
+bst.insert(15);
+bst.insert(3);
+bst.insert(7);
+
+console.log("inorder:", bst.inorder());   // [3,5,7,10,15]
+console.log("find 7:", bst.find(7));      // 7
+console.log("find 99:", bst.find(99));    // null
+
+bst.delete(5);
+console.log("after delete 5:", bst.inorder()); // [3,7,10,15]
+*inorderIter(): Generator<T> {
+  const stack: BSTNode<T>[] = [];
+  let current = this.root;
+
+  while (stack.length || current) {
+    while (current) {
+      stack.push(current);
+      current = current.left!;
+    }
+
+    current = stack.pop()!;
+    yield current.value;
+    current = current.right!;
+  }
+}
+for (const val of bst.inorderIter()) {
+  console.log(val);
 }
