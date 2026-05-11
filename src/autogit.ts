@@ -1,158 +1,128 @@
-// A simple hash table that stores key/value pairs.
-// Collisions are resolved via separate chaining (linked lists).
-export class SimpleHashTable<K, V> {
-  private buckets: Array<LinkedListNode<K, V> | null>;
-  private _size: number;
-  private _count: number;
-  private readonly loadFactorThreshold: number; // e.g. 0.75
+type AdjList = Map<number, Set<number>>;
 
-  constructor(initSize = 16, loadFactor = 0.75) {
-    this.buckets = new Array(initSize).fill(null);
-    this._size = initSize;
-    this._count = 0;
-    this.loadFactorThreshold = loadFactor;
-  }
+class Graph {
+  private adj = new Map<number, Set<number>>();
 
-  // Public API
-  set(key: K, value: V): void { /* ... */ }
-  get(key: K): V | undefined { /* ... */ }
-  delete(key: K): boolean { /* ... */ }
-  has(key: K): boolean { /* ... */ }
-  clear(): void { /* ... */ }
-  get size(): number { return this._count; }
-  // Optionally:
-  // values(), keys(), entries()
-}
-class LinkedListNode<K, V> {
-  key: K;
-  value: V;
-  next: LinkedListNode<K, V> | null;
-
-  constructor(key: K, value: V, next: LinkedListNode<K, V> | null = null) {
-    this.key = key;
-    this.value = value;
-    this.next = next;
-  }
-}
-private getHash(key: K): number {
-  // Simple implementation: works for string & number keys.
-  const strKey = typeof key === 'string' ? key : String(key);
-  let hash = 5381; // djb2 seed
-  for (let i = 0; i < strKey.length; i++) {
-    hash = (hash * 33) ^ strKey.charCodeAt(i);
-  }
-  // Ensure positive index and wrap around bucket count.
-  return Math.abs(hash) % this._size;
-}
-set(key: K, value: V): void {
-  const index = this.getHash(key);
-
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      node.value = value;      // Update existing
-      return;
+  addEdge(u: number, v: number, directed = false): void {
+    if (!this.adj.has(u)) this.adj.set(u, new Set());
+    this.adj.get(u)!.add(v);
+    if (!directed) {
+      if (!this.adj.has(v)) this.adj.set(v, new Set());
+      this.adj.get(v)!.add(u);
     }
-    node = node.next;
   }
 
-  // Insert new node at front of chain
-  const newNode = new LinkedListNode(key, value, this.buckets[index]);
-  this.buckets[index] = newNode;
-  this._count++;
+  getNeighbors(v: number): Set<number> {
+    return this.adj.get(v) ?? new Set();
+  }
 
-  if (this._count / this._size > this.loadFactorThreshold) {
-    this.resize();
+  // helper: list all vertices (useful for disconnected graphs)
+  vertices(): IterableIterator<number> {
+    return this.adj.keys();
   }
 }
+const g = new Graph();
+g.addEdge(0, 1);
+g.addEdge(0, 2);
+g.addEdge(1, 2);
+g.addEdge(1, 3);
+g.addEdge(3, 4);
+function dfsRecursive(
+  graph: Graph,
+  start: number,
+  visited = new Set<number>(),
+  action?: (node: number) => void
+): void {
+  visited.add(start);
+  action?.(start);
 
-get(key: K): V | undefined {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      return node.value;
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) {
+      dfsRecursive(graph, nb, visited, action);
     }
-    node = node.next;
   }
-  return undefined;
 }
+dfsRecursive(g, 0, undefined, console.log);
+// output: 0, 1, 2, 3, 4 (order may vary)
+function dfsIterative(
+  graph: Graph,
+  start: number,
+  action?: (node: number) => void
+): void {
+  const stack: number[] = [start];
+  const visited = new Set<number>();
 
-delete(key: K): boolean {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  let prev: LinkedListNode<K, V> | null = null;
+  while (stack.length) {
+    const v = stack.pop()!; // `!` known to be non‑null
+    if (visited.has(v)) continue;
 
-  while (node) {
-    if (this.equals(node.key, key)) {
-      if (prev) prev.next = node.next;
-      else this.buckets[index] = node.next;
-      this._count--;
-      return true;
+    visited.add(v);
+    action?.(v);
+
+    // push neighbors reverse order if you want LIFO order same as recursion
+    for (const nb of [...graph.getNeighbors(v)].reverse()) {
+      if (!visited.has(nb)) stack.push(nb);
     }
-    prev = node;
-    node = node.next;
   }
+}
+dfsIterative(g, 0, console.log);
+// same output as before
+function hasCycle(graph: Graph): boolean {
+  const visited = new Set<number>();
+  const stack = new Set<number>();
+
+  function visit(v: number): boolean {
+    if (stack.has(v)) return true;      // back‑edge found
+    if (visited.has(v)) return false;    // already seen, no cycle on this path
+
+    visited.add(v);
+    stack.add(v);
+
+    for (const nb of graph.getNeighbors(v)) {
+      if (visit(nb)) return true;
+    }
+
+    stack.delete(v);
+    return false;
+  }
+
+  for (const v of graph.vertices()) if (visit(v)) return true;
   return false;
 }
-
-has(key: K): boolean {
-  return this.get(key) !== undefined;
+function dfsWithOrders(
+  graph: Graph,
+  start: number,
+  pre?: (node: number) => void,
+  post?: (node: number) => void,
+  visited = new Set<number>()
+) {
+  visited.add(start);
+  pre?.(start);
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) dfsWithOrders(graph, nb, pre, post, visited);
+  }
+  post?.(start);
 }
+function connectedComponents(graph: Graph): number[][] {
+  const visited = new Set<number>();
+  const components: number[][] = [];
 
-clear(): void {
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-}
-private equals(a: K, b: K): boolean {
-  return a === b;
-}
-private resize(): void {
-  const oldBuckets = this.buckets;
-  this._size *= 2;                 // Classic, double the bucket count
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-
-  for (const bucket of oldBuckets) {
-    let node = bucket;
-    while (node) {
-      this.set(node.key, node.value); // Re‑hash & insert
-      node = node.next;
+  function explore(v: number, comp: number[]) {
+    visited.add(v);
+    comp.push(v);
+    for (const nb of graph.getNeighbors(v)) {
+      if (!visited.has(nb)) explore(nb, comp);
     }
   }
-}
-values(): V[] {
-  const vals: V[] = [];
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      vals.push(node.value);
-      node = node.next;
+
+  for (const v of graph.vertices()) {
+    if (!visited.has(v)) {
+      const comp: number[] = [];
+      explore(v, comp);
+      components.push(comp);
     }
   }
-  return vals;
+  return components;
 }
-*entries(): IterableIterator<[K, V]> {
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      yield [node.key, node.value];
-      node = node.next;
-    }
-  }
-}
-const ht = new SimpleHashTable<string, number>();
-
-ht.set('apple', 3);
-ht.set('banana', 
-
-
-
----
-
-**Support Pollinations.AI:**
-
----
-
-🌸 **Ad** 🌸
-Powered by Pollinations.AI free text APIs. [Support our mission](https://pollinations.ai/redirect/kofi) to keep AI accessible for everyone.
+npm i -D typescript ts-node
+npx ts-node dfs.ts
