@@ -1,38 +1,83 @@
 /**
- * Counting sort for an array of integers.
- *
- * @param arr The array to sort – an array of numbers.
- * @returns A new array containing the sorted values.
+ * A directed graph is expected to be an object where each key is a node
+ * id (string) and the value is an array of neighbouring node ids.
+ * Example:
+ *   const graph = {
+ *     a: ['b', 'c'],
+ *     b: ['c'],
+ *     c: ['a', 'd'],
+ *     d: ['e'],
+ *     e: []
+ *   };
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+type Graph = Record<string, string[]>;
 
-  // Locate the bounds of the values.
-  let min = arr[0];
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-    if (val < min) min = val;
-    if (val > max) max = val;
-  }
+/**
+ * Tarjan’s SCC algorithm.
+ *
+ * @param graph – adjacency list representation of the directed graph
+ * @returns array of SCCs, each itself an array of node ids
+ */
+export function tarjanSCC(graph: Graph): string[][] {
+  const indexMap = new Map<string, number>();
+  const lowLinkMap = new Map<string, number>();
+  const onStack = new Set<string>();
 
-  const range = max - min + 1;          // Number of distinct possible values
-  const count = new Array<number>(range).fill(0);
+  const stack: string[] = [];
+  let idx = 0;
+  const sccs: string[][] = [];
 
-  // Count occurrences of each integer.
-  for (const value of arr) {
-    count[value - min]++;               // Shift by min so index 0 stays valid
-  }
+  const strongConnect = (node: string) => {
+    // Set the depth index for this node to the smallest unused index
+    indexMap.set(node, idx);
+    lowLinkMap.set(node, idx);
+    idx++;
 
-  // Overwrite the input array (or build a new one) using the counts.
-  const sorted: number[] = [];
-  for (let i = 0; i < range; i++) {
-    const currentVal = i + min;
-    const occ = count[i];
-    for (let j = 0; j < occ; j++) {
-      sorted.push(currentVal);
+    stack.push(node);
+    onStack.add(node);
+
+    // Consider successors of node
+    for (const succ of graph[node] ?? []) {
+      if (!indexMap.has(succ)) {
+        // Successor has not yet been visited – recurse on it
+        strongConnect(succ);
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // Successor is in stack → node is in the same SCC
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+      }
+    }
+
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap.get(node) === indexMap.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  };
+
+  // Call the recursion for each node (in any order)
+  for (const node of Object.keys(graph)) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
     }
   }
 
-  return sorted;
+  return sccs;
 }
+const graph: Graph = {
+  a: ['b'],
+  b: ['c'],
+  c: ['a', 'd'],
+  d: ['e'],
+  e: ['f'],
+  f: ['d']
+};
+
+console.log(tarjanSCC(graph));
+// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
