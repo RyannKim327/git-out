@@ -1,98 +1,33 @@
-/**
- * Comparator signature: (a, b) => boolean
- * Should return true if `a` has higher priority than `b`
- * (i.e. `a` should come *before* `b` in the heap order).
- */
-type Comparator<T> = (a: T, b: T) => boolean;
+// Node >=18 or any modern browser
+// 👉 install types for node-fetch if you’re on older Node: npm i @types/node-fetch
 
-export class PriorityQueue<T> {
-  /** Encoded binary‑heap */
-  private items: T[] = [];
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
+async function fetchPost(id = 1): Promise<Post> {
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
 
-  /* ---------- Properties ---------- */
-
-  get size(): number { return this.items.length; }
-  get isEmpty(): boolean { return this.items.length === 0; }
-
-  /* ---------- Queries ---------- */
-
-  peek(): T | undefined { return this.items[0]; }
-
-  /* ---------- Mutations ---------- */
-
-  push(item: T): void {
-    this.items.push(item);
-    this.bubbleUp(this.items.length - 1);
+  if (!res.ok) {
+    // Throwing includes the HTTP status for downstream handling
+    throw new Error(`Unexpected status ${res.status}`);
   }
 
-  pop(): T | undefined {
-    if (this.isEmpty) return undefined;
-
-    const top = this.items[0];
-    const last = this.items.pop()!; // array isn't empty
-
-    if (!this.isEmpty) {
-      this.items[0] = last;
-      this.bubbleDown(0);
-    }
-
-    return top;
-  }
-
-  /* ---------- Internals ---------- */
-
-  private bubbleUp(idx: number): void {
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (this.comparator(this.items[idx], this.items[parentIdx])) {
-        this.swap(idx, parentIdx);
-        idx = parentIdx;
-      } else {
-        break;
-      }
-    }
-  }
-
-  private bubbleDown(idx: number): void {
-    const length = this.items.length;
-    while (true) {
-      const left = idx * 2 + 1;
-      const right = left + 1;
-      let smallest = idx;
-
-      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
-        smallest = left;
-      }
-      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
-        smallest = right;
-      }
-
-      if (smallest !== idx) {
-        this.swap(idx, smallest);
-        idx = smallest;
-      } else {
-        break;
-      }
-    }
-  }
-
-  private swap(i: number, j: number): void {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
-  }
-}
-const maxHeap = new PriorityQueue<number>((a, b) => a > b);
-interface Task {
-  priority: number;     // smaller number → higher priority
-  description: string;
+  // Telling TS that the JSON shapes like our Post type
+  const data = await res.json() as Post;
+  return data;
 }
 
-const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
-const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
-
-[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
-
-while (!pq.isEmpty) {
-  console.log(pq.pop()); // prints: 1, 3, 5, 8
-}
+(async () => {
+  try {
+    const post = await fetchPost(42);  // change the ID if you like
+    console.log('🚀 Post fetched:');
+    console.log(`Title: ${post.title}`);
+    console.log(`Body: ${post.body.slice(0, 70)}…`);
+  } catch (err) {
+    console.error('❌ Fetch failed:', err);
+  }
+})();
