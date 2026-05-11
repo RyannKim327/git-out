@@ -1,54 +1,128 @@
-/**
- * Iterative (bottom‑up) merge sort.
- * @param arr The array to be sorted (in‑place).
- * @returns The sorted array – same reference as the input.
- */
-function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1) return arr;          // nothing to do
+type AdjList = Map<number, Set<number>>;
 
-  const n = arr.length;
-  const temp: T[] = new Array(n);           // temporary buffer for merging
+class Graph {
+  private adj = new Map<number, Set<number>>();
 
-  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
-  for (let width = 1; width < n; width *= 2) {
-    // left is the start of the first run in a pair
-    for (let left = 0; left < n; left += 2 * width) {
-      const mid   = Math.min(left + width, n);        // first run ends
-      const right = Math.min(left + 2 * width, n);    // second run ends
-
-      // merge [left, mid) and [mid, right) into temp
-      let i = left,      // index in first run
-          j = mid,       // index in second run
-          k = left;      // index in temp
-
-      while (i < mid && j < right) {
-        // Use compareFn if supplied, else default <>
-        const cmp = compareFn
-          ? compareFn(arr[i], arr[j])
-          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
-        
-        if (cmp <= 0) {
-          temp[k++] = arr[i++];
-        } else {
-          temp[k++] = arr[j++];
-        }
-      }
-
-      // copy any remaining items from the first run
-      while (i < mid) temp[k++] = arr[i++];
-      // copy any remaining items from the second run
-      while (j < right) temp[k++] = arr[j++];
-
-      // copy the merged part back into the original array
-      for (let p = left; p < right; p++) {
-        arr[p] = temp[p];
-      }
+  addEdge(u: number, v: number, directed = false): void {
+    if (!this.adj.has(u)) this.adj.set(u, new Set());
+    this.adj.get(u)!.add(v);
+    if (!directed) {
+      if (!this.adj.has(v)) this.adj.set(v, new Set());
+      this.adj.get(v)!.add(u);
     }
   }
 
-  return arr;
+  getNeighbors(v: number): Set<number> {
+    return this.adj.get(v) ?? new Set();
+  }
+
+  // helper: list all vertices (useful for disconnected graphs)
+  vertices(): IterableIterator<number> {
+    return this.adj.keys();
+  }
 }
-const numbers = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(numbers);
-console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
-mergeSortIterative(list, (a, b) => a.age - b.age);
+const g = new Graph();
+g.addEdge(0, 1);
+g.addEdge(0, 2);
+g.addEdge(1, 2);
+g.addEdge(1, 3);
+g.addEdge(3, 4);
+function dfsRecursive(
+  graph: Graph,
+  start: number,
+  visited = new Set<number>(),
+  action?: (node: number) => void
+): void {
+  visited.add(start);
+  action?.(start);
+
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) {
+      dfsRecursive(graph, nb, visited, action);
+    }
+  }
+}
+dfsRecursive(g, 0, undefined, console.log);
+// output: 0, 1, 2, 3, 4 (order may vary)
+function dfsIterative(
+  graph: Graph,
+  start: number,
+  action?: (node: number) => void
+): void {
+  const stack: number[] = [start];
+  const visited = new Set<number>();
+
+  while (stack.length) {
+    const v = stack.pop()!; // `!` known to be non‑null
+    if (visited.has(v)) continue;
+
+    visited.add(v);
+    action?.(v);
+
+    // push neighbors reverse order if you want LIFO order same as recursion
+    for (const nb of [...graph.getNeighbors(v)].reverse()) {
+      if (!visited.has(nb)) stack.push(nb);
+    }
+  }
+}
+dfsIterative(g, 0, console.log);
+// same output as before
+function hasCycle(graph: Graph): boolean {
+  const visited = new Set<number>();
+  const stack = new Set<number>();
+
+  function visit(v: number): boolean {
+    if (stack.has(v)) return true;      // back‑edge found
+    if (visited.has(v)) return false;    // already seen, no cycle on this path
+
+    visited.add(v);
+    stack.add(v);
+
+    for (const nb of graph.getNeighbors(v)) {
+      if (visit(nb)) return true;
+    }
+
+    stack.delete(v);
+    return false;
+  }
+
+  for (const v of graph.vertices()) if (visit(v)) return true;
+  return false;
+}
+function dfsWithOrders(
+  graph: Graph,
+  start: number,
+  pre?: (node: number) => void,
+  post?: (node: number) => void,
+  visited = new Set<number>()
+) {
+  visited.add(start);
+  pre?.(start);
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) dfsWithOrders(graph, nb, pre, post, visited);
+  }
+  post?.(start);
+}
+function connectedComponents(graph: Graph): number[][] {
+  const visited = new Set<number>();
+  const components: number[][] = [];
+
+  function explore(v: number, comp: number[]) {
+    visited.add(v);
+    comp.push(v);
+    for (const nb of graph.getNeighbors(v)) {
+      if (!visited.has(nb)) explore(nb, comp);
+    }
+  }
+
+  for (const v of graph.vertices()) {
+    if (!visited.has(v)) {
+      const comp: number[] = [];
+      explore(v, comp);
+      components.push(comp);
+    }
+  }
+  return components;
+}
+npm i -D typescript ts-node
+npx ts-node dfs.ts
