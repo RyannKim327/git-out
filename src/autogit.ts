@@ -1,95 +1,64 @@
-type EdgeMap = Map<number, Node>; // key = first char code of the edge
+/**
+ * Very permissive yet useful email pattern.
+ *
+ *  - No whitespace
+ *  - At least one character before and after the @
+ *  - Requires a dot‑separated domain part
+ *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
+ *
+ * The pattern is intentionally simple: it catches the majority of mistakes while
+ * avoiding needless complexity that can cost performance or readability.
+ */
+export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export class Node {
-  // Children edges keyed by first character code
-  public children: EdgeMap = new Map();
+/**
+ * Strict RFC‑5322 compliant-ish pattern.  
+ *  - Handles quoted local‑part, escaped characters, and domain literals.
+ *  - Still keeps things readable by splitting the regex into small parts.
+ *
+ * Use this only if you need the extra validation and can afford a slightly slower check.
+ */
+export const strictEmailRE = new RegExp(
+  // Local part (quoted or unquoted)
+  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
+  // Domain part (letters, digits, hyphens, dots)
+  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
+  '$'
+);
 
-  // Edge that leads **to** this node
-  public start: number = -1;           // inclusive
-  public end: number = -1;             // exclusive
-  public suffixLink: Node | null = null;
-
-  constructor(start: number = -1, end: number = -1) {
-    this.start = start;
-    this.end   = end;
-  }
+/**
+ * Helper that returns `true` if the input matches *either* pattern.
+ *
+ * @param email Email string to validate.
+ * @returns `true` when the string looks like a valid email address.
+ */
+export function isValidEmail(email: string): boolean {
+  // Trim first – most forms send untrimmed values.
+  const trimmed = email.trim();
+  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
 }
-export class SuffixTree {
-  /** original text, appended with a unique terminator that does not appear elsewhere */
-  private text: string[];
+import { isValidEmail } from './emailValidator';
 
-  /** root node */
-  private root: Node = new Node();
+const test = 'user.name+tag@sub.domain.co.uk';
 
-  /** active point */
-  private activeNode: Node = this.root;
-  private activeEdge: number | null = null;
-  private activeLength: number = 0;
+if (isValidEmail(test)) {
+  console.log(`"${test}" passes the regex test`);
+} else {
+  console.log(`"${test}" is definitely not a valid email`);
+}
+const cases = [
+  'simple@example.com',
+  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
+  'very.unusual.@.example.com',
+  'disposable.style.email.with+symbol@example.com',
+  '"much.more unusual"@example.com',
+  'admin@mailserver1',                 // missing TLD
+  'example@localhost',                 // often allowed in dev env
+  'plainaddress',
+  'email.@example.com',
+  '@missing-local.org',
+  'user@.invalid.com',
+  'huge‑domain‑name‑that‑really‑long.com',
+];
 
-  /** number of suffixes that have yet to be inserted for the current phase */
-  private remainder: number = 0;
-
-  /** end index for leaves – shared so all leaves refer to the current suffix end */
-  private leafEnd: number = -1;
-
-  constructor(text: string) {
-    // Ensure a single terminator is appended; '#' is common
-    this.text = text.split('').concat('#');
-    this.build();
-  }
-
-  /** Core driver – runs one pass over the text */
-  private build(): void {
-    for (let i = 0; i < this.text.length; i++) {
-      this.extend(i);
-    }
-  }
-
-  /** Ukkonen’s “extension” for position i of the text */
-  private extend(pos: number): void {
-    this.leafEnd = pos;  // All current leaves stretch to the new char
-
-    this.remainder++;   // We have one more suffix to add
-
-    let lastNewNode: Node | null = null;
-
-    while (this.remainder > 0) {
-      if (this.activeLength === 0) {
-        // Start a new edge from the active node
-        this.activeEdge = pos;
-      }
-
-      const activeChar = this.text[this.activeEdge!];
-      const child = this.activeNode.children.get(activeChar.charCodeAt(0));
-
-      // 1. No edge starting with the active char → create a leaf
-      if (!child) {
-        const leaf = new Node(pos, Infinity); // Infinity means “extends to leafEnd”
-        this.activeNode.children.set(activeChar.charCodeAt(0), leaf);
-
-        // set suffix link for last internal node
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this.activeNode;
-          lastNewNode = null;
-        }
-      }
-      // 2. Edge exists → walk down if we have to
-      else if (this.walkDown(child, pos)) {
-        // edge fully traversed – repeat loop with updated active point
-        continue;
-      }
-      // 3. Edge exists but activeLength < edge length → split edge
-      else {
-        const edgeLen = this.edgeLength(child, pos);
-        if (this.activeLength === edgeLen) {
-          // If we are *exactly* at the end of an edge, further walk down happens
-          if (lastNewNode && this.activeNode !== this.root) {
-            lastNewNode.suffixLink = this.activeNode;
-            lastNewNode = null;
-          }
-          this.activeNode = child;
-          this.activeLength++; // effectively moving to next character on edge
-          break;               // proceed to next i
-        }
-
-        // Create internal node
+cases.forEach(e => console.log(e, isValidEmail(e)));
