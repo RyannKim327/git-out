@@ -1,61 +1,74 @@
 /**
- * Merge‑sort for an array of T.
+ * Quick‑sort implementation.
  *
- * @param array      – the array to sort (mutated in‑place)
- * @param compareFn – optional comparator (a, b) => number
- *                    (neg: < a, 0: equal, pos: > a)
- * @returns the sorted array (same reference as the input)
+ * @param arr   The array to sort – it will be mutated in place.
+ * @param compare Optional comparison function.  
+ *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+ *                If omitted, the default is a numeric comparison.
+ * @returns The same array reference, now sorted.
  */
-export function mergeSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
+export function quickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
 ): T[] {
-  // Base case: a single element is already sorted.
-  if (array.length <= 1) return array;
+  // Default to numeric comparison if no comparator is given
+  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
 
-  // Split the array in half.
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
+  // Recursive helper – operates on the portion of the array
+  function qs(left: number, right: number): void {
+    if (left >= right) return;
 
-  // Recursively sort each half then merge them.
-  mergeSort(left, compareFn);
-  mergeSort(right, compareFn);
-  merge(array, left, right, compareFn);
-  return array;               // return the same array reference
-}
+    // Partition returns the final index of the pivot
+    const pivotIndex = partition(left, right);
 
-/**
- * Merge the two sorted halves back into `out`.
- */
-function merge<T>(
-  out: T[],
-  left: T[],
-  right: T[],
-  compareFn: (a: T, b: T) => number
-) {
-  let i = 0, j = 0, k = 0;
-  while (i < left.length && j < right.length) {
-    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
-    else out[k++] = right[j++];
+    // Recurse on smaller side first to keep stack depth <= log₂(n)
+    if (pivotIndex - left < right - pivotIndex) {
+      qs(left, pivotIndex - 1);
+      qs(pivotIndex + 1, right);
+    } else {
+      qs(pivotIndex + 1, right);
+      qs(left, pivotIndex - 1);
+    }
   }
-  // Copy any remaining items.
-  while (i < left.length) out[k++] = left[i++];
-  while (j < right.length) out[k++] = right[j++];
-}
 
-/**
- * Default comparator for numbers or strings.
- */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
+  // Lomuto‑style partition – choose rightmost element as pivot
+  function partition(left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;          // Place for swapping
+
+    for (let j = left; j < right; j++) {
+      if (cmp(arr[j], pivot) <= 0) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    // Move pivot to its final place
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
+  }
+
+  qs(0, arr.length - 1);
+  return arr;
 }
+// Numbers – default numeric comparison is fine
 const nums = [34, 7, 23, 32, 5, 62];
-mergeSort(nums);            // in‑place sort
-console.log(nums);          // [5, 7, 23, 32, 34, 62]
+console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
 
-// With a custom comparator (e.g., reverse order)
-mergeSort(nums, (a, b) => b - a);
-console.log(nums);          // [62, 34, 32, 23, 7, 5]
+// Strings – need a string comparator  
+const words = ['banana', 'apple', 'cherry'];
+console.log(
+  quickSort(words, (a, b) => a.localeCompare(b))
+); // ['apple', 'banana', 'cherry']
+
+// Custom objects  
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Anna', age: 27 },
+  { name: 'Bob', age: 22 },
+  { name: 'Clara', age: 35 },
+];
+
+quickSort(people, (a, b) => a.age - b.age);
+console.log(people);
+// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
