@@ -1,37 +1,147 @@
-const original = [1, 2, 3, 4];
+/* ------------------------------------------------------------
+   A tiny bidirectional BFS implementation
+   ------------------------------------------------------------ */
 
-const filtered = original.filter(n => n !== 3); // [1, 2, 4]
-const arr = [1, 2, 3, 4, 3];
+type NodeId = string | number;
 
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
+// A node in an undirected graph.
+interface GraphNode<T> {
+  id: NodeId;             // unique hashable identifier
+  val: T;                 // payload you care about
+  neighbors: NodeId[];    // adjacent node ids
 }
-const arr = ['a', 'b', 'c', 'd'];
-arr.splice(2, 1); // removes element at index 2
-// arr is now ['a', 'b', 'd']
-function removeItem<T>(arr: T[], item: T): T[] {
-  const idx = arr.indexOf(item);
-  if (idx !== -1) {
-    const copy = [...arr];
-    copy.splice(idx, 1);
-    return copy;
+
+// Helper: build a hash map (id → node) for quick lookup
+function indexNodes<T>(nodes: GraphNode<T>[]): Map<NodeId, GraphNode<T>> {
+  const map = new Map<NodeId, GraphNode<T>>();
+  for (const node of nodes) map.set(node.id, node);
+  return map;
+}
+
+// ------------------------------------------------------------
+
+/**
+ * Bidirectional search between `startId` and `goalId`.
+ *
+ * @param nodes          array of all nodes in the graph
+ * @param startId       id of the starting node
+ * @param goalId        id of the target node
+ * @returns              array of node ids representing the shortest path,
+ *                       or `null` if no path exists
+ */
+export function biBfs<T>(
+  nodes: GraphNode<T>[],
+  startId: NodeId,
+  goalId: NodeId
+): NodeId[] | null {
+  if (startId === goalId) return [startId];
+
+  const lookup = indexNodes(nodes);
+
+  // Frontier queues for each direction
+  const frontierStart: NodeId[] = [startId];
+  const frontierGoal: NodeId[]   = [goalId];
+
+  // Visited maps: id → predecessor id (to reconstruct)
+  const predStart = new Map<NodeId, NodeId | null>();
+  const predGoal  = new Map<NodeId, NodeId | null>();
+
+  predStart.set(startId, null);
+  predGoal.set(goalId, null);
+
+  // Visited sets to decide intersection
+  const visitedStart = new Set<NodeId>([startId]);
+  const visitedGoal  = new Set<NodeId>([goalId]);
+
+  while (frontierStart.length && frontierGoal.length) {
+    // Expand the smaller frontier to keep the search balanced
+    const expandStart = frontierStart.length <= frontierGoal.length;
+    const currentFrontier = expandStart ? frontierStart : frontierGoal;
+    const currentVisited = expandStart ? visitedStart : visitedGoal;
+    const otherVisited = expandStart ? visitedGoal : visitedStart;
+    const currentPred = expandStart ? predStart : predGoal;
+    const otherPred = expandStart ? predGoal : predStart;
+    const direction = expandStart ? 'start' : 'goal';
+
+    // Pull the next batch of nodes (classic BFS layer)
+    const nextLayer: NodeId[] = [];
+    for (const nodeId of currentFrontier) {
+      const node = lookup.get(nodeId)!;
+      for (const neighId of node.neighbors) {
+        if (currentVisited.has(neighId)) continue;
+
+        // Mark visited and store predecessor
+        currentVisited.add(neighId);
+        currentPred.set(neighId, nodeId);
+        nextLayer.push(neighId);
+
+        // If the other side has already seen this neighbor, we’re done
+        if (otherVisited.has(neighId)) {
+          // Build the full path
+          return buildPath(
+            neighId,
+            predStart,
+            predGoal,
+            startId,
+            goalId,
+            direction === 'start'
+          );
+        }
+      }
+    }
+
+    // Replace frontier with the newly generated layer
+    if (expandStart) frontierStart.length = 0; else frontierGoal.length = 0;
+    if (expandStart) frontierStart.push(...nextLayer); else frontierGoal.push(...nextLayer);
   }
-  return arr;
+
+  // No meeting point found
+  return null;
 }
 
-const nums = [7, 8, 9];
-const updated = removeItem(nums, 8); // [7, 9]
-type Item = { id: number; name: string };
+/** Reconstruct path once the two searches meet at `meetId`. */
+function buildPath(
+  meetId: NodeId,
+  predStart: Map<NodeId, NodeId | null>,
+  predGoal: Map<NodeId, NodeId | null>,
+  startId: NodeId,
+  goalId: NodeId,
+  fromStart: boolean
+): NodeId[] {
+  const path: NodeId[] = [];
 
-const items: Item[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Carol' }
+  // Walk back from the meeting point to the start
+  let cur: NodeId | null = meetId;
+  while (cur !== null) {
+    path.unshift(cur);
+    cur = predStart.get(cur) ?? null;
+  }
+
+  // Walk forward from the meeting point to the goal
+  cur = predGoal.get(meetId) ?? null;
+  while (cur !== null) {
+    path.push(cur);
+    cur = predGoal.get(cur) ?? null;
+  }
+
+  // Connect start and goal if they weren't directly the meet point
+  if (path[0] !== startId) path.unshift(startId);
+  if (path[path.length - 1] !== goalId) path.push(goalId);
+
+  return path;
+}
+
+// ------------------------------------------------------------
+// Demo usage ---------------------------------------------------
+
+const graph: GraphNode<number>[] = [
+  { id: 1, val: 1, neighbors: [2, 5] },
+  { id: 2, val: 2, neighbors: [1, 3] },
+  { id: 3, val: 3, neighbors: [2, 4] },
+  { id: 4, val: 4, neighbors: [3] },
+  { id: 5, val: 5, neighbors: [1, 6] },
+  { id: 6, val: 6, neighbors: [5] },
 ];
 
-const withoutBob = items.filter(item => item.id !== 2);
-// smallest change, clean and declarative
-const unique = new Set([1, 2, 3, 4]); // Set<number>
-unique.delete(3); // removes 3
-const arr = [...unique]; // back to an array if needed
+const path = biBfs(graph, 1, 4);
+console.log(path); // [1, 2, 3, 4]
