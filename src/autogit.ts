@@ -1,34 +1,40 @@
-// One‑way (singly) list node
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
-function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+/**
+ * Interpolation Search – O(log log n) average, O(n) worst.
+ *
+ * @param arr   Sorted array of numbers (ascending order)
+ * @param key   Value to locate
+ * @returns     Index of `key` in `arr`, or -1 if absent
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  while (curr) {
-    const next = curr.next;   // keep the next node
-    curr.next = prev;         // reverse the link
-    prev = curr;              // advance prev
-    curr = next;              // advance curr
+  let low = 0;
+  let high = arr.length - 1;
+
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high]
+    if (arr[low] === arr[high]) {
+      return arr[low] === key ? low : -1;
+    }
+
+    // Estimation formula
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    const val = arr[pos];
+    if (val === key) {
+      return pos;               // Key found
+    }
+    if (val < key) {
+      low = pos + 1;             // Search upper segment
+    } else {
+      high = pos - 1;            // Search lower segment
+    }
   }
 
-  return prev;                // new head of the reversed list
+  return -1; // Not found
 }
-function reverseRec<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;      // end reached – prev is the new head
-
-  const next = node.next;      // hold next
-  node.next = prev;            // reverse pointer
-  return reverseRec(next, node); // recurse
-}
-// 1 → 2 → 3 → null
-let head = new ListNode(1);
-head.next = new ListNode(2, new ListNode(3));
-
-head = reverseLinkedList(head);
-
-// head now points to 3 → 2 → 1 → null
+const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
+console.log(interpolationSearch(sorted, 31)); // → 6
+console.log(interpolationSearch(sorted, 10)); // → -1
