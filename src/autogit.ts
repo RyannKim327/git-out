@@ -1,61 +1,30 @@
-/**
- * Merge‑sort for an array of T.
- *
- * @param array      – the array to sort (mutated in‑place)
- * @param compareFn – optional comparator (a, b) => number
- *                    (neg: < a, 0: equal, pos: > a)
- * @returns the sorted array (same reference as the input)
- */
-export function mergeSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  // Base case: a single element is already sorted.
-  if (array.length <= 1) return array;
+// Generic helper that works for any type that supports the < operator
+function isSortedAscending<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
+  // If a comparator isn’t supplied, fall back to the default "<" | ">" comparison.
+  // This works for numbers, strings, Dates, etc.
+  const cmp = comparator ?? ((a: any, b: any) => a < b);
 
-  // Split the array in half.
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
-
-  // Recursively sort each half then merge them.
-  mergeSort(left, compareFn);
-  mergeSort(right, compareFn);
-  merge(array, left, right, compareFn);
-  return array;               // return the same array reference
-}
-
-/**
- * Merge the two sorted halves back into `out`.
- */
-function merge<T>(
-  out: T[],
-  left: T[],
-  right: T[],
-  compareFn: (a: T, b: T) => number
-) {
-  let i = 0, j = 0, k = 0;
-  while (i < left.length && j < right.length) {
-    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
-    else out[k++] = right[j++];
+  // Walk through the array once and bail out on the first violation.
+  for (let i = 1; i < arr.length; i++) {
+    // cmp(a, b) should be true for an ascending array.
+    // For numbers, that means a < b; you could allow equality by `%=` or `<=`.
+    if (!cmp(arr[i-1], arr[i])) {
+      // The pair is out of order – the array isn’t sorted.
+      return false;
+    }
   }
-  // Copy any remaining items.
-  while (i < left.length) out[k++] = left[i++];
-  while (j < right.length) out[k++] = right[j++];
+  return true;          // All pairs were in the correct order.
 }
+const nums = [1, 3, 3, 7, 12];
+console.log(isSortedAscending(nums));      // true
 
-/**
- * Default comparator for numbers or strings.
- */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
+const people = [
+  { name: 'Alice', age: 34 },
+  { name: 'Bob', age: 27 },
+];
+console.log(isSortedAscending(people, (x, y) => x.age < y.age)); // false
+function isSortedCompare<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
+  const sorted = [...arr].sort((a,b)=> (comparator ? (comparator(a,b)?-1:1) : a < b ? -1 : 1));
+  return JSON.stringify(sorted) === JSON.stringify(arr);
 }
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSort(nums);            // in‑place sort
-console.log(nums);          // [5, 7, 23, 32, 34, 62]
-
-// With a custom comparator (e.g., reverse order)
-mergeSort(nums, (a, b) => b - a);
-console.log(nums);          // [62, 34, 32, 23, 7, 5]
+const isSorted = (a: number[]) => a.every((v, i, l) => i === 0 || l[i-1] <= v);
