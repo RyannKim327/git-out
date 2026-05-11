@@ -1,64 +1,138 @@
-/**
- * Very permissive yet useful email pattern.
- *
- *  - No whitespace
- *  - At least one character before and after the @
- *  - Requires a dot‑separated domain part
- *  - Accepts most user‑friendly variants (e.g. “foo+bar@baz.co.uk”)
- *
- * The pattern is intentionally simple: it catches the majority of mistakes while
- * avoiding needless complexity that can cost performance or readability.
- */
-export const simpleEmailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// ──────────────────────────────────────────────────────────────────────
+// 1️⃣  Node definition
+// ──────────────────────────────────────────────────────────────────────
 
-/**
- * Strict RFC‑5322 compliant-ish pattern.  
- *  - Handles quoted local‑part, escaped characters, and domain literals.
- *  - Still keeps things readable by splitting the regex into small parts.
- *
- * Use this only if you need the extra validation and can afford a slightly slower check.
- */
-export const strictEmailRE = new RegExp(
-  // Local part (quoted or unquoted)
-  '^(([^\\s@]+)|"([^"\\\\]|\\\\.|\\\\")+")@' +
-  // Domain part (letters, digits, hyphens, dots)
-  '([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*\\.)+[a-zA-Z]{2,}' +
-  '$'
-);
-
-/**
- * Helper that returns `true` if the input matches *either* pattern.
- *
- * @param email Email string to validate.
- * @returns `true` when the string looks like a valid email address.
- */
-export function isValidEmail(email: string): boolean {
-  // Trim first – most forms send untrimmed values.
-  const trimmed = email.trim();
-  return simpleEmailRE.test(trimmed) || strictEmailRE.test(trimmed);
+export class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-import { isValidEmail } from './emailValidator';
 
-const test = 'user.name+tag@sub.domain.co.uk';
+// ──────────────────────────────────────────────────────────────────────
+// 2️⃣  Binary‑Search‑Tree
+// ──────────────────────────────────────────────────────────────────────
 
-if (isValidEmail(test)) {
-  console.log(`"${test}" passes the regex test`);
-} else {
-  console.log(`"${test}" is definitely not a valid email`);
+export class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+
+  /* ----------------------------------------------------------------- */
+  // basic insertion – assumes no duplicates
+  /* ----------------------------------------------------------------- */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
+
+    let node: TreeNode<T> | null = this.root;
+    while (node) {
+      if (value < node.value) {
+        if (!node.left) {
+          node.left = newNode;
+          break;
+        }
+        node = node.left;
+      } else {
+        if (!node.right) {
+          node.right = newNode;
+          break;
+        }
+        node = node.right;
+      }
+    }
+  }
+
+  /* ----------------------------------------------------------------- */
+  // find a value – returns the node or null
+  /* ----------------------------------------------------------------- */
+  find(value: T): TreeNode<T> | null {
+    let node = this.root;
+    while (node) {
+      if (value === node.value) return node;
+      node = value < node.value ? node.left : node.right;
+    }
+    return null;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // In‑order traversal – returns array of values sorted (for BST)
+  /* ----------------------------------------------------------------- */
+  inorder(): T[] {
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [];
+    let node = this.root;
+
+    while (stack.length || node) {
+      while (node) {
+        stack.push(node);
+        node = node.left!;
+      }
+      node = stack.pop()!;
+      result.push(node.value);
+      node = node.right!;
+    }
+
+    return result;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // Pre‑order (root, left, right)
+  /* ----------------------------------------------------------------- */
+  preorder(): T[] {
+    if (!this.root) return [];
+    const result: T[] = [];
+    const stack: Array<TreeNode<T>> = [this.root];
+
+    while (stack.length) {
+      const node = stack.pop()!;
+      result.push(node.value);
+
+      // push right first so left is processed first
+      if (node.right) stack.push(node.right);
+      if (node.left) stack.push(node.left);
+    }
+
+    return result;
+  }
+
+  /* ----------------------------------------------------------------- */
+  // Post‑order (left, right, root) – iterative with two stacks
+  /* ----------------------------------------------------------------- */
+  postorder(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
+
+    const stack1: TreeNode<T>[] = [this.root];
+    const stack2: TreeNode<T>[] = [];
+
+    while (stack1.length) {
+      const node = stack1.pop()!;
+      stack2.push(node);
+
+      if (node.left) stack1.push(node.left);
+      if (node.right) stack1.push(node.right);
+    }
+
+    while (stack2.length) {
+      result.push(stack2.pop()!.value);
+    }
+
+    return result;
+  }
 }
-const cases = [
-  'simple@example.com',
-  'user+mailbox/department=shipping@example.com',  // RFC‑5322 compliant but unusual
-  'very.unusual.@.example.com',
-  'disposable.style.email.with+symbol@example.com',
-  '"much.more unusual"@example.com',
-  'admin@mailserver1',                 // missing TLD
-  'example@localhost',                 // often allowed in dev env
-  'plainaddress',
-  'email.@example.com',
-  '@missing-local.org',
-  'user@.invalid.com',
-  'huge‑domain‑name‑that‑really‑long.com',
-];
+import { BinarySearchTree } from "./bst";
 
-cases.forEach(e => console.log(e, isValidEmail(e)));
+const bst = new BinarySearchTree<number>();
+
+[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+
+console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
+console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
+console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
+
+console.log("Find 5:", bst.find(5)?.value);          // 5
+console.log("Find 20:", bst.find(20));               // null
