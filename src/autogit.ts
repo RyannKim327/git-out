@@ -1,76 +1,58 @@
-// ---------------------------------------------------
-// Queue implemented with a singly linked list
-// ---------------------------------------------------
-class Queue<T> {
-  // ------- internal node type -------
-  private static class Node<U> {
-    constructor(public value: U, public next?: Queue.Node<U>) {}
-  }
+/**
+ * Computes the prefix function (failure table) of a pattern.
+ * pi[i] = the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+function buildPrefixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const pi: number[] = Array(m).fill(0);
+  let k = 0;   // mismatch counter
 
-  // ------- private fields -------
-  private head?: typeof Queue.Node<any>; // points to the first element
-  private tail?: typeof Queue.Node<any>; // points to the last element
-  private _size = 0;
-
-  // ------- public methods -------
-
-  /** Insert a new element at the tail. */
-  enqueue(value: T): void {
-    const newNode = new Queue.Node(value);
-    if (!this.tail) {
-      // The queue is empty.
-      this.head = this.tail = newNode;
-    } else {
-      this.tail.next = newNode;
-      this.tail = newNode;
+  for (let i = 1; i < m; i++) {
+    // fall back until we either hit a match or k == 0
+    while (k > 0 && pattern[i] !== pattern[k]) {
+      k = pi[k - 1];
     }
-    this._size++;
+    if (pattern[i] === pattern[k]) k++;
+    pi[i] = k;
   }
-
-  /** Remove and return the element at the head. */
-  dequeue(): T | undefined {
-    if (!this.head) return undefined;          // empty queue
-    const removed = this.head.value;           // capture value
-    this.head = this.head.next;                // advance head
-    if (!this.head) this.tail = undefined;     // became empty
-    this._size--;
-    return removed;
-  }
-
-  /** Peek at the head without removing it. */
-  peek(): T | undefined {
-    return this.head?.value;
-  }
-
-  /** Number of items currently in the queue. */
-  size(): number {
-    return this._size;
-  }
-
-  /** Is the queue empty? */
-  isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  // Optional: allow `for..of` iteration over the queue
-  [Symbol.iterator](): Iterator<T> {
-    let current = this.head;
-    return {
-      next(): IteratorResult<T> {
-        if (!current) return { done: true, value: undefined };
-        const value = current.value;
-        current = current.next;
-        return { done: false, value };
-      },
-    };
-  }
+  return pi;
 }
-const q = new Queue<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+/**
+ * KMP search – returns the starting indices of all matches of `needle`
+ * inside `haystack`.  Does *exact* matching (no regex features).
+ */
+export function kmpSearch(haystack: string, needle: string): number[] {
+  const n = haystack.length;
+  const m = needle.length;
+  if (m === 0) return [];          // nothing to find
+  if (m > n) return [];            // can't fit
 
-console.log(q.peek()); // 10
-console.log(q.dequeue()); // 10
-console.log([...q]); // [20, 30]
+  const pi = buildPrefixTable(needle);
+  const matches: number[] = [];
+  let j = 0;                        // current index in needle
+
+  for (let i = 0; i < n; i++) {
+    // if mismatch, fall back using pi until match or j == 0
+    while (j > 0 && haystack[i] !== needle[j]) {
+      j = pi[j - 1];
+    }
+    if (haystack[i] === needle[j]) j++;
+
+    // full match found
+    if (j === m) {
+      matches.push(i - m + 1);
+      j = pi[j - 1];   // allow overlaps
+    }
+  }
+
+  return matches;
+}
+const txt = "ababcabcababc";
+const pat = "abc";
+
+console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
+function contains(haystack: string, needle: string) {
+  return haystack.indexOf(needle) !== -1;
+}
