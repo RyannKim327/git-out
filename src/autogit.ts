@@ -1,158 +1,98 @@
-// A simple hash table that stores key/value pairs.
-// Collisions are resolved via separate chaining (linked lists).
-export class SimpleHashTable<K, V> {
-  private buckets: Array<LinkedListNode<K, V> | null>;
-  private _size: number;
-  private _count: number;
-  private readonly loadFactorThreshold: number; // e.g. 0.75
+/**
+ * Comparator signature: (a, b) => boolean
+ * Should return true if `a` has higher priority than `b`
+ * (i.e. `a` should come *before* `b` in the heap order).
+ */
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  constructor(initSize = 16, loadFactor = 0.75) {
-    this.buckets = new Array(initSize).fill(null);
-    this._size = initSize;
-    this._count = 0;
-    this.loadFactorThreshold = loadFactor;
+export class PriorityQueue<T> {
+  /** Encoded binary‑heap */
+  private items: T[] = [];
+
+  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
+
+  /* ---------- Properties ---------- */
+
+  get size(): number { return this.items.length; }
+  get isEmpty(): boolean { return this.items.length === 0; }
+
+  /* ---------- Queries ---------- */
+
+  peek(): T | undefined { return this.items[0]; }
+
+  /* ---------- Mutations ---------- */
+
+  push(item: T): void {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
   }
 
-  // Public API
-  set(key: K, value: V): void { /* ... */ }
-  get(key: K): V | undefined { /* ... */ }
-  delete(key: K): boolean { /* ... */ }
-  has(key: K): boolean { /* ... */ }
-  clear(): void { /* ... */ }
-  get size(): number { return this._count; }
-  // Optionally:
-  // values(), keys(), entries()
-}
-class LinkedListNode<K, V> {
-  key: K;
-  value: V;
-  next: LinkedListNode<K, V> | null;
+  pop(): T | undefined {
+    if (this.isEmpty) return undefined;
 
-  constructor(key: K, value: V, next: LinkedListNode<K, V> | null = null) {
-    this.key = key;
-    this.value = value;
-    this.next = next;
-  }
-}
-private getHash(key: K): number {
-  // Simple implementation: works for string & number keys.
-  const strKey = typeof key === 'string' ? key : String(key);
-  let hash = 5381; // djb2 seed
-  for (let i = 0; i < strKey.length; i++) {
-    hash = (hash * 33) ^ strKey.charCodeAt(i);
-  }
-  // Ensure positive index and wrap around bucket count.
-  return Math.abs(hash) % this._size;
-}
-set(key: K, value: V): void {
-  const index = this.getHash(key);
+    const top = this.items[0];
+    const last = this.items.pop()!; // array isn't empty
 
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      node.value = value;      // Update existing
-      return;
+    if (!this.isEmpty) {
+      this.items[0] = last;
+      this.bubbleDown(0);
     }
-    node = node.next;
+
+    return top;
   }
 
-  // Insert new node at front of chain
-  const newNode = new LinkedListNode(key, value, this.buckets[index]);
-  this.buckets[index] = newNode;
-  this._count++;
+  /* ---------- Internals ---------- */
 
-  if (this._count / this._size > this.loadFactorThreshold) {
-    this.resize();
-  }
-}
-
-get(key: K): V | undefined {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      return node.value;
-    }
-    node = node.next;
-  }
-  return undefined;
-}
-
-delete(key: K): boolean {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  let prev: LinkedListNode<K, V> | null = null;
-
-  while (node) {
-    if (this.equals(node.key, key)) {
-      if (prev) prev.next = node.next;
-      else this.buckets[index] = node.next;
-      this._count--;
-      return true;
-    }
-    prev = node;
-    node = node.next;
-  }
-  return false;
-}
-
-has(key: K): boolean {
-  return this.get(key) !== undefined;
-}
-
-clear(): void {
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-}
-private equals(a: K, b: K): boolean {
-  return a === b;
-}
-private resize(): void {
-  const oldBuckets = this.buckets;
-  this._size *= 2;                 // Classic, double the bucket count
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-
-  for (const bucket of oldBuckets) {
-    let node = bucket;
-    while (node) {
-      this.set(node.key, node.value); // Re‑hash & insert
-      node = node.next;
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (this.comparator(this.items[idx], this.items[parentIdx])) {
+        this.swap(idx, parentIdx);
+        idx = parentIdx;
+      } else {
+        break;
+      }
     }
   }
-}
-values(): V[] {
-  const vals: V[] = [];
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      vals.push(node.value);
-      node = node.next;
+
+  private bubbleDown(idx: number): void {
+    const length = this.items.length;
+    while (true) {
+      const left = idx * 2 + 1;
+      const right = left + 1;
+      let smallest = idx;
+
+      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
+        smallest = left;
+      }
+      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
+        smallest = right;
+      }
+
+      if (smallest !== idx) {
+        this.swap(idx, smallest);
+        idx = smallest;
+      } else {
+        break;
+      }
     }
   }
-  return vals;
-}
-*entries(): IterableIterator<[K, V]> {
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      yield [node.key, node.value];
-      node = node.next;
-    }
+
+  private swap(i: number, j: number): void {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
   }
 }
-const ht = new SimpleHashTable<string, number>();
+const maxHeap = new PriorityQueue<number>((a, b) => a > b);
+interface Task {
+  priority: number;     // smaller number → higher priority
+  description: string;
+}
 
-ht.set('apple', 3);
-ht.set('banana', 
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
+const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
 
+[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
 
-
----
-
-**Support Pollinations.AI:**
-
----
-
-🌸 **Ad** 🌸
-Powered by Pollinations.AI free text APIs. [Support our mission](https://pollinations.ai/redirect/kofi) to keep AI accessible for everyone.
+while (!pq.isEmpty) {
+  console.log(pq.pop()); // prints: 1, 3, 5, 8
+}
