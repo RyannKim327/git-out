@@ -1,112 +1,89 @@
-// Represents a single weighted directed edge.
-export interface Edge {
-  from: number;
-  to: number;
-  weight: number;
+/**
+ * Forward Burrows–Wheeler Transform.
+ * @param input – original string
+ * @returns {bwt, index} – BWT string and index of the original string in the sorted rotation table.
+ */
+export function bwtEncode(input: string): { bwt: string; index: number } {
+    // 1️⃣ Append a sentinel that is smaller than every other char
+    const sentinel = '\0';
+    const padded = input + sentinel;
+
+    // 2️⃣ Make all cyclic rotations
+    // Using an array of start indices so we never build full strings.
+    const n = padded.length;
+    const rotations = Array.from({ length: n }, (_, i) => i);
+
+    // 3️⃣ Stable sort rotations lexicographically
+    rotations.sort((a, b) => {
+        for (let offset = 0; offset < n; offset++) {
+            const ca = padded[(a + offset) % n];
+            const cb = padded[(b + offset) % n];
+            if (ca < cb) return -1;
+            if (ca > cb) return 1;
+            // equal – iterate next offset
+        }
+        return 0;       // rotations are identical – should not happen with sentinel
+    });
+
+    // 4️⃣ Build the BWT string by taking the character preceding each rotation
+    const bwt = new Array<string>(n);
+    let originalIndex = -1;
+    for (let i = 0; i < n; i++) {
+        const rotStart = rotations[i];
+        const bwtChar = padded[(rotStart + n - 1) % n]; // char before rotation
+        bwt[i] = bwtChar;
+
+        // If this rotation is the original (started at 0), remember its position
+        if (rotStart === 0) originalIndex = i;
+    }
+
+    return { bwt: bwt.join(''), index: originalIndex };
 }
 /**
- * Bellman–Ford shortest‑path algorithm.
- *
- * @param n      Number of vertices (vertices are 0 … n‑1).
- * @param edges  Array of directed weighted edges.
- * @param source Index of the source vertex.
- * @returns {distances, predecessors}
- *          - `distances` is an array where `distances[v]` holds the
- *            length of a shortest path from source to v.
- *          - `predecessors` holds the previous vertex on that path
- *            (use `-1` for the source and unreachable vertices).
- *
- * @throws Error if a negative cycle is reachable from source.
+ * Inverse Burrows–Wheeler Transform.
+ * @param bwt – BWT string (length n)
+ * @param index – index of the original string in the sorted rotations
+ * @returns original string (without the sentinel)
  */
-export function bellmanFord(
-  n: number,
-  edges: Edge[],
-  source: number = 0
-): { distances: number[]; predecessors: number[] } {
-  // 1️⃣ BFS‑style relaxation loop.
-  const dist: number[] = Array(n).fill(Infinity);
-  const pred: number[] = Array(n).fill(-1);
+export function bwtDecode(bwt: string, index: number): string {
+    const n = bwt.length;
+    // 1️⃣ Build first column by sorting the BWT string
+    const first = bwt.split('').sort(); // stable because JS sort is stable (ES2019+)
 
-  dist[source] = 0;
+    // 2️⃣ Compute the “next” array – mapping from a row in first column
+    //    to the corresponding row in last column.
+    //    This is essentially the Longest‑Common‑Prefix order of the rotations.
+    const next = new Array<number>(n);
+    const buckets = new Map<string, number[]>();
 
-  for (let i = 0; i < n - 1; i++) {
-    let changed = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        changed = true;
-      }
+    // Collect indices of each character in the BWT string
+    for (let i = 0; i < n; i++) {
+        const ch = bwt[i];
+        if (!buckets.has(ch)) buckets.set(ch, []);
+        buckets.get(ch)!.push(i);
     }
-    // Early exit if nothing moved this pass.
-    if (!changed) break;
-  }
 
-  // 2️⃣ Check for negative‑weight cycles.
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      const cycle: number[] = findNegCycle(n, edges, to);
-      throw new Error(
-        `Negative cycle detected: ${cycle.join(' → ')}`
-      );
+    // For each character, allocate its positions in the first column
+    const bucketIterators = new Map<string, number>();
+    for (const [ch, posList] of buckets.entries()) {
+        bucketIterators.set(ch, 0);
     }
-  }
 
-  return { distances: dist, predecessors: pred };
+    for (let i = 0; i < n; i++) {
+        const ch = first[i];
+        const idxInBlt = buckets.get(ch)![bucketIterators.get(ch)!++];
+        next[i] = idxInBlt;
+    }
+
+    // 3️⃣ Reconstruct original by following the next pointers starting from `index`
+    const result: string[] = new Array<string>(n);
+    let row = index;
+    for (let i = n - 1; i >= 0; i--) {
+        result[i] = first[row];
+        row = next[row];
+    }
+
+    // The sentinel is the first char of the reconstructed string
+    // Strip it and return the original
+    return result.join('').slice(1); // drop sentinel
 }
-
-/**
- * Helper: recover a node that lies on a negative cycle reachable from `start`.
- * Returns the cycle as a list of vertex indices in order.
- *
- * This is a brute‑force way – for large graphs you’ll want a more
- * sophisticated cycle extraction, but it’s fine for teaching/compacting.
- */
-function findNegCycle(
-  n: number,
-  edges: Edge[],
-  start: number
-): number[] {
-  const parent: number[] = Array(n).fill(-1);
-  let x = start;
-  for (let i = 0; i < n; i++) x = edges.find(e => e.to === x)?.from ?? -1;
-
-  const cycle: number[] = [];
-  let cur = x;
-  do {
-    cycle.push(cur);
-    cur = parent[cur];
-  } while (cur !== x && cur !== -1);
-  cycle.reverse();
-  return cycle;
-}
-import { bellmanFord, Edge } from './bellmanFord';
-
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -1 },
-  { from: 1, to: 3, weight: 10 },
-  { from: 2, to: 3, weight: 3 },
-  // Add more edges as needed
-];
-
-const { distances, predecessors } = bellmanFord(4, edges, 0);
-
-console.log('Distances:', distances);
-// [0, 4, 3, 6]
-
-console.log('Predecessors:', predecessors);
-// [-1, 0, 1, 2]
-
-// Reconstruct a path to vertex 3
-function pathTo(v: number) {
-  const path: number[] = [];
-  while (v !== -1) {
-    path.unshift(v);
-    v = predecessors[v];
-  }
-  return path;
-}
-
-console.log('Path 0 → 3:', pathTo(3)); // [0, 1, 2, 3]
