@@ -1,44 +1,61 @@
 /**
- * In‑place Selection Sort.
+ * Merge‑sort for an array of T.
  *
- * @param arr   The array to sort.
- * @param cmp   Optional comparison function.
- *              Should return a negative number if a < b,
- *              zero if a === b, and positive if a > b.
+ * @param array      – the array to sort (mutated in‑place)
+ * @param compareFn – optional comparator (a, b) => number
+ *                    (neg: < a, 0: equal, pos: > a)
+ * @returns the sorted array (same reference as the input)
  */
-function selectionSort<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number = (a, b) => (a < b ? -1 : a > b ? 1 : 0)
-): void {
-  const n = arr.length;
+export function mergeSort<T>(
+  array: T[],
+  compareFn: (a: T, b: T) => number = defaultCompare
+): T[] {
+  // Base case: a single element is already sorted.
+  if (array.length <= 1) return array;
 
-  for (let i = 0; i < n - 1; i++) {
-    // Assume the minimum is at i.
-    let minIndex = i;
+  // Split the array in half.
+  const mid = Math.floor(array.length / 2);
+  const left = array.slice(0, mid);
+  const right = array.slice(mid);
 
-    // Search for the true minimum in the unsorted part.
-    for (let j = i + 1; j < n; j++) {
-      if (cmp(arr[j], arr[minIndex]) < 0) {
-        minIndex = j;
-      }
-    }
-
-    // If minIndex changed, swap the two values.
-    if (minIndex !== i) {
-      [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]];
-    }
-  }
+  // Recursively sort each half then merge them.
+  mergeSort(left, compareFn);
+  mergeSort(right, compareFn);
+  merge(array, left, right, compareFn);
+  return array;               // return the same array reference
 }
-const nums = [64, 25, 12, 22, 11];
-selectionSort(nums);
-console.log(nums); // [11, 12, 22, 25, 64]
-interface Person { name: string; age: number }
 
-const people: Person[] = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 25 },
-  { name: 'Charlie', age: 35 }
-];
+/**
+ * Merge the two sorted halves back into `out`.
+ */
+function merge<T>(
+  out: T[],
+  left: T[],
+  right: T[],
+  compareFn: (a: T, b: T) => number
+) {
+  let i = 0, j = 0, k = 0;
+  while (i < left.length && j < right.length) {
+    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
+    else out[k++] = right[j++];
+  }
+  // Copy any remaining items.
+  while (i < left.length) out[k++] = left[i++];
+  while (j < right.length) out[k++] = right[j++];
+}
 
-selectionSort(people, (p1, p2) => p1.age - p2.age);
-console.log(people);
+/**
+ * Default comparator for numbers or strings.
+ */
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+const nums = [34, 7, 23, 32, 5, 62];
+mergeSort(nums);            // in‑place sort
+console.log(nums);          // [5, 7, 23, 32, 34, 62]
+
+// With a custom comparator (e.g., reverse order)
+mergeSort(nums, (a, b) => b - a);
+console.log(nums);          // [62, 34, 32, 23, 7, 5]
