@@ -1,128 +1,106 @@
-type AdjList = Map<number, Set<number>>;
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-class Graph {
-  private adj = new Map<number, Set<number>>();
+  // 1️⃣ Find the middle (fast/slow trick)
+  let slow = head, fast = head, prev: ListNode | null = null;
+  while (fast && fast.next) {
+    // 2️⃣ Reverse the first half while we’re at it
+    let nxt = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nxt;
 
-  addEdge(u: number, v: number, directed = false): void {
-    if (!this.adj.has(u)) this.adj.set(u, new Set());
-    this.adj.get(u)!.add(v);
-    if (!directed) {
-      if (!this.adj.has(v)) this.adj.set(v, new Set());
-      this.adj.get(v)!.add(u);
-    }
+    fast = fast.next.next;
   }
 
-  getNeighbors(v: number): Set<number> {
-    return this.adj.get(v) ?? new Set();
-  }
+  // 3️⃣ If odd number of nodes skip the middle one
+  if (fast) slow = slow.next;
 
-  // helper: list all vertices (useful for disconnected graphs)
-  vertices(): IterableIterator<number> {
-    return this.adj.keys();
+  // 4️⃣ Compare the two halves
+  let p1 = prev, p2 = slow;
+  while (p1 && p2) {
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
   }
+  return true;
 }
-const g = new Graph();
-g.addEdge(0, 1);
-g.addEdge(0, 2);
-g.addEdge(1, 2);
-g.addEdge(1, 3);
-g.addEdge(3, 4);
-function dfsRecursive(
-  graph: Graph,
-  start: number,
-  visited = new Set<number>(),
-  action?: (node: number) => void
-): void {
-  visited.add(start);
-  action?.(start);
-
-  for (const nb of graph.getNeighbors(start)) {
-    if (!visited.has(nb)) {
-      dfsRecursive(graph, nb, visited, action);
-    }
-  }
+interface ListNode {
+  val: number | string;      // whatever you want to store
+  next?: ListNode | null;    // `next` is optional to support the “end” of the list
 }
-dfsRecursive(g, 0, undefined, console.log);
-// output: 0, 1, 2, 3, 4 (order may vary)
-function dfsIterative(
-  graph: Graph,
-  start: number,
-  action?: (node: number) => void
-): void {
-  const stack: number[] = [start];
-  const visited = new Set<number>();
+/**
+ * Returns true if the singly linked list is a palindrome.
+ *
+ * @param head - The head node of the linked list (or null).
+ */
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → palindrome
 
-  while (stack.length) {
-    const v = stack.pop()!; // `!` known to be non‑null
-    if (visited.has(v)) continue;
+  let slow = head;
+  let fast = head;
+  let prev: ListNode | null = null; // will become the head of the reversed first half
 
-    visited.add(v);
-    action?.(v);
+  // Step 1 & 2: find middle, reverse first half
+  while (fast && fast.next) {
+    // Reverse the link for `slow`'s current node
+    const nextNode = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nextNode;
 
-    // push neighbors reverse order if you want LIFO order same as recursion
-    for (const nb of [...graph.getNeighbors(v)].reverse()) {
-      if (!visited.has(nb)) stack.push(nb);
-    }
+    fast = fast.next.next;
   }
+
+  // Step 3: if odd length, skip the middle node
+  if (fast) {
+    slow = slow.next!;
+  }
+
+  // Step 4: compare nodes from the two halves
+  let firstHalf = prev;
+  let secondHalf = slow;
+  while (firstHalf && secondHalf) {
+    if (firstHalf.val !== secondHalf.val) return false;
+    firstHalf = firstHalf.next!;
+    secondHalf = secondHalf.next!;
+  }
+
+  return true;
 }
-dfsIterative(g, 0, console.log);
-// same output as before
-function hasCycle(graph: Graph): boolean {
-  const visited = new Set<number>();
-  const stack = new Set<number>();
-
-  function visit(v: number): boolean {
-    if (stack.has(v)) return true;      // back‑edge found
-    if (visited.has(v)) return false;    // already seen, no cycle on this path
-
-    visited.add(v);
-    stack.add(v);
-
-    for (const nb of graph.getNeighbors(v)) {
-      if (visit(nb)) return true;
-    }
-
-    stack.delete(v);
-    return false;
+// Helper to create a list from an array
+function fromArray(arr: (number | string)[]): ListNode | null {
+  if (!arr.length) return null;
+  const head: ListNode = { val: arr[0] };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { val: arr[i] };
+    current = current.next;
   }
-
-  for (const v of graph.vertices()) if (visit(v)) return true;
-  return false;
+  return head;
 }
-function dfsWithOrders(
-  graph: Graph,
-  start: number,
-  pre?: (node: number) => void,
-  post?: (node: number) => void,
-  visited = new Set<number>()
-) {
-  visited.add(start);
-  pre?.(start);
-  for (const nb of graph.getNeighbors(start)) {
-    if (!visited.has(nb)) dfsWithOrders(graph, nb, pre, post, visited);
-  }
-  post?.(start);
-}
-function connectedComponents(graph: Graph): number[][] {
-  const visited = new Set<number>();
-  const components: number[][] = [];
 
-  function explore(v: number, comp: number[]) {
-    visited.add(v);
-    comp.push(v);
-    for (const nb of graph.getNeighbors(v)) {
-      if (!visited.has(nb)) explore(nb, comp);
-    }
+console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
+console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string)[] = [];
+  let fast = head;
+  let slow = head;
+
+  // Push first half onto stack
+  while (fast && fast.next) {
+    stack.push(slow!.val);
+    slow = slow!.next!;
+    fast = fast.next.next;
   }
 
-  for (const v of graph.vertices()) {
-    if (!visited.has(v)) {
-      const comp: number[] = [];
-      explore(v, comp);
-      components.push(comp);
-    }
+  // Skip middle element for odd length
+  if (fast) slow = slow!.next!;
+
+  // Compare the rest with stack
+  while (slow) {
+    if (stack.pop() !== slow.val) return false;
+    slow = slow.next;
   }
-  return components;
+  return true;
 }
-npm i -D typescript ts-node
-npx ts-node dfs.ts
