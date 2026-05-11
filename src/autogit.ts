@@ -1,84 +1,70 @@
-// 1️⃣  Interfaces ----------------------------------------------------
-interface State {
-  // Unique identifier that helps us spot already‑visited nodes.
-  id: string | number;
+// random-cron.ts
+// ----------
+// Requires:
+//   npm install node-cron
+//   npm install --save-dev @types/node-cron   (optional if you want type safety)
+// ----------
+import cron from 'node-cron';
 
-  // Return all children reachable from this state.
-  getChildren(): State[];
-
-  // For demo purposes, we also expose a pretty‑print.
-  toString?(): string;
+/**
+ * Handy helper that returns a random integer in [min, max] inclusive.
+ */
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-type GoalFn<T extends State> = (s: T) => boolean;
+/**
+ * A tiny random “quote” pool. Feel free to replace these with your own.
+ */
+const QUOTES: string[] = [
+  "Do not wait to strike till the iron is hot; but make it hot by striking.",
+  "All that we see or seem is but a dream within a dream.",
+  "Noise is bliss when you’re chasing a dream.",
+  "In the middle of difficulty lies opportunity.",
+  "The only limit to our realization of tomorrow is our doubts about today."
+];
 
-// 2️⃣  The recursive DLS ----------------------------------------------
-function depthLimitedSearch<T extends State>(
-  node: T,
-  goal: GoalFn<T>,
-  limit: number,
-  visited = new Set<T | string | number>()
-): T | null {
-  // Depth exceeded → give up.
-  if (limit < 0) return null;
-
-  // Safe‑guard against cycles: if this node already saw, skip it.
-  if (visited.has(node.id)) return null;
-
-  // Mark the node as visited for this path.
-  visited.add(node.id);
-
-  // Goal found.
-  if (goal(node)) return node;
-
-  // Explore children.
-  for (const child of node.getChildren()) {
-    const result = depthLimitedSearch(child, goal, limit - 1, visited);
-    if (result !== null) return result;
-  }
-
-  // Nothing found → backtrack.
-  return null;
-}
-class GridCell implements State {
-  constructor(
-    public x: number,
-    public y: number,
-    public goal = false
-  ) {}
-
-  get id() { return `${this.x},${this.y}`; }
-
-  getChildren(): State[] {
-    const dirs = [
-      [0, 1],
-      [1, 0],
-      [0, -1],
-      [-1, 0],
-    ];
-    return dirs
-      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
-      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
-  }
-
-  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
+/**
+ * Pick a random quote from `QUOTES`.
+ */
+function getRandomQuote(): string {
+  const idx = randInt(0, QUOTES.length - 1);
+  return QUOTES[idx];
 }
 
-// Simple goal: bottom‑right corner.
-const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
-
-const start = new GridCell(0, 0);
-const result = depthLimitedSearch(start, goalFn, 4);
-
-console.log(result?.toString() ?? 'No solution within depth 4');
-function iterativeDeepeningDFS<T extends State>(
-  start: T,
-  goal: GoalFn<T>,
-  maxLimit: number
-): T | null {
-  for (let l = 0; l <= maxLimit; l++) {
-    const res = depthLimitedSearch(start, goal, l);
-    if (res !== null) return res;      // Found a goal
-  }
-  return null;                        // Still no goal within maxLimit
+/**
+ * Pick a random time (hour/minute) so that the job will fire at a different
+ * spot each day. These are UTC values in the cron string.
+ */
+function generateRandomCronExpr(): string {
+  const hour = randInt(0, 23);
+  const minute = randInt(0, 59);
+  // e.g. "14 3 * * *" → 3:14 AM UTC every day
+  return `${minute} ${hour} * * *`;
 }
+
+/**
+ * Launch a cron job that runs at the generated random time.
+ */
+function scheduleDailyQuote() {
+  const cronExpr = generateRandomCronExpr();
+  console.log(`Scheduling daily quote at *${cronExpr}* (UTC).`);
+
+  cron.schedule(cronExpr, () => {
+    const msg = getRandomQuote();
+    const time = new Date().toISOString();
+    console.log(`[${time}] Random quote: ${msg}`);
+  });
+}
+
+scheduleDailyQuote();
+# 1. Install deps
+npm install --save node-cron
+# Optional typings
+npm install --save-dev @types/node-cron
+
+# 2. Compile (if you’re using tsc)
+tsc random-cron.ts
+
+# 3. Run
+node random-cron.js
