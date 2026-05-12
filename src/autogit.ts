@@ -1,117 +1,43 @@
 /**
- * Boyer–Moore search – Typescript implementation
- * ------------------------------------------------
- * O(m + n) preprocessing  (m = pattern length, n = text length)
- * O(n/m) expected search time (in practice, very fast)
+ * Random‑pivot QuickSort
+ *
+ * @param data - array of numbers to sort in place
+ * @returns the sorted array
  */
+function randomQuickSort(data: number[]): number[] {
+  // Helper that actually does the work, using indices so the call stack is shallow.
+  function sort(left: number, right: number) {
+    if (left >= right) return;
 
-export class BoyerMoore {
-  /** Pattern to look for */
-  private readonly pat: string;
-  /** Length of the pattern */
-  private readonly m: number;
-  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
-  private readonly badChar: number[];
-  /** Good‑suffix shift table */
-  private readonly goodSuffix: number[];
+    // Pick a random index between left and right (inclusive)
+    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    // Swap pivot with the last element – easier partitioning
+    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
+    const pivot = data[right];
 
-  constructor(pattern: string) {
-    if (!pattern.length) throw new Error("Pattern must not be empty");
-    this.pat = pattern;
-    this.m = pattern.length;
+    let i = left - 1; // elements ≤ pivot will be to the left of i
 
-    this.badChar = this.buildBadCharTable();
-    this.goodSuffix = this.buildGoodSuffixTable();
-  }
-
-  /* --------------------------------------------- */
-  /* ===========  PRE‑PROCESSING  ================= */
-  /* --------------------------------------------- */
-
-  /** Build a table indexed by character code (fast array look‑ups). */
-  private buildBadCharTable(): number[] {
-    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
-    for (let i = 0; i < this.m - 1; i++) {
-      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
-    }
-    return SHIFT;
-  }
-
-  /** Build the good‑suffix table (two parts: border and suffix arrays). */
-  private buildGoodSuffixTable(): number[] {
-    const r = this.m;
-    const suffix = new Array(r + 1).fill(0);
-    const border = new Array(r + 1).fill(0);
-
-    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
-    let j = r;
-    let k = 0;
-    suffix[r] = r;
-    for (let i = r - 1; i >= 0; i--) {
-      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
-        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
-        k = border[k];
-      }
-      k++;
-      suffix[i] = k;
-    }
-
-    // Step 2 – compute border[] (largest border for each prefix length)
-    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
-
-    // Step 3 – fill goodSuffix[] using borders
-    const good = new Array(r).fill(r);
-    let jMax = 0;
-    for (let i = r - 1; i >= 0; i--) {
-      if (suffix[i] === 0) continue;
-      while (jMax + 1 <= r - i - 1) {
-        if (good[jMax] === r) good[jMax] = r - i - 1;
-        jMax++;
+    for (let j = left; j < right; j++) {
+      if (data[j] <= pivot) {
+        i++;
+        [data[i], data[j]] = [data[j], data[i]];
       }
     }
-    // For the remaining positions that have no suffix match
-    for (let i = 0; i < r; i++) {
-      if (good[i] === r) good[i] = r - border[i];
-    }
 
-    return good;
+    // place pivot after the last smaller element
+    const finalPivotPos = i + 1;
+    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
+
+    // Recurse on each partition
+    sort(left, finalPivotPos - 1);
+    sort(finalPivotPos + 1, right);
   }
 
-  /* --------------------------------------------- */
-  /* ===========       SEARCH        ============= */
-  /* --------------------------------------------- */
-
-  /**
-   * Find the first occurrence of the pattern in `text`.
-   * @returns index of first match or -1 if not found.
-   */
-  public search(text: string): number {
-    const n = text.length;
-    let s = 0;               // shift of the pattern
-
-    while (s <= n - this.m) {
-      let j = this.m - 1;
-
-      // Step 4 – compare from right to left
-      while (j >= 0 && this.pat[j] === text[s + j]) j--;
-
-      if (j < 0) return s;  // match found
-
-      // compute shifts
-      const badShift = this.badChar[text.charCodeAt(s + j)];
-      const goodShift = this.goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
-    return -1;              // not found
-  }
-
-  /* --------------------------------------------- */
-  /* ===========  EXAMPLE USAGE  =============== */
-  /* --------------------------------------------- */
+  sort(0, data.length - 1);
+  return data;
 }
 
-// Example usage:
-const bm = new BoyerMoore("needle");
-const txt = "haystack needle haystack inside needlesea";
-const idx = bm.search(txt);
-console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
+/* --- demo ------------------------------------ */
+const arr = [5, 2, 9, 1, 5, 6];
+console.log('original:', arr);
+console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
