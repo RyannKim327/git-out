@@ -1,87 +1,45 @@
-type Comparator<K> = (a: K, b: K) => number; // <0 a<b, 0 a==b, >0 a>b
-class BTreeNode<K> {
-  keys: K[] = [];
-  children: BTreeNode<K>[] = [];
-  leaf: boolean;
+dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
+if s1[i] === s2[j]
+    dp[i][j] = dp[i‑1][j‑1] + 1
+else
+    dp[i][j] = 0
+/**
+ * Returns the longest common substring of two strings.
+ * If there are multiple substrings of the same maximal length,
+ * the first one encountered is returned.
+ */
+function longestCommonSubstring(a: string, b: string): string {
+    if (!a || !b) return "";
 
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
+    const n = a.length;
+    const m = b.length;
+
+    // Use a 1‑D array to hold the previous row of DP values.
+    let prev = new Array(m + 1).fill(0);
+    let curr = new Array(m + 1).fill(0);
+
+    let bestLen = 0;
+    let bestEndIdxInA = 0; // index in `a` where the best substring ends
+
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= m; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                curr[j] = prev[j - 1] + 1;
+                if (curr[j] > bestLen) {
+                    bestLen = curr[j];
+                    bestEndIdxInA = i;
+                }
+            } else {
+                curr[j] = 0;
+            }
+        }
+        // swap references for the next iteration
+        [prev, curr] = [curr, prev];
+    }
+
+    if (bestLen === 0) return "";
+    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
 }
-export class BTree<K> {
-  private root!: BTreeNode<K>;
-  private readonly t: number;              // minimum degree
-  private readonly cmp: Comparator<K>;
-
-  constructor(t: number, cmp: Comparator<K>) {
-    if (t < 2) throw new Error('BTree minimum degree must be at least 2');
-    this.t = t;
-    this.cmp = cmp;
-    this.root = new BTreeNode<K>(true);
-  }
-  search(key: K, node?: BTreeNode<K>): BTreeNode<K> | null {
-    node ??= this.root;
-    let i = 0;
-    while (i < node.keys.length && this.cmp(key, node.keys[i]) > 0) i++;
-
-    if (i < node.keys.length && this.cmp(key, node.keys[i]) === 0) {
-      return node;                                       // found
-    }
-
-    if (node.leaf) return null;                          // not found
-    return this.search(key, node.children[i]);           // recurse
-  }
-  private splitChild(x: BTreeNode<K>, i: number): void {
-    const y = x.children[i];
-    const z = new BTreeNode<K>(y.leaf);
-    const t = this.t;
-
-    // Transfer the upper half of y's keys to z
-    z.keys = y.keys.splice(t, t - 1);
-
-    // If y is not a leaf, pull the corresponding children
-    if (!y.leaf) {
-      z.children = y.children.splice(t, t);
-    }
-
-    // Insert z as y's sibling
-    x.children.splice(i + 1, 0, z);
-    // Move y's median key up into x
-    x.keys.splice(i, 0, y.keys.splice(t - 1, 1)[0]!);
-  }
-  insert(key: K): void {
-    const r = this.root;
-    if (r.keys.length === 2 * this.t - 1) {           // root full → split
-      const s = new BTreeNode<K>(false);
-      s.children.push(r);
-      this.splitChild(s, 0);
-      this.root = s;
-      this._insertNonFull(s, key);
-    } else {
-      this._insertNonFull(r, key);
-    }
-  }
-
-  private _insertNonFull(x: BTreeNode<K>, key: K): void {
-    let i = x.keys.length - 1;
-    if (x.leaf) {                                    // insert directly
-      // Find slot for key
-      while (i >= 0 && this.cmp(key, x.keys[i]) < 0) i--;
-      x.keys.splice(i + 1, 0, key);
-    } else {                                          // descend
-      while (i >= 0 && this.cmp(key, x.keys[i]) < 0) i--;
-      i++;                                            // child index
-      const child = x.children[i];
-      if (child.keys.length === 2 * this.t - 1) {     // full child → split
-        this.splitChild(x, i);
-        if (this.cmp(key, x.keys[i]) > 0) i++;        // key goes right of median
-      }
-      this._insertNonFull(x.children[i], key);
-    }
-  }
-const cmp = (a: number, b: number) => a - b;
-const tree = new BTree<number>(3, cmp);          // t = 3, 2t‑1 = 5 keys per node
-
-[10, 20, 5, 6, 12, 30, 7, 17].forEach(k => tree.insert(k));
-
-console.log(tree.search(6));   // node containing 
+console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
+console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
+console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
