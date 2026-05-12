@@ -1,58 +1,50 @@
 /**
- * Computes the prefix function (failure table) of a pattern.
- * pi[i] = the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
+ * Returns n! for a positive integer n (or 0).
+ * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
  */
-function buildPrefixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const pi: number[] = Array(m).fill(0);
-  let k = 0;   // mismatch counter
-
-  for (let i = 1; i < m; i++) {
-    // fall back until we either hit a match or k == 0
-    while (k > 0 && pattern[i] !== pattern[k]) {
-      k = pi[k - 1];
-    }
-    if (pattern[i] === pattern[k]) k++;
-    pi[i] = k;
+export function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error('Factorial is only defined for non‑negative integers');
   }
-  return pi;
+  // 0! = 1, and the recursion base case covers that
+  if (n <= 1) return 1;
+  return n * factorialRecursive(n - 1);
 }
+console.log(factorialRecursive(5)); // 120
+console.log(factorialRecursive(0)); // 1
+export function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-/**
- * KMP search – returns the starting indices of all matches of `needle`
- * inside `haystack`.  Does *exact* matching (no regex features).
- */
-export function kmpSearch(haystack: string, needle: string): number[] {
-  const n = haystack.length;
-  const m = needle.length;
-  if (m === 0) return [];          // nothing to find
-  if (m > n) return [];            // can't fit
-
-  const pi = buildPrefixTable(needle);
-  const matches: number[] = [];
-  let j = 0;                        // current index in needle
-
-  for (let i = 0; i < n; i++) {
-    // if mismatch, fall back using pi until match or j == 0
-    while (j > 0 && haystack[i] !== needle[j]) {
-      j = pi[j - 1];
-    }
-    if (haystack[i] === needle[j]) j++;
-
-    // full match found
-    if (j === m) {
-      matches.push(i - m + 1);
-      j = pi[j - 1];   // allow overlaps
-    }
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return matches;
+  return result;
 }
-const txt = "ababcabcababc";
-const pat = "abc";
+export function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
-function contains(haystack: string, needle: string) {
-  return haystack.indexOf(needle) !== -1;
+  let result = 1n; // BigInt literal
+  for (let i = 2; i <= n; i++) {
+    result *= BigInt(i);
+  }
+  return result;
+}
+console.log(factorialBigInt(20).toString()); // "2432902008176640000"
+console.log(factorialBigInt(100).toString()); // 158‑digit number
+const memo = new Map<number, number | bigint>();
+
+export function factorialMemo(n: number, useBigInt = false): number | bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n <= 1) return useBigInt ? 1n : 1;
+
+  const key = n;
+  if (memo.has(key)) return memo.get(key)!;
+
+  const res = useBigInt
+    ? BigInt(n) * factorialMemo(n - 1, true)
+    : n * factorialMemo(n - 1, false);
+
+  memo.set(key, res);
+  return res;
 }
