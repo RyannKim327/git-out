@@ -1,27 +1,29 @@
-/**
- * Remove all vowels (a, e, i, o, u) from a string.
- * Case‑insensitive and works for ASCII‑only vowels.
- */
-function removeVowels(str: string): string {
-  return str.replace(/[aeiouAEIOU]/g, '');
+// A minimal node definition
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
 }
 
-// Example
-console.log(removeVowels('Hello, World!')); // Hll, Wrld!
-function removeVowelsIncludingY(str: string): string {
-  return str.replace(/[aeiouyAEIOUY]/g, '');
-}
-function removeAnyLatinVowel(str: string): string {
-  // Matches any letter in the Latin script that is a vowel
-  return str.replace(/\p{Script=Latin}\p{Vowel}/gu, '');
-}
-function removeVowelsLoop(str: string): string {
-  const vowels = new Set('aeiouAEIOU');
-  let result = '';
-  for (const ch of str) {
-    if (!vowels.has(ch)) {
-      result += ch;
-    }
+// Finder function
+function length<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
+  while (current !== null) {
+    count++;
+    current = current.next;
   }
-  return result;
+  return count;
+}
+
+// Example usage
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+
+a.next = b;
+b.next = c;
+
+console.log(length(a)); // 3
+function lengthRec<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;
+  return 1 + lengthRec(node.next);
 }
