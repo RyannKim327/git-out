@@ -1,128 +1,101 @@
-type Comparator<T> = (a: T, b: T) => number;
+function kthSmallest<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-interface BSTNode<T> {
-  value: T;
-  left: BSTNode<T> | null;
-  right: BSTNode<T> | null;
+  // make a shallow copy so the caller's array stays untouched
+  const copy = [...arr];
+  copy.sort(cmp);
+  return copy[k - 1];
 }
-class BinarySearchTree<T> {
-  private root: BSTNode<T> | null = null;
-  private readonly compare: Comparator<T>;
+/**
+ * Returns the k-th smallest element (1‑indexed) in `arr`.
+ * Modifies the array in place (no extra array allocation).
+ */
+function quickSelect<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  return select(arr, 0, arr.length - 1, k - 1);
 
-  constructor(compareFn: Comparator<T>) {
-    this.compare = compareFn;
-  }
+  function partition(lo: number, hi: number): number {
+    const pivotIdx = Math.floor((lo + hi) / 2);
+    const pivot = arr[pivotIdx];
+    // move pivot to the end
+    [arr[pivotIdx], arr[hi]] = [arr[hi], arr[pivotIdx]];
 
-  /* ---------- Public API ---------- */
-
-  insert(value: T): void {
-    this.root = this._insert(this.root, value);
-  }
-
-  find(value: T): T | null {
-    const node = this._find(this.root, value);
-    return node ? node.value : null;
-  }
-
-  delete(value: T): void {
-    this.root = this._delete(this.root, value);
-  }
-
-  // In‑order walk: returns the keys sorted ascending
-  inorder(): T[] {
-    const out: T[] = [];
-    this._inorder(this.root, out);
-    return out;
-  }
-
-  // Optional helpers
-  preorder(): T[] { /* … */ }
-  postorder(): T[] { /* … */ }
-}
-private _insert(node: BSTNode<T> | null, value: T): BSTNode<T> {
-  if (!node) return { value, left: null, right: null };
-
-  const cmp = this.compare(value, node.value);
-  if (cmp < 0) {
-    node.left = this._insert(node.left, value);
-  } else if (cmp > 0) {
-    node.right = this._insert(node.right, value);
-  } // duplicate values are ignored
-
-  return node;
-}
-
-private _find(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
-  if (!node) return null;
-
-  const cmp = this.compare(value, node.value);
-  if (cmp === 0) return node;
-  return cmp < 0 ? this._find(node.left, value) : this._find(node.right, value);
-}
-private _delete(node: BSTNode<T> | null, value: T): BSTNode<T> | null {
-  if (!node) return null;
-
-  const cmp = this.compare(value, node.value);
-  if (cmp < 0) {
-    node.left = this._delete(node.left, value);
-  } else if (cmp > 0) {
-    node.right = this._delete(node.right, value);
-  } else {
-    // node to delete found
-    if (!node.left) return node.right;          // only right child or none
-    if (!node.right) return node.left;          // only left child
-
-    // two children: find the in‑order successor (smallest on right)
-    const succ = this._minNode(node.right)!;
-    node.value = succ.value;                   // replace value
-    node.right = this._delete(node.right, succ.value); // delete successor
-  }
-  return node;
-}
-
-private _minNode(node: BSTNode<T>): BSTNode<T> | null {
-  while (node.left) node = node.left;
-  return node;
-}
-private _inorder(node: BSTNode<T> | null, out: T[]): void {
-  if (!node) return;
-  this._inorder(node.left, out);
-  out.push(node.value);
-  this._inorder(node.right, out);
-}
-
-// You can add preorder/postorder in the same style if you need them.
-const compareNumbers = (a: number, b: number) => a - b;
-
-const bst = new BinarySearchTree<number>(compareNumbers);
-
-bst.insert(10);
-bst.insert(5);
-bst.insert(15);
-bst.insert(3);
-bst.insert(7);
-
-console.log("inorder:", bst.inorder());   // [3,5,7,10,15]
-console.log("find 7:", bst.find(7));      // 7
-console.log("find 99:", bst.find(99));    // null
-
-bst.delete(5);
-console.log("after delete 5:", bst.inorder()); // [3,7,10,15]
-*inorderIter(): Generator<T> {
-  const stack: BSTNode<T>[] = [];
-  let current = this.root;
-
-  while (stack.length || current) {
-    while (current) {
-      stack.push(current);
-      current = current.left!;
+    let store = lo;
+    for (let i = lo; i < hi; i++) {
+      if (cmp(arr[i], pivot) < 0) {
+        [arr[i], arr[store]] = [arr[store], arr[i]];
+        store++;
+      }
     }
+    // put pivot back in its final place
+    [arr[store], arr[hi]] = [arr[hi], arr[store]];
+    return store;
+  }
 
-    current = stack.pop()!;
-    yield current.value;
-    current = current.right!;
+  function select(lo: number, hi: number, targetIdx: number): T {
+    if (lo === hi) return arr[lo];
+    const pivotIdx = partition(lo, hi);
+    if (pivotIdx === targetIdx) {
+      return arr[pivotIdx];
+    } else if (pivotIdx > targetIdx) {
+      return select(lo, pivotIdx - 1, targetIdx);
+    } else {
+      return select(pivotIdx + 1, hi, targetIdx);
+    }
   }
 }
-for (const val of bst.inorderIter()) {
-  console.log(val);
+class BinaryHeap<T> {
+  constructor(private cmp: (a: T | null, b: T | null) => number) {}
+  private heap: (T | null)[] = [null];          // 1‑indexed
+
+  get size() { return this.heap.length - 1; }
+
+  push(val: T) {
+    this.heap.push(val);
+    this.bubbleUp(this.size);
+  }
+
+  pop(): T | null {
+    if (this.size === 0) return null;
+    const ret = this.heap[1];
+    this.heap[1] = this.heap.pop()!;
+    this.bubbleDown(1);
+    return ret;
+  }
+
+  peek(): T | null {
+    return this.size ? this.heap[1] : null;
+  }
+
+  private bubbleUp(i: number) {
+    while (i > 1) {
+      const p = Math.floor(i / 2);
+      if (this.cmp(this.heap[i]!, this.heap[p]!) < 0) {
+        [this.heap[i], this.heap[p]] = [this.heap[p], this.heap[i]];
+        i = p;
+      } else break;
+    }
+  }
+
+  private bubbleDown(i: number) {
+    while (true) {
+      const l = i * 2, r = l + 1;
+      let smallest = i;
+      if (l <= this.size && this.cmp(this.heap[l]!, this.heap[smallest]!) < 0) smallest = l;
+      if (r <= this.size && this.cmp(this.heap[r]!, this.heap[smallest]!) < 0) smallest = r;
+      if (smallest !== i) {
+        [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+        i = smallest;
+      } else break;
+    }
+  }
+}
+
+function kthSmallestHeap<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const heap = new BinaryHeap<T>((a, b) => cmp(a, b));
+  for (const v of arr) heap.push(v);
+  // pop k-1 times to discard smaller elements
+  for (let i = 0; i < k - 1; i++) heap.pop();
+  return heap.peek() as T;
 }
