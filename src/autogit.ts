@@ -1,74 +1,57 @@
-// src/utils/http.ts
-import { knownFolders, File } from '@nativescript/core';
+/**
+ * Returns the index of `target` inside the sorted array `arr`,
+ * or -1 if the target is not present.
+ *
+ * @param arr     Sorted numerical array (ascending order)
+ * @param target  Value to find
+ */
+export function fibonacciSearch(arr: readonly number[], target: number): number {
+  const n = arr.length;
 
-// ──────────────────────────────────────────────────────────────────
-// Step 1 – A friendly async helper that does the fetch
-// ──────────────────────────────────────────────────────────────────
-export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  // (1) Generate the smallest Fibonacci number ≥ n
+  let fibMMinus2 = 0; // F(m-2)
+  let fibMMinus1 = 1; // F(m-1)
+  let fibM = fibMMinus2 + fibMMinus1; // F(m)
 
-  try {
-    const resp = await fetch(url, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        // add any custom headers you need
-      },
-    });
+  while (fibM < n) {
+    fibMMinus2 = fibMMinus1;
+    fibMMinus1 = fibM;
+    fibM = fibMMinus1 + fibMMinus2;
+  }
 
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
+  // (2) Marks the eliminated range from front
+  let offset = -1;
+
+  // (3) While there are elements to inspect
+  while (fibM > 1) {
+    // Check the index. Do not go beyond the array bounds.
+    const i = Math.min(offset + fibMMinus2, n - 1);
+
+    if (arr[i] < target) {
+      // Move three Fibonacci variables one step closer to the end
+      fibM = fibMMinus1;
+      fibMMinus1 = fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+      offset = i;
+    } else if (arr[i] > target) {
+      // Move the Fibonacci window two steps back
+      fibM = fibMMinus2;
+      fibMMinus1 = fibMMinus1 - fibMMinus2;
+      fibMMinus2 = fibM - fibMMinus1;
+    } else {
+      return i; // Found
     }
-
-    const json = await resp.json() as T;
-    return json;
-  } finally {
-    clearTimeout(id);
   }
+
+  // (4) If the last element is the target
+  if (fibMMinus1 && offset + 1 < n && arr[offset + 1] === target) {
+    return offset + 1;
+  }
+
+  // Not found
+  return -1;
 }
+const sorted = [1, 3, 5, 7, 9, 12, 15, 18, 21, 24, 30];
 
-// ──────────────────────────────────────────────────────────────────
-// Step 2 – Call it from an Android Activity / Page, e.g.
-// ──────────────────────────────────────────────────────────────────
-export async function demoFetch() {
-  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
-
-  try {
-    const data = await getJson<any>(apiUrl);
-    console.log('Data received:', data);
-
-    // If you want to touch the UI, do it on the UI thread
-    // (in NativeScript you can simply update a component property,
-    // or use a dispatcher if you’re outside a component)
-  } catch (err) {
-    console.error('fetch error:', err);
-    // In an Android UI you might show a toast:
-    const Toast = android.widget.Toast;
-    const ctx = android.content.Context;
-    const activity = /** get the current activity from your page **/;
-    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
-  }
-}
-
-/*
-  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
-
-  import { demoFetch } from '~/utils/http';
-
-  export function pageLoaded(args) {
-    demoFetch();
-  }
-*/
-const HttpGetTask = android.os.AsyncTask.extend({
-  doInBackground: function (params) {
-    try {
-      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
-      const conn = url.openConnection() as java.net.HttpURLConnection;
-      conn.setRequestMethod('GET');
-      conn.setConnectTimeout(5000);
-      conn.setReadTimeout(5000);
-
-      const reader = new java.io.BufferedReader(
-
+console.log(fibonacciSearch(sorted, 15)); // → 6
+console.log(fibonacciSearch(sorted, 4));  // → -1
