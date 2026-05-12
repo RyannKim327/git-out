@@ -1,38 +1,45 @@
-/**
- * Counting sort for an array of integers.
- *
- * @param arr The array to sort – an array of numbers.
- * @returns A new array containing the sorted values.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+// 1. Basic list node definition
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 
-  // Locate the bounds of the values.
-  let min = arr[0];
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-    if (val < min) min = val;
-    if (val > max) max = val;
+// 2. Utility: build a linked list from an array
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null;
+
+  const head = new ListNode(values[0]);
+  let current = head;
+  for (let i = 1; i < values.length; i++) {
+    current.next = new ListNode(values[i]);
+    current = current.next;
+  }
+  return head;
+}
+
+// 3. Find the middle node – fast/slow pointer
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {      // stop when fast can't advance two steps
+    slow = slow.next!;             // safe because previous check guarantees truthy
+    fast = fast.next.next!;
   }
 
-  const range = max - min + 1;          // Number of distinct possible values
-  const count = new Array<number>(range).fill(0);
+  return slow;                     // slow is at the middle
+}
 
-  // Count occurrences of each integer.
-  for (const value of arr) {
-    count[value - min]++;               // Shift by min so index 0 stays valid
-  }
+// Demo
+const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
+const oddHead = buildList(arr);
+console.log(getMiddle(oddHead)?.val); // 3
 
-  // Overwrite the input array (or build a new one) using the counts.
-  const sorted: number[] = [];
-  for (let i = 0; i < range; i++) {
-    const currentVal = i + min;
-    const occ = count[i];
-    for (let j = 0; j < occ; j++) {
-      sorted.push(currentVal);
-    }
-  }
-
-  return sorted;
+const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
+const evenHead = buildList(evenArr);
+console.log(getMiddle(evenHead)?.val); // 20
+while (fast && fast.next && fast.next.next) {
+  slow = slow.next!;
+  fast = fast.next.next!;
 }
