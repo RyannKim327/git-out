@@ -1,35 +1,35 @@
-// 1️⃣ Base & height
-export function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0)
-    throw new Error('Base and height must be positive numbers.');
-  return (base * height) / 2;
+/**
+ * Returns the longest common prefix of an array of strings.
+ * If the array is empty, returns an empty string.
+ *
+ * @param words - array of strings
+ * @returns longest common prefix
+ */
+function longestCommonPrefix(words: string[]): string {
+  if (words.length === 0) return '';
+
+  // 1. Find the min and max strings (lexicographically)
+  let min = words[0];
+  let max = words[0];
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i];
+    if (w < min) min = w;
+    if (w > max) max = w;
+  }
+
+  // 2. Find first mismatch between min and max
+  let j = 0;
+  while (j < min.length && j < max.length && min[j] === max[j]) {
+    j++;
+  }
+
+  // 3. Slice the common part
+  return min.slice(0, j);
 }
+const arr = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(arr)); // → "fl"
 
-// 2️⃣ Heron’s formula (three sides)
-export function areaHeron(a: number, b: number, c: number): number {
-  // Validate that the sides can form a triangle
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error('Side lengths must be positive numbers.');
-  }
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not satisfy the triangle inequality.');
-  }
-
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-  // area might be NaN if the vertices are collinear (area close to 0)
-  if (areaSquared < 0) {
-    throw new Error('Computed area squared is negative – check your side lengths.');
-  }
-
-  return Math.sqrt(areaSquared);
-}
-// Base & height
-const tri1 = areaBaseHeight(10, 4); // 20
-
-// Heron’s formula
-const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
-
-console.log(`Base/Height area: ${tri1}`);
-console.log(`Heron area: ${tri2}`);
+console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
+console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
+console.log(longestCommonPrefix(['single'])); // → "single"
+console.log(longestCommonPrefix([])); // → ""
