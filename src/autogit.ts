@@ -1,106 +1,74 @@
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1️⃣ Find the middle (fast/slow trick)
-  let slow = head, fast = head, prev: ListNode | null = null;
-  while (fast && fast.next) {
-    // 2️⃣ Reverse the first half while we’re at it
-    let nxt = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nxt;
-
-    fast = fast.next.next;
-  }
-
-  // 3️⃣ If odd number of nodes skip the middle one
-  if (fast) slow = slow.next;
-
-  // 4️⃣ Compare the two halves
-  let p1 = prev, p2 = slow;
-  while (p1 && p2) {
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-  return true;
-}
-interface ListNode {
-  val: number | string;      // whatever you want to store
-  next?: ListNode | null;    // `next` is optional to support the “end” of the list
-}
 /**
- * Returns true if the singly linked list is a palindrome.
+ * Quick‑sort implementation.
  *
- * @param head - The head node of the linked list (or null).
+ * @param arr   The array to sort – it will be mutated in place.
+ * @param compare Optional comparison function.  
+ *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+ *                If omitted, the default is a numeric comparison.
+ * @returns The same array reference, now sorted.
  */
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+export function quickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to numeric comparison if no comparator is given
+  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
 
-  let slow = head;
-  let fast = head;
-  let prev: ListNode | null = null; // will become the head of the reversed first half
+  // Recursive helper – operates on the portion of the array
+  function qs(left: number, right: number): void {
+    if (left >= right) return;
 
-  // Step 1 & 2: find middle, reverse first half
-  while (fast && fast.next) {
-    // Reverse the link for `slow`'s current node
-    const nextNode = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nextNode;
+    // Partition returns the final index of the pivot
+    const pivotIndex = partition(left, right);
 
-    fast = fast.next.next;
+    // Recurse on smaller side first to keep stack depth <= log₂(n)
+    if (pivotIndex - left < right - pivotIndex) {
+      qs(left, pivotIndex - 1);
+      qs(pivotIndex + 1, right);
+    } else {
+      qs(pivotIndex + 1, right);
+      qs(left, pivotIndex - 1);
+    }
   }
 
-  // Step 3: if odd length, skip the middle node
-  if (fast) {
-    slow = slow.next!;
+  // Lomuto‑style partition – choose rightmost element as pivot
+  function partition(left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;          // Place for swapping
+
+    for (let j = left; j < right; j++) {
+      if (cmp(arr[j], pivot) <= 0) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    // Move pivot to its final place
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
   }
 
-  // Step 4: compare nodes from the two halves
-  let firstHalf = prev;
-  let secondHalf = slow;
-  while (firstHalf && secondHalf) {
-    if (firstHalf.val !== secondHalf.val) return false;
-    firstHalf = firstHalf.next!;
-    secondHalf = secondHalf.next!;
-  }
-
-  return true;
+  qs(0, arr.length - 1);
+  return arr;
 }
-// Helper to create a list from an array
-function fromArray(arr: (number | string)[]): ListNode | null {
-  if (!arr.length) return null;
-  const head: ListNode = { val: arr[0] };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { val: arr[i] };
-    current = current.next;
-  }
-  return head;
-}
+// Numbers – default numeric comparison is fine
+const nums = [34, 7, 23, 32, 5, 62];
+console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
 
-console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
-console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string)[] = [];
-  let fast = head;
-  let slow = head;
+// Strings – need a string comparator  
+const words = ['banana', 'apple', 'cherry'];
+console.log(
+  quickSort(words, (a, b) => a.localeCompare(b))
+); // ['apple', 'banana', 'cherry']
 
-  // Push first half onto stack
-  while (fast && fast.next) {
-    stack.push(slow!.val);
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
+// Custom objects  
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Anna', age: 27 },
+  { name: 'Bob', age: 22 },
+  { name: 'Clara', age: 35 },
+];
 
-  // Skip middle element for odd length
-  if (fast) slow = slow!.next!;
-
-  // Compare the rest with stack
-  while (slow) {
-    if (stack.pop() !== slow.val) return false;
-    slow = slow.next;
-  }
-  return true;
-}
+quickSort(people, (a, b) => a.age - b.age);
+console.log(people);
+// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
