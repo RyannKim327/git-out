@@ -1,62 +1,42 @@
 /**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
- */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
-}
-/**
- * Return the n‑th node from the end of the list.
+ * Returns the largest prime factor of n.
  *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
+ * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
  */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
-  }
+export function largestPrimeFactor(n: number | bigint): number | bigint {
+    if (n <= 1) throw new Error('n must be > 1');
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
+    // Work with BigInt for arbitrary precision
+    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
+    let maxFactor: bigint = 1n;
 
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
+    // Handle factor 2 separately
+    while (num % 2n === 0n) {
+        maxFactor = 2n;
+        num /= 2n;
     }
-    fast = fast.next
-  }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
-  }
+    // Now num is odd – we only need to check odd divisors
+    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
+        while (num % divisor === 0n) {
+            maxFactor = divisor;
+            num /= divisor;
+        }
+    }
 
-  return slow
+    // If anything is left, it's a prime larger than any divisor we tried
+    if (num > 1n) maxFactor = num;
+
+    // Return a native number if the input was a number and the result fits
+    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
+        return Number(maxFactor);
+    }
+    return maxFactor;
 }
-import { ListNode, nthFromEnd } from './linkedListHelpers'
+console.log(largestPrimeFactor(28));          // 7
+console.log(largestPrimeFactor(91));          // 13
+console.log(largestPrimeFactor(600851475143));// 6857
 
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
-}
-
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
-
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
-
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+// With a BigInt (e.g. a 100‑digit number)
+const huge = BigInt('123456789123456789123456789');
+console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
