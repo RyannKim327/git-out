@@ -1,45 +1,40 @@
-// random-example.ts
-// a small TypeScript demo that pulls data from a public API using axios
+/**
+ * Interpolation Search – O(log log n) average, O(n) worst.
+ *
+ * @param arr   Sorted array of numbers (ascending order)
+ * @param key   Value to locate
+ * @returns     Index of `key` in `arr`, or -1 if absent
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-import axios from 'axios';
+  let low = 0;
+  let high = arr.length - 1;
 
-// ---------- Types ----------
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-// ---------- API wrapper ----------
-async function fetchTodo(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
-  return response.data;
-}
-
-// ---------- CLI entry point ----------
-async function main() {
-  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
-
-  try {
-    const todo = await fetchTodo(todoId);
-    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
-    console.log(`  - ${todo.title}`);
-    console.log(`  - completed: ${todo.completed}`);
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      console.error(`Request failed: ${err.message}`);
-    } else {
-      console.error(`Unexpected error:`, err);
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high]
+    if (arr[low] === arr[high]) {
+      return arr[low] === key ? low : -1;
     }
-    process.exit(1);
+
+    // Estimation formula
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
+
+    const val = arr[pos];
+    if (val === key) {
+      return pos;               // Key found
+    }
+    if (val < key) {
+      low = pos + 1;             // Search upper segment
+    } else {
+      high = pos - 1;            // Search lower segment
+    }
   }
+
+  return -1; // Not found
 }
-
-main();
-# 1. Install deps (run once)
-npm install axios
-
-# 2. Compile / run
-npx ts-node random-example.ts 5
+const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
+console.log(interpolationSearch(sorted, 31)); // → 6
+console.log(interpolationSearch(sorted, 10)); // → -1
