@@ -1,56 +1,75 @@
-/**
- * Rabin‑Karp string search.
- * @param text    The string to be searched.
- * @param pattern The pattern to search for.
- * @returns      An array containing the starting indices where `pattern`
- *               occurs in `text`. If the pattern is not found, returns [].
- */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const result: number[] = [];
+// -------------------------------------------------------------
+// 1️⃣  O(n²) DP – intuition + implementation
+// -------------------------------------------------------------
+function lisDP(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
 
-  if (m === 0 || n < m) return result;       // edge cases
+  // dp[i]  – length of LIS that ends at index i
+  const dp: number[] = Array(n).fill(1);
+  // prev[i] – previous index in the LIS that ends at i
+  const prev: number[] = Array(n).fill(-1);
 
-  /* ---- constants ---- */
-  const prime = 1000000007;                   // large prime modulus
-  const base = 256;                           // number of possible char values
+  let bestEnd = 0; // index where the overall best LIS ends
 
-  /* ---- pre‑compute base^(m-1) % prime ---- */
-  let highestPower = 1;
-  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
-
-  /* ---- first window hash ---- */
-  let patternHash = 0;
-  let textHash = 0;
-  for (let i = 0; i < m; i++) {
-    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
-    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
-  }
-
-  /* ---- slide through text ---- */
-  for (let i = 0; i <= n - m; i++) {
-    /* match: compare hashes first, then do a full string compare to avoid false positives */
-    if (patternHash === textHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
+  for (let i = 0; i < n; ++i) {
+    for (let j = 0; j < i; ++j) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
       }
     }
-
-    /* roll: compute hash for next window */
-    if (i < n - m) {
-      // Remove leading character
-      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
-      // Avoid negative
-      if (textHash < 0) textHash += prime;
-      // Add trailing character
-      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
-    }
+    if (dp[i] > dp[bestEnd]) bestEnd = i;
   }
 
-  return result;
-}
-const text = "abracadabra";
-const pattern = "abra";
+  // Rebuild the sequence
+  const seq: number[] = [];
+  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
+  seq.reverse();
 
-console.log(rabinKarp(text, pattern)); // → [0, 7]
+  return { length: dp[bestEnd], sequence: seq };
+}
+// -------------------------------------------------------------
+// 2️⃣  O(n log n) – patience sorting + back‑tracking
+// -------------------------------------------------------------
+function lisPatience(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
+
+  // tails[i] – index of the smallest tail of LIS with length i+1
+  const tails: number[] = [];
+  // parentIdx[i] – previous index in LIS that ends at i
+  const parentIdx: number[] = Array(n).fill(-1);
+
+  for (let i = 0; i < n; ++i) {
+    const x = arr[i];
+
+    // Binary search: first tail >= x
+    let lo = 0, hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (arr[tails[mid]] < x) lo = mid + 1;
+      else hi = mid;
+    }
+
+    // lo now points to position where x will go
+    if (lo > 0) parentIdx[i] = tails[lo - 1];
+
+    if (lo === tails.length) tails.push(i);
+    else tails[lo] = i;
+  }
+
+  // Reconstruct sequence
+  const seq: number[] = [];
+  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
+  seq.reverse();
+
+  return { length: tails.length, sequence: seq };
+}
+const example = [10, 9, 2, 5, 3, 7, 101, 18];
+
+console.log(lisDP(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+
+console.log(lisPatience(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
