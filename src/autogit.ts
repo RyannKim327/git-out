@@ -1,64 +1,38 @@
 /**
- * A directed graph represented by an adjacency list.
- * Each node is identified by a string (you can swap to number / symbol if you want).
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Returns an array of nodes in a topological order.
+ * Recursive binary search.
  *
- * Throws if the graph contains a cycle (i.e. cannot be sorted).
+ * @param data   Sorted array to search in.
+ * @param target Value you’re looking for.
+ * @param compare Optional comparator – defaults to numeric or lexical.
+ * @param left   Left index of the current sub‑array (internal use).
+ * @param right  Right index of the current sub‑array (internal use).
+ * @returns Index of the target or -1 if not found.
  */
-export function topologicalSort(graph: Graph): string[] {
-  // 1. Compute indegree for every node.
-  const indegree: Record<string, number> = {};
-  const nodes: string[] = Object.keys(graph);
+function binarySearch<T>(
+  data: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => ((a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0),
+  left: number = 0,
+  right: number = data.length - 1
+): number {
+  if (left > right) return -1;                 // base case: empty window
 
-  nodes.forEach(node => (indegree[node] = 0));
+  const mid = Math.floor((left + right) / 2);
+  const cmp = compare(target, data[mid]);
 
-  nodes.forEach(node =>
-    graph[node].forEach(neighbor => {
-      if (indegree[neighbor] === undefined) {
-        indegree[neighbor] = 0; // in case a node has no outgoing edges but appears as a target
-      }
-      indegree[neighbor] += 1;
-    })
-  );
-
-  // 2. Start with all nodes that have indegree 0.
-  const queue: string[] = nodes.filter(node => indegree[node] === 0);
-  const order: string[] = [];
-
-  // 3. Repeatedly take a node out of the queue,
-  //    append it to order, and subtract 1 from
-  //    the indegree of each of its neighbours.
-  while (queue.length > 0) {
-    const current = queue.shift() as string; // safe because we know queue isn't empty
-    order.push(current);
-
-    graph[current].forEach(next => {
-      indegree[next] -= 1;
-      if (indegree[next] === 0) {
-        queue.push(next);
-      }
-    });
-  }
-
-  // 4. If we were able to visit every node, the graph is a DAG.
-  if (order.length !== Object.keys(indegree).length) {
-    throw new Error('Graph has at least one cycle – topological sort impossible');
-  }
-
-  return order;
+  if (cmp === 0) return mid;                   // found
+  if (cmp < 0) return binarySearch(data, target, compare, left, mid - 1);
+  return binarySearch(data, target, compare, mid + 1, right);
 }
-const sampleGraph: Graph = {
-  a: ['b', 'c'],
-  b: ['d'],
-  c: ['d'],
-  d: [],          // d has no outgoing edges
-  e: ['a', 'f'],  // e is another root
-  f: []
-};
+// numeric, already sorted
+const nums = [3, 7, 12, 18, 26, 42, 57];
+const idx1 = binarySearch(nums, 18);   // → 3
+const idx2 = binarySearch(nums, 5);    // → -1
 
-console.log(topologicalSort(sampleGraph));
-// → [ 'e', 'a', 'b', 'c', 'd', 'f' ]  (one valid topological ordering)
+// string, case‑insensitive
+const words = ["apple", "banana", "cherry", "date"];
+const idx3 = binarySearch(
+  words,
+  "CHERRY",
+  (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+); // → 2
