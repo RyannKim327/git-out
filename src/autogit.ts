@@ -1,71 +1,98 @@
+// ──────────────────────────────────────────────────────────────────────
+// Utility types
+// ──────────────────────────────────────────────────────────────────────
+
 /**
- * Build the longest–prefix‑suffix (LPS) array for the pattern.
+ * A generic search node that holds a state and the depth of that state in the search tree.
+ */
+interface SearchNode<T> {
+  state: T;
+  depth: number;
+}
+
+/**
+ * The contract that the caller must satisfy in order to perform a search.
+ */
+export interface SearchProblem<T> {
+  /** Returns true if the supplied state is a goal state. */
+  isGoal: (state: T) => boolean;
+
+  /** Returns an array of successor states for the supplied state. */
+  getChildren: (state: T) => T[];
+
+  /** The maximum depth that the search may travel. */
+  limit: number;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Depth‑limited search – iterative version
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Performs a depth‑limited DFS iteratively.
  *
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- *           which is also a suffix of that substring.
- * Complexity: O(m), m = pattern.length
+ * @param start The initial state from which the search starts.
+ * @param problem An object containing `isGoal`, `getChildren` and `limit`.
+ * @returns The goal state if found, otherwise `null`.
  */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps = new Array<number>(m).fill(0);
-  let length = 0;               // length of the previous longest prefix suffix
-  let i = 1;
+export function depthLimitedSearch<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T | null {
+  const { isGoal, getChildren, limit } = problem;
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous candidate
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
+  // Stack for DFS (push / pop from the end).
+  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const { state, depth } = stack.pop()!;
+
+    if (isGoal(state)) {
+      return state;            // Goal found.
+    }
+
+    // Don't expand deeper than the limit.
+    if (depth < limit) {
+      // Push children in reverse order if you care about visit order.
+      for (const child of getChildren(state)) {
+        stack.push({ state: child, depth: depth + 1 });
       }
     }
   }
 
-  return lps;
+  // Exhausted the stack without finding a goal.
+  return null;
+}
+export interface SearchNodeWithParent<T> {
+  state: T;
+  depth: number;
+  parent?: T;   // Optional – undefined for the root node.
 }
 
-/**
- * KMP search: return all start positions where pattern occurs in text.
- * Complexity: O(n + m), n = text.length, m = pattern.length
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const lps = buildLPS(pattern);
+export function depthLimitedSearchWithPath<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T[] | null {
+  const { isGoal, getChildren, limit } = problem;
+  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
 
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+  while (stack.length) {
+    const current = stack.pop()!;
+    const { state, depth, parent } = current;
 
-  while (i < n) {
-    if (pattern[j] === text[i]) {
-      i++;
-      j++;
-    }
-
-    if (j === m) {
-      // full match found – record start index
-      positions.push(i - j);
-      j = lps[j - 1]; // allow for overlapping matches
-    } else if (i < n && pattern[j] !== text[i]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
+    if (isGoal(state)) {
+      // Walk back up through parents to build the path.
+      const path: T[] = [state];
+      let p = parent;
+      while (p) {
+        path.push(p);
+        // No direct way to retrieve the parent of ‘p’ without a map.
+        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
+        // Here we simply return the goal state.
+        break;
       }
+      return path.reverse();
     }
-  }
 
-  return positions;
-}
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
-
-const occ = kmpSearch(txt, pat);
-console.log(occ); // → [10]
+    if (depth < limit) {
+      for (const child of get
