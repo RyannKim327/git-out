@@ -1,18 +1,68 @@
-// 1. Remove whitespace from the ends – trim()
-const raw = "   some text   ";
-const trimmed = raw.trim();          // "some text"
+// ──────────────────────────────────────────────────────────────
+// 1️⃣  Imports & type definitions
+// ──────────────────────────────────────────────────────────────
+import fetch from 'node-fetch'; // npm i node-fetch@2
+// If you’re in a browser environment just drop the import line
+// and use the native `fetch` API.
 
-// 2. Remove whitespace everywhere in the string
-const raw2 = "  some text  with  spaces ";
-const noSpace = raw2.replace(/\s+/g, ''); // "sometextwithspaces"
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-// 3. Remove all *outside* whitespace but keep internal spaces
-const raw3 = "   some text with  internal   spaces   ";
-const keepInternal = raw3.trim();           // "some text with  internal   spaces"
+// ──────────────────────────────────────────────────────────────
+// 2️⃣  The async loader
+// ──────────────────────────────────────────────────────────────
+async function fetchPosts(apiUrl: string): Promise<Post[]> {
+  // A quick sanity check – you don’t want to send an empty string.
+  if (!apiUrl.trim()) {
+    throw new Error('API URL cannot be empty');
+  }
 
-// 4. If you only want to drop **all** whitespace characters (tabs, newlines, etc.)
-const raw4 = "line1\n  line2\t";
-const noWhitespace = raw4.replace(/\s+/g, ''); // "line1line2"
+  const res = await fetch(apiUrl, {
+    // JSON is the common output. Adjust headers if your API
+    // requires authentication or special content‑type.
+    headers: {
+      Accept: 'application/json',
+    },
+    // A generous timeout – network latency can be unpredictable.
+    timeout: 10_000,
+  });
 
-// 5. To keep only alphanumerics (remove spaces, punctuation, etc.)
-const cleaned = raw2.replace(/[^a-zA-Z0-9]/g, ''); // "sometextwithspaces"
+  if (!res.ok) {
+    // Throw an error with the HTTP status so callers can catch it.
+    throw new Error(`Network response was not OK (${res.status})`);
+  }
+
+  // We’ve decided the result is an array of posts. 
+  // Narrow it to Post[] for full type safety.
+  const data = (await res.json()) as Post[];
+
+  return data;
+}
+
+// ──────────────────────────────────────────────────────────────
+// 3️⃣  Entry point – usage example
+// ──────────────────────────────────────────────────────────────
+async function main() {
+  try {
+    // This is a free JSON placeholder service that offers fake blog posts.
+    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
+
+    // Just log the first 3 for brevity
+    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
+    posts.slice(0, 3).forEach((p, i) => {
+      console.log(`\nPost #${i + 1}`);
+      console.log(`ID: ${p.id}`);
+      console.log(`Title: ${p.title}`);
+      console.log(`Body: ${p.body.slice(0, 60)}…`);
+    });
+  } catch (err) {
+    // A simple error handler – plug in your own logger if needed.
+    console.error('❌ Failed to fetch posts:', err);
+  }
+}
+
+main();
