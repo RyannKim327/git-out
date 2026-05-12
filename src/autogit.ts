@@ -1,89 +1,62 @@
+/* ------------------------------------------------------------
+   Heap‑sort in TypeScript
+   ------------------------------------------------------------ */
+
 /**
- * Forward Burrows–Wheeler Transform.
- * @param input – original string
- * @returns {bwt, index} – BWT string and index of the original string in the sorted rotation table.
+ * Build a max‑heap in place.
+ * `heapSize` is the number of elements to consider from the start of `arr`.
  */
-export function bwtEncode(input: string): { bwt: string; index: number } {
-    // 1️⃣ Append a sentinel that is smaller than every other char
-    const sentinel = '\0';
-    const padded = input + sentinel;
+function heapify<T>(arr: T[], heapSize: number, i: number, cmp: (a: T, b: T) => number) {
+    const left  = 2 * i + 1;
+    const right = 2 * i + 2;
+    let largest = i;
 
-    // 2️⃣ Make all cyclic rotations
-    // Using an array of start indices so we never build full strings.
-    const n = padded.length;
-    const rotations = Array.from({ length: n }, (_, i) => i);
+    if (left  < heapSize && cmp(arr[left],  arr[largest]) > 0) largest = left;
+    if (right < heapSize && cmp(arr[right], arr[largest]) > 0) largest = right;
 
-    // 3️⃣ Stable sort rotations lexicographically
-    rotations.sort((a, b) => {
-        for (let offset = 0; offset < n; offset++) {
-            const ca = padded[(a + offset) % n];
-            const cb = padded[(b + offset) % n];
-            if (ca < cb) return -1;
-            if (ca > cb) return 1;
-            // equal – iterate next offset
-        }
-        return 0;       // rotations are identical – should not happen with sentinel
-    });
-
-    // 4️⃣ Build the BWT string by taking the character preceding each rotation
-    const bwt = new Array<string>(n);
-    let originalIndex = -1;
-    for (let i = 0; i < n; i++) {
-        const rotStart = rotations[i];
-        const bwtChar = padded[(rotStart + n - 1) % n]; // char before rotation
-        bwt[i] = bwtChar;
-
-        // If this rotation is the original (started at 0), remember its position
-        if (rotStart === 0) originalIndex = i;
+    if (largest !== i) {
+        [arr[i], arr[largest]] = [arr[largest], arr[i]];
+        heapify(arr, heapSize, largest, cmp);
     }
-
-    return { bwt: bwt.join(''), index: originalIndex };
 }
+
 /**
- * Inverse Burrows–Wheeler Transform.
- * @param bwt – BWT string (length n)
- * @param index – index of the original string in the sorted rotations
- * @returns original string (without the sentinel)
+ * Transform an array into a heap.  O(n) time.
  */
-export function bwtDecode(bwt: string, index: number): string {
-    const n = bwt.length;
-    // 1️⃣ Build first column by sorting the BWT string
-    const first = bwt.split('').sort(); // stable because JS sort is stable (ES2019+)
-
-    // 2️⃣ Compute the “next” array – mapping from a row in first column
-    //    to the corresponding row in last column.
-    //    This is essentially the Longest‑Common‑Prefix order of the rotations.
-    const next = new Array<number>(n);
-    const buckets = new Map<string, number[]>();
-
-    // Collect indices of each character in the BWT string
-    for (let i = 0; i < n; i++) {
-        const ch = bwt[i];
-        if (!buckets.has(ch)) buckets.set(ch, []);
-        buckets.get(ch)!.push(i);
+function buildHeap<T>(arr: T[], cmp: (a: T, b: T) => number) {
+    const heapSize = arr.length;
+    for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+        heapify(arr, heapSize, i, cmp);
     }
-
-    // For each character, allocate its positions in the first column
-    const bucketIterators = new Map<string, number>();
-    for (const [ch, posList] of buckets.entries()) {
-        bucketIterators.set(ch, 0);
-    }
-
-    for (let i = 0; i < n; i++) {
-        const ch = first[i];
-        const idxInBlt = buckets.get(ch)![bucketIterators.get(ch)!++];
-        next[i] = idxInBlt;
-    }
-
-    // 3️⃣ Reconstruct original by following the next pointers starting from `index`
-    const result: string[] = new Array<string>(n);
-    let row = index;
-    for (let i = n - 1; i >= 0; i--) {
-        result[i] = first[row];
-        row = next[row];
-    }
-
-    // The sentinel is the first char of the reconstructed string
-    // Strip it and return the original
-    return result.join('').slice(1); // drop sentinel
 }
+
+/**
+ * Heap‑sort: sorts `arr` in place and returns it.
+ * Default comparison is numeric ascending order.
+ */
+export function heapSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+    const compare = cmp ?? ((a, b) => (a as any) - (b as any));
+
+    // 1️⃣ build max‑heap
+    buildHeap(arr, compare);
+
+    // 2️⃣ repeatedly extract the max and rebuild heap
+    let heapSize = arr.length;
+    for (let i = arr.length - 1; i > 0; i--) {
+        // put current max (root) at the end
+        [arr[0], arr[i]] = [arr[i], arr[0]];
+        heapSize--;
+
+        // restore heap property on the reduced heap
+        heapify(arr, heapSize, 0, compare);
+    }
+
+    return arr;
+}
+const numbers = [5, 3, 8, 4, 1, 7, 2];
+heapSort(numbers);
+console.log(numbers); // → [1, 2, 3, 4, 5, 7, 8]
+interface Person { name: string; age: number }
+
+// Sort by age ascending
+heapSort(people, (a, b) => a.age - b.age);
