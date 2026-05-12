@@ -1,57 +1,40 @@
 /**
- * Returns the index of `target` inside the sorted array `arr`,
- * or -1 if the target is not present.
+ * Compute n! recursively.
  *
- * @param arr     Sorted numerical array (ascending order)
- * @param target  Value to find
+ * Handles:
+ *   - n >= 0   → valid
+ *   - n < 0    → throws (factorial is undefined for negatives)
+ *
+ * Returns a number if the result fits in a JavaScript number,
+ * otherwise returns a BigInt to avoid overflow.
  */
-export function fibonacciSearch(arr: readonly number[], target: number): number {
-  const n = arr.length;
+export function factorial(n: number | bigint): number | bigint {
+  // Normalize input to a bigint for exact arithmetic
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
 
-  // (1) Generate the smallest Fibonacci number ≥ n
-  let fibMMinus2 = 0; // F(m-2)
-  let fibMMinus1 = 1; // F(m-1)
-  let fibM = fibMMinus2 + fibMMinus1; // F(m)
-
-  while (fibM < n) {
-    fibMMinus2 = fibMMinus1;
-    fibMMinus1 = fibM;
-    fibM = fibMMinus1 + fibMMinus2;
+  if (bigN < 0n) {
+    throw new Error('Factorial is defined only for non‑negative integers.');
   }
 
-  // (2) Marks the eliminated range from front
-  let offset = -1;
+  // Base case: 0! = 1 and 1! = 1
+  if (bigN <= 1n) return 1n;
 
-  // (3) While there are elements to inspect
-  while (fibM > 1) {
-    // Check the index. Do not go beyond the array bounds.
-    const i = Math.min(offset + fibMMinus2, n - 1);
+  // Recursive step
+  const product = bigN * factorial(bigN - 1n);
 
-    if (arr[i] < target) {
-      // Move three Fibonacci variables one step closer to the end
-      fibM = fibMMinus1;
-      fibMMinus1 = fibMMinus2;
-      fibMMinus2 = fibM - fibMMinus1;
-      offset = i;
-    } else if (arr[i] > target) {
-      // Move the Fibonacci window two steps back
-      fibM = fibMMinus2;
-      fibMMinus1 = fibMMinus1 - fibMMinus2;
-      fibMMinus2 = fibM - fibMMinus1;
-    } else {
-      return i; // Found
-    }
+  // Return a standard Number when it’s mathematically safe
+  // (anything that fits within 2^53‑1).
+  if (product <= BigInt(Number.MAX_SAFE_INTEGER)) {
+    return Number(product);
   }
 
-  // (4) If the last element is the target
-  if (fibMMinus1 && offset + 1 < n && arr[offset + 1] === target) {
-    return offset + 1;
-  }
-
-  // Not found
-  return -1;
+  // Otherwise keep it as a BigInt.
+  return product;
 }
-const sorted = [1, 3, 5, 7, 9, 12, 15, 18, 21, 24, 30];
+import { factorial } from './factorial';
 
-console.log(fibonacciSearch(sorted, 15)); // → 6
-console.log(fibonacciSearch(sorted, 4));  // → -1
+console.log(factorial(5));   // 120          (returns a number)
+console.log(factorial(20));  // 2432902008176640000  (returns a number)
+console.log(factorial(50));  // BigInt(304140932...)
+// if you prefer a string for extremely large results:
+console.log(factorial(50).toString());
