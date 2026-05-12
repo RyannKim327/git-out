@@ -1,16 +1,28 @@
 /**
- * Return a random integer between `min` and `max`, inclusive.
+ * Convert a decimal number (base‑10) into a binary string.
+ *
+ * Works for both positive and negative integers.
+ * If you need a signed‑bit representation (e.g., 32‑bit), adjust the `bits` argument.
  */
-function randomInt(min: number, max: number): number {
-  // Math.random() → [0, 1)
-  // Multiply by (max - min + 1) → [0, max - min + 1)
-  // floor to get an integer in [0, max - min]
-  // Shift by min to get the desired range
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function decimalToBinary(num: number, bits?: number): string {
+  // Handles NaN, Infinity, -Infinity
+  if (!Number.isFinite(num)) {
+    throw new RangeError('Input must be a finite number');
+  }
+
+  // Quick built‑in path for normal integers/small numbers
+  if (!bits) {
+    return num.toString(2);
+  }
+
+  // For fixed‑width binary (two's complement)
+  // e.g., decimalToBinary(-1, 8) → "11111111"
+  const mask = (1 << bits) - 1;
+  return (num & mask).toString(2).padStart(bits, '0');
 }
 
-/* Example */
-console.log(randomInt(5, 15)); // might print 7, 12, 15, …
-function randomFloat(min: number, max: number): number {
-  return Math.random() * (max - min) + min; // [min, max)
-}
+/* Examples */
+console.log(decimalToBinary(10));           // "1010"
+console.log(decimalToBinary(-5));          // "-101"
+// 8‑bit representation
+console.log(decimalToBinary(-5, 8));        // "11111011"
