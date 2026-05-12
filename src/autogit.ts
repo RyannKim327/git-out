@@ -1,138 +1,102 @@
-// ──────────────────────────────────────────────────────────────────────
-// 1️⃣  Node definition
-// ──────────────────────────────────────────────────────────────────────
+/**
+ * The shift table used by BMH.
+ * Key: a character (string of length 1)
+ * Value: how many positions to move the pattern to the right
+ */
+type BadCharTable = Record<string, number>;
 
-export class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+/**
+ * Build the bad‑character shift table from the pattern.
+ *
+ * @param pattern – the pattern we are looking for
+ * @returns an object mapping each character to its shift value
+ */
+function buildBadCharTable(pattern: string): BadCharTable {
+  const table: BadCharTable = {};
+  const lastIdx = pattern.length - 1;
+
+  // Initialize all characters to the full length (worst case)
+  for (let i = 0; i < lastIdx; i++) {
+    const c = pattern[i];
+    // The shift is the distance from the current position to the last character
+    table[c] = lastIdx - i;
+  }
+  // Characters that don't appear in the pattern keep the full length shift.
+  // (In JavaScript the property will simply be missing, which we interpret as
+  // the default value `pattern.length` later.)
+  return table;
 }
+/**
+ * Find all indices where `pattern` occurs in `text` (0‑based).
+ *
+ * @param text – the string we’re scanning
+ * @param pattern – the pattern we’re looking for
+ * @returns an array of starting indices; empty if none
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  if (pattern.empty) return [];
+  if (pattern.length > text.length) return [];
 
-// ──────────────────────────────────────────────────────────────────────
-// 2️⃣  Binary‑Search‑Tree
-// ──────────────────────────────────────────────────────────────────────
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
+  let i = m - 1;          // index in `text` aligned with pattern's last char
 
-export class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-
-  /* ----------------------------------------------------------------- */
-  // basic insertion – assumes no duplicates
-  /* ----------------------------------------------------------------- */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
+  while (i < n) {
+    // Compare pattern from right to left
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
     }
 
-    let node: TreeNode<T> | null = this.root;
-    while (node) {
-      if (value < node.value) {
-        if (!node.left) {
-          node.left = newNode;
-          break;
-        }
-        node = node.left;
-      } else {
-        if (!node.right) {
-          node.right = newNode;
-          break;
-        }
-        node = node.right;
-      }
+    // Full match
+    if (j < 0) {
+      result.push(i - m + 1);
+      // Move past the matched window (next search starts after the match)
+      i += 1;
+    } else {
+      // Mismatch: determine how far we can shift
+      const badChar = text[i];
+      const shift = table[badChar] ?? m; // if missing, shift by full length
+      i += shift;
     }
   }
-
-  /* ----------------------------------------------------------------- */
-  // find a value – returns the node or null
-  /* ----------------------------------------------------------------- */
-  find(value: T): TreeNode<T> | null {
-    let node = this.root;
-    while (node) {
-      if (value === node.value) return node;
-      node = value < node.value ? node.left : node.right;
-    }
-    return null;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // In‑order traversal – returns array of values sorted (for BST)
-  /* ----------------------------------------------------------------- */
-  inorder(): T[] {
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [];
-    let node = this.root;
-
-    while (stack.length || node) {
-      while (node) {
-        stack.push(node);
-        node = node.left!;
-      }
-      node = stack.pop()!;
-      result.push(node.value);
-      node = node.right!;
-    }
-
-    return result;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // Pre‑order (root, left, right)
-  /* ----------------------------------------------------------------- */
-  preorder(): T[] {
-    if (!this.root) return [];
-    const result: T[] = [];
-    const stack: Array<TreeNode<T>> = [this.root];
-
-    while (stack.length) {
-      const node = stack.pop()!;
-      result.push(node.value);
-
-      // push right first so left is processed first
-      if (node.right) stack.push(node.right);
-      if (node.left) stack.push(node.left);
-    }
-
-    return result;
-  }
-
-  /* ----------------------------------------------------------------- */
-  // Post‑order (left, right, root) – iterative with two stacks
-  /* ----------------------------------------------------------------- */
-  postorder(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
-
-    const stack1: TreeNode<T>[] = [this.root];
-    const stack2: TreeNode<T>[] = [];
-
-    while (stack1.length) {
-      const node = stack1.pop()!;
-      stack2.push(node);
-
-      if (node.left) stack1.push(node.left);
-      if (node.right) stack1.push(node.right);
-    }
-
-    while (stack2.length) {
-      result.push(stack2.pop()!.value);
-    }
-
-    return result;
-  }
+  return result;
 }
-import { BinarySearchTree } from "./bst";
+/**
+ * Return the index of the first occurrence of `pattern` in `text`,
+ * or -1 if it doesn’t exist.
+ */
+export function bmhSearchFirst(text: string, pattern: string): number {
+  if (pattern.empty) return 0;
+  if (pattern.length > text.length) return -1;
 
-const bst = new BinarySearchTree<number>();
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  let i = m - 1;
 
-[7, 3, 9, 1, 5, 8, 10].forEach(v => bst.insert(v));
+  while (i < n) {
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
+    }
+    if (j < 0) {
+      return i - m + 1;
+    }
+    const badChar = text[i];
+    const shift = table[badChar] ?? m;
+    i += shift;
+  }
+  return -1;
+}
+const text = "abracadabra";
+const pattern = "abra";
 
-console.log("In‑order (sorted):", bst.inorder());     // [1, 3, 5, 7, 8, 9, 10]
-console.log("Pre‑order:", bst.preorder());            // [7, 3, 1, 5, 9, 8, 10]
-console.log("Post‑order:", bst.postorder());          // [1, 5, 3, 8, 10, 9, 7]
+console.log(bmhSearch(text, pattern));       // [0, 7]
+console.log(bmhSearchFirst(text, pattern));  // 0
 
-console.log("Find 5:", bst.find(5)?.value);          // 5
-console.log("Find 20:", bst.find(20));               // null
+// Non‑existent pattern
+console.log(bmhSearch("hello", "world"));     // []
+console.log(bmhSearchFirst("hello", "world")); // -1
