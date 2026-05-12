@@ -1,78 +1,35 @@
-// ───────────────────── Graph Types ───────────────────────────────────────
-type NodeId = string | number;          // anything that can be compared with ===
-interface AdjList {
-  // nodeId -> array of neighbor nodeIds
-  [key: string]: NodeId[];
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
 }
 
-// ───────────────────── BFS Implementation ────────────────────────────────
-function bfs(
-  graph: AdjList,
-  start: NodeId,
-  visit: (node: NodeId) => void = () => {}
-): NodeId[] {
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
-
-  visited.add(start);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
-
-    visit(current);        // optional callback that may do whatever you want
-    order.push(current);
-
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        queue.push(neigh);
-      }
-    }
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
+  }
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
   }
 
-  return order;           // return traversal order if you need it
-}
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
 
-// ───────────────────── Example Usage ──────────────────────────────────────
-const exampleGraph: AdjList = {
-  A: ['B', 'C'],
-  B: ['A', 'D', 'E'],
-  C: ['A', 'F'],
-  D: ['B'],
-  E: ['B', 'F'],
-  F: ['C', 'E'],
-};
-
-const traversal = bfs(exampleGraph, 'A');
-console.log('BFS order:', traversal);
-// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
-
-// If you only care about distances from the start node:
-function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
-  const distances = new Map<NodeId, number>();
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-
-  visited.add(start);
-  distances.set(start, 0);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        distances.set(neigh, distances.get(current)! + 1);
-        queue.push(neigh);
-      }
-    }
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
   }
 
-  return distances;
+  return Math.sqrt(areaSquared);
 }
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
 
-const dists = bfsDistances(exampleGraph, 'A');
-console.log('Distances from A:', Object.fromEntries(dists.entries()));
-// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
