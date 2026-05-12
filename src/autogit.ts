@@ -1,51 +1,37 @@
-function areAnagrams(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s
-      .replace(/[^a-zA-Z0-9]/g, "") // strip non‑alphanumerics
-      .toLowerCase();               // ignore case
+const original = [1, 2, 3, 4];
 
-  const na = normalize(a);
-  const nb = normalize(b);
-  if (na.length !== nb.length) return false;
+const filtered = original.filter(n => n !== 3); // [1, 2, 4]
+const arr = [1, 2, 3, 4, 3];
 
-  // Count frequencies
-  const freq = new Map<string, number>();
-  for (const ch of na) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  for (const ch of nb) {
-    const count = (freq.get(ch) ?? 0) - 1;
-    if (count < 0) return false;   // more of ch in nb than in a
-    if (count === 0) freq.delete(ch);
-    else freq.set(ch, count);
-  }
-
-  return freq.size === 0;
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
 }
-function areAnagramsSort(a: string, b: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-
-  const na = normalize(a).split("").sort().join("");
-  const nb = normalize(b).split("").sort().join("");
-
-  return na === nb;
-}
-console.assert(areAnagrams("Dormitory", "dirty room") === true);
-console.assert(areAnagrams("Hello", "Olelh") === true);
-console.assert(areAnagrams("Cats", "Acting") === false);
-function containsAnagram(s: string, minLength = 2): boolean {
-  const chars = s.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-  const seen = new Set<string>();
-
-  for (let i = 0; i < chars.length; i++) {
-    for (let j = i + minLength; j <= chars.length; j++) {
-      const sub = chars.slice(i, j);
-      const key = sub.split("").sort().join("");
-      if (seen.has(key)) return true;
-      seen.add(key);
-    }
+const arr = ['a', 'b', 'c', 'd'];
+arr.splice(2, 1); // removes element at index 2
+// arr is now ['a', 'b', 'd']
+function removeItem<T>(arr: T[], item: T): T[] {
+  const idx = arr.indexOf(item);
+  if (idx !== -1) {
+    const copy = [...arr];
+    copy.splice(idx, 1);
+    return copy;
   }
-  return false;
+  return arr;
 }
+
+const nums = [7, 8, 9];
+const updated = removeItem(nums, 8); // [7, 9]
+type Item = { id: number; name: string };
+
+const items: Item[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Carol' }
+];
+
+const withoutBob = items.filter(item => item.id !== 2);
+// smallest change, clean and declarative
+const unique = new Set([1, 2, 3, 4]); // Set<number>
+unique.delete(3); // removes 3
+const arr = [...unique]; // back to an array if needed
