@@ -1,40 +1,58 @@
 /**
- * Compute n! recursively.
- *
- * Handles:
- *   - n >= 0   → valid
- *   - n < 0    → throws (factorial is undefined for negatives)
- *
- * Returns a number if the result fits in a JavaScript number,
- * otherwise returns a BigInt to avoid overflow.
+ * Computes the prefix function (failure table) of a pattern.
+ * pi[i] = the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
  */
-export function factorial(n: number | bigint): number | bigint {
-  // Normalize input to a bigint for exact arithmetic
-  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+function buildPrefixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const pi: number[] = Array(m).fill(0);
+  let k = 0;   // mismatch counter
 
-  if (bigN < 0n) {
-    throw new Error('Factorial is defined only for non‑negative integers.');
+  for (let i = 1; i < m; i++) {
+    // fall back until we either hit a match or k == 0
+    while (k > 0 && pattern[i] !== pattern[k]) {
+      k = pi[k - 1];
+    }
+    if (pattern[i] === pattern[k]) k++;
+    pi[i] = k;
   }
-
-  // Base case: 0! = 1 and 1! = 1
-  if (bigN <= 1n) return 1n;
-
-  // Recursive step
-  const product = bigN * factorial(bigN - 1n);
-
-  // Return a standard Number when it’s mathematically safe
-  // (anything that fits within 2^53‑1).
-  if (product <= BigInt(Number.MAX_SAFE_INTEGER)) {
-    return Number(product);
-  }
-
-  // Otherwise keep it as a BigInt.
-  return product;
+  return pi;
 }
-import { factorial } from './factorial';
 
-console.log(factorial(5));   // 120          (returns a number)
-console.log(factorial(20));  // 2432902008176640000  (returns a number)
-console.log(factorial(50));  // BigInt(304140932...)
-// if you prefer a string for extremely large results:
-console.log(factorial(50).toString());
+/**
+ * KMP search – returns the starting indices of all matches of `needle`
+ * inside `haystack`.  Does *exact* matching (no regex features).
+ */
+export function kmpSearch(haystack: string, needle: string): number[] {
+  const n = haystack.length;
+  const m = needle.length;
+  if (m === 0) return [];          // nothing to find
+  if (m > n) return [];            // can't fit
+
+  const pi = buildPrefixTable(needle);
+  const matches: number[] = [];
+  let j = 0;                        // current index in needle
+
+  for (let i = 0; i < n; i++) {
+    // if mismatch, fall back using pi until match or j == 0
+    while (j > 0 && haystack[i] !== needle[j]) {
+      j = pi[j - 1];
+    }
+    if (haystack[i] === needle[j]) j++;
+
+    // full match found
+    if (j === m) {
+      matches.push(i - m + 1);
+      j = pi[j - 1];   // allow overlaps
+    }
+  }
+
+  return matches;
+}
+const txt = "ababcabcababc";
+const pat = "abc";
+
+console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
+function contains(haystack: string, needle: string) {
+  return haystack.indexOf(needle) !== -1;
+}
