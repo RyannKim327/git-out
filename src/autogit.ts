@@ -1,98 +1,117 @@
-// ──────────────────────────────────────────────────────────────────────
-// Utility types
-// ──────────────────────────────────────────────────────────────────────
-
 /**
- * A generic search node that holds a state and the depth of that state in the search tree.
+ * Boyer–Moore search – Typescript implementation
+ * ------------------------------------------------
+ * O(m + n) preprocessing  (m = pattern length, n = text length)
+ * O(n/m) expected search time (in practice, very fast)
  */
-interface SearchNode<T> {
-  state: T;
-  depth: number;
-}
 
-/**
- * The contract that the caller must satisfy in order to perform a search.
- */
-export interface SearchProblem<T> {
-  /** Returns true if the supplied state is a goal state. */
-  isGoal: (state: T) => boolean;
+export class BoyerMoore {
+  /** Pattern to look for */
+  private readonly pat: string;
+  /** Length of the pattern */
+  private readonly m: number;
+  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
+  private readonly badChar: number[];
+  /** Good‑suffix shift table */
+  private readonly goodSuffix: number[];
 
-  /** Returns an array of successor states for the supplied state. */
-  getChildren: (state: T) => T[];
+  constructor(pattern: string) {
+    if (!pattern.length) throw new Error("Pattern must not be empty");
+    this.pat = pattern;
+    this.m = pattern.length;
 
-  /** The maximum depth that the search may travel. */
-  limit: number;
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// Depth‑limited search – iterative version
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * Performs a depth‑limited DFS iteratively.
- *
- * @param start The initial state from which the search starts.
- * @param problem An object containing `isGoal`, `getChildren` and `limit`.
- * @returns The goal state if found, otherwise `null`.
- */
-export function depthLimitedSearch<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T | null {
-  const { isGoal, getChildren, limit } = problem;
-
-  // Stack for DFS (push / pop from the end).
-  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
-
-  while (stack.length) {
-    const { state, depth } = stack.pop()!;
-
-    if (isGoal(state)) {
-      return state;            // Goal found.
-    }
-
-    // Don't expand deeper than the limit.
-    if (depth < limit) {
-      // Push children in reverse order if you care about visit order.
-      for (const child of getChildren(state)) {
-        stack.push({ state: child, depth: depth + 1 });
-      }
-    }
+    this.badChar = this.buildBadCharTable();
+    this.goodSuffix = this.buildGoodSuffixTable();
   }
 
-  // Exhausted the stack without finding a goal.
-  return null;
-}
-export interface SearchNodeWithParent<T> {
-  state: T;
-  depth: number;
-  parent?: T;   // Optional – undefined for the root node.
-}
+  /* --------------------------------------------- */
+  /* ===========  PRE‑PROCESSING  ================= */
+  /* --------------------------------------------- */
 
-export function depthLimitedSearchWithPath<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T[] | null {
-  const { isGoal, getChildren, limit } = problem;
-  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
+  /** Build a table indexed by character code (fast array look‑ups). */
+  private buildBadCharTable(): number[] {
+    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
+    for (let i = 0; i < this.m - 1; i++) {
+      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
+    }
+    return SHIFT;
+  }
 
-  while (stack.length) {
-    const current = stack.pop()!;
-    const { state, depth, parent } = current;
+  /** Build the good‑suffix table (two parts: border and suffix arrays). */
+  private buildGoodSuffixTable(): number[] {
+    const r = this.m;
+    const suffix = new Array(r + 1).fill(0);
+    const border = new Array(r + 1).fill(0);
 
-    if (isGoal(state)) {
-      // Walk back up through parents to build the path.
-      const path: T[] = [state];
-      let p = parent;
-      while (p) {
-        path.push(p);
-        // No direct way to retrieve the parent of ‘p’ without a map.
-        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
-        // Here we simply return the goal state.
-        break;
+    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
+    let j = r;
+    let k = 0;
+    suffix[r] = r;
+    for (let i = r - 1; i >= 0; i--) {
+      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
+        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
+        k = border[k];
       }
-      return path.reverse();
+      k++;
+      suffix[i] = k;
     }
 
-    if (depth < limit) {
-      for (const child of get
+    // Step 2 – compute border[] (largest border for each prefix length)
+    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
+
+    // Step 3 – fill goodSuffix[] using borders
+    const good = new Array(r).fill(r);
+    let jMax = 0;
+    for (let i = r - 1; i >= 0; i--) {
+      if (suffix[i] === 0) continue;
+      while (jMax + 1 <= r - i - 1) {
+        if (good[jMax] === r) good[jMax] = r - i - 1;
+        jMax++;
+      }
+    }
+    // For the remaining positions that have no suffix match
+    for (let i = 0; i < r; i++) {
+      if (good[i] === r) good[i] = r - border[i];
+    }
+
+    return good;
+  }
+
+  /* --------------------------------------------- */
+  /* ===========       SEARCH        ============= */
+  /* --------------------------------------------- */
+
+  /**
+   * Find the first occurrence of the pattern in `text`.
+   * @returns index of first match or -1 if not found.
+   */
+  public search(text: string): number {
+    const n = text.length;
+    let s = 0;               // shift of the pattern
+
+    while (s <= n - this.m) {
+      let j = this.m - 1;
+
+      // Step 4 – compare from right to left
+      while (j >= 0 && this.pat[j] === text[s + j]) j--;
+
+      if (j < 0) return s;  // match found
+
+      // compute shifts
+      const badShift = this.badChar[text.charCodeAt(s + j)];
+      const goodShift = this.goodSuffix[j];
+      s += Math.max(badShift, goodShift);
+    }
+    return -1;              // not found
+  }
+
+  /* --------------------------------------------- */
+  /* ===========  EXAMPLE USAGE  =============== */
+  /* --------------------------------------------- */
+}
+
+// Example usage:
+const bm = new BoyerMoore("needle");
+const txt = "haystack needle haystack inside needlesea";
+const idx = bm.search(txt);
+console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
