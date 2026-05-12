@@ -1,45 +1,64 @@
-// 1. Basic list node definition
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
 }
+const foo = [1, 2, 3, 4];
+const bar = [3, 4, 5, 6];
+console.log(intersection(foo, bar)); // [3, 4]
+function intersectionSorted<T>(a: T[], b: T[]): T[] {
+  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
+  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
+  const res: T[] = [];
+  let i = 0, j = 0;
 
-// 2. Utility: build a linked list from an array
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null;
-
-  const head = new ListNode(values[0]);
-  let current = head;
-  for (let i = 1; i < values.length; i++) {
-    current.next = new ListNode(values[i]);
-    current = current.next;
+  while (i < sortedA.length && j < sortedB.length) {
+    if (sortedA[i] === sortedB[j]) {
+      res.push(sortedA[i]); i++; j++;
+    } else if (sortedA[i] < sortedB[j]) {
+      i++;
+    } else {
+      j++;
+    }
   }
-  return head;
+  return res;
+}
+function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const seen = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
+function intersectionBy<T, K>(
+  a: T[],
+  b: T[],
+  keyFn: (item: T) => K
+): T[] {
+  const setB = new Set(b.map(keyFn));
+  return a.filter(x => setB.has(keyFn(x)));
+}
+const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
+const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
+
+console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
+const common = a.filter(v => b.includes(v));
+type KeyFn<T, K> = (item: T) => K;
+
+// Fastest for primitives
+export function intersection<T>(a: T[], b: T[]): T[] {
+  const set = new Set(b);
+  return a.filter(x => set.has(x));
 }
 
-// 3. Find the middle node – fast/slow pointer
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  while (fast && fast.next) {      // stop when fast can't advance two steps
-    slow = slow.next!;             // safe because previous check guarantees truthy
-    fast = fast.next.next!;
-  }
-
-  return slow;                     // slow is at the middle
+// Preserve order, unique results
+export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
+  return [...out];
 }
 
-// Demo
-const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
-const oddHead = buildList(arr);
-console.log(getMiddle(oddHead)?.val); // 3
-
-const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
-const evenHead = buildList(evenArr);
-console.log(getMiddle(evenHead)?.val); // 20
-while (fast && fast.next && fast.next.next) {
-  slow = slow.next!;
-  fast = fast.next.next!;
+// For objects or custom equality
+export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
+  const set = new Set(b.map(keyFn));
+  return a.filter(x => set.has(keyFn(x)));
 }
