@@ -1,27 +1,18 @@
-/**
- * Remove all vowels (a, e, i, o, u) from a string.
- * Case‑insensitive and works for ASCII‑only vowels.
- */
-function removeVowels(str: string): string {
-  return str.replace(/[aeiouAEIOU]/g, '');
-}
+const s = "42";
 
-// Example
-console.log(removeVowels('Hello, World!')); // Hll, Wrld!
-function removeVowelsIncludingY(str: string): string {
-  return str.replace(/[aeiouyAEIOUY]/g, '');
-}
-function removeAnyLatinVowel(str: string): string {
-  // Matches any letter in the Latin script that is a vowel
-  return str.replace(/\p{Script=Latin}\p{Vowel}/gu, '');
-}
-function removeVowelsLoop(str: string): string {
-  const vowels = new Set('aeiouAEIOU');
-  let result = '';
-  for (const ch of str) {
-    if (!vowels.has(ch)) {
-      result += ch;
-    }
-  }
-  return result;
-}
+// 1️⃣  Simple integer
+const num1 = Number(s);     // 42
+const num2 = +"42";         // 42
+
+// 2️⃣  Parse with a specific radix (base)
+const hex = parseInt("FF", 16);   // 255
+const oct = parseInt("10", 8);    // 8
+
+// 3️⃣  Floating‑point
+const floatVal = Number.parseFloat("3.14"); // 3.14
+
+// 4️⃣  BigInt
+const big = BigInt("12345678901234567890");
+
+// 5️⃣  Handling bad input
+const bad = Number("not a number"); // NaN
