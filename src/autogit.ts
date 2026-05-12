@@ -1,37 +1,112 @@
-const original = [1, 2, 3, 4];
-
-const filtered = original.filter(n => n !== 3); // [1, 2, 4]
-const arr = [1, 2, 3, 4, 3];
-
-const idx = arr.indexOf(3);
-if (idx !== -1) {
-  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
+// Represents a single weighted directed edge.
+export interface Edge {
+  from: number;
+  to: number;
+  weight: number;
 }
-const arr = ['a', 'b', 'c', 'd'];
-arr.splice(2, 1); // removes element at index 2
-// arr is now ['a', 'b', 'd']
-function removeItem<T>(arr: T[], item: T): T[] {
-  const idx = arr.indexOf(item);
-  if (idx !== -1) {
-    const copy = [...arr];
-    copy.splice(idx, 1);
-    return copy;
+/**
+ * Bellman–Ford shortest‑path algorithm.
+ *
+ * @param n      Number of vertices (vertices are 0 … n‑1).
+ * @param edges  Array of directed weighted edges.
+ * @param source Index of the source vertex.
+ * @returns {distances, predecessors}
+ *          - `distances` is an array where `distances[v]` holds the
+ *            length of a shortest path from source to v.
+ *          - `predecessors` holds the previous vertex on that path
+ *            (use `-1` for the source and unreachable vertices).
+ *
+ * @throws Error if a negative cycle is reachable from source.
+ */
+export function bellmanFord(
+  n: number,
+  edges: Edge[],
+  source: number = 0
+): { distances: number[]; predecessors: number[] } {
+  // 1️⃣ BFS‑style relaxation loop.
+  const dist: number[] = Array(n).fill(Infinity);
+  const pred: number[] = Array(n).fill(-1);
+
+  dist[source] = 0;
+
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        changed = true;
+      }
+    }
+    // Early exit if nothing moved this pass.
+    if (!changed) break;
   }
-  return arr;
+
+  // 2️⃣ Check for negative‑weight cycles.
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      const cycle: number[] = findNegCycle(n, edges, to);
+      throw new Error(
+        `Negative cycle detected: ${cycle.join(' → ')}`
+      );
+    }
+  }
+
+  return { distances: dist, predecessors: pred };
 }
 
-const nums = [7, 8, 9];
-const updated = removeItem(nums, 8); // [7, 9]
-type Item = { id: number; name: string };
+/**
+ * Helper: recover a node that lies on a negative cycle reachable from `start`.
+ * Returns the cycle as a list of vertex indices in order.
+ *
+ * This is a brute‑force way – for large graphs you’ll want a more
+ * sophisticated cycle extraction, but it’s fine for teaching/compacting.
+ */
+function findNegCycle(
+  n: number,
+  edges: Edge[],
+  start: number
+): number[] {
+  const parent: number[] = Array(n).fill(-1);
+  let x = start;
+  for (let i = 0; i < n; i++) x = edges.find(e => e.to === x)?.from ?? -1;
 
-const items: Item[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Carol' }
+  const cycle: number[] = [];
+  let cur = x;
+  do {
+    cycle.push(cur);
+    cur = parent[cur];
+  } while (cur !== x && cur !== -1);
+  cycle.reverse();
+  return cycle;
+}
+import { bellmanFord, Edge } from './bellmanFord';
+
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 2, weight: -1 },
+  { from: 1, to: 3, weight: 10 },
+  { from: 2, to: 3, weight: 3 },
+  // Add more edges as needed
 ];
 
-const withoutBob = items.filter(item => item.id !== 2);
-// smallest change, clean and declarative
-const unique = new Set([1, 2, 3, 4]); // Set<number>
-unique.delete(3); // removes 3
-const arr = [...unique]; // back to an array if needed
+const { distances, predecessors } = bellmanFord(4, edges, 0);
+
+console.log('Distances:', distances);
+// [0, 4, 3, 6]
+
+console.log('Predecessors:', predecessors);
+// [-1, 0, 1, 2]
+
+// Reconstruct a path to vertex 3
+function pathTo(v: number) {
+  const path: number[] = [];
+  while (v !== -1) {
+    path.unshift(v);
+    v = predecessors[v];
+  }
+  return path;
+}
+
+console.log('Path 0 → 3:', pathTo(3)); // [0, 1, 2, 3]
