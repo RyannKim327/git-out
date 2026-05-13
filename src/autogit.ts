@@ -1,110 +1,158 @@
-expand(root):
-    frontier = [root]               // first beam
-    while frontier not empty:
-        nextFrontier = []            // expanded children
-        for state in frontier:
-            children = expand(state) // domain‑specific
-            for child in children:
-                nextFrontier.push( child )
-        // keep only the best k
-        nextFrontier.sort(by heuristic) // ascending or descending depending on reward
-        frontier = nextFrontier.slice(0, k)
-        if any frontier element is a goal:
-            return that element
-    return null   // no goal found
-// beam-search.ts
+// A simple hash table that stores key/value pairs.
+// Collisions are resolved via separate chaining (linked lists).
+export class SimpleHashTable<K, V> {
+  private buckets: Array<LinkedListNode<K, V> | null>;
+  private _size: number;
+  private _count: number;
+  private readonly loadFactorThreshold: number; // e.g. 0.75
 
-/**
- * Type of a node in the search tree.
- * Replace the fields with whatever fits your problem.
- */
-export interface Node<Data = any> {
-  /**
-   * Represents the search state (e.g., board edges, current path).
-   * It must be something you can compare heuristically.
-   */
-  data: Data
-
-  /** The cost of reaching this node from the root. */
-  costFromRoot: number
-
-  /** Predicted total cost to reach the goal. Typically cost + heuristic. */
-  totalEstimatedCost: number // for D* type f = g + h
-}
-
-/**
- * Heuristic function that takes a node and returns a number
- * (the lower, the better – think “expected remaining cost”).
- */
-export type HeuristicFn<Data> = (node: Node<Data>) => number
-
-/**
- * Expansion function – given a node, return its children.
- */
-export type ExpandFn<Data> = (node: Node<Data>) => Node<Data>[]
-
-/**
- * Optional: function to test if a node is a goal.
- */
-export type IsGoalFn<Data> = (node: Node<Data>) => boolean
-
-/**
- * Beam search implementation.
- *
- * @param root      The initial node.
- * @param beamWidth The number `k` of nodes to keep per level.
- * @param expand    Expansion function, domain‑specific.
- * @param heuristic Optional heuristic; if omitted, plain cost is used.
- * @param isGoal    Optional goal‑test; if omitted, you can supply an empty predicate.
- * @returns Best goal node found, or null if none within breadth.
- */
-export function beamSearch<Data>(
-  root: Node<Data>,
-  beamWidth: number,
-  expand: ExpandFn<Data>,
-  heuristic?: HeuristicFn<Data>,
-  isGoal?: IsGoalFn<Data>
-): Node<Data> | null {
-  // if no heuristic is given, use costFromRoot as the estimate
-  const getScore = heuristic
-    ? (node: Node<Data>) => node.totalEstimatedCost
-    : (node: Node<Data>) => node.costFromRoot
-
-  // Frontier is our beam for the current depth.
-  let frontier: Node<Data>[] = [root]
-
-  while (frontier.length > 0) {
-    // Check for goal state *before* expansion to catch the root too.
-    for (const node of frontier) {
-      if (isGoal && isGoal(node)) return node
-    }
-
-    // Expand all nodes in the current beam
-    const nextFrontier: Node<Data>[] = []
-
-    for (const node of frontier) {
-      const children = expand(node)
-
-      // Attach heuristics (problem‑specific)
-      for (const child of children) {
-        child.totalEstimatedCost =
-          child.costFromRoot + (heuristic ? heuristic(child) : 0)
-        nextFrontier.push(child)
-      }
-    }
-
-    // Sort by estimated total cost ascending (lower is better)
-    nextFrontier.sort((a, b) => a.totalEstimatedCost - b.totalEstimatedCost)
-
-    // Trim to beam width
-    frontier = nextFrontier.slice(0, beamWidth)
+  constructor(initSize = 16, loadFactor = 0.75) {
+    this.buckets = new Array(initSize).fill(null);
+    this._size = initSize;
+    this._count = 0;
+    this.loadFactorThreshold = loadFactor;
   }
 
-  // Nothing found
-  return null
+  // Public API
+  set(key: K, value: V): void { /* ... */ }
+  get(key: K): V | undefined { /* ... */ }
+  delete(key: K): boolean { /* ... */ }
+  has(key: K): boolean { /* ... */ }
+  clear(): void { /* ... */ }
+  get size(): number { return this._count; }
+  // Optionally:
+  // values(), keys(), entries()
 }
-// toy-graph.ts
-interface GraphNode {
-  id: string
-  neighbors: Record<string, number> // neighbor id -> edge weight
+class LinkedListNode<K, V> {
+  key: K;
+  value: V;
+  next: LinkedListNode<K, V> | null;
 
+  constructor(key: K, value: V, next: LinkedListNode<K, V> | null = null) {
+    this.key = key;
+    this.value = value;
+    this.next = next;
+  }
+}
+private getHash(key: K): number {
+  // Simple implementation: works for string & number keys.
+  const strKey = typeof key === 'string' ? key : String(key);
+  let hash = 5381; // djb2 seed
+  for (let i = 0; i < strKey.length; i++) {
+    hash = (hash * 33) ^ strKey.charCodeAt(i);
+  }
+  // Ensure positive index and wrap around bucket count.
+  return Math.abs(hash) % this._size;
+}
+set(key: K, value: V): void {
+  const index = this.getHash(key);
+
+  let node = this.buckets[index];
+  while (node) {
+    if (this.equals(node.key, key)) {
+      node.value = value;      // Update existing
+      return;
+    }
+    node = node.next;
+  }
+
+  // Insert new node at front of chain
+  const newNode = new LinkedListNode(key, value, this.buckets[index]);
+  this.buckets[index] = newNode;
+  this._count++;
+
+  if (this._count / this._size > this.loadFactorThreshold) {
+    this.resize();
+  }
+}
+
+get(key: K): V | undefined {
+  const index = this.getHash(key);
+  let node = this.buckets[index];
+  while (node) {
+    if (this.equals(node.key, key)) {
+      return node.value;
+    }
+    node = node.next;
+  }
+  return undefined;
+}
+
+delete(key: K): boolean {
+  const index = this.getHash(key);
+  let node = this.buckets[index];
+  let prev: LinkedListNode<K, V> | null = null;
+
+  while (node) {
+    if (this.equals(node.key, key)) {
+      if (prev) prev.next = node.next;
+      else this.buckets[index] = node.next;
+      this._count--;
+      return true;
+    }
+    prev = node;
+    node = node.next;
+  }
+  return false;
+}
+
+has(key: K): boolean {
+  return this.get(key) !== undefined;
+}
+
+clear(): void {
+  this.buckets = new Array(this._size).fill(null);
+  this._count = 0;
+}
+private equals(a: K, b: K): boolean {
+  return a === b;
+}
+private resize(): void {
+  const oldBuckets = this.buckets;
+  this._size *= 2;                 // Classic, double the bucket count
+  this.buckets = new Array(this._size).fill(null);
+  this._count = 0;
+
+  for (const bucket of oldBuckets) {
+    let node = bucket;
+    while (node) {
+      this.set(node.key, node.value); // Re‑hash & insert
+      node = node.next;
+    }
+  }
+}
+values(): V[] {
+  const vals: V[] = [];
+  for (const bucket of this.buckets) {
+    let node = bucket;
+    while (node) {
+      vals.push(node.value);
+      node = node.next;
+    }
+  }
+  return vals;
+}
+*entries(): IterableIterator<[K, V]> {
+  for (const bucket of this.buckets) {
+    let node = bucket;
+    while (node) {
+      yield [node.key, node.value];
+      node = node.next;
+    }
+  }
+}
+const ht = new SimpleHashTable<string, number>();
+
+ht.set('apple', 3);
+ht.set('banana', 
+
+
+
+---
+
+**Support Pollinations.AI:**
+
+---
+
+🌸 **Ad** 🌸
+Powered by Pollinations.AI free text APIs. [Support our mission](https://pollinations.ai/redirect/kofi) to keep AI accessible for everyone.
