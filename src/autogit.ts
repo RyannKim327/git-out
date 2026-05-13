@@ -1,18 +1,18 @@
-function reverseSimple(str: string): string {
-  return str.split('').reverse().join('');
+function removeAllWhitespace(str: string): string {
+  return str.replace(/\s+/g, "");
 }
-console.log(reverseSimple('hello')); // "olleh"
-function reverseWithSpread(str: string): string {
-  return [...str].reverse().join('');
+function trimStart(str: string): string {
+  return str.replace(/^\s+/, "");
 }
-function reverseManual(str: string): string {
-  let result = '';
-  for (let i = str.length - 1; i >= 0; i--) {
-    result += str[i];
-  }
-  return result;
+function trimEnd(str: string): string {
+  return str.replace(/\s+$/, "");
 }
-function reverseUnicode(str: string): string {
-  return Array.from(str).reverse().join('');
-}
-console.log(reverseUnicode('👩‍👧‍👦')); // 👦🏽‍👧‍👩
+const raw = "\n  Let's   test this!  \t\n";
+console.log("original  :", raw);
+console.log("trimmed    :", raw.trim());
+console.log("no spaces :", raw.replace(/\s+/g, ""));
+original  : "
+  Let's   test this!   
+"
+trimmed    : "Let's   test this!"
+no spaces : "Letstestthis!"
