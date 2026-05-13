@@ -1,100 +1,74 @@
-class LinkedList<T> implements Iterable<T> {
-  private head: Node<T> | null = null;
-  private tail: Node<T> | null = null;
-  private length = 0;
+// src/utils/http.ts
+import { knownFolders, File } from '@nativescript/core';
 
-  push(value: T): void { /* … */ }
-  pop(): T | undefined { /* … */ }
-  unshift(value: T): void { /* … */ }
-  shift(): T | undefined { /* … */ }
-  get(index: number): T | undefined { /* … */ }
-  set(index: number, value: T): boolean { /* … */ }
-  insert(index: number, value: T): boolean { /* … */ }
-  remove(index: number): T | undefined { /* … */ }
-  clear(): void { /* … */ }
-  toArray(): T[] { /* … */ }
+// ──────────────────────────────────────────────────────────────────
+// Step 1 – A friendly async helper that does the fetch
+// ──────────────────────────────────────────────────────────────────
+export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
 
-  [Symbol.iterator](): Iterator<T> { /* … */ }
-}
-// Simple singly‑linked node
-class Node<T> {
-  constructor(
-    public readonly value: T,
-    public next: Node<T> | null = null
-  ) {}
-}
-class LinkedList<T> implements Iterable<T> {
-  private head: Node<T> | null = null; // first node
-  private tail: Node<T> | null = null; // last
-  private length = 0;
-}
-constructor(iterable?: Iterable<T>) {
-  if (iterable) {
-    for (const item of iterable) this.push(item);
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        // add any custom headers you need
+      },
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
+    }
+
+    const json = await resp.json() as T;
+    return json;
+  } finally {
+    clearTimeout(id);
   }
 }
-private _getNode(index: number): Node<T> | null {
-  if (index < 0 || index >= this.length) return null;
-  let curr = this.head;
-  for (let i = 0; i < index; i++) curr = curr!.next;
-  return curr;
-}
-push(value: T): void {
-  const node = new Node(value);
-  if (!this.head) {            // first item
-    this.head = this.tail = node;
-  } else {
-    this.tail!.next = node;    // append
-    this.tail = node;
+
+// ──────────────────────────────────────────────────────────────────
+// Step 2 – Call it from an Android Activity / Page, e.g.
+// ──────────────────────────────────────────────────────────────────
+export async function demoFetch() {
+  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
+
+  try {
+    const data = await getJson<any>(apiUrl);
+    console.log('Data received:', data);
+
+    // If you want to touch the UI, do it on the UI thread
+    // (in NativeScript you can simply update a component property,
+    // or use a dispatcher if you’re outside a component)
+  } catch (err) {
+    console.error('fetch error:', err);
+    // In an Android UI you might show a toast:
+    const Toast = android.widget.Toast;
+    const ctx = android.content.Context;
+    const activity = /** get the current activity from your page **/;
+    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
   }
-  this.length++;
 }
-pop(): T | undefined {
-  if (!this.head) return undefined;
 
-  const lastVal = this.tail!.value;
+/*
+  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
 
-  if (this.head === this.tail) {    // only one node
-    this.head = this.tail = null;
-  } else {
-    // find the node before tail
-    let curr = this.head;
-    while (curr.next !== this.tail) curr = curr.next!;
-    curr.next = null;
-    this.tail = curr;
+  import { demoFetch } from '~/utils/http';
+
+  export function pageLoaded(args) {
+    demoFetch();
   }
+*/
+const HttpGetTask = android.os.AsyncTask.extend({
+  doInBackground: function (params) {
+    try {
+      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
+      const conn = url.openConnection() as java.net.HttpURLConnection;
+      conn.setRequestMethod('GET');
+      conn.setConnectTimeout(5000);
+      conn.setReadTimeout(5000);
 
-  this.length--;
-  return lastVal;
-}
-unshift(value: T): void {
-  const node = new Node(value, this.head);
-  this.head = node;
-  if (!this.tail) this.tail = node; // list was empty
-  this.length++;
-}
-shift(): T | undefined {
-  if (!this.head) return undefined;
-  const val = this.head.value;
-  this.head = this.head.next;
-  if (!this.head) this.tail = null; // list became empty
-  this.length--;
-  return val;
-}
-get(index: number): T | undefined {
-  const node = this._getNode(index);
-  return node ? node.value : undefined;
-}
-set(index: number, value: T): boolean {
-  const node = this._getNode(index);
-  if (!node) return false;
-  node.value = value;
-  return true;
-}
-insert(index: number, value: T): boolean {
-  if (index < 0 || index > this.length) return false;
-  if (index === 0) return (this.unshift(value), true);
-  if (index === this.length) return (this.push(value), true);
+      const reader = new java.io.BufferedReader(
 
-  const prev = this._getNode(index - 1)!;
-  const node = new Node(value,
