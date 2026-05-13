@@ -1,171 +1,68 @@
-// ------------------------------------------------------------
-//  1️⃣  Types / data structures
-// ------------------------------------------------------------
-export type ID = string | number;
+// ──────────────────────────────────────────────────────────────
+// 1️⃣  Imports & type definitions
+// ──────────────────────────────────────────────────────────────
+import fetch from 'node-fetch'; // npm i node-fetch@2
+// If you’re in a browser environment just drop the import line
+// and use the native `fetch` API.
 
-// Location on a grid (for the example)
-export interface Point {
-  x: number;
-  y: number;
-  toString(): string;           // stringify for use as Map keys
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-export class PointImpl implements Point {
-  constructor(public x: number, public y: number) {}
-  toString() { return `${this.x},${this.y}`; }
+// ──────────────────────────────────────────────────────────────
+// 2️⃣  The async loader
+// ──────────────────────────────────────────────────────────────
+async function fetchPosts(apiUrl: string): Promise<Post[]> {
+  // A quick sanity check – you don’t want to send an empty string.
+  if (!apiUrl.trim()) {
+    throw new Error('API URL cannot be empty');
+  }
 
-  // For the priority queue we need a score
-  distanceTo(other: Point) {
-    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
+  const res = await fetch(apiUrl, {
+    // JSON is the common output. Adjust headers if your API
+    // requires authentication or special content‑type.
+    headers: {
+      Accept: 'application/json',
+    },
+    // A generous timeout – network latency can be unpredictable.
+    timeout: 10_000,
+  });
+
+  if (!res.ok) {
+    // Throw an error with the HTTP status so callers can catch it.
+    throw new Error(`Network response was not OK (${res.status})`);
+  }
+
+  // We’ve decided the result is an array of posts. 
+  // Narrow it to Post[] for full type safety.
+  const data = (await res.json()) as Post[];
+
+  return data;
+}
+
+// ──────────────────────────────────────────────────────────────
+// 3️⃣  Entry point – usage example
+// ──────────────────────────────────────────────────────────────
+async function main() {
+  try {
+    // This is a free JSON placeholder service that offers fake blog posts.
+    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
+
+    // Just log the first 3 for brevity
+    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
+    posts.slice(0, 3).forEach((p, i) => {
+      console.log(`\nPost #${i + 1}`);
+      console.log(`ID: ${p.id}`);
+      console.log(`Title: ${p.title}`);
+      console.log(`Body: ${p.body.slice(0, 60)}…`);
+    });
+  } catch (err) {
+    // A simple error handler – plug in your own logger if needed.
+    console.error('❌ Failed to fetch posts:', err);
   }
 }
 
-// Edge connects two nodes with a weight (default = 1)
-export interface Edge<T> {
-  from: T;
-  to: T;
-  weight: number;
-  cost?: number;          // will be filled later
-}
-
-export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
-
-// ------------------------------------------------------------
-//  2️⃣  Binary‑heap priority queue (min‑heap)
-// ------------------------------------------------------------
-class HeapNode<T> {
-  constructor(public key: number, public value: T) {}
-}
-
-export class PriorityQueue<T> {
-  private heap: HeapNode<T>[] = [];
-
-  get size() { return this.heap.length; }
-  empty() { return this.size === 0; }
-
-  push(key: number, value: T) {
-    this.heap.push(new HeapNode(key, value));
-    this.bubbleUp(this.size - 1);
-  }
-  pop(): HeapNode<T> | undefined {
-    if (this.empty()) return;
-    const top = this.heap[0];
-    const last = this.heap.pop()!;
-    if (!this.empty()) {
-      this.heap[0] = last;
-      this.bubbleDown(0);
-    }
-    return top;
-  }
-
-  private bubbleUp(i: number) {
-    while (i > 0) {
-      const p = (i - 1) >> 1;
-      if (this.heap[p].key <= this.heap[i].key) break;
-      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
-      i = p;
-    }
-  }
-  private bubbleDown(i: number) {
-    const n = this.size;
-    while (true) {
-      let l = (i << 1) + 1, r = l + 1, smallest = i;
-      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
-      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
-      if (smallest === i) break;
-      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
-      i = smallest;
-    }
-  }
-}
-
-// ------------------------------------------------------------
-//  3️⃣  AStar implementation
-// ------------------------------------------------------------
-export interface AStarOptions<T> {
-  graph: Graph<T>;
-  heuristic: (a: T, b: T) => number;
-  start: T;
-  goal: T;
-}
-
-export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
-  const { graph, heuristic, start, goal } = opts;
-
-  const open = new PriorityQueue<T>();
-  open.push(0, start);
-
-  const cameFrom = new Map<T, T | null>();
-  const gScore = new Map<T, number>();
-
-  cameFrom.set(start, null);
-  gScore.set(start, 0);
-
-  while (!open.empty()) {
-    const node = open.pop()!;
-    const u = node.value;
-
-    if (u === goal) {
-      // reconstruct
-      const path: T[] = [];
-      let cur: T | null = u;
-      while (cur !== null) {
-        path.push(cur);
-        cur = cameFrom.get(cur) ?? null;
-      }
-      path.reverse();
-      return { path, cost: gScore.get(u)! };
-    }
-
-    for (const edge of graph.get(u) ?? []) {
-      const v = edge.to;
-      const tentativeG = gScore.get(u)! + edge.weight;
-
-      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
-        cameFrom.set(v, u);
-        gScore.set(v, tentativeG);
-
-        const f = tentativeG + heuristic(v, goal);
-        open.push(f, v);
-      }
-    }
-  }
-
-  return null; // no path
-}
-
-// ------------------------------------------------------------
-//  4️⃣  Example – 4×4 grid with obstacles
-// ------------------------------------------------------------
-function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
-  const graph = new Map<Point, Edge<Point>[]>();
-
-  const dirs = [
-    [0, -1], [1, 0], [0, 1], [-1, 0],
-  ];
-
-  for (let y = 0; y < height; ++y) {
-    for (let x = 0; x < width; ++x) {
-      const p = new PointImpl(x, y);
-      if (walls.has(p.toString())) continue;
-
-      const neighbours: Edge<Point>[] = [];
-      for (const [dx, dy] of dirs) {
-        const nx = x + dx, ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        const q = new PointImpl(nx, ny);
-        if (walls.has(q.toString())) continue;
-        neighbours.push({ from: p, to: q, weight: 1 });
-      }
-      graph.set(p, neighbours);
-    }
-  }
-
-  return graph;
-}
-
-export async function main() {
-  const width = 4, height = 4;
-  const walls = new Set<string>([
-    new PointImpl(1, 1).toString(),
-    new PointImpl(2, 1).
+main();
