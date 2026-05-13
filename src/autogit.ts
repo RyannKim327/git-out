@@ -1,158 +1,171 @@
-// A simple hash table that stores key/value pairs.
-// Collisions are resolved via separate chaining (linked lists).
-export class SimpleHashTable<K, V> {
-  private buckets: Array<LinkedListNode<K, V> | null>;
-  private _size: number;
-  private _count: number;
-  private readonly loadFactorThreshold: number; // e.g. 0.75
+// ------------------------------------------------------------
+//  1️⃣  Types / data structures
+// ------------------------------------------------------------
+export type ID = string | number;
 
-  constructor(initSize = 16, loadFactor = 0.75) {
-    this.buckets = new Array(initSize).fill(null);
-    this._size = initSize;
-    this._count = 0;
-    this.loadFactorThreshold = loadFactor;
-  }
-
-  // Public API
-  set(key: K, value: V): void { /* ... */ }
-  get(key: K): V | undefined { /* ... */ }
-  delete(key: K): boolean { /* ... */ }
-  has(key: K): boolean { /* ... */ }
-  clear(): void { /* ... */ }
-  get size(): number { return this._count; }
-  // Optionally:
-  // values(), keys(), entries()
+// Location on a grid (for the example)
+export interface Point {
+  x: number;
+  y: number;
+  toString(): string;           // stringify for use as Map keys
 }
-class LinkedListNode<K, V> {
-  key: K;
-  value: V;
-  next: LinkedListNode<K, V> | null;
 
-  constructor(key: K, value: V, next: LinkedListNode<K, V> | null = null) {
-    this.key = key;
-    this.value = value;
-    this.next = next;
+export class PointImpl implements Point {
+  constructor(public x: number, public y: number) {}
+  toString() { return `${this.x},${this.y}`; }
+
+  // For the priority queue we need a score
+  distanceTo(other: Point) {
+    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
   }
 }
-private getHash(key: K): number {
-  // Simple implementation: works for string & number keys.
-  const strKey = typeof key === 'string' ? key : String(key);
-  let hash = 5381; // djb2 seed
-  for (let i = 0; i < strKey.length; i++) {
-    hash = (hash * 33) ^ strKey.charCodeAt(i);
-  }
-  // Ensure positive index and wrap around bucket count.
-  return Math.abs(hash) % this._size;
-}
-set(key: K, value: V): void {
-  const index = this.getHash(key);
 
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      node.value = value;      // Update existing
-      return;
+// Edge connects two nodes with a weight (default = 1)
+export interface Edge<T> {
+  from: T;
+  to: T;
+  weight: number;
+  cost?: number;          // will be filled later
+}
+
+export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
+
+// ------------------------------------------------------------
+//  2️⃣  Binary‑heap priority queue (min‑heap)
+// ------------------------------------------------------------
+class HeapNode<T> {
+  constructor(public key: number, public value: T) {}
+}
+
+export class PriorityQueue<T> {
+  private heap: HeapNode<T>[] = [];
+
+  get size() { return this.heap.length; }
+  empty() { return this.size === 0; }
+
+  push(key: number, value: T) {
+    this.heap.push(new HeapNode(key, value));
+    this.bubbleUp(this.size - 1);
+  }
+  pop(): HeapNode<T> | undefined {
+    if (this.empty()) return;
+    const top = this.heap[0];
+    const last = this.heap.pop()!;
+    if (!this.empty()) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
     }
-    node = node.next;
+    return top;
   }
 
-  // Insert new node at front of chain
-  const newNode = new LinkedListNode(key, value, this.buckets[index]);
-  this.buckets[index] = newNode;
-  this._count++;
-
-  if (this._count / this._size > this.loadFactorThreshold) {
-    this.resize();
-  }
-}
-
-get(key: K): V | undefined {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      return node.value;
+  private bubbleUp(i: number) {
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.heap[p].key <= this.heap[i].key) break;
+      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+      i = p;
     }
-    node = node.next;
   }
-  return undefined;
-}
-
-delete(key: K): boolean {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  let prev: LinkedListNode<K, V> | null = null;
-
-  while (node) {
-    if (this.equals(node.key, key)) {
-      if (prev) prev.next = node.next;
-      else this.buckets[index] = node.next;
-      this._count--;
-      return true;
-    }
-    prev = node;
-    node = node.next;
-  }
-  return false;
-}
-
-has(key: K): boolean {
-  return this.get(key) !== undefined;
-}
-
-clear(): void {
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-}
-private equals(a: K, b: K): boolean {
-  return a === b;
-}
-private resize(): void {
-  const oldBuckets = this.buckets;
-  this._size *= 2;                 // Classic, double the bucket count
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-
-  for (const bucket of oldBuckets) {
-    let node = bucket;
-    while (node) {
-      this.set(node.key, node.value); // Re‑hash & insert
-      node = node.next;
+  private bubbleDown(i: number) {
+    const n = this.size;
+    while (true) {
+      let l = (i << 1) + 1, r = l + 1, smallest = i;
+      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
+      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
+      if (smallest === i) break;
+      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+      i = smallest;
     }
   }
 }
-values(): V[] {
-  const vals: V[] = [];
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      vals.push(node.value);
-      node = node.next;
+
+// ------------------------------------------------------------
+//  3️⃣  AStar implementation
+// ------------------------------------------------------------
+export interface AStarOptions<T> {
+  graph: Graph<T>;
+  heuristic: (a: T, b: T) => number;
+  start: T;
+  goal: T;
+}
+
+export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
+  const { graph, heuristic, start, goal } = opts;
+
+  const open = new PriorityQueue<T>();
+  open.push(0, start);
+
+  const cameFrom = new Map<T, T | null>();
+  const gScore = new Map<T, number>();
+
+  cameFrom.set(start, null);
+  gScore.set(start, 0);
+
+  while (!open.empty()) {
+    const node = open.pop()!;
+    const u = node.value;
+
+    if (u === goal) {
+      // reconstruct
+      const path: T[] = [];
+      let cur: T | null = u;
+      while (cur !== null) {
+        path.push(cur);
+        cur = cameFrom.get(cur) ?? null;
+      }
+      path.reverse();
+      return { path, cost: gScore.get(u)! };
+    }
+
+    for (const edge of graph.get(u) ?? []) {
+      const v = edge.to;
+      const tentativeG = gScore.get(u)! + edge.weight;
+
+      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
+        cameFrom.set(v, u);
+        gScore.set(v, tentativeG);
+
+        const f = tentativeG + heuristic(v, goal);
+        open.push(f, v);
+      }
     }
   }
-  return vals;
+
+  return null; // no path
 }
-*entries(): IterableIterator<[K, V]> {
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      yield [node.key, node.value];
-      node = node.next;
+
+// ------------------------------------------------------------
+//  4️⃣  Example – 4×4 grid with obstacles
+// ------------------------------------------------------------
+function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
+  const graph = new Map<Point, Edge<Point>[]>();
+
+  const dirs = [
+    [0, -1], [1, 0], [0, 1], [-1, 0],
+  ];
+
+  for (let y = 0; y < height; ++y) {
+    for (let x = 0; x < width; ++x) {
+      const p = new PointImpl(x, y);
+      if (walls.has(p.toString())) continue;
+
+      const neighbours: Edge<Point>[] = [];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const q = new PointImpl(nx, ny);
+        if (walls.has(q.toString())) continue;
+        neighbours.push({ from: p, to: q, weight: 1 });
+      }
+      graph.set(p, neighbours);
     }
   }
+
+  return graph;
 }
-const ht = new SimpleHashTable<string, number>();
 
-ht.set('apple', 3);
-ht.set('banana', 
-
-
-
----
-
-**Support Pollinations.AI:**
-
----
-
-🌸 **Ad** 🌸
-Powered by Pollinations.AI free text APIs. [Support our mission](https://pollinations.ai/redirect/kofi) to keep AI accessible for everyone.
+export async function main() {
+  const width = 4, height = 4;
+  const walls = new Set<string>([
+    new PointImpl(1, 1).toString(),
+    new PointImpl(2, 1).
