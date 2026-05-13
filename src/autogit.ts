@@ -1,26 +1,45 @@
-/**
- * Returns the first character that is repeated, or `undefined` if the string
- * contains no duplicates.
- */
-function firstRepeated(s: string): string | undefined {
-  const seen = new Set<string>();
-
-  for (const ch of s) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
-  }
-  return undefined;     // nothing repeated
+// 1. Basic list node definition
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-console.log(firstRepeated("abca"));   // → 'a'
-console.log(firstRepeated("abcdef")); // → undefined
-console.log(firstRepeated("aabbc"));  // → 'a'
-function firstRepeatedAscii(s: string): string | undefined {
-  const seen = new Array(128).fill(false);
 
-  for (const ch of s) {
-    const code = ch.charCodeAt(0);
-    if (seen[code]) return ch;
-    seen[code] = true;
+// 2. Utility: build a linked list from an array
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null;
+
+  const head = new ListNode(values[0]);
+  let current = head;
+  for (let i = 1; i < values.length; i++) {
+    current.next = new ListNode(values[i]);
+    current = current.next;
   }
-  return undefined;
+  return head;
+}
+
+// 3. Find the middle node – fast/slow pointer
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {      // stop when fast can't advance two steps
+    slow = slow.next!;             // safe because previous check guarantees truthy
+    fast = fast.next.next!;
+  }
+
+  return slow;                     // slow is at the middle
+}
+
+// Demo
+const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
+const oddHead = buildList(arr);
+console.log(getMiddle(oddHead)?.val); // 3
+
+const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
+const evenHead = buildList(evenArr);
+console.log(getMiddle(evenHead)?.val); // 20
+while (fast && fast.next && fast.next.next) {
+  slow = slow.next!;
+  fast = fast.next.next!;
 }
