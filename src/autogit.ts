@@ -1,74 +1,50 @@
-// src/utils/http.ts
-import { knownFolders, File } from '@nativescript/core';
+/*  random-cron-example.ts
+ *
+ *  Requires:
+ *    npm install cron chalk
+ *  Compile with:
+ *    tsc random-cron-example.ts --module commonjs
+ *  Run with:
+ *    node random-cron-example.js
+ */
 
-// ──────────────────────────────────────────────────────────────────
-// Step 1 – A friendly async helper that does the fetch
-// ──────────────────────────────────────────────────────────────────
-export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+import { CronJob } from "cron";
+import chalk from "chalk";
 
-  try {
-    const resp = await fetch(url, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        // add any custom headers you need
-      },
-    });
-
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
-    }
-
-    const json = await resp.json() as T;
-    return json;
-  } finally {
-    clearTimeout(id);
-  }
+// A function that does something "random enough" each time it runs.
+function generateMagicNumber(): number {
+  // Pick a pseudo‑random integer between 1 and 100
+  return Math.floor(Math.random() * 100) + 1;
 }
 
-// ──────────────────────────────────────────────────────────────────
-// Step 2 – Call it from an Android Activity / Page, e.g.
-// ──────────────────────────────────────────────────────────────────
-export async function demoFetch() {
-  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
+// Define a cron job that fires every minute.
+// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
+const job = new CronJob(
+  // Every minute
+  "* * * * *",
+  () => {
+    const now = new Date();
+    const magic = generateMagicNumber();
+    console.log(
+      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
+        magic
+      )}`
+    );
+  },
+  null, // onComplete callback (unused)
+  true, // start the job right away
+  "America/New_York" // time zone
+);
 
-  try {
-    const data = await getJson<any>(apiUrl);
-    console.log('Data received:', data);
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log(chalk.red("\nStopping the cron job..."));
+  job.stop();
+  process.exit(0);
+});
 
-    // If you want to touch the UI, do it on the UI thread
-    // (in NativeScript you can simply update a component property,
-    // or use a dispatcher if you’re outside a component)
-  } catch (err) {
-    console.error('fetch error:', err);
-    // In an Android UI you might show a toast:
-    const Toast = android.widget.Toast;
-    const ctx = android.content.Context;
-    const activity = /** get the current activity from your page **/;
-    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
-  }
-}
-
-/*
-  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
-
-  import { demoFetch } from '~/utils/http';
-
-  export function pageLoaded(args) {
-    demoFetch();
-  }
-*/
-const HttpGetTask = android.os.AsyncTask.extend({
-  doInBackground: function (params) {
-    try {
-      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
-      const conn = url.openConnection() as java.net.HttpURLConnection;
-      conn.setRequestMethod('GET');
-      conn.setConnectTimeout(5000);
-      conn.setReadTimeout(5000);
-
-      const reader = new java.io.BufferedReader(
-
+console.log(
+  chalk.blue(
+    "Random cron job started. It will output a magic number every minute."
+  )
+);
