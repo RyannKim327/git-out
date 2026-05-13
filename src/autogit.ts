@@ -1,62 +1,45 @@
-/**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
- */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
-}
-/**
- * Return the n‑th node from the end of the list.
- *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
- */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
-  }
-
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
-
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
-    }
-    fast = fast.next
-  }
-
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
-  }
-
-  return slow
-}
-import { ListNode, nthFromEnd } from './linkedListHelpers'
-
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
+// 1. Basic list node definition
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
+// 2. Utility: build a linked list from an array
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null;
 
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
+  const head = new ListNode(values[0]);
+  let current = head;
+  for (let i = 1; i < values.length; i++) {
+    current.next = new ListNode(values[i]);
+    current = current.next;
+  }
+  return head;
+}
 
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+// 3. Find the middle node – fast/slow pointer
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {      // stop when fast can't advance two steps
+    slow = slow.next!;             // safe because previous check guarantees truthy
+    fast = fast.next.next!;
+  }
+
+  return slow;                     // slow is at the middle
+}
+
+// Demo
+const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
+const oddHead = buildList(arr);
+console.log(getMiddle(oddHead)?.val); // 3
+
+const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
+const evenHead = buildList(evenArr);
+console.log(getMiddle(evenHead)?.val); // 20
+while (fast && fast.next && fast.next.next) {
+  slow = slow.next!;
+  fast = fast.next.next!;
+}
