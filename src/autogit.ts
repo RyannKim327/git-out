@@ -1,62 +1,83 @@
-/* ------------------------------------------------------------
-   Heap‑sort in TypeScript
-   ------------------------------------------------------------ */
+/**
+ * A directed graph is expected to be an object where each key is a node
+ * id (string) and the value is an array of neighbouring node ids.
+ * Example:
+ *   const graph = {
+ *     a: ['b', 'c'],
+ *     b: ['c'],
+ *     c: ['a', 'd'],
+ *     d: ['e'],
+ *     e: []
+ *   };
+ */
+type Graph = Record<string, string[]>;
 
 /**
- * Build a max‑heap in place.
- * `heapSize` is the number of elements to consider from the start of `arr`.
+ * Tarjan’s SCC algorithm.
+ *
+ * @param graph – adjacency list representation of the directed graph
+ * @returns array of SCCs, each itself an array of node ids
  */
-function heapify<T>(arr: T[], heapSize: number, i: number, cmp: (a: T, b: T) => number) {
-    const left  = 2 * i + 1;
-    const right = 2 * i + 2;
-    let largest = i;
+export function tarjanSCC(graph: Graph): string[][] {
+  const indexMap = new Map<string, number>();
+  const lowLinkMap = new Map<string, number>();
+  const onStack = new Set<string>();
 
-    if (left  < heapSize && cmp(arr[left],  arr[largest]) > 0) largest = left;
-    if (right < heapSize && cmp(arr[right], arr[largest]) > 0) largest = right;
+  const stack: string[] = [];
+  let idx = 0;
+  const sccs: string[][] = [];
 
-    if (largest !== i) {
-        [arr[i], arr[largest]] = [arr[largest], arr[i]];
-        heapify(arr, heapSize, largest, cmp);
-    }
-}
+  const strongConnect = (node: string) => {
+    // Set the depth index for this node to the smallest unused index
+    indexMap.set(node, idx);
+    lowLinkMap.set(node, idx);
+    idx++;
 
-/**
- * Transform an array into a heap.  O(n) time.
- */
-function buildHeap<T>(arr: T[], cmp: (a: T, b: T) => number) {
-    const heapSize = arr.length;
-    for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-        heapify(arr, heapSize, i, cmp);
-    }
-}
+    stack.push(node);
+    onStack.add(node);
 
-/**
- * Heap‑sort: sorts `arr` in place and returns it.
- * Default comparison is numeric ascending order.
- */
-export function heapSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const compare = cmp ?? ((a, b) => (a as any) - (b as any));
-
-    // 1️⃣ build max‑heap
-    buildHeap(arr, compare);
-
-    // 2️⃣ repeatedly extract the max and rebuild heap
-    let heapSize = arr.length;
-    for (let i = arr.length - 1; i > 0; i--) {
-        // put current max (root) at the end
-        [arr[0], arr[i]] = [arr[i], arr[0]];
-        heapSize--;
-
-        // restore heap property on the reduced heap
-        heapify(arr, heapSize, 0, compare);
+    // Consider successors of node
+    for (const succ of graph[node] ?? []) {
+      if (!indexMap.has(succ)) {
+        // Successor has not yet been visited – recurse on it
+        strongConnect(succ);
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // Successor is in stack → node is in the same SCC
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+      }
     }
 
-    return arr;
-}
-const numbers = [5, 3, 8, 4, 1, 7, 2];
-heapSort(numbers);
-console.log(numbers); // → [1, 2, 3, 4, 5, 7, 8]
-interface Person { name: string; age: number }
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap.get(node) === indexMap.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  };
 
-// Sort by age ascending
-heapSort(people, (a, b) => a.age - b.age);
+  // Call the recursion for each node (in any order)
+  for (const node of Object.keys(graph)) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
+  }
+
+  return sccs;
+}
+const graph: Graph = {
+  a: ['b'],
+  b: ['c'],
+  c: ['a', 'd'],
+  d: ['e'],
+  e: ['f'],
+  f: ['d']
+};
+
+console.log(tarjanSCC(graph));
+// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
