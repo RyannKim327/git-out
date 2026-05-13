@@ -1,62 +1,98 @@
 /**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
+ * Comparator signature: (a, b) => boolean
+ * Should return true if `a` has higher priority than `b`
+ * (i.e. `a` should come *before* `b` in the heap order).
  */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
-}
-/**
- * Return the n‑th node from the end of the list.
- *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
- */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
+type Comparator<T> = (a: T, b: T) => boolean;
+
+export class PriorityQueue<T> {
+  /** Encoded binary‑heap */
+  private items: T[] = [];
+
+  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
+
+  /* ---------- Properties ---------- */
+
+  get size(): number { return this.items.length; }
+  get isEmpty(): boolean { return this.items.length === 0; }
+
+  /* ---------- Queries ---------- */
+
+  peek(): T | undefined { return this.items[0]; }
+
+  /* ---------- Mutations ---------- */
+
+  push(item: T): void {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
   }
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
+  pop(): T | undefined {
+    if (this.isEmpty) return undefined;
 
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
+    const top = this.items[0];
+    const last = this.items.pop()!; // array isn't empty
+
+    if (!this.isEmpty) {
+      this.items[0] = last;
+      this.bubbleDown(0);
     }
-    fast = fast.next
+
+    return top;
   }
 
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
+  /* ---------- Internals ---------- */
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (this.comparator(this.items[idx], this.items[parentIdx])) {
+        this.swap(idx, parentIdx);
+        idx = parentIdx;
+      } else {
+        break;
+      }
+    }
   }
 
-  return slow
+  private bubbleDown(idx: number): void {
+    const length = this.items.length;
+    while (true) {
+      const left = idx * 2 + 1;
+      const right = left + 1;
+      let smallest = idx;
+
+      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
+        smallest = left;
+      }
+      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
+        smallest = right;
+      }
+
+      if (smallest !== idx) {
+        this.swap(idx, smallest);
+        idx = smallest;
+      } else {
+        break;
+      }
+    }
+  }
+
+  private swap(i: number, j: number): void {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  }
 }
-import { ListNode, nthFromEnd } from './linkedListHelpers'
-
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
+const maxHeap = new PriorityQueue<number>((a, b) => a > b);
+interface Task {
+  priority: number;     // smaller number → higher priority
+  description: string;
 }
 
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
+const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
 
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
+[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
 
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+while (!pq.isEmpty) {
+  console.log(pq.pop()); // prints: 1, 3, 5, 8
+}
