@@ -1,50 +1,84 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
+// 1️⃣  Interfaces ----------------------------------------------------
+interface State {
+  // Unique identifier that helps us spot already‑visited nodes.
+  id: string | number;
+
+  // Return all children reachable from this state.
+  getChildren(): State[];
+
+  // For demo purposes, we also expose a pretty‑print.
+  toString?(): string;
 }
 
-/**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
- */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+type GoalFn<T extends State> = (s: T) => boolean;
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+// 2️⃣  The recursive DLS ----------------------------------------------
+function depthLimitedSearch<T extends State>(
+  node: T,
+  goal: GoalFn<T>,
+  limit: number,
+  visited = new Set<T | string | number>()
+): T | null {
+  // Depth exceeded → give up.
+  if (limit < 0) return null;
 
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+  // Safe‑guard against cycles: if this node already saw, skip it.
+  if (visited.has(node.id)) return null;
+
+  // Mark the node as visited for this path.
+  visited.add(node.id);
+
+  // Goal found.
+  if (goal(node)) return node;
+
+  // Explore children.
+  for (const child of node.getChildren()) {
+    const result = depthLimitedSearch(child, goal, limit - 1, visited);
+    if (result !== null) return result;
   }
 
-  return pA; // either the intersection node or null
+  // Nothing found → backtrack.
+  return null;
 }
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
+class GridCell implements State {
+  constructor(
+    public x: number,
+    public y: number,
+    public goal = false
+  ) {}
+
+  get id() { return `${this.x},${this.y}`; }
+
+  getChildren(): State[] {
+    const dirs = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ];
+    return dirs
+      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
+      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
   }
-  return dummy.next;
+
+  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
 }
 
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
+// Simple goal: bottom‑right corner.
+const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
 
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
+const start = new GridCell(0, 0);
+const result = depthLimitedSearch(start, goalFn, 4);
 
-console.log(getIntersectionNode(a1, b1) === shared); // true
+console.log(result?.toString() ?? 'No solution within depth 4');
+function iterativeDeepeningDFS<T extends State>(
+  start: T,
+  goal: GoalFn<T>,
+  maxLimit: number
+): T | null {
+  for (let l = 0; l <= maxLimit; l++) {
+    const res = depthLimitedSearch(start, goal, l);
+    if (res !== null) return res;      // Found a goal
+  }
+  return null;                        // Still no goal within maxLimit
+}
