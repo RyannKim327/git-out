@@ -1,62 +1,100 @@
-/* ------------------------------------------------------------
-   Heap‑sort in TypeScript
-   ------------------------------------------------------------ */
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null;
+  private tail: Node<T> | null = null;
+  private length = 0;
 
-/**
- * Build a max‑heap in place.
- * `heapSize` is the number of elements to consider from the start of `arr`.
- */
-function heapify<T>(arr: T[], heapSize: number, i: number, cmp: (a: T, b: T) => number) {
-    const left  = 2 * i + 1;
-    const right = 2 * i + 2;
-    let largest = i;
+  push(value: T): void { /* … */ }
+  pop(): T | undefined { /* … */ }
+  unshift(value: T): void { /* … */ }
+  shift(): T | undefined { /* … */ }
+  get(index: number): T | undefined { /* … */ }
+  set(index: number, value: T): boolean { /* … */ }
+  insert(index: number, value: T): boolean { /* … */ }
+  remove(index: number): T | undefined { /* … */ }
+  clear(): void { /* … */ }
+  toArray(): T[] { /* … */ }
 
-    if (left  < heapSize && cmp(arr[left],  arr[largest]) > 0) largest = left;
-    if (right < heapSize && cmp(arr[right], arr[largest]) > 0) largest = right;
-
-    if (largest !== i) {
-        [arr[i], arr[largest]] = [arr[largest], arr[i]];
-        heapify(arr, heapSize, largest, cmp);
-    }
+  [Symbol.iterator](): Iterator<T> { /* … */ }
 }
-
-/**
- * Transform an array into a heap.  O(n) time.
- */
-function buildHeap<T>(arr: T[], cmp: (a: T, b: T) => number) {
-    const heapSize = arr.length;
-    for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-        heapify(arr, heapSize, i, cmp);
-    }
+// Simple singly‑linked node
+class Node<T> {
+  constructor(
+    public readonly value: T,
+    public next: Node<T> | null = null
+  ) {}
 }
-
-/**
- * Heap‑sort: sorts `arr` in place and returns it.
- * Default comparison is numeric ascending order.
- */
-export function heapSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const compare = cmp ?? ((a, b) => (a as any) - (b as any));
-
-    // 1️⃣ build max‑heap
-    buildHeap(arr, compare);
-
-    // 2️⃣ repeatedly extract the max and rebuild heap
-    let heapSize = arr.length;
-    for (let i = arr.length - 1; i > 0; i--) {
-        // put current max (root) at the end
-        [arr[0], arr[i]] = [arr[i], arr[0]];
-        heapSize--;
-
-        // restore heap property on the reduced heap
-        heapify(arr, heapSize, 0, compare);
-    }
-
-    return arr;
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null; // first node
+  private tail: Node<T> | null = null; // last
+  private length = 0;
 }
-const numbers = [5, 3, 8, 4, 1, 7, 2];
-heapSort(numbers);
-console.log(numbers); // → [1, 2, 3, 4, 5, 7, 8]
-interface Person { name: string; age: number }
+constructor(iterable?: Iterable<T>) {
+  if (iterable) {
+    for (const item of iterable) this.push(item);
+  }
+}
+private _getNode(index: number): Node<T> | null {
+  if (index < 0 || index >= this.length) return null;
+  let curr = this.head;
+  for (let i = 0; i < index; i++) curr = curr!.next;
+  return curr;
+}
+push(value: T): void {
+  const node = new Node(value);
+  if (!this.head) {            // first item
+    this.head = this.tail = node;
+  } else {
+    this.tail!.next = node;    // append
+    this.tail = node;
+  }
+  this.length++;
+}
+pop(): T | undefined {
+  if (!this.head) return undefined;
 
-// Sort by age ascending
-heapSort(people, (a, b) => a.age - b.age);
+  const lastVal = this.tail!.value;
+
+  if (this.head === this.tail) {    // only one node
+    this.head = this.tail = null;
+  } else {
+    // find the node before tail
+    let curr = this.head;
+    while (curr.next !== this.tail) curr = curr.next!;
+    curr.next = null;
+    this.tail = curr;
+  }
+
+  this.length--;
+  return lastVal;
+}
+unshift(value: T): void {
+  const node = new Node(value, this.head);
+  this.head = node;
+  if (!this.tail) this.tail = node; // list was empty
+  this.length++;
+}
+shift(): T | undefined {
+  if (!this.head) return undefined;
+  const val = this.head.value;
+  this.head = this.head.next;
+  if (!this.head) this.tail = null; // list became empty
+  this.length--;
+  return val;
+}
+get(index: number): T | undefined {
+  const node = this._getNode(index);
+  return node ? node.value : undefined;
+}
+set(index: number, value: T): boolean {
+  const node = this._getNode(index);
+  if (!node) return false;
+  node.value = value;
+  return true;
+}
+insert(index: number, value: T): boolean {
+  if (index < 0 || index > this.length) return false;
+  if (index === 0) return (this.unshift(value), true);
+  if (index === this.length) return (this.push(value), true);
+
+  const prev = this._getNode(index - 1)!;
+  const node = new Node(value,
