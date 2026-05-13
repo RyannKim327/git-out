@@ -1,68 +1,35 @@
-// ──────────────────────────────────────────────────────────────
-// 1️⃣  Imports & type definitions
-// ──────────────────────────────────────────────────────────────
-import fetch from 'node-fetch'; // npm i node-fetch@2
-// If you’re in a browser environment just drop the import line
-// and use the native `fetch` API.
+/*  0001‑random‑ts‑with‑input.ts  */
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+import * as readline from 'node:readline';
 
-// ──────────────────────────────────────────────────────────────
-// 2️⃣  The async loader
-// ──────────────────────────────────────────────────────────────
-async function fetchPosts(apiUrl: string): Promise<Post[]> {
-  // A quick sanity check – you don’t want to send an empty string.
-  if (!apiUrl.trim()) {
-    throw new Error('API URL cannot be empty');
-  }
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-  const res = await fetch(apiUrl, {
-    // JSON is the common output. Adjust headers if your API
-    // requires authentication or special content‑type.
-    headers: {
-      Accept: 'application/json',
-    },
-    // A generous timeout – network latency can be unpredictable.
-    timeout: 10_000,
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
   });
-
-  if (!res.ok) {
-    // Throw an error with the HTTP status so callers can catch it.
-    throw new Error(`Network response was not OK (${res.status})`);
-  }
-
-  // We’ve decided the result is an array of posts. 
-  // Narrow it to Post[] for full type safety.
-  const data = (await res.json()) as Post[];
-
-  return data;
-}
-
-// ──────────────────────────────────────────────────────────────
-// 3️⃣  Entry point – usage example
-// ──────────────────────────────────────────────────────────────
-async function main() {
-  try {
-    // This is a free JSON placeholder service that offers fake blog posts.
-    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
-
-    // Just log the first 3 for brevity
-    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
-    posts.slice(0, 3).forEach((p, i) => {
-      console.log(`\nPost #${i + 1}`);
-      console.log(`ID: ${p.id}`);
-      console.log(`Title: ${p.title}`);
-      console.log(`Body: ${p.body.slice(0, 60)}…`);
-    });
-  } catch (err) {
-    // A simple error handler – plug in your own logger if needed.
-    console.error('❌ Failed to fetch posts:', err);
-  }
-}
-
-main();
+});
