@@ -1,75 +1,35 @@
-// -------------------------------------------------------------
-// 1️⃣  O(n²) DP – intuition + implementation
-// -------------------------------------------------------------
-function lisDP(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
+}
 
-  // dp[i]  – length of LIS that ends at index i
-  const dp: number[] = Array(n).fill(1);
-  // prev[i] – previous index in the LIS that ends at i
-  const prev: number[] = Array(n).fill(-1);
-
-  let bestEnd = 0; // index where the overall best LIS ends
-
-  for (let i = 0; i < n; ++i) {
-    for (let j = 0; j < i; ++j) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (dp[i] > dp[bestEnd]) bestEnd = i;
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
+  }
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
   }
 
-  // Rebuild the sequence
-  const seq: number[] = [];
-  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
-  seq.reverse();
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
 
-  return { length: dp[bestEnd], sequence: seq };
-}
-// -------------------------------------------------------------
-// 2️⃣  O(n log n) – patience sorting + back‑tracking
-// -------------------------------------------------------------
-function lisPatience(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
-
-  // tails[i] – index of the smallest tail of LIS with length i+1
-  const tails: number[] = [];
-  // parentIdx[i] – previous index in LIS that ends at i
-  const parentIdx: number[] = Array(n).fill(-1);
-
-  for (let i = 0; i < n; ++i) {
-    const x = arr[i];
-
-    // Binary search: first tail >= x
-    let lo = 0, hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (arr[tails[mid]] < x) lo = mid + 1;
-      else hi = mid;
-    }
-
-    // lo now points to position where x will go
-    if (lo > 0) parentIdx[i] = tails[lo - 1];
-
-    if (lo === tails.length) tails.push(i);
-    else tails[lo] = i;
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
   }
 
-  // Reconstruct sequence
-  const seq: number[] = [];
-  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
-  seq.reverse();
-
-  return { length: tails.length, sequence: seq };
+  return Math.sqrt(areaSquared);
 }
-const example = [10, 9, 2, 5, 3, 7, 101, 18];
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
 
-console.log(lisDP(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
 
-console.log(lisPatience(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
