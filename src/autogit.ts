@@ -1,45 +1,49 @@
-dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
-if s1[i] === s2[j]
-    dp[i][j] = dp[i‑1][j‑1] + 1
-else
-    dp[i][j] = 0
 /**
- * Returns the longest common substring of two strings.
- * If there are multiple substrings of the same maximal length,
- * the first one encountered is returned.
+ * Returns the maximum sum of any contiguous sub‑array.
+ * If all numbers are negative, the result is the largest (least negative) number.
  */
-function longestCommonSubstring(a: string, b: string): string {
-    if (!a || !b) return "";
+function maxSubarraySum(arr: number[]): number {
+    if (arr.length === 0) throw new Error('Array must contain at least one element');
 
-    const n = a.length;
-    const m = b.length;
+    let currentSum = arr[0];
+    let bestSum = arr[0];
 
-    // Use a 1‑D array to hold the previous row of DP values.
-    let prev = new Array(m + 1).fill(0);
-    let curr = new Array(m + 1).fill(0);
+    // We start from index 1 because the first element was already handled
+    for (let i = 1; i < arr.length; i++) {
+        // Either extend the previous sub‑array or start anew at arr[i]
+        currentSum = Math.max(arr[i], currentSum + arr[i]);
 
-    let bestLen = 0;
-    let bestEndIdxInA = 0; // index in `a` where the best substring ends
-
-    for (let i = 1; i <= n; i++) {
-        for (let j = 1; j <= m; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                curr[j] = prev[j - 1] + 1;
-                if (curr[j] > bestLen) {
-                    bestLen = curr[j];
-                    bestEndIdxInA = i;
-                }
-            } else {
-                curr[j] = 0;
-            }
-        }
-        // swap references for the next iteration
-        [prev, curr] = [curr, prev];
+        // Update global best if we found a better one
+        bestSum = Math.max(bestSum, currentSum);
     }
 
-    if (bestLen === 0) return "";
-    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
+    return bestSum;
 }
-console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
-console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
-console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
+const data = [−2, −3, 4, −1, −2, 1, 5, −3];
+console.log(maxSubarraySum(data)); // 7
+
+// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
+function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
+    let currentSum = arr[0];
+    let bestSum = arr[0];
+    let tempStart = 0;
+    let bestStart = 0;
+    let bestEnd = 0;
+
+    for (let i = 1; i < arr.length; i++) {
+        if (currentSum + arr[i] >= arr[i]) {
+            currentSum += arr[i];
+        } else {
+            currentSum = arr[i];
+            tempStart = i;
+        }
+
+        if (currentSum > bestSum) {
+            bestSum = currentSum;
+            bestStart = tempStart;
+            bestEnd = i;
+        }
+    }
+
+    return { sum: bestSum, start: bestStart, end: bestEnd };
+}
