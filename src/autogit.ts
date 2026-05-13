@@ -1,35 +1,84 @@
-// 1️⃣ Base & height
-export function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0)
-    throw new Error('Base and height must be positive numbers.');
-  return (base * height) / 2;
+// 1️⃣  Interfaces ----------------------------------------------------
+interface State {
+  // Unique identifier that helps us spot already‑visited nodes.
+  id: string | number;
+
+  // Return all children reachable from this state.
+  getChildren(): State[];
+
+  // For demo purposes, we also expose a pretty‑print.
+  toString?(): string;
 }
 
-// 2️⃣ Heron’s formula (three sides)
-export function areaHeron(a: number, b: number, c: number): number {
-  // Validate that the sides can form a triangle
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw new Error('Side lengths must be positive numbers.');
-  }
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The provided sides do not satisfy the triangle inequality.');
+type GoalFn<T extends State> = (s: T) => boolean;
+
+// 2️⃣  The recursive DLS ----------------------------------------------
+function depthLimitedSearch<T extends State>(
+  node: T,
+  goal: GoalFn<T>,
+  limit: number,
+  visited = new Set<T | string | number>()
+): T | null {
+  // Depth exceeded → give up.
+  if (limit < 0) return null;
+
+  // Safe‑guard against cycles: if this node already saw, skip it.
+  if (visited.has(node.id)) return null;
+
+  // Mark the node as visited for this path.
+  visited.add(node.id);
+
+  // Goal found.
+  if (goal(node)) return node;
+
+  // Explore children.
+  for (const child of node.getChildren()) {
+    const result = depthLimitedSearch(child, goal, limit - 1, visited);
+    if (result !== null) return result;
   }
 
-  const s = (a + b + c) / 2;                // semi‑perimeter
-  const areaSquared = s * (s - a) * (s - b) * (s - c);
-
-  // area might be NaN if the vertices are collinear (area close to 0)
-  if (areaSquared < 0) {
-    throw new Error('Computed area squared is negative – check your side lengths.');
-  }
-
-  return Math.sqrt(areaSquared);
+  // Nothing found → backtrack.
+  return null;
 }
-// Base & height
-const tri1 = areaBaseHeight(10, 4); // 20
+class GridCell implements State {
+  constructor(
+    public x: number,
+    public y: number,
+    public goal = false
+  ) {}
 
-// Heron’s formula
-const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+  get id() { return `${this.x},${this.y}`; }
 
-console.log(`Base/Height area: ${tri1}`);
-console.log(`Heron area: ${tri2}`);
+  getChildren(): State[] {
+    const dirs = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ];
+    return dirs
+      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
+      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
+  }
+
+  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
+}
+
+// Simple goal: bottom‑right corner.
+const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
+
+const start = new GridCell(0, 0);
+const result = depthLimitedSearch(start, goalFn, 4);
+
+console.log(result?.toString() ?? 'No solution within depth 4');
+function iterativeDeepeningDFS<T extends State>(
+  start: T,
+  goal: GoalFn<T>,
+  maxLimit: number
+): T | null {
+  for (let l = 0; l <= maxLimit; l++) {
+    const res = depthLimitedSearch(start, goal, l);
+    if (res !== null) return res;      // Found a goal
+  }
+  return null;                        // Still no goal within maxLimit
+}
