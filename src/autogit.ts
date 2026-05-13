@@ -1,38 +1,50 @@
-/**
- * Recursive binary search.
+/*  random-cron-example.ts
  *
- * @param data   Sorted array to search in.
- * @param target Value you’re looking for.
- * @param compare Optional comparator – defaults to numeric or lexical.
- * @param left   Left index of the current sub‑array (internal use).
- * @param right  Right index of the current sub‑array (internal use).
- * @returns Index of the target or -1 if not found.
+ *  Requires:
+ *    npm install cron chalk
+ *  Compile with:
+ *    tsc random-cron-example.ts --module commonjs
+ *  Run with:
+ *    node random-cron-example.js
  */
-function binarySearch<T>(
-  data: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number = (a, b) => ((a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0),
-  left: number = 0,
-  right: number = data.length - 1
-): number {
-  if (left > right) return -1;                 // base case: empty window
 
-  const mid = Math.floor((left + right) / 2);
-  const cmp = compare(target, data[mid]);
+import { CronJob } from "cron";
+import chalk from "chalk";
 
-  if (cmp === 0) return mid;                   // found
-  if (cmp < 0) return binarySearch(data, target, compare, left, mid - 1);
-  return binarySearch(data, target, compare, mid + 1, right);
+// A function that does something "random enough" each time it runs.
+function generateMagicNumber(): number {
+  // Pick a pseudo‑random integer between 1 and 100
+  return Math.floor(Math.random() * 100) + 1;
 }
-// numeric, already sorted
-const nums = [3, 7, 12, 18, 26, 42, 57];
-const idx1 = binarySearch(nums, 18);   // → 3
-const idx2 = binarySearch(nums, 5);    // → -1
 
-// string, case‑insensitive
-const words = ["apple", "banana", "cherry", "date"];
-const idx3 = binarySearch(
-  words,
-  "CHERRY",
-  (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
-); // → 2
+// Define a cron job that fires every minute.
+// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
+const job = new CronJob(
+  // Every minute
+  "* * * * *",
+  () => {
+    const now = new Date();
+    const magic = generateMagicNumber();
+    console.log(
+      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
+        magic
+      )}`
+    );
+  },
+  null, // onComplete callback (unused)
+  true, // start the job right away
+  "America/New_York" // time zone
+);
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log(chalk.red("\nStopping the cron job..."));
+  job.stop();
+  process.exit(0);
+});
+
+console.log(
+  chalk.blue(
+    "Random cron job started. It will output a magic number every minute."
+  )
+);
