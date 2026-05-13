@@ -1,45 +1,56 @@
-// 1. Basic list node definition
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
+ */
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-// 2. Utility: build a linked list from an array
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null;
+  if (m === 0 || n < m) return result;       // edge cases
 
-  const head = new ListNode(values[0]);
-  let current = head;
-  for (let i = 1; i < values.length; i++) {
-    current.next = new ListNode(values[i]);
-    current = current.next;
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
+
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
+
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
   }
-  return head;
-}
 
-// 3. Find the middle node – fast/slow pointer
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
 
-  let slow = head;
-  let fast = head;
-
-  while (fast && fast.next) {      // stop when fast can't advance two steps
-    slow = slow.next!;             // safe because previous check guarantees truthy
-    fast = fast.next.next!;
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
+    }
   }
 
-  return slow;                     // slow is at the middle
+  return result;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-// Demo
-const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
-const oddHead = buildList(arr);
-console.log(getMiddle(oddHead)?.val); // 3
-
-const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
-const evenHead = buildList(evenArr);
-console.log(getMiddle(evenHead)?.val); // 20
-while (fast && fast.next && fast.next.next) {
-  slow = slow.next!;
-  fast = fast.next.next!;
-}
+console.log(rabinKarp(text, pattern)); // → [0, 7]
