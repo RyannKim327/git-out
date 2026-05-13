@@ -1,85 +1,62 @@
-// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
-export interface TreeNode<T> {
-  value: T;
-  left?: TreeNode<T>;   // optional because a leaf might not have children
-  right?: TreeNode<T>;
+/**
+ * A conventional singly–linked list node.
+ * The value is generic so you can store anything.
+ */
+export interface ListNode<T = number> {
+  value: T
+  next: ListNode<T> | null
 }
 /**
- * Counts leaf nodes (nodes with no children) in a binary tree.
+ * Return the n‑th node from the end of the list.
  *
- * @param root - root node of the tree
- * @returns number of leaf nodes
+ * @param head  the head node of the list
+ * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
+ * @returns the ListNode that is n places from the end,
+ *          or `null` if the list has fewer than n items.
  */
-export function countLeavesRec<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree -> 0 leaves
-
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                // this node is a leaf
-
-  // otherwise add leaves of the left and right sub‑trees
-  return countLeavesRec(root.left) + countLeavesRec(root.right);
-}
-/**
- * Iterative breadth‑first traversal using a queue.
- * Does the same thing as the recursive version but avoids recursion depth limits.
- */
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  let leafCount = 0;
-  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
-
-  while (queue.length) {
-    const node = queue.shift()!;         // dequeue
-
-    // If the node has no children, it’s a leaf
-    if (!node.left && !node.right) {
-      leafCount += 1;
-    } else {
-      // enqueue any existing children
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  if (n <= 0) {
+    throw new Error('n must be a positive integer');
   }
 
-  return leafCount;
-}
-function buildSampleTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //        / \     \
-  //       4   5     6
-  return {
-    value: 1,
-    left: {
-      value: 2,
-      left: { value: 4 },
-      right: { value: 5 }
-    },
-    right: {
-      value: 3,
-      right: { value: 6 }
-    }
-  };
-}
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
 
-const tree = buildSampleTree();
-console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
-console.log('Iterative:', countLeavesIter(tree)); // → 3
-function leafMetrics<T>(root?: TreeNode<T>) {
-  if (!root) return { leafCount: 0, leafDepthSum: 0 };
-
-  // helper that returns (#leaves, sum of leaf depths)
-  function helper(node: TreeNode<T>, depth: number): [number, number] {
-    if (!node.left && !node.right) {
-      return [1, depth];
+  // Move `fast` n nodes ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) {
+      // The list is shorter than n.
+      return null
     }
-    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
-    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
-    return [left[0] + right[0], left[1] + right[1]];
+    fast = fast.next
   }
 
-  const [cnt, depthSum] = helper(root, 0);
-  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next // `slow` cannot be null here.
+  }
+
+  return slow
 }
+import { ListNode, nthFromEnd } from './linkedListHelpers'
+
+// Build a quick sample list: 1 → 2 → 3 → 4 → 5
+let head: ListNode<number> | null = { value: 1, next: null }
+let cur = head
+for (let i = 2; i <= 5; i++) {
+  cur!.next = { value: i, next: null }
+  cur = cur.next
+}
+
+// 1st from the end → 5
+console.log(nthFromEnd(head, 1)!.value) // 5
+
+// 3rd from the end → 3
+console.log(nthFromEnd(head, 3)!.value) // 3
+
+// 6th from the end → null (list too short)
+console.log(nthFromEnd(head, 6)) // null
