@@ -1,35 +1,46 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+interface ListNode<T = unknown> {
+  value: T;
+  next?: ListNode<T>;
+}
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false; // an empty list can’t have a cycle
 
-import * as readline from 'node:readline';
+  let slow = head;
+  let fast = head.next; // fast starts one step ahead
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+  while (fast && fast.next) {
+    if (slow === fast) return true; // cycle detected
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+    slow = slow.next!;          // move one step
+    fast = fast.next.next!; // move two steps
+  }
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+  return false; // reached the end, no cycle
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+  let current = head;
 
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+  while (current) {
+    if (visited.has(current)) return true; // we’re back at a node we saw
+    visited.add(current);
+    current = current.next;
+  }
+
+  return false;
+}
+// build a small example
+const a: ListNode = { value: 1 };
+const b: ListNode = { value: 2 };
+const c: ListNode = { value: 3 };
+
+a.next = b;
+b.next = c;
+c.next = a; // ← closes the loop
+
+console.log(hasCycle(a));          // true
+console.log(hasCycleWithSet(a));   // true
+
+// break the cycle
+c.next = undefined;
+console.log(hasCycle(a));          // false
