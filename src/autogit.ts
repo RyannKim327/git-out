@@ -1,84 +1,37 @@
-// 1️⃣  Interfaces ----------------------------------------------------
-interface State {
-  // Unique identifier that helps us spot already‑visited nodes.
-  id: string | number;
+const original = [1, 2, 3, 4];
 
-  // Return all children reachable from this state.
-  getChildren(): State[];
+const filtered = original.filter(n => n !== 3); // [1, 2, 4]
+const arr = [1, 2, 3, 4, 3];
 
-  // For demo purposes, we also expose a pretty‑print.
-  toString?(): string;
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
 }
-
-type GoalFn<T extends State> = (s: T) => boolean;
-
-// 2️⃣  The recursive DLS ----------------------------------------------
-function depthLimitedSearch<T extends State>(
-  node: T,
-  goal: GoalFn<T>,
-  limit: number,
-  visited = new Set<T | string | number>()
-): T | null {
-  // Depth exceeded → give up.
-  if (limit < 0) return null;
-
-  // Safe‑guard against cycles: if this node already saw, skip it.
-  if (visited.has(node.id)) return null;
-
-  // Mark the node as visited for this path.
-  visited.add(node.id);
-
-  // Goal found.
-  if (goal(node)) return node;
-
-  // Explore children.
-  for (const child of node.getChildren()) {
-    const result = depthLimitedSearch(child, goal, limit - 1, visited);
-    if (result !== null) return result;
+const arr = ['a', 'b', 'c', 'd'];
+arr.splice(2, 1); // removes element at index 2
+// arr is now ['a', 'b', 'd']
+function removeItem<T>(arr: T[], item: T): T[] {
+  const idx = arr.indexOf(item);
+  if (idx !== -1) {
+    const copy = [...arr];
+    copy.splice(idx, 1);
+    return copy;
   }
-
-  // Nothing found → backtrack.
-  return null;
-}
-class GridCell implements State {
-  constructor(
-    public x: number,
-    public y: number,
-    public goal = false
-  ) {}
-
-  get id() { return `${this.x},${this.y}`; }
-
-  getChildren(): State[] {
-    const dirs = [
-      [0, 1],
-      [1, 0],
-      [0, -1],
-      [-1, 0],
-    ];
-    return dirs
-      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
-      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
-  }
-
-  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
+  return arr;
 }
 
-// Simple goal: bottom‑right corner.
-const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
+const nums = [7, 8, 9];
+const updated = removeItem(nums, 8); // [7, 9]
+type Item = { id: number; name: string };
 
-const start = new GridCell(0, 0);
-const result = depthLimitedSearch(start, goalFn, 4);
+const items: Item[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Carol' }
+];
 
-console.log(result?.toString() ?? 'No solution within depth 4');
-function iterativeDeepeningDFS<T extends State>(
-  start: T,
-  goal: GoalFn<T>,
-  maxLimit: number
-): T | null {
-  for (let l = 0; l <= maxLimit; l++) {
-    const res = depthLimitedSearch(start, goal, l);
-    if (res !== null) return res;      // Found a goal
-  }
-  return null;                        // Still no goal within maxLimit
-}
+const withoutBob = items.filter(item => item.id !== 2);
+// smallest change, clean and declarative
+const unique = new Set([1, 2, 3, 4]); // Set<number>
+unique.delete(3); // removes 3
+const arr = [...unique]; // back to an array if needed
