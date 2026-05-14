@@ -1,74 +1,78 @@
-// src/utils/http.ts
-import { knownFolders, File } from '@nativescript/core';
+// ───────────────────── Graph Types ───────────────────────────────────────
+type NodeId = string | number;          // anything that can be compared with ===
+interface AdjList {
+  // nodeId -> array of neighbor nodeIds
+  [key: string]: NodeId[];
+}
 
-// ──────────────────────────────────────────────────────────────────
-// Step 1 – A friendly async helper that does the fetch
-// ──────────────────────────────────────────────────────────────────
-export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+// ───────────────────── BFS Implementation ────────────────────────────────
+function bfs(
+  graph: AdjList,
+  start: NodeId,
+  visit: (node: NodeId) => void = () => {}
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
 
-  try {
-    const resp = await fetch(url, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        // add any custom headers you need
-      },
-    });
+  visited.add(start);
+  queue.push(start);
 
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
+  while (queue.length > 0) {
+    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
+
+    visit(current);        // optional callback that may do whatever you want
+    order.push(current);
+
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        queue.push(neigh);
+      }
     }
-
-    const json = await resp.json() as T;
-    return json;
-  } finally {
-    clearTimeout(id);
   }
+
+  return order;           // return traversal order if you need it
 }
 
-// ──────────────────────────────────────────────────────────────────
-// Step 2 – Call it from an Android Activity / Page, e.g.
-// ──────────────────────────────────────────────────────────────────
-export async function demoFetch() {
-  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
+// ───────────────────── Example Usage ──────────────────────────────────────
+const exampleGraph: AdjList = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
 
-  try {
-    const data = await getJson<any>(apiUrl);
-    console.log('Data received:', data);
+const traversal = bfs(exampleGraph, 'A');
+console.log('BFS order:', traversal);
+// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
 
-    // If you want to touch the UI, do it on the UI thread
-    // (in NativeScript you can simply update a component property,
-    // or use a dispatcher if you’re outside a component)
-  } catch (err) {
-    console.error('fetch error:', err);
-    // In an Android UI you might show a toast:
-    const Toast = android.widget.Toast;
-    const ctx = android.content.Context;
-    const activity = /** get the current activity from your page **/;
-    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
+// If you only care about distances from the start node:
+function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
+  const distances = new Map<NodeId, number>();
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+
+  visited.add(start);
+  distances.set(start, 0);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        distances.set(neigh, distances.get(current)! + 1);
+        queue.push(neigh);
+      }
+    }
   }
+
+  return distances;
 }
 
-/*
-  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
-
-  import { demoFetch } from '~/utils/http';
-
-  export function pageLoaded(args) {
-    demoFetch();
-  }
-*/
-const HttpGetTask = android.os.AsyncTask.extend({
-  doInBackground: function (params) {
-    try {
-      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
-      const conn = url.openConnection() as java.net.HttpURLConnection;
-      conn.setRequestMethod('GET');
-      conn.setConnectTimeout(5000);
-      conn.setReadTimeout(5000);
-
-      const reader = new java.io.BufferedReader(
-
+const dists = bfsDistances(exampleGraph, 'A');
+console.log('Distances from A:', Object.fromEntries(dists.entries()));
+// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
