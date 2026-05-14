@@ -1,56 +1,84 @@
-/**
- * Rabin‑Karp string search.
- * @param text    The string to be searched.
- * @param pattern The pattern to search for.
- * @returns      An array containing the starting indices where `pattern`
- *               occurs in `text`. If the pattern is not found, returns [].
- */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const result: number[] = [];
+// 1️⃣  Interfaces ----------------------------------------------------
+interface State {
+  // Unique identifier that helps us spot already‑visited nodes.
+  id: string | number;
 
-  if (m === 0 || n < m) return result;       // edge cases
+  // Return all children reachable from this state.
+  getChildren(): State[];
 
-  /* ---- constants ---- */
-  const prime = 1000000007;                   // large prime modulus
-  const base = 256;                           // number of possible char values
-
-  /* ---- pre‑compute base^(m-1) % prime ---- */
-  let highestPower = 1;
-  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
-
-  /* ---- first window hash ---- */
-  let patternHash = 0;
-  let textHash = 0;
-  for (let i = 0; i < m; i++) {
-    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
-    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
-  }
-
-  /* ---- slide through text ---- */
-  for (let i = 0; i <= n - m; i++) {
-    /* match: compare hashes first, then do a full string compare to avoid false positives */
-    if (patternHash === textHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
-
-    /* roll: compute hash for next window */
-    if (i < n - m) {
-      // Remove leading character
-      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
-      // Avoid negative
-      if (textHash < 0) textHash += prime;
-      // Add trailing character
-      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
-    }
-  }
-
-  return result;
+  // For demo purposes, we also expose a pretty‑print.
+  toString?(): string;
 }
-const text = "abracadabra";
-const pattern = "abra";
 
-console.log(rabinKarp(text, pattern)); // → [0, 7]
+type GoalFn<T extends State> = (s: T) => boolean;
+
+// 2️⃣  The recursive DLS ----------------------------------------------
+function depthLimitedSearch<T extends State>(
+  node: T,
+  goal: GoalFn<T>,
+  limit: number,
+  visited = new Set<T | string | number>()
+): T | null {
+  // Depth exceeded → give up.
+  if (limit < 0) return null;
+
+  // Safe‑guard against cycles: if this node already saw, skip it.
+  if (visited.has(node.id)) return null;
+
+  // Mark the node as visited for this path.
+  visited.add(node.id);
+
+  // Goal found.
+  if (goal(node)) return node;
+
+  // Explore children.
+  for (const child of node.getChildren()) {
+    const result = depthLimitedSearch(child, goal, limit - 1, visited);
+    if (result !== null) return result;
+  }
+
+  // Nothing found → backtrack.
+  return null;
+}
+class GridCell implements State {
+  constructor(
+    public x: number,
+    public y: number,
+    public goal = false
+  ) {}
+
+  get id() { return `${this.x},${this.y}`; }
+
+  getChildren(): State[] {
+    const dirs = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ];
+    return dirs
+      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
+      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
+  }
+
+  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
+}
+
+// Simple goal: bottom‑right corner.
+const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
+
+const start = new GridCell(0, 0);
+const result = depthLimitedSearch(start, goalFn, 4);
+
+console.log(result?.toString() ?? 'No solution within depth 4');
+function iterativeDeepeningDFS<T extends State>(
+  start: T,
+  goal: GoalFn<T>,
+  maxLimit: number
+): T | null {
+  for (let l = 0; l <= maxLimit; l++) {
+    const res = depthLimitedSearch(start, goal, l);
+    if (res !== null) return res;      // Found a goal
+  }
+  return null;                        // Still no goal within maxLimit
+}
