@@ -1,22 +1,45 @@
-/**
- * Return true if n is prime, false otherwise.
- *
- * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
- * For bigger integers you’d need BigInt and, better yet, a probabilistic test
- * (Miller‑Rabin, etc.).
- */
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
-
-  // From here we only need to test numbers of the form 6k ± 1
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 5; i <= limit; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-  return true;
+// 1. Basic list node definition
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-console.log(isPrime(11));          // true
-console.log(isPrime(12));          // false
-console.log(isPrime(1_000_003));   // true (1 M+‑prime)
+
+// 2. Utility: build a linked list from an array
+function buildList<T>(values: T[]): ListNode<T> | null {
+  if (values.length === 0) return null;
+
+  const head = new ListNode(values[0]);
+  let current = head;
+  for (let i = 1; i < values.length; i++) {
+    current.next = new ListNode(values[i]);
+    current = current.next;
+  }
+  return head;
+}
+
+// 3. Find the middle node – fast/slow pointer
+function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  if (!head) return null;          // empty list
+
+  let slow = head;
+  let fast = head;
+
+  while (fast && fast.next) {      // stop when fast can't advance two steps
+    slow = slow.next!;             // safe because previous check guarantees truthy
+    fast = fast.next.next!;
+  }
+
+  return slow;                     // slow is at the middle
+}
+
+// Demo
+const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
+const oddHead = buildList(arr);
+console.log(getMiddle(oddHead)?.val); // 3
+
+const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
+const evenHead = buildList(evenArr);
+console.log(getMiddle(evenHead)?.val); // 20
+while (fast && fast.next && fast.next.next) {
+  slow = slow.next!;
+  fast = fast.next.next!;
+}
