@@ -1,85 +1,44 @@
-// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
-export interface TreeNode<T> {
-  value: T;
-  left?: TreeNode<T>;   // optional because a leaf might not have children
-  right?: TreeNode<T>;
-}
 /**
- * Counts leaf nodes (nodes with no children) in a binary tree.
+ * In‑place insertion sort.
  *
- * @param root - root node of the tree
- * @returns number of leaf nodes
+ * @param arr  The array to sort.  It will be mutated.
+ * @param compare Optional comparison function.  If omitted, the default
+ *                 JavaScript `<` operator is used (suitable for numbers,
+ *                 strings, etc.).
+ * @returns The sorted array (same reference as the input).
  */
-export function countLeavesRec<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree -> 0 leaves
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  if (arr.length < 2) return arr;          // already sorted
 
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                // this node is a leaf
+  // Default comparer: a < b => -1, a > b => +1, else 0
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  // otherwise add leaves of the left and right sub‑trees
-  return countLeavesRec(root.left) + countLeavesRec(root.right);
-}
-/**
- * Iterative breadth‑first traversal using a queue.
- * Does the same thing as the recursive version but avoids recursion depth limits.
- */
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+  // Start from the second element – the first is trivially sorted.
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  let leafCount = 0;
-  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
-
-  while (queue.length) {
-    const node = queue.shift()!;         // dequeue
-
-    // If the node has no children, it’s a leaf
-    if (!node.left && !node.right) {
-      leafCount += 1;
-    } else {
-      // enqueue any existing children
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+    // Move elements that are greater than key one position ahead.
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
+
+    // Place key after the element just smaller than it.
+    arr[j + 1] = key;
   }
 
-  return leafCount;
+  return arr;
 }
-function buildSampleTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //        / \     \
-  //       4   5     6
-  return {
-    value: 1,
-    left: {
-      value: 2,
-      left: { value: 4 },
-      right: { value: 5 }
-    },
-    right: {
-      value: 3,
-      right: { value: 6 }
-    }
-  };
-}
+const nums = [8, 3, 5, 1, 9, 6];
+console.log(insertionSort(nums)); // [1, 3, 5, 6, 8, 9]
 
-const tree = buildSampleTree();
-console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
-console.log('Iterative:', countLeavesIter(tree)); // → 3
-function leafMetrics<T>(root?: TreeNode<T>) {
-  if (!root) return { leafCount: 0, leafDepthSum: 0 };
+const words = ['pear', 'apple', 'orange'];
+console.log(insertionSort(words)); // ['apple', 'orange', 'pear']
 
-  // helper that returns (#leaves, sum of leaf depths)
-  function helper(node: TreeNode<T>, depth: number): [number, number] {
-    if (!node.left && !node.right) {
-      return [1, depth];
-    }
-    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
-    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
-    return [left[0] + right[0], left[1] + right[1]];
-  }
-
-  const [cnt, depthSum] = helper(root, 0);
-  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
-}
+// Custom comparator (reverse order for numbers)
+console.log(insertionSort([4, 1, 7, 3], (a, b) => b - a));
+// [7, 4, 3, 1]
