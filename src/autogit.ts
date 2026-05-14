@@ -1,44 +1,56 @@
 /**
- * In‑place insertion sort.
- *
- * @param arr  The array to sort.  It will be mutated.
- * @param compare Optional comparison function.  If omitted, the default
- *                 JavaScript `<` operator is used (suitable for numbers,
- *                 strings, etc.).
- * @returns The sorted array (same reference as the input).
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
  */
-export function insertionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  if (arr.length < 2) return arr;          // already sorted
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-  // Default comparer: a < b => -1, a > b => +1, else 0
-  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+  if (m === 0 || n < m) return result;       // edge cases
 
-  // Start from the second element – the first is trivially sorted.
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
 
-    // Move elements that are greater than key one position ahead.
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
 
-    // Place key after the element just smaller than it.
-    arr[j + 1] = key;
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
   }
 
-  return arr;
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
+    }
+  }
+
+  return result;
 }
-const nums = [8, 3, 5, 1, 9, 6];
-console.log(insertionSort(nums)); // [1, 3, 5, 6, 8, 9]
+const text = "abracadabra";
+const pattern = "abra";
 
-const words = ['pear', 'apple', 'orange'];
-console.log(insertionSort(words)); // ['apple', 'orange', 'pear']
-
-// Custom comparator (reverse order for numbers)
-console.log(insertionSort([4, 1, 7, 3], (a, b) => b - a));
-// [7, 4, 3, 1]
+console.log(rabinKarp(text, pattern)); // → [0, 7]
