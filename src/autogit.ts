@@ -1,101 +1,54 @@
-function kthSmallest<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  // make a shallow copy so the caller's array stays untouched
-  const copy = [...arr];
-  copy.sort(cmp);
-  return copy[k - 1];
-}
 /**
- * Returns the k-th smallest element (1‑indexed) in `arr`.
- * Modifies the array in place (no extra array allocation).
+ * Iterative (bottom‑up) merge sort.
+ * @param arr The array to be sorted (in‑place).
+ * @returns The sorted array – same reference as the input.
  */
-function quickSelect<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  return select(arr, 0, arr.length - 1, k - 1);
+function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1) return arr;          // nothing to do
 
-  function partition(lo: number, hi: number): number {
-    const pivotIdx = Math.floor((lo + hi) / 2);
-    const pivot = arr[pivotIdx];
-    // move pivot to the end
-    [arr[pivotIdx], arr[hi]] = [arr[hi], arr[pivotIdx]];
+  const n = arr.length;
+  const temp: T[] = new Array(n);           // temporary buffer for merging
 
-    let store = lo;
-    for (let i = lo; i < hi; i++) {
-      if (cmp(arr[i], pivot) < 0) {
-        [arr[i], arr[store]] = [arr[store], arr[i]];
-        store++;
+  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
+  for (let width = 1; width < n; width *= 2) {
+    // left is the start of the first run in a pair
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid   = Math.min(left + width, n);        // first run ends
+      const right = Math.min(left + 2 * width, n);    // second run ends
+
+      // merge [left, mid) and [mid, right) into temp
+      let i = left,      // index in first run
+          j = mid,       // index in second run
+          k = left;      // index in temp
+
+      while (i < mid && j < right) {
+        // Use compareFn if supplied, else default <>
+        const cmp = compareFn
+          ? compareFn(arr[i], arr[j])
+          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
+        
+        if (cmp <= 0) {
+          temp[k++] = arr[i++];
+        } else {
+          temp[k++] = arr[j++];
+        }
+      }
+
+      // copy any remaining items from the first run
+      while (i < mid) temp[k++] = arr[i++];
+      // copy any remaining items from the second run
+      while (j < right) temp[k++] = arr[j++];
+
+      // copy the merged part back into the original array
+      for (let p = left; p < right; p++) {
+        arr[p] = temp[p];
       }
     }
-    // put pivot back in its final place
-    [arr[store], arr[hi]] = [arr[hi], arr[store]];
-    return store;
   }
 
-  function select(lo: number, hi: number, targetIdx: number): T {
-    if (lo === hi) return arr[lo];
-    const pivotIdx = partition(lo, hi);
-    if (pivotIdx === targetIdx) {
-      return arr[pivotIdx];
-    } else if (pivotIdx > targetIdx) {
-      return select(lo, pivotIdx - 1, targetIdx);
-    } else {
-      return select(pivotIdx + 1, hi, targetIdx);
-    }
-  }
+  return arr;
 }
-class BinaryHeap<T> {
-  constructor(private cmp: (a: T | null, b: T | null) => number) {}
-  private heap: (T | null)[] = [null];          // 1‑indexed
-
-  get size() { return this.heap.length - 1; }
-
-  push(val: T) {
-    this.heap.push(val);
-    this.bubbleUp(this.size);
-  }
-
-  pop(): T | null {
-    if (this.size === 0) return null;
-    const ret = this.heap[1];
-    this.heap[1] = this.heap.pop()!;
-    this.bubbleDown(1);
-    return ret;
-  }
-
-  peek(): T | null {
-    return this.size ? this.heap[1] : null;
-  }
-
-  private bubbleUp(i: number) {
-    while (i > 1) {
-      const p = Math.floor(i / 2);
-      if (this.cmp(this.heap[i]!, this.heap[p]!) < 0) {
-        [this.heap[i], this.heap[p]] = [this.heap[p], this.heap[i]];
-        i = p;
-      } else break;
-    }
-  }
-
-  private bubbleDown(i: number) {
-    while (true) {
-      const l = i * 2, r = l + 1;
-      let smallest = i;
-      if (l <= this.size && this.cmp(this.heap[l]!, this.heap[smallest]!) < 0) smallest = l;
-      if (r <= this.size && this.cmp(this.heap[r]!, this.heap[smallest]!) < 0) smallest = r;
-      if (smallest !== i) {
-        [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
-        i = smallest;
-      } else break;
-    }
-  }
-}
-
-function kthSmallestHeap<T>(arr: T[], k: number, cmp = (a: T, b: T) => a < b ? -1 : a > b ? 1 : 0): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const heap = new BinaryHeap<T>((a, b) => cmp(a, b));
-  for (const v of arr) heap.push(v);
-  // pop k-1 times to discard smaller elements
-  for (let i = 0; i < k - 1; i++) heap.pop();
-  return heap.peek() as T;
-}
+const numbers = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(numbers);
+console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
+mergeSortIterative(list, (a, b) => a.age - b.age);
