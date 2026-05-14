@@ -1,75 +1,68 @@
-// -------------------------------------------------------------
-// 1️⃣  O(n²) DP – intuition + implementation
-// -------------------------------------------------------------
-function lisDP(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
+// ──────────────────────────────────────────────────────────────
+// 1️⃣  Imports & type definitions
+// ──────────────────────────────────────────────────────────────
+import fetch from 'node-fetch'; // npm i node-fetch@2
+// If you’re in a browser environment just drop the import line
+// and use the native `fetch` API.
 
-  // dp[i]  – length of LIS that ends at index i
-  const dp: number[] = Array(n).fill(1);
-  // prev[i] – previous index in the LIS that ends at i
-  const prev: number[] = Array(n).fill(-1);
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-  let bestEnd = 0; // index where the overall best LIS ends
-
-  for (let i = 0; i < n; ++i) {
-    for (let j = 0; j < i; ++j) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (dp[i] > dp[bestEnd]) bestEnd = i;
+// ──────────────────────────────────────────────────────────────
+// 2️⃣  The async loader
+// ──────────────────────────────────────────────────────────────
+async function fetchPosts(apiUrl: string): Promise<Post[]> {
+  // A quick sanity check – you don’t want to send an empty string.
+  if (!apiUrl.trim()) {
+    throw new Error('API URL cannot be empty');
   }
 
-  // Rebuild the sequence
-  const seq: number[] = [];
-  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
-  seq.reverse();
+  const res = await fetch(apiUrl, {
+    // JSON is the common output. Adjust headers if your API
+    // requires authentication or special content‑type.
+    headers: {
+      Accept: 'application/json',
+    },
+    // A generous timeout – network latency can be unpredictable.
+    timeout: 10_000,
+  });
 
-  return { length: dp[bestEnd], sequence: seq };
-}
-// -------------------------------------------------------------
-// 2️⃣  O(n log n) – patience sorting + back‑tracking
-// -------------------------------------------------------------
-function lisPatience(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
-
-  // tails[i] – index of the smallest tail of LIS with length i+1
-  const tails: number[] = [];
-  // parentIdx[i] – previous index in LIS that ends at i
-  const parentIdx: number[] = Array(n).fill(-1);
-
-  for (let i = 0; i < n; ++i) {
-    const x = arr[i];
-
-    // Binary search: first tail >= x
-    let lo = 0, hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (arr[tails[mid]] < x) lo = mid + 1;
-      else hi = mid;
-    }
-
-    // lo now points to position where x will go
-    if (lo > 0) parentIdx[i] = tails[lo - 1];
-
-    if (lo === tails.length) tails.push(i);
-    else tails[lo] = i;
+  if (!res.ok) {
+    // Throw an error with the HTTP status so callers can catch it.
+    throw new Error(`Network response was not OK (${res.status})`);
   }
 
-  // Reconstruct sequence
-  const seq: number[] = [];
-  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
-  seq.reverse();
+  // We’ve decided the result is an array of posts. 
+  // Narrow it to Post[] for full type safety.
+  const data = (await res.json()) as Post[];
 
-  return { length: tails.length, sequence: seq };
+  return data;
 }
-const example = [10, 9, 2, 5, 3, 7, 101, 18];
 
-console.log(lisDP(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+// ──────────────────────────────────────────────────────────────
+// 3️⃣  Entry point – usage example
+// ──────────────────────────────────────────────────────────────
+async function main() {
+  try {
+    // This is a free JSON placeholder service that offers fake blog posts.
+    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
 
-console.log(lisPatience(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+    // Just log the first 3 for brevity
+    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
+    posts.slice(0, 3).forEach((p, i) => {
+      console.log(`\nPost #${i + 1}`);
+      console.log(`ID: ${p.id}`);
+      console.log(`Title: ${p.title}`);
+      console.log(`Body: ${p.body.slice(0, 60)}…`);
+    });
+  } catch (err) {
+    // A simple error handler – plug in your own logger if needed.
+    console.error('❌ Failed to fetch posts:', err);
+  }
+}
+
+main();
