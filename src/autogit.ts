@@ -1,50 +1,35 @@
-const unique = (arr: readonly any[]) => [...new Set(arr)];
-
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(unique(numbers)); // [1, 2, 3, 4]
-function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
-  const seen = new Set<any>();
-  return arr.filter(item => {
-    const k = item[key];
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
 }
 
-const people = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 1, name: 'Ada' },
-  { id: 3, name: 'Ken' }
-];
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
+  }
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
+  }
 
-console.log(uniqBy(people, 'id'));
-/*
-[
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 3, name: 'Ken' }
-]
-*/
-import uniqWith from 'lodash/uniqWith';
-import isEqual from 'lodash/isEqual';
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
 
-const dupObjs = [
-  { a: 1, b: 2 },
-  { a: 1, b: 2 },
-  { a: 3, b: 4 }
-];
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
+  }
 
-console.log(uniqWith(dupObjs, isEqual));
-// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
-const unique = (arr: readonly any[]) =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
+  return Math.sqrt(areaSquared);
+}
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
 
-console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
-const uniq = (arr: readonly any[]) => [...new Set(arr)];
-// or for objects by key
-const uniqByKey = (arr: readonly any[], key: string) => {
-  const seen = new Set();
-  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
-};
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
