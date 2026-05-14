@@ -1,50 +1,50 @@
-/*  random-cron-example.ts
- *
- *  Requires:
- *    npm install cron chalk
- *  Compile with:
- *    tsc random-cron-example.ts --module commonjs
- *  Run with:
- *    node random-cron-example.js
- */
+const unique = (arr: readonly any[]) => [...new Set(arr)];
 
-import { CronJob } from "cron";
-import chalk from "chalk";
-
-// A function that does something "random enough" each time it runs.
-function generateMagicNumber(): number {
-  // Pick a pseudo‑random integer between 1 and 100
-  return Math.floor(Math.random() * 100) + 1;
+const numbers = [1, 2, 3, 2, 4, 1];
+console.log(unique(numbers)); // [1, 2, 3, 4]
+function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
+  const seen = new Set<any>();
+  return arr.filter(item => {
+    const k = item[key];
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
-// Define a cron job that fires every minute.
-// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
-const job = new CronJob(
-  // Every minute
-  "* * * * *",
-  () => {
-    const now = new Date();
-    const magic = generateMagicNumber();
-    console.log(
-      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
-        magic
-      )}`
-    );
-  },
-  null, // onComplete callback (unused)
-  true, // start the job right away
-  "America/New_York" // time zone
-);
+const people = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 1, name: 'Ada' },
+  { id: 3, name: 'Ken' }
+];
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  console.log(chalk.red("\nStopping the cron job..."));
-  job.stop();
-  process.exit(0);
-});
+console.log(uniqBy(people, 'id'));
+/*
+[
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 3, name: 'Ken' }
+]
+*/
+import uniqWith from 'lodash/uniqWith';
+import isEqual from 'lodash/isEqual';
 
-console.log(
-  chalk.blue(
-    "Random cron job started. It will output a magic number every minute."
-  )
-);
+const dupObjs = [
+  { a: 1, b: 2 },
+  { a: 1, b: 2 },
+  { a: 3, b: 4 }
+];
+
+console.log(uniqWith(dupObjs, isEqual));
+// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
+const unique = (arr: readonly any[]) =>
+  arr.filter((value, index, self) => self.indexOf(value) === index);
+
+console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
+const uniq = (arr: readonly any[]) => [...new Set(arr)];
+// or for objects by key
+const uniqByKey = (arr: readonly any[], key: string) => {
+  const seen = new Set();
+  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
+};
