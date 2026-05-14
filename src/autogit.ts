@@ -1,139 +1,122 @@
-type Node = string | number;
+// A "comparable" type: any that supports the < and > operators.
+type Comparable = number | string | { compareTo(other: this): number };
 
-interface Edge {
-  to: Node;
-  weight: number;
+interface INode<K extends Comparable, V> {
+  keys: K[];
+  values: V[];      // same length as keys
+  children: (INode<K, V> | null)[];
+  leaf: boolean;
 }
+const compare = <K extends Comparable>(a: K, b: K): number => {
+  if (typeof a === 'number' || typeof a === 'string')
+    return a < b ? -1 : a > b ? 1 : 0;
+  return a.compareTo(b);
+};
 
-type Graph = Map<Node, Edge[]>;         // adjacency list
-function buildGraph(edges: Array<[Node, Node, number]>): Graph {
-  const graph: Graph = new Map();
-  for (const [u, v, w] of edges) {
-    if (!graph.has(u)) graph.set(u, []);
-    graph.get(u)!.push({ to: v, weight: w });
-
-    // For an undirected graph, repeat the reverse edge:
-    // if (!graph.has(v)) graph.set(v, []);
-    // graph.get(v)!.push({ to: u, weight: w });
+const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
+  // binary search – returns the position where key should be inserted
+  let low = 0, high = arr.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const cmp = compare(arr[mid], key);
+    if (cmp === 0) return mid;
+    if (cmp < 0) low = mid + 1; else high = mid - 1;
   }
-  return graph;
+  return low; // insertion point
+};
+class BTreeNode<K extends Comparable, V> implements INode<K, V> {
+  keys: K[] = [];
+  values: V[] = [];
+  children: (BTreeNode<K, V> | null)[] = [];
+  leaf: boolean;
+
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
 }
-class MinHeap<T> {
-  private data: { key: number; value: T }[] = [];
+export class BTree<K extends Comparable, V> {
+  readonly order: number;          // minimum number of keys per node (t)
+  private root: BTreeNode<K, V>;
 
-  insert(key: number, value: T) {
-    this.data.push({ key, value });
-    this.bubbleUp(this.data.length - 1);
+  constructor(order: number) {
+    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
+    this.order = order;
+    this.root = new BTreeNode<K, V>(true);   // start with a leaf
   }
 
-  extractMin(): { key: number; value: T } | undefined {
-    if (!this.data.length) return undefined;
-    const min = this.data[0];
-    const end = this.data.pop()!;
-    if (this.data.length) {
-      this.data[0] = end;
-      this.bubbleDown(0);
+  /* ---------- Public API ---------- */
+  public search(key: K): V | undefined {
+    return this.searchNode(this.root, key);
+  }
+
+  public insert(key: K, value: V): void {
+    if (this.root.keys.length === 2 * this.order - 1) {
+      // root is full – split it
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this.splitChild(newRoot, 0);
+      this.root = newRoot;
     }
-    return min;
+    this.insertNonFull(this.root, key, value);
   }
 
-  private bubbleUp(idx: number) {
-    const element = this.data[idx];
-    while (idx > 0) {
-      const parentIdx = (idx - 1) >> 1;
-      const parent = this.data[parentIdx];
-      if (element.key >= parent.key) break;
-      this.data[idx] = parent;
-      this.data[parentIdx] = element;
-      idx = parentIdx;
+  public delete(key: K): void {
+    this.deleteNode(this.root, key);
+    // shrink the root if it becomes empty
+    if (!this.root.leaf && this.root.keys.length === 0) {
+      this.root = this.root.children[0]!;
     }
   }
 
-  private bubbleDown(idx: number) {
-    const length = this.data.length;
-    const element = this.data[idx];
-    while (true) {
-      let leftIdx = idx * 2 + 1;
-      let rightIdx = idx * 2 + 2;
-      let swapIdx: number | null = null;
+  /* ---------- Traversal helpers (optional) ---------- */
+  public *inOrder(): IterableIterator<[K, V]> {
+    yield* this.inOrderNode(this.root);
+  }
 
-      if (leftIdx < length) {
-        const left = this.data[leftIdx];
-        if (left.key < element.key) swapIdx = leftIdx;
+  /* ---------- Internal helpers ---------- */
+  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
+    const i = findIndex(node.keys, key);
+    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
+      return node.values[i];
+    }
+    if (node.leaf) return undefined;
+    return this.searchNode(node.children[i]!, key);
+  }
+
+  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
+    let i = node.keys.length - 1;
+    if (node.leaf) {
+      // Insert in sorted order
+      const pos = findIndex(node.keys, key);
+      node.keys.splice(pos, 0, key);
+      node.values.splice(pos, 0, value);
+    } else {
+      // Descend to the right child
+      const pos = findIndex(node.keys, key);
+      const child = node.children[pos]!;
+      if (child.keys.length === 2 * this.order - 1) {
+        this.splitChild(node, pos);
+        // After split, the middle key moves up
+        if (compare(key, node.keys[pos]) > 0) pos++;
       }
-      if (rightIdx < length) {
-        const right = this.data[rightIdx];
-        if (
-          (swapIdx === null && right.key < element.key) ||
-          (swapIdx !== null && right.key < this.data[swapIdx].key)
-        )
-          swapIdx = rightIdx;
-      }
-
-      if (swapIdx === null) break;
-      this.data[idx] = this.data[swapIdx];
-      this.data[swapIdx] = element;
-      idx = swapIdx;
+      this.insertNonFull(node.children[pos]!, key, value);
     }
   }
 
-  get size() { return this.data.length; }
-}
-/**
- * Computes shortest-path distances from `source` to all reachable nodes.
- *
- * @param graph  Adjacency list of the graph
- * @param source The starting vertex
- * @returns Map from each vertex to its shortest distance from the source
- */
-function dijkstra(graph: Graph, source: Node): Map<Node, number> {
-  const dist = new Map<Node, number>();
-  const heap = new MinHeap<Node>();
+  private splitChild(parent: BTreeNode<K, V>, idx: number) {
+    const t = this.order;
+    const y = parent.children[idx]!;               // node to split
+    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
 
-  // initialise: distance to source is 0, all others are +∞
-  for (const node of graph.keys()) {
-    const initial = node === source ? 0 : Infinity;
-    dist.set(node, initial);
-    heap.insert(initial, node);
-  }
+    // Move upper half of y's keys/values to z
+    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
+    z.values = y.values.splice(t, t - 1);
 
-  while (heap.size > 0) {
-    const { key: d, value: u } = heap.extractMin()!;
-    // Skip entries that are stale because a shorter path was already processed
-    if (d > dist.get(u)!) continue;
-
-    for (const edge of graph.get(u)!) {
-      const alt = d + edge.weight;
-      if (alt < dist.get(edge.to)!) {
-        dist.set(edge.to, alt);
-        heap.insert(alt, edge.to);
-      }
+    if (!y.leaf) {
+      z.children = y.children.splice(t, t);         // children t … 2t-1
     }
-  }
 
-  return dist;
-}
-const edges: Array<[Node, Node, number]> = [
-  ['A', 'B', 5],
-  ['A', 'C', 2],
-  ['B', 'C', 1],
-  ['B', 'D', 2],
-  ['C', 'D', 3],
-  ['C', 'E', 1],
-  ['D', 'E', 2],
-  ['D', 'F', 1],
-  ['E', 'F', 4]
-];
-
-const graph = buildGraph(edges);
-
-const distances = dijkstra(graph, 'A');
-
-for (const node of graph.keys()) {
-  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
-}
-Distance from A to A: 0
-Distance from A to B: 4
-Distance from A to C: 2
-Distance from A to D: 5
-
+    // Insert z into parent
+    parent.children.splice(idx + 1, 0, z);
+    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
+    parent.values.splice(idx
