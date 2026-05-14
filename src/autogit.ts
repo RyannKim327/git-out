@@ -1,74 +1,54 @@
 /**
- * Quick‑sort implementation.
- *
- * @param arr   The array to sort – it will be mutated in place.
- * @param compare Optional comparison function.  
- *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
- *                If omitted, the default is a numeric comparison.
- * @returns The same array reference, now sorted.
+ * Iterative (bottom‑up) merge sort.
+ * @param arr The array to be sorted (in‑place).
+ * @returns The sorted array – same reference as the input.
  */
-export function quickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Default to numeric comparison if no comparator is given
-  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
+function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  if (arr.length <= 1) return arr;          // nothing to do
 
-  // Recursive helper – operates on the portion of the array
-  function qs(left: number, right: number): void {
-    if (left >= right) return;
+  const n = arr.length;
+  const temp: T[] = new Array(n);           // temporary buffer for merging
 
-    // Partition returns the final index of the pivot
-    const pivotIndex = partition(left, right);
+  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
+  for (let width = 1; width < n; width *= 2) {
+    // left is the start of the first run in a pair
+    for (let left = 0; left < n; left += 2 * width) {
+      const mid   = Math.min(left + width, n);        // first run ends
+      const right = Math.min(left + 2 * width, n);    // second run ends
 
-    // Recurse on smaller side first to keep stack depth <= log₂(n)
-    if (pivotIndex - left < right - pivotIndex) {
-      qs(left, pivotIndex - 1);
-      qs(pivotIndex + 1, right);
-    } else {
-      qs(pivotIndex + 1, right);
-      qs(left, pivotIndex - 1);
-    }
-  }
+      // merge [left, mid) and [mid, right) into temp
+      let i = left,      // index in first run
+          j = mid,       // index in second run
+          k = left;      // index in temp
 
-  // Lomuto‑style partition – choose rightmost element as pivot
-  function partition(left: number, right: number): number {
-    const pivot = arr[right];
-    let i = left - 1;          // Place for swapping
+      while (i < mid && j < right) {
+        // Use compareFn if supplied, else default <>
+        const cmp = compareFn
+          ? compareFn(arr[i], arr[j])
+          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
+        
+        if (cmp <= 0) {
+          temp[k++] = arr[i++];
+        } else {
+          temp[k++] = arr[j++];
+        }
+      }
 
-    for (let j = left; j < right; j++) {
-      if (cmp(arr[j], pivot) <= 0) {
-        i++;
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+      // copy any remaining items from the first run
+      while (i < mid) temp[k++] = arr[i++];
+      // copy any remaining items from the second run
+      while (j < right) temp[k++] = arr[j++];
+
+      // copy the merged part back into the original array
+      for (let p = left; p < right; p++) {
+        arr[p] = temp[p];
       }
     }
-
-    // Move pivot to its final place
-    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
-    return i + 1;
   }
 
-  qs(0, arr.length - 1);
   return arr;
 }
-// Numbers – default numeric comparison is fine
-const nums = [34, 7, 23, 32, 5, 62];
-console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
-
-// Strings – need a string comparator  
-const words = ['banana', 'apple', 'cherry'];
-console.log(
-  quickSort(words, (a, b) => a.localeCompare(b))
-); // ['apple', 'banana', 'cherry']
-
-// Custom objects  
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Anna', age: 27 },
-  { name: 'Bob', age: 22 },
-  { name: 'Clara', age: 35 },
-];
-
-quickSort(people, (a, b) => a.age - b.age);
-console.log(people);
-// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
+const numbers = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(numbers);
+console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
+mergeSortIterative(list, (a, b) => a.age - b.age);
