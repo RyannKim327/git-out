@@ -1,50 +1,22 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
-}
-
 /**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
+ * Return true if n is prime, false otherwise.
+ *
+ * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
+ * For bigger integers you’d need BigInt and, better yet, a probabilistic test
+ * (Miller‑Rabin, etc.).
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
-
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+  // From here we only need to test numbers of the form 6k ± 1
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-
-  return pA; // either the intersection node or null
+  return true;
 }
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
-}
-
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
-
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
-
-console.log(getIntersectionNode(a1, b1) === shared); // true
+console.log(isPrime(11));          // true
+console.log(isPrime(12));          // false
+console.log(isPrime(1_000_003));   // true (1 M+‑prime)
