@@ -1,35 +1,40 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+/**
+ * Interpolation Search – O(log log n) average, O(n) worst.
+ *
+ * @param arr   Sorted array of numbers (ascending order)
+ * @param key   Value to locate
+ * @returns     Index of `key` in `arr`, or -1 if absent
+ */
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-import * as readline from 'node:readline';
+  let low = 0;
+  let high = arr.length - 1;
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high]
+    if (arr[low] === arr[high]) {
+      return arr[low] === key ? low : -1;
+    }
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+    // Estimation formula
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+    const val = arr[pos];
+    if (val === key) {
+      return pos;               // Key found
+    }
+    if (val < key) {
+      low = pos + 1;             // Search upper segment
+    } else {
+      high = pos - 1;            // Search lower segment
+    }
+  }
 
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+  return -1; // Not found
+}
+const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
+console.log(interpolationSearch(sorted, 31)); // → 6
+console.log(interpolationSearch(sorted, 10)); // → -1
