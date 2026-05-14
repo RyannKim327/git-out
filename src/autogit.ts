@@ -1,9 +1,26 @@
-const shout: string = "HELLO WORLD";
+/**
+ * Returns the first character that is repeated, or `undefined` if the string
+ * contains no duplicates.
+ */
+function firstRepeated(s: string): string | undefined {
+  const seen = new Set<string>();
 
-const whisper: string = shout.toLowerCase(); // "hello world"
+  for (const ch of s) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
+  }
+  return undefined;     // nothing repeated
+}
+console.log(firstRepeated("abca"));   // → 'a'
+console.log(firstRepeated("abcdef")); // → undefined
+console.log(firstRepeated("aabbc"));  // → 'a'
+function firstRepeatedAscii(s: string): string | undefined {
+  const seen = new Array(128).fill(false);
 
-console.log(whisper);
-const ganglı = "İSTANBUL";
-
-console.log(ganglı.toLocaleLowerCase('tr-TR')); // "istanbul"
-console.log(ganglı.toLocaleLowerCase('en-US')); // "i̇stanbul" (notice the dotless I)
+  for (const ch of s) {
+    const code = ch.charCodeAt(0);
+    if (seen[code]) return ch;
+    seen[code] = true;
+  }
+  return undefined;
+}
