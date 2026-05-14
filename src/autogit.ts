@@ -1,19 +1,9 @@
-function isPalindrome(s: string): boolean {
-  // Two‑pointer scan from both ends
-  let left = 0;
-  let right = s.length - 1;
+const shout: string = "HELLO WORLD";
 
-  while (left < right) {
-    // Compare the characters at the two pointers
-    if (s.charAt(left) !== s.charAt(right)) {
-      return false;          // mismatch found – not a palindrome
-    }
-    left++;
-    right--;
-  }
+const whisper: string = shout.toLowerCase(); // "hello world"
 
-  return true;                 // all mirrored pairs matched
-}
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-console.log(isPalindrome(""));        // true (empty string is a palindrome)
+console.log(whisper);
+const ganglı = "İSTANBUL";
+
+console.log(ganglı.toLocaleLowerCase('tr-TR')); // "istanbul"
+console.log(ganglı.toLocaleLowerCase('en-US')); // "i̇stanbul" (notice the dotless I)
