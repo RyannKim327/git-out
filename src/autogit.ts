@@ -1,73 +1,59 @@
-/**
- * Return the median of two sorted numeric arrays.
- * Complexity: O(m + n) time, O(1) extra space (besides a few indices).
- */
-export function medianOfTwoSortedLinear(a: number[], b: number[]): number {
-  const m = a.length, n = b.length;
-  const total = m + n;
-  const k = Math.floor((total - 1) / 2); // 0‑based index of first median element
-
-  let i = 0, j = 0, count = 0;
-  let cur = 0, next = 0;
-
-  while (count <= k) {
-    // Pick the next smallest element
-    if (i < m && (j >= n || a[i] <= b[j])) {
-      cur = next;   // shift previous value
-      next = a[i++];
-    } else {
-      cur = next;
-      next = b[j++];
-    }
-    count++;
-  }
-
-  // If total is odd, median is next
-  if (total % 2 === 1) {
-    return next;
-  }
-
-  // If total is even, median is average of cur and next
-  return (cur + next) / 2;
+// A minimal, generic binary‑tree node
+export interface TreeNode<T = number> {
+    /** The value stored in this node.  (Can be any type.) */
+    val: T;
+    /** Left child – `null` if none. */
+    left: TreeNode<T> | null;
+    /** Right child – `null` if none. */
+    right: TreeNode<T> | null;
 }
 /**
- * Median of two sorted arrays in O(log(min(m,n))) time.
- * Assumes a and b are sorted in non‑decreasing order.
+ * Sum all the numeric values stored in a binary tree.
+ *
+ * @param root First node of the tree (or `null`).
+ * @returns   Sum of every `val` in the tree.
  */
-export function medianOfTwoSortedBinary(a: number[], b: number[]): number {
-  // Ensure a is the smaller array
-  if (a.length > b.length) return medianOfTwoSortedBinary(b, a);
-
-  let m = a.length, n = b.length;
-  let low = 0, high = m;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
-
-    const aLeft  = (i === 0)  ? Number.NEGATIVE_INFINITY : a[i - 1];
-    const aRight = (i === m) ? Number.POSITIVE_INFINITY : a[i];
-    const bLeft  = (j === 0)  ? Number.NEGATIVE_INFINITY : b[j - 1];
-    const bRight = (j === n) ? Number.POSITIVE_INFINITY : b[j];
-
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // Partitions are correct
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      high = i - 1; // move left in a
-    } else {
-      low = i + 1; // move right in a
-    }
-  }
-
-  throw new Error('Input arrays are not sorted or sizes are incorrect.');
+export function sumTree(root: TreeNode<number> | null): number {
+    if (!root) return 0;                // base case: empty subtree
+    const left  = sumTree(root.left);   // sum of left subtree
+    const right = sumTree(root.right);  // sum of right subtree
+    return root.val + left + right;     // current node + children
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
+/**
+ * Sum all the numeric values stored in a binary tree, iteratively.
+ *
+ * Uses an explicit stack so it never uses the call stack.
+ */
+export function sumTreeIterative(root: TreeNode<number> | null): number {
+    if (!root) return 0;
 
-console.log(medianOfTwoSortedLinear(arr1, arr2));   // 8
-console.log(medianOfTwoSortedBinary(arr1, arr2));    // 8
+    let sum = 0;
+    const stack: Array<TreeNode<number>> = [root];
+
+    while (stack.length > 0) {
+        const node = stack.pop()!;   // pop returns |undefined|, but we know stack isn’t empty
+        sum += node.val;
+
+        // Push children onto the stack – order doesn’t matter for sum
+        if (node.right) stack.push(node.right);
+        if (node.left)  stack.push(node.left);
+    }
+
+    return sum;
+}
+const tree: TreeNode = {
+    val: 5,
+    left: {
+        val: 3,
+        left:  { val: 2, left: null, right: null },
+        right: { val: 4, left: null, right: null },
+    },
+    right: {
+        val: 8,
+        left:  { val: 7, left: null, right: null },
+        right: { val: 9, left: null, right: null },
+    },
+};
+
+console.log(sumTree(tree));          // → 47
+console.log(sumTreeIterative(tree)); // → 47
