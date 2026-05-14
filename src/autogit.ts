@@ -1,54 +1,59 @@
-/**
- * Iterative (bottom‑up) merge sort.
- * @param arr The array to be sorted (in‑place).
- * @returns The sorted array – same reference as the input.
- */
-function mergeSortIterative<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  if (arr.length <= 1) return arr;          // nothing to do
-
-  const n = arr.length;
-  const temp: T[] = new Array(n);           // temporary buffer for merging
-
-  // width is the size of sub‑runs to merge: 1, 2, 4, 8, ...
-  for (let width = 1; width < n; width *= 2) {
-    // left is the start of the first run in a pair
-    for (let left = 0; left < n; left += 2 * width) {
-      const mid   = Math.min(left + width, n);        // first run ends
-      const right = Math.min(left + 2 * width, n);    // second run ends
-
-      // merge [left, mid) and [mid, right) into temp
-      let i = left,      // index in first run
-          j = mid,       // index in second run
-          k = left;      // index in temp
-
-      while (i < mid && j < right) {
-        // Use compareFn if supplied, else default <>
-        const cmp = compareFn
-          ? compareFn(arr[i], arr[j])
-          : (arr[i] as any) < (arr[j] as any) ? -1 : ((arr[i] as any) > (arr[j] as any) ? 1 : 0);
-        
-        if (cmp <= 0) {
-          temp[k++] = arr[i++];
-        } else {
-          temp[k++] = arr[j++];
-        }
-      }
-
-      // copy any remaining items from the first run
-      while (i < mid) temp[k++] = arr[i++];
-      // copy any remaining items from the second run
-      while (j < right) temp[k++] = arr[j++];
-
-      // copy the merged part back into the original array
-      for (let p = left; p < right; p++) {
-        arr[p] = temp[p];
-      }
-    }
-  }
-
-  return arr;
+// A minimal, generic binary‑tree node
+export interface TreeNode<T = number> {
+    /** The value stored in this node.  (Can be any type.) */
+    val: T;
+    /** Left child – `null` if none. */
+    left: TreeNode<T> | null;
+    /** Right child – `null` if none. */
+    right: TreeNode<T> | null;
 }
-const numbers = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(numbers);
-console.log(numbers); // [3, 9, 10, 27, 38, 43, 82]
-mergeSortIterative(list, (a, b) => a.age - b.age);
+/**
+ * Sum all the numeric values stored in a binary tree.
+ *
+ * @param root First node of the tree (or `null`).
+ * @returns   Sum of every `val` in the tree.
+ */
+export function sumTree(root: TreeNode<number> | null): number {
+    if (!root) return 0;                // base case: empty subtree
+    const left  = sumTree(root.left);   // sum of left subtree
+    const right = sumTree(root.right);  // sum of right subtree
+    return root.val + left + right;     // current node + children
+}
+/**
+ * Sum all the numeric values stored in a binary tree, iteratively.
+ *
+ * Uses an explicit stack so it never uses the call stack.
+ */
+export function sumTreeIterative(root: TreeNode<number> | null): number {
+    if (!root) return 0;
+
+    let sum = 0;
+    const stack: Array<TreeNode<number>> = [root];
+
+    while (stack.length > 0) {
+        const node = stack.pop()!;   // pop returns |undefined|, but we know stack isn’t empty
+        sum += node.val;
+
+        // Push children onto the stack – order doesn’t matter for sum
+        if (node.right) stack.push(node.right);
+        if (node.left)  stack.push(node.left);
+    }
+
+    return sum;
+}
+const tree: TreeNode = {
+    val: 5,
+    left: {
+        val: 3,
+        left:  { val: 2, left: null, right: null },
+        right: { val: 4, left: null, right: null },
+    },
+    right: {
+        val: 8,
+        left:  { val: 7, left: null, right: null },
+        right: { val: 9, left: null, right: null },
+    },
+};
+
+console.log(sumTree(tree));          // → 47
+console.log(sumTreeIterative(tree)); // → 47
