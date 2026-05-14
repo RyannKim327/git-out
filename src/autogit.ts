@@ -1,35 +1,40 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+/**
+ * Compute n! recursively.
+ *
+ * Handles:
+ *   - n >= 0   → valid
+ *   - n < 0    → throws (factorial is undefined for negatives)
+ *
+ * Returns a number if the result fits in a JavaScript number,
+ * otherwise returns a BigInt to avoid overflow.
+ */
+export function factorial(n: number | bigint): number | bigint {
+  // Normalize input to a bigint for exact arithmetic
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
 
-import * as readline from 'node:readline';
+  if (bigN < 0n) {
+    throw new Error('Factorial is defined only for non‑negative integers.');
+  }
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+  // Base case: 0! = 1 and 1! = 1
+  if (bigN <= 1n) return 1n;
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+  // Recursive step
+  const product = bigN * factorial(bigN - 1n);
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+  // Return a standard Number when it’s mathematically safe
+  // (anything that fits within 2^53‑1).
+  if (product <= BigInt(Number.MAX_SAFE_INTEGER)) {
+    return Number(product);
+  }
 
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+  // Otherwise keep it as a BigInt.
+  return product;
+}
+import { factorial } from './factorial';
+
+console.log(factorial(5));   // 120          (returns a number)
+console.log(factorial(20));  // 2432902008176640000  (returns a number)
+console.log(factorial(50));  // BigInt(304140932...)
+// if you prefer a string for extremely large results:
+console.log(factorial(50).toString());
