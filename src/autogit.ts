@@ -1,78 +1,38 @@
-// ───────────────────── Graph Types ───────────────────────────────────────
-type NodeId = string | number;          // anything that can be compared with ===
-interface AdjList {
-  // nodeId -> array of neighbor nodeIds
-  [key: string]: NodeId[];
+/**
+ * Recursive binary search.
+ *
+ * @param data   Sorted array to search in.
+ * @param target Value you’re looking for.
+ * @param compare Optional comparator – defaults to numeric or lexical.
+ * @param left   Left index of the current sub‑array (internal use).
+ * @param right  Right index of the current sub‑array (internal use).
+ * @returns Index of the target or -1 if not found.
+ */
+function binarySearch<T>(
+  data: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => ((a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0),
+  left: number = 0,
+  right: number = data.length - 1
+): number {
+  if (left > right) return -1;                 // base case: empty window
+
+  const mid = Math.floor((left + right) / 2);
+  const cmp = compare(target, data[mid]);
+
+  if (cmp === 0) return mid;                   // found
+  if (cmp < 0) return binarySearch(data, target, compare, left, mid - 1);
+  return binarySearch(data, target, compare, mid + 1, right);
 }
+// numeric, already sorted
+const nums = [3, 7, 12, 18, 26, 42, 57];
+const idx1 = binarySearch(nums, 18);   // → 3
+const idx2 = binarySearch(nums, 5);    // → -1
 
-// ───────────────────── BFS Implementation ────────────────────────────────
-function bfs(
-  graph: AdjList,
-  start: NodeId,
-  visit: (node: NodeId) => void = () => {}
-): NodeId[] {
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
-
-  visited.add(start);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
-
-    visit(current);        // optional callback that may do whatever you want
-    order.push(current);
-
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        queue.push(neigh);
-      }
-    }
-  }
-
-  return order;           // return traversal order if you need it
-}
-
-// ───────────────────── Example Usage ──────────────────────────────────────
-const exampleGraph: AdjList = {
-  A: ['B', 'C'],
-  B: ['A', 'D', 'E'],
-  C: ['A', 'F'],
-  D: ['B'],
-  E: ['B', 'F'],
-  F: ['C', 'E'],
-};
-
-const traversal = bfs(exampleGraph, 'A');
-console.log('BFS order:', traversal);
-// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
-
-// If you only care about distances from the start node:
-function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
-  const distances = new Map<NodeId, number>();
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-
-  visited.add(start);
-  distances.set(start, 0);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        distances.set(neigh, distances.get(current)! + 1);
-        queue.push(neigh);
-      }
-    }
-  }
-
-  return distances;
-}
-
-const dists = bfsDistances(exampleGraph, 'A');
-console.log('Distances from A:', Object.fromEntries(dists.entries()));
-// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
+// string, case‑insensitive
+const words = ["apple", "banana", "cherry", "date"];
+const idx3 = binarySearch(
+  words,
+  "CHERRY",
+  (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+); // → 2
