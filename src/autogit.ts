@@ -1,62 +1,139 @@
-/* ------------------------------------------------------------
-   Heap‑sort in TypeScript
-   ------------------------------------------------------------ */
+type Node = string | number;
 
-/**
- * Build a max‑heap in place.
- * `heapSize` is the number of elements to consider from the start of `arr`.
- */
-function heapify<T>(arr: T[], heapSize: number, i: number, cmp: (a: T, b: T) => number) {
-    const left  = 2 * i + 1;
-    const right = 2 * i + 2;
-    let largest = i;
-
-    if (left  < heapSize && cmp(arr[left],  arr[largest]) > 0) largest = left;
-    if (right < heapSize && cmp(arr[right], arr[largest]) > 0) largest = right;
-
-    if (largest !== i) {
-        [arr[i], arr[largest]] = [arr[largest], arr[i]];
-        heapify(arr, heapSize, largest, cmp);
-    }
+interface Edge {
+  to: Node;
+  weight: number;
 }
 
-/**
- * Transform an array into a heap.  O(n) time.
- */
-function buildHeap<T>(arr: T[], cmp: (a: T, b: T) => number) {
-    const heapSize = arr.length;
-    for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-        heapify(arr, heapSize, i, cmp);
-    }
+type Graph = Map<Node, Edge[]>;         // adjacency list
+function buildGraph(edges: Array<[Node, Node, number]>): Graph {
+  const graph: Graph = new Map();
+  for (const [u, v, w] of edges) {
+    if (!graph.has(u)) graph.set(u, []);
+    graph.get(u)!.push({ to: v, weight: w });
+
+    // For an undirected graph, repeat the reverse edge:
+    // if (!graph.has(v)) graph.set(v, []);
+    // graph.get(v)!.push({ to: u, weight: w });
+  }
+  return graph;
 }
+class MinHeap<T> {
+  private data: { key: number; value: T }[] = [];
 
-/**
- * Heap‑sort: sorts `arr` in place and returns it.
- * Default comparison is numeric ascending order.
- */
-export function heapSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const compare = cmp ?? ((a, b) => (a as any) - (b as any));
+  insert(key: number, value: T) {
+    this.data.push({ key, value });
+    this.bubbleUp(this.data.length - 1);
+  }
 
-    // 1️⃣ build max‑heap
-    buildHeap(arr, compare);
-
-    // 2️⃣ repeatedly extract the max and rebuild heap
-    let heapSize = arr.length;
-    for (let i = arr.length - 1; i > 0; i--) {
-        // put current max (root) at the end
-        [arr[0], arr[i]] = [arr[i], arr[0]];
-        heapSize--;
-
-        // restore heap property on the reduced heap
-        heapify(arr, heapSize, 0, compare);
+  extractMin(): { key: number; value: T } | undefined {
+    if (!this.data.length) return undefined;
+    const min = this.data[0];
+    const end = this.data.pop()!;
+    if (this.data.length) {
+      this.data[0] = end;
+      this.bubbleDown(0);
     }
+    return min;
+  }
 
-    return arr;
+  private bubbleUp(idx: number) {
+    const element = this.data[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (element.key >= parent.key) break;
+      this.data[idx] = parent;
+      this.data[parentIdx] = element;
+      idx = parentIdx;
+    }
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.data.length;
+    const element = this.data[idx];
+    while (true) {
+      let leftIdx = idx * 2 + 1;
+      let rightIdx = idx * 2 + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (left.key < element.key) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        if (
+          (swapIdx === null && right.key < element.key) ||
+          (swapIdx !== null && right.key < this.data[swapIdx].key)
+        )
+          swapIdx = rightIdx;
+      }
+
+      if (swapIdx === null) break;
+      this.data[idx] = this.data[swapIdx];
+      this.data[swapIdx] = element;
+      idx = swapIdx;
+    }
+  }
+
+  get size() { return this.data.length; }
 }
-const numbers = [5, 3, 8, 4, 1, 7, 2];
-heapSort(numbers);
-console.log(numbers); // → [1, 2, 3, 4, 5, 7, 8]
-interface Person { name: string; age: number }
+/**
+ * Computes shortest-path distances from `source` to all reachable nodes.
+ *
+ * @param graph  Adjacency list of the graph
+ * @param source The starting vertex
+ * @returns Map from each vertex to its shortest distance from the source
+ */
+function dijkstra(graph: Graph, source: Node): Map<Node, number> {
+  const dist = new Map<Node, number>();
+  const heap = new MinHeap<Node>();
 
-// Sort by age ascending
-heapSort(people, (a, b) => a.age - b.age);
+  // initialise: distance to source is 0, all others are +∞
+  for (const node of graph.keys()) {
+    const initial = node === source ? 0 : Infinity;
+    dist.set(node, initial);
+    heap.insert(initial, node);
+  }
+
+  while (heap.size > 0) {
+    const { key: d, value: u } = heap.extractMin()!;
+    // Skip entries that are stale because a shorter path was already processed
+    if (d > dist.get(u)!) continue;
+
+    for (const edge of graph.get(u)!) {
+      const alt = d + edge.weight;
+      if (alt < dist.get(edge.to)!) {
+        dist.set(edge.to, alt);
+        heap.insert(alt, edge.to);
+      }
+    }
+  }
+
+  return dist;
+}
+const edges: Array<[Node, Node, number]> = [
+  ['A', 'B', 5],
+  ['A', 'C', 2],
+  ['B', 'C', 1],
+  ['B', 'D', 2],
+  ['C', 'D', 3],
+  ['C', 'E', 1],
+  ['D', 'E', 2],
+  ['D', 'F', 1],
+  ['E', 'F', 4]
+];
+
+const graph = buildGraph(edges);
+
+const distances = dijkstra(graph, 'A');
+
+for (const node of graph.keys()) {
+  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
+}
+Distance from A to A: 0
+Distance from A to B: 4
+Distance from A to C: 2
+Distance from A to D: 5
+
