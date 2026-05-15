@@ -1,148 +1,102 @@
-// ------------------------------------------------------------------
-// SkipList.ts
-// ------------------------------------------------------------------
-export type Comparator<K> = (a: K, b: K) => number;
+/**
+ * The shift table used by BMH.
+ * Key: a character (string of length 1)
+ * Value: how many positions to move the pattern to the right
+ */
+type BadCharTable = Record<string, number>;
 
-interface ListNode<K, V> {
-  key: K;
-  value: V;
-  next: Array<ListNode<K, V> | null>; // forward pointers, one per level
+/**
+ * Build the bad‑character shift table from the pattern.
+ *
+ * @param pattern – the pattern we are looking for
+ * @returns an object mapping each character to its shift value
+ */
+function buildBadCharTable(pattern: string): BadCharTable {
+  const table: BadCharTable = {};
+  const lastIdx = pattern.length - 1;
+
+  // Initialize all characters to the full length (worst case)
+  for (let i = 0; i < lastIdx; i++) {
+    const c = pattern[i];
+    // The shift is the distance from the current position to the last character
+    table[c] = lastIdx - i;
+  }
+  // Characters that don't appear in the pattern keep the full length shift.
+  // (In JavaScript the property will simply be missing, which we interpret as
+  // the default value `pattern.length` later.)
+  return table;
 }
+/**
+ * Find all indices where `pattern` occurs in `text` (0‑based).
+ *
+ * @param text – the string we’re scanning
+ * @param pattern – the pattern we’re looking for
+ * @returns an array of starting indices; empty if none
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  if (pattern.empty) return [];
+  if (pattern.length > text.length) return [];
 
-export class SkipList<K, V> {
-  // These constants set the “skew” of the random level.
-  // Every additional level is ½ as likely as the previous one.
-  private static readonly P = 0.5;
-  private static readonly MAX_LEVEL = 32;
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
+  let i = m - 1;          // index in `text` aligned with pattern's last char
 
-  private readonly head: ListNode<K, V>;
-  private readonly tail: ListNode<K, V>;
-  private level = 0;                // current highest level that contains any nodes
-  private size = 0;                // number of key/value pairs
+  while (i < n) {
+    // Compare pattern from right to left
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
+    }
 
-  constructor(private readonly compare: Comparator<K>) {
-    // create an array of `null` references for head and tail
-    const sentinelNext: Array<ListNode<K, V> | null> =
-      Array(SkipList.MAX_LEVEL).fill(null);
-
-    this.head = { key: null as any, value: null as any, next: sentinelNext };
-    this.tail = { key: null as any, value: null as any, next: sentinelNext };
+    // Full match
+    if (j < 0) {
+      result.push(i - m + 1);
+      // Move past the matched window (next search starts after the match)
+      i += 1;
+    } else {
+      // Mismatch: determine how far we can shift
+      const badChar = text[i];
+      const shift = table[badChar] ?? m; // if missing, shift by full length
+      i += shift;
+    }
   }
+  return result;
+}
+/**
+ * Return the index of the first occurrence of `pattern` in `text`,
+ * or -1 if it doesn’t exist.
+ */
+export function bmhSearchFirst(text: string, pattern: string): number {
+  if (pattern.empty) return 0;
+  if (pattern.length > text.length) return -1;
 
-  /* -----------------------------------------------------------------
-     Random level generator – geometric distribution
-     ----------------------------------------------------------------- */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < SkipList.P && lvl < SkipList.MAX_LEVEL - 1) {
-      lvl++;
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  let i = m - 1;
+
+  while (i < n) {
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
     }
-    return lvl;
+    if (j < 0) {
+      return i - m + 1;
+    }
+    const badChar = text[i];
+    const shift = table[badChar] ?? m;
+    i += shift;
   }
+  return -1;
+}
+const text = "abracadabra";
+const pattern = "abra";
 
-  /* -----------------------------------------------------------------
-     Search – returns the value for a key, or undefined if not found.
-     ----------------------------------------------------------------- */
-  get(key: K): V | undefined {
-    let current = this.head;
+console.log(bmhSearch(text, pattern));       // [0, 7]
+console.log(bmhSearchFirst(text, pattern));  // 0
 
-    // walk from top level down
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        current.next[i] &&
-        this.compare(current.next[i]!.key, key) < 0
-      ) {
-        current = current.next[i]!;
-      }
-    }
-
-    const candidate = current.next[0];
-    if (candidate && this.compare(candidate.key, key) === 0) {
-      return candidate.value;
-    }
-    return undefined;
-  }
-
-  /* -----------------------------------------------------------------
-     Insert – O(log n) average
-     ----------------------------------------------------------------- */
-  set(key: K, value: V): void {
-    // build a slice of pointers that we’ll need to update
-    const update: Array<ListNode<K, V> | null> =
-      Array(SkipList.MAX_LEVEL).fill(null);
-
-    let current = this.head;
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        current.next[i] &&
-        this.compare(current.next[i]!.key, key) < 0
-      ) {
-        current = current.next[i]!;
-      }
-      update[i] = current;
-    }
-
-    const next = current.next[0];
-
-    // key already present → just replace the value
-    if (next && this.compare(next.key, key) === 0) {
-      next.value = value;
-      return;
-    }
-
-    // new node: determine its height
-    const nodeLevel = this.randomLevel();
-    const newNode: ListNode<K, V> = {
-      key,
-      value,
-      next: Array(nodeLevel + 1).fill(null),
-    };
-
-    if (nodeLevel > this.level) {
-      // adjust the “head” to point to the tail on the new higher levels
-      for (let i = this.level + 1; i <= nodeLevel; i++) {
-        update[i] = this.head;
-      }
-      this.level = nodeLevel;
-    }
-
-    // link the new node into the list
-    for (let i = 0; i <= nodeLevel; i++) {
-      newNode.next[i] = update[i]!.next[i];
-      update[i]!.next[i] = newNode;
-    }
-
-    this.size++;
-  }
-
-  /* -----------------------------------------------------------------
-     Delete – O(log n) average
-     ----------------------------------------------------------------- */
-  delete(key: K): boolean {
-    const update: Array<ListNode<K, V> | null> =
-      Array(SkipList.MAX_LEVEL).fill(null);
-
-    let current = this.head;
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        current.next[i] &&
-        this.compare(current.next[i]!.key, key) < 0
-      ) {
-        current = current.next[i]!;
-      }
-      update[i] = current;
-    }
-
-    const target = current.next[0];
-    if (!target || this.compare(target.key, key) !== 0) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node from every level it appears in
-    for (let i = 0; i <= target.next.length - 1; i++) {
-      if (update[i]!.next[i] !== target) break;
-      update[i]!.next[i] = target.next[i];
-    }
-
-    // trim empty top levels
-    while (this.level > 0 && this.head
+// Non‑existent pattern
+console.log(bmhSearch("hello", "world"));     // []
+console.log(bmhSearchFirst("hello", "world")); // -1
