@@ -1,41 +1,43 @@
-function charCount(str: string, target: string): number {
-  if (target.length !== 1) throw new Error('Target must be a single character');
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+/**
+ * Random‑pivot QuickSort
+ *
+ * @param data - array of numbers to sort in place
+ * @returns the sorted array
+ */
+function randomQuickSort(data: number[]): number[] {
+  // Helper that actually does the work, using indices so the call stack is shallow.
+  function sort(left: number, right: number) {
+    if (left >= right) return;
+
+    // Pick a random index between left and right (inclusive)
+    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    // Swap pivot with the last element – easier partitioning
+    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
+    const pivot = data[right];
+
+    let i = left - 1; // elements ≤ pivot will be to the left of i
+
+    for (let j = left; j < right; j++) {
+      if (data[j] <= pivot) {
+        i++;
+        [data[i], data[j]] = [data[j], data[i]];
+      }
+    }
+
+    // place pivot after the last smaller element
+    const finalPivotPos = i + 1;
+    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
+
+    // Recurse on each partition
+    sort(left, finalPivotPos - 1);
+    sort(finalPivotPos + 1, right);
   }
-  return count;
-}
-function charCountSplit(str: string, target: string): number {
-  if (target.length !== 1) throw new Error('Target must be a single character');
-  return str.split(target).length - 1;
-}
-function charCountRegex(str: string, target: string): number {
-  if (target.length !== 1) throw new Error('Target must be a single character');
-  const re = new RegExp(escapeRegExp(target), 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
+
+  sort(0, data.length - 1);
+  return data;
 }
 
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-function charCountReduce(str: string, target: string): number {
-  if (target.length !== 1) throw new Error('Target must be a single character');
-  return [...str].reduce((acc, ch) => acc + (ch === target ? 1 : 0), 0);
-}
-function charCountUtf16(str: string, target: string): number {
-  if (target.length !== 1) throw new Error('Target must be a single character');
-  const targetCode = target.charCodeAt(0);
-  let count = 0;
-  for (let i = 0, len = str.length; i < len; i++) {
-    if (str.charCodeAt(i) === targetCode) count++;
-  }
-  return count;
-}
-const text = "hello世界hello";
-
-console.log(charCount(text, 'l')); // 3
-console.log(charCountSplit(text, 'l')); // 3
-console.log(charCountRegex(text, 'l')); // 3
-console.log(charCountReduce(text, 'l')); // 3
+/* --- demo ------------------------------------ */
+const arr = [5, 2, 9, 1, 5, 6];
+console.log('original:', arr);
+console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
