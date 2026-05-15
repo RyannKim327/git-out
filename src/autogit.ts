@@ -1,59 +1,35 @@
-// A minimal, generic binary‑tree node
-export interface TreeNode<T = number> {
-    /** The value stored in this node.  (Can be any type.) */
-    val: T;
-    /** Left child – `null` if none. */
-    left: TreeNode<T> | null;
-    /** Right child – `null` if none. */
-    right: TreeNode<T> | null;
-}
-/**
- * Sum all the numeric values stored in a binary tree.
- *
- * @param root First node of the tree (or `null`).
- * @returns   Sum of every `val` in the tree.
- */
-export function sumTree(root: TreeNode<number> | null): number {
-    if (!root) return 0;                // base case: empty subtree
-    const left  = sumTree(root.left);   // sum of left subtree
-    const right = sumTree(root.right);  // sum of right subtree
-    return root.val + left + right;     // current node + children
-}
-/**
- * Sum all the numeric values stored in a binary tree, iteratively.
- *
- * Uses an explicit stack so it never uses the call stack.
- */
-export function sumTreeIterative(root: TreeNode<number> | null): number {
-    if (!root) return 0;
+/*  0001‑random‑ts‑with‑input.ts  */
 
-    let sum = 0;
-    const stack: Array<TreeNode<number>> = [root];
+import * as readline from 'node:readline';
 
-    while (stack.length > 0) {
-        const node = stack.pop()!;   // pop returns |undefined|, but we know stack isn’t empty
-        sum += node.val;
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-        // Push children onto the stack – order doesn’t matter for sum
-        if (node.right) stack.push(node.right);
-        if (node.left)  stack.push(node.left);
-    }
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
 
-    return sum;
-}
-const tree: TreeNode = {
-    val: 5,
-    left: {
-        val: 3,
-        left:  { val: 2, left: null, right: null },
-        right: { val: 4, left: null, right: null },
-    },
-    right: {
-        val: 8,
-        left:  { val: 7, left: null, right: null },
-        right: { val: 9, left: null, right: null },
-    },
-};
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
 
-console.log(sumTree(tree));          // → 47
-console.log(sumTreeIterative(tree)); // → 47
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
