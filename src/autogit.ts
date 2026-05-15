@@ -1,27 +1,10 @@
-/**
- * Remove all vowels (a, e, i, o, u) from a string.
- * Case‑insensitive and works for ASCII‑only vowels.
- */
-function removeVowels(str: string): string {
-  return str.replace(/[aeiouAEIOU]/g, '');
-}
+// 1. `includes` – ES6 and newer
+const myString = "Hello, TypeScript!";
+const hasSub = myString.includes("TypeScript"); // true
 
-// Example
-console.log(removeVowels('Hello, World!')); // Hll, Wrld!
-function removeVowelsIncludingY(str: string): string {
-  return str.replace(/[aeiouyAEIOUY]/g, '');
-}
-function removeAnyLatinVowel(str: string): string {
-  // Matches any letter in the Latin script that is a vowel
-  return str.replace(/\p{Script=Latin}\p{Vowel}/gu, '');
-}
-function removeVowelsLoop(str: string): string {
-  const vowels = new Set('aeiouAEIOU');
-  let result = '';
-  for (const ch of str) {
-    if (!vowels.has(ch)) {
-      result += ch;
-    }
-  }
-  return result;
-}
+// 2. `indexOf` – works everywhere
+const hasSubAlt = myString.indexOf("TypeScript") !== -1; // also true
+
+// 3. Regular expression (useful for case‑insensitive or pattern matching)
+const hasRegex = /typescript/i.test(myString); // true because /i makes it case‑insensitive
+const hasIgnoreCase = myString.toLowerCase().includes("typescript");
