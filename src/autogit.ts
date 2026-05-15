@@ -1,34 +1,45 @@
-// One‑way (singly) list node
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
+dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
+if s1[i] === s2[j]
+    dp[i][j] = dp[i‑1][j‑1] + 1
+else
+    dp[i][j] = 0
+/**
+ * Returns the longest common substring of two strings.
+ * If there are multiple substrings of the same maximal length,
+ * the first one encountered is returned.
+ */
+function longestCommonSubstring(a: string, b: string): string {
+    if (!a || !b) return "";
+
+    const n = a.length;
+    const m = b.length;
+
+    // Use a 1‑D array to hold the previous row of DP values.
+    let prev = new Array(m + 1).fill(0);
+    let curr = new Array(m + 1).fill(0);
+
+    let bestLen = 0;
+    let bestEndIdxInA = 0; // index in `a` where the best substring ends
+
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= m; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                curr[j] = prev[j - 1] + 1;
+                if (curr[j] > bestLen) {
+                    bestLen = curr[j];
+                    bestEndIdxInA = i;
+                }
+            } else {
+                curr[j] = 0;
+            }
+        }
+        // swap references for the next iteration
+        [prev, curr] = [curr, prev];
+    }
+
+    if (bestLen === 0) return "";
+    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
 }
-function reverseLinkedList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
-
-  while (curr) {
-    const next = curr.next;   // keep the next node
-    curr.next = prev;         // reverse the link
-    prev = curr;              // advance prev
-    curr = next;              // advance curr
-  }
-
-  return prev;                // new head of the reversed list
-}
-function reverseRec<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;      // end reached – prev is the new head
-
-  const next = node.next;      // hold next
-  node.next = prev;            // reverse pointer
-  return reverseRec(next, node); // recurse
-}
-// 1 → 2 → 3 → null
-let head = new ListNode(1);
-head.next = new ListNode(2, new ListNode(3));
-
-head = reverseLinkedList(head);
-
-// head now points to 3 → 2 → 1 → null
+console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
+console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
+console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
