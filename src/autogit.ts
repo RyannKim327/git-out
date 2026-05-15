@@ -1,60 +1,50 @@
-/**
- * Finds the Longest Common Subsequence (LCS) of two strings.
+/*  random-cron-example.ts
  *
- * @param a – first string
- * @param b – second string
- * @returns an object `{ length, seq }`
- *   * `length` – length of the LCS
- *   * `seq`    – the LCS string itself (empty if none)
+ *  Requires:
+ *    npm install cron chalk
+ *  Compile with:
+ *    tsc random-cron-example.ts --module commonjs
+ *  Run with:
+ *    node random-cron-example.js
  */
-export function lcs(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
 
-  /* 1. Build DP table:  (m+1) × (n+1) */
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    Array(n + 1).fill(0)
-  );
+import { CronJob } from "cron";
+import chalk from "chalk";
 
-  for (let i = 1; i <= m; i++) {
-    const ca = a[i - 1];
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        ca === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
-    }
-  }
-
-  /* 2. Back‑track to recover the sequence */
-  let i = m,
-    j = n,
-    seqArr: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seqArr.push(a[i - 1]); // match – add to subsequence
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
-  }
-
-  // The string is built backwards, so reverse it
-  const seq = seqArr.reverse().join('');
-  return { length: dp[m][n], seq };
+// A function that does something "random enough" each time it runs.
+function generateMagicNumber(): number {
+  // Pick a pseudo‑random integer between 1 and 100
+  return Math.floor(Math.random() * 100) + 1;
 }
-const prev: number[] = Array(n + 1).fill(0);
-const curr: number[] = Array(n + 1);
-for (let i = 1; i <= m; i++) {
-  curr[0] = 0;
-  for (let j = 1; j <= n; j++) {
-    curr[j] =
-      a[i - 1] === b[j - 1]
-        ? prev[j - 1] + 1
-        : Math.max(prev[j], curr[j - 1]);
-  }
-  // swap
-  [prev, curr] = [curr, prev];
-}
+
+// Define a cron job that fires every minute.
+// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
+const job = new CronJob(
+  // Every minute
+  "* * * * *",
+  () => {
+    const now = new Date();
+    const magic = generateMagicNumber();
+    console.log(
+      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
+        magic
+      )}`
+    );
+  },
+  null, // onComplete callback (unused)
+  true, // start the job right away
+  "America/New_York" // time zone
+);
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log(chalk.red("\nStopping the cron job..."));
+  job.stop();
+  process.exit(0);
+});
+
+console.log(
+  chalk.blue(
+    "Random cron job started. It will output a magic number every minute."
+  )
+);
