@@ -1,35 +1,49 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+/**
+ * Returns the maximum sum of any contiguous sub‑array.
+ * If all numbers are negative, the result is the largest (least negative) number.
+ */
+function maxSubarraySum(arr: number[]): number {
+    if (arr.length === 0) throw new Error('Array must contain at least one element');
 
-import * as readline from 'node:readline';
+    let currentSum = arr[0];
+    let bestSum = arr[0];
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+    // We start from index 1 because the first element was already handled
+    for (let i = 1; i < arr.length; i++) {
+        // Either extend the previous sub‑array or start anew at arr[i]
+        currentSum = Math.max(arr[i], currentSum + arr[i]);
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+        // Update global best if we found a better one
+        bestSum = Math.max(bestSum, currentSum);
+    }
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+    return bestSum;
+}
+const data = [−2, −3, 4, −1, −2, 1, 5, −3];
+console.log(maxSubarraySum(data)); // 7
 
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
+function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
+    let currentSum = arr[0];
+    let bestSum = arr[0];
+    let tempStart = 0;
+    let bestStart = 0;
+    let bestEnd = 0;
+
+    for (let i = 1; i < arr.length; i++) {
+        if (currentSum + arr[i] >= arr[i]) {
+            currentSum += arr[i];
+        } else {
+            currentSum = arr[i];
+            tempStart = i;
+        }
+
+        if (currentSum > bestSum) {
+            bestSum = currentSum;
+            bestStart = tempStart;
+            bestEnd = i;
+        }
+    }
+
+    return { sum: bestSum, start: bestStart, end: bestEnd };
+}
