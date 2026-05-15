@@ -1,46 +1,73 @@
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-
-  // A little help‑trim: you can decide to ignore whitespace, case, etc.
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
-
-  const sortedA = normalize(a).split('').sort().join('');
-  const sortedB = normalize(b).split('').sort().join('');
-
-  return sortedA === sortedB;
+/* 1️⃣  A node in a graph  */
+interface Node<T = unknown> {
+  /* Something that identifies the node (e.g. a string key) */
+  id: string;
+  /* The value that the node holds – may be anything you need */
+  value: T;
 }
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
 
-  const freq = new Map<string, number>();
+/* 2️⃣  How the graph is stored  */
+type AdjacencyList<T = unknown> = Record<string, Node<T>[]>;
+/**
+ * Run a breadth‑first search on a graph until the target is found *or*
+ * the specified maximum depth is reached.
+ *
+ * @param startId     – ID of the node you start from
+ * @param targetId    – ID of the node you’re looking for
+ * @param graph       – adjacency list representing the graph
+ * @param maxDepth    – maximum breadth level to explore (0 means only the start node)
+ * @returns            – distance (depth) from start to target, or -1 if not found within limit
+ */
+export function breadthLimitedBFS<T>(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number {
+  // Edge‑case: “start” may already be the target.
+  if (startId === targetId) return 0;
+  if (maxDepth < 1) return -1; // cannot go further than the start node.
 
-  for (const ch of a) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  // 3️⃣  Classic BFS ingredients
+  const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
+  const visited = new Set<string>([startId]);
+
+  while (queue.length) {
+    const { id, depth } = queue.shift()!;
+
+    // Stop expanding beyond the user‑supplied depth limit.
+    if (depth === maxDepth) continue;
+
+    const neighbors = graph[id] ?? [];
+    for (const neighbor of neighbors) {
+      if (visited.has(neighbor.id)) continue;
+      if (neighbor.id === targetId) return depth + 1; // found
+
+      visited.add(neighbor.id);
+      queue.push({ id: neighbor.id, depth: depth + 1 });
+    }
   }
 
-  for (const ch of b) {
-    const count = freq.get(ch);
-    if (!count) return false;          // either zero or undefined
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
-  }
-
-  return freq.size === 0;
+  // Not found within the depth bound.
+  return -1;
 }
-function areAnagramsAscii(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+// Sample graph: a small directed graph
+const graph: AdjacencyList<number> = {
+  A: [{ id: 'B', value: 2 }, { id: 'C', value: 3 }],
+  B: [{ id: 'D', value: 4 }],
+  C: [{ id: 'D', value: 4 }, { id: 'E', value: 5 }],
+  D: [],
+  E: [{ id: 'F', value: 6 }],
+  F: []
+};
 
-  const counts = new Uint32Array(26);
-
-  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
-  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
-
-  return counts.every(v => v === 0);
-}
-const compact = (s: string) =>
-  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
-
-function areAnagramsClean(a: string, b: string): boolean {
-  return areAnagrams(compact(a), compact(b));
-}
+const distance = breadthLimitedBFS('A', 'F', graph, 2);
+console.log(distance); // prints 3? Actually depth 3 would exceed maxDepth 2, so it returns -1
+// try a larger depth
+console.log(breadthLimitedBFS('A', 'F', graph, 3)); // prints 3 (A→C→E→F)
+breadthLimitedBFS(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number
