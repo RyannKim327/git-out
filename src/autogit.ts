@@ -1,78 +1,64 @@
-// ───────────────────── Graph Types ───────────────────────────────────────
-type NodeId = string | number;          // anything that can be compared with ===
-interface AdjList {
-  // nodeId -> array of neighbor nodeIds
-  [key: string]: NodeId[];
+function intersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(x => setB.has(x));
 }
+const foo = [1, 2, 3, 4];
+const bar = [3, 4, 5, 6];
+console.log(intersection(foo, bar)); // [3, 4]
+function intersectionSorted<T>(a: T[], b: T[]): T[] {
+  const sortedA = [...a].sort((x,y)=>x>y?1:-1);
+  const sortedB = [...b].sort((x,y)=>x>y?1:-1);
+  const res: T[] = [];
+  let i = 0, j = 0;
 
-// ───────────────────── BFS Implementation ────────────────────────────────
-function bfs(
-  graph: AdjList,
-  start: NodeId,
-  visit: (node: NodeId) => void = () => {}
-): NodeId[] {
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
-
-  visited.add(start);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
-
-    visit(current);        // optional callback that may do whatever you want
-    order.push(current);
-
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        queue.push(neigh);
-      }
+  while (i < sortedA.length && j < sortedB.length) {
+    if (sortedA[i] === sortedB[j]) {
+      res.push(sortedA[i]); i++; j++;
+    } else if (sortedA[i] < sortedB[j]) {
+      i++;
+    } else {
+      j++;
     }
   }
+  return res;
+}
+function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const seen = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (seen.has(x) && !out.has(x)) out.add(x);
+  return [...out];
+}
+function intersectionBy<T, K>(
+  a: T[],
+  b: T[],
+  keyFn: (item: T) => K
+): T[] {
+  const setB = new Set(b.map(keyFn));
+  return a.filter(x => setB.has(keyFn(x)));
+}
+const usersA = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
+const usersB = [{id: 2, name: 'B'}, {id: 3, name: 'C'}];
 
-  return order;           // return traversal order if you need it
+console.log(intersectionBy(usersA, usersB, u => u.id)); // [{id:2,name:'B'}]
+const common = a.filter(v => b.includes(v));
+type KeyFn<T, K> = (item: T) => K;
+
+// Fastest for primitives
+export function intersection<T>(a: T[], b: T[]): T[] {
+  const set = new Set(b);
+  return a.filter(x => set.has(x));
 }
 
-// ───────────────────── Example Usage ──────────────────────────────────────
-const exampleGraph: AdjList = {
-  A: ['B', 'C'],
-  B: ['A', 'D', 'E'],
-  C: ['A', 'F'],
-  D: ['B'],
-  E: ['B', 'F'],
-  F: ['C', 'E'],
-};
-
-const traversal = bfs(exampleGraph, 'A');
-console.log('BFS order:', traversal);
-// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
-
-// If you only care about distances from the start node:
-function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
-  const distances = new Map<NodeId, number>();
-  const visited = new Set<NodeId>();
-  const queue: NodeId[] = [];
-
-  visited.add(start);
-  distances.set(start, 0);
-  queue.push(start);
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const neigh of graph[current] ?? []) {
-      if (!visited.has(neigh)) {
-        visited.add(neigh);
-        distances.set(neigh, distances.get(current)! + 1);
-        queue.push(neigh);
-      }
-    }
-  }
-
-  return distances;
+// Preserve order, unique results
+export function uniqueIntersection<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  const out = new Set<T>();
+  for (const x of a) if (setB.has(x) && !out.has(x)) out.add(x);
+  return [...out];
 }
 
-const dists = bfsDistances(exampleGraph, 'A');
-console.log('Distances from A:', Object.fromEntries(dists.entries()));
-// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
+// For objects or custom equality
+export function intersectionBy<T, K>(a: T[], b: T[], keyFn: KeyFn<T, K>): T[] {
+  const set = new Set(b.map(keyFn));
+  return a.filter(x => set.has(keyFn(x)));
+}
