@@ -1,100 +1,35 @@
-class LinkedList<T> implements Iterable<T> {
-  private head: Node<T> | null = null;
-  private tail: Node<T> | null = null;
-  private length = 0;
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
+}
 
-  push(value: T): void { /* … */ }
-  pop(): T | undefined { /* … */ }
-  unshift(value: T): void { /* … */ }
-  shift(): T | undefined { /* … */ }
-  get(index: number): T | undefined { /* … */ }
-  set(index: number, value: T): boolean { /* … */ }
-  insert(index: number, value: T): boolean { /* … */ }
-  remove(index: number): T | undefined { /* … */ }
-  clear(): void { /* … */ }
-  toArray(): T[] { /* … */ }
-
-  [Symbol.iterator](): Iterator<T> { /* … */ }
-}
-// Simple singly‑linked node
-class Node<T> {
-  constructor(
-    public readonly value: T,
-    public next: Node<T> | null = null
-  ) {}
-}
-class LinkedList<T> implements Iterable<T> {
-  private head: Node<T> | null = null; // first node
-  private tail: Node<T> | null = null; // last
-  private length = 0;
-}
-constructor(iterable?: Iterable<T>) {
-  if (iterable) {
-    for (const item of iterable) this.push(item);
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
   }
-}
-private _getNode(index: number): Node<T> | null {
-  if (index < 0 || index >= this.length) return null;
-  let curr = this.head;
-  for (let i = 0; i < index; i++) curr = curr!.next;
-  return curr;
-}
-push(value: T): void {
-  const node = new Node(value);
-  if (!this.head) {            // first item
-    this.head = this.tail = node;
-  } else {
-    this.tail!.next = node;    // append
-    this.tail = node;
-  }
-  this.length++;
-}
-pop(): T | undefined {
-  if (!this.head) return undefined;
-
-  const lastVal = this.tail!.value;
-
-  if (this.head === this.tail) {    // only one node
-    this.head = this.tail = null;
-  } else {
-    // find the node before tail
-    let curr = this.head;
-    while (curr.next !== this.tail) curr = curr.next!;
-    curr.next = null;
-    this.tail = curr;
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
   }
 
-  this.length--;
-  return lastVal;
-}
-unshift(value: T): void {
-  const node = new Node(value, this.head);
-  this.head = node;
-  if (!this.tail) this.tail = node; // list was empty
-  this.length++;
-}
-shift(): T | undefined {
-  if (!this.head) return undefined;
-  const val = this.head.value;
-  this.head = this.head.next;
-  if (!this.head) this.tail = null; // list became empty
-  this.length--;
-  return val;
-}
-get(index: number): T | undefined {
-  const node = this._getNode(index);
-  return node ? node.value : undefined;
-}
-set(index: number, value: T): boolean {
-  const node = this._getNode(index);
-  if (!node) return false;
-  node.value = value;
-  return true;
-}
-insert(index: number, value: T): boolean {
-  if (index < 0 || index > this.length) return false;
-  if (index === 0) return (this.unshift(value), true);
-  if (index === this.length) return (this.push(value), true);
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
 
-  const prev = this._getNode(index - 1)!;
-  const node = new Node(value,
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
+  }
+
+  return Math.sqrt(areaSquared);
+}
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
+
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
