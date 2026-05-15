@@ -1,117 +1,55 @@
 /**
- * Boyer–Moore search – Typescript implementation
- * ------------------------------------------------
- * O(m + n) preprocessing  (m = pattern length, n = text length)
- * O(n/m) expected search time (in practice, very fast)
+ * Return true if `s` is a palindrome.
+ *
+ * @param s      The string to test.
+ * @param opts   Optional flags:
+ *   - ignoreCase:   Treat uppercase and lowercase the same.
+ *   - ignorePunct:  Strip everything that's not a letter or number.
+ *
+ * @example
+ * isPalindrome('A man, a plan, a canal: Panama'); // → true
  */
+function isPalindrome(
+  s: string,
+  opts: { ignoreCase?: boolean; ignorePunct?: boolean } = {}
+): boolean {
+  const { ignoreCase = false, ignorePunct = false } = opts;
 
-export class BoyerMoore {
-  /** Pattern to look for */
-  private readonly pat: string;
-  /** Length of the pattern */
-  private readonly m: number;
-  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
-  private readonly badChar: number[];
-  /** Good‑suffix shift table */
-  private readonly goodSuffix: number[];
+  let cleaned = s;
 
-  constructor(pattern: string) {
-    if (!pattern.length) throw new Error("Pattern must not be empty");
-    this.pat = pattern;
-    this.m = pattern.length;
-
-    this.badChar = this.buildBadCharTable();
-    this.goodSuffix = this.buildGoodSuffixTable();
+  if (ignorePunct) {
+    // Keep letters and digits only.
+    cleaned = cleaned.replace(/[^A-Za-z0-9]/g, '');
   }
 
-  /* --------------------------------------------- */
-  /* ===========  PRE‑PROCESSING  ================= */
-  /* --------------------------------------------- */
-
-  /** Build a table indexed by character code (fast array look‑ups). */
-  private buildBadCharTable(): number[] {
-    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
-    for (let i = 0; i < this.m - 1; i++) {
-      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
-    }
-    return SHIFT;
+  if (ignoreCase) {
+    cleaned = cleaned.toLowerCase();
   }
 
-  /** Build the good‑suffix table (two parts: border and suffix arrays). */
-  private buildGoodSuffixTable(): number[] {
-    const r = this.m;
-    const suffix = new Array(r + 1).fill(0);
-    const border = new Array(r + 1).fill(0);
+  // Quick fail for empty string – you can decide if you want to treat it as palindrome.
+  if (cleaned.length === 0) return true;
 
-    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
-    let j = r;
-    let k = 0;
-    suffix[r] = r;
-    for (let i = r - 1; i >= 0; i--) {
-      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
-        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
-        k = border[k];
-      }
-      k++;
-      suffix[i] = k;
+  // Compare from both ends without building a reversed copy.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
     }
-
-    // Step 2 – compute border[] (largest border for each prefix length)
-    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
-
-    // Step 3 – fill goodSuffix[] using borders
-    const good = new Array(r).fill(r);
-    let jMax = 0;
-    for (let i = r - 1; i >= 0; i--) {
-      if (suffix[i] === 0) continue;
-      while (jMax + 1 <= r - i - 1) {
-        if (good[jMax] === r) good[jMax] = r - i - 1;
-        jMax++;
-      }
-    }
-    // For the remaining positions that have no suffix match
-    for (let i = 0; i < r; i++) {
-      if (good[i] === r) good[i] = r - border[i];
-    }
-
-    return good;
+    left++;
+    right--;
   }
 
-  /* --------------------------------------------- */
-  /* ===========       SEARCH        ============= */
-  /* --------------------------------------------- */
-
-  /**
-   * Find the first occurrence of the pattern in `text`.
-   * @returns index of first match or -1 if not found.
-   */
-  public search(text: string): number {
-    const n = text.length;
-    let s = 0;               // shift of the pattern
-
-    while (s <= n - this.m) {
-      let j = this.m - 1;
-
-      // Step 4 – compare from right to left
-      while (j >= 0 && this.pat[j] === text[s + j]) j--;
-
-      if (j < 0) return s;  // match found
-
-      // compute shifts
-      const badShift = this.badChar[text.charCodeAt(s + j)];
-      const goodShift = this.goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
-    return -1;              // not found
-  }
-
-  /* --------------------------------------------- */
-  /* ===========  EXAMPLE USAGE  =============== */
-  /* --------------------------------------------- */
+  return true;
 }
-
-// Example usage:
-const bm = new BoyerMoore("needle");
-const txt = "haystack needle haystack inside needlesea";
-const idx = bm.search(txt);
-console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
+console.log(isPalindrome('racecar')); // true
+console.log(isPalindrome('RaceCar')); // false (case‑sensitive)
+console.log(isPalindrome('RaceCar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama')); // false
+console.log(
+  isPalindrome('A man, a plan, a canal: Panama', {
+    ignoreCase: true,
+    ignorePunct: true,
+  })
+); // true
