@@ -1,68 +1,106 @@
-// ──────────────────────────────────────────────────────────────
-// 1️⃣  Imports & type definitions
-// ──────────────────────────────────────────────────────────────
-import fetch from 'node-fetch'; // npm i node-fetch@2
-// If you’re in a browser environment just drop the import line
-// and use the native `fetch` API.
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+  // 1️⃣ Find the middle (fast/slow trick)
+  let slow = head, fast = head, prev: ListNode | null = null;
+  while (fast && fast.next) {
+    // 2️⃣ Reverse the first half while we’re at it
+    let nxt = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nxt;
 
-// ──────────────────────────────────────────────────────────────
-// 2️⃣  The async loader
-// ──────────────────────────────────────────────────────────────
-async function fetchPosts(apiUrl: string): Promise<Post[]> {
-  // A quick sanity check – you don’t want to send an empty string.
-  if (!apiUrl.trim()) {
-    throw new Error('API URL cannot be empty');
+    fast = fast.next.next;
   }
 
-  const res = await fetch(apiUrl, {
-    // JSON is the common output. Adjust headers if your API
-    // requires authentication or special content‑type.
-    headers: {
-      Accept: 'application/json',
-    },
-    // A generous timeout – network latency can be unpredictable.
-    timeout: 10_000,
-  });
+  // 3️⃣ If odd number of nodes skip the middle one
+  if (fast) slow = slow.next;
 
-  if (!res.ok) {
-    // Throw an error with the HTTP status so callers can catch it.
-    throw new Error(`Network response was not OK (${res.status})`);
+  // 4️⃣ Compare the two halves
+  let p1 = prev, p2 = slow;
+  while (p1 && p2) {
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+  return true;
+}
+interface ListNode {
+  val: number | string;      // whatever you want to store
+  next?: ListNode | null;    // `next` is optional to support the “end” of the list
+}
+/**
+ * Returns true if the singly linked list is a palindrome.
+ *
+ * @param head - The head node of the linked list (or null).
+ */
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+
+  let slow = head;
+  let fast = head;
+  let prev: ListNode | null = null; // will become the head of the reversed first half
+
+  // Step 1 & 2: find middle, reverse first half
+  while (fast && fast.next) {
+    // Reverse the link for `slow`'s current node
+    const nextNode = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nextNode;
+
+    fast = fast.next.next;
   }
 
-  // We’ve decided the result is an array of posts. 
-  // Narrow it to Post[] for full type safety.
-  const data = (await res.json()) as Post[];
-
-  return data;
-}
-
-// ──────────────────────────────────────────────────────────────
-// 3️⃣  Entry point – usage example
-// ──────────────────────────────────────────────────────────────
-async function main() {
-  try {
-    // This is a free JSON placeholder service that offers fake blog posts.
-    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
-
-    // Just log the first 3 for brevity
-    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
-    posts.slice(0, 3).forEach((p, i) => {
-      console.log(`\nPost #${i + 1}`);
-      console.log(`ID: ${p.id}`);
-      console.log(`Title: ${p.title}`);
-      console.log(`Body: ${p.body.slice(0, 60)}…`);
-    });
-  } catch (err) {
-    // A simple error handler – plug in your own logger if needed.
-    console.error('❌ Failed to fetch posts:', err);
+  // Step 3: if odd length, skip the middle node
+  if (fast) {
+    slow = slow.next!;
   }
+
+  // Step 4: compare nodes from the two halves
+  let firstHalf = prev;
+  let secondHalf = slow;
+  while (firstHalf && secondHalf) {
+    if (firstHalf.val !== secondHalf.val) return false;
+    firstHalf = firstHalf.next!;
+    secondHalf = secondHalf.next!;
+  }
+
+  return true;
+}
+// Helper to create a list from an array
+function fromArray(arr: (number | string)[]): ListNode | null {
+  if (!arr.length) return null;
+  const head: ListNode = { val: arr[0] };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { val: arr[i] };
+    current = current.next;
+  }
+  return head;
 }
 
-main();
+console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
+console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string)[] = [];
+  let fast = head;
+  let slow = head;
+
+  // Push first half onto stack
+  while (fast && fast.next) {
+    stack.push(slow!.val);
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
+
+  // Skip middle element for odd length
+  if (fast) slow = slow!.next!;
+
+  // Compare the rest with stack
+  while (slow) {
+    if (stack.pop() !== slow.val) return false;
+    slow = slow.next;
+  }
+  return true;
+}
