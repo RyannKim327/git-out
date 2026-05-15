@@ -1,18 +1,35 @@
-const s = "42";
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
+}
 
-// 1️⃣  Simple integer
-const num1 = Number(s);     // 42
-const num2 = +"42";         // 42
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
+  }
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
+  }
 
-// 2️⃣  Parse with a specific radix (base)
-const hex = parseInt("FF", 16);   // 255
-const oct = parseInt("10", 8);    // 8
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
 
-// 3️⃣  Floating‑point
-const floatVal = Number.parseFloat("3.14"); // 3.14
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
+  }
 
-// 4️⃣  BigInt
-const big = BigInt("12345678901234567890");
+  return Math.sqrt(areaSquared);
+}
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
 
-// 5️⃣  Handling bad input
-const bad = Number("not a number"); // NaN
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
+
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
