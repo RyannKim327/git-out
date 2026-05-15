@@ -1,13 +1,18 @@
-// 1. The classic + operator
-const a = "Hello";
-const b = "world!";
-const c = a + " " + b;   // "Hello world!"
-
-// 2. Template literals (better for readability, especially with variables)
-const d = `${a} ${b}`;   // "Hello world!"
-const firstName = "Ada";
-const lastName = "Lovelace";
-const greeting = `Good morning, ${firstName} ${lastName}!`; // Good morning, Ada Lovelace!
-const a: string | null = null;
-const b = "world!";
-const result = `${a ?? ""}${b}`;  // avoids “nullworld!”
+function removeAllWhitespace(str: string): string {
+  return str.replace(/\s+/g, "");
+}
+function trimStart(str: string): string {
+  return str.replace(/^\s+/, "");
+}
+function trimEnd(str: string): string {
+  return str.replace(/\s+$/, "");
+}
+const raw = "\n  Let's   test this!  \t\n";
+console.log("original  :", raw);
+console.log("trimmed    :", raw.trim());
+console.log("no spaces :", raw.replace(/\s+/g, ""));
+original  : "
+  Let's   test this!   
+"
+trimmed    : "Let's   test this!"
+no spaces : "Letstestthis!"
