@@ -1,98 +1,122 @@
-/**
- * Comparator signature: (a, b) => boolean
- * Should return true if `a` has higher priority than `b`
- * (i.e. `a` should come *before* `b` in the heap order).
- */
-type Comparator<T> = (a: T, b: T) => boolean;
+// A "comparable" type: any that supports the < and > operators.
+type Comparable = number | string | { compareTo(other: this): number };
 
-export class PriorityQueue<T> {
-  /** Encoded binary‑heap */
-  private items: T[] = [];
+interface INode<K extends Comparable, V> {
+  keys: K[];
+  values: V[];      // same length as keys
+  children: (INode<K, V> | null)[];
+  leaf: boolean;
+}
+const compare = <K extends Comparable>(a: K, b: K): number => {
+  if (typeof a === 'number' || typeof a === 'string')
+    return a < b ? -1 : a > b ? 1 : 0;
+  return a.compareTo(b);
+};
 
-  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
+const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
+  // binary search – returns the position where key should be inserted
+  let low = 0, high = arr.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const cmp = compare(arr[mid], key);
+    if (cmp === 0) return mid;
+    if (cmp < 0) low = mid + 1; else high = mid - 1;
+  }
+  return low; // insertion point
+};
+class BTreeNode<K extends Comparable, V> implements INode<K, V> {
+  keys: K[] = [];
+  values: V[] = [];
+  children: (BTreeNode<K, V> | null)[] = [];
+  leaf: boolean;
 
-  /* ---------- Properties ---------- */
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
+}
+export class BTree<K extends Comparable, V> {
+  readonly order: number;          // minimum number of keys per node (t)
+  private root: BTreeNode<K, V>;
 
-  get size(): number { return this.items.length; }
-  get isEmpty(): boolean { return this.items.length === 0; }
-
-  /* ---------- Queries ---------- */
-
-  peek(): T | undefined { return this.items[0]; }
-
-  /* ---------- Mutations ---------- */
-
-  push(item: T): void {
-    this.items.push(item);
-    this.bubbleUp(this.items.length - 1);
+  constructor(order: number) {
+    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
+    this.order = order;
+    this.root = new BTreeNode<K, V>(true);   // start with a leaf
   }
 
-  pop(): T | undefined {
-    if (this.isEmpty) return undefined;
+  /* ---------- Public API ---------- */
+  public search(key: K): V | undefined {
+    return this.searchNode(this.root, key);
+  }
 
-    const top = this.items[0];
-    const last = this.items.pop()!; // array isn't empty
-
-    if (!this.isEmpty) {
-      this.items[0] = last;
-      this.bubbleDown(0);
+  public insert(key: K, value: V): void {
+    if (this.root.keys.length === 2 * this.order - 1) {
+      // root is full – split it
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this.splitChild(newRoot, 0);
+      this.root = newRoot;
     }
-
-    return top;
+    this.insertNonFull(this.root, key, value);
   }
 
-  /* ---------- Internals ---------- */
-
-  private bubbleUp(idx: number): void {
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (this.comparator(this.items[idx], this.items[parentIdx])) {
-        this.swap(idx, parentIdx);
-        idx = parentIdx;
-      } else {
-        break;
-      }
-    }
-  }
-
-  private bubbleDown(idx: number): void {
-    const length = this.items.length;
-    while (true) {
-      const left = idx * 2 + 1;
-      const right = left + 1;
-      let smallest = idx;
-
-      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
-        smallest = left;
-      }
-      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
-        smallest = right;
-      }
-
-      if (smallest !== idx) {
-        this.swap(idx, smallest);
-        idx = smallest;
-      } else {
-        break;
-      }
+  public delete(key: K): void {
+    this.deleteNode(this.root, key);
+    // shrink the root if it becomes empty
+    if (!this.root.leaf && this.root.keys.length === 0) {
+      this.root = this.root.children[0]!;
     }
   }
 
-  private swap(i: number, j: number): void {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  /* ---------- Traversal helpers (optional) ---------- */
+  public *inOrder(): IterableIterator<[K, V]> {
+    yield* this.inOrderNode(this.root);
   }
-}
-const maxHeap = new PriorityQueue<number>((a, b) => a > b);
-interface Task {
-  priority: number;     // smaller number → higher priority
-  description: string;
-}
 
-const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
-const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
+  /* ---------- Internal helpers ---------- */
+  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
+    const i = findIndex(node.keys, key);
+    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
+      return node.values[i];
+    }
+    if (node.leaf) return undefined;
+    return this.searchNode(node.children[i]!, key);
+  }
 
-[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
+  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
+    let i = node.keys.length - 1;
+    if (node.leaf) {
+      // Insert in sorted order
+      const pos = findIndex(node.keys, key);
+      node.keys.splice(pos, 0, key);
+      node.values.splice(pos, 0, value);
+    } else {
+      // Descend to the right child
+      const pos = findIndex(node.keys, key);
+      const child = node.children[pos]!;
+      if (child.keys.length === 2 * this.order - 1) {
+        this.splitChild(node, pos);
+        // After split, the middle key moves up
+        if (compare(key, node.keys[pos]) > 0) pos++;
+      }
+      this.insertNonFull(node.children[pos]!, key, value);
+    }
+  }
 
-while (!pq.isEmpty) {
-  console.log(pq.pop()); // prints: 1, 3, 5, 8
-}
+  private splitChild(parent: BTreeNode<K, V>, idx: number) {
+    const t = this.order;
+    const y = parent.children[idx]!;               // node to split
+    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
+
+    // Move upper half of y's keys/values to z
+    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
+    z.values = y.values.splice(t, t - 1);
+
+    if (!y.leaf) {
+      z.children = y.children.splice(t, t);         // children t … 2t-1
+    }
+
+    // Insert z into parent
+    parent.children.splice(idx + 1, 0, z);
+    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
+    parent.values.splice(idx
