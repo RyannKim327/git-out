@@ -1,45 +1,32 @@
-// random-example.ts
-// a small TypeScript demo that pulls data from a public API using axios
+/**
+ * Returns the second largest value in the array, or `undefined` if it can’t exist.
+ * If you need the second *distinct* largest value, set `distinct = true`.
+ */
+function secondLargest(nums: number[], distinct = false): number | undefined {
+  if (nums.length < 2) return undefined;          // not enough numbers
 
-import axios from 'axios';
-
-// ---------- Types ----------
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-// ---------- API wrapper ----------
-async function fetchTodo(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
-  return response.data;
-}
-
-// ---------- CLI entry point ----------
-async function main() {
-  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
-
-  try {
-    const todo = await fetchTodo(todoId);
-    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
-    console.log(`  - ${todo.title}`);
-    console.log(`  - completed: ${todo.completed}`);
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      console.error(`Request failed: ${err.message}`);
-    } else {
-      console.error(`Unexpected error:`, err);
-    }
-    process.exit(1);
+  // Fast path: sort once, pick the second element
+  // (O(n log n) – fine for small arrays)
+  if (!distinct) {
+    const sorted = [...nums].sort((a, b) => b - a); // descending
+    return sorted[1];
   }
+
+  // O(n) single‑pass solution for distinct values
+  let max = Number.NEGATIVE_INFINITY;
+  let second = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > max) {
+      second = max;
+      max = n;
+    } else if (n < max && n > second) {
+      second = n;
+    }
+  }
+
+  return second === Number.NEGATIVE_INFINITY ? undefined : second;
 }
-
-main();
-# 1. Install deps (run once)
-npm install axios
-
-# 2. Compile / run
-npx ts-node random-example.ts 5
+console.log(secondLargest([5, 1, 7, 3]));     // → 5
+console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
+console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
