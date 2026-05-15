@@ -1,49 +1,84 @@
-/**
- * Returns the maximum sum of any contiguous sub‑array.
- * If all numbers are negative, the result is the largest (least negative) number.
- */
-function maxSubarraySum(arr: number[]): number {
-    if (arr.length === 0) throw new Error('Array must contain at least one element');
+// 1️⃣  Interfaces ----------------------------------------------------
+interface State {
+  // Unique identifier that helps us spot already‑visited nodes.
+  id: string | number;
 
-    let currentSum = arr[0];
-    let bestSum = arr[0];
+  // Return all children reachable from this state.
+  getChildren(): State[];
 
-    // We start from index 1 because the first element was already handled
-    for (let i = 1; i < arr.length; i++) {
-        // Either extend the previous sub‑array or start anew at arr[i]
-        currentSum = Math.max(arr[i], currentSum + arr[i]);
-
-        // Update global best if we found a better one
-        bestSum = Math.max(bestSum, currentSum);
-    }
-
-    return bestSum;
+  // For demo purposes, we also expose a pretty‑print.
+  toString?(): string;
 }
-const data = [−2, −3, 4, −1, −2, 1, 5, −3];
-console.log(maxSubarraySum(data)); // 7
 
-// The winning sub‑array is [4, -1, -2, 1, 5] → sum = 7
-function maxSubarrayInfo(arr: number[]): { sum: number; start: number; end: number } {
-    let currentSum = arr[0];
-    let bestSum = arr[0];
-    let tempStart = 0;
-    let bestStart = 0;
-    let bestEnd = 0;
+type GoalFn<T extends State> = (s: T) => boolean;
 
-    for (let i = 1; i < arr.length; i++) {
-        if (currentSum + arr[i] >= arr[i]) {
-            currentSum += arr[i];
-        } else {
-            currentSum = arr[i];
-            tempStart = i;
-        }
+// 2️⃣  The recursive DLS ----------------------------------------------
+function depthLimitedSearch<T extends State>(
+  node: T,
+  goal: GoalFn<T>,
+  limit: number,
+  visited = new Set<T | string | number>()
+): T | null {
+  // Depth exceeded → give up.
+  if (limit < 0) return null;
 
-        if (currentSum > bestSum) {
-            bestSum = currentSum;
-            bestStart = tempStart;
-            bestEnd = i;
-        }
-    }
+  // Safe‑guard against cycles: if this node already saw, skip it.
+  if (visited.has(node.id)) return null;
 
-    return { sum: bestSum, start: bestStart, end: bestEnd };
+  // Mark the node as visited for this path.
+  visited.add(node.id);
+
+  // Goal found.
+  if (goal(node)) return node;
+
+  // Explore children.
+  for (const child of node.getChildren()) {
+    const result = depthLimitedSearch(child, goal, limit - 1, visited);
+    if (result !== null) return result;
+  }
+
+  // Nothing found → backtrack.
+  return null;
+}
+class GridCell implements State {
+  constructor(
+    public x: number,
+    public y: number,
+    public goal = false
+  ) {}
+
+  get id() { return `${this.x},${this.y}`; }
+
+  getChildren(): State[] {
+    const dirs = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ];
+    return dirs
+      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
+      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
+  }
+
+  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
+}
+
+// Simple goal: bottom‑right corner.
+const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
+
+const start = new GridCell(0, 0);
+const result = depthLimitedSearch(start, goalFn, 4);
+
+console.log(result?.toString() ?? 'No solution within depth 4');
+function iterativeDeepeningDFS<T extends State>(
+  start: T,
+  goal: GoalFn<T>,
+  maxLimit: number
+): T | null {
+  for (let l = 0; l <= maxLimit; l++) {
+    const res = depthLimitedSearch(start, goal, l);
+    if (res !== null) return res;      // Found a goal
+  }
+  return null;                        // Still no goal within maxLimit
 }
