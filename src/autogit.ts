@@ -1,50 +1,74 @@
-/*  random-cron-example.ts
+/**
+ * Quick‑sort implementation.
  *
- *  Requires:
- *    npm install cron chalk
- *  Compile with:
- *    tsc random-cron-example.ts --module commonjs
- *  Run with:
- *    node random-cron-example.js
+ * @param arr   The array to sort – it will be mutated in place.
+ * @param compare Optional comparison function.  
+ *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+ *                If omitted, the default is a numeric comparison.
+ * @returns The same array reference, now sorted.
  */
+export function quickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to numeric comparison if no comparator is given
+  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
 
-import { CronJob } from "cron";
-import chalk from "chalk";
+  // Recursive helper – operates on the portion of the array
+  function qs(left: number, right: number): void {
+    if (left >= right) return;
 
-// A function that does something "random enough" each time it runs.
-function generateMagicNumber(): number {
-  // Pick a pseudo‑random integer between 1 and 100
-  return Math.floor(Math.random() * 100) + 1;
+    // Partition returns the final index of the pivot
+    const pivotIndex = partition(left, right);
+
+    // Recurse on smaller side first to keep stack depth <= log₂(n)
+    if (pivotIndex - left < right - pivotIndex) {
+      qs(left, pivotIndex - 1);
+      qs(pivotIndex + 1, right);
+    } else {
+      qs(pivotIndex + 1, right);
+      qs(left, pivotIndex - 1);
+    }
+  }
+
+  // Lomuto‑style partition – choose rightmost element as pivot
+  function partition(left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;          // Place for swapping
+
+    for (let j = left; j < right; j++) {
+      if (cmp(arr[j], pivot) <= 0) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    // Move pivot to its final place
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
+  }
+
+  qs(0, arr.length - 1);
+  return arr;
 }
+// Numbers – default numeric comparison is fine
+const nums = [34, 7, 23, 32, 5, 62];
+console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
 
-// Define a cron job that fires every minute.
-// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
-const job = new CronJob(
-  // Every minute
-  "* * * * *",
-  () => {
-    const now = new Date();
-    const magic = generateMagicNumber();
-    console.log(
-      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
-        magic
-      )}`
-    );
-  },
-  null, // onComplete callback (unused)
-  true, // start the job right away
-  "America/New_York" // time zone
-);
-
-// Graceful shutdown
-process.on("SIGINT", () => {
-  console.log(chalk.red("\nStopping the cron job..."));
-  job.stop();
-  process.exit(0);
-});
-
+// Strings – need a string comparator  
+const words = ['banana', 'apple', 'cherry'];
 console.log(
-  chalk.blue(
-    "Random cron job started. It will output a magic number every minute."
-  )
-);
+  quickSort(words, (a, b) => a.localeCompare(b))
+); // ['apple', 'banana', 'cherry']
+
+// Custom objects  
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Anna', age: 27 },
+  { name: 'Bob', age: 22 },
+  { name: 'Clara', age: 35 },
+];
+
+quickSort(people, (a, b) => a.age - b.age);
+console.log(people);
+// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
