@@ -1,131 +1,117 @@
-/* ----------  TrieNode  ---------- */
+/**
+ * Boyer–Moore search – Typescript implementation
+ * ------------------------------------------------
+ * O(m + n) preprocessing  (m = pattern length, n = text length)
+ * O(n/m) expected search time (in practice, very fast)
+ */
 
-class TrieNode<T = any> {
-  /** Holds the full value for a key that ends here. */
-  public value: T | null = null;
+export class BoyerMoore {
+  /** Pattern to look for */
+  private readonly pat: string;
+  /** Length of the pattern */
+  private readonly m: number;
+  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
+  private readonly badChar: number[];
+  /** Good‑suffix shift table */
+  private readonly goodSuffix: number[];
 
-  /** Child pointers keyed by the next character. */
-  readonly children: Map<string, TrieNode<T>> = new Map();
+  constructor(pattern: string) {
+    if (!pattern.length) throw new Error("Pattern must not be empty");
+    this.pat = pattern;
+    this.m = pattern.length;
 
-  /** Convenience flag – true if this node marks the end of a key. */
-  get hasValue(): boolean {
-    return this.value !== null;
+    this.badChar = this.buildBadCharTable();
+    this.goodSuffix = this.buildGoodSuffixTable();
   }
-}
 
-/* ----------  Trie  ---------- */
+  /* --------------------------------------------- */
+  /* ===========  PRE‑PROCESSING  ================= */
+  /* --------------------------------------------- */
 
-class Trie<T = any> {
-  private root = new TrieNode<T>();
+  /** Build a table indexed by character code (fast array look‑ups). */
+  private buildBadCharTable(): number[] {
+    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
+    for (let i = 0; i < this.m - 1; i++) {
+      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
+    }
+    return SHIFT;
+  }
 
-  /**
-   * Insert a key/value pair.  Keys can be any string.
-   */
-  insert(key: string, value: T): void {
-    let node = this.root;
-    for (const ch of key) {
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode<T>());
+  /** Build the good‑suffix table (two parts: border and suffix arrays). */
+  private buildGoodSuffixTable(): number[] {
+    const r = this.m;
+    const suffix = new Array(r + 1).fill(0);
+    const border = new Array(r + 1).fill(0);
+
+    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
+    let j = r;
+    let k = 0;
+    suffix[r] = r;
+    for (let i = r - 1; i >= 0; i--) {
+      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
+        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
+        k = border[k];
       }
-      node = node.children.get(ch)!;
+      k++;
+      suffix[i] = k;
     }
-    node.value = value;
+
+    // Step 2 – compute border[] (largest border for each prefix length)
+    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
+
+    // Step 3 – fill goodSuffix[] using borders
+    const good = new Array(r).fill(r);
+    let jMax = 0;
+    for (let i = r - 1; i >= 0; i--) {
+      if (suffix[i] === 0) continue;
+      while (jMax + 1 <= r - i - 1) {
+        if (good[jMax] === r) good[jMax] = r - i - 1;
+        jMax++;
+      }
+    }
+    // For the remaining positions that have no suffix match
+    for (let i = 0; i < r; i++) {
+      if (good[i] === r) good[i] = r - border[i];
+    }
+
+    return good;
   }
+
+  /* --------------------------------------------- */
+  /* ===========       SEARCH        ============= */
+  /* --------------------------------------------- */
 
   /**
-   * Returns the value stored under *key*, or `undefined` if the key
-   * isn't present.
+   * Find the first occurrence of the pattern in `text`.
+   * @returns index of first match or -1 if not found.
    */
-  get(key: string): T | undefined {
-    const node = this._findNode(key);
-    return node?.value ?? undefined;
-  }
+  public search(text: string): number {
+    const n = text.length;
+    let s = 0;               // shift of the pattern
 
-  /**
-   * Checks whether *key* exists in the trie.
-   */
-  has(key: string): boolean {
-    const node = this._findNode(key);
-    return !!node?.hasValue;
-  }
+    while (s <= n - this.m) {
+      let j = this.m - 1;
 
-  /**
-   * Delete a key.  If the key isn't present, nothing happens.
-   * The method ends up trimming unused nodes on the way back.
-   */
-  delete(key: string): void {
-    const path: TrieNode[] = [];
-    let node = this.root;
+      // Step 4 – compare from right to left
+      while (j >= 0 && this.pat[j] === text[s + j]) j--;
 
-    for (const ch of key) {
-      const child = node.children.get(ch);
-      if (!child) return;          // key not found
-      path.push(node);
-      node = child;
+      if (j < 0) return s;  // match found
+
+      // compute shifts
+      const badShift = this.badChar[text.charCodeAt(s + j)];
+      const goodShift = this.goodSuffix[j];
+      s += Math.max(badShift, goodShift);
     }
-
-    if (!node.hasValue) return;    // no value to delete
-
-    node.value = null;
-
-    // Walk backward, removing nodes that became unnecessary.
-    for (let i = key.length - 1; i >= 0; i--) {
-      const parent = path[i];
-      const ch = key[i];
-
-      const child = parent.children.get(ch)!;
-      if (child.children.size > 0 || child.hasValue) break;
-      parent.children.delete(ch);
-    }
+    return -1;              // not found
   }
 
-  /**
-   * Returns all keys that start with *prefix*.
-   */
-  startsWith(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    this._collect(node, prefix, results);
-    return results;
-  }
-
-  /* ---------  Helpers  --------- */
-
-  private _findNode(key: string): TrieNode | null {
-    let node: TrieNode | undefined = this.root;
-    for (const ch of key) {
-      node = node?.children.get(ch);
-      if (!node) return null;
-    }
-    return node;
-  }
-
-  private _collect(node: TrieNode, prefix: string, out: string[]): void {
-    if (node.hasValue) out.push(prefix);
-
-    for (const [ch, child] of node.children) {
-      this._collect(child, prefix + ch, out);
-    }
-  }
+  /* --------------------------------------------- */
+  /* ===========  EXAMPLE USAGE  =============== */
+  /* --------------------------------------------- */
 }
 
-/* ----------  Usage Demo  ---------- */
-
-const trie = new Trie<number>();
-
-trie.insert('cat', 1);
-trie.insert('car', 2);
-trie.insert('cart', 3);
-trie.insert('dog', 4);
-
-console.log(trie.get('cat'));         // 1
-console.log(trie.get('cart'));        // 3
-console.log(trie.has('carpent'));     // false
-
-console.log(trie.startsWith('ca'));   // ['cat', 'car', 'cart']
-console.log(trie.startsWith('do'));   // ['dog']
-
-trie.delete('cart');
-console.log(trie.startsWith('ca'));   // ['cat', 'car']
+// Example usage:
+const bm = new BoyerMoore("needle");
+const txt = "haystack needle haystack inside needlesea";
+const idx = bm.search(txt);
+console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
