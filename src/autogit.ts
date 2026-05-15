@@ -1,62 +1,45 @@
-/**
- * A conventional singly–linked list node.
- * The value is generic so you can store anything.
- */
-export interface ListNode<T = number> {
-  value: T
-  next: ListNode<T> | null
+// random-example.ts
+// a small TypeScript demo that pulls data from a public API using axios
+
+import axios from 'axios';
+
+// ---------- Types ----------
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-/**
- * Return the n‑th node from the end of the list.
- *
- * @param head  the head node of the list
- * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
- * @returns the ListNode that is n places from the end,
- *          or `null` if the list has fewer than n items.
- */
-export function nthFromEnd<T>(
-  head: ListNode<T> | null,
-  n: number,
-): ListNode<T> | null {
-  if (n <= 0) {
-    throw new Error('n must be a positive integer');
-  }
 
-  let fast: ListNode<T> | null = head
-  let slow: ListNode<T> | null = head
+// ---------- API wrapper ----------
+async function fetchTodo(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
+  return response.data;
+}
 
-  // Move `fast` n nodes ahead.
-  for (let i = 0; i < n; i++) {
-    if (!fast) {
-      // The list is shorter than n.
-      return null
+// ---------- CLI entry point ----------
+async function main() {
+  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
+
+  try {
+    const todo = await fetchTodo(todoId);
+    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
+    console.log(`  - ${todo.title}`);
+    console.log(`  - completed: ${todo.completed}`);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error(`Request failed: ${err.message}`);
+    } else {
+      console.error(`Unexpected error:`, err);
     }
-    fast = fast.next
+    process.exit(1);
   }
-
-  // Move both pointers until `fast` reaches the end.
-  while (fast) {
-    fast = fast.next
-    slow = slow!.next // `slow` cannot be null here.
-  }
-
-  return slow
-}
-import { ListNode, nthFromEnd } from './linkedListHelpers'
-
-// Build a quick sample list: 1 → 2 → 3 → 4 → 5
-let head: ListNode<number> | null = { value: 1, next: null }
-let cur = head
-for (let i = 2; i <= 5; i++) {
-  cur!.next = { value: i, next: null }
-  cur = cur.next
 }
 
-// 1st from the end → 5
-console.log(nthFromEnd(head, 1)!.value) // 5
+main();
+# 1. Install deps (run once)
+npm install axios
 
-// 3rd from the end → 3
-console.log(nthFromEnd(head, 3)!.value) // 3
-
-// 6th from the end → null (list too short)
-console.log(nthFromEnd(head, 6)) // null
+# 2. Compile / run
+npx ts-node random-example.ts 5
