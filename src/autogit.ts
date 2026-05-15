@@ -1,106 +1,102 @@
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+/**
+ * The shift table used by BMH.
+ * Key: a character (string of length 1)
+ * Value: how many positions to move the pattern to the right
+ */
+type BadCharTable = Record<string, number>;
 
-  // 1️⃣ Find the middle (fast/slow trick)
-  let slow = head, fast = head, prev: ListNode | null = null;
-  while (fast && fast.next) {
-    // 2️⃣ Reverse the first half while we’re at it
-    let nxt = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nxt;
+/**
+ * Build the bad‑character shift table from the pattern.
+ *
+ * @param pattern – the pattern we are looking for
+ * @returns an object mapping each character to its shift value
+ */
+function buildBadCharTable(pattern: string): BadCharTable {
+  const table: BadCharTable = {};
+  const lastIdx = pattern.length - 1;
 
-    fast = fast.next.next;
+  // Initialize all characters to the full length (worst case)
+  for (let i = 0; i < lastIdx; i++) {
+    const c = pattern[i];
+    // The shift is the distance from the current position to the last character
+    table[c] = lastIdx - i;
   }
-
-  // 3️⃣ If odd number of nodes skip the middle one
-  if (fast) slow = slow.next;
-
-  // 4️⃣ Compare the two halves
-  let p1 = prev, p2 = slow;
-  while (p1 && p2) {
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-  return true;
-}
-interface ListNode {
-  val: number | string;      // whatever you want to store
-  next?: ListNode | null;    // `next` is optional to support the “end” of the list
+  // Characters that don't appear in the pattern keep the full length shift.
+  // (In JavaScript the property will simply be missing, which we interpret as
+  // the default value `pattern.length` later.)
+  return table;
 }
 /**
- * Returns true if the singly linked list is a palindrome.
+ * Find all indices where `pattern` occurs in `text` (0‑based).
  *
- * @param head - The head node of the linked list (or null).
+ * @param text – the string we’re scanning
+ * @param pattern – the pattern we’re looking for
+ * @returns an array of starting indices; empty if none
  */
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+export function bmhSearch(text: string, pattern: string): number[] {
+  if (pattern.empty) return [];
+  if (pattern.length > text.length) return [];
 
-  let slow = head;
-  let fast = head;
-  let prev: ListNode | null = null; // will become the head of the reversed first half
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
+  let i = m - 1;          // index in `text` aligned with pattern's last char
 
-  // Step 1 & 2: find middle, reverse first half
-  while (fast && fast.next) {
-    // Reverse the link for `slow`'s current node
-    const nextNode = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nextNode;
+  while (i < n) {
+    // Compare pattern from right to left
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
+    }
 
-    fast = fast.next.next;
+    // Full match
+    if (j < 0) {
+      result.push(i - m + 1);
+      // Move past the matched window (next search starts after the match)
+      i += 1;
+    } else {
+      // Mismatch: determine how far we can shift
+      const badChar = text[i];
+      const shift = table[badChar] ?? m; // if missing, shift by full length
+      i += shift;
+    }
   }
-
-  // Step 3: if odd length, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-
-  // Step 4: compare nodes from the two halves
-  let firstHalf = prev;
-  let secondHalf = slow;
-  while (firstHalf && secondHalf) {
-    if (firstHalf.val !== secondHalf.val) return false;
-    firstHalf = firstHalf.next!;
-    secondHalf = secondHalf.next!;
-  }
-
-  return true;
+  return result;
 }
-// Helper to create a list from an array
-function fromArray(arr: (number | string)[]): ListNode | null {
-  if (!arr.length) return null;
-  const head: ListNode = { val: arr[0] };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { val: arr[i] };
-    current = current.next;
+/**
+ * Return the index of the first occurrence of `pattern` in `text`,
+ * or -1 if it doesn’t exist.
+ */
+export function bmhSearchFirst(text: string, pattern: string): number {
+  if (pattern.empty) return 0;
+  if (pattern.length > text.length) return -1;
+
+  const table = buildBadCharTable(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  let i = m - 1;
+
+  while (i < n) {
+    let j = m - 1;
+    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
+      j -= 1;
+    }
+    if (j < 0) {
+      return i - m + 1;
+    }
+    const badChar = text[i];
+    const shift = table[badChar] ?? m;
+    i += shift;
   }
-  return head;
+  return -1;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
-console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string)[] = [];
-  let fast = head;
-  let slow = head;
+console.log(bmhSearch(text, pattern));       // [0, 7]
+console.log(bmhSearchFirst(text, pattern));  // 0
 
-  // Push first half onto stack
-  while (fast && fast.next) {
-    stack.push(slow!.val);
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
-
-  // Skip middle element for odd length
-  if (fast) slow = slow!.next!;
-
-  // Compare the rest with stack
-  while (slow) {
-    if (stack.pop() !== slow.val) return false;
-    slow = slow.next;
-  }
-  return true;
-}
+// Non‑existent pattern
+console.log(bmhSearch("hello", "world"));     // []
+console.log(bmhSearchFirst("hello", "world")); // -1
