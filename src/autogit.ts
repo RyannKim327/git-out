@@ -1,54 +1,40 @@
 /**
- * Return the first non‑repeating character, or `null` if every character repeats.
+ * Compute n! recursively.
  *
- * @example
- * firstNonRepeating('abacabad') // => 'c'
+ * Handles:
+ *   - n >= 0   → valid
+ *   - n < 0    → throws (factorial is undefined for negatives)
+ *
+ * Returns a number if the result fits in a JavaScript number,
+ * otherwise returns a BigInt to avoid overflow.
  */
-export function firstNonRepeating(str: string): string | null {
-  // 1️⃣ Pass: count each character
-  const freq = new Map<string, number>();
-  for (const ch of str) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+export function factorial(n: number | bigint): number | bigint {
+  // Normalize input to a bigint for exact arithmetic
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+
+  if (bigN < 0n) {
+    throw new Error('Factorial is defined only for non‑negative integers.');
   }
 
-  // 2️⃣ Pass: find the first character that appears only once
-  for (const ch of str) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
+  // Base case: 0! = 1 and 1! = 1
+  if (bigN <= 1n) return 1n;
+
+  // Recursive step
+  const product = bigN * factorial(bigN - 1n);
+
+  // Return a standard Number when it’s mathematically safe
+  // (anything that fits within 2^53‑1).
+  if (product <= BigInt(Number.MAX_SAFE_INTEGER)) {
+    return Number(product);
   }
 
-  return null; // all characters repeat
+  // Otherwise keep it as a BigInt.
+  return product;
 }
-export function firstNonRepeatingAscii(str: string): string | null {
-  const count = new Int32Array(128); // index 0–127
+import { factorial } from './factorial';
 
-  for (const ch of str) {
-    count[ch.charCodeAt(0)]++;
-  }
-
-  for (const ch of str) {
-    if (count[ch.charCodeAt(0)] === 1) {
-      return ch;
-    }
-  }
-
-  return null;
-}
-export const firstNonRepeatingFunctional = (str: string): string | null =>
-  [...str]
-    .reduce((acc, ch) => {
-      if (!acc.count.has(ch)) acc.count.set(ch, 0);
-      acc.count.set(ch, acc.count.get(ch)! + 1);
-      return acc;
-    }, { count: new Map<string, number>() })
-    // Rest of the string is still needed to find the first unique
-    ?.count
-    ?.entries()
-    ?.find(([, cnt]) => cnt === 1)?.[0] ?? null;
-import { firstNonRepeating } from './your-file';
-
-console.assert(firstNonRepeating('abacabad') === 'c');
-console.assert(firstNonRepeating('aabbcc') === null);
-console.assert(firstNonRepeating('') === null);
-console.assert(firstNonRepeating('😀😃😃😀😄') === '😄'); // emoji demo
+console.log(factorial(5));   // 120          (returns a number)
+console.log(factorial(20));  // 2432902008176640000  (returns a number)
+console.log(factorial(50));  // BigInt(304140932...)
+// if you prefer a string for extremely large results:
+console.log(factorial(50).toString());
