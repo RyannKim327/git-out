@@ -1,102 +1,122 @@
-/**
- * The shift table used by BMH.
- * Key: a character (string of length 1)
- * Value: how many positions to move the pattern to the right
- */
-type BadCharTable = Record<string, number>;
-
-/**
- * Build the bad‑character shift table from the pattern.
- *
- * @param pattern – the pattern we are looking for
- * @returns an object mapping each character to its shift value
- */
-function buildBadCharTable(pattern: string): BadCharTable {
-  const table: BadCharTable = {};
-  const lastIdx = pattern.length - 1;
-
-  // Initialize all characters to the full length (worst case)
-  for (let i = 0; i < lastIdx; i++) {
-    const c = pattern[i];
-    // The shift is the distance from the current position to the last character
-    table[c] = lastIdx - i;
-  }
-  // Characters that don't appear in the pattern keep the full length shift.
-  // (In JavaScript the property will simply be missing, which we interpret as
-  // the default value `pattern.length` later.)
-  return table;
+/** A node that holds a value and optional left/right children. */
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-/**
- * Find all indices where `pattern` occurs in `text` (0‑based).
- *
- * @param text – the string we’re scanning
- * @param pattern – the pattern we’re looking for
- * @returns an array of starting indices; empty if none
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  if (pattern.empty) return [];
-  if (pattern.length > text.length) return [];
+/** A minimal generic binary search tree. */
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-  const table = buildBadCharTable(pattern);
-  const m = pattern.length;
-  const n = text.length;
-  const result: number[] = [];
-  let i = m - 1;          // index in `text` aligned with pattern's last char
+  /* Comparator: returns negative if a < b, 0 if equal, positive if a > b */
+  constructor(private compare: (a: T, b: T) => number) {}
 
-  while (i < n) {
-    // Compare pattern from right to left
-    let j = m - 1;
-    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
-      j -= 1;
+  /** Insert a new value. */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+
+    if (!this.root) {
+      this.root = newNode;
+      return;
     }
 
-    // Full match
-    if (j < 0) {
-      result.push(i - m + 1);
-      // Move past the matched window (next search starts after the match)
-      i += 1;
-    } else {
-      // Mismatch: determine how far we can shift
-      const badChar = text[i];
-      const shift = table[badChar] ?? m; // if missing, shift by full length
-      i += shift;
+    let current = this.root;
+    while (true) {
+      if (this.compare(value, current.value) < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          break;
+        }
+        current = current.left;
+      } else {
+        if (!current.right) {
+          current.right = newNode;
+          break;
+        }
+        current = current.right;
+      }
     }
   }
-  return result;
-}
-/**
- * Return the index of the first occurrence of `pattern` in `text`,
- * or -1 if it doesn’t exist.
- */
-export function bmhSearchFirst(text: string, pattern: string): number {
-  if (pattern.empty) return 0;
-  if (pattern.length > text.length) return -1;
 
-  const table = buildBadCharTable(pattern);
-  const m = pattern.length;
-  const n = text.length;
-  let i = m - 1;
-
-  while (i < n) {
-    let j = m - 1;
-    while (j >= 0 && text[i - (m - 1 - j)] === pattern[j]) {
-      j -= 1;
+  /** Search for a value – returns <node> or null. */
+  find(value: T): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const cmp = this.compare(value, current.value);
+      if (cmp === 0) return current;
+      current = cmp < 0 ? current.left : current.right;
     }
-    if (j < 0) {
-      return i - m + 1;
-    }
-    const badChar = text[i];
-    const shift = table[badChar] ?? m;
-    i += shift;
+    return null;
   }
-  return -1;
+
+  /** In-order traversal – returns values sorted ascending. */
+  inOrder(): T[] {
+    const result: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      result.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return result;
+  }
+
+  /** Remove a value. (Simplest version – does not handle replacement of two children.) */
+  delete(value: T): void {
+    const remove = (
+      node: TreeNode<T> | null,
+      value: T
+    ): TreeNode<T> | null => {
+      if (!node) return null;
+
+      const cmp = this.compare(value, node.value);
+      if (cmp < 0) {
+        node.left = remove(node.left, value);
+      } else if (cmp > 0) {
+        node.right = remove(node.right, value);
+      } else {
+        // Node with only one child or no child
+        if (!node.left) return node.right;
+        if (!node.right) return node.left;
+
+        // Node with two children: get the inorder successor (smallest in right subtree)
+        let succ = node.right;
+        while (succ.left) succ = succ.left;
+        node.value = succ.value;                // Copy successor’s value
+        node.right = remove(node.right, succ.value); // Delete successor
+      }
+      return node;
+    };
+
+    this.root = remove(this.root, value);
+  }
 }
-const text = "abracadabra";
-const pattern = "abra";
+// A simple numeric comparator
+const numCmp = (a: number, b: number) => a - b;
 
-console.log(bmhSearch(text, pattern));       // [0, 7]
-console.log(bmhSearchFirst(text, pattern));  // 0
+// Create tree
+const tree = new BinarySearchTree<number>(numCmp);
 
-// Non‑existent pattern
-console.log(bmhSearch("hello", "world"));     // []
-console.log(bmhSearchFirst("hello", "world")); // -1
+// Insert numbers
+[5, 3, 7, 2, 4, 6, 8].forEach(v => tree.insert(v));
+
+// Search
+console.log(tree.find(4)?.value); // 4
+console.log(tree.find(10));       // null
+
+// In‑order traversal should be sorted
+console.log(tree.inOrder()); // [2,3,4,5,6,7,8]
+
+// Delete a value
+tree.delete(5);
+console.log(tree.inOrder()); // [2,3,4,6,7,8]
+interface Person { name: string; age: number }
+
+const ageCmp = (a: Person, b: Person) => a.age - b.age;
+const personTree = new BinarySearchTree<Person>(ageCmp);
+
+personTree.insert({ name: "Alice", age: 30 });
+personTree.insert({ name: "Bob", age: 25 });
