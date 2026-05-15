@@ -1,56 +1,78 @@
-/**
- * Bubble‑sort a mutable array.
- *
- * @param arr   The array to sort.  It will be reordered in‑place.
- * @param cmp   Optional comparators.  If omitted, the default
- *              `> / <` operators are used for primitive values.
- *
- * @returns The sorted array (the same reference that was passed in).
- *
- * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
- * sorted (but we still make one full pass to check that).
- */
-export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr;          // Already sorted
-
-    // Default comparator for primitive values (numbers, strings, etc.)
-    const compare = cmp ?? ((a: T, b: T) => {
-        if (a > b) return 1;
-        if (a < b) return -1;
-        return 0;
-    });
-
-    let swapped: boolean;
-
-    // One full outer loop pass guarantees sortedness,
-    // but we abort early if no swaps occur in a pass.
-    for (let i = 0; i < n; i++) {
-        swapped = false;
-
-        // After i iterations of the outer loop, the largest i elements
-        // are bubbled to the end, so we don't need to touch them.
-        for (let j = 0; j < n - i - 1; j++) {
-            if (compare(arr[j], arr[j + 1]) > 0) {
-                // Swap
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                swapped = true;
-            }
-        }
-
-        // If we made no swaps during this pass, array is sorted.
-        if (!swapped) break;
-    }
-
-    return arr;
+// ───────────────────── Graph Types ───────────────────────────────────────
+type NodeId = string | number;          // anything that can be compared with ===
+interface AdjList {
+  // nodeId -> array of neighbor nodeIds
+  [key: string]: NodeId[];
 }
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
 
-// Sorting strings
-const words = ["apple", "banana", "cherry", "date"];
-console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
+// ───────────────────── BFS Implementation ────────────────────────────────
+function bfs(
+  graph: AdjList,
+  start: NodeId,
+  visit: (node: NodeId) => void = () => {}
+): NodeId[] {
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+  const order: NodeId[] = [];      // keep track of the order in which nodes are seen
 
-// Custom comparator (descending order)
-bubbleSort(nums, (a, b) => b - a);
-console.log(nums); // → [90,64,34,25,22,12,11]
+  visited.add(start);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!; // safe: queue is guaranteed non‑empty inside loop
+
+    visit(current);        // optional callback that may do whatever you want
+    order.push(current);
+
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        queue.push(neigh);
+      }
+    }
+  }
+
+  return order;           // return traversal order if you need it
+}
+
+// ───────────────────── Example Usage ──────────────────────────────────────
+const exampleGraph: AdjList = {
+  A: ['B', 'C'],
+  B: ['A', 'D', 'E'],
+  C: ['A', 'F'],
+  D: ['B'],
+  E: ['B', 'F'],
+  F: ['C', 'E'],
+};
+
+const traversal = bfs(exampleGraph, 'A');
+console.log('BFS order:', traversal);
+// → BFS order: [ 'A', 'B', 'C', 'D', 'E', 'F' ]
+
+// If you only care about distances from the start node:
+function bfsDistances(graph: AdjList, start: NodeId): Map<NodeId, number> {
+  const distances = new Map<NodeId, number>();
+  const visited = new Set<NodeId>();
+  const queue: NodeId[] = [];
+
+  visited.add(start);
+  distances.set(start, 0);
+  queue.push(start);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neigh of graph[current] ?? []) {
+      if (!visited.has(neigh)) {
+        visited.add(neigh);
+        distances.set(neigh, distances.get(current)! + 1);
+        queue.push(neigh);
+      }
+    }
+  }
+
+  return distances;
+}
+
+const dists = bfsDistances(exampleGraph, 'A');
+console.log('Distances from A:', Object.fromEntries(dists.entries()));
+// → Distances from A: { A: 0, B: 1, C: 1, D: 2, E: 2, F: 2 }
