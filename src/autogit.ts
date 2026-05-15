@@ -1,84 +1,122 @@
-// 1️⃣  Interfaces ----------------------------------------------------
-interface State {
-  // Unique identifier that helps us spot already‑visited nodes.
-  id: string | number;
+// A "comparable" type: any that supports the < and > operators.
+type Comparable = number | string | { compareTo(other: this): number };
 
-  // Return all children reachable from this state.
-  getChildren(): State[];
-
-  // For demo purposes, we also expose a pretty‑print.
-  toString?(): string;
+interface INode<K extends Comparable, V> {
+  keys: K[];
+  values: V[];      // same length as keys
+  children: (INode<K, V> | null)[];
+  leaf: boolean;
 }
+const compare = <K extends Comparable>(a: K, b: K): number => {
+  if (typeof a === 'number' || typeof a === 'string')
+    return a < b ? -1 : a > b ? 1 : 0;
+  return a.compareTo(b);
+};
 
-type GoalFn<T extends State> = (s: T) => boolean;
+const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
+  // binary search – returns the position where key should be inserted
+  let low = 0, high = arr.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const cmp = compare(arr[mid], key);
+    if (cmp === 0) return mid;
+    if (cmp < 0) low = mid + 1; else high = mid - 1;
+  }
+  return low; // insertion point
+};
+class BTreeNode<K extends Comparable, V> implements INode<K, V> {
+  keys: K[] = [];
+  values: V[] = [];
+  children: (BTreeNode<K, V> | null)[] = [];
+  leaf: boolean;
 
-// 2️⃣  The recursive DLS ----------------------------------------------
-function depthLimitedSearch<T extends State>(
-  node: T,
-  goal: GoalFn<T>,
-  limit: number,
-  visited = new Set<T | string | number>()
-): T | null {
-  // Depth exceeded → give up.
-  if (limit < 0) return null;
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
+}
+export class BTree<K extends Comparable, V> {
+  readonly order: number;          // minimum number of keys per node (t)
+  private root: BTreeNode<K, V>;
 
-  // Safe‑guard against cycles: if this node already saw, skip it.
-  if (visited.has(node.id)) return null;
-
-  // Mark the node as visited for this path.
-  visited.add(node.id);
-
-  // Goal found.
-  if (goal(node)) return node;
-
-  // Explore children.
-  for (const child of node.getChildren()) {
-    const result = depthLimitedSearch(child, goal, limit - 1, visited);
-    if (result !== null) return result;
+  constructor(order: number) {
+    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
+    this.order = order;
+    this.root = new BTreeNode<K, V>(true);   // start with a leaf
   }
 
-  // Nothing found → backtrack.
-  return null;
-}
-class GridCell implements State {
-  constructor(
-    public x: number,
-    public y: number,
-    public goal = false
-  ) {}
-
-  get id() { return `${this.x},${this.y}`; }
-
-  getChildren(): State[] {
-    const dirs = [
-      [0, 1],
-      [1, 0],
-      [0, -1],
-      [-1, 0],
-    ];
-    return dirs
-      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
-      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
+  /* ---------- Public API ---------- */
+  public search(key: K): V | undefined {
+    return this.searchNode(this.root, key);
   }
 
-  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
-}
-
-// Simple goal: bottom‑right corner.
-const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
-
-const start = new GridCell(0, 0);
-const result = depthLimitedSearch(start, goalFn, 4);
-
-console.log(result?.toString() ?? 'No solution within depth 4');
-function iterativeDeepeningDFS<T extends State>(
-  start: T,
-  goal: GoalFn<T>,
-  maxLimit: number
-): T | null {
-  for (let l = 0; l <= maxLimit; l++) {
-    const res = depthLimitedSearch(start, goal, l);
-    if (res !== null) return res;      // Found a goal
+  public insert(key: K, value: V): void {
+    if (this.root.keys.length === 2 * this.order - 1) {
+      // root is full – split it
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this.splitChild(newRoot, 0);
+      this.root = newRoot;
+    }
+    this.insertNonFull(this.root, key, value);
   }
-  return null;                        // Still no goal within maxLimit
-}
+
+  public delete(key: K): void {
+    this.deleteNode(this.root, key);
+    // shrink the root if it becomes empty
+    if (!this.root.leaf && this.root.keys.length === 0) {
+      this.root = this.root.children[0]!;
+    }
+  }
+
+  /* ---------- Traversal helpers (optional) ---------- */
+  public *inOrder(): IterableIterator<[K, V]> {
+    yield* this.inOrderNode(this.root);
+  }
+
+  /* ---------- Internal helpers ---------- */
+  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
+    const i = findIndex(node.keys, key);
+    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
+      return node.values[i];
+    }
+    if (node.leaf) return undefined;
+    return this.searchNode(node.children[i]!, key);
+  }
+
+  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
+    let i = node.keys.length - 1;
+    if (node.leaf) {
+      // Insert in sorted order
+      const pos = findIndex(node.keys, key);
+      node.keys.splice(pos, 0, key);
+      node.values.splice(pos, 0, value);
+    } else {
+      // Descend to the right child
+      const pos = findIndex(node.keys, key);
+      const child = node.children[pos]!;
+      if (child.keys.length === 2 * this.order - 1) {
+        this.splitChild(node, pos);
+        // After split, the middle key moves up
+        if (compare(key, node.keys[pos]) > 0) pos++;
+      }
+      this.insertNonFull(node.children[pos]!, key, value);
+    }
+  }
+
+  private splitChild(parent: BTreeNode<K, V>, idx: number) {
+    const t = this.order;
+    const y = parent.children[idx]!;               // node to split
+    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
+
+    // Move upper half of y's keys/values to z
+    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
+    z.values = y.values.splice(t, t - 1);
+
+    if (!y.leaf) {
+      z.children = y.children.splice(t, t);         // children t … 2t-1
+    }
+
+    // Insert z into parent
+    parent.children.splice(idx + 1, 0, z);
+    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
+    parent.values.splice(idx
