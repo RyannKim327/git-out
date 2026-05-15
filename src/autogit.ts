@@ -1,169 +1,62 @@
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree for any type T that can be compared via a comparator
-   ────────────────────────────────────────────────────────────────────── */
-
-interface Node<T> {
-  value: T;
-  left?: Node<T>;
-  right?: Node<T>;
-  height: number;           // height of the subtree rooted at this node
+/**
+ * A conventional singly–linked list node.
+ * The value is generic so you can store anything.
+ */
+export interface ListNode<T = number> {
+  value: T
+  next: ListNode<T> | null
 }
+/**
+ * Return the n‑th node from the end of the list.
+ *
+ * @param head  the head node of the list
+ * @param n     1‑based index (1 → last node, 2 → second‑to‑last, …)
+ * @returns the ListNode that is n places from the end,
+ *          or `null` if the list has fewer than n items.
+ */
+export function nthFromEnd<T>(
+  head: ListNode<T> | null,
+  n: number,
+): ListNode<T> | null {
+  if (n <= 0) {
+    throw new Error('n must be a positive integer');
+  }
 
-type Comparator<T> = (a: T, b: T) => number;
+  let fast: ListNode<T> | null = head
+  let slow: ListNode<T> | null = head
 
-/* ──────────────────────────────────────────────────────────────────────
-   Binary‑search‑tree helper: node height, balance factor, update
-   ────────────────────────────────────────────────────────────────────── */
-
-function nodeHeight<T>(n: Node<T> | undefined): number {
-  return n ? n.height : 0;
-}
-
-function balanceFactor<T>(n: Node<T> | undefined): number {
-  return n ? nodeHeight(n.left) - nodeHeight(n.right) : 0;
-}
-
-function updateHeight<T>(n: Node<T>): void {
-  n.height = 1 + Math.max(nodeHeight(n.left), nodeHeight(n.right));
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   Rotations
-   ────────────────────────────────────────────────────────────────────── */
-
-function rotateRight<T>(y: Node<T>): Node<T> {
-  const x = y.left!;
-  const T2 = x.right;
-
-  // Rotation
-  x.right = y;
-  y.left = T2;
-
-  // Update heights
-  updateHeight(y);
-  updateHeight(x);
-  return x;                  // new root
-}
-
-function rotateLeft<T>(x: Node<T>): Node<T> {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // Rotation
-  y.left = x;
-  x.right = T2;
-
-  // Update heights
-  updateHeight(x);
-  updateHeight(y);
-  return y;                  // new root
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   Rebalance a node
-   ────────────────────────────────────────────────────────────────────── */
-
-function rebalance<T>(node: Node<T>): Node<T> {
-  updateHeight(node);
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (balanceFactor(node.left) < 0) {
-      node.left = rotateLeft(node.left!);
+  // Move `fast` n nodes ahead.
+  for (let i = 0; i < n; i++) {
+    if (!fast) {
+      // The list is shorter than n.
+      return null
     }
-    return rotateRight(node);
+    fast = fast.next
   }
 
-  // Right heavy
-  if (bf < -1) {
-    if (balanceFactor(node.right) > 0) {
-      node.right = rotateRight(node.right!);
-    }
-    return rotateLeft(node);
+  // Move both pointers until `fast` reaches the end.
+  while (fast) {
+    fast = fast.next
+    slow = slow!.next // `slow` cannot be null here.
   }
 
-  return node;   // already balanced
+  return slow
+}
+import { ListNode, nthFromEnd } from './linkedListHelpers'
+
+// Build a quick sample list: 1 → 2 → 3 → 4 → 5
+let head: ListNode<number> | null = { value: 1, next: null }
+let cur = head
+for (let i = 2; i <= 5; i++) {
+  cur!.next = { value: i, next: null }
+  cur = cur.next
 }
 
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree class
-   ────────────────────────────────────────────────────────────────────── */
+// 1st from the end → 5
+console.log(nthFromEnd(head, 1)!.value) // 5
 
-export class AVLTree<T> {
-  private root?: Node<T>;
-  private readonly compare: Comparator<T>;
+// 3rd from the end → 3
+console.log(nthFromEnd(head, 3)!.value) // 3
 
-  constructor(compareFn: Comparator<T>) {
-    this.compare = compareFn;
-  }
-
-  /* ── PUBLIC API ───────────────────────────────────────────────────── */
-
-  insert(value: T): void {
-    this.root = this._insert(this.root, value);
-  }
-
-  delete(value: T): void {
-    this.root = this._delete(this.root, value);
-  }
-
-  find(value: T): Node<T> | undefined {
-    return this._find(this.root, value);
-  }
-
-  /** In‑order traversal – handy for visualising the tree */
-  inOrder(): T[] {
-    const res: T[] = [];
-    this._inOrder(this.root, res);
-    return res;
-  }
-
-  /** Return raw root – useful for debugging */
-  getRoot(): Node<T> | undefined {
-    return this.root;
-  }
-
-  /* ── INTERNAL IMPLEMENTATION ─────────────────────────────────────── */
-
-  private _insert(node: Node<T> | undefined, value: T): Node<T> {
-    if (!node) return { value, height: 1 };           // new leaf
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) node.left  = this._insert(node.left,  value);
-    else if (cmp > 0) node.right = this._insert(node.right, value);
-    else return node;                                 // ignore duplicates
-
-    return rebalance(node);
-  }
-
-  private _find(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-    const cmp = this.compare(value, node.value);
-    if (cmp === 0) return node;
-    return cmp < 0 ? this._find(node.left,  value) : this._find(node.right, value);
-  }
-
-  private _inOrder(node: Node<T> | undefined, out: T[]): void {
-    if (!node) return;
-    this._inOrder(node.left, out);
-    out.push(node.value);
-    this._inOrder(node.right, out);
-  }
-
-  /** Delete and rebalance */
-  private _delete(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) {
-      node.left = this._delete(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._delete(node.right, value);
-    } else {
-      // node to delete found
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // Two children: use in‑order predecessor (max of left subtree)
-      const maxLeft = this._max
+// 6th from the end → null (list too short)
+console.log(nthFromEnd(head, 6)) // null
