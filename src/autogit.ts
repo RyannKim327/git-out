@@ -1,45 +1,68 @@
-// 1. Basic list node definition
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/*  stack.ts  */
+export class Stack<T> {
+  // The raw array that stores everything.
+  private readonly items: T[] = [];
 
-// 2. Utility: build a linked list from an array
-function buildList<T>(values: T[]): ListNode<T> | null {
-  if (values.length === 0) return null;
-
-  const head = new ListNode(values[0]);
-  let current = head;
-  for (let i = 1; i < values.length; i++) {
-    current.next = new ListNode(values[i]);
-    current = current.next;
-  }
-  return head;
-}
-
-// 3. Find the middle node – fast/slow pointer
-function getMiddle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return null;          // empty list
-
-  let slow = head;
-  let fast = head;
-
-  while (fast && fast.next) {      // stop when fast can't advance two steps
-    slow = slow.next!;             // safe because previous check guarantees truthy
-    fast = fast.next.next!;
+  /** Push a value onto the stack. Complexity: O(1). */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  return slow;                     // slow is at the middle
+  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot pop from an empty stack');
+    }
+    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
+  }
+
+  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot peek at an empty stack');
+    }
+    return this.items[this.items.length - 1];
+  }
+
+  /** True if the stack has no elements. Complexity: O(1). */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** Number of items currently stored. Complexity: O(1). */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clear everything. Complexity: O(1) (just resets reference). */
+  clear(): void {
+    this.items.length = 0;
+  }
 }
+import { Stack } from './stack';
 
-// Demo
-const arr = [1, 2, 3, 4, 5];      // odd length → middle = 3
-const oddHead = buildList(arr);
-console.log(getMiddle(oddHead)?.val); // 3
+const numStack = new Stack<number>();
 
-const evenArr = [10, 20, 30, 40]; // even length → middle = 20 (first of the two)
-const evenHead = buildList(evenArr);
-console.log(getMiddle(evenHead)?.val); // 20
-while (fast && fast.next && fast.next.next) {
-  slow = slow.next!;
-  fast = fast.next.next!;
+numStack.push(1);
+numStack.push(2);
+numStack.push(3);
+
+console.log(numStack.peek());   // 3
+console.log(numStack.pop());    // 3
+console.log(numStack.size());   // 2
+console.log(numStack.isEmpty()); // false
+
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class Stack<T> {
+  private readonly items: T[] = [];
+  constructor(private readonly capacity = Infinity) {}
+
+  push(item: T): void {
+    if (this.items.length >= this.capacity) {
+      throw new Error('Stack overflow: cannot push beyond capacity');
+    }
+    this.items.push(item);
+  }
+  /* … rest of the class unchanged … */
 }
