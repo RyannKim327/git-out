@@ -1,33 +1,50 @@
-/**
- * Returns `true` if the supplied value is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores all non‑alphanumeric characters
+/*  random-cron-example.ts
  *
- * @example
- * isPalindrome("A man, a plan, a canal: Panama") // → true
- * isPalindrome("Madam")                          // → true
- * isPalindrome("Hello")                          // → false
+ *  Requires:
+ *    npm install cron chalk
+ *  Compile with:
+ *    tsc random-cron-example.ts --module commonjs
+ *  Run with:
+ *    node random-cron-example.js
  */
-export function isPalindrome(str: string): boolean {
-  // Keep only alphanumeric characters and lower‑case the rest.
-  const cleaned = str
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
 
-  // Two‑pointer technique: compare chars from both ends.
-  let left = 0;
-  let right = cleaned.length - 1;
+import { CronJob } from "cron";
+import chalk from "chalk";
 
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
-    left++;
-    right--;
-  }
-
-  return true;
+// A function that does something "random enough" each time it runs.
+function generateMagicNumber(): number {
+  // Pick a pseudo‑random integer between 1 and 100
+  return Math.floor(Math.random() * 100) + 1;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("Hello"));                         // false
+
+// Define a cron job that fires every minute.
+// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
+const job = new CronJob(
+  // Every minute
+  "* * * * *",
+  () => {
+    const now = new Date();
+    const magic = generateMagicNumber();
+    console.log(
+      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
+        magic
+      )}`
+    );
+  },
+  null, // onComplete callback (unused)
+  true, // start the job right away
+  "America/New_York" // time zone
+);
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log(chalk.red("\nStopping the cron job..."));
+  job.stop();
+  process.exit(0);
+});
+
+console.log(
+  chalk.blue(
+    "Random cron job started. It will output a magic number every minute."
+  )
+);
