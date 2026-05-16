@@ -1,46 +1,51 @@
 /**
- * Returns the majority element of a non‑empty array
- * or null if no majority exists.
+ * Radix sort for non‑negative integers.
+ * @param arr  –   array of numbers to sort
+ * @returns    –   a new sorted array (the input is unchanged)
  */
-function majorityElement(nums: number[]): number | null {
-  let candidate: number | null = null;
-  let count = 0;
+export function radixSort(arr: number[]): number[] {
+  if (!Array.isArray(arr) || arr.length === 0) return [];
 
-  // 1️⃣ first pass – find a candidate
-  for (const x of nums) {
-    if (count === 0) {
-      candidate = x;
-      count = 1;
-    } else if (x === candidate) {
-      count++;
-    } else {
-      count--;
+  // 1. Find the maximum value to know how many digits we need
+  const max = Math.max(...arr);
+  const base = 10;                     // decimal digits
+  const maxDigits = Math.floor(Math.log10(max)) + 1;
+
+  // 2. Work on a copy so we don't mutate the original array
+  let output = [...arr];
+  let digitPlace = 1;   // 1, 10, 100, …
+
+  for (let d = 0; d < maxDigits; d++) {
+    // 3. Counting sort for the current digit
+    const count = new Array(base).fill(0);
+
+    // Count occurrences of each digit
+    for (const num of output) {
+      const digit = Math.floor((num / digitPlace) % base);
+      count[digit]++;
     }
+
+    // Make count[i] contain the actual position of this digit
+    for (let i = 1; i < base; i++) {
+      count[i] += count[i - 1];
+    }
+
+    // 4. Build the output array from the end to maintain stability
+    const temp = new Array(output.length);
+    for (let i = output.length - 1; i >= 0; i--) {
+      const num = output[i];
+      const digit = Math.floor((num / digitPlace) % base);
+      const idx = --count[digit];
+      temp[idx] = num;
+    }
+
+    // After moving all numbers, we’ll sort by the next digit
+    output = temp;
+    digitPlace *= base;
   }
 
-  // 2️⃣ optional second pass – verify the candidate
-  if (candidate !== null) {
-    count = 0;
-    for (const x of nums) if (x === candidate) count++;
-
-    return count > Math.floor(nums.length / 2) ? candidate : null;
-  }
-
-  return null;
+  return output;
 }
-const arr = [1, 2, 3, 1, 1];
-console.log(majorityElement(arr)); // 1
-
-const noMajority = [1, 2, 3, 4];
-console.log(majorityElement(noMajority)); // null
-function majorityWithMap(nums: number[]): number | null {
-  const freq = new Map<number, number>();
-  const half = Math.floor(nums.length / 2);
-
-  for (const x of nums) {
-    const newCount = (freq.get(x) || 0) + 1;
-    freq.set(x, newCount);
-    if (newCount > half) return x;
-  }
-  return null;
-}
+const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
+console.log(radixSort(unsorted));
+// → [2, 24, 45, 66, 75, 90, 170, 802]
