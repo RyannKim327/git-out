@@ -1,68 +1,38 @@
-/*  stack.ts  */
-export class Stack<T> {
-  // The raw array that stores everything.
-  private readonly items: T[] = [];
+/**
+ * Counting sort for an array of integers.
+ *
+ * @param arr The array to sort – an array of numbers.
+ * @returns A new array containing the sorted values.
+ */
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  /** Push a value onto the stack. Complexity: O(1). */
-  push(item: T): void {
-    this.items.push(item);
+  // Locate the bounds of the values.
+  let min = arr[0];
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+    if (val < min) min = val;
+    if (val > max) max = val;
   }
 
-  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot pop from an empty stack');
+  const range = max - min + 1;          // Number of distinct possible values
+  const count = new Array<number>(range).fill(0);
+
+  // Count occurrences of each integer.
+  for (const value of arr) {
+    count[value - min]++;               // Shift by min so index 0 stays valid
+  }
+
+  // Overwrite the input array (or build a new one) using the counts.
+  const sorted: number[] = [];
+  for (let i = 0; i < range; i++) {
+    const currentVal = i + min;
+    const occ = count[i];
+    for (let j = 0; j < occ; j++) {
+      sorted.push(currentVal);
     }
-    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
   }
 
-  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot peek at an empty stack');
-    }
-    return this.items[this.items.length - 1];
-  }
-
-  /** True if the stack has no elements. Complexity: O(1). */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Number of items currently stored. Complexity: O(1). */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything. Complexity: O(1) (just resets reference). */
-  clear(): void {
-    this.items.length = 0;
-  }
-}
-import { Stack } from './stack';
-
-const numStack = new Stack<number>();
-
-numStack.push(1);
-numStack.push(2);
-numStack.push(3);
-
-console.log(numStack.peek());   // 3
-console.log(numStack.pop());    // 3
-console.log(numStack.size());   // 2
-console.log(numStack.isEmpty()); // false
-
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class Stack<T> {
-  private readonly items: T[] = [];
-  constructor(private readonly capacity = Infinity) {}
-
-  push(item: T): void {
-    if (this.items.length >= this.capacity) {
-      throw new Error('Stack overflow: cannot push beyond capacity');
-    }
-    this.items.push(item);
-  }
-  /* … rest of the class unchanged … */
+  return sorted;
 }
