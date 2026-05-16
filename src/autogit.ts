@@ -1,158 +1,42 @@
-// A simple hash table that stores key/value pairs.
-// Collisions are resolved via separate chaining (linked lists).
-export class SimpleHashTable<K, V> {
-  private buckets: Array<LinkedListNode<K, V> | null>;
-  private _size: number;
-  private _count: number;
-  private readonly loadFactorThreshold: number; // e.g. 0.75
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr     Sorted array to search
+ * @param target  Value to find
+ * @param lessThan Comparator that returns true if  a < b
+ * @returns Index of the target or -1 if not found
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  lessThan: (a: T, b: T) => boolean
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-  constructor(initSize = 16, loadFactor = 0.75) {
-    this.buckets = new Array(initSize).fill(null);
-    this._size = initSize;
-    this._count = 0;
-    this.loadFactorThreshold = loadFactor;
-  }
+  while (low <= high) {
+    // middle index – use bit‑shifting to avoid overflow
+    const mid = (low + high) >> 1;
+    const midVal = arr[mid];
 
-  // Public API
-  set(key: K, value: V): void { /* ... */ }
-  get(key: K): V | undefined { /* ... */ }
-  delete(key: K): boolean { /* ... */ }
-  has(key: K): boolean { /* ... */ }
-  clear(): void { /* ... */ }
-  get size(): number { return this._count; }
-  // Optionally:
-  // values(), keys(), entries()
-}
-class LinkedListNode<K, V> {
-  key: K;
-  value: V;
-  next: LinkedListNode<K, V> | null;
-
-  constructor(key: K, value: V, next: LinkedListNode<K, V> | null = null) {
-    this.key = key;
-    this.value = value;
-    this.next = next;
-  }
-}
-private getHash(key: K): number {
-  // Simple implementation: works for string & number keys.
-  const strKey = typeof key === 'string' ? key : String(key);
-  let hash = 5381; // djb2 seed
-  for (let i = 0; i < strKey.length; i++) {
-    hash = (hash * 33) ^ strKey.charCodeAt(i);
-  }
-  // Ensure positive index and wrap around bucket count.
-  return Math.abs(hash) % this._size;
-}
-set(key: K, value: V): void {
-  const index = this.getHash(key);
-
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      node.value = value;      // Update existing
-      return;
-    }
-    node = node.next;
-  }
-
-  // Insert new node at front of chain
-  const newNode = new LinkedListNode(key, value, this.buckets[index]);
-  this.buckets[index] = newNode;
-  this._count++;
-
-  if (this._count / this._size > this.loadFactorThreshold) {
-    this.resize();
-  }
-}
-
-get(key: K): V | undefined {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  while (node) {
-    if (this.equals(node.key, key)) {
-      return node.value;
-    }
-    node = node.next;
-  }
-  return undefined;
-}
-
-delete(key: K): boolean {
-  const index = this.getHash(key);
-  let node = this.buckets[index];
-  let prev: LinkedListNode<K, V> | null = null;
-
-  while (node) {
-    if (this.equals(node.key, key)) {
-      if (prev) prev.next = node.next;
-      else this.buckets[index] = node.next;
-      this._count--;
-      return true;
-    }
-    prev = node;
-    node = node.next;
-  }
-  return false;
-}
-
-has(key: K): boolean {
-  return this.get(key) !== undefined;
-}
-
-clear(): void {
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-}
-private equals(a: K, b: K): boolean {
-  return a === b;
-}
-private resize(): void {
-  const oldBuckets = this.buckets;
-  this._size *= 2;                 // Classic, double the bucket count
-  this.buckets = new Array(this._size).fill(null);
-  this._count = 0;
-
-  for (const bucket of oldBuckets) {
-    let node = bucket;
-    while (node) {
-      this.set(node.key, node.value); // Re‑hash & insert
-      node = node.next;
+    if (lessThan(target, midVal)) {
+      high = mid - 1; // target is in the left half
+    } else if (lessThan(midVal, target)) {
+      low = mid + 1; // target is in the right half
+    } else {
+      return mid; // found
     }
   }
+
+  return -1; // not found
 }
-values(): V[] {
-  const vals: V[] = [];
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      vals.push(node.value);
-      node = node.next;
-    }
-  }
-  return vals;
-}
-*entries(): IterableIterator<[K, V]> {
-  for (const bucket of this.buckets) {
-    let node = bucket;
-    while (node) {
-      yield [node.key, node.value];
-      node = node.next;
-    }
-  }
-}
-const ht = new SimpleHashTable<string, number>();
+const nums = [1, 3, 5, 7, 9, 11];
 
-ht.set('apple', 3);
-ht.set('banana', 
+// simple number comparison
+const index = binarySearch(nums, 7, (a, b) => a < b);
+console.log(index); // 3
 
-
-
----
-
-**Support Pollinations.AI:**
-
----
-
-🌸 **Ad** 🌸
-Powered by Pollinations.AI free text APIs. [Support our mission](https://pollinations.ai/redirect/kofi) to keep AI accessible for everyone.
+// with strings
+const words = ['apple', 'banana', 'cherry', 'date'];
+const idx = binarySearch(words, 'cherry', (a, b) => a < b);
+console.log(idx); // 2
