@@ -1,39 +1,35 @@
 /**
- * Return a random integer *between* `min` and `max` **inclusive**.
+ * Returns the longest common prefix of an array of strings.
+ * If the array is empty, returns an empty string.
  *
- * @param min - lowest possible value
- * @param max - highest possible value
+ * @param words - array of strings
+ * @returns longest common prefix
  */
-function randInt(min: number, max: number): number {
-  const lower = Math.ceil(min);                // in case min is decimal
-  const upper = Math.floor(max);               // in case max is decimal
-  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
-}
-const roll = randInt(1, 6);   // a fair 1‑to‑6 dice roll
-console.log(roll);            // 1, 2, 3, 4, 5, or 6
-/**
- * Return a random float *between* `min` (inclusive) and `max` (exclusive).
- *
- * @param min - lowest possible value
- * @param max - value we’ll never hit
- */
-function randFloat(min = 0, max = 1): number {
-  return Math.random() * (max - min) + min;
-}
-const lerp = randFloat(0, 1);   // a random number in [0, 1)
-// Simple LCG – not cryptographically secure,
-// but good enough for games, demos, tests etc.
-function lcg(seed: number) {
-  const m = 0x80000000; // 2^31
-  const a = 1103515245;
-  const c = 12345;
-  let state = seed % m;
-  return () => {
-    state = (a * state + c) % m;
-    return state / m; // raw [0,1)
-  };
-}
+function longestCommonPrefix(words: string[]): string {
+  if (words.length === 0) return '';
 
-const random = lcg(123456);          // seed=123456
-const randIntSeeded = (min: number, max: number) =>
-  Math.floor(random() * (max - min + 1)) + min;
+  // 1. Find the min and max strings (lexicographically)
+  let min = words[0];
+  let max = words[0];
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i];
+    if (w < min) min = w;
+    if (w > max) max = w;
+  }
+
+  // 2. Find first mismatch between min and max
+  let j = 0;
+  while (j < min.length && j < max.length && min[j] === max[j]) {
+    j++;
+  }
+
+  // 3. Slice the common part
+  return min.slice(0, j);
+}
+const arr = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(arr)); // → "fl"
+
+console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
+console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
+console.log(longestCommonPrefix(['single'])); // → "single"
+console.log(longestCommonPrefix([])); // → ""
