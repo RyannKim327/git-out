@@ -1,46 +1,34 @@
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  // A little help‑trim: you can decide to ignore whitespace, case, etc.
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
-
-  const sortedA = normalize(a).split('').sort().join('');
-  const sortedB = normalize(b).split('').sort().join('');
-
-  return sortedA === sortedB;
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
 }
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
 
-  const freq = new Map<string, number>();
+function maxDepth(root: TreeNode | null): number {
+  if (root === null) return 0;           // base case: empty subtree
+  const leftDepth  = maxDepth(root.left);   // depth of left subtree
+  const rightDepth = maxDepth(root.right);  // depth of right subtree
+  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
+}
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-  for (const ch of a) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
+  let max = 0;
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
 
-  for (const ch of b) {
-    const count = freq.get(ch);
-    if (!count) return false;          // either zero or undefined
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
-  }
-
-  return freq.size === 0;
-}
-function areAnagramsAscii(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-
-  const counts = new Uint32Array(26);
-
-  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
-  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
-
-  return counts.every(v => v === 0);
-}
-const compact = (s: string) =>
-  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
-
-function areAnagramsClean(a: string, b: string): boolean {
-  return areAnagrams(compact(a), compact(b));
+  return max;
 }
