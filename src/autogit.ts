@@ -1,30 +1,45 @@
-// Generic helper that works for any type that supports the < operator
-function isSortedAscending<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
-  // If a comparator isn’t supplied, fall back to the default "<" | ">" comparison.
-  // This works for numbers, strings, Dates, etc.
-  const cmp = comparator ?? ((a: any, b: any) => a < b);
+// random-example.ts
+// a small TypeScript demo that pulls data from a public API using axios
 
-  // Walk through the array once and bail out on the first violation.
-  for (let i = 1; i < arr.length; i++) {
-    // cmp(a, b) should be true for an ascending array.
-    // For numbers, that means a < b; you could allow equality by `%=` or `<=`.
-    if (!cmp(arr[i-1], arr[i])) {
-      // The pair is out of order – the array isn’t sorted.
-      return false;
+import axios from 'axios';
+
+// ---------- Types ----------
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+// ---------- API wrapper ----------
+async function fetchTodo(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
+  return response.data;
+}
+
+// ---------- CLI entry point ----------
+async function main() {
+  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
+
+  try {
+    const todo = await fetchTodo(todoId);
+    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
+    console.log(`  - ${todo.title}`);
+    console.log(`  - completed: ${todo.completed}`);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error(`Request failed: ${err.message}`);
+    } else {
+      console.error(`Unexpected error:`, err);
     }
+    process.exit(1);
   }
-  return true;          // All pairs were in the correct order.
 }
-const nums = [1, 3, 3, 7, 12];
-console.log(isSortedAscending(nums));      // true
 
-const people = [
-  { name: 'Alice', age: 34 },
-  { name: 'Bob', age: 27 },
-];
-console.log(isSortedAscending(people, (x, y) => x.age < y.age)); // false
-function isSortedCompare<T>(arr: T[], comparator?: (a: T, b: T) => boolean): boolean {
-  const sorted = [...arr].sort((a,b)=> (comparator ? (comparator(a,b)?-1:1) : a < b ? -1 : 1));
-  return JSON.stringify(sorted) === JSON.stringify(arr);
-}
-const isSorted = (a: number[]) => a.every((v, i, l) => i === 0 || l[i-1] <= v);
+main();
+# 1. Install deps (run once)
+npm install axios
+
+# 2. Compile / run
+npx ts-node random-example.ts 5
