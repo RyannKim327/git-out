@@ -1,42 +1,40 @@
 /**
- * Returns the largest prime factor of n.
+ * Interpolation Search – O(log log n) average, O(n) worst.
  *
- * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
+ * @param arr   Sorted array of numbers (ascending order)
+ * @param key   Value to locate
+ * @returns     Index of `key` in `arr`, or -1 if absent
  */
-export function largestPrimeFactor(n: number | bigint): number | bigint {
-    if (n <= 1) throw new Error('n must be > 1');
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-    // Work with BigInt for arbitrary precision
-    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
-    let maxFactor: bigint = 1n;
+  let low = 0;
+  let high = arr.length - 1;
 
-    // Handle factor 2 separately
-    while (num % 2n === 0n) {
-        maxFactor = 2n;
-        num /= 2n;
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high]
+    if (arr[low] === arr[high]) {
+      return arr[low] === key ? low : -1;
     }
 
-    // Now num is odd – we only need to check odd divisors
-    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
-        while (num % divisor === 0n) {
-            maxFactor = divisor;
-            num /= divisor;
-        }
-    }
+    // Estimation formula
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
 
-    // If anything is left, it's a prime larger than any divisor we tried
-    if (num > 1n) maxFactor = num;
-
-    // Return a native number if the input was a number and the result fits
-    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
-        return Number(maxFactor);
+    const val = arr[pos];
+    if (val === key) {
+      return pos;               // Key found
     }
-    return maxFactor;
+    if (val < key) {
+      low = pos + 1;             // Search upper segment
+    } else {
+      high = pos - 1;            // Search lower segment
+    }
+  }
+
+  return -1; // Not found
 }
-console.log(largestPrimeFactor(28));          // 7
-console.log(largestPrimeFactor(91));          // 13
-console.log(largestPrimeFactor(600851475143));// 6857
-
-// With a BigInt (e.g. a 100‑digit number)
-const huge = BigInt('123456789123456789123456789');
-console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
+const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
+console.log(interpolationSearch(sorted, 31)); // → 6
+console.log(interpolationSearch(sorted, 10)); // → -1
