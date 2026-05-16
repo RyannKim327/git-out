@@ -1,73 +1,42 @@
 /**
- * Return the median of two sorted numeric arrays.
- * Complexity: O(m + n) time, O(1) extra space (besides a few indices).
+ * Returns the largest prime factor of n.
+ *
+ * @param n The number (must be > 1).  Use `BigInt` if you’ll pass a value > Number.MAX_SAFE_INTEGER.
  */
-export function medianOfTwoSortedLinear(a: number[], b: number[]): number {
-  const m = a.length, n = b.length;
-  const total = m + n;
-  const k = Math.floor((total - 1) / 2); // 0‑based index of first median element
+export function largestPrimeFactor(n: number | bigint): number | bigint {
+    if (n <= 1) throw new Error('n must be > 1');
 
-  let i = 0, j = 0, count = 0;
-  let cur = 0, next = 0;
+    // Work with BigInt for arbitrary precision
+    let num: bigint = typeof n === 'bigint' ? n : BigInt(n);
+    let maxFactor: bigint = 1n;
 
-  while (count <= k) {
-    // Pick the next smallest element
-    if (i < m && (j >= n || a[i] <= b[j])) {
-      cur = next;   // shift previous value
-      next = a[i++];
-    } else {
-      cur = next;
-      next = b[j++];
+    // Handle factor 2 separately
+    while (num % 2n === 0n) {
+        maxFactor = 2n;
+        num /= 2n;
     }
-    count++;
-  }
 
-  // If total is odd, median is next
-  if (total % 2 === 1) {
-    return next;
-  }
-
-  // If total is even, median is average of cur and next
-  return (cur + next) / 2;
-}
-/**
- * Median of two sorted arrays in O(log(min(m,n))) time.
- * Assumes a and b are sorted in non‑decreasing order.
- */
-export function medianOfTwoSortedBinary(a: number[], b: number[]): number {
-  // Ensure a is the smaller array
-  if (a.length > b.length) return medianOfTwoSortedBinary(b, a);
-
-  let m = a.length, n = b.length;
-  let low = 0, high = m;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
-
-    const aLeft  = (i === 0)  ? Number.NEGATIVE_INFINITY : a[i - 1];
-    const aRight = (i === m) ? Number.POSITIVE_INFINITY : a[i];
-    const bLeft  = (j === 0)  ? Number.NEGATIVE_INFINITY : b[j - 1];
-    const bRight = (j === n) ? Number.POSITIVE_INFINITY : b[j];
-
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // Partitions are correct
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      high = i - 1; // move left in a
-    } else {
-      low = i + 1; // move right in a
+    // Now num is odd – we only need to check odd divisors
+    for (let divisor = 3n; divisor * divisor <= num; divisor += 2n) {
+        while (num % divisor === 0n) {
+            maxFactor = divisor;
+            num /= divisor;
+        }
     }
-  }
 
-  throw new Error('Input arrays are not sorted or sizes are incorrect.');
+    // If anything is left, it's a prime larger than any divisor we tried
+    if (num > 1n) maxFactor = num;
+
+    // Return a native number if the input was a number and the result fits
+    if (typeof n === 'number' && maxFactor <= Number.MAX_SAFE_INTEGER) {
+        return Number(maxFactor);
+    }
+    return maxFactor;
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
+console.log(largestPrimeFactor(28));          // 7
+console.log(largestPrimeFactor(91));          // 13
+console.log(largestPrimeFactor(600851475143));// 6857
 
-console.log(medianOfTwoSortedLinear(arr1, arr2));   // 8
-console.log(medianOfTwoSortedBinary(arr1, arr2));    // 8
+// With a BigInt (e.g. a 100‑digit number)
+const huge = BigInt('123456789123456789123456789');
+console.log(largestPrimeFactor(huge)); // prints the largest prime factor as a BigInt
