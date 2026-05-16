@@ -1,50 +1,35 @@
-/**
- * Returns n! for a positive integer n (or 0).
- * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
- */
-export function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers');
+// 1️⃣ Base & height
+export function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0)
+    throw new Error('Base and height must be positive numbers.');
+  return (base * height) / 2;
+}
+
+// 2️⃣ Heron’s formula (three sides)
+export function areaHeron(a: number, b: number, c: number): number {
+  // Validate that the sides can form a triangle
+  if (a <= 0 || b <= 0 || c <= 0) {
+    throw new Error('Side lengths must be positive numbers.');
   }
-  // 0! = 1, and the recursion base case covers that
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-console.log(factorialRecursive(5)); // 120
-console.log(factorialRecursive(0)); // 1
-export function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The provided sides do not satisfy the triangle inequality.');
   }
-  return result;
-}
-export function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-  let result = 1n; // BigInt literal
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
+  const s = (a + b + c) / 2;                // semi‑perimeter
+  const areaSquared = s * (s - a) * (s - b) * (s - c);
+
+  // area might be NaN if the vertices are collinear (area close to 0)
+  if (areaSquared < 0) {
+    throw new Error('Computed area squared is negative – check your side lengths.');
   }
-  return result;
+
+  return Math.sqrt(areaSquared);
 }
-console.log(factorialBigInt(20).toString()); // "2432902008176640000"
-console.log(factorialBigInt(100).toString()); // 158‑digit number
-const memo = new Map<number, number | bigint>();
+// Base & height
+const tri1 = areaBaseHeight(10, 4); // 20
 
-export function factorialMemo(n: number, useBigInt = false): number | bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n <= 1) return useBigInt ? 1n : 1;
+// Heron’s formula
+const tri2 = areaHeron(3, 4, 5);     // 6  – right‑triangle check
 
-  const key = n;
-  if (memo.has(key)) return memo.get(key)!;
-
-  const res = useBigInt
-    ? BigInt(n) * factorialMemo(n - 1, true)
-    : n * factorialMemo(n - 1, false);
-
-  memo.set(key, res);
-  return res;
-}
+console.log(`Base/Height area: ${tri1}`);
+console.log(`Heron area: ${tri2}`);
