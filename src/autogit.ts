@@ -1,60 +1,139 @@
+type Node = string | number;
+
+interface Edge {
+  to: Node;
+  weight: number;
+}
+
+type Graph = Map<Node, Edge[]>;         // adjacency list
+function buildGraph(edges: Array<[Node, Node, number]>): Graph {
+  const graph: Graph = new Map();
+  for (const [u, v, w] of edges) {
+    if (!graph.has(u)) graph.set(u, []);
+    graph.get(u)!.push({ to: v, weight: w });
+
+    // For an undirected graph, repeat the reverse edge:
+    // if (!graph.has(v)) graph.set(v, []);
+    // graph.get(v)!.push({ to: u, weight: w });
+  }
+  return graph;
+}
+class MinHeap<T> {
+  private data: { key: number; value: T }[] = [];
+
+  insert(key: number, value: T) {
+    this.data.push({ key, value });
+    this.bubbleUp(this.data.length - 1);
+  }
+
+  extractMin(): { key: number; value: T } | undefined {
+    if (!this.data.length) return undefined;
+    const min = this.data[0];
+    const end = this.data.pop()!;
+    if (this.data.length) {
+      this.data[0] = end;
+      this.bubbleDown(0);
+    }
+    return min;
+  }
+
+  private bubbleUp(idx: number) {
+    const element = this.data[idx];
+    while (idx > 0) {
+      const parentIdx = (idx - 1) >> 1;
+      const parent = this.data[parentIdx];
+      if (element.key >= parent.key) break;
+      this.data[idx] = parent;
+      this.data[parentIdx] = element;
+      idx = parentIdx;
+    }
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.data.length;
+    const element = this.data[idx];
+    while (true) {
+      let leftIdx = idx * 2 + 1;
+      let rightIdx = idx * 2 + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        const left = this.data[leftIdx];
+        if (left.key < element.key) swapIdx = leftIdx;
+      }
+      if (rightIdx < length) {
+        const right = this.data[rightIdx];
+        if (
+          (swapIdx === null && right.key < element.key) ||
+          (swapIdx !== null && right.key < this.data[swapIdx].key)
+        )
+          swapIdx = rightIdx;
+      }
+
+      if (swapIdx === null) break;
+      this.data[idx] = this.data[swapIdx];
+      this.data[swapIdx] = element;
+      idx = swapIdx;
+    }
+  }
+
+  get size() { return this.data.length; }
+}
 /**
- * Finds the Longest Common Subsequence (LCS) of two strings.
+ * Computes shortest-path distances from `source` to all reachable nodes.
  *
- * @param a – first string
- * @param b – second string
- * @returns an object `{ length, seq }`
- *   * `length` – length of the LCS
- *   * `seq`    – the LCS string itself (empty if none)
+ * @param graph  Adjacency list of the graph
+ * @param source The starting vertex
+ * @returns Map from each vertex to its shortest distance from the source
  */
-export function lcs(a: string, b: string) {
-  const m = a.length;
-  const n = b.length;
+function dijkstra(graph: Graph, source: Node): Map<Node, number> {
+  const dist = new Map<Node, number>();
+  const heap = new MinHeap<Node>();
 
-  /* 1. Build DP table:  (m+1) × (n+1) */
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    Array(n + 1).fill(0)
-  );
+  // initialise: distance to source is 0, all others are +∞
+  for (const node of graph.keys()) {
+    const initial = node === source ? 0 : Infinity;
+    dist.set(node, initial);
+    heap.insert(initial, node);
+  }
 
-  for (let i = 1; i <= m; i++) {
-    const ca = a[i - 1];
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        ca === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  while (heap.size > 0) {
+    const { key: d, value: u } = heap.extractMin()!;
+    // Skip entries that are stale because a shorter path was already processed
+    if (d > dist.get(u)!) continue;
+
+    for (const edge of graph.get(u)!) {
+      const alt = d + edge.weight;
+      if (alt < dist.get(edge.to)!) {
+        dist.set(edge.to, alt);
+        heap.insert(alt, edge.to);
+      }
     }
   }
 
-  /* 2. Back‑track to recover the sequence */
-  let i = m,
-    j = n,
-    seqArr: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      seqArr.push(a[i - 1]); // match – add to subsequence
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--; // move up
-    } else {
-      j--; // move left
-    }
-  }
-
-  // The string is built backwards, so reverse it
-  const seq = seqArr.reverse().join('');
-  return { length: dp[m][n], seq };
+  return dist;
 }
-const prev: number[] = Array(n + 1).fill(0);
-const curr: number[] = Array(n + 1);
-for (let i = 1; i <= m; i++) {
-  curr[0] = 0;
-  for (let j = 1; j <= n; j++) {
-    curr[j] =
-      a[i - 1] === b[j - 1]
-        ? prev[j - 1] + 1
-        : Math.max(prev[j], curr[j - 1]);
-  }
-  // swap
-  [prev, curr] = [curr, prev];
+const edges: Array<[Node, Node, number]> = [
+  ['A', 'B', 5],
+  ['A', 'C', 2],
+  ['B', 'C', 1],
+  ['B', 'D', 2],
+  ['C', 'D', 3],
+  ['C', 'E', 1],
+  ['D', 'E', 2],
+  ['D', 'F', 1],
+  ['E', 'F', 4]
+];
+
+const graph = buildGraph(edges);
+
+const distances = dijkstra(graph, 'A');
+
+for (const node of graph.keys()) {
+  console.log(`Distance from A to ${node}: ${distances.get(node)}`);
 }
+Distance from A to A: 0
+Distance from A to B: 4
+Distance from A to C: 2
+Distance from A to D: 5
+
