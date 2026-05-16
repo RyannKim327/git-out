@@ -1,42 +1,14 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr     Sorted array to search
- * @param target  Value to find
- * @param lessThan Comparator that returns true if  a < b
- * @returns Index of the target or -1 if not found
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  lessThan: (a: T, b: T) => boolean
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
+// or, if you only want literal space characters (not tabs, newlines, …)
+const clean = str.replaceAll(' ', '');
+const input = "  Why   are   we  still  here?  \n";
 
-  while (low <= high) {
-    // middle index – use bit‑shifting to avoid overflow
-    const mid = (low + high) >> 1;
-    const midVal = arr[mid];
+const withoutAllWhitespace = input.replace(/\s+/g, '');
+console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
 
-    if (lessThan(target, midVal)) {
-      high = mid - 1; // target is in the left half
-    } else if (lessThan(midVal, target)) {
-      low = mid + 1; // target is in the right half
-    } else {
-      return mid; // found
-    }
-  }
+const withoutOnlySpaces = input.replaceAll(' ', '');
+console.log(withoutOnlySpaces);  // "Why\there? "
 
-  return -1; // not found
-}
-const nums = [1, 3, 5, 7, 9, 11];
-
-// simple number comparison
-const index = binarySearch(nums, 7, (a, b) => a < b);
-console.log(index); // 3
-
-// with strings
-const words = ['apple', 'banana', 'cherry', 'date'];
-const idx = binarySearch(words, 'cherry', (a, b) => a < b);
-console.log(idx); // 2
+// If you want to keep line breaks but trim spaces:
+const trimmed = input.trim();  // removes spaces at the start/end only
+const noSpaces = str.split(' ').join('');
