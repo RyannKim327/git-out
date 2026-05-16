@@ -1,32 +1,45 @@
+dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
+if s1[i] === s2[j]
+    dp[i][j] = dp[i‑1][j‑1] + 1
+else
+    dp[i][j] = 0
 /**
- * Returns the second largest value in the array, or `undefined` if it can’t exist.
- * If you need the second *distinct* largest value, set `distinct = true`.
+ * Returns the longest common substring of two strings.
+ * If there are multiple substrings of the same maximal length,
+ * the first one encountered is returned.
  */
-function secondLargest(nums: number[], distinct = false): number | undefined {
-  if (nums.length < 2) return undefined;          // not enough numbers
+function longestCommonSubstring(a: string, b: string): string {
+    if (!a || !b) return "";
 
-  // Fast path: sort once, pick the second element
-  // (O(n log n) – fine for small arrays)
-  if (!distinct) {
-    const sorted = [...nums].sort((a, b) => b - a); // descending
-    return sorted[1];
-  }
+    const n = a.length;
+    const m = b.length;
 
-  // O(n) single‑pass solution for distinct values
-  let max = Number.NEGATIVE_INFINITY;
-  let second = Number.NEGATIVE_INFINITY;
+    // Use a 1‑D array to hold the previous row of DP values.
+    let prev = new Array(m + 1).fill(0);
+    let curr = new Array(m + 1).fill(0);
 
-  for (const n of nums) {
-    if (n > max) {
-      second = max;
-      max = n;
-    } else if (n < max && n > second) {
-      second = n;
+    let bestLen = 0;
+    let bestEndIdxInA = 0; // index in `a` where the best substring ends
+
+    for (let i = 1; i <= n; i++) {
+        for (let j = 1; j <= m; j++) {
+            if (a[i - 1] === b[j - 1]) {
+                curr[j] = prev[j - 1] + 1;
+                if (curr[j] > bestLen) {
+                    bestLen = curr[j];
+                    bestEndIdxInA = i;
+                }
+            } else {
+                curr[j] = 0;
+            }
+        }
+        // swap references for the next iteration
+        [prev, curr] = [curr, prev];
     }
-  }
 
-  return second === Number.NEGATIVE_INFINITY ? undefined : second;
+    if (bestLen === 0) return "";
+    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
 }
-console.log(secondLargest([5, 1, 7, 3]));     // → 5
-console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
-console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
+console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
+console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
+console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
