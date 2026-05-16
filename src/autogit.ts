@@ -1,95 +1,56 @@
-type EdgeMap = Map<number, Node>; // key = first char code of the edge
+/**
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
+ */
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-export class Node {
-  // Children edges keyed by first character code
-  public children: EdgeMap = new Map();
+  if (m === 0 || n < m) return result;       // edge cases
 
-  // Edge that leads **to** this node
-  public start: number = -1;           // inclusive
-  public end: number = -1;             // exclusive
-  public suffixLink: Node | null = null;
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
 
-  constructor(start: number = -1, end: number = -1) {
-    this.start = start;
-    this.end   = end;
-  }
-}
-export class SuffixTree {
-  /** original text, appended with a unique terminator that does not appear elsewhere */
-  private text: string[];
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
 
-  /** root node */
-  private root: Node = new Node();
-
-  /** active point */
-  private activeNode: Node = this.root;
-  private activeEdge: number | null = null;
-  private activeLength: number = 0;
-
-  /** number of suffixes that have yet to be inserted for the current phase */
-  private remainder: number = 0;
-
-  /** end index for leaves – shared so all leaves refer to the current suffix end */
-  private leafEnd: number = -1;
-
-  constructor(text: string) {
-    // Ensure a single terminator is appended; '#' is common
-    this.text = text.split('').concat('#');
-    this.build();
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
   }
 
-  /** Core driver – runs one pass over the text */
-  private build(): void {
-    for (let i = 0; i < this.text.length; i++) {
-      this.extend(i);
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
     }
   }
 
-  /** Ukkonen’s “extension” for position i of the text */
-  private extend(pos: number): void {
-    this.leafEnd = pos;  // All current leaves stretch to the new char
+  return result;
+}
+const text = "abracadabra";
+const pattern = "abra";
 
-    this.remainder++;   // We have one more suffix to add
-
-    let lastNewNode: Node | null = null;
-
-    while (this.remainder > 0) {
-      if (this.activeLength === 0) {
-        // Start a new edge from the active node
-        this.activeEdge = pos;
-      }
-
-      const activeChar = this.text[this.activeEdge!];
-      const child = this.activeNode.children.get(activeChar.charCodeAt(0));
-
-      // 1. No edge starting with the active char → create a leaf
-      if (!child) {
-        const leaf = new Node(pos, Infinity); // Infinity means “extends to leafEnd”
-        this.activeNode.children.set(activeChar.charCodeAt(0), leaf);
-
-        // set suffix link for last internal node
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this.activeNode;
-          lastNewNode = null;
-        }
-      }
-      // 2. Edge exists → walk down if we have to
-      else if (this.walkDown(child, pos)) {
-        // edge fully traversed – repeat loop with updated active point
-        continue;
-      }
-      // 3. Edge exists but activeLength < edge length → split edge
-      else {
-        const edgeLen = this.edgeLength(child, pos);
-        if (this.activeLength === edgeLen) {
-          // If we are *exactly* at the end of an edge, further walk down happens
-          if (lastNewNode && this.activeNode !== this.root) {
-            lastNewNode.suffixLink = this.activeNode;
-            lastNewNode = null;
-          }
-          this.activeNode = child;
-          this.activeLength++; // effectively moving to next character on edge
-          break;               // proceed to next i
-        }
-
-        // Create internal node
+console.log(rabinKarp(text, pattern)); // → [0, 7]
