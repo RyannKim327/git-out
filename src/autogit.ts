@@ -1,43 +1,46 @@
-/**
- * Random‑pivot QuickSort
- *
- * @param data - array of numbers to sort in place
- * @returns the sorted array
- */
-function randomQuickSort(data: number[]): number[] {
-  // Helper that actually does the work, using indices so the call stack is shallow.
-  function sort(left: number, right: number) {
-    if (left >= right) return;
+interface ListNode<T = unknown> {
+  value: T;
+  next?: ListNode<T>;
+}
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false; // an empty list can’t have a cycle
 
-    // Pick a random index between left and right (inclusive)
-    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-    // Swap pivot with the last element – easier partitioning
-    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
-    const pivot = data[right];
+  let slow = head;
+  let fast = head.next; // fast starts one step ahead
 
-    let i = left - 1; // elements ≤ pivot will be to the left of i
+  while (fast && fast.next) {
+    if (slow === fast) return true; // cycle detected
 
-    for (let j = left; j < right; j++) {
-      if (data[j] <= pivot) {
-        i++;
-        [data[i], data[j]] = [data[j], data[i]];
-      }
-    }
-
-    // place pivot after the last smaller element
-    const finalPivotPos = i + 1;
-    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
-
-    // Recurse on each partition
-    sort(left, finalPivotPos - 1);
-    sort(finalPivotPos + 1, right);
+    slow = slow.next!;          // move one step
+    fast = fast.next.next!; // move two steps
   }
 
-  sort(0, data.length - 1);
-  return data;
+  return false; // reached the end, no cycle
 }
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+  let current = head;
 
-/* --- demo ------------------------------------ */
-const arr = [5, 2, 9, 1, 5, 6];
-console.log('original:', arr);
-console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
+  while (current) {
+    if (visited.has(current)) return true; // we’re back at a node we saw
+    visited.add(current);
+    current = current.next;
+  }
+
+  return false;
+}
+// build a small example
+const a: ListNode = { value: 1 };
+const b: ListNode = { value: 2 };
+const c: ListNode = { value: 3 };
+
+a.next = b;
+b.next = c;
+c.next = a; // ← closes the loop
+
+console.log(hasCycle(a));          // true
+console.log(hasCycleWithSet(a));   // true
+
+// break the cycle
+c.next = undefined;
+console.log(hasCycle(a));          // false
