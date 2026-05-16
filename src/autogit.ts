@@ -1,50 +1,35 @@
-/**
- * Returns n! for a positive integer n (or 0).
- * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
- */
-export function factorialRecursive(n: number): number {
-  if (n < 0) {
-    throw new Error('Factorial is only defined for non‑negative integers');
-  }
-  // 0! = 1, and the recursion base case covers that
-  if (n <= 1) return 1;
-  return n * factorialRecursive(n - 1);
-}
-console.log(factorialRecursive(5)); // 120
-console.log(factorialRecursive(0)); // 1
-export function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+/*  0001‑random‑ts‑with‑input.ts  */
 
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-export function factorialBigInt(n: number): bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+import * as readline from 'node:readline';
 
-  let result = 1n; // BigInt literal
-  for (let i = 2; i <= n; i++) {
-    result *= BigInt(i);
-  }
-  return result;
-}
-console.log(factorialBigInt(20).toString()); // "2432902008176640000"
-console.log(factorialBigInt(100).toString()); // 158‑digit number
-const memo = new Map<number, number | bigint>();
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-export function factorialMemo(n: number, useBigInt = false): number | bigint {
-  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
-  if (n <= 1) return useBigInt ? 1n : 1;
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
 
-  const key = n;
-  if (memo.has(key)) return memo.get(key)!;
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
 
-  const res = useBigInt
-    ? BigInt(n) * factorialMemo(n - 1, true)
-    : n * factorialMemo(n - 1, false);
-
-  memo.set(key, res);
-  return res;
-}
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
