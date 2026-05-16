@@ -1,169 +1,46 @@
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree for any type T that can be compared via a comparator
-   ────────────────────────────────────────────────────────────────────── */
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-interface Node<T> {
-  value: T;
-  left?: Node<T>;
-  right?: Node<T>;
-  height: number;           // height of the subtree rooted at this node
+  // A little help‑trim: you can decide to ignore whitespace, case, etc.
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
+
+  const sortedA = normalize(a).split('').sort().join('');
+  const sortedB = normalize(b).split('').sort().join('');
+
+  return sortedA === sortedB;
 }
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-type Comparator<T> = (a: T, b: T) => number;
+  const freq = new Map<string, number>();
 
-/* ──────────────────────────────────────────────────────────────────────
-   Binary‑search‑tree helper: node height, balance factor, update
-   ────────────────────────────────────────────────────────────────────── */
+  for (const ch of a) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-function nodeHeight<T>(n: Node<T> | undefined): number {
-  return n ? n.height : 0;
+  for (const ch of b) {
+    const count = freq.get(ch);
+    if (!count) return false;          // either zero or undefined
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  return freq.size === 0;
 }
+function areAnagramsAscii(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-function balanceFactor<T>(n: Node<T> | undefined): number {
-  return n ? nodeHeight(n.left) - nodeHeight(n.right) : 0;
+  const counts = new Uint32Array(26);
+
+  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
+  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
+
+  return counts.every(v => v === 0);
 }
+const compact = (s: string) =>
+  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
 
-function updateHeight<T>(n: Node<T>): void {
-  n.height = 1 + Math.max(nodeHeight(n.left), nodeHeight(n.right));
+function areAnagramsClean(a: string, b: string): boolean {
+  return areAnagrams(compact(a), compact(b));
 }
-
-/* ──────────────────────────────────────────────────────────────────────
-   Rotations
-   ────────────────────────────────────────────────────────────────────── */
-
-function rotateRight<T>(y: Node<T>): Node<T> {
-  const x = y.left!;
-  const T2 = x.right;
-
-  // Rotation
-  x.right = y;
-  y.left = T2;
-
-  // Update heights
-  updateHeight(y);
-  updateHeight(x);
-  return x;                  // new root
-}
-
-function rotateLeft<T>(x: Node<T>): Node<T> {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // Rotation
-  y.left = x;
-  x.right = T2;
-
-  // Update heights
-  updateHeight(x);
-  updateHeight(y);
-  return y;                  // new root
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   Rebalance a node
-   ────────────────────────────────────────────────────────────────────── */
-
-function rebalance<T>(node: Node<T>): Node<T> {
-  updateHeight(node);
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (balanceFactor(node.left) < 0) {
-      node.left = rotateLeft(node.left!);
-    }
-    return rotateRight(node);
-  }
-
-  // Right heavy
-  if (bf < -1) {
-    if (balanceFactor(node.right) > 0) {
-      node.right = rotateRight(node.right!);
-    }
-    return rotateLeft(node);
-  }
-
-  return node;   // already balanced
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree class
-   ────────────────────────────────────────────────────────────────────── */
-
-export class AVLTree<T> {
-  private root?: Node<T>;
-  private readonly compare: Comparator<T>;
-
-  constructor(compareFn: Comparator<T>) {
-    this.compare = compareFn;
-  }
-
-  /* ── PUBLIC API ───────────────────────────────────────────────────── */
-
-  insert(value: T): void {
-    this.root = this._insert(this.root, value);
-  }
-
-  delete(value: T): void {
-    this.root = this._delete(this.root, value);
-  }
-
-  find(value: T): Node<T> | undefined {
-    return this._find(this.root, value);
-  }
-
-  /** In‑order traversal – handy for visualising the tree */
-  inOrder(): T[] {
-    const res: T[] = [];
-    this._inOrder(this.root, res);
-    return res;
-  }
-
-  /** Return raw root – useful for debugging */
-  getRoot(): Node<T> | undefined {
-    return this.root;
-  }
-
-  /* ── INTERNAL IMPLEMENTATION ─────────────────────────────────────── */
-
-  private _insert(node: Node<T> | undefined, value: T): Node<T> {
-    if (!node) return { value, height: 1 };           // new leaf
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) node.left  = this._insert(node.left,  value);
-    else if (cmp > 0) node.right = this._insert(node.right, value);
-    else return node;                                 // ignore duplicates
-
-    return rebalance(node);
-  }
-
-  private _find(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-    const cmp = this.compare(value, node.value);
-    if (cmp === 0) return node;
-    return cmp < 0 ? this._find(node.left,  value) : this._find(node.right, value);
-  }
-
-  private _inOrder(node: Node<T> | undefined, out: T[]): void {
-    if (!node) return;
-    this._inOrder(node.left, out);
-    out.push(node.value);
-    this._inOrder(node.right, out);
-  }
-
-  /** Delete and rebalance */
-  private _delete(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) {
-      node.left = this._delete(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._delete(node.right, value);
-    } else {
-      // node to delete found
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // Two children: use in‑order predecessor (max of left subtree)
-      const maxLeft = this._max
