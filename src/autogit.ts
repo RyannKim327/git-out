@@ -1,74 +1,42 @@
-// src/utils/http.ts
-import { knownFolders, File } from '@nativescript/core';
+/**
+ * Binary search on a sorted array.
+ *
+ * @param arr     Sorted array to search
+ * @param target  Value to find
+ * @param lessThan Comparator that returns true if  a < b
+ * @returns Index of the target or -1 if not found
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  lessThan: (a: T, b: T) => boolean
+): number {
+  let low = 0;
+  let high = arr.length - 1;
 
-// ──────────────────────────────────────────────────────────────────
-// Step 1 – A friendly async helper that does the fetch
-// ──────────────────────────────────────────────────────────────────
-export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+  while (low <= high) {
+    // middle index – use bit‑shifting to avoid overflow
+    const mid = (low + high) >> 1;
+    const midVal = arr[mid];
 
-  try {
-    const resp = await fetch(url, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        // add any custom headers you need
-      },
-    });
-
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
+    if (lessThan(target, midVal)) {
+      high = mid - 1; // target is in the left half
+    } else if (lessThan(midVal, target)) {
+      low = mid + 1; // target is in the right half
+    } else {
+      return mid; // found
     }
-
-    const json = await resp.json() as T;
-    return json;
-  } finally {
-    clearTimeout(id);
   }
+
+  return -1; // not found
 }
+const nums = [1, 3, 5, 7, 9, 11];
 
-// ──────────────────────────────────────────────────────────────────
-// Step 2 – Call it from an Android Activity / Page, e.g.
-// ──────────────────────────────────────────────────────────────────
-export async function demoFetch() {
-  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
+// simple number comparison
+const index = binarySearch(nums, 7, (a, b) => a < b);
+console.log(index); // 3
 
-  try {
-    const data = await getJson<any>(apiUrl);
-    console.log('Data received:', data);
-
-    // If you want to touch the UI, do it on the UI thread
-    // (in NativeScript you can simply update a component property,
-    // or use a dispatcher if you’re outside a component)
-  } catch (err) {
-    console.error('fetch error:', err);
-    // In an Android UI you might show a toast:
-    const Toast = android.widget.Toast;
-    const ctx = android.content.Context;
-    const activity = /** get the current activity from your page **/;
-    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
-  }
-}
-
-/*
-  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
-
-  import { demoFetch } from '~/utils/http';
-
-  export function pageLoaded(args) {
-    demoFetch();
-  }
-*/
-const HttpGetTask = android.os.AsyncTask.extend({
-  doInBackground: function (params) {
-    try {
-      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
-      const conn = url.openConnection() as java.net.HttpURLConnection;
-      conn.setRequestMethod('GET');
-      conn.setConnectTimeout(5000);
-      conn.setReadTimeout(5000);
-
-      const reader = new java.io.BufferedReader(
-
+// with strings
+const words = ['apple', 'banana', 'cherry', 'date'];
+const idx = binarySearch(words, 'cherry', (a, b) => a < b);
+console.log(idx); // 2
