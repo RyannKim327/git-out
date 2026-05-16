@@ -1,51 +1,39 @@
 /**
- * Radix sort for non‑negative integers.
- * @param arr  –   array of numbers to sort
- * @returns    –   a new sorted array (the input is unchanged)
+ * Return a random integer *between* `min` and `max` **inclusive**.
+ *
+ * @param min - lowest possible value
+ * @param max - highest possible value
  */
-export function radixSort(arr: number[]): number[] {
-  if (!Array.isArray(arr) || arr.length === 0) return [];
-
-  // 1. Find the maximum value to know how many digits we need
-  const max = Math.max(...arr);
-  const base = 10;                     // decimal digits
-  const maxDigits = Math.floor(Math.log10(max)) + 1;
-
-  // 2. Work on a copy so we don't mutate the original array
-  let output = [...arr];
-  let digitPlace = 1;   // 1, 10, 100, …
-
-  for (let d = 0; d < maxDigits; d++) {
-    // 3. Counting sort for the current digit
-    const count = new Array(base).fill(0);
-
-    // Count occurrences of each digit
-    for (const num of output) {
-      const digit = Math.floor((num / digitPlace) % base);
-      count[digit]++;
-    }
-
-    // Make count[i] contain the actual position of this digit
-    for (let i = 1; i < base; i++) {
-      count[i] += count[i - 1];
-    }
-
-    // 4. Build the output array from the end to maintain stability
-    const temp = new Array(output.length);
-    for (let i = output.length - 1; i >= 0; i--) {
-      const num = output[i];
-      const digit = Math.floor((num / digitPlace) % base);
-      const idx = --count[digit];
-      temp[idx] = num;
-    }
-
-    // After moving all numbers, we’ll sort by the next digit
-    output = temp;
-    digitPlace *= base;
-  }
-
-  return output;
+function randInt(min: number, max: number): number {
+  const lower = Math.ceil(min);                // in case min is decimal
+  const upper = Math.floor(max);               // in case max is decimal
+  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted));
-// → [2, 24, 45, 66, 75, 90, 170, 802]
+const roll = randInt(1, 6);   // a fair 1‑to‑6 dice roll
+console.log(roll);            // 1, 2, 3, 4, 5, or 6
+/**
+ * Return a random float *between* `min` (inclusive) and `max` (exclusive).
+ *
+ * @param min - lowest possible value
+ * @param max - value we’ll never hit
+ */
+function randFloat(min = 0, max = 1): number {
+  return Math.random() * (max - min) + min;
+}
+const lerp = randFloat(0, 1);   // a random number in [0, 1)
+// Simple LCG – not cryptographically secure,
+// but good enough for games, demos, tests etc.
+function lcg(seed: number) {
+  const m = 0x80000000; // 2^31
+  const a = 1103515245;
+  const c = 12345;
+  let state = seed % m;
+  return () => {
+    state = (a * state + c) % m;
+    return state / m; // raw [0,1)
+  };
+}
+
+const random = lcg(123456);          // seed=123456
+const randIntSeeded = (min: number, max: number) =>
+  Math.floor(random() * (max - min + 1)) + min;
