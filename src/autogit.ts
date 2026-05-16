@@ -1,35 +1,50 @@
 /**
- * Returns the longest common prefix of an array of strings.
- * If the array is empty, returns an empty string.
- *
- * @param words - array of strings
- * @returns longest common prefix
+ * Returns n! for a positive integer n (or 0).
+ * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
  */
-function longestCommonPrefix(words: string[]): string {
-  if (words.length === 0) return '';
-
-  // 1. Find the min and max strings (lexicographically)
-  let min = words[0];
-  let max = words[0];
-  for (let i = 1; i < words.length; i++) {
-    const w = words[i];
-    if (w < min) min = w;
-    if (w > max) max = w;
+export function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error('Factorial is only defined for non‑negative integers');
   }
-
-  // 2. Find first mismatch between min and max
-  let j = 0;
-  while (j < min.length && j < max.length && min[j] === max[j]) {
-    j++;
-  }
-
-  // 3. Slice the common part
-  return min.slice(0, j);
+  // 0! = 1, and the recursion base case covers that
+  if (n <= 1) return 1;
+  return n * factorialRecursive(n - 1);
 }
-const arr = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(arr)); // → "fl"
+console.log(factorialRecursive(5)); // 120
+console.log(factorialRecursive(0)); // 1
+export function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
 
-console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
-console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
-console.log(longestCommonPrefix(['single'])); // → "single"
-console.log(longestCommonPrefix([])); // → ""
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+export function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+
+  let result = 1n; // BigInt literal
+  for (let i = 2; i <= n; i++) {
+    result *= BigInt(i);
+  }
+  return result;
+}
+console.log(factorialBigInt(20).toString()); // "2432902008176640000"
+console.log(factorialBigInt(100).toString()); // 158‑digit number
+const memo = new Map<number, number | bigint>();
+
+export function factorialMemo(n: number, useBigInt = false): number | bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n <= 1) return useBigInt ? 1n : 1;
+
+  const key = n;
+  if (memo.has(key)) return memo.get(key)!;
+
+  const res = useBigInt
+    ? BigInt(n) * factorialMemo(n - 1, true)
+    : n * factorialMemo(n - 1, false);
+
+  memo.set(key, res);
+  return res;
+}
