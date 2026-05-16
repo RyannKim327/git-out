@@ -1,46 +1,33 @@
 /**
- * Returns the majority element of a non‑empty array
- * or null if no majority exists.
+ * Returns `true` if the supplied value is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores all non‑alphanumeric characters
+ *
+ * @example
+ * isPalindrome("A man, a plan, a canal: Panama") // → true
+ * isPalindrome("Madam")                          // → true
+ * isPalindrome("Hello")                          // → false
  */
-function majorityElement(nums: number[]): number | null {
-  let candidate: number | null = null;
-  let count = 0;
+export function isPalindrome(str: string): boolean {
+  // Keep only alphanumeric characters and lower‑case the rest.
+  const cleaned = str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 
-  // 1️⃣ first pass – find a candidate
-  for (const x of nums) {
-    if (count === 0) {
-      candidate = x;
-      count = 1;
-    } else if (x === candidate) {
-      count++;
-    } else {
-      count--;
+  // Two‑pointer technique: compare chars from both ends.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
     }
+    left++;
+    right--;
   }
 
-  // 2️⃣ optional second pass – verify the candidate
-  if (candidate !== null) {
-    count = 0;
-    for (const x of nums) if (x === candidate) count++;
-
-    return count > Math.floor(nums.length / 2) ? candidate : null;
-  }
-
-  return null;
+  return true;
 }
-const arr = [1, 2, 3, 1, 1];
-console.log(majorityElement(arr)); // 1
-
-const noMajority = [1, 2, 3, 4];
-console.log(majorityElement(noMajority)); // null
-function majorityWithMap(nums: number[]): number | null {
-  const freq = new Map<number, number>();
-  const half = Math.floor(nums.length / 2);
-
-  for (const x of nums) {
-    const newCount = (freq.get(x) || 0) + 1;
-    freq.set(x, newCount);
-    if (newCount > half) return x;
-  }
-  return null;
-}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("Hello"));                         // false
