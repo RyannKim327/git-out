@@ -1,75 +1,171 @@
-// -------------------------------------------------------------
-// 1️⃣  O(n²) DP – intuition + implementation
-// -------------------------------------------------------------
-function lisDP(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
+// ------------------------------------------------------------
+//  1️⃣  Types / data structures
+// ------------------------------------------------------------
+export type ID = string | number;
 
-  // dp[i]  – length of LIS that ends at index i
-  const dp: number[] = Array(n).fill(1);
-  // prev[i] – previous index in the LIS that ends at i
-  const prev: number[] = Array(n).fill(-1);
+// Location on a grid (for the example)
+export interface Point {
+  x: number;
+  y: number;
+  toString(): string;           // stringify for use as Map keys
+}
 
-  let bestEnd = 0; // index where the overall best LIS ends
+export class PointImpl implements Point {
+  constructor(public x: number, public y: number) {}
+  toString() { return `${this.x},${this.y}`; }
 
-  for (let i = 0; i < n; ++i) {
-    for (let j = 0; j < i; ++j) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-        prev[i] = j;
+  // For the priority queue we need a score
+  distanceTo(other: Point) {
+    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y); // manhattan
+  }
+}
+
+// Edge connects two nodes with a weight (default = 1)
+export interface Edge<T> {
+  from: T;
+  to: T;
+  weight: number;
+  cost?: number;          // will be filled later
+}
+
+export type Graph<T> = Map<T, Edge<T>[]>; // adjacency list
+
+// ------------------------------------------------------------
+//  2️⃣  Binary‑heap priority queue (min‑heap)
+// ------------------------------------------------------------
+class HeapNode<T> {
+  constructor(public key: number, public value: T) {}
+}
+
+export class PriorityQueue<T> {
+  private heap: HeapNode<T>[] = [];
+
+  get size() { return this.heap.length; }
+  empty() { return this.size === 0; }
+
+  push(key: number, value: T) {
+    this.heap.push(new HeapNode(key, value));
+    this.bubbleUp(this.size - 1);
+  }
+  pop(): HeapNode<T> | undefined {
+    if (this.empty()) return;
+    const top = this.heap[0];
+    const last = this.heap.pop()!;
+    if (!this.empty()) {
+      this.heap[0] = last;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(i: number) {
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.heap[p].key <= this.heap[i].key) break;
+      [this.heap[p], this.heap[i]] = [this.heap[i], this.heap[p]];
+      i = p;
+    }
+  }
+  private bubbleDown(i: number) {
+    const n = this.size;
+    while (true) {
+      let l = (i << 1) + 1, r = l + 1, smallest = i;
+      if (l < n && this.heap[l].key < this.heap[smallest].key) smallest = l;
+      if (r < n && this.heap[r].key < this.heap[smallest].key) smallest = r;
+      if (smallest === i) break;
+      [this.heap[i], this.heap[smallest]] = [this.heap[smallest], this.heap[i]];
+      i = smallest;
+    }
+  }
+}
+
+// ------------------------------------------------------------
+//  3️⃣  AStar implementation
+// ------------------------------------------------------------
+export interface AStarOptions<T> {
+  graph: Graph<T>;
+  heuristic: (a: T, b: T) => number;
+  start: T;
+  goal: T;
+}
+
+export function aStar<T>(opts: AStarOptions<T>): { path: T[]; cost: number } | null {
+  const { graph, heuristic, start, goal } = opts;
+
+  const open = new PriorityQueue<T>();
+  open.push(0, start);
+
+  const cameFrom = new Map<T, T | null>();
+  const gScore = new Map<T, number>();
+
+  cameFrom.set(start, null);
+  gScore.set(start, 0);
+
+  while (!open.empty()) {
+    const node = open.pop()!;
+    const u = node.value;
+
+    if (u === goal) {
+      // reconstruct
+      const path: T[] = [];
+      let cur: T | null = u;
+      while (cur !== null) {
+        path.push(cur);
+        cur = cameFrom.get(cur) ?? null;
+      }
+      path.reverse();
+      return { path, cost: gScore.get(u)! };
+    }
+
+    for (const edge of graph.get(u) ?? []) {
+      const v = edge.to;
+      const tentativeG = gScore.get(u)! + edge.weight;
+
+      if (!gScore.has(v) || tentativeG < gScore.get(v)!) {
+        cameFrom.set(v, u);
+        gScore.set(v, tentativeG);
+
+        const f = tentativeG + heuristic(v, goal);
+        open.push(f, v);
       }
     }
-    if (dp[i] > dp[bestEnd]) bestEnd = i;
   }
 
-  // Rebuild the sequence
-  const seq: number[] = [];
-  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
-  seq.reverse();
-
-  return { length: dp[bestEnd], sequence: seq };
+  return null; // no path
 }
-// -------------------------------------------------------------
-// 2️⃣  O(n log n) – patience sorting + back‑tracking
-// -------------------------------------------------------------
-function lisPatience(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
 
-  // tails[i] – index of the smallest tail of LIS with length i+1
-  const tails: number[] = [];
-  // parentIdx[i] – previous index in LIS that ends at i
-  const parentIdx: number[] = Array(n).fill(-1);
+// ------------------------------------------------------------
+//  4️⃣  Example – 4×4 grid with obstacles
+// ------------------------------------------------------------
+function buildGridGraph(width: number, height: number, walls: Set<string>): Graph<Point> {
+  const graph = new Map<Point, Edge<Point>[]>();
 
-  for (let i = 0; i < n; ++i) {
-    const x = arr[i];
+  const dirs = [
+    [0, -1], [1, 0], [0, 1], [-1, 0],
+  ];
 
-    // Binary search: first tail >= x
-    let lo = 0, hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (arr[tails[mid]] < x) lo = mid + 1;
-      else hi = mid;
+  for (let y = 0; y < height; ++y) {
+    for (let x = 0; x < width; ++x) {
+      const p = new PointImpl(x, y);
+      if (walls.has(p.toString())) continue;
+
+      const neighbours: Edge<Point>[] = [];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+        const q = new PointImpl(nx, ny);
+        if (walls.has(q.toString())) continue;
+        neighbours.push({ from: p, to: q, weight: 1 });
+      }
+      graph.set(p, neighbours);
     }
-
-    // lo now points to position where x will go
-    if (lo > 0) parentIdx[i] = tails[lo - 1];
-
-    if (lo === tails.length) tails.push(i);
-    else tails[lo] = i;
   }
 
-  // Reconstruct sequence
-  const seq: number[] = [];
-  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
-  seq.reverse();
-
-  return { length: tails.length, sequence: seq };
+  return graph;
 }
-const example = [10, 9, 2, 5, 3, 7, 101, 18];
 
-console.log(lisDP(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
-
-console.log(lisPatience(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+export async function main() {
+  const width = 4, height = 4;
+  const walls = new Set<string>([
+    new PointImpl(1, 1).toString(),
+    new PointImpl(2, 1).
