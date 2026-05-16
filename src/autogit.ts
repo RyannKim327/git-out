@@ -1,45 +1,50 @@
-dp[i][j] = length of longest common suffix of s1[0…i] and s2[0…j]
-if s1[i] === s2[j]
-    dp[i][j] = dp[i‑1][j‑1] + 1
-else
-    dp[i][j] = 0
 /**
- * Returns the longest common substring of two strings.
- * If there are multiple substrings of the same maximal length,
- * the first one encountered is returned.
+ * Returns n! for a positive integer n (or 0).
+ * Uses recursion – safe for small n, but can hit the call‑stack for big ones.
  */
-function longestCommonSubstring(a: string, b: string): string {
-    if (!a || !b) return "";
-
-    const n = a.length;
-    const m = b.length;
-
-    // Use a 1‑D array to hold the previous row of DP values.
-    let prev = new Array(m + 1).fill(0);
-    let curr = new Array(m + 1).fill(0);
-
-    let bestLen = 0;
-    let bestEndIdxInA = 0; // index in `a` where the best substring ends
-
-    for (let i = 1; i <= n; i++) {
-        for (let j = 1; j <= m; j++) {
-            if (a[i - 1] === b[j - 1]) {
-                curr[j] = prev[j - 1] + 1;
-                if (curr[j] > bestLen) {
-                    bestLen = curr[j];
-                    bestEndIdxInA = i;
-                }
-            } else {
-                curr[j] = 0;
-            }
-        }
-        // swap references for the next iteration
-        [prev, curr] = [curr, prev];
-    }
-
-    if (bestLen === 0) return "";
-    return a.slice(bestEndIdxInA - bestLen, bestEndIdxInA);
+export function factorialRecursive(n: number): number {
+  if (n < 0) {
+    throw new Error('Factorial is only defined for non‑negative integers');
+  }
+  // 0! = 1, and the recursion base case covers that
+  if (n <= 1) return 1;
+  return n * factorialRecursive(n - 1);
 }
-console.log(longestCommonSubstring("ABCDXYZ", "XYZABCD"));   // → "ABCD"
-console.log(longestCommonSubstring("abcde", "fgh"));        // → ""
-console.log(longestCommonSubstring("abcPQRSTabc", "XYabcZ")); // → "abc"
+console.log(factorialRecursive(5)); // 120
+console.log(factorialRecursive(0)); // 1
+export function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+export function factorialBigInt(n: number): bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+
+  let result = 1n; // BigInt literal
+  for (let i = 2; i <= n; i++) {
+    result *= BigInt(i);
+  }
+  return result;
+}
+console.log(factorialBigInt(20).toString()); // "2432902008176640000"
+console.log(factorialBigInt(100).toString()); // 158‑digit number
+const memo = new Map<number, number | bigint>();
+
+export function factorialMemo(n: number, useBigInt = false): number | bigint {
+  if (n < 0) throw new Error('Factorial is only defined for non‑negative integers');
+  if (n <= 1) return useBigInt ? 1n : 1;
+
+  const key = n;
+  if (memo.has(key)) return memo.get(key)!;
+
+  const res = useBigInt
+    ? BigInt(n) * factorialMemo(n - 1, true)
+    : n * factorialMemo(n - 1, false);
+
+  memo.set(key, res);
+  return res;
+}
