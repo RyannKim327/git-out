@@ -1,68 +1,26 @@
-/*  stack.ts  */
-export class Stack<T> {
-  // The raw array that stores everything.
-  private readonly items: T[] = [];
+/**
+ * Returns the first character that is repeated, or `undefined` if the string
+ * contains no duplicates.
+ */
+function firstRepeated(s: string): string | undefined {
+  const seen = new Set<string>();
 
-  /** Push a value onto the stack. Complexity: O(1). */
-  push(item: T): void {
-    this.items.push(item);
+  for (const ch of s) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
   }
-
-  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot pop from an empty stack');
-    }
-    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
-  }
-
-  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error('Stack underflow: cannot peek at an empty stack');
-    }
-    return this.items[this.items.length - 1];
-  }
-
-  /** True if the stack has no elements. Complexity: O(1). */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** Number of items currently stored. Complexity: O(1). */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything. Complexity: O(1) (just resets reference). */
-  clear(): void {
-    this.items.length = 0;
-  }
+  return undefined;     // nothing repeated
 }
-import { Stack } from './stack';
+console.log(firstRepeated("abca"));   // → 'a'
+console.log(firstRepeated("abcdef")); // → undefined
+console.log(firstRepeated("aabbc"));  // → 'a'
+function firstRepeatedAscii(s: string): string | undefined {
+  const seen = new Array(128).fill(false);
 
-const numStack = new Stack<number>();
-
-numStack.push(1);
-numStack.push(2);
-numStack.push(3);
-
-console.log(numStack.peek());   // 3
-console.log(numStack.pop());    // 3
-console.log(numStack.size());   // 2
-console.log(numStack.isEmpty()); // false
-
-numStack.clear();
-console.log(numStack.isEmpty()); // true
-export class Stack<T> {
-  private readonly items: T[] = [];
-  constructor(private readonly capacity = Infinity) {}
-
-  push(item: T): void {
-    if (this.items.length >= this.capacity) {
-      throw new Error('Stack overflow: cannot push beyond capacity');
-    }
-    this.items.push(item);
+  for (const ch of s) {
+    const code = ch.charCodeAt(0);
+    if (seen[code]) return ch;
+    seen[code] = true;
   }
-  /* … rest of the class unchanged … */
+  return undefined;
 }
