@@ -1,54 +1,138 @@
-/**
- * Area from base and height.
- * @param base  - Base length (any positive number)
- * @param height - Height length (any positive number)
- * @returns Triangle area
- */
-function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('Base and height must be positive numbers.');
-  }
-  return (base * height) / 2;
-}
-const area = areaBaseHeight(10, 5); // 25
-console.log(`Area = ${area}`);      // Area = 25
-/**
- * Deal with three side lengths.
- * @param a - length of side a
- * @param b - length of side b
- * @param c - length of side c
- * @returns Triangle area
- */
-function areaBySides(a: number, b: number, c: number): number {
-  // Simple validity check – the sides must satisfy the triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The given sides do not form a valid triangle.');
-  }
+/** The two colours that a node can be. */
+enum Color { RED, BLACK }
 
-  const s = (a + b + c) / 2;                 // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
-}
-const areaHeron = areaBySides(3, 4, 5); // 6
-console.log(`Area (Heron) = ${areaHeron}`);
-/**
- * Area from two sides and an included angle (in degrees or radians).
- * @param side1   - length of one side
- * @param side2   - length of the other side
- * @param angle   - included angle (in degrees)
- * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
- * @returns Triangle area
- */
-function areaFromSidesAndAngle(
-  side1: number,
-  side2: number,
-  angle: number,
-  inRadians = false
-): number {
-  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
+/** Sentinel that represents all NIL leaves. It is shared by every
+ *  subtree so that we never have to check for `null` – the tree knows
+ *  that `NIL` is a perfectly black node with no actual key/value. */
+const NIL = new class {
+    color = Color.BLACK
+    left: this | null = null
+    right: this | null = null
+    parent: this | null = null
+    // Sentinel never carries real payload
+} as any
 
-  const rad = inRadians ? angle : (angle * Math.PI) / 180;
-  return (side1 * side2 * Math.sin(rad)) / 2;
+/** A node in the tree.  We keep the children *always* defined as
+ *  `RBNode` so that the rest of the code never has to deal with `null`s. */
+class RBNode<TKey, TValue> {
+    left: RBNode<TKey, TValue>
+    right: RBNode<TKey, TValue>
+    parent: RBNode<TKey, TValue>
+    color: Color
+
+    constructor(
+        public key: TKey,
+        public value: TValue,
+        color: Color = Color.RED,
+        parent: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
+    ) {
+        this.left = NIL as RBNode<TKey, TValue>
+        this.right = NIL as RBNode<TKey, TValue>
+        this.parent = parent
+        this.color = color
+    }
 }
-const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
-console.log(`Area from two sides & angle = ${areaMixed}`);
+class RedBlackTree<TKey, TValue> {
+    private root: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
+
+    /* ---------- Public API ---------- */
+
+    /** Insert a key/value pair.  If the key already exists, its value
+     *  is overwritten. */
+    insert(key: TKey, value: TValue): void {
+        const newNode = new RBNode(key, value)
+        let y = NIL as RBNode<TKey, TValue>
+        let x = this.root
+
+        // --- 1. Standard BST insertion to find the parent --- //
+        while (x !== NIL) {
+            y = x
+            if (key < x.key) {          // assuming TKey is number/string
+                x = x.left
+            } else if (key > x.key) {
+                x = x.right
+            } else {                     // key already exists → replace
+                x.value = value
+                return
+            }
+        }
+
+        newNode.parent = y
+        if (y === NIL) {
+            this.root = newNode
+        } else if (key < y.key) {
+            y.left = newNode
+        } else {
+            y.right = newNode
+        }
+        newNode.left = NIL
+        newNode.right = NIL
+        newNode.color = Color.RED
+
+        // --- 2. Fix the tree to restore rbt properties --- //
+        this.fixInsert(newNode)
+    }
+
+    /** Return the value for a key, or `undefined`. */
+    get(key: TKey): TValue | undefined {
+        const node = this.search(key)
+        return node ? node.value : undefined
+    }
+
+    /** Delete a key if it exists; otherwise do nothing. */
+    delete(key: TKey): void {
+        const node = this.search(key)
+        if (!node) return
+        this.deleteNode(node)
+    }
+
+    /** In‑order traversal – useful for debugging or debugging. */
+    inorder(f: (k: TKey, v: TValue) => void): void {
+        const walk = (node: RBNode<TKey, TValue>) => {
+            if (node === NIL) return
+            walk(node.left)
+            f(node.key, node.value)
+            walk(node.right)
+        }
+        walk(this.root)
+    }
+
+    /* ---------- Private helpers ---------- */
+
+    /** Helper to walk down the tree and find a node by key. */
+    private search(key: TKey): RBNode<TKey, TValue> | null {
+        let node = this.root
+        while (node !== NIL) {
+            if (key < node.key) node = node.left
+            else if (key > node.key) node = node.right
+            else return node
+        }
+        return null
+    }
+
+    /* Rotations – keep the tree balanced if you’re playing with your own
+     * recursive helper.  They are basically a graft + replace.*
+     */
+
+    private leftRotate(x: RBNode<TKey, TValue>): void {
+        const y = x.right
+        x.right = y.left
+        if (y.left !== NIL) y.left.parent = x
+
+        y.parent = x.parent
+        if (x.parent === NIL) this.root = y
+        else if (x === x.parent.left) x.parent.left = y
+        else x.parent.right = y
+
+        y.left = x
+        x.parent = y
+    }
+
+    private rightRotate(y: RBNode<TKey, TValue>): void {
+        const x = y.left
+        y.left = x.right
+        if (x.right !== NIL) x.right.parent = y
+
+        x.parent = y.parent
+        if (y.parent === NIL) this.root = x
+        else if (y === y.parent.left) y.parent.left = x
