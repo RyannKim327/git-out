@@ -1,106 +1,85 @@
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1️⃣ Find the middle (fast/slow trick)
-  let slow = head, fast = head, prev: ListNode | null = null;
-  while (fast && fast.next) {
-    // 2️⃣ Reverse the first half while we’re at it
-    let nxt = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nxt;
-
-    fast = fast.next.next;
-  }
-
-  // 3️⃣ If odd number of nodes skip the middle one
-  if (fast) slow = slow.next;
-
-  // 4️⃣ Compare the two halves
-  let p1 = prev, p2 = slow;
-  while (p1 && p2) {
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-  return true;
-}
-interface ListNode {
-  val: number | string;      // whatever you want to store
-  next?: ListNode | null;    // `next` is optional to support the “end” of the list
+// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
+export interface TreeNode<T> {
+  value: T;
+  left?: TreeNode<T>;   // optional because a leaf might not have children
+  right?: TreeNode<T>;
 }
 /**
- * Returns true if the singly linked list is a palindrome.
+ * Counts leaf nodes (nodes with no children) in a binary tree.
  *
- * @param head - The head node of the linked list (or null).
+ * @param root - root node of the tree
+ * @returns number of leaf nodes
  */
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+export function countLeavesRec<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree -> 0 leaves
 
-  let slow = head;
-  let fast = head;
-  let prev: ListNode | null = null; // will become the head of the reversed first half
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                // this node is a leaf
 
-  // Step 1 & 2: find middle, reverse first half
-  while (fast && fast.next) {
-    // Reverse the link for `slow`'s current node
-    const nextNode = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nextNode;
-
-    fast = fast.next.next;
-  }
-
-  // Step 3: if odd length, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
-
-  // Step 4: compare nodes from the two halves
-  let firstHalf = prev;
-  let secondHalf = slow;
-  while (firstHalf && secondHalf) {
-    if (firstHalf.val !== secondHalf.val) return false;
-    firstHalf = firstHalf.next!;
-    secondHalf = secondHalf.next!;
-  }
-
-  return true;
+  // otherwise add leaves of the left and right sub‑trees
+  return countLeavesRec(root.left) + countLeavesRec(root.right);
 }
-// Helper to create a list from an array
-function fromArray(arr: (number | string)[]): ListNode | null {
-  if (!arr.length) return null;
-  const head: ListNode = { val: arr[0] };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { val: arr[i] };
-    current = current.next;
+/**
+ * Iterative breadth‑first traversal using a queue.
+ * Does the same thing as the recursive version but avoids recursion depth limits.
+ */
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let leafCount = 0;
+  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
+
+  while (queue.length) {
+    const node = queue.shift()!;         // dequeue
+
+    // If the node has no children, it’s a leaf
+    if (!node.left && !node.right) {
+      leafCount += 1;
+    } else {
+      // enqueue any existing children
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-  return head;
+
+  return leafCount;
+}
+function buildSampleTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //        / \     \
+  //       4   5     6
+  return {
+    value: 1,
+    left: {
+      value: 2,
+      left: { value: 4 },
+      right: { value: 5 }
+    },
+    right: {
+      value: 3,
+      right: { value: 6 }
+    }
+  };
 }
 
-console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
-console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string)[] = [];
-  let fast = head;
-  let slow = head;
+const tree = buildSampleTree();
+console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
+console.log('Iterative:', countLeavesIter(tree)); // → 3
+function leafMetrics<T>(root?: TreeNode<T>) {
+  if (!root) return { leafCount: 0, leafDepthSum: 0 };
 
-  // Push first half onto stack
-  while (fast && fast.next) {
-    stack.push(slow!.val);
-    slow = slow!.next!;
-    fast = fast.next.next;
+  // helper that returns (#leaves, sum of leaf depths)
+  function helper(node: TreeNode<T>, depth: number): [number, number] {
+    if (!node.left && !node.right) {
+      return [1, depth];
+    }
+    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
+    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
+    return [left[0] + right[0], left[1] + right[1]];
   }
 
-  // Skip middle element for odd length
-  if (fast) slow = slow!.next!;
-
-  // Compare the rest with stack
-  while (slow) {
-    if (stack.pop() !== slow.val) return false;
-    slow = slow.next;
-  }
-  return true;
+  const [cnt, depthSum] = helper(root, 0);
+  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
 }
