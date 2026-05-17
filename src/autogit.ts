@@ -1,63 +1,74 @@
-/**
- * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
- *
- * @param src   the source array (contents will not be mutated)
- * @param dst   the destination array into which the merged result goes
- * @param l     left index (inclusive)
- * @param m     middle index (left sub‑range ends here)
- * @param r     right index (exclusive)
- */
-function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
-    let i = l;      // iterator for left sub‑run
-    let j = m;      // iterator for right sub‑run
-    let k = l;      // iterator for destination
+// src/utils/http.ts
+import { knownFolders, File } from '@nativescript/core';
 
-    while (i < m && j < r) {
-        if (src[i] <= src[j]) {
-            dst[k++] = src[i++];
-        } else {
-            dst[k++] = src[j++];
-        }
+// ──────────────────────────────────────────────────────────────────
+// Step 1 – A friendly async helper that does the fetch
+// ──────────────────────────────────────────────────────────────────
+export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        // add any custom headers you need
+      },
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
     }
 
-    // copy any leftovers (at most one of the two while above will run)
-    while (i < m) dst[k++] = src[i++];
-    while (j < r) dst[k++] = src[j++];
+    const json = await resp.json() as T;
+    return json;
+  } finally {
+    clearTimeout(id);
+  }
 }
 
-/**
- * Iterative bottom‑up merge sort.
- *
- * @remarks
- *   * `arr` is the array you want sorted—original remains untouched.
- *   * Returns a new sorted array. If you want to sort in place you
- *     could swap the references to the source and destination arrays
- *     after each pass.
- *
- * @param arr  array to sort
- * @returns    sorted copy of `arr`
- */
-export function mergeSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr.slice();   // trivial case
+// ──────────────────────────────────────────────────────────────────
+// Step 2 – Call it from an Android Activity / Page, e.g.
+// ──────────────────────────────────────────────────────────────────
+export async function demoFetch() {
+  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
 
-    let src = arr.slice();            // working copy
-    let dst: T[] = new Array(n);      // auxiliary buffer
+  try {
+    const data = await getJson<any>(apiUrl);
+    console.log('Data received:', data);
 
-    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
-    for (let run = 1; run < n; run <<= 1) {
-        // merge adjacent runs of current length
-        for (let start = 0; start < n; start += 2 * run) {
-            const mid = Math.min(start + run, n);
-            const end = Math.min(start + 2 * run, n);
-            merge(src, dst, start, mid, end);
-        }
-
-        // the freshly merged segments now sit in `dst`;
-        // swap src/dst to let next pass read the new data
-        [src, dst] = [dst, src];
-    }
-
-    // After the last pass `src` holds the sorted data (due to the final swap)
-    return src;
+    // If you want to touch the UI, do it on the UI thread
+    // (in NativeScript you can simply update a component property,
+    // or use a dispatcher if you’re outside a component)
+  } catch (err) {
+    console.error('fetch error:', err);
+    // In an Android UI you might show a toast:
+    const Toast = android.widget.Toast;
+    const ctx = android.content.Context;
+    const activity = /** get the current activity from your page **/;
+    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
+  }
 }
+
+/*
+  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
+
+  import { demoFetch } from '~/utils/http';
+
+  export function pageLoaded(args) {
+    demoFetch();
+  }
+*/
+const HttpGetTask = android.os.AsyncTask.extend({
+  doInBackground: function (params) {
+    try {
+      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
+      const conn = url.openConnection() as java.net.HttpURLConnection;
+      conn.setRequestMethod('GET');
+      conn.setConnectTimeout(5000);
+      conn.setReadTimeout(5000);
+
+      const reader = new java.io.BufferedReader(
+
