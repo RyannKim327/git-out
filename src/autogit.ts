@@ -1,73 +1,100 @@
-/**
- * Return the median of two sorted numeric arrays.
- * Complexity: O(m + n) time, O(1) extra space (besides a few indices).
- */
-export function medianOfTwoSortedLinear(a: number[], b: number[]): number {
-  const m = a.length, n = b.length;
-  const total = m + n;
-  const k = Math.floor((total - 1) / 2); // 0‑based index of first median element
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null;
+  private tail: Node<T> | null = null;
+  private length = 0;
 
-  let i = 0, j = 0, count = 0;
-  let cur = 0, next = 0;
+  push(value: T): void { /* … */ }
+  pop(): T | undefined { /* … */ }
+  unshift(value: T): void { /* … */ }
+  shift(): T | undefined { /* … */ }
+  get(index: number): T | undefined { /* … */ }
+  set(index: number, value: T): boolean { /* … */ }
+  insert(index: number, value: T): boolean { /* … */ }
+  remove(index: number): T | undefined { /* … */ }
+  clear(): void { /* … */ }
+  toArray(): T[] { /* … */ }
 
-  while (count <= k) {
-    // Pick the next smallest element
-    if (i < m && (j >= n || a[i] <= b[j])) {
-      cur = next;   // shift previous value
-      next = a[i++];
-    } else {
-      cur = next;
-      next = b[j++];
-    }
-    count++;
-  }
-
-  // If total is odd, median is next
-  if (total % 2 === 1) {
-    return next;
-  }
-
-  // If total is even, median is average of cur and next
-  return (cur + next) / 2;
+  [Symbol.iterator](): Iterator<T> { /* … */ }
 }
-/**
- * Median of two sorted arrays in O(log(min(m,n))) time.
- * Assumes a and b are sorted in non‑decreasing order.
- */
-export function medianOfTwoSortedBinary(a: number[], b: number[]): number {
-  // Ensure a is the smaller array
-  if (a.length > b.length) return medianOfTwoSortedBinary(b, a);
+// Simple singly‑linked node
+class Node<T> {
+  constructor(
+    public readonly value: T,
+    public next: Node<T> | null = null
+  ) {}
+}
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null; // first node
+  private tail: Node<T> | null = null; // last
+  private length = 0;
+}
+constructor(iterable?: Iterable<T>) {
+  if (iterable) {
+    for (const item of iterable) this.push(item);
+  }
+}
+private _getNode(index: number): Node<T> | null {
+  if (index < 0 || index >= this.length) return null;
+  let curr = this.head;
+  for (let i = 0; i < index; i++) curr = curr!.next;
+  return curr;
+}
+push(value: T): void {
+  const node = new Node(value);
+  if (!this.head) {            // first item
+    this.head = this.tail = node;
+  } else {
+    this.tail!.next = node;    // append
+    this.tail = node;
+  }
+  this.length++;
+}
+pop(): T | undefined {
+  if (!this.head) return undefined;
 
-  let m = a.length, n = b.length;
-  let low = 0, high = m;
-  const halfLen = Math.floor((m + n + 1) / 2);
+  const lastVal = this.tail!.value;
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
-
-    const aLeft  = (i === 0)  ? Number.NEGATIVE_INFINITY : a[i - 1];
-    const aRight = (i === m) ? Number.POSITIVE_INFINITY : a[i];
-    const bLeft  = (j === 0)  ? Number.NEGATIVE_INFINITY : b[j - 1];
-    const bRight = (j === n) ? Number.POSITIVE_INFINITY : b[j];
-
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // Partitions are correct
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      high = i - 1; // move left in a
-    } else {
-      low = i + 1; // move right in a
-    }
+  if (this.head === this.tail) {    // only one node
+    this.head = this.tail = null;
+  } else {
+    // find the node before tail
+    let curr = this.head;
+    while (curr.next !== this.tail) curr = curr.next!;
+    curr.next = null;
+    this.tail = curr;
   }
 
-  throw new Error('Input arrays are not sorted or sizes are incorrect.');
+  this.length--;
+  return lastVal;
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
+unshift(value: T): void {
+  const node = new Node(value, this.head);
+  this.head = node;
+  if (!this.tail) this.tail = node; // list was empty
+  this.length++;
+}
+shift(): T | undefined {
+  if (!this.head) return undefined;
+  const val = this.head.value;
+  this.head = this.head.next;
+  if (!this.head) this.tail = null; // list became empty
+  this.length--;
+  return val;
+}
+get(index: number): T | undefined {
+  const node = this._getNode(index);
+  return node ? node.value : undefined;
+}
+set(index: number, value: T): boolean {
+  const node = this._getNode(index);
+  if (!node) return false;
+  node.value = value;
+  return true;
+}
+insert(index: number, value: T): boolean {
+  if (index < 0 || index > this.length) return false;
+  if (index === 0) return (this.unshift(value), true);
+  if (index === this.length) return (this.push(value), true);
 
-console.log(medianOfTwoSortedLinear(arr1, arr2));   // 8
-console.log(medianOfTwoSortedBinary(arr1, arr2));    // 8
+  const prev = this._getNode(index - 1)!;
+  const node = new Node(value,
