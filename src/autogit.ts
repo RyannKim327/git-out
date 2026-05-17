@@ -1,34 +1,95 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+type EdgeMap = Map<number, Node>; // key = first char code of the edge
 
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
+export class Node {
+  // Children edges keyed by first character code
+  public children: EdgeMap = new Map();
+
+  // Edge that leads **to** this node
+  public start: number = -1;           // inclusive
+  public end: number = -1;             // exclusive
+  public suffixLink: Node | null = null;
+
+  constructor(start: number = -1, end: number = -1) {
+    this.start = start;
+    this.end   = end;
   }
 }
+export class SuffixTree {
+  /** original text, appended with a unique terminator that does not appear elsewhere */
+  private text: string[];
 
-function maxDepth(root: TreeNode | null): number {
-  if (root === null) return 0;           // base case: empty subtree
-  const leftDepth  = maxDepth(root.left);   // depth of left subtree
-  const rightDepth = maxDepth(root.right);  // depth of right subtree
-  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
-}
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+  /** root node */
+  private root: Node = new Node();
 
-  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
-  let max = 0;
+  /** active point */
+  private activeNode: Node = this.root;
+  private activeEdge: number | null = null;
+  private activeLength: number = 0;
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
+  /** number of suffixes that have yet to be inserted for the current phase */
+  private remainder: number = 0;
 
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  /** end index for leaves – shared so all leaves refer to the current suffix end */
+  private leafEnd: number = -1;
+
+  constructor(text: string) {
+    // Ensure a single terminator is appended; '#' is common
+    this.text = text.split('').concat('#');
+    this.build();
   }
 
-  return max;
-}
+  /** Core driver – runs one pass over the text */
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.extend(i);
+    }
+  }
+
+  /** Ukkonen’s “extension” for position i of the text */
+  private extend(pos: number): void {
+    this.leafEnd = pos;  // All current leaves stretch to the new char
+
+    this.remainder++;   // We have one more suffix to add
+
+    let lastNewNode: Node | null = null;
+
+    while (this.remainder > 0) {
+      if (this.activeLength === 0) {
+        // Start a new edge from the active node
+        this.activeEdge = pos;
+      }
+
+      const activeChar = this.text[this.activeEdge!];
+      const child = this.activeNode.children.get(activeChar.charCodeAt(0));
+
+      // 1. No edge starting with the active char → create a leaf
+      if (!child) {
+        const leaf = new Node(pos, Infinity); // Infinity means “extends to leafEnd”
+        this.activeNode.children.set(activeChar.charCodeAt(0), leaf);
+
+        // set suffix link for last internal node
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this.activeNode;
+          lastNewNode = null;
+        }
+      }
+      // 2. Edge exists → walk down if we have to
+      else if (this.walkDown(child, pos)) {
+        // edge fully traversed – repeat loop with updated active point
+        continue;
+      }
+      // 3. Edge exists but activeLength < edge length → split edge
+      else {
+        const edgeLen = this.edgeLength(child, pos);
+        if (this.activeLength === edgeLen) {
+          // If we are *exactly* at the end of an edge, further walk down happens
+          if (lastNewNode && this.activeNode !== this.root) {
+            lastNewNode.suffixLink = this.activeNode;
+            lastNewNode = null;
+          }
+          this.activeNode = child;
+          this.activeLength++; // effectively moving to next character on edge
+          break;               // proceed to next i
+        }
+
+        // Create internal node
