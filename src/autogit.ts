@@ -1,74 +1,83 @@
-// src/utils/http.ts
-import { knownFolders, File } from '@nativescript/core';
+/**
+ * A directed graph is expected to be an object where each key is a node
+ * id (string) and the value is an array of neighbouring node ids.
+ * Example:
+ *   const graph = {
+ *     a: ['b', 'c'],
+ *     b: ['c'],
+ *     c: ['a', 'd'],
+ *     d: ['e'],
+ *     e: []
+ *   };
+ */
+type Graph = Record<string, string[]>;
 
-// ──────────────────────────────────────────────────────────────────
-// Step 1 – A friendly async helper that does the fetch
-// ──────────────────────────────────────────────────────────────────
-export async function getJson<T>(url: string, timeoutMs = 5000): Promise<T> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
+/**
+ * Tarjan’s SCC algorithm.
+ *
+ * @param graph – adjacency list representation of the directed graph
+ * @returns array of SCCs, each itself an array of node ids
+ */
+export function tarjanSCC(graph: Graph): string[][] {
+  const indexMap = new Map<string, number>();
+  const lowLinkMap = new Map<string, number>();
+  const onStack = new Set<string>();
 
-  try {
-    const resp = await fetch(url, {
-      method: 'GET',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        // add any custom headers you need
-      },
-    });
+  const stack: string[] = [];
+  let idx = 0;
+  const sccs: string[][] = [];
 
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status} – ${resp.statusText}`);
+  const strongConnect = (node: string) => {
+    // Set the depth index for this node to the smallest unused index
+    indexMap.set(node, idx);
+    lowLinkMap.set(node, idx);
+    idx++;
+
+    stack.push(node);
+    onStack.add(node);
+
+    // Consider successors of node
+    for (const succ of graph[node] ?? []) {
+      if (!indexMap.has(succ)) {
+        // Successor has not yet been visited – recurse on it
+        strongConnect(succ);
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
+      } else if (onStack.has(succ)) {
+        // Successor is in stack → node is in the same SCC
+        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+      }
     }
 
-    const json = await resp.json() as T;
-    return json;
-  } finally {
-    clearTimeout(id);
+    // If node is a root node, pop the stack and generate an SCC
+    if (lowLinkMap.get(node) === indexMap.get(node)) {
+      const scc: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        scc.push(w);
+      } while (w !== node);
+      sccs.push(scc);
+    }
+  };
+
+  // Call the recursion for each node (in any order)
+  for (const node of Object.keys(graph)) {
+    if (!indexMap.has(node)) {
+      strongConnect(node);
+    }
   }
+
+  return sccs;
 }
+const graph: Graph = {
+  a: ['b'],
+  b: ['c'],
+  c: ['a', 'd'],
+  d: ['e'],
+  e: ['f'],
+  f: ['d']
+};
 
-// ──────────────────────────────────────────────────────────────────
-// Step 2 – Call it from an Android Activity / Page, e.g.
-// ──────────────────────────────────────────────────────────────────
-export async function demoFetch() {
-  const apiUrl = 'https://jsonplaceholder.typicode.com/todos/1';
-
-  try {
-    const data = await getJson<any>(apiUrl);
-    console.log('Data received:', data);
-
-    // If you want to touch the UI, do it on the UI thread
-    // (in NativeScript you can simply update a component property,
-    // or use a dispatcher if you’re outside a component)
-  } catch (err) {
-    console.error('fetch error:', err);
-    // In an Android UI you might show a toast:
-    const Toast = android.widget.Toast;
-    const ctx = android.content.Context;
-    const activity = /** get the current activity from your page **/;
-    Toast.makeText(activity, `Error: ${err.message}`, Toast.LENGTH_LONG).show();
-  }
-}
-
-/*
-  Usage (e.g. in your Page's onNavigatedTo or an Android Activity):
-
-  import { demoFetch } from '~/utils/http';
-
-  export function pageLoaded(args) {
-    demoFetch();
-  }
-*/
-const HttpGetTask = android.os.AsyncTask.extend({
-  doInBackground: function (params) {
-    try {
-      const url = new java.net.URL('https://jsonplaceholder.typicode.com/todos/1');
-      const conn = url.openConnection() as java.net.HttpURLConnection;
-      conn.setRequestMethod('GET');
-      conn.setConnectTimeout(5000);
-      conn.setReadTimeout(5000);
-
-      const reader = new java.io.BufferedReader(
-
+console.log(tarjanSCC(graph));
+// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
