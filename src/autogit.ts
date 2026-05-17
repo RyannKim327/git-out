@@ -1,35 +1,34 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-import * as readline from 'node:readline';
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
+}
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+function maxDepth(root: TreeNode | null): number {
+  if (root === null) return 0;           // base case: empty subtree
+  const leftDepth  = maxDepth(root.left);   // depth of left subtree
+  const rightDepth = maxDepth(root.right);  // depth of right subtree
+  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
+}
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
+  let max = 0;
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
 
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  }
+
+  return max;
+}
