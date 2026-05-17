@@ -1,50 +1,148 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
+// ------------------------------------------------------------------
+// SkipList.ts
+// ------------------------------------------------------------------
+export type Comparator<K> = (a: K, b: K) => number;
+
+interface ListNode<K, V> {
+  key: K;
+  value: V;
+  next: Array<ListNode<K, V> | null>; // forward pointers, one per level
 }
 
-/**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
- */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+export class SkipList<K, V> {
+  // These constants set the “skew” of the random level.
+  // Every additional level is ½ as likely as the previous one.
+  private static readonly P = 0.5;
+  private static readonly MAX_LEVEL = 32;
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+  private readonly head: ListNode<K, V>;
+  private readonly tail: ListNode<K, V>;
+  private level = 0;                // current highest level that contains any nodes
+  private size = 0;                // number of key/value pairs
 
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+  constructor(private readonly compare: Comparator<K>) {
+    // create an array of `null` references for head and tail
+    const sentinelNext: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
+
+    this.head = { key: null as any, value: null as any, next: sentinelNext };
+    this.tail = { key: null as any, value: null as any, next: sentinelNext };
   }
 
-  return pA; // either the intersection node or null
-}
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
+  /* -----------------------------------------------------------------
+     Random level generator – geometric distribution
+     ----------------------------------------------------------------- */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < SkipList.P && lvl < SkipList.MAX_LEVEL - 1) {
+      lvl++;
+    }
+    return lvl;
   }
-  return dummy.next;
-}
 
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
+  /* -----------------------------------------------------------------
+     Search – returns the value for a key, or undefined if not found.
+     ----------------------------------------------------------------- */
+  get(key: K): V | undefined {
+    let current = this.head;
 
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
+    // walk from top level down
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+    }
 
-console.log(getIntersectionNode(a1, b1) === shared); // true
+    const candidate = current.next[0];
+    if (candidate && this.compare(candidate.key, key) === 0) {
+      return candidate.value;
+    }
+    return undefined;
+  }
+
+  /* -----------------------------------------------------------------
+     Insert – O(log n) average
+     ----------------------------------------------------------------- */
+  set(key: K, value: V): void {
+    // build a slice of pointers that we’ll need to update
+    const update: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
+
+    let current = this.head;
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+      update[i] = current;
+    }
+
+    const next = current.next[0];
+
+    // key already present → just replace the value
+    if (next && this.compare(next.key, key) === 0) {
+      next.value = value;
+      return;
+    }
+
+    // new node: determine its height
+    const nodeLevel = this.randomLevel();
+    const newNode: ListNode<K, V> = {
+      key,
+      value,
+      next: Array(nodeLevel + 1).fill(null),
+    };
+
+    if (nodeLevel > this.level) {
+      // adjust the “head” to point to the tail on the new higher levels
+      for (let i = this.level + 1; i <= nodeLevel; i++) {
+        update[i] = this.head;
+      }
+      this.level = nodeLevel;
+    }
+
+    // link the new node into the list
+    for (let i = 0; i <= nodeLevel; i++) {
+      newNode.next[i] = update[i]!.next[i];
+      update[i]!.next[i] = newNode;
+    }
+
+    this.size++;
+  }
+
+  /* -----------------------------------------------------------------
+     Delete – O(log n) average
+     ----------------------------------------------------------------- */
+  delete(key: K): boolean {
+    const update: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
+
+    let current = this.head;
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+      update[i] = current;
+    }
+
+    const target = current.next[0];
+    if (!target || this.compare(target.key, key) !== 0) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node from every level it appears in
+    for (let i = 0; i <= target.next.length - 1; i++) {
+      if (update[i]!.next[i] !== target) break;
+      update[i]!.next[i] = target.next[i];
+    }
+
+    // trim empty top levels
+    while (this.level > 0 && this.head
