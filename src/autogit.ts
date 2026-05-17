@@ -1,35 +1,68 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+/*  stack.ts  */
+export class Stack<T> {
+  // The raw array that stores everything.
+  private readonly items: T[] = [];
 
-import * as readline from 'node:readline';
+  /** Push a value onto the stack. Complexity: O(1). */
+  push(item: T): void {
+    this.items.push(item);
+  }
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+  /** Remove and return the top value. Throws if the stack is empty. Complexity: O(1). */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot pop from an empty stack');
+    }
+    return this.items.pop() as T;  // `pop()` can return undefined, but we guard above
+  }
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+  /** Return the top value without removing it. Throws if empty. Complexity: O(1). */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error('Stack underflow: cannot peek at an empty stack');
+    }
+    return this.items[this.items.length - 1];
+  }
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+  /** True if the stack has no elements. Complexity: O(1). */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
 
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+  /** Number of items currently stored. Complexity: O(1). */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clear everything. Complexity: O(1) (just resets reference). */
+  clear(): void {
+    this.items.length = 0;
+  }
+}
+import { Stack } from './stack';
+
+const numStack = new Stack<number>();
+
+numStack.push(1);
+numStack.push(2);
+numStack.push(3);
+
+console.log(numStack.peek());   // 3
+console.log(numStack.pop());    // 3
+console.log(numStack.size());   // 2
+console.log(numStack.isEmpty()); // false
+
+numStack.clear();
+console.log(numStack.isEmpty()); // true
+export class Stack<T> {
+  private readonly items: T[] = [];
+  constructor(private readonly capacity = Infinity) {}
+
+  push(item: T): void {
+    if (this.items.length >= this.capacity) {
+      throw new Error('Stack overflow: cannot push beyond capacity');
+    }
+    this.items.push(item);
+  }
+  /* … rest of the class unchanged … */
+}
