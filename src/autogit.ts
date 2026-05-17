@@ -1,43 +1,19 @@
-/**
- * Random‑pivot QuickSort
- *
- * @param data - array of numbers to sort in place
- * @returns the sorted array
- */
-function randomQuickSort(data: number[]): number[] {
-  // Helper that actually does the work, using indices so the call stack is shallow.
-  function sort(left: number, right: number) {
-    if (left >= right) return;
+function isPalindrome(s: string): boolean {
+  // Two‑pointer scan from both ends
+  let left = 0;
+  let right = s.length - 1;
 
-    // Pick a random index between left and right (inclusive)
-    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
-    // Swap pivot with the last element – easier partitioning
-    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
-    const pivot = data[right];
-
-    let i = left - 1; // elements ≤ pivot will be to the left of i
-
-    for (let j = left; j < right; j++) {
-      if (data[j] <= pivot) {
-        i++;
-        [data[i], data[j]] = [data[j], data[i]];
-      }
+  while (left < right) {
+    // Compare the characters at the two pointers
+    if (s.charAt(left) !== s.charAt(right)) {
+      return false;          // mismatch found – not a palindrome
     }
-
-    // place pivot after the last smaller element
-    const finalPivotPos = i + 1;
-    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
-
-    // Recurse on each partition
-    sort(left, finalPivotPos - 1);
-    sort(finalPivotPos + 1, right);
+    left++;
+    right--;
   }
 
-  sort(0, data.length - 1);
-  return data;
+  return true;                 // all mirrored pairs matched
 }
-
-/* --- demo ------------------------------------ */
-const arr = [5, 2, 9, 1, 5, 6];
-console.log('original:', arr);
-console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+console.log(isPalindrome(""));        // true (empty string is a palindrome)
