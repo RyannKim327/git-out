@@ -1,18 +1,14 @@
-const s = "42";
+const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
+// or, if you only want literal space characters (not tabs, newlines, …)
+const clean = str.replaceAll(' ', '');
+const input = "  Why   are   we  still  here?  \n";
 
-// 1️⃣  Simple integer
-const num1 = Number(s);     // 42
-const num2 = +"42";         // 42
+const withoutAllWhitespace = input.replace(/\s+/g, '');
+console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
 
-// 2️⃣  Parse with a specific radix (base)
-const hex = parseInt("FF", 16);   // 255
-const oct = parseInt("10", 8);    // 8
+const withoutOnlySpaces = input.replaceAll(' ', '');
+console.log(withoutOnlySpaces);  // "Why\there? "
 
-// 3️⃣  Floating‑point
-const floatVal = Number.parseFloat("3.14"); // 3.14
-
-// 4️⃣  BigInt
-const big = BigInt("12345678901234567890");
-
-// 5️⃣  Handling bad input
-const bad = Number("not a number"); // NaN
+// If you want to keep line breaks but trim spaces:
+const trimmed = input.trim();  // removes spaces at the start/end only
+const noSpaces = str.split(' ').join('');
