@@ -1,83 +1,43 @@
 /**
- * A directed graph is expected to be an object where each key is a node
- * id (string) and the value is an array of neighbouring node ids.
- * Example:
- *   const graph = {
- *     a: ['b', 'c'],
- *     b: ['c'],
- *     c: ['a', 'd'],
- *     d: ['e'],
- *     e: []
- *   };
- */
-type Graph = Record<string, string[]>;
-
-/**
- * Tarjan’s SCC algorithm.
+ * Random‑pivot QuickSort
  *
- * @param graph – adjacency list representation of the directed graph
- * @returns array of SCCs, each itself an array of node ids
+ * @param data - array of numbers to sort in place
+ * @returns the sorted array
  */
-export function tarjanSCC(graph: Graph): string[][] {
-  const indexMap = new Map<string, number>();
-  const lowLinkMap = new Map<string, number>();
-  const onStack = new Set<string>();
+function randomQuickSort(data: number[]): number[] {
+  // Helper that actually does the work, using indices so the call stack is shallow.
+  function sort(left: number, right: number) {
+    if (left >= right) return;
 
-  const stack: string[] = [];
-  let idx = 0;
-  const sccs: string[][] = [];
+    // Pick a random index between left and right (inclusive)
+    const pivotIndex = left + Math.floor(Math.random() * (right - left + 1));
+    // Swap pivot with the last element – easier partitioning
+    [data[pivotIndex], data[right]] = [data[right], data[pivotIndex]];
+    const pivot = data[right];
 
-  const strongConnect = (node: string) => {
-    // Set the depth index for this node to the smallest unused index
-    indexMap.set(node, idx);
-    lowLinkMap.set(node, idx);
-    idx++;
+    let i = left - 1; // elements ≤ pivot will be to the left of i
 
-    stack.push(node);
-    onStack.add(node);
-
-    // Consider successors of node
-    for (const succ of graph[node] ?? []) {
-      if (!indexMap.has(succ)) {
-        // Successor has not yet been visited – recurse on it
-        strongConnect(succ);
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // Successor is in stack → node is in the same SCC
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+    for (let j = left; j < right; j++) {
+      if (data[j] <= pivot) {
+        i++;
+        [data[i], data[j]] = [data[j], data[i]];
       }
     }
 
-    // If node is a root node, pop the stack and generate an SCC
-    if (lowLinkMap.get(node) === indexMap.get(node)) {
-      const scc: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== node);
-      sccs.push(scc);
-    }
-  };
+    // place pivot after the last smaller element
+    const finalPivotPos = i + 1;
+    [data[finalPivotPos], data[right]] = [data[right], data[finalPivotPos]];
 
-  // Call the recursion for each node (in any order)
-  for (const node of Object.keys(graph)) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
-    }
+    // Recurse on each partition
+    sort(left, finalPivotPos - 1);
+    sort(finalPivotPos + 1, right);
   }
 
-  return sccs;
+  sort(0, data.length - 1);
+  return data;
 }
-const graph: Graph = {
-  a: ['b'],
-  b: ['c'],
-  c: ['a', 'd'],
-  d: ['e'],
-  e: ['f'],
-  f: ['d']
-};
 
-console.log(tarjanSCC(graph));
-// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
+/* --- demo ------------------------------------ */
+const arr = [5, 2, 9, 1, 5, 6];
+console.log('original:', arr);
+console.log('sorted  :', randomQuickSort([...arr])); // [...arr] keeps the demo clean
