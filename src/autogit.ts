@@ -1,45 +1,35 @@
-// random-example.ts
-// a small TypeScript demo that pulls data from a public API using axios
+/*  0001‑random‑ts‑with‑input.ts  */
 
-import axios from 'axios';
+import * as readline from 'node:readline';
 
-// ---------- Types ----------
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-// ---------- API wrapper ----------
-async function fetchTodo(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
-  return response.data;
-}
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
 
-// ---------- CLI entry point ----------
-async function main() {
-  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
 
-  try {
-    const todo = await fetchTodo(todoId);
-    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
-    console.log(`  - ${todo.title}`);
-    console.log(`  - completed: ${todo.completed}`);
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      console.error(`Request failed: ${err.message}`);
-    } else {
-      console.error(`Unexpected error:`, err);
-    }
-    process.exit(1);
-  }
-}
-
-main();
-# 1. Install deps (run once)
-npm install axios
-
-# 2. Compile / run
-npx ts-node random-example.ts 5
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
