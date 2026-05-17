@@ -1,50 +1,45 @@
-const unique = (arr: readonly any[]) => [...new Set(arr)];
+// random-example.ts
+// a small TypeScript demo that pulls data from a public API using axios
 
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(unique(numbers)); // [1, 2, 3, 4]
-function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
-  const seen = new Set<any>();
-  return arr.filter(item => {
-    const k = item[key];
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+import axios from 'axios';
+
+// ---------- Types ----------
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
 
-const people = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 1, name: 'Ada' },
-  { id: 3, name: 'Ken' }
-];
+// ---------- API wrapper ----------
+async function fetchTodo(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
+  return response.data;
+}
 
-console.log(uniqBy(people, 'id'));
-/*
-[
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 3, name: 'Ken' }
-]
-*/
-import uniqWith from 'lodash/uniqWith';
-import isEqual from 'lodash/isEqual';
+// ---------- CLI entry point ----------
+async function main() {
+  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
 
-const dupObjs = [
-  { a: 1, b: 2 },
-  { a: 1, b: 2 },
-  { a: 3, b: 4 }
-];
+  try {
+    const todo = await fetchTodo(todoId);
+    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
+    console.log(`  - ${todo.title}`);
+    console.log(`  - completed: ${todo.completed}`);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error(`Request failed: ${err.message}`);
+    } else {
+      console.error(`Unexpected error:`, err);
+    }
+    process.exit(1);
+  }
+}
 
-console.log(uniqWith(dupObjs, isEqual));
-// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
-const unique = (arr: readonly any[]) =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
+main();
+# 1. Install deps (run once)
+npm install axios
 
-console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
-const uniq = (arr: readonly any[]) => [...new Set(arr)];
-// or for objects by key
-const uniqByKey = (arr: readonly any[], key: string) => {
-  const seen = new Set();
-  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
-};
+# 2. Compile / run
+npx ts-node random-example.ts 5
