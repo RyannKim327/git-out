@@ -1,138 +1,73 @@
-/** The two colours that a node can be. */
-enum Color { RED, BLACK }
+/**
+ * Return the median of two sorted numeric arrays.
+ * Complexity: O(m + n) time, O(1) extra space (besides a few indices).
+ */
+export function medianOfTwoSortedLinear(a: number[], b: number[]): number {
+  const m = a.length, n = b.length;
+  const total = m + n;
+  const k = Math.floor((total - 1) / 2); // 0‑based index of first median element
 
-/** Sentinel that represents all NIL leaves. It is shared by every
- *  subtree so that we never have to check for `null` – the tree knows
- *  that `NIL` is a perfectly black node with no actual key/value. */
-const NIL = new class {
-    color = Color.BLACK
-    left: this | null = null
-    right: this | null = null
-    parent: this | null = null
-    // Sentinel never carries real payload
-} as any
+  let i = 0, j = 0, count = 0;
+  let cur = 0, next = 0;
 
-/** A node in the tree.  We keep the children *always* defined as
- *  `RBNode` so that the rest of the code never has to deal with `null`s. */
-class RBNode<TKey, TValue> {
-    left: RBNode<TKey, TValue>
-    right: RBNode<TKey, TValue>
-    parent: RBNode<TKey, TValue>
-    color: Color
-
-    constructor(
-        public key: TKey,
-        public value: TValue,
-        color: Color = Color.RED,
-        parent: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
-    ) {
-        this.left = NIL as RBNode<TKey, TValue>
-        this.right = NIL as RBNode<TKey, TValue>
-        this.parent = parent
-        this.color = color
+  while (count <= k) {
+    // Pick the next smallest element
+    if (i < m && (j >= n || a[i] <= b[j])) {
+      cur = next;   // shift previous value
+      next = a[i++];
+    } else {
+      cur = next;
+      next = b[j++];
     }
+    count++;
+  }
+
+  // If total is odd, median is next
+  if (total % 2 === 1) {
+    return next;
+  }
+
+  // If total is even, median is average of cur and next
+  return (cur + next) / 2;
 }
-class RedBlackTree<TKey, TValue> {
-    private root: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
+/**
+ * Median of two sorted arrays in O(log(min(m,n))) time.
+ * Assumes a and b are sorted in non‑decreasing order.
+ */
+export function medianOfTwoSortedBinary(a: number[], b: number[]): number {
+  // Ensure a is the smaller array
+  if (a.length > b.length) return medianOfTwoSortedBinary(b, a);
 
-    /* ---------- Public API ---------- */
+  let m = a.length, n = b.length;
+  let low = 0, high = m;
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-    /** Insert a key/value pair.  If the key already exists, its value
-     *  is overwritten. */
-    insert(key: TKey, value: TValue): void {
-        const newNode = new RBNode(key, value)
-        let y = NIL as RBNode<TKey, TValue>
-        let x = this.root
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);
+    const j = halfLen - i;
 
-        // --- 1. Standard BST insertion to find the parent --- //
-        while (x !== NIL) {
-            y = x
-            if (key < x.key) {          // assuming TKey is number/string
-                x = x.left
-            } else if (key > x.key) {
-                x = x.right
-            } else {                     // key already exists → replace
-                x.value = value
-                return
-            }
-        }
+    const aLeft  = (i === 0)  ? Number.NEGATIVE_INFINITY : a[i - 1];
+    const aRight = (i === m) ? Number.POSITIVE_INFINITY : a[i];
+    const bLeft  = (j === 0)  ? Number.NEGATIVE_INFINITY : b[j - 1];
+    const bRight = (j === n) ? Number.POSITIVE_INFINITY : b[j];
 
-        newNode.parent = y
-        if (y === NIL) {
-            this.root = newNode
-        } else if (key < y.key) {
-            y.left = newNode
-        } else {
-            y.right = newNode
-        }
-        newNode.left = NIL
-        newNode.right = NIL
-        newNode.color = Color.RED
-
-        // --- 2. Fix the tree to restore rbt properties --- //
-        this.fixInsert(newNode)
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // Partitions are correct
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
+      }
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      high = i - 1; // move left in a
+    } else {
+      low = i + 1; // move right in a
     }
+  }
 
-    /** Return the value for a key, or `undefined`. */
-    get(key: TKey): TValue | undefined {
-        const node = this.search(key)
-        return node ? node.value : undefined
-    }
+  throw new Error('Input arrays are not sorted or sizes are incorrect.');
+}
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
 
-    /** Delete a key if it exists; otherwise do nothing. */
-    delete(key: TKey): void {
-        const node = this.search(key)
-        if (!node) return
-        this.deleteNode(node)
-    }
-
-    /** In‑order traversal – useful for debugging or debugging. */
-    inorder(f: (k: TKey, v: TValue) => void): void {
-        const walk = (node: RBNode<TKey, TValue>) => {
-            if (node === NIL) return
-            walk(node.left)
-            f(node.key, node.value)
-            walk(node.right)
-        }
-        walk(this.root)
-    }
-
-    /* ---------- Private helpers ---------- */
-
-    /** Helper to walk down the tree and find a node by key. */
-    private search(key: TKey): RBNode<TKey, TValue> | null {
-        let node = this.root
-        while (node !== NIL) {
-            if (key < node.key) node = node.left
-            else if (key > node.key) node = node.right
-            else return node
-        }
-        return null
-    }
-
-    /* Rotations – keep the tree balanced if you’re playing with your own
-     * recursive helper.  They are basically a graft + replace.*
-     */
-
-    private leftRotate(x: RBNode<TKey, TValue>): void {
-        const y = x.right
-        x.right = y.left
-        if (y.left !== NIL) y.left.parent = x
-
-        y.parent = x.parent
-        if (x.parent === NIL) this.root = y
-        else if (x === x.parent.left) x.parent.left = y
-        else x.parent.right = y
-
-        y.left = x
-        x.parent = y
-    }
-
-    private rightRotate(y: RBNode<TKey, TValue>): void {
-        const x = y.left
-        y.left = x.right
-        if (x.right !== NIL) x.right.parent = y
-
-        x.parent = y.parent
-        if (y.parent === NIL) this.root = x
-        else if (y === y.parent.left) y.parent.left = x
+console.log(medianOfTwoSortedLinear(arr1, arr2));   // 8
+console.log(medianOfTwoSortedBinary(arr1, arr2));    // 8
