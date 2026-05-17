@@ -1,99 +1,66 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
 /**
- * Example of an async “network task” that you might run in Android
- * (React‑Native runs JavaScript on a background thread for you).
+ * Finds the index of `key` in a sorted array `arr` using Fibonacci search.
+ * @param arr  A sorted array of comparable elements.
+ * @param key  The value to locate.
+ * @returns The index of `key` in `arr`, or -1 if not found.
  */
-const App: React.FC = () => {
-  /*--- State: loading / data / error -----------------------------------*/
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+export function fibonacciSearch<T>(arr: T[], key: T): number {
+  const n = arr.length;
 
-  /*--- Effect: fire once on mount -------------------------------------*/
-  useEffect(() => {
-    /**
-     * Async function inside the effect so we can use await at a top level.
-     * It's an equivalent of Android’s AsyncTask (but without the Android
-     * boilerplate) – just a Promise chain wrapped in async/await.
-     */
-    const fetchData = async () => {
-      try {
-        // 1️⃣ Make the request
-        const response = await fetch(
-          'https://api.adviceslip.com/advice',
-        );
+  // 1️⃣ Build Fibonacci numbers up to ≥ n
+  let fibMm2 = 0; // (m-2)th Fibonacci
+  let fibMm1 = 1; // (m-1)th Fibonacci
+  let fibM = fibMm2 + fibMm1; // mth Fibonacci
 
-        // 2️⃣ Check for HTTP errors
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM = fibMm2 + fibMm1;
+  }
 
-        // 3️⃣ Parse the JSON payload
-        const json = await response.json();
+  // 2️⃣ `offset` marks the eliminated portion from the left
+  let offset = -1;
 
-        // 4️⃣ Store the result
-        setData(json);          // data.slip.advice will be the string
-        setError(null);
-      } catch (e) {
-        // Anything that goes wrong lands here
-        console.error('Failed to fetch advice:', e);
-        setError((e as Error).message);
-        setData(null);
-      } finally {
-        // Whatever happens, loading is done
-        setLoading(false);
-      }
-    };
+  // 3️⃣ Main loop: keep shrinking the range
+  while (fibM > 1) {
+    const i = Math.min(offset + fibMm2, n - 1);
 
-    fetchData();
+    // Debugging helper: show where we're looking
+    // console.log(`Comparing at index ${i} (value=${arr[i]})`);
 
-    // Optional: cleanup if the component unmounts before fetch resolves
-    // return () => { /* cancel request if using AbortController, e.g. */ };
-  }, []); // empty deps → run once
+    if (arr[i] < key) {
+      // Move three Fibonacci steps down
+      fibM = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > key) {
+      // Move two Fibonacci steps down
+      fibM = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+      // offset stays the same
+    } else {
+      // Element found
+      return i;
+    }
+  }
 
-  /*--- Rendering -----------------------------------------------------*/
-  return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.text}>Loading advice...</Text>
-        </View>
-      )}
+  // Check the last remaining element
+  if (fibMm1 === 1 && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
+  }
 
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
-        </View>
-      )}
-
-      {!loading && data && (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Here’s an advice for you:</Text>
-          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-};
-
-/*--- Styles ----------------------------------------------------------*/
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, marginTop: 12 },
-  title: { fontSize: 18, fontWeight: '600' },
-  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
-  error: { color: 'red' },
-});
-
-export default App;
+  // Element not found
+  return -1;
+}
+const sorted = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+console.log(fibonacciSearch(sorted, 13)); // → 6
+console.log(fibonacciSearch(sorted, 2));  // → -1
+export function fibonacciSearch<T>(
+  arr: T[],
+  key: T,
+  cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  // use cmp(a, b) instead of a < b / a > b
+}
