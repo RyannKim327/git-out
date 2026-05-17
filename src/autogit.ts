@@ -1,15 +1,35 @@
 /**
- * Return the arithmetic mean of an array of numbers.
- * @param values – the numbers to average
- * @returns the mean, or `null` if the array is empty
+ * Returns the longest common prefix of an array of strings.
+ * If the array is empty, returns an empty string.
+ *
+ * @param words - array of strings
+ * @returns longest common prefix
  */
-function mean(values: number[]): number | null {
-  if (values.length === 0) return null;
+function longestCommonPrefix(words: string[]): string {
+  if (words.length === 0) return '';
 
-  const total = values.reduce((sum, v) => sum + v, 0);
-  return total / values.length;
+  // 1. Find the min and max strings (lexicographically)
+  let min = words[0];
+  let max = words[0];
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i];
+    if (w < min) min = w;
+    if (w > max) max = w;
+  }
+
+  // 2. Find first mismatch between min and max
+  let j = 0;
+  while (j < min.length && j < max.length && min[j] === max[j]) {
+    j++;
+  }
+
+  // 3. Slice the common part
+  return min.slice(0, j);
 }
-const grades = [88, 92, 76, 81, 95];
+const arr = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(arr)); // → "fl"
 
-console.log(mean(grades)); // 86
-console.log(mean([]));     // null
+console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
+console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
+console.log(longestCommonPrefix(['single'])); // → "single"
+console.log(longestCommonPrefix([])); // → ""
