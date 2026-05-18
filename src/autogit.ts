@@ -1,169 +1,76 @@
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree for any type T that can be compared via a comparator
-   ────────────────────────────────────────────────────────────────────── */
-
-interface Node<T> {
-  value: T;
-  left?: Node<T>;
-  right?: Node<T>;
-  height: number;           // height of the subtree rooted at this node
-}
-
-type Comparator<T> = (a: T, b: T) => number;
-
-/* ──────────────────────────────────────────────────────────────────────
-   Binary‑search‑tree helper: node height, balance factor, update
-   ────────────────────────────────────────────────────────────────────── */
-
-function nodeHeight<T>(n: Node<T> | undefined): number {
-  return n ? n.height : 0;
-}
-
-function balanceFactor<T>(n: Node<T> | undefined): number {
-  return n ? nodeHeight(n.left) - nodeHeight(n.right) : 0;
-}
-
-function updateHeight<T>(n: Node<T>): void {
-  n.height = 1 + Math.max(nodeHeight(n.left), nodeHeight(n.right));
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   Rotations
-   ────────────────────────────────────────────────────────────────────── */
-
-function rotateRight<T>(y: Node<T>): Node<T> {
-  const x = y.left!;
-  const T2 = x.right;
-
-  // Rotation
-  x.right = y;
-  y.left = T2;
-
-  // Update heights
-  updateHeight(y);
-  updateHeight(x);
-  return x;                  // new root
-}
-
-function rotateLeft<T>(x: Node<T>): Node<T> {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // Rotation
-  y.left = x;
-  x.right = T2;
-
-  // Update heights
-  updateHeight(x);
-  updateHeight(y);
-  return y;                  // new root
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   Rebalance a node
-   ────────────────────────────────────────────────────────────────────── */
-
-function rebalance<T>(node: Node<T>): Node<T> {
-  updateHeight(node);
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (balanceFactor(node.left) < 0) {
-      node.left = rotateLeft(node.left!);
-    }
-    return rotateRight(node);
+// ---------------------------------------------------
+// Queue implemented with a singly linked list
+// ---------------------------------------------------
+class Queue<T> {
+  // ------- internal node type -------
+  private static class Node<U> {
+    constructor(public value: U, public next?: Queue.Node<U>) {}
   }
 
-  // Right heavy
-  if (bf < -1) {
-    if (balanceFactor(node.right) > 0) {
-      node.right = rotateRight(node.right!);
-    }
-    return rotateLeft(node);
-  }
+  // ------- private fields -------
+  private head?: typeof Queue.Node<any>; // points to the first element
+  private tail?: typeof Queue.Node<any>; // points to the last element
+  private _size = 0;
 
-  return node;   // already balanced
-}
+  // ------- public methods -------
 
-/* ──────────────────────────────────────────────────────────────────────
-   AVL tree class
-   ────────────────────────────────────────────────────────────────────── */
-
-export class AVLTree<T> {
-  private root?: Node<T>;
-  private readonly compare: Comparator<T>;
-
-  constructor(compareFn: Comparator<T>) {
-    this.compare = compareFn;
-  }
-
-  /* ── PUBLIC API ───────────────────────────────────────────────────── */
-
-  insert(value: T): void {
-    this.root = this._insert(this.root, value);
-  }
-
-  delete(value: T): void {
-    this.root = this._delete(this.root, value);
-  }
-
-  find(value: T): Node<T> | undefined {
-    return this._find(this.root, value);
-  }
-
-  /** In‑order traversal – handy for visualising the tree */
-  inOrder(): T[] {
-    const res: T[] = [];
-    this._inOrder(this.root, res);
-    return res;
-  }
-
-  /** Return raw root – useful for debugging */
-  getRoot(): Node<T> | undefined {
-    return this.root;
-  }
-
-  /* ── INTERNAL IMPLEMENTATION ─────────────────────────────────────── */
-
-  private _insert(node: Node<T> | undefined, value: T): Node<T> {
-    if (!node) return { value, height: 1 };           // new leaf
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) node.left  = this._insert(node.left,  value);
-    else if (cmp > 0) node.right = this._insert(node.right, value);
-    else return node;                                 // ignore duplicates
-
-    return rebalance(node);
-  }
-
-  private _find(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-    const cmp = this.compare(value, node.value);
-    if (cmp === 0) return node;
-    return cmp < 0 ? this._find(node.left,  value) : this._find(node.right, value);
-  }
-
-  private _inOrder(node: Node<T> | undefined, out: T[]): void {
-    if (!node) return;
-    this._inOrder(node.left, out);
-    out.push(node.value);
-    this._inOrder(node.right, out);
-  }
-
-  /** Delete and rebalance */
-  private _delete(node: Node<T> | undefined, value: T): Node<T> | undefined {
-    if (!node) return undefined;
-
-    const cmp = this.compare(value, node.value);
-    if (cmp < 0) {
-      node.left = this._delete(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._delete(node.right, value);
+  /** Insert a new element at the tail. */
+  enqueue(value: T): void {
+    const newNode = new Queue.Node(value);
+    if (!this.tail) {
+      // The queue is empty.
+      this.head = this.tail = newNode;
     } else {
-      // node to delete found
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
+      this.tail.next = newNode;
+      this.tail = newNode;
+    }
+    this._size++;
+  }
 
-      // Two children: use in‑order predecessor (max of left subtree)
-      const maxLeft = this._max
+  /** Remove and return the element at the head. */
+  dequeue(): T | undefined {
+    if (!this.head) return undefined;          // empty queue
+    const removed = this.head.value;           // capture value
+    this.head = this.head.next;                // advance head
+    if (!this.head) this.tail = undefined;     // became empty
+    this._size--;
+    return removed;
+  }
+
+  /** Peek at the head without removing it. */
+  peek(): T | undefined {
+    return this.head?.value;
+  }
+
+  /** Number of items currently in the queue. */
+  size(): number {
+    return this._size;
+  }
+
+  /** Is the queue empty? */
+  isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  // Optional: allow `for..of` iteration over the queue
+  [Symbol.iterator](): Iterator<T> {
+    let current = this.head;
+    return {
+      next(): IteratorResult<T> {
+        if (!current) return { done: true, value: undefined };
+        const value = current.value;
+        current = current.next;
+        return { done: false, value };
+      },
+    };
+  }
+}
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek()); // 10
+console.log(q.dequeue()); // 10
+console.log([...q]); // [20, 30]
