@@ -1,71 +1,45 @@
-/**
- * Build the longest–prefix‑suffix (LPS) array for the pattern.
- *
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- *           which is also a suffix of that substring.
- * Complexity: O(m), m = pattern.length
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps = new Array<number>(m).fill(0);
-  let length = 0;               // length of the previous longest prefix suffix
-  let i = 1;
+// random-example.ts
+// a small TypeScript demo that pulls data from a public API using axios
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
+import axios from 'axios';
+
+// ---------- Types ----------
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+// ---------- API wrapper ----------
+async function fetchTodo(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
+  return response.data;
+}
+
+// ---------- CLI entry point ----------
+async function main() {
+  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
+
+  try {
+    const todo = await fetchTodo(todoId);
+    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
+    console.log(`  - ${todo.title}`);
+    console.log(`  - completed: ${todo.completed}`);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error(`Request failed: ${err.message}`);
     } else {
-      if (length !== 0) {
-        // fall back to the previous candidate
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
+      console.error(`Unexpected error:`, err);
     }
+    process.exit(1);
   }
-
-  return lps;
 }
 
-/**
- * KMP search: return all start positions where pattern occurs in text.
- * Complexity: O(n + m), n = text.length, m = pattern.length
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const lps = buildLPS(pattern);
+main();
+# 1. Install deps (run once)
+npm install axios
 
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < n) {
-    if (pattern[j] === text[i]) {
-      i++;
-      j++;
-    }
-
-    if (j === m) {
-      // full match found – record start index
-      positions.push(i - j);
-      j = lps[j - 1]; // allow for overlapping matches
-    } else if (i < n && pattern[j] !== text[i]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
-  }
-
-  return positions;
-}
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
-
-const occ = kmpSearch(txt, pat);
-console.log(occ); // → [10]
+# 2. Compile / run
+npx ts-node random-example.ts 5
