@@ -1,71 +1,46 @@
-/**
- * Build the longest–prefix‑suffix (LPS) array for the pattern.
- *
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- *           which is also a suffix of that substring.
- * Complexity: O(m), m = pattern.length
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps = new Array<number>(m).fill(0);
-  let length = 0;               // length of the previous longest prefix suffix
-  let i = 1;
+interface ListNode<T = unknown> {
+  value: T;
+  next?: ListNode<T>;
+}
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false; // an empty list can’t have a cycle
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous candidate
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+  let slow = head;
+  let fast = head.next; // fast starts one step ahead
+
+  while (fast && fast.next) {
+    if (slow === fast) return true; // cycle detected
+
+    slow = slow.next!;          // move one step
+    fast = fast.next.next!; // move two steps
   }
 
-  return lps;
+  return false; // reached the end, no cycle
 }
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+  let current = head;
 
-/**
- * KMP search: return all start positions where pattern occurs in text.
- * Complexity: O(n + m), n = text.length, m = pattern.length
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const lps = buildLPS(pattern);
-
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < n) {
-    if (pattern[j] === text[i]) {
-      i++;
-      j++;
-    }
-
-    if (j === m) {
-      // full match found – record start index
-      positions.push(i - j);
-      j = lps[j - 1]; // allow for overlapping matches
-    } else if (i < n && pattern[j] !== text[i]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
+  while (current) {
+    if (visited.has(current)) return true; // we’re back at a node we saw
+    visited.add(current);
+    current = current.next;
   }
 
-  return positions;
+  return false;
 }
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
+// build a small example
+const a: ListNode = { value: 1 };
+const b: ListNode = { value: 2 };
+const c: ListNode = { value: 3 };
 
-const occ = kmpSearch(txt, pat);
-console.log(occ); // → [10]
+a.next = b;
+b.next = c;
+c.next = a; // ← closes the loop
+
+console.log(hasCycle(a));          // true
+console.log(hasCycleWithSet(a));   // true
+
+// break the cycle
+c.next = undefined;
+console.log(hasCycle(a));          // false
