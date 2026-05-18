@@ -1,98 +1,25 @@
 /**
- * Comparator signature: (a, b) => boolean
- * Should return true if `a` has higher priority than `b`
- * (i.e. `a` should come *before* `b` in the heap order).
+ * Very practical “looks‑nice‑like‑an‑email” validator.
+ * Not a full RFC‑5322 parser, but catches most real‑world cases.
  */
-type Comparator<T> = (a: T, b: T) => boolean;
-
-export class PriorityQueue<T> {
-  /** Encoded binary‑heap */
-  private items: T[] = [];
-
-  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
-
-  /* ---------- Properties ---------- */
-
-  get size(): number { return this.items.length; }
-  get isEmpty(): boolean { return this.items.length === 0; }
-
-  /* ---------- Queries ---------- */
-
-  peek(): T | undefined { return this.items[0]; }
-
-  /* ---------- Mutations ---------- */
-
-  push(item: T): void {
-    this.items.push(item);
-    this.bubbleUp(this.items.length - 1);
-  }
-
-  pop(): T | undefined {
-    if (this.isEmpty) return undefined;
-
-    const top = this.items[0];
-    const last = this.items.pop()!; // array isn't empty
-
-    if (!this.isEmpty) {
-      this.items[0] = last;
-      this.bubbleDown(0);
-    }
-
-    return top;
-  }
-
-  /* ---------- Internals ---------- */
-
-  private bubbleUp(idx: number): void {
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      if (this.comparator(this.items[idx], this.items[parentIdx])) {
-        this.swap(idx, parentIdx);
-        idx = parentIdx;
-      } else {
-        break;
-      }
-    }
-  }
-
-  private bubbleDown(idx: number): void {
-    const length = this.items.length;
-    while (true) {
-      const left = idx * 2 + 1;
-      const right = left + 1;
-      let smallest = idx;
-
-      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
-        smallest = left;
-      }
-      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
-        smallest = right;
-      }
-
-      if (smallest !== idx) {
-        this.swap(idx, smallest);
-        idx = smallest;
-      } else {
-        break;
-      }
-    }
-  }
-
-  private swap(i: number, j: number): void {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
-  }
+export function isValidEmail(email: string): boolean {
+  // One or more non‑space, non‑@ chars, an @, one or more non‑space @ chars,
+  // a dot, and finally one or more non‑space chars.
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
-const maxHeap = new PriorityQueue<number>((a, b) => a > b);
-interface Task {
-  priority: number;     // smaller number → higher priority
-  description: string;
-}
+import validator from 'validator';
+validator.isEmail(someString); // true/false
+const input = document.querySelector('#email') as HTMLInputElement;
 
-const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
-const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
+function onSubmit(e: Event) {
+  e.preventDefault();
+  const email = input.value.trim();
 
-[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
+  if (!isValidEmail(email)) {
+    alert('That’s not a valid email address.');
+    return;
+  }
 
-while (!pq.isEmpty) {
-  console.log(pq.pop()); // prints: 1, 3, 5, 8
+  // …go on with your logic
 }
