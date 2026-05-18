@@ -1,122 +1,131 @@
-// A "comparable" type: any that supports the < and > operators.
-type Comparable = number | string | { compareTo(other: this): number };
+/* ----------  TrieNode  ---------- */
 
-interface INode<K extends Comparable, V> {
-  keys: K[];
-  values: V[];      // same length as keys
-  children: (INode<K, V> | null)[];
-  leaf: boolean;
-}
-const compare = <K extends Comparable>(a: K, b: K): number => {
-  if (typeof a === 'number' || typeof a === 'string')
-    return a < b ? -1 : a > b ? 1 : 0;
-  return a.compareTo(b);
-};
+class TrieNode<T = any> {
+  /** Holds the full value for a key that ends here. */
+  public value: T | null = null;
 
-const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
-  // binary search – returns the position where key should be inserted
-  let low = 0, high = arr.length - 1;
-  while (low <= high) {
-    const mid = (low + high) >> 1;
-    const cmp = compare(arr[mid], key);
-    if (cmp === 0) return mid;
-    if (cmp < 0) low = mid + 1; else high = mid - 1;
-  }
-  return low; // insertion point
-};
-class BTreeNode<K extends Comparable, V> implements INode<K, V> {
-  keys: K[] = [];
-  values: V[] = [];
-  children: (BTreeNode<K, V> | null)[] = [];
-  leaf: boolean;
+  /** Child pointers keyed by the next character. */
+  readonly children: Map<string, TrieNode<T>> = new Map();
 
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
+  /** Convenience flag – true if this node marks the end of a key. */
+  get hasValue(): boolean {
+    return this.value !== null;
   }
 }
-export class BTree<K extends Comparable, V> {
-  readonly order: number;          // minimum number of keys per node (t)
-  private root: BTreeNode<K, V>;
 
-  constructor(order: number) {
-    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
-    this.order = order;
-    this.root = new BTreeNode<K, V>(true);   // start with a leaf
-  }
+/* ----------  Trie  ---------- */
 
-  /* ---------- Public API ---------- */
-  public search(key: K): V | undefined {
-    return this.searchNode(this.root, key);
-  }
+class Trie<T = any> {
+  private root = new TrieNode<T>();
 
-  public insert(key: K, value: V): void {
-    if (this.root.keys.length === 2 * this.order - 1) {
-      // root is full – split it
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this.splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this.insertNonFull(this.root, key, value);
-  }
-
-  public delete(key: K): void {
-    this.deleteNode(this.root, key);
-    // shrink the root if it becomes empty
-    if (!this.root.leaf && this.root.keys.length === 0) {
-      this.root = this.root.children[0]!;
-    }
-  }
-
-  /* ---------- Traversal helpers (optional) ---------- */
-  public *inOrder(): IterableIterator<[K, V]> {
-    yield* this.inOrderNode(this.root);
-  }
-
-  /* ---------- Internal helpers ---------- */
-  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
-    const i = findIndex(node.keys, key);
-    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
-      return node.values[i];
-    }
-    if (node.leaf) return undefined;
-    return this.searchNode(node.children[i]!, key);
-  }
-
-  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
-    let i = node.keys.length - 1;
-    if (node.leaf) {
-      // Insert in sorted order
-      const pos = findIndex(node.keys, key);
-      node.keys.splice(pos, 0, key);
-      node.values.splice(pos, 0, value);
-    } else {
-      // Descend to the right child
-      const pos = findIndex(node.keys, key);
-      const child = node.children[pos]!;
-      if (child.keys.length === 2 * this.order - 1) {
-        this.splitChild(node, pos);
-        // After split, the middle key moves up
-        if (compare(key, node.keys[pos]) > 0) pos++;
+  /**
+   * Insert a key/value pair.  Keys can be any string.
+   */
+  insert(key: string, value: T): void {
+    let node = this.root;
+    for (const ch of key) {
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode<T>());
       }
-      this.insertNonFull(node.children[pos]!, key, value);
+      node = node.children.get(ch)!;
+    }
+    node.value = value;
+  }
+
+  /**
+   * Returns the value stored under *key*, or `undefined` if the key
+   * isn't present.
+   */
+  get(key: string): T | undefined {
+    const node = this._findNode(key);
+    return node?.value ?? undefined;
+  }
+
+  /**
+   * Checks whether *key* exists in the trie.
+   */
+  has(key: string): boolean {
+    const node = this._findNode(key);
+    return !!node?.hasValue;
+  }
+
+  /**
+   * Delete a key.  If the key isn't present, nothing happens.
+   * The method ends up trimming unused nodes on the way back.
+   */
+  delete(key: string): void {
+    const path: TrieNode[] = [];
+    let node = this.root;
+
+    for (const ch of key) {
+      const child = node.children.get(ch);
+      if (!child) return;          // key not found
+      path.push(node);
+      node = child;
+    }
+
+    if (!node.hasValue) return;    // no value to delete
+
+    node.value = null;
+
+    // Walk backward, removing nodes that became unnecessary.
+    for (let i = key.length - 1; i >= 0; i--) {
+      const parent = path[i];
+      const ch = key[i];
+
+      const child = parent.children.get(ch)!;
+      if (child.children.size > 0 || child.hasValue) break;
+      parent.children.delete(ch);
     }
   }
 
-  private splitChild(parent: BTreeNode<K, V>, idx: number) {
-    const t = this.order;
-    const y = parent.children[idx]!;               // node to split
-    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
+  /**
+   * Returns all keys that start with *prefix*.
+   */
+  startsWith(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
 
-    // Move upper half of y's keys/values to z
-    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
-    z.values = y.values.splice(t, t - 1);
+    const results: string[] = [];
+    this._collect(node, prefix, results);
+    return results;
+  }
 
-    if (!y.leaf) {
-      z.children = y.children.splice(t, t);         // children t … 2t-1
+  /* ---------  Helpers  --------- */
+
+  private _findNode(key: string): TrieNode | null {
+    let node: TrieNode | undefined = this.root;
+    for (const ch of key) {
+      node = node?.children.get(ch);
+      if (!node) return null;
     }
+    return node;
+  }
 
-    // Insert z into parent
-    parent.children.splice(idx + 1, 0, z);
-    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
-    parent.values.splice(idx
+  private _collect(node: TrieNode, prefix: string, out: string[]): void {
+    if (node.hasValue) out.push(prefix);
+
+    for (const [ch, child] of node.children) {
+      this._collect(child, prefix + ch, out);
+    }
+  }
+}
+
+/* ----------  Usage Demo  ---------- */
+
+const trie = new Trie<number>();
+
+trie.insert('cat', 1);
+trie.insert('car', 2);
+trie.insert('cart', 3);
+trie.insert('dog', 4);
+
+console.log(trie.get('cat'));         // 1
+console.log(trie.get('cart'));        // 3
+console.log(trie.has('carpent'));     // false
+
+console.log(trie.startsWith('ca'));   // ['cat', 'car', 'cart']
+console.log(trie.startsWith('do'));   // ['dog']
+
+trie.delete('cart');
+console.log(trie.startsWith('ca'));   // ['cat', 'car']
