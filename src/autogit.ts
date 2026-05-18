@@ -1,89 +1,100 @@
-/**
- * Forward Burrows–Wheeler Transform.
- * @param input – original string
- * @returns {bwt, index} – BWT string and index of the original string in the sorted rotation table.
- */
-export function bwtEncode(input: string): { bwt: string; index: number } {
-    // 1️⃣ Append a sentinel that is smaller than every other char
-    const sentinel = '\0';
-    const padded = input + sentinel;
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null;
+  private tail: Node<T> | null = null;
+  private length = 0;
 
-    // 2️⃣ Make all cyclic rotations
-    // Using an array of start indices so we never build full strings.
-    const n = padded.length;
-    const rotations = Array.from({ length: n }, (_, i) => i);
+  push(value: T): void { /* … */ }
+  pop(): T | undefined { /* … */ }
+  unshift(value: T): void { /* … */ }
+  shift(): T | undefined { /* … */ }
+  get(index: number): T | undefined { /* … */ }
+  set(index: number, value: T): boolean { /* … */ }
+  insert(index: number, value: T): boolean { /* … */ }
+  remove(index: number): T | undefined { /* … */ }
+  clear(): void { /* … */ }
+  toArray(): T[] { /* … */ }
 
-    // 3️⃣ Stable sort rotations lexicographically
-    rotations.sort((a, b) => {
-        for (let offset = 0; offset < n; offset++) {
-            const ca = padded[(a + offset) % n];
-            const cb = padded[(b + offset) % n];
-            if (ca < cb) return -1;
-            if (ca > cb) return 1;
-            // equal – iterate next offset
-        }
-        return 0;       // rotations are identical – should not happen with sentinel
-    });
-
-    // 4️⃣ Build the BWT string by taking the character preceding each rotation
-    const bwt = new Array<string>(n);
-    let originalIndex = -1;
-    for (let i = 0; i < n; i++) {
-        const rotStart = rotations[i];
-        const bwtChar = padded[(rotStart + n - 1) % n]; // char before rotation
-        bwt[i] = bwtChar;
-
-        // If this rotation is the original (started at 0), remember its position
-        if (rotStart === 0) originalIndex = i;
-    }
-
-    return { bwt: bwt.join(''), index: originalIndex };
+  [Symbol.iterator](): Iterator<T> { /* … */ }
 }
-/**
- * Inverse Burrows–Wheeler Transform.
- * @param bwt – BWT string (length n)
- * @param index – index of the original string in the sorted rotations
- * @returns original string (without the sentinel)
- */
-export function bwtDecode(bwt: string, index: number): string {
-    const n = bwt.length;
-    // 1️⃣ Build first column by sorting the BWT string
-    const first = bwt.split('').sort(); // stable because JS sort is stable (ES2019+)
-
-    // 2️⃣ Compute the “next” array – mapping from a row in first column
-    //    to the corresponding row in last column.
-    //    This is essentially the Longest‑Common‑Prefix order of the rotations.
-    const next = new Array<number>(n);
-    const buckets = new Map<string, number[]>();
-
-    // Collect indices of each character in the BWT string
-    for (let i = 0; i < n; i++) {
-        const ch = bwt[i];
-        if (!buckets.has(ch)) buckets.set(ch, []);
-        buckets.get(ch)!.push(i);
-    }
-
-    // For each character, allocate its positions in the first column
-    const bucketIterators = new Map<string, number>();
-    for (const [ch, posList] of buckets.entries()) {
-        bucketIterators.set(ch, 0);
-    }
-
-    for (let i = 0; i < n; i++) {
-        const ch = first[i];
-        const idxInBlt = buckets.get(ch)![bucketIterators.get(ch)!++];
-        next[i] = idxInBlt;
-    }
-
-    // 3️⃣ Reconstruct original by following the next pointers starting from `index`
-    const result: string[] = new Array<string>(n);
-    let row = index;
-    for (let i = n - 1; i >= 0; i--) {
-        result[i] = first[row];
-        row = next[row];
-    }
-
-    // The sentinel is the first char of the reconstructed string
-    // Strip it and return the original
-    return result.join('').slice(1); // drop sentinel
+// Simple singly‑linked node
+class Node<T> {
+  constructor(
+    public readonly value: T,
+    public next: Node<T> | null = null
+  ) {}
 }
+class LinkedList<T> implements Iterable<T> {
+  private head: Node<T> | null = null; // first node
+  private tail: Node<T> | null = null; // last
+  private length = 0;
+}
+constructor(iterable?: Iterable<T>) {
+  if (iterable) {
+    for (const item of iterable) this.push(item);
+  }
+}
+private _getNode(index: number): Node<T> | null {
+  if (index < 0 || index >= this.length) return null;
+  let curr = this.head;
+  for (let i = 0; i < index; i++) curr = curr!.next;
+  return curr;
+}
+push(value: T): void {
+  const node = new Node(value);
+  if (!this.head) {            // first item
+    this.head = this.tail = node;
+  } else {
+    this.tail!.next = node;    // append
+    this.tail = node;
+  }
+  this.length++;
+}
+pop(): T | undefined {
+  if (!this.head) return undefined;
+
+  const lastVal = this.tail!.value;
+
+  if (this.head === this.tail) {    // only one node
+    this.head = this.tail = null;
+  } else {
+    // find the node before tail
+    let curr = this.head;
+    while (curr.next !== this.tail) curr = curr.next!;
+    curr.next = null;
+    this.tail = curr;
+  }
+
+  this.length--;
+  return lastVal;
+}
+unshift(value: T): void {
+  const node = new Node(value, this.head);
+  this.head = node;
+  if (!this.tail) this.tail = node; // list was empty
+  this.length++;
+}
+shift(): T | undefined {
+  if (!this.head) return undefined;
+  const val = this.head.value;
+  this.head = this.head.next;
+  if (!this.head) this.tail = null; // list became empty
+  this.length--;
+  return val;
+}
+get(index: number): T | undefined {
+  const node = this._getNode(index);
+  return node ? node.value : undefined;
+}
+set(index: number, value: T): boolean {
+  const node = this._getNode(index);
+  if (!node) return false;
+  node.value = value;
+  return true;
+}
+insert(index: number, value: T): boolean {
+  if (index < 0 || index > this.length) return false;
+  if (index === 0) return (this.unshift(value), true);
+  if (index === this.length) return (this.push(value), true);
+
+  const prev = this._getNode(index - 1)!;
+  const node = new Node(value,
