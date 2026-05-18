@@ -1,61 +1,71 @@
 /**
- * Merge‑sort for an array of T.
+ * Build the longest–prefix‑suffix (LPS) array for the pattern.
  *
- * @param array      – the array to sort (mutated in‑place)
- * @param compareFn – optional comparator (a, b) => number
- *                    (neg: < a, 0: equal, pos: > a)
- * @returns the sorted array (same reference as the input)
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ *           which is also a suffix of that substring.
+ * Complexity: O(m), m = pattern.length
  */
-export function mergeSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  // Base case: a single element is already sorted.
-  if (array.length <= 1) return array;
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps = new Array<number>(m).fill(0);
+  let length = 0;               // length of the previous longest prefix suffix
+  let i = 1;
 
-  // Split the array in half.
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
-
-  // Recursively sort each half then merge them.
-  mergeSort(left, compareFn);
-  mergeSort(right, compareFn);
-  merge(array, left, right, compareFn);
-  return array;               // return the same array reference
-}
-
-/**
- * Merge the two sorted halves back into `out`.
- */
-function merge<T>(
-  out: T[],
-  left: T[],
-  right: T[],
-  compareFn: (a: T, b: T) => number
-) {
-  let i = 0, j = 0, k = 0;
-  while (i < left.length && j < right.length) {
-    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
-    else out[k++] = right[j++];
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous candidate
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-  // Copy any remaining items.
-  while (i < left.length) out[k++] = left[i++];
-  while (j < right.length) out[k++] = right[j++];
+
+  return lps;
 }
 
 /**
- * Default comparator for numbers or strings.
+ * KMP search: return all start positions where pattern occurs in text.
+ * Complexity: O(n + m), n = text.length, m = pattern.length
  */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSort(nums);            // in‑place sort
-console.log(nums);          // [5, 7, 23, 32, 34, 62]
+export function kmpSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const lps = buildLPS(pattern);
 
-// With a custom comparator (e.g., reverse order)
-mergeSort(nums, (a, b) => b - a);
-console.log(nums);          // [62, 34, 32, 23, 7, 5]
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < n) {
+    if (pattern[j] === text[i]) {
+      i++;
+      j++;
+    }
+
+    if (j === m) {
+      // full match found – record start index
+      positions.push(i - j);
+      j = lps[j - 1]; // allow for overlapping matches
+    } else if (i < n && pattern[j] !== text[i]) {
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
+  }
+
+  return positions;
+}
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const occ = kmpSearch(txt, pat);
+console.log(occ); // → [10]
