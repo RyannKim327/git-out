@@ -1,21 +1,50 @@
-const original: number[] = [1, 2, 3, 4, 5];
-original.reverse();          // original is now [5, 4, 3, 2, 1]
-const copy = [...original].reverse(); // or use original.slice().reverse()
+const unique = (arr: readonly any[]) => [...new Set(arr)];
 
-// original remains unchanged
-function reverseArray<T>(arr: T[]): T[] {
-  const len = arr.length;
-  const half = Math.floor(len / 2);
-  const copy = [...arr]; // keep original intact
-
-  for (let i = 0; i < half; i++) {
-    const j = len - 1 - i;
-    [copy[i], copy[j]] = [copy[j], copy[i]]; // swap
-  }
-  return copy;
+const numbers = [1, 2, 3, 2, 4, 1];
+console.log(unique(numbers)); // [1, 2, 3, 4]
+function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
+  const seen = new Set<any>();
+  return arr.filter(item => {
+    const k = item[key];
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
-const reversed = reverseArray(original);
-function reverseArray<T>(arr: T[]): T[] {
-  return [...arr].reverse();
-}
+const people = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 1, name: 'Ada' },
+  { id: 3, name: 'Ken' }
+];
+
+console.log(uniqBy(people, 'id'));
+/*
+[
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 3, name: 'Ken' }
+]
+*/
+import uniqWith from 'lodash/uniqWith';
+import isEqual from 'lodash/isEqual';
+
+const dupObjs = [
+  { a: 1, b: 2 },
+  { a: 1, b: 2 },
+  { a: 3, b: 4 }
+];
+
+console.log(uniqWith(dupObjs, isEqual));
+// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
+const unique = (arr: readonly any[]) =>
+  arr.filter((value, index, self) => self.indexOf(value) === index);
+
+console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
+const uniq = (arr: readonly any[]) => [...new Set(arr)];
+// or for objects by key
+const uniqByKey = (arr: readonly any[], key: string) => {
+  const seen = new Set();
+  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
+};
