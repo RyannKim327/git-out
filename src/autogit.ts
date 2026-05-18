@@ -1,52 +1,98 @@
 /**
- * Selection sort – returns a **new** sorted array.
- * The original array is left untouched.
- *
- * @param arr   – source array
- * @returns     – a new array sorted in ascending order
+ * Comparator signature: (a, b) => boolean
+ * Should return true if `a` has higher priority than `b`
+ * (i.e. `a` should come *before* `b` in the heap order).
  */
-export function selectionSort<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];          // clone so we don't mutate the caller's array
-  const n = toSort.length;
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  for (let i = 0; i < n - 1; i++) {
-    // assume the smallest element is at i
-    let minIndex = i;
+export class PriorityQueue<T> {
+  /** Encoded binary‑heap */
+  private items: T[] = [];
 
-    // find the real smallest element in the remaining unsorted section
-    for (let j = i + 1; j < n; j++) {
-      if (toSort[j] < toSort[minIndex]) {
-        minIndex = j;
-      }
+  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
+
+  /* ---------- Properties ---------- */
+
+  get size(): number { return this.items.length; }
+  get isEmpty(): boolean { return this.items.length === 0; }
+
+  /* ---------- Queries ---------- */
+
+  peek(): T | undefined { return this.items[0]; }
+
+  /* ---------- Mutations ---------- */
+
+  push(item: T): void {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (this.isEmpty) return undefined;
+
+    const top = this.items[0];
+    const last = this.items.pop()!; // array isn't empty
+
+    if (!this.isEmpty) {
+      this.items[0] = last;
+      this.bubbleDown(0);
     }
 
-    // swap the found minimum with the element at i
-    if (minIndex !== i) {
-      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
+    return top;
+  }
+
+  /* ---------- Internals ---------- */
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (this.comparator(this.items[idx], this.items[parentIdx])) {
+        this.swap(idx, parentIdx);
+        idx = parentIdx;
+      } else {
+        break;
+      }
     }
   }
 
-  return toSort;
-}
-const unsorted = [9, 3, 10, 2, 7];
-const sorted = selectionSort(unsorted);
+  private bubbleDown(idx: number): void {
+    const length = this.items.length;
+    while (true) {
+      const left = idx * 2 + 1;
+      const right = left + 1;
+      let smallest = idx;
 
-console.log(sorted);      // [2, 3, 7, 9, 10]
-console.log(unsorted);    // remains [9, 3, 10, 2, 7]
-export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];
-  const helper = (k: number) => {
-    if (k >= toSort.length - 1) return;
+      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
+        smallest = left;
+      }
+      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
+        smallest = right;
+      }
 
-    let minIdx = k;
-    for (let i = k + 1; i < toSort.length; i++) {
-      if (toSort[i] < toSort[minIdx]) minIdx = i;
+      if (smallest !== idx) {
+        this.swap(idx, smallest);
+        idx = smallest;
+      } else {
+        break;
+      }
     }
+  }
 
-    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
-    helper(k + 1);
-  };
+  private swap(i: number, j: number): void {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  }
+}
+const maxHeap = new PriorityQueue<number>((a, b) => a > b);
+interface Task {
+  priority: number;     // smaller number → higher priority
+  description: string;
+}
 
-  helper(0);
-  return toSort;
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
+const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
+
+[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
+
+while (!pq.isEmpty) {
+  console.log(pq.pop()); // prints: 1, 3, 5, 8
 }
