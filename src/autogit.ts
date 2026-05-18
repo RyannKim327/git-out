@@ -1,112 +1,71 @@
-// ---------- 1️⃣  Node definition ----------
-class Node<T> {
-  /** The stored value. */
-  value: T;
-  /** Left child – < value */
-  left: Node<T> | null = null;
-  /** Right child – > value */
-  right: Node<T> | null = null;
+/**
+ * Build the longest–prefix‑suffix (LPS) array for the pattern.
+ *
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ *           which is also a suffix of that substring.
+ * Complexity: O(m), m = pattern.length
+ */
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps = new Array<number>(m).fill(0);
+  let length = 0;               // length of the previous longest prefix suffix
+  let i = 1;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
-
-// ---------- 2️⃣  BinaryTree wrapper ----------
-class BinaryTree<T> {
-  /** Root of the tree (can be null if the tree is empty). */
-  root: Node<T> | null = null;
-
-  // Plug in the comparison logic so the tree can work with any type.
-  // By default it uses the built‑in < and > operators.
-  constructor(private compare: (a: T, b: T) => number = (a, b) => {
-    if (a === b) return 0;
-    return a < b ? -1 : 1;       // <=> -1, =0, >=>1
-  }) {}
-
-  // ---------- 3️⃣  Insert ----------
-  insert(value: T): void {
-    const newNode = new Node(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-    let cur = this.root;
-    while (true) {
-      if (this.compare(value, cur.value) < 0) {
-        if (!cur.left) {
-          cur.left = newNode;
-          return;
-        }
-        cur = cur.left;
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous candidate
+        length = lps[length - 1];
       } else {
-        if (!cur.right) {
-          cur.right = newNode;
-          return;
-        }
-        cur = cur.right;
+        lps[i] = 0;
+        i++;
       }
     }
   }
 
-  // ---------- 4️⃣  Search ----------
-  find(value: T): Node<T> | null {
-    let cur = this.root;
-    while (cur) {
-      const cmp = this.compare(value, cur.value);
-      if (cmp === 0) return cur;
-      cur = cmp < 0 ? cur.left : cur.right;
-    }
-    return null;   // not found
-  }
-
-  // ---------- 5️⃣  Traversals ----------
-  // In‑order: left → node → right (sorted order for a BST)
-  inorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      result.push(n.value);
-      walk(n.right);
-    }
-    walk(this.root);
-    return result;
-  }
-
-  // Pre‑order: node → left → right
-  preorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      result.push(n.value);
-      walk(n.left);
-      walk(n.right);
-    }
-    walk(this.root);
-    return result;
-  }
-
-  // Post‑order: left → right → node
-  postorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      walk(n.right);
-      result.push(n.value);
-    }
-    walk(this.root);
-    return result;
-  }
+  return lps;
 }
-const nums = new BinaryTree<number>();
-[7, 3, 9, 1, 5, 8, 10].forEach(n => nums.insert(n));
 
-console.log('In‑order (sorted):', nums.inorder());    // [1,3,5,7,8,9,10]
-console.log('Pre‑order:', nums.preorder());           // [7,3,1,5,9,8,10]
-console.log('Post‑order:', nums.postorder());         // [1,5,3,8,10,9,7]
+/**
+ * KMP search: return all start positions where pattern occurs in text.
+ * Complexity: O(n + m), n = text.length, m = pattern.length
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const lps = buildLPS(pattern);
 
-const node = nums.find(5);
-console.log('Found node:', node?.value);               // 5
-console.log('Does 6 exist?', !!nums.find(6));          // false
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < n) {
+    if (pattern[j] === text[i]) {
+      i++;
+      j++;
+    }
+
+    if (j === m) {
+      // full match found – record start index
+      positions.push(i - j);
+      j = lps[j - 1]; // allow for overlapping matches
+    } else if (i < n && pattern[j] !== text[i]) {
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
+  }
+
+  return positions;
+}
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const occ = kmpSearch(txt, pat);
+console.log(occ); // → [10]
