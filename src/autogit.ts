@@ -1,26 +1,45 @@
-/**
- * Returns the first character that is repeated, or `undefined` if the string
- * contains no duplicates.
- */
-function firstRepeated(s: string): string | undefined {
-  const seen = new Set<string>();
+// random-example.ts
+// a small TypeScript demo that pulls data from a public API using axios
 
-  for (const ch of s) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
-  }
-  return undefined;     // nothing repeated
-}
-console.log(firstRepeated("abca"));   // → 'a'
-console.log(firstRepeated("abcdef")); // → undefined
-console.log(firstRepeated("aabbc"));  // → 'a'
-function firstRepeatedAscii(s: string): string | undefined {
-  const seen = new Array(128).fill(false);
+import axios from 'axios';
 
-  for (const ch of s) {
-    const code = ch.charCodeAt(0);
-    if (seen[code]) return ch;
-    seen[code] = true;
-  }
-  return undefined;
+// ---------- Types ----------
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
+
+// ---------- API wrapper ----------
+async function fetchTodo(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
+  return response.data;
+}
+
+// ---------- CLI entry point ----------
+async function main() {
+  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
+
+  try {
+    const todo = await fetchTodo(todoId);
+    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
+    console.log(`  - ${todo.title}`);
+    console.log(`  - completed: ${todo.completed}`);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error(`Request failed: ${err.message}`);
+    } else {
+      console.error(`Unexpected error:`, err);
+    }
+    process.exit(1);
+  }
+}
+
+main();
+# 1. Install deps (run once)
+npm install axios
+
+# 2. Compile / run
+npx ts-node random-example.ts 5
