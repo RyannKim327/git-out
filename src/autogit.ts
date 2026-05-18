@@ -1,58 +1,148 @@
-/**
- * Computes the prefix function (failure table) of a pattern.
- * pi[i] = the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
- */
-function buildPrefixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const pi: number[] = Array(m).fill(0);
-  let k = 0;   // mismatch counter
+// ------------------------------------------------------------------
+// SkipList.ts
+// ------------------------------------------------------------------
+export type Comparator<K> = (a: K, b: K) => number;
 
-  for (let i = 1; i < m; i++) {
-    // fall back until we either hit a match or k == 0
-    while (k > 0 && pattern[i] !== pattern[k]) {
-      k = pi[k - 1];
-    }
-    if (pattern[i] === pattern[k]) k++;
-    pi[i] = k;
-  }
-  return pi;
+interface ListNode<K, V> {
+  key: K;
+  value: V;
+  next: Array<ListNode<K, V> | null>; // forward pointers, one per level
 }
 
-/**
- * KMP search – returns the starting indices of all matches of `needle`
- * inside `haystack`.  Does *exact* matching (no regex features).
- */
-export function kmpSearch(haystack: string, needle: string): number[] {
-  const n = haystack.length;
-  const m = needle.length;
-  if (m === 0) return [];          // nothing to find
-  if (m > n) return [];            // can't fit
+export class SkipList<K, V> {
+  // These constants set the “skew” of the random level.
+  // Every additional level is ½ as likely as the previous one.
+  private static readonly P = 0.5;
+  private static readonly MAX_LEVEL = 32;
 
-  const pi = buildPrefixTable(needle);
-  const matches: number[] = [];
-  let j = 0;                        // current index in needle
+  private readonly head: ListNode<K, V>;
+  private readonly tail: ListNode<K, V>;
+  private level = 0;                // current highest level that contains any nodes
+  private size = 0;                // number of key/value pairs
 
-  for (let i = 0; i < n; i++) {
-    // if mismatch, fall back using pi until match or j == 0
-    while (j > 0 && haystack[i] !== needle[j]) {
-      j = pi[j - 1];
-    }
-    if (haystack[i] === needle[j]) j++;
+  constructor(private readonly compare: Comparator<K>) {
+    // create an array of `null` references for head and tail
+    const sentinelNext: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
 
-    // full match found
-    if (j === m) {
-      matches.push(i - m + 1);
-      j = pi[j - 1];   // allow overlaps
-    }
+    this.head = { key: null as any, value: null as any, next: sentinelNext };
+    this.tail = { key: null as any, value: null as any, next: sentinelNext };
   }
 
-  return matches;
-}
-const txt = "ababcabcababc";
-const pat = "abc";
+  /* -----------------------------------------------------------------
+     Random level generator – geometric distribution
+     ----------------------------------------------------------------- */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < SkipList.P && lvl < SkipList.MAX_LEVEL - 1) {
+      lvl++;
+    }
+    return lvl;
+  }
 
-console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
-function contains(haystack: string, needle: string) {
-  return haystack.indexOf(needle) !== -1;
-}
+  /* -----------------------------------------------------------------
+     Search – returns the value for a key, or undefined if not found.
+     ----------------------------------------------------------------- */
+  get(key: K): V | undefined {
+    let current = this.head;
+
+    // walk from top level down
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+    }
+
+    const candidate = current.next[0];
+    if (candidate && this.compare(candidate.key, key) === 0) {
+      return candidate.value;
+    }
+    return undefined;
+  }
+
+  /* -----------------------------------------------------------------
+     Insert – O(log n) average
+     ----------------------------------------------------------------- */
+  set(key: K, value: V): void {
+    // build a slice of pointers that we’ll need to update
+    const update: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
+
+    let current = this.head;
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+      update[i] = current;
+    }
+
+    const next = current.next[0];
+
+    // key already present → just replace the value
+    if (next && this.compare(next.key, key) === 0) {
+      next.value = value;
+      return;
+    }
+
+    // new node: determine its height
+    const nodeLevel = this.randomLevel();
+    const newNode: ListNode<K, V> = {
+      key,
+      value,
+      next: Array(nodeLevel + 1).fill(null),
+    };
+
+    if (nodeLevel > this.level) {
+      // adjust the “head” to point to the tail on the new higher levels
+      for (let i = this.level + 1; i <= nodeLevel; i++) {
+        update[i] = this.head;
+      }
+      this.level = nodeLevel;
+    }
+
+    // link the new node into the list
+    for (let i = 0; i <= nodeLevel; i++) {
+      newNode.next[i] = update[i]!.next[i];
+      update[i]!.next[i] = newNode;
+    }
+
+    this.size++;
+  }
+
+  /* -----------------------------------------------------------------
+     Delete – O(log n) average
+     ----------------------------------------------------------------- */
+  delete(key: K): boolean {
+    const update: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
+
+    let current = this.head;
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+      update[i] = current;
+    }
+
+    const target = current.next[0];
+    if (!target || this.compare(target.key, key) !== 0) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node from every level it appears in
+    for (let i = 0; i <= target.next.length - 1; i++) {
+      if (update[i]!.next[i] !== target) break;
+      update[i]!.next[i] = target.next[i];
+    }
+
+    // trim empty top levels
+    while (this.level > 0 && this.head
