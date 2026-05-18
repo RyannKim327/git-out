@@ -1,83 +1,118 @@
-/**
- * A directed graph is expected to be an object where each key is a node
- * id (string) and the value is an array of neighbouring node ids.
- * Example:
- *   const graph = {
- *     a: ['b', 'c'],
- *     b: ['c'],
- *     c: ['a', 'd'],
- *     d: ['e'],
- *     e: []
- *   };
- */
-type Graph = Record<string, string[]>;
+type Node = number | string;           // whatever your IDs look like
+type Graph = Record<Node, Node[]>;     // adjacency list
 
 /**
- * Tarjan’s SCC algorithm.
- *
- * @param graph – adjacency list representation of the directed graph
- * @returns array of SCCs, each itself an array of node ids
+ * Breadth‑first search that collects the visit order.
  */
-export function tarjanSCC(graph: Graph): string[][] {
-  const indexMap = new Map<string, number>();
-  const lowLinkMap = new Map<string, number>();
-  const onStack = new Set<string>();
+export function bfsVisitOrder(
+  graph: Graph,
+  start: Node
+): Node[] {
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const order: Node[] = [];
 
-  const stack: string[] = [];
-  let idx = 0;
-  const sccs: string[][] = [];
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
 
-  const strongConnect = (node: string) => {
-    // Set the depth index for this node to the smallest unused index
-    indexMap.set(node, idx);
-    lowLinkMap.set(node, idx);
-    idx++;
-
-    stack.push(node);
-    onStack.add(node);
-
-    // Consider successors of node
-    for (const succ of graph[node] ?? []) {
-      if (!indexMap.has(succ)) {
-        // Successor has not yet been visited – recurse on it
-        strongConnect(succ);
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, lowLinkMap.get(succ)!));
-      } else if (onStack.has(succ)) {
-        // Successor is in stack → node is in the same SCC
-        lowLinkMap.set(node, Math.min(lowLinkMap.get(node)!, indexMap.get(succ)!));
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
       }
     }
+  }
+  return order;
+}
 
-    // If node is a root node, pop the stack and generate an SCC
-    if (lowLinkMap.get(node) === indexMap.get(node)) {
-      const scc: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        scc.push(w);
-      } while (w !== node);
-      sccs.push(scc);
-    }
-  };
+/**
+ * Breadth‑first search that stops at a goal node
+ * and returns the *shortest path* (for unweighted graphs).
+ */
+export function bfsShortestPath(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {
+  if (start === goal) return [start];
 
-  // Call the recursion for each node (in any order)
-  for (const node of Object.keys(graph)) {
-    if (!indexMap.has(node)) {
-      strongConnect(node);
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const parent: Record<Node, Node | null> = {};
+  parent[start] = null;
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        parent[neighbor] = cur;
+        if (neighbor === goal) {
+          // build the path from goal back to start
+          const path: Node[] = [goal];
+          let p: Node | null = cur;
+          while (p !== null) {
+            path.push(p);
+            p = parent[p];
+          }
+          return path.reverse();
+        }
+        queue.push(neighbor);
+      }
     }
   }
 
-  return sccs;
+  return null; // goal not reachable
 }
 const graph: Graph = {
-  a: ['b'],
-  b: ['c'],
-  c: ['a', 'd'],
-  d: ['e'],
-  e: ['f'],
-  f: ['d']
+  1: [2, 3],
+  2: [4],
+  3: [4, 5],
+  4: [],
+  5: [6],
+  6: [],
 };
 
-console.log(tarjanSCC(graph));
-// e.g. [ [ 'c', 'b', 'a' ], [ 'f', 'e', 'd' ] ]
+console.log(bfsVisitOrder(graph, 1));
+// → [1, 2, 3, 4, 5, 6]
+
+console.log(bfsShortestPath(graph, 1, 6));
+// → [1, 3, 5, 6]
+type NodeId = string | number;
+
+// Generic graph implemented as Map<id, array of ids>
+export type GenericGraph<T> = Map<T, T[]>;
+
+export function genericBfsVisitOrder<T>(
+  graph: GenericGraph<T>,
+  start: T
+): T[] {
+  const queue: T[] = [start];
+  const visited: Set<T> = new Set([start]);
+  const order: T[] = [];
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
+    for (const neighbour of graph.get(cur) ?? []) {
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push(neighbour);
+      }
+    }
+  }
+  return order;
+}
+const g: GenericGraph<string> = new Map([
+  ["A", ["B", "C"]],
+  ["B", ["D"]],
+  ["C", ["D", "E"]],
+  ["D", []],
+  ["E", ["F"]],
+  ["F", []],
+]);
+
+console.log(genericBfsVisitOrder(g, "A"));
+// → ["
