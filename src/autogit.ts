@@ -1,22 +1,65 @@
-// Regular number factorial (fast for small n, but beware of JS number limits)
-function factorialRecursive(n: number): number {
-  if (n < 0)
-    throw new Error('factorial is defined only for non‑negative integers');
+/**
+ * Return the intersection of two arrays.
+ * @param a  First array
+ * @param b  Second array
+ * @returns  An array containing every element that appears in **both** `a` and `b`
+ *
+ * The function is generic so it keeps the element type while still being type‑safe.
+ * For primitive values a direct equality check (`===`) is sufficient.
+ */
+export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
+  // Build a set from the larger array – that keeps lookup O(1).
+  // (You could skip the `max` decision; it's just a micro‑optimization.)
+  const [large, small] = a.length > b.length ? [a, b] : [b, a];
+  const set = new Set(large);
 
-  // the base case
-  if (n === 0 || n === 1) return 1;
-
-  // recursive call
-  return n * factorialRecursive(n - 1);
+  // Pick elements of the smaller array that exist in the set.
+  return small.filter((x) => set.has(x));
 }
-// BigInt variant – no loss of precision up to very large n
-function factorialRecursiveBigInt(n: bigint): bigint {
-  if (n < 0n)
-    throw new Error('factorial is defined only for non‑negative integers');
+const xs = [1, 2, 3, 4];
+const ys = [3, 4, 5, 6];
 
-  if (n === 0n || n === 1n) return 1n;
+console.log(intersection(xs, ys)); // → [3, 4]
+import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
 
-  return n * factorialRecursiveBigInt(n - 1n);
+console.log(intersection(xs, ys)); // → [3, 4]
+interface Person {
+  id: number;
+  name: string;
 }
-console.log(factorialRecursive(5));          // 120
-console.log(factorialRecursiveBigInt(20n));   // 2432902008176640000n
+
+const a: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+];
+
+const b: Person[] = [
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+  { id: 4, name: 'Dan'   },
+];
+
+const key = (p: Person) => p.id;
+
+function intersectionBy<T, K extends string | number | symbol>(
+  a: readonly T[],
+  b: readonly T[],
+  getKey: (item: T) => K
+): T[] {
+  const map = new Map<K, T>();
+  for (const item of a) {
+    map.set(getKey(item), item);
+  }
+  const result: T[] = [];
+  for (const item of b) {
+    const key = getKey(item);
+    if (map.has(key)) {
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+console.log(intersectionBy(a, b, key));
+// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
