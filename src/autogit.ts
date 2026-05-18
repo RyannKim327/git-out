@@ -1,148 +1,125 @@
-// ------------------------------------------------------------------
-// SkipList.ts
-// ------------------------------------------------------------------
-export type Comparator<K> = (a: K, b: K) => number;
+// --- types ----------------------------------------------------------
 
-interface ListNode<K, V> {
-  key: K;
-  value: V;
-  next: Array<ListNode<K, V> | null>; // forward pointers, one per level
+type Node = string | number;             // anything that can be compared by ===
+type Graph = Map<Node, Node[]>;          // adjacency list
+
+// an entry tracks a node and the parent that led to it
+interface QueueEntry {
+  node: Node;
+  parent: Node | null;   // parent in the search tree
 }
 
-export class SkipList<K, V> {
-  // These constants set the “skew” of the random level.
-  // Every additional level is ½ as likely as the previous one.
-  private static readonly P = 0.5;
-  private static readonly MAX_LEVEL = 32;
+// --- helper ---------------------------------------------------------
 
-  private readonly head: ListNode<K, V>;
-  private readonly tail: ListNode<K, V>;
-  private level = 0;                // current highest level that contains any nodes
-  private size = 0;                // number of key/value pairs
+/**
+ * Simple FIFO queue built on an array for speed.
+ */
+class Queue<T> {
+  private items: T[] = [];
+  enqueue(item: T) { this.items.push(item); }
+  dequeue(): T | undefined { return this.items.shift(); }
+  isEmpty() { return this.items.length === 0; }
+  size() { return this.items.length; }
+}
 
-  constructor(private readonly compare: Comparator<K>) {
-    // create an array of `null` references for head and tail
-    const sentinelNext: Array<ListNode<K, V> | null> =
-      Array(SkipList.MAX_LEVEL).fill(null);
+// --- bidirectional BFS ----------------------------------------------
 
-    this.head = { key: null as any, value: null as any, next: sentinelNext };
-    this.tail = { key: null as any, value: null as any, next: sentinelNext };
-  }
+export function bidirectionalSearch(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {      // null iff no path
 
-  /* -----------------------------------------------------------------
-     Random level generator – geometric distribution
-     ----------------------------------------------------------------- */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < SkipList.P && lvl < SkipList.MAX_LEVEL - 1) {
-      lvl++;
-    }
-    return lvl;
-  }
+  if (start === goal) return [start];
 
-  /* -----------------------------------------------------------------
-     Search – returns the value for a key, or undefined if not found.
-     ----------------------------------------------------------------- */
-  get(key: K): V | undefined {
-    let current = this.head;
+  // queues for both directions
+  const qStart = new Queue<QueueEntry>();
+  const qGoal  = new Queue<QueueEntry>();
 
-    // walk from top level down
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        current.next[i] &&
-        this.compare(current.next[i]!.key, key) < 0
-      ) {
-        current = current.next[i]!;
+  // visited maps: node -> parent
+  const visitedStart = new Map<Node, Node | null>();
+  const visitedGoal  = new Map<Node, Node | null>();
+
+  // initialise
+  qStart.enqueue({ node: start, parent: null });
+  visitedStart.set(start, null);
+
+  qGoal.enqueue({ node: goal, parent: null });
+  visitedGoal.set(goal, null);
+
+  // work until one frontier empties
+  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
+
+    // ---- expand the smaller frontier ----
+    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
+    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
+
+    const { node: current, parent } = nextFrontier.dequeue()!;
+
+    const neighbors = graph.get(current) ?? [];
+    for (const neigh of neighbors) {
+
+      // skip already visited by this side
+      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
+      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
+
+      // mark as visited by this side
+      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
+      visited.set(neigh, current);
+      nextFrontier.enqueue({ node: neigh, parent: current });
+
+      // --- check for meeting point ---
+      if (otherVisited.has(neigh)) {
+        return buildPath(
+          start, goal, neigh, visitedStart, visitedGoal
+        );
       }
     }
-
-    const candidate = current.next[0];
-    if (candidate && this.compare(candidate.key, key) === 0) {
-      return candidate.value;
-    }
-    return undefined;
   }
 
-  /* -----------------------------------------------------------------
-     Insert – O(log n) average
-     ----------------------------------------------------------------- */
-  set(key: K, value: V): void {
-    // build a slice of pointers that we’ll need to update
-    const update: Array<ListNode<K, V> | null> =
-      Array(SkipList.MAX_LEVEL).fill(null);
+  // nothing found
+  return null;
+}
 
-    let current = this.head;
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        current.next[i] &&
-        this.compare(current.next[i]!.key, key) < 0
-      ) {
-        current = current.next[i]!;
-      }
-      update[i] = current;
-    }
+/**
+ * Walk back from the meeting point to the start and goal to build the full path.
+ */
+function buildPath(
+  start: Node,
+  goal: Node,
+  meet: Node,
+  visitedStart: Map<Node, Node | null>,
+  visitedGoal:  Map<Node, Node | null>
+): Node[] {
 
-    const next = current.next[0];
+  // walk back to start
+  const pathStart: Node[] = [];
+  let cur: Node | null = meet;
+  while (cur !== null) {
+    pathStart.push(cur);
+    cur = visitedStart.get(cur) ?? null;
+  }
+  pathStart.reverse();    // start -> meet
 
-    // key already present → just replace the value
-    if (next && this.compare(next.key, key) === 0) {
-      next.value = value;
-      return;
-    }
-
-    // new node: determine its height
-    const nodeLevel = this.randomLevel();
-    const newNode: ListNode<K, V> = {
-      key,
-      value,
-      next: Array(nodeLevel + 1).fill(null),
-    };
-
-    if (nodeLevel > this.level) {
-      // adjust the “head” to point to the tail on the new higher levels
-      for (let i = this.level + 1; i <= nodeLevel; i++) {
-        update[i] = this.head;
-      }
-      this.level = nodeLevel;
-    }
-
-    // link the new node into the list
-    for (let i = 0; i <= nodeLevel; i++) {
-      newNode.next[i] = update[i]!.next[i];
-      update[i]!.next[i] = newNode;
-    }
-
-    this.size++;
+  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
+  const pathGoal: Node[] = [];
+  cur = visitedGoal.get(meet);
+  while (cur !== null) {
+    pathGoal.push(cur);
+    cur = visitedGoal.get(cur) ?? null;
   }
 
-  /* -----------------------------------------------------------------
-     Delete – O(log n) average
-     ----------------------------------------------------------------- */
-  delete(key: K): boolean {
-    const update: Array<ListNode<K, V> | null> =
-      Array(SkipList.MAX_LEVEL).fill(null);
+  return [...pathStart, ...pathGoal];
+}
+const graph: Graph = new Map([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E', 'G']],
+  ['G', ['F']]
+]);
 
-    let current = this.head;
-    for (let i = this.level; i >= 0; i--) {
-      while (
-        current.next[i] &&
-        this.compare(current.next[i]!.key, key) < 0
-      ) {
-        current = current.next[i]!;
-      }
-      update[i] = current;
-    }
-
-    const target = current.next[0];
-    if (!target || this.compare(target.key, key) !== 0) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node from every level it appears in
-    for (let i = 0; i <= target.next.length - 1; i++) {
-      if (update[i]!.next[i] !== target) break;
-      update[i]!.next[i] = target.next[i];
-    }
-
-    // trim empty top levels
-    while (this.level > 0 && this.head
+const path = bidirectionalSearch(graph, 'A', 'G');
+console.log(path); // => [ 'A', 'C', 'F', 'G' ]
