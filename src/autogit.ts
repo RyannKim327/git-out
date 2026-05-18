@@ -1,25 +1,27 @@
-/**
- * Convert a decimal number to binary.
- *
- * @param n – the decimal number you want to convert (must be an integer ≥ 0)
- * @returns a string containing the binary representation
- */
-function decimalToBinary(n: number): string {
-  if (n === 0) return '0';
-
-  let result = '';
-  let current = n;
-
-  while (current > 0) {
-    result = (current % 2).toString() + result;
-    current = Math.floor(current / 2);
+function stringLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
   }
+  return count;
+}
+function stringLength(str: string): number {
+  let index = 0;
+  while (true) {
+    // if the index is beyond the end, we’re done
+    if (str.charAt(index) === '') break;
+    index++;
+  }
+  return index;
+}
+function stringLength(str: string): number {
+  return str === '' ? 0 : 1 + stringLength(str.slice(1));
+}
+function stringLength(str: string): number {
+  let count = 0;
+  [...str].forEach(() => count++);
+  return count;
+}
+const msg = 'Hello 🌍!';
 
-  return result;
-}
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-function decimalToBinaryWithSign(n: number): string {
-  if (n < 0) return '-' + decimalToBinary(-n);
-  return decimalToBinary(n);
-}
+console.log(stringLength(msg)); // 8  (H,e,l,l,o,space,🌍,!)
