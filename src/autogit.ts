@@ -1,35 +1,41 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+function charCount(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
+  }
+  return count;
+}
+function charCountSplit(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  return str.split(target).length - 1;
+}
+function charCountRegex(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  const re = new RegExp(escapeRegExp(target), 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
 
-import * as readline from 'node:readline';
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function charCountReduce(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  return [...str].reduce((acc, ch) => acc + (ch === target ? 1 : 0), 0);
+}
+function charCountUtf16(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  const targetCode = target.charCodeAt(0);
+  let count = 0;
+  for (let i = 0, len = str.length; i < len; i++) {
+    if (str.charCodeAt(i) === targetCode) count++;
+  }
+  return count;
+}
+const text = "hello世界hello";
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
-
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
-
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
-
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+console.log(charCount(text, 'l')); // 3
+console.log(charCountSplit(text, 'l')); // 3
+console.log(charCountRegex(text, 'l')); // 3
+console.log(charCountReduce(text, 'l')); // 3
