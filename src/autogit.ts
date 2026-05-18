@@ -1,98 +1,34 @@
-// ──────────────────────────────────────────────────────────────────────
-// Utility types
-// ──────────────────────────────────────────────────────────────────────
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-/**
- * A generic search node that holds a state and the depth of that state in the search tree.
- */
-interface SearchNode<T> {
-  state: T;
-  depth: number;
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
 }
 
-/**
- * The contract that the caller must satisfy in order to perform a search.
- */
-export interface SearchProblem<T> {
-  /** Returns true if the supplied state is a goal state. */
-  isGoal: (state: T) => boolean;
-
-  /** Returns an array of successor states for the supplied state. */
-  getChildren: (state: T) => T[];
-
-  /** The maximum depth that the search may travel. */
-  limit: number;
+function maxDepth(root: TreeNode | null): number {
+  if (root === null) return 0;           // base case: empty subtree
+  const leftDepth  = maxDepth(root.left);   // depth of left subtree
+  const rightDepth = maxDepth(root.right);  // depth of right subtree
+  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
 }
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-// ──────────────────────────────────────────────────────────────────────
-// Depth‑limited search – iterative version
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * Performs a depth‑limited DFS iteratively.
- *
- * @param start The initial state from which the search starts.
- * @param problem An object containing `isGoal`, `getChildren` and `limit`.
- * @returns The goal state if found, otherwise `null`.
- */
-export function depthLimitedSearch<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T | null {
-  const { isGoal, getChildren, limit } = problem;
-
-  // Stack for DFS (push / pop from the end).
-  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
+  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
+  let max = 0;
 
   while (stack.length) {
-    const { state, depth } = stack.pop()!;
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
 
-    if (isGoal(state)) {
-      return state;            // Goal found.
-    }
-
-    // Don't expand deeper than the limit.
-    if (depth < limit) {
-      // Push children in reverse order if you care about visit order.
-      for (const child of getChildren(state)) {
-        stack.push({ state: child, depth: depth + 1 });
-      }
-    }
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
 
-  // Exhausted the stack without finding a goal.
-  return null;
+  return max;
 }
-export interface SearchNodeWithParent<T> {
-  state: T;
-  depth: number;
-  parent?: T;   // Optional – undefined for the root node.
-}
-
-export function depthLimitedSearchWithPath<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T[] | null {
-  const { isGoal, getChildren, limit } = problem;
-  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
-
-  while (stack.length) {
-    const current = stack.pop()!;
-    const { state, depth, parent } = current;
-
-    if (isGoal(state)) {
-      // Walk back up through parents to build the path.
-      const path: T[] = [state];
-      let p = parent;
-      while (p) {
-        path.push(p);
-        // No direct way to retrieve the parent of ‘p’ without a map.
-        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
-        // Here we simply return the goal state.
-        break;
-      }
-      return path.reverse();
-    }
-
-    if (depth < limit) {
-      for (const child of get
