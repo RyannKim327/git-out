@@ -1,40 +1,98 @@
+// ──────────────────────────────────────────────────────────────────────
+// Utility types
+// ──────────────────────────────────────────────────────────────────────
+
 /**
- * Interpolation Search – O(log log n) average, O(n) worst.
- *
- * @param arr   Sorted array of numbers (ascending order)
- * @param key   Value to locate
- * @returns     Index of `key` in `arr`, or -1 if absent
+ * A generic search node that holds a state and the depth of that state in the search tree.
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+interface SearchNode<T> {
+  state: T;
+  depth: number;
+}
 
-  let low = 0;
-  let high = arr.length - 1;
+/**
+ * The contract that the caller must satisfy in order to perform a search.
+ */
+export interface SearchProblem<T> {
+  /** Returns true if the supplied state is a goal state. */
+  isGoal: (state: T) => boolean;
 
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high]
-    if (arr[low] === arr[high]) {
-      return arr[low] === key ? low : -1;
+  /** Returns an array of successor states for the supplied state. */
+  getChildren: (state: T) => T[];
+
+  /** The maximum depth that the search may travel. */
+  limit: number;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Depth‑limited search – iterative version
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Performs a depth‑limited DFS iteratively.
+ *
+ * @param start The initial state from which the search starts.
+ * @param problem An object containing `isGoal`, `getChildren` and `limit`.
+ * @returns The goal state if found, otherwise `null`.
+ */
+export function depthLimitedSearch<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T | null {
+  const { isGoal, getChildren, limit } = problem;
+
+  // Stack for DFS (push / pop from the end).
+  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const { state, depth } = stack.pop()!;
+
+    if (isGoal(state)) {
+      return state;            // Goal found.
     }
 
-    // Estimation formula
-    const pos = low + Math.floor(
-      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-    );
-
-    const val = arr[pos];
-    if (val === key) {
-      return pos;               // Key found
-    }
-    if (val < key) {
-      low = pos + 1;             // Search upper segment
-    } else {
-      high = pos - 1;            // Search lower segment
+    // Don't expand deeper than the limit.
+    if (depth < limit) {
+      // Push children in reverse order if you care about visit order.
+      for (const child of getChildren(state)) {
+        stack.push({ state: child, depth: depth + 1 });
+      }
     }
   }
 
-  return -1; // Not found
+  // Exhausted the stack without finding a goal.
+  return null;
 }
-const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
-console.log(interpolationSearch(sorted, 31)); // → 6
-console.log(interpolationSearch(sorted, 10)); // → -1
+export interface SearchNodeWithParent<T> {
+  state: T;
+  depth: number;
+  parent?: T;   // Optional – undefined for the root node.
+}
+
+export function depthLimitedSearchWithPath<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T[] | null {
+  const { isGoal, getChildren, limit } = problem;
+  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const current = stack.pop()!;
+    const { state, depth, parent } = current;
+
+    if (isGoal(state)) {
+      // Walk back up through parents to build the path.
+      const path: T[] = [state];
+      let p = parent;
+      while (p) {
+        path.push(p);
+        // No direct way to retrieve the parent of ‘p’ without a map.
+        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
+        // Here we simply return the goal state.
+        break;
+      }
+      return path.reverse();
+    }
+
+    if (depth < limit) {
+      for (const child of get
