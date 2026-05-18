@@ -1,50 +1,50 @@
-const unique = (arr: readonly any[]) => [...new Set(arr)];
-
-const numbers = [1, 2, 3, 2, 4, 1];
-console.log(unique(numbers)); // [1, 2, 3, 4]
-function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
-  const seen = new Set<any>();
-  return arr.filter(item => {
-    const k = item[key];
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+class ListNode {
+  constructor(public val: number = 0, public next: ListNode | null = null) {}
 }
 
-const people = [
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 1, name: 'Ada' },
-  { id: 3, name: 'Ken' }
-];
+/**
+ * Return the intersection node of two singly linked lists, or null if they
+ * never meet.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // First guard for trivial cases.
+  if (!headA || !headB) return null;
 
-console.log(uniqBy(people, 'id'));
-/*
-[
-  { id: 1, name: 'Ada' },
-  { id: 2, name: 'Grace' },
-  { id: 3, name: 'Ken' }
-]
-*/
-import uniqWith from 'lodash/uniqWith';
-import isEqual from 'lodash/isEqual';
+  // Two pointers that start at the heads of the two lists.
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
 
-const dupObjs = [
-  { a: 1, b: 2 },
-  { a: 1, b: 2 },
-  { a: 3, b: 4 }
-];
+  /**
+   * Each pointer walks until it reaches the end of its list, then jumps
+   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
+   * they will either collide (at the intersection) or simultaneously reach
+   * the tail (`null`) meaning the lists do not intersect.
+   */
+  while (pA !== pB) {
+    pA = pA === null ? headB : pA.next;
+    pB = pB === null ? headA : pB.next;
+  }
 
-console.log(uniqWith(dupObjs, isEqual));
-// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
-const unique = (arr: readonly any[]) =>
-  arr.filter((value, index, self) => self.indexOf(value) === index);
+  return pA; // either the intersection node or null
+}
+// Helper to build a list from an array
+function build(arr: number[]): ListNode | null {
+  let dummy = new ListNode(-1);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
 
-console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
-const uniq = (arr: readonly any[]) => [...new Set(arr)];
-// or for objects by key
-const uniqByKey = (arr: readonly any[], key: string) => {
-  const seen = new Set();
-  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
-};
+// Build two lists that intersect
+const shared = build([8, 9, 10]);
+
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
+
+console.log(getIntersectionNode(a1, b1) === shared); // true
