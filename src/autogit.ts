@@ -1,65 +1,33 @@
-/**
- * Return the intersection of two arrays.
- * @param a  First array
- * @param b  Second array
- * @returns  An array containing every element that appears in **both** `a` and `b`
- *
- * The function is generic so it keeps the element type while still being type‑safe.
- * For primitive values a direct equality check (`===`) is sufficient.
- */
-export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
-  // Build a set from the larger array – that keeps lookup O(1).
-  // (You could skip the `max` decision; it's just a micro‑optimization.)
-  const [large, small] = a.length > b.length ? [a, b] : [b, a];
-  const set = new Set(large);
-
-  // Pick elements of the smaller array that exist in the set.
-  return small.filter((x) => set.has(x));
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-const xs = [1, 2, 3, 4];
-const ys = [3, 4, 5, 6];
+const head: ListNode<number> = { val: 1, next: null };
+head.next = { val: 2, next: null };
+head.next.next = { val: 3, next: null };      // 1 → 2 → 3
+function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-console.log(intersection(xs, ys)); // → [3, 4]
-import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
-
-console.log(intersection(xs, ys)); // → [3, 4]
-interface Person {
-  id: number;
-  name: string;
-}
-
-const a: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-];
-
-const b: Person[] = [
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-  { id: 4, name: 'Dan'   },
-];
-
-const key = (p: Person) => p.id;
-
-function intersectionBy<T, K extends string | number | symbol>(
-  a: readonly T[],
-  b: readonly T[],
-  getKey: (item: T) => K
-): T[] {
-  const map = new Map<K, T>();
-  for (const item of a) {
-    map.set(getKey(item), item);
+  while (fast !== null && fast.next !== null) {
+    slow = slow?.next ?? null;   // advance by 1
+    fast = fast.next.next;       // advance by 2
   }
-  const result: T[] = [];
-  for (const item of b) {
-    const key = getKey(item);
-    if (map.has(key)) {
-      result.push(item);
-    }
-  }
-  return result;
+
+  return slow; // could be null if the list was empty
+}
+if (fast !== null) {            // original list had even length
+  slow = slow?.next ?? null;    // bump to the second middle
+}
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
 }
 
-console.log(intersectionBy(a, b, key));
-// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
+const list: ListNode<number> | null = {
+  val: 10,
+  next: { val: 20, next: { val: 30, next: null } },
+};
+
+console.log(middle(list)?.val); // prints 20
