@@ -1,118 +1,22 @@
-type Node = number | string;           // whatever your IDs look like
-type Graph = Record<Node, Node[]>;     // adjacency list
-
 /**
- * Breadth‑first search that collects the visit order.
+ * Return true if n is prime, false otherwise.
+ *
+ * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
+ * For bigger integers you’d need BigInt and, better yet, a probabilistic test
+ * (Miller‑Rabin, etc.).
  */
-export function bfsVisitOrder(
-  graph: Graph,
-  start: Node
-): Node[] {
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const order: Node[] = [];
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
 
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
-
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
+  // From here we only need to test numbers of the form 6k ± 1
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-  return order;
+  return true;
 }
-
-/**
- * Breadth‑first search that stops at a goal node
- * and returns the *shortest path* (for unweighted graphs).
- */
-export function bfsShortestPath(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {
-  if (start === goal) return [start];
-
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const parent: Record<Node, Node | null> = {};
-  parent[start] = null;
-
-  while (queue.length) {
-    const cur = queue.shift()!;
-
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        parent[neighbor] = cur;
-        if (neighbor === goal) {
-          // build the path from goal back to start
-          const path: Node[] = [goal];
-          let p: Node | null = cur;
-          while (p !== null) {
-            path.push(p);
-            p = parent[p];
-          }
-          return path.reverse();
-        }
-        queue.push(neighbor);
-      }
-    }
-  }
-
-  return null; // goal not reachable
-}
-const graph: Graph = {
-  1: [2, 3],
-  2: [4],
-  3: [4, 5],
-  4: [],
-  5: [6],
-  6: [],
-};
-
-console.log(bfsVisitOrder(graph, 1));
-// → [1, 2, 3, 4, 5, 6]
-
-console.log(bfsShortestPath(graph, 1, 6));
-// → [1, 3, 5, 6]
-type NodeId = string | number;
-
-// Generic graph implemented as Map<id, array of ids>
-export type GenericGraph<T> = Map<T, T[]>;
-
-export function genericBfsVisitOrder<T>(
-  graph: GenericGraph<T>,
-  start: T
-): T[] {
-  const queue: T[] = [start];
-  const visited: Set<T> = new Set([start]);
-  const order: T[] = [];
-
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
-    for (const neighbour of graph.get(cur) ?? []) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
-    }
-  }
-  return order;
-}
-const g: GenericGraph<string> = new Map([
-  ["A", ["B", "C"]],
-  ["B", ["D"]],
-  ["C", ["D", "E"]],
-  ["D", []],
-  ["E", ["F"]],
-  ["F", []],
-]);
-
-console.log(genericBfsVisitOrder(g, "A"));
-// → ["
+console.log(isPrime(11));          // true
+console.log(isPrime(12));          // false
+console.log(isPrime(1_000_003));   // true (1 M+‑prime)
