@@ -1,38 +1,73 @@
+/* 1️⃣  A node in a graph  */
+interface Node<T = unknown> {
+  /* Something that identifies the node (e.g. a string key) */
+  id: string;
+  /* The value that the node holds – may be anything you need */
+  value: T;
+}
+
+/* 2️⃣  How the graph is stored  */
+type AdjacencyList<T = unknown> = Record<string, Node<T>[]>;
 /**
- * Counting sort for an array of integers.
+ * Run a breadth‑first search on a graph until the target is found *or*
+ * the specified maximum depth is reached.
  *
- * @param arr The array to sort – an array of numbers.
- * @returns A new array containing the sorted values.
+ * @param startId     – ID of the node you start from
+ * @param targetId    – ID of the node you’re looking for
+ * @param graph       – adjacency list representing the graph
+ * @param maxDepth    – maximum breadth level to explore (0 means only the start node)
+ * @returns            – distance (depth) from start to target, or -1 if not found within limit
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+export function breadthLimitedBFS<T>(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number {
+  // Edge‑case: “start” may already be the target.
+  if (startId === targetId) return 0;
+  if (maxDepth < 1) return -1; // cannot go further than the start node.
 
-  // Locate the bounds of the values.
-  let min = arr[0];
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-    if (val < min) min = val;
-    if (val > max) max = val;
-  }
+  // 3️⃣  Classic BFS ingredients
+  const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
+  const visited = new Set<string>([startId]);
 
-  const range = max - min + 1;          // Number of distinct possible values
-  const count = new Array<number>(range).fill(0);
+  while (queue.length) {
+    const { id, depth } = queue.shift()!;
 
-  // Count occurrences of each integer.
-  for (const value of arr) {
-    count[value - min]++;               // Shift by min so index 0 stays valid
-  }
+    // Stop expanding beyond the user‑supplied depth limit.
+    if (depth === maxDepth) continue;
 
-  // Overwrite the input array (or build a new one) using the counts.
-  const sorted: number[] = [];
-  for (let i = 0; i < range; i++) {
-    const currentVal = i + min;
-    const occ = count[i];
-    for (let j = 0; j < occ; j++) {
-      sorted.push(currentVal);
+    const neighbors = graph[id] ?? [];
+    for (const neighbor of neighbors) {
+      if (visited.has(neighbor.id)) continue;
+      if (neighbor.id === targetId) return depth + 1; // found
+
+      visited.add(neighbor.id);
+      queue.push({ id: neighbor.id, depth: depth + 1 });
     }
   }
 
-  return sorted;
+  // Not found within the depth bound.
+  return -1;
 }
+// Sample graph: a small directed graph
+const graph: AdjacencyList<number> = {
+  A: [{ id: 'B', value: 2 }, { id: 'C', value: 3 }],
+  B: [{ id: 'D', value: 4 }],
+  C: [{ id: 'D', value: 4 }, { id: 'E', value: 5 }],
+  D: [],
+  E: [{ id: 'F', value: 6 }],
+  F: []
+};
+
+const distance = breadthLimitedBFS('A', 'F', graph, 2);
+console.log(distance); // prints 3? Actually depth 3 would exceed maxDepth 2, so it returns -1
+// try a larger depth
+console.log(breadthLimitedBFS('A', 'F', graph, 3)); // prints 3 (A→C→E→F)
+breadthLimitedBFS(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number
