@@ -1,42 +1,21 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr     Sorted array to search
- * @param target  Value to find
- * @param lessThan Comparator that returns true if  a < b
- * @returns Index of the target or -1 if not found
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  lessThan: (a: T, b: T) => boolean
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+const original: number[] = [1, 2, 3, 4, 5];
+original.reverse();          // original is now [5, 4, 3, 2, 1]
+const copy = [...original].reverse(); // or use original.slice().reverse()
 
-  while (low <= high) {
-    // middle index – use bit‑shifting to avoid overflow
-    const mid = (low + high) >> 1;
-    const midVal = arr[mid];
+// original remains unchanged
+function reverseArray<T>(arr: T[]): T[] {
+  const len = arr.length;
+  const half = Math.floor(len / 2);
+  const copy = [...arr]; // keep original intact
 
-    if (lessThan(target, midVal)) {
-      high = mid - 1; // target is in the left half
-    } else if (lessThan(midVal, target)) {
-      low = mid + 1; // target is in the right half
-    } else {
-      return mid; // found
-    }
+  for (let i = 0; i < half; i++) {
+    const j = len - 1 - i;
+    [copy[i], copy[j]] = [copy[j], copy[i]]; // swap
   }
-
-  return -1; // not found
+  return copy;
 }
-const nums = [1, 3, 5, 7, 9, 11];
 
-// simple number comparison
-const index = binarySearch(nums, 7, (a, b) => a < b);
-console.log(index); // 3
-
-// with strings
-const words = ['apple', 'banana', 'cherry', 'date'];
-const idx = binarySearch(words, 'cherry', (a, b) => a < b);
-console.log(idx); // 2
+const reversed = reverseArray(original);
+function reverseArray<T>(arr: T[]): T[] {
+  return [...arr].reverse();
+}
