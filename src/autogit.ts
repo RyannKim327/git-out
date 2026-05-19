@@ -1,39 +1,38 @@
 /**
- * Return a random integer *between* `min` and `max` **inclusive**.
+ * Recursive binary search.
  *
- * @param min - lowest possible value
- * @param max - highest possible value
+ * @param data   Sorted array to search in.
+ * @param target Value you’re looking for.
+ * @param compare Optional comparator – defaults to numeric or lexical.
+ * @param left   Left index of the current sub‑array (internal use).
+ * @param right  Right index of the current sub‑array (internal use).
+ * @returns Index of the target or -1 if not found.
  */
-function randInt(min: number, max: number): number {
-  const lower = Math.ceil(min);                // in case min is decimal
-  const upper = Math.floor(max);               // in case max is decimal
-  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
-}
-const roll = randInt(1, 6);   // a fair 1‑to‑6 dice roll
-console.log(roll);            // 1, 2, 3, 4, 5, or 6
-/**
- * Return a random float *between* `min` (inclusive) and `max` (exclusive).
- *
- * @param min - lowest possible value
- * @param max - value we’ll never hit
- */
-function randFloat(min = 0, max = 1): number {
-  return Math.random() * (max - min) + min;
-}
-const lerp = randFloat(0, 1);   // a random number in [0, 1)
-// Simple LCG – not cryptographically secure,
-// but good enough for games, demos, tests etc.
-function lcg(seed: number) {
-  const m = 0x80000000; // 2^31
-  const a = 1103515245;
-  const c = 12345;
-  let state = seed % m;
-  return () => {
-    state = (a * state + c) % m;
-    return state / m; // raw [0,1)
-  };
-}
+function binarySearch<T>(
+  data: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number = (a, b) => ((a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0),
+  left: number = 0,
+  right: number = data.length - 1
+): number {
+  if (left > right) return -1;                 // base case: empty window
 
-const random = lcg(123456);          // seed=123456
-const randIntSeeded = (min: number, max: number) =>
-  Math.floor(random() * (max - min + 1)) + min;
+  const mid = Math.floor((left + right) / 2);
+  const cmp = compare(target, data[mid]);
+
+  if (cmp === 0) return mid;                   // found
+  if (cmp < 0) return binarySearch(data, target, compare, left, mid - 1);
+  return binarySearch(data, target, compare, mid + 1, right);
+}
+// numeric, already sorted
+const nums = [3, 7, 12, 18, 26, 42, 57];
+const idx1 = binarySearch(nums, 18);   // → 3
+const idx2 = binarySearch(nums, 5);    // → -1
+
+// string, case‑insensitive
+const words = ["apple", "banana", "cherry", "date"];
+const idx3 = binarySearch(
+  words,
+  "CHERRY",
+  (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+); // → 2
