@@ -1,84 +1,44 @@
-function kthSmallest(arr: number[], k: number): number | undefined {
-  if (k < 1 || k > arr.length) return undefined; // out‑of‑range
-
-  const sorted = [...arr].sort((a, b) => a - b); // stable numeric sort
-  return sorted[k - 1];                         // k is 1‑based here
-}
 /**
- * Return the k-th smallest element (1‑based) or `undefined` if out of range.
+ * Randomly shuffles an array in-place.
+ * Uses the Fisher–Yates algorithm.
  */
-function kthSmallestQuickSelect(arr: number[], k: number): number | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  // work on a copy so the caller’s array isn’t mutated
-  const a = [...arr];
-
-  // Helper that returns the zero‑based index of the desired element
-  const select = (left: number, right: number, targetIndex: number): number => {
-    while (true) {
-      if (left === right) return a[left]; // only one element
-
-      // Pick a pivot – here we use the middle element
-      const pivotIndex = Math.floor((left + right) / 2);
-      const pivotValue = a[pivotIndex];
-
-      // Partition: elements < pivot go left, > pivot go right
-      // In‑place partitioning that keeps the pivot’s value
-      let i = left;
-      let j = right;
-      while (i <= j) {
-        while (a[i] < pivotValue) i++;
-        while (a[j] > pivotValue) j--;
-        if (i <= j) {
-          [a[i], a[j]] = [a[j], a[i]];
-          i++;
-          j--;
-        }
-      }
-
-      // After partitioning: indices [left .. j] <= pivot, [i .. right] >= pivot
-      if (targetIndex <= j) {
-        right = j;            // target in the left partition
-      } else if (targetIndex >= i) {
-        left = i;             // target in the right partition
-      } else {
-        return a[targetIndex]; // the pivot itself is the answer
-      }
-    }
-  };
-
-  // Convert k (1‑based) to zero‑based index
-  return select(0, a.length - 1, k - 1);
-}
-function kthSmallestGeneric<T>(
-  arr: T[],
-  k: number,
-  compare: (a: T, b: T) => number
-): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  const a = [...arr];
-  const targetIndex = k - 1;
-  let left = 0, right = a.length - 1;
-
-  while (true) {
-    if (left === right) return a[left];
-
-    const pivotIndex = Math.floor((left + right) / 2);
-    const pivotValue = a[pivotIndex];
-
-    let i = left, j = right;
-    while (i <= j) {
-      while (compare(a[i], pivotValue) < 0) i++;
-      while (compare(a[j], pivotValue) > 0) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++; j--;
-      }
-    }
-
-    if (targetIndex <= j) right = j;
-    else if (targetIndex >= i) left = i;
-    else return a[targetIndex];
+function shuffle<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
 }
+
+/**
+ * Checks whether the array is sorted in ascending order.
+ * Works for numbers and strings (lexicographically).
+ */
+function isSorted<T extends number | string>(array: T[]): boolean {
+  for (let i = 0; i < array.length - 1; i++) {
+    if (array[i] > array[i + 1]) return false;
+  }
+  return true;
+}
+
+/**
+ * Bogosort: keep shuffling until the array is sorted.
+ * In practice, this is a joke algorithm because of its astronomical
+ * expected runtime, but it’s fun to see it in TypeScript.
+ */
+export function randomSort<T extends number | string>(array: T[]): T[] {
+  // We’ll operate on a copy to avoid mutating the caller’s data.
+  const arr = array.slice();
+
+  // Guard against trivial cases.
+  if (arr.length < 2) return arr;
+
+  // Keep shuffling until the array is sorted.
+  while (!isSorted(arr)) {
+    shuffle(arr);
+  }
+
+  return arr;
+}
+const unsorted = [3, 1, 4, 1, 5, 9, 2];
+const sorted = randomSort(unsorted);
+console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
