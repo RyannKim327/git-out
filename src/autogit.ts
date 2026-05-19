@@ -1,39 +1,98 @@
 /**
- * Return a random integer *between* `min` and `max` **inclusive**.
- *
- * @param min - lowest possible value
- * @param max - highest possible value
+ * Comparator signature: (a, b) => boolean
+ * Should return true if `a` has higher priority than `b`
+ * (i.e. `a` should come *before* `b` in the heap order).
  */
-function randInt(min: number, max: number): number {
-  const lower = Math.ceil(min);                // in case min is decimal
-  const upper = Math.floor(max);               // in case max is decimal
-  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
+type Comparator<T> = (a: T, b: T) => boolean;
+
+export class PriorityQueue<T> {
+  /** Encoded binary‑heap */
+  private items: T[] = [];
+
+  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
+
+  /* ---------- Properties ---------- */
+
+  get size(): number { return this.items.length; }
+  get isEmpty(): boolean { return this.items.length === 0; }
+
+  /* ---------- Queries ---------- */
+
+  peek(): T | undefined { return this.items[0]; }
+
+  /* ---------- Mutations ---------- */
+
+  push(item: T): void {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (this.isEmpty) return undefined;
+
+    const top = this.items[0];
+    const last = this.items.pop()!; // array isn't empty
+
+    if (!this.isEmpty) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+
+    return top;
+  }
+
+  /* ---------- Internals ---------- */
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (this.comparator(this.items[idx], this.items[parentIdx])) {
+        this.swap(idx, parentIdx);
+        idx = parentIdx;
+      } else {
+        break;
+      }
+    }
+  }
+
+  private bubbleDown(idx: number): void {
+    const length = this.items.length;
+    while (true) {
+      const left = idx * 2 + 1;
+      const right = left + 1;
+      let smallest = idx;
+
+      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
+        smallest = left;
+      }
+      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
+        smallest = right;
+      }
+
+      if (smallest !== idx) {
+        this.swap(idx, smallest);
+        idx = smallest;
+      } else {
+        break;
+      }
+    }
+  }
+
+  private swap(i: number, j: number): void {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  }
 }
-const roll = randInt(1, 6);   // a fair 1‑to‑6 dice roll
-console.log(roll);            // 1, 2, 3, 4, 5, or 6
-/**
- * Return a random float *between* `min` (inclusive) and `max` (exclusive).
- *
- * @param min - lowest possible value
- * @param max - value we’ll never hit
- */
-function randFloat(min = 0, max = 1): number {
-  return Math.random() * (max - min) + min;
-}
-const lerp = randFloat(0, 1);   // a random number in [0, 1)
-// Simple LCG – not cryptographically secure,
-// but good enough for games, demos, tests etc.
-function lcg(seed: number) {
-  const m = 0x80000000; // 2^31
-  const a = 1103515245;
-  const c = 12345;
-  let state = seed % m;
-  return () => {
-    state = (a * state + c) % m;
-    return state / m; // raw [0,1)
-  };
+const maxHeap = new PriorityQueue<number>((a, b) => a > b);
+interface Task {
+  priority: number;     // smaller number → higher priority
+  description: string;
 }
 
-const random = lcg(123456);          // seed=123456
-const randIntSeeded = (min: number, max: number) =>
-  Math.floor(random() * (max - min + 1)) + min;
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
+const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
+
+[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
+
+while (!pq.isEmpty) {
+  console.log(pq.pop()); // prints: 1, 3, 5, 8
+}
