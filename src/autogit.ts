@@ -1,35 +1,29 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+// A minimal node definition
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
 
-import * as readline from 'node:readline';
+// Finder function
+function length<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
+  while (current !== null) {
+    count++;
+    current = current.next;
+  }
+  return count;
+}
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+// Example usage
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+a.next = b;
+b.next = c;
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
-
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+console.log(length(a)); // 3
+function lengthRec<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;
+  return 1 + lengthRec(node.next);
+}
