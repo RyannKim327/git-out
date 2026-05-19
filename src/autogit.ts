@@ -1,66 +1,73 @@
+/* 1️⃣  A node in a graph  */
+interface Node<T = unknown> {
+  /* Something that identifies the node (e.g. a string key) */
+  id: string;
+  /* The value that the node holds – may be anything you need */
+  value: T;
+}
+
+/* 2️⃣  How the graph is stored  */
+type AdjacencyList<T = unknown> = Record<string, Node<T>[]>;
 /**
- * Finds the index of `key` in a sorted array `arr` using Fibonacci search.
- * @param arr  A sorted array of comparable elements.
- * @param key  The value to locate.
- * @returns The index of `key` in `arr`, or -1 if not found.
+ * Run a breadth‑first search on a graph until the target is found *or*
+ * the specified maximum depth is reached.
+ *
+ * @param startId     – ID of the node you start from
+ * @param targetId    – ID of the node you’re looking for
+ * @param graph       – adjacency list representing the graph
+ * @param maxDepth    – maximum breadth level to explore (0 means only the start node)
+ * @returns            – distance (depth) from start to target, or -1 if not found within limit
  */
-export function fibonacciSearch<T>(arr: T[], key: T): number {
-  const n = arr.length;
+export function breadthLimitedBFS<T>(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number {
+  // Edge‑case: “start” may already be the target.
+  if (startId === targetId) return 0;
+  if (maxDepth < 1) return -1; // cannot go further than the start node.
 
-  // 1️⃣ Build Fibonacci numbers up to ≥ n
-  let fibMm2 = 0; // (m-2)th Fibonacci
-  let fibMm1 = 1; // (m-1)th Fibonacci
-  let fibM = fibMm2 + fibMm1; // mth Fibonacci
+  // 3️⃣  Classic BFS ingredients
+  const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
+  const visited = new Set<string>([startId]);
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM = fibMm2 + fibMm1;
-  }
+  while (queue.length) {
+    const { id, depth } = queue.shift()!;
 
-  // 2️⃣ `offset` marks the eliminated portion from the left
-  let offset = -1;
+    // Stop expanding beyond the user‑supplied depth limit.
+    if (depth === maxDepth) continue;
 
-  // 3️⃣ Main loop: keep shrinking the range
-  while (fibM > 1) {
-    const i = Math.min(offset + fibMm2, n - 1);
+    const neighbors = graph[id] ?? [];
+    for (const neighbor of neighbors) {
+      if (visited.has(neighbor.id)) continue;
+      if (neighbor.id === targetId) return depth + 1; // found
 
-    // Debugging helper: show where we're looking
-    // console.log(`Comparing at index ${i} (value=${arr[i]})`);
-
-    if (arr[i] < key) {
-      // Move three Fibonacci steps down
-      fibM = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > key) {
-      // Move two Fibonacci steps down
-      fibM = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-      // offset stays the same
-    } else {
-      // Element found
-      return i;
+      visited.add(neighbor.id);
+      queue.push({ id: neighbor.id, depth: depth + 1 });
     }
   }
 
-  // Check the last remaining element
-  if (fibMm1 === 1 && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
-  }
-
-  // Element not found
+  // Not found within the depth bound.
   return -1;
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
-console.log(fibonacciSearch(sorted, 13)); // → 6
-console.log(fibonacciSearch(sorted, 2));  // → -1
-export function fibonacciSearch<T>(
-  arr: T[],
-  key: T,
-  cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  // use cmp(a, b) instead of a < b / a > b
-}
+// Sample graph: a small directed graph
+const graph: AdjacencyList<number> = {
+  A: [{ id: 'B', value: 2 }, { id: 'C', value: 3 }],
+  B: [{ id: 'D', value: 4 }],
+  C: [{ id: 'D', value: 4 }, { id: 'E', value: 5 }],
+  D: [],
+  E: [{ id: 'F', value: 6 }],
+  F: []
+};
+
+const distance = breadthLimitedBFS('A', 'F', graph, 2);
+console.log(distance); // prints 3? Actually depth 3 would exceed maxDepth 2, so it returns -1
+// try a larger depth
+console.log(breadthLimitedBFS('A', 'F', graph, 3)); // prints 3 (A→C→E→F)
+breadthLimitedBFS(
+  startId: string,
+  targetId: string,
+  graph: AdjacencyList<T>,
+  maxDepth: number
+): number
