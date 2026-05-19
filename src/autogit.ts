@@ -1,73 +1,131 @@
-/* 1️⃣  A node in a graph  */
-interface Node<T = unknown> {
-  /* Something that identifies the node (e.g. a string key) */
-  id: string;
-  /* The value that the node holds – may be anything you need */
-  value: T;
+/* ----------  TrieNode  ---------- */
+
+class TrieNode<T = any> {
+  /** Holds the full value for a key that ends here. */
+  public value: T | null = null;
+
+  /** Child pointers keyed by the next character. */
+  readonly children: Map<string, TrieNode<T>> = new Map();
+
+  /** Convenience flag – true if this node marks the end of a key. */
+  get hasValue(): boolean {
+    return this.value !== null;
+  }
 }
 
-/* 2️⃣  How the graph is stored  */
-type AdjacencyList<T = unknown> = Record<string, Node<T>[]>;
-/**
- * Run a breadth‑first search on a graph until the target is found *or*
- * the specified maximum depth is reached.
- *
- * @param startId     – ID of the node you start from
- * @param targetId    – ID of the node you’re looking for
- * @param graph       – adjacency list representing the graph
- * @param maxDepth    – maximum breadth level to explore (0 means only the start node)
- * @returns            – distance (depth) from start to target, or -1 if not found within limit
- */
-export function breadthLimitedBFS<T>(
-  startId: string,
-  targetId: string,
-  graph: AdjacencyList<T>,
-  maxDepth: number
-): number {
-  // Edge‑case: “start” may already be the target.
-  if (startId === targetId) return 0;
-  if (maxDepth < 1) return -1; // cannot go further than the start node.
+/* ----------  Trie  ---------- */
 
-  // 3️⃣  Classic BFS ingredients
-  const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
-  const visited = new Set<string>([startId]);
+class Trie<T = any> {
+  private root = new TrieNode<T>();
 
-  while (queue.length) {
-    const { id, depth } = queue.shift()!;
+  /**
+   * Insert a key/value pair.  Keys can be any string.
+   */
+  insert(key: string, value: T): void {
+    let node = this.root;
+    for (const ch of key) {
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode<T>());
+      }
+      node = node.children.get(ch)!;
+    }
+    node.value = value;
+  }
 
-    // Stop expanding beyond the user‑supplied depth limit.
-    if (depth === maxDepth) continue;
+  /**
+   * Returns the value stored under *key*, or `undefined` if the key
+   * isn't present.
+   */
+  get(key: string): T | undefined {
+    const node = this._findNode(key);
+    return node?.value ?? undefined;
+  }
 
-    const neighbors = graph[id] ?? [];
-    for (const neighbor of neighbors) {
-      if (visited.has(neighbor.id)) continue;
-      if (neighbor.id === targetId) return depth + 1; // found
+  /**
+   * Checks whether *key* exists in the trie.
+   */
+  has(key: string): boolean {
+    const node = this._findNode(key);
+    return !!node?.hasValue;
+  }
 
-      visited.add(neighbor.id);
-      queue.push({ id: neighbor.id, depth: depth + 1 });
+  /**
+   * Delete a key.  If the key isn't present, nothing happens.
+   * The method ends up trimming unused nodes on the way back.
+   */
+  delete(key: string): void {
+    const path: TrieNode[] = [];
+    let node = this.root;
+
+    for (const ch of key) {
+      const child = node.children.get(ch);
+      if (!child) return;          // key not found
+      path.push(node);
+      node = child;
+    }
+
+    if (!node.hasValue) return;    // no value to delete
+
+    node.value = null;
+
+    // Walk backward, removing nodes that became unnecessary.
+    for (let i = key.length - 1; i >= 0; i--) {
+      const parent = path[i];
+      const ch = key[i];
+
+      const child = parent.children.get(ch)!;
+      if (child.children.size > 0 || child.hasValue) break;
+      parent.children.delete(ch);
     }
   }
 
-  // Not found within the depth bound.
-  return -1;
-}
-// Sample graph: a small directed graph
-const graph: AdjacencyList<number> = {
-  A: [{ id: 'B', value: 2 }, { id: 'C', value: 3 }],
-  B: [{ id: 'D', value: 4 }],
-  C: [{ id: 'D', value: 4 }, { id: 'E', value: 5 }],
-  D: [],
-  E: [{ id: 'F', value: 6 }],
-  F: []
-};
+  /**
+   * Returns all keys that start with *prefix*.
+   */
+  startsWith(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
 
-const distance = breadthLimitedBFS('A', 'F', graph, 2);
-console.log(distance); // prints 3? Actually depth 3 would exceed maxDepth 2, so it returns -1
-// try a larger depth
-console.log(breadthLimitedBFS('A', 'F', graph, 3)); // prints 3 (A→C→E→F)
-breadthLimitedBFS(
-  startId: string,
-  targetId: string,
-  graph: AdjacencyList<T>,
-  maxDepth: number
-): number
+    const results: string[] = [];
+    this._collect(node, prefix, results);
+    return results;
+  }
+
+  /* ---------  Helpers  --------- */
+
+  private _findNode(key: string): TrieNode | null {
+    let node: TrieNode | undefined = this.root;
+    for (const ch of key) {
+      node = node?.children.get(ch);
+      if (!node) return null;
+    }
+    return node;
+  }
+
+  private _collect(node: TrieNode, prefix: string, out: string[]): void {
+    if (node.hasValue) out.push(prefix);
+
+    for (const [ch, child] of node.children) {
+      this._collect(child, prefix + ch, out);
+    }
+  }
+}
+
+/* ----------  Usage Demo  ---------- */
+
+const trie = new Trie<number>();
+
+trie.insert('cat', 1);
+trie.insert('car', 2);
+trie.insert('cart', 3);
+trie.insert('dog', 4);
+
+console.log(trie.get('cat'));         // 1
+console.log(trie.get('cart'));        // 3
+console.log(trie.has('carpent'));     // false
+
+console.log(trie.startsWith('ca'));   // ['cat', 'car', 'cart']
+console.log(trie.startsWith('do'));   // ['dog']
+
+trie.delete('cart');
+console.log(trie.startsWith('ca'));   // ['cat', 'car']
