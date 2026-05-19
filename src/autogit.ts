@@ -1,29 +1,37 @@
-// A minimal node definition
-class ListNode<T> {
-  constructor(public value: T, public next: ListNode<T> | null = null) {}
-}
+const original = [1, 2, 3, 4];
 
-// Finder function
-function length<T>(head: ListNode<T> | null): number {
-  let count = 0;
-  let current = head;
-  while (current !== null) {
-    count++;
-    current = current.next;
+const filtered = original.filter(n => n !== 3); // [1, 2, 4]
+const arr = [1, 2, 3, 4, 3];
+
+const idx = arr.indexOf(3);
+if (idx !== -1) {
+  arr.splice(idx, 1); // arr is now [1, 2, 4, 3]
+}
+const arr = ['a', 'b', 'c', 'd'];
+arr.splice(2, 1); // removes element at index 2
+// arr is now ['a', 'b', 'd']
+function removeItem<T>(arr: T[], item: T): T[] {
+  const idx = arr.indexOf(item);
+  if (idx !== -1) {
+    const copy = [...arr];
+    copy.splice(idx, 1);
+    return copy;
   }
-  return count;
+  return arr;
 }
 
-// Example usage
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
+const nums = [7, 8, 9];
+const updated = removeItem(nums, 8); // [7, 9]
+type Item = { id: number; name: string };
 
-a.next = b;
-b.next = c;
+const items: Item[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Carol' }
+];
 
-console.log(length(a)); // 3
-function lengthRec<T>(node: ListNode<T> | null): number {
-  if (!node) return 0;
-  return 1 + lengthRec(node.next);
-}
+const withoutBob = items.filter(item => item.id !== 2);
+// smallest change, clean and declarative
+const unique = new Set([1, 2, 3, 4]); // Set<number>
+unique.delete(3); // removes 3
+const arr = [...unique]; // back to an array if needed
