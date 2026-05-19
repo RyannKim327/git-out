@@ -1,73 +1,75 @@
-/* 1️⃣  A node in a graph  */
-interface Node<T = unknown> {
-  /* Something that identifies the node (e.g. a string key) */
-  id: string;
-  /* The value that the node holds – may be anything you need */
-  value: T;
-}
+// -------------------------------------------------------------
+// 1️⃣  O(n²) DP – intuition + implementation
+// -------------------------------------------------------------
+function lisDP(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
 
-/* 2️⃣  How the graph is stored  */
-type AdjacencyList<T = unknown> = Record<string, Node<T>[]>;
-/**
- * Run a breadth‑first search on a graph until the target is found *or*
- * the specified maximum depth is reached.
- *
- * @param startId     – ID of the node you start from
- * @param targetId    – ID of the node you’re looking for
- * @param graph       – adjacency list representing the graph
- * @param maxDepth    – maximum breadth level to explore (0 means only the start node)
- * @returns            – distance (depth) from start to target, or -1 if not found within limit
- */
-export function breadthLimitedBFS<T>(
-  startId: string,
-  targetId: string,
-  graph: AdjacencyList<T>,
-  maxDepth: number
-): number {
-  // Edge‑case: “start” may already be the target.
-  if (startId === targetId) return 0;
-  if (maxDepth < 1) return -1; // cannot go further than the start node.
+  // dp[i]  – length of LIS that ends at index i
+  const dp: number[] = Array(n).fill(1);
+  // prev[i] – previous index in the LIS that ends at i
+  const prev: number[] = Array(n).fill(-1);
 
-  // 3️⃣  Classic BFS ingredients
-  const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
-  const visited = new Set<string>([startId]);
+  let bestEnd = 0; // index where the overall best LIS ends
 
-  while (queue.length) {
-    const { id, depth } = queue.shift()!;
-
-    // Stop expanding beyond the user‑supplied depth limit.
-    if (depth === maxDepth) continue;
-
-    const neighbors = graph[id] ?? [];
-    for (const neighbor of neighbors) {
-      if (visited.has(neighbor.id)) continue;
-      if (neighbor.id === targetId) return depth + 1; // found
-
-      visited.add(neighbor.id);
-      queue.push({ id: neighbor.id, depth: depth + 1 });
+  for (let i = 0; i < n; ++i) {
+    for (let j = 0; j < i; ++j) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
     }
+    if (dp[i] > dp[bestEnd]) bestEnd = i;
   }
 
-  // Not found within the depth bound.
-  return -1;
-}
-// Sample graph: a small directed graph
-const graph: AdjacencyList<number> = {
-  A: [{ id: 'B', value: 2 }, { id: 'C', value: 3 }],
-  B: [{ id: 'D', value: 4 }],
-  C: [{ id: 'D', value: 4 }, { id: 'E', value: 5 }],
-  D: [],
-  E: [{ id: 'F', value: 6 }],
-  F: []
-};
+  // Rebuild the sequence
+  const seq: number[] = [];
+  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
+  seq.reverse();
 
-const distance = breadthLimitedBFS('A', 'F', graph, 2);
-console.log(distance); // prints 3? Actually depth 3 would exceed maxDepth 2, so it returns -1
-// try a larger depth
-console.log(breadthLimitedBFS('A', 'F', graph, 3)); // prints 3 (A→C→E→F)
-breadthLimitedBFS(
-  startId: string,
-  targetId: string,
-  graph: AdjacencyList<T>,
-  maxDepth: number
-): number
+  return { length: dp[bestEnd], sequence: seq };
+}
+// -------------------------------------------------------------
+// 2️⃣  O(n log n) – patience sorting + back‑tracking
+// -------------------------------------------------------------
+function lisPatience(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
+
+  // tails[i] – index of the smallest tail of LIS with length i+1
+  const tails: number[] = [];
+  // parentIdx[i] – previous index in LIS that ends at i
+  const parentIdx: number[] = Array(n).fill(-1);
+
+  for (let i = 0; i < n; ++i) {
+    const x = arr[i];
+
+    // Binary search: first tail >= x
+    let lo = 0, hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (arr[tails[mid]] < x) lo = mid + 1;
+      else hi = mid;
+    }
+
+    // lo now points to position where x will go
+    if (lo > 0) parentIdx[i] = tails[lo - 1];
+
+    if (lo === tails.length) tails.push(i);
+    else tails[lo] = i;
+  }
+
+  // Reconstruct sequence
+  const seq: number[] = [];
+  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
+  seq.reverse();
+
+  return { length: tails.length, sequence: seq };
+}
+const example = [10, 9, 2, 5, 3, 7, 101, 18];
+
+console.log(lisDP(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+
+console.log(lisPatience(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
