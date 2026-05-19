@@ -1,23 +1,46 @@
-// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
-function reverseString1(s: string): string {
-  return s.split('').reverse().join('');
+interface ListNode<T = unknown> {
+  value: T;
+  next?: ListNode<T>;
 }
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  if (!head) return false; // an empty list can’t have a cycle
 
-// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
-function reverseString2(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+  let slow = head;
+  let fast = head.next; // fast starts one step ahead
 
-// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
-function reverseString3(s: string): string {
-  const out: string[] = [];
-  for (let i = s.length - 1; i >= 0; i--) {
-    out.push(s[i]);           // or use code points with s.codePointAt(i)
+  while (fast && fast.next) {
+    if (slow === fast) return true; // cycle detected
+
+    slow = slow.next!;          // move one step
+    fast = fast.next.next!; // move two steps
   }
-  return out.join('');
-}
 
-// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
-const reverseString4 = (s: string) => s.split('').reverse().join('');
-console.log(reverseString1('hello')); // 'olleh'
-console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
+  return false; // reached the end, no cycle
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const visited = new Set<ListNode<T>>();
+  let current = head;
+
+  while (current) {
+    if (visited.has(current)) return true; // we’re back at a node we saw
+    visited.add(current);
+    current = current.next;
+  }
+
+  return false;
+}
+// build a small example
+const a: ListNode = { value: 1 };
+const b: ListNode = { value: 2 };
+const c: ListNode = { value: 3 };
+
+a.next = b;
+b.next = c;
+c.next = a; // ← closes the loop
+
+console.log(hasCycle(a));          // true
+console.log(hasCycleWithSet(a));   // true
+
+// break the cycle
+c.next = undefined;
+console.log(hasCycle(a));          // false
