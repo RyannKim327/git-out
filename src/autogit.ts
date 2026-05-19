@@ -1,68 +1,56 @@
-// ──────────────────────────────────────────────────────────────
-// 1️⃣  Imports & type definitions
-// ──────────────────────────────────────────────────────────────
-import fetch from 'node-fetch'; // npm i node-fetch@2
-// If you’re in a browser environment just drop the import line
-// and use the native `fetch` API.
+/**
+ * Bubble‑sort a mutable array.
+ *
+ * @param arr   The array to sort.  It will be reordered in‑place.
+ * @param cmp   Optional comparators.  If omitted, the default
+ *              `> / <` operators are used for primitive values.
+ *
+ * @returns The sorted array (the same reference that was passed in).
+ *
+ * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
+ * sorted (but we still make one full pass to check that).
+ */
+export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
+    const n = arr.length;
+    if (n <= 1) return arr;          // Already sorted
 
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
-
-// ──────────────────────────────────────────────────────────────
-// 2️⃣  The async loader
-// ──────────────────────────────────────────────────────────────
-async function fetchPosts(apiUrl: string): Promise<Post[]> {
-  // A quick sanity check – you don’t want to send an empty string.
-  if (!apiUrl.trim()) {
-    throw new Error('API URL cannot be empty');
-  }
-
-  const res = await fetch(apiUrl, {
-    // JSON is the common output. Adjust headers if your API
-    // requires authentication or special content‑type.
-    headers: {
-      Accept: 'application/json',
-    },
-    // A generous timeout – network latency can be unpredictable.
-    timeout: 10_000,
-  });
-
-  if (!res.ok) {
-    // Throw an error with the HTTP status so callers can catch it.
-    throw new Error(`Network response was not OK (${res.status})`);
-  }
-
-  // We’ve decided the result is an array of posts. 
-  // Narrow it to Post[] for full type safety.
-  const data = (await res.json()) as Post[];
-
-  return data;
-}
-
-// ──────────────────────────────────────────────────────────────
-// 3️⃣  Entry point – usage example
-// ──────────────────────────────────────────────────────────────
-async function main() {
-  try {
-    // This is a free JSON placeholder service that offers fake blog posts.
-    const posts = await fetchPosts('https://jsonplaceholder.typicode.com/posts');
-
-    // Just log the first 3 for brevity
-    console.log('🎉 Fetched', posts.length, 'posts. Here are the first 3:');
-    posts.slice(0, 3).forEach((p, i) => {
-      console.log(`\nPost #${i + 1}`);
-      console.log(`ID: ${p.id}`);
-      console.log(`Title: ${p.title}`);
-      console.log(`Body: ${p.body.slice(0, 60)}…`);
+    // Default comparator for primitive values (numbers, strings, etc.)
+    const compare = cmp ?? ((a: T, b: T) => {
+        if (a > b) return 1;
+        if (a < b) return -1;
+        return 0;
     });
-  } catch (err) {
-    // A simple error handler – plug in your own logger if needed.
-    console.error('❌ Failed to fetch posts:', err);
-  }
-}
 
-main();
+    let swapped: boolean;
+
+    // One full outer loop pass guarantees sortedness,
+    // but we abort early if no swaps occur in a pass.
+    for (let i = 0; i < n; i++) {
+        swapped = false;
+
+        // After i iterations of the outer loop, the largest i elements
+        // are bubbled to the end, so we don't need to touch them.
+        for (let j = 0; j < n - i - 1; j++) {
+            if (compare(arr[j], arr[j + 1]) > 0) {
+                // Swap
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                swapped = true;
+            }
+        }
+
+        // If we made no swaps during this pass, array is sorted.
+        if (!swapped) break;
+    }
+
+    return arr;
+}
+const nums = [64, 34, 25, 12, 22, 11, 90];
+console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
+
+// Sorting strings
+const words = ["apple", "banana", "cherry", "date"];
+console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
+
+// Custom comparator (descending order)
+bubbleSort(nums, (a, b) => b - a);
+console.log(nums); // → [90,64,34,25,22,12,11]
