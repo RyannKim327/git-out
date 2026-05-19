@@ -1,15 +1,50 @@
-const numbers: number[] = [42, 23, 8, 15, 16];
+const unique = (arr: readonly any[]) => [...new Set(arr)];
 
-// Ascending (smallest → largest)
-const asc = [...numbers].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [8, 15, 16, 23, 42]
-
-// Descending (largest → smallest)
-const desc = [...numbers].sort((a, b) => b - a);
-console.log('Descending:', desc); // [42, 23, 16, 15, 8]
-function sortNumbers(arr: number[], ascending = true): number[] {
-  return [...arr].sort((a, b) => ascending ? a - b : b - a);
+const numbers = [1, 2, 3, 2, 4, 1];
+console.log(unique(numbers)); // [1, 2, 3, 4]
+function uniqBy<T, K extends keyof T>(arr: readonly T[], key: K): T[] {
+  const seen = new Set<any>();
+  return arr.filter(item => {
+    const k = item[key];
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
-console.log(sortNumbers(numbers));      // Ascending
-console.log(sortNumbers(numbers, false)); // Descending
+const people = [
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 1, name: 'Ada' },
+  { id: 3, name: 'Ken' }
+];
+
+console.log(uniqBy(people, 'id'));
+/*
+[
+  { id: 1, name: 'Ada' },
+  { id: 2, name: 'Grace' },
+  { id: 3, name: 'Ken' }
+]
+*/
+import uniqWith from 'lodash/uniqWith';
+import isEqual from 'lodash/isEqual';
+
+const dupObjs = [
+  { a: 1, b: 2 },
+  { a: 1, b: 2 },
+  { a: 3, b: 4 }
+];
+
+console.log(uniqWith(dupObjs, isEqual));
+// [{ a: 1, b: 2 }, { a: 3, b: 4 }]
+const unique = (arr: readonly any[]) =>
+  arr.filter((value, index, self) => self.indexOf(value) === index);
+
+console.log(unique([1, 2, 3, 2, 4, 1])); // [1, 2, 3, 4]
+const uniq = (arr: readonly any[]) => [...new Set(arr)];
+// or for objects by key
+const uniqByKey = (arr: readonly any[], key: string) => {
+  const seen = new Set();
+  return arr.filter(v => !seen.has(v[key]) && !seen.add(v[key]));
+};
