@@ -1,44 +1,54 @@
 /**
- * Randomly shuffles an array in-place.
- * Uses the Fisher–Yates algorithm.
+ * Area from base and height.
+ * @param base  - Base length (any positive number)
+ * @param height - Height length (any positive number)
+ * @returns Triangle area
  */
-function shuffle<T>(array: T[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('Base and height must be positive numbers.');
   }
+  return (base * height) / 2;
 }
-
+const area = areaBaseHeight(10, 5); // 25
+console.log(`Area = ${area}`);      // Area = 25
 /**
- * Checks whether the array is sorted in ascending order.
- * Works for numbers and strings (lexicographically).
+ * Deal with three side lengths.
+ * @param a - length of side a
+ * @param b - length of side b
+ * @param c - length of side c
+ * @returns Triangle area
  */
-function isSorted<T extends number | string>(array: T[]): boolean {
-  for (let i = 0; i < array.length - 1; i++) {
-    if (array[i] > array[i + 1]) return false;
+function areaBySides(a: number, b: number, c: number): number {
+  // Simple validity check – the sides must satisfy the triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The given sides do not form a valid triangle.');
   }
-  return true;
-}
 
+  const s = (a + b + c) / 2;                 // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
+}
+const areaHeron = areaBySides(3, 4, 5); // 6
+console.log(`Area (Heron) = ${areaHeron}`);
 /**
- * Bogosort: keep shuffling until the array is sorted.
- * In practice, this is a joke algorithm because of its astronomical
- * expected runtime, but it’s fun to see it in TypeScript.
+ * Area from two sides and an included angle (in degrees or radians).
+ * @param side1   - length of one side
+ * @param side2   - length of the other side
+ * @param angle   - included angle (in degrees)
+ * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
+ * @returns Triangle area
  */
-export function randomSort<T extends number | string>(array: T[]): T[] {
-  // We’ll operate on a copy to avoid mutating the caller’s data.
-  const arr = array.slice();
+function areaFromSidesAndAngle(
+  side1: number,
+  side2: number,
+  angle: number,
+  inRadians = false
+): number {
+  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
 
-  // Guard against trivial cases.
-  if (arr.length < 2) return arr;
-
-  // Keep shuffling until the array is sorted.
-  while (!isSorted(arr)) {
-    shuffle(arr);
-  }
-
-  return arr;
+  const rad = inRadians ? angle : (angle * Math.PI) / 180;
+  return (side1 * side2 * Math.sin(rad)) / 2;
 }
-const unsorted = [3, 1, 4, 1, 5, 9, 2];
-const sorted = randomSort(unsorted);
-console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
+const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
+console.log(`Area from two sides & angle = ${areaMixed}`);
