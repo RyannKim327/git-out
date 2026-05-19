@@ -1,110 +1,122 @@
-// Basic node description
-export interface Node {
-  id: string;           // unique identifier
-  // optional coordinates – handy for the heuristic
-  x?: number;
-  y?: number;
-  // all directly reachable neighbours
-  neighbors: string[];  // ids of neighbour nodes
+/** A node that holds a value and optional left/right children. */
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
+/** A minimal generic binary search tree. */
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-export interface Edge {
-  from: string;      // node id
-  to: string;        // node id
-  cost: number;      // weight of the edge
-}
-class PriorityQueue<T> {
-  private items: { key: number; value: T }[] = [];
+  /* Comparator: returns negative if a < b, 0 if equal, positive if a > b */
+  constructor(private compare: (a: T, b: T) => number) {}
 
-  // swap helpers
-  private swap(i: number, j: number) {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
-  }
+  /** Insert a new value. */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
 
-  // bubble‑up to maintain heap invariant
-  private bubbleUp(idx: number) {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.items[parent].key <= this.items[idx].key) break;
-      this.swap(parent, idx);
-      idx = parent;
+    if (!this.root) {
+      this.root = newNode;
+      return;
     }
-  }
 
-  // bubble‑down to maintain heap invariant
-  private bubbleDown(idx: number) {
-    const last = this.items.length - 1;
+    let current = this.root;
     while (true) {
-      const left = 2 * idx + 1;
-      const right = 2 * idx + 2;
-      let smallest = idx;
-
-      if (left <= last && this.items[left].key < this.items[smallest].key)
-        smallest = left;
-      if (right <= last && this.items[right].key < this.items[smallest].key)
-        smallest = right;
-
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
+      if (this.compare(value, current.value) < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          break;
+        }
+        current = current.left;
+      } else {
+        if (!current.right) {
+          current.right = newNode;
+          break;
+        }
+        current = current.right;
+      }
     }
   }
 
-  // push a new value with a priority
-  push(value: T, key: number) {
-    this.items.push({ value, key });
-    this.bubbleUp(this.items.length - 1);
-  }
-
-  // pop the value with the smallest priority
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const root = this.items[0].value;
-    const last = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = last;
-      this.bubbleDown(0);
+  /** Search for a value – returns <node> or null. */
+  find(value: T): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const cmp = this.compare(value, current.value);
+      if (cmp === 0) return current;
+      current = cmp < 0 ? current.left : current.right;
     }
-    return root;
+    return null;
   }
 
-  get size(): number {
-    return this.items.length;
+  /** In-order traversal – returns values sorted ascending. */
+  inOrder(): T[] {
+    const result: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      result.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return result;
+  }
+
+  /** Remove a value. (Simplest version – does not handle replacement of two children.) */
+  delete(value: T): void {
+    const remove = (
+      node: TreeNode<T> | null,
+      value: T
+    ): TreeNode<T> | null => {
+      if (!node) return null;
+
+      const cmp = this.compare(value, node.value);
+      if (cmp < 0) {
+        node.left = remove(node.left, value);
+      } else if (cmp > 0) {
+        node.right = remove(node.right, value);
+      } else {
+        // Node with only one child or no child
+        if (!node.left) return node.right;
+        if (!node.right) return node.left;
+
+        // Node with two children: get the inorder successor (smallest in right subtree)
+        let succ = node.right;
+        while (succ.left) succ = succ.left;
+        node.value = succ.value;                // Copy successor’s value
+        node.right = remove(node.right, succ.value); // Delete successor
+      }
+      return node;
+    };
+
+    this.root = remove(this.root, value);
   }
 }
-/**
- * Generic A* implementation.
- * @param nodes   Map of node id → Node
- * @param edges   Map of node id → array of out‑going edges
- * @param start   id of the start node
- * @param goal    id of the goal node
- * @param heuristic (node) ⇒ estimated distance to goal
- * @returns array of node ids that form the cheapest path, or empty array if none
- */
-export function aStar(
-  nodes: Map<string, Node>,
-  edges: Map<string, Edge[]>,
-  start: string,
-  goal: string,
-  heuristic: (nodeId: string) => number
-): string[] {
-  // G‑costs: current best known cost to each node
-  const g: Map<string, number> = new Map();
-  g.set(start, 0);
+// A simple numeric comparator
+const numCmp = (a: number, b: number) => a - b;
 
-  // Came‑from map to rebuild the path
-  const cameFrom: Map<string, string> = new Map();
+// Create tree
+const tree = new BinarySearchTree<number>(numCmp);
 
-  // Open set – priority queue keyed by F = G + H
-  const open = new PriorityQueue<string>();
-  open.push(start, heuristic(start));
+// Insert numbers
+[5, 3, 7, 2, 4, 6, 8].forEach(v => tree.insert(v));
 
-  // Closed set: processed nodes
-  const closed = new Set<string>();
+// Search
+console.log(tree.find(4)?.value); // 4
+console.log(tree.find(10));       // null
 
-  while (open.size > 0) {
-    const current = open.pop()!;
+// In‑order traversal should be sorted
+console.log(tree.inOrder()); // [2,3,4,5,6,7,8]
 
-    // Goal found – reconstruct the path
-    if (current === goal) {
-      const path: string[] =
+// Delete a value
+tree.delete(5);
+console.log(tree.inOrder()); // [2,3,4,6,7,8]
+interface Person { name: string; age: number }
+
+const ageCmp = (a: Person, b: Person) => a.age - b.age;
+const personTree = new BinarySearchTree<Person>(ageCmp);
+
+personTree.insert({ name: "Alice", age: 30 });
+personTree.insert({ name: "Bob", age: 25 });
