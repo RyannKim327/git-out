@@ -1,51 +1,89 @@
 /**
- * Radix sort for non‑negative integers.
- * @param arr  –   array of numbers to sort
- * @returns    –   a new sorted array (the input is unchanged)
+ * Forward Burrows–Wheeler Transform.
+ * @param input – original string
+ * @returns {bwt, index} – BWT string and index of the original string in the sorted rotation table.
  */
-export function radixSort(arr: number[]): number[] {
-  if (!Array.isArray(arr) || arr.length === 0) return [];
+export function bwtEncode(input: string): { bwt: string; index: number } {
+    // 1️⃣ Append a sentinel that is smaller than every other char
+    const sentinel = '\0';
+    const padded = input + sentinel;
 
-  // 1. Find the maximum value to know how many digits we need
-  const max = Math.max(...arr);
-  const base = 10;                     // decimal digits
-  const maxDigits = Math.floor(Math.log10(max)) + 1;
+    // 2️⃣ Make all cyclic rotations
+    // Using an array of start indices so we never build full strings.
+    const n = padded.length;
+    const rotations = Array.from({ length: n }, (_, i) => i);
 
-  // 2. Work on a copy so we don't mutate the original array
-  let output = [...arr];
-  let digitPlace = 1;   // 1, 10, 100, …
+    // 3️⃣ Stable sort rotations lexicographically
+    rotations.sort((a, b) => {
+        for (let offset = 0; offset < n; offset++) {
+            const ca = padded[(a + offset) % n];
+            const cb = padded[(b + offset) % n];
+            if (ca < cb) return -1;
+            if (ca > cb) return 1;
+            // equal – iterate next offset
+        }
+        return 0;       // rotations are identical – should not happen with sentinel
+    });
 
-  for (let d = 0; d < maxDigits; d++) {
-    // 3. Counting sort for the current digit
-    const count = new Array(base).fill(0);
+    // 4️⃣ Build the BWT string by taking the character preceding each rotation
+    const bwt = new Array<string>(n);
+    let originalIndex = -1;
+    for (let i = 0; i < n; i++) {
+        const rotStart = rotations[i];
+        const bwtChar = padded[(rotStart + n - 1) % n]; // char before rotation
+        bwt[i] = bwtChar;
 
-    // Count occurrences of each digit
-    for (const num of output) {
-      const digit = Math.floor((num / digitPlace) % base);
-      count[digit]++;
+        // If this rotation is the original (started at 0), remember its position
+        if (rotStart === 0) originalIndex = i;
     }
 
-    // Make count[i] contain the actual position of this digit
-    for (let i = 1; i < base; i++) {
-      count[i] += count[i - 1];
-    }
-
-    // 4. Build the output array from the end to maintain stability
-    const temp = new Array(output.length);
-    for (let i = output.length - 1; i >= 0; i--) {
-      const num = output[i];
-      const digit = Math.floor((num / digitPlace) % base);
-      const idx = --count[digit];
-      temp[idx] = num;
-    }
-
-    // After moving all numbers, we’ll sort by the next digit
-    output = temp;
-    digitPlace *= base;
-  }
-
-  return output;
+    return { bwt: bwt.join(''), index: originalIndex };
 }
-const unsorted = [170, 45, 75, 90, 802, 24, 2, 66];
-console.log(radixSort(unsorted));
-// → [2, 24, 45, 66, 75, 90, 170, 802]
+/**
+ * Inverse Burrows–Wheeler Transform.
+ * @param bwt – BWT string (length n)
+ * @param index – index of the original string in the sorted rotations
+ * @returns original string (without the sentinel)
+ */
+export function bwtDecode(bwt: string, index: number): string {
+    const n = bwt.length;
+    // 1️⃣ Build first column by sorting the BWT string
+    const first = bwt.split('').sort(); // stable because JS sort is stable (ES2019+)
+
+    // 2️⃣ Compute the “next” array – mapping from a row in first column
+    //    to the corresponding row in last column.
+    //    This is essentially the Longest‑Common‑Prefix order of the rotations.
+    const next = new Array<number>(n);
+    const buckets = new Map<string, number[]>();
+
+    // Collect indices of each character in the BWT string
+    for (let i = 0; i < n; i++) {
+        const ch = bwt[i];
+        if (!buckets.has(ch)) buckets.set(ch, []);
+        buckets.get(ch)!.push(i);
+    }
+
+    // For each character, allocate its positions in the first column
+    const bucketIterators = new Map<string, number>();
+    for (const [ch, posList] of buckets.entries()) {
+        bucketIterators.set(ch, 0);
+    }
+
+    for (let i = 0; i < n; i++) {
+        const ch = first[i];
+        const idxInBlt = buckets.get(ch)![bucketIterators.get(ch)!++];
+        next[i] = idxInBlt;
+    }
+
+    // 3️⃣ Reconstruct original by following the next pointers starting from `index`
+    const result: string[] = new Array<string>(n);
+    let row = index;
+    for (let i = n - 1; i >= 0; i--) {
+        result[i] = first[row];
+        row = next[row];
+    }
+
+    // The sentinel is the first char of the reconstructed string
+    // Strip it and return the original
+    return result.join('').slice(1); // drop sentinel
+}
