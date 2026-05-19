@@ -1,166 +1,66 @@
-// A node holding one element and a pointer to the next node.
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
+/**
+ * Finds the index of `key` in a sorted array `arr` using Fibonacci search.
+ * @param arr  A sorted array of comparable elements.
+ * @param key  The value to locate.
+ * @returns The index of `key` in `arr`, or -1 if not found.
+ */
+export function fibonacciSearch<T>(arr: T[], key: T): number {
+  const n = arr.length;
+
+  // 1️⃣ Build Fibonacci numbers up to ≥ n
+  let fibMm2 = 0; // (m-2)th Fibonacci
+  let fibMm1 = 1; // (m-1)th Fibonacci
+  let fibM = fibMm2 + fibMm1; // mth Fibonacci
+
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM = fibMm2 + fibMm1;
+  }
+
+  // 2️⃣ `offset` marks the eliminated portion from the left
+  let offset = -1;
+
+  // 3️⃣ Main loop: keep shrinking the range
+  while (fibM > 1) {
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    // Debugging helper: show where we're looking
+    // console.log(`Comparing at index ${i} (value=${arr[i]})`);
+
+    if (arr[i] < key) {
+      // Move three Fibonacci steps down
+      fibM = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > key) {
+      // Move two Fibonacci steps down
+      fibM = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+      // offset stays the same
+    } else {
+      // Element found
+      return i;
+    }
+  }
+
+  // Check the last remaining element
+  if (fibMm1 === 1 && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
+  }
+
+  // Element not found
+  return -1;
 }
-
-// A generic linked list that knows the head and tail and its size.
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-
-  /* Basic introspection ------------------------------------ */
-
-  get size()          { return this._size; }
-  get isEmpty()       { return this._size === 0; }
-
-  /* -----------------------------------------------------------------
-   * Mutating operations
-   * ----------------------------------------------------------------- */
-
-  // Add to the end (O(1)).
-  push(val: T): void {
-    const node = new ListNode(val);
-    if (this.tail) {
-      this.tail.next = node;
-      this.tail = node;
-    } else {               // list was empty
-      this.head = this.tail = node;
-    }
-    this._size++;
-  }
-
-  // Remove from the end (O(n) – we walk to the previous node).
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {      // one element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-    // walk to the node just before tail
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-
-  // Add to the front (O(1)).
-  unshift(val: T): void {
-    const node = new ListNode(val, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node;
-    this._size++;
-  }
-
-  // Remove from the front (O(1)).
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const val = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._size--;
-    return val;
-  }
-
-  // Insert after a given node (O(1)).  Handy for external use.
-  insertAfter(node: ListNode<T>, val: T): ListNode<T> {
-    const nodeToInsert = new ListNode(val, node.next);
-    node.next = nodeToInsert;
-    if (node === this.tail) this.tail = nodeToInsert;
-    this._size++;
-    return nodeToInsert;
-  }
-
-  // Remove the *first* occurrence of a value (O(n)).
-  remove(val: T): boolean {
-    if (!this.head) return false;
-
-    // deleting head
-    if (this.head.value === val) {
-      this.head = this.head.next;
-      if (!this.head) this.tail = null;
-      this._size--;
-      return true;
-    }
-
-    // walk until we find the predecessor
-    let prev = this.head;
-    while (prev.next && prev.next.value !== val) {
-      prev = prev.next;
-    }
-
-    if (!prev.next) return false; // not found
-
-    // patch over the node we’re deleting
-    prev.next = prev.next.next;
-    if (prev.next === null) this.tail = prev;
-    this._size--;
-    return true;
-  }
-
-  /* -----------------------------------------------------------------
-   * Utility helpers
-   * ----------------------------------------------------------------- */
-
-  // Return an array of all values. (Useful for tests/printing)
-  toArray(): T[] {
-    const arr: T[] = [];
-    for (const v of this) arr.push(v);
-    return arr;
-  }
-
-  // Find first node with a given value.
-  find(val: T): ListNode<T> | null {
-    for (let node of this.iterate()) {
-      if (node.value === val) return node;
-    }
-    return null;
-  }
-
-  /* -----------------------------------------------------------------
-   * Iteration
-   * ----------------------------------------------------------------- */
-
-  // Forward iterator (ES6).
-  * [Symbol.iterator](): Generator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-
-  // Iterable over nodes if you need more than just the value.
-  * iterate(): Generator<ListNode<T>> {
-    let current = this.head;
-    while (current) {
-      yield current;
-      current = current.next;
-    }
-  }
+const sorted = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+console.log(fibonacciSearch(sorted, 13)); // → 6
+console.log(fibonacciSearch(sorted, 2));  // → -1
+export function fibonacciSearch<T>(
+  arr: T[],
+  key: T,
+  cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)
+): number {
+  // use cmp(a, b) instead of a < b / a > b
 }
-import { LinkedList } from "./LinkedList";
-
-const list = new LinkedList<number>();
-
-list.push(3);          // -> 3
-list.push(5);          // -> 3 → 5
-list.unshift(1);       // -> 1 → 3 → 5
-
-console.log(list.toArray()); // [1, 3, 5]
-
-list.remove(3);          // remove middle element
-console.log(list.toArray()); // [1, 5]
-
-console.log(list.pop()); // 5, list is now [1]
-console.log(list.shift()); // 1, list is empty
