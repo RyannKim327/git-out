@@ -1,25 +1,14 @@
-const str = "42";
-const num = parseInt(str, 10);  // 42
-parseInt("42 apples", 10);  // 42
-parseInt("  42", 10);       // 42
-parseInt("apple 42", 10);   // NaN
-const s = "42";
-const n1 = Number(s);   // 42
-const n2 = +s;          // 42
-Number("3.14");   // 3.14
-Number.parseFloat("3.14");  // 3.14
-function toInt(value: string): number | null {
-  const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) return null;
-  return parsed;
-}
+const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
+// or, if you only want literal space characters (not tabs, newlines, …)
+const clean = str.replaceAll(' ', '');
+const input = "  Why   are   we  still  here?  \n";
 
-const x = toInt("foo"); // null
-const y = toInt("12");  // 12
-const hex = "0xFF";
-const oct = "0o77";
+const withoutAllWhitespace = input.replace(/\s+/g, '');
+console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
 
-Number(hex);   // 255
-Number(oct);   // 63
+const withoutOnlySpaces = input.replaceAll(' ', '');
+console.log(withoutOnlySpaces);  // "Why\there? "
 
-parseInt(hex, 16);  // 255
+// If you want to keep line breaks but trim spaces:
+const trimmed = input.trim();  // removes spaces at the start/end only
+const noSpaces = str.split(' ').join('');
