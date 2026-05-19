@@ -1,25 +1,44 @@
 /**
- * Returns the first non‑repeating character of `s`, or `null` if every character repeats.
- *
- * @param s - Input string (may contain any Unicode characters)
- * @returns  The first unique character, or `null`
+ * Return the majority element (> n/2) if it exists, or null otherwise.
+ * @param arr array of numbers (or any comparable type)
  */
-export function firstNonRepeating(s: string): string | null {
-  // Map keeps the order in which characters appear
-  const freq = new Map<string, number>();
+export function majorityElement<T>(arr: T[]): T | null {
+  if (!arr.length) return null;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+  /* ---------- 1st pass: find candidate ---------- */
+  let candidate = arr[0];
+  let count = 0;
 
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += (num === candidate) ? 1 : -1;
     }
   }
 
-  return null; // no unique character
+  /* ---------- 2nd pass: verify candidate ---------- */
+  let freq = 0;
+  for (const num of arr) {
+    if (num === candidate) freq++;
+  }
+
+  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
 }
-console.log(firstNonRepeating("swiss"));       // "w"
-console.log(firstNonRepeating("aabbcc"));      // null
-console.log(firstNonRepeating("hello world")); // "h"
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const majority = majorityElement(nums);
+console.log(majority); // → 3
+export function majorityElementMap<T>(arr: T[]): T | null {
+  const counts = new Map<T, number>();
+  
+  for (const val of arr) {
+    counts.set(val, (counts.get(val) ?? 0) + 1);
+  }
+
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, cnt] of counts) {
+    if (cnt > threshold) return val;
+  }
+  return null;
+}
