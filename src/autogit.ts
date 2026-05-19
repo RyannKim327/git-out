@@ -1,106 +1,112 @@
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1️⃣ Find the middle (fast/slow trick)
-  let slow = head, fast = head, prev: ListNode | null = null;
-  while (fast && fast.next) {
-    // 2️⃣ Reverse the first half while we’re at it
-    let nxt = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nxt;
-
-    fast = fast.next.next;
-  }
-
-  // 3️⃣ If odd number of nodes skip the middle one
-  if (fast) slow = slow.next;
-
-  // 4️⃣ Compare the two halves
-  let p1 = prev, p2 = slow;
-  while (p1 && p2) {
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-  return true;
-}
-interface ListNode {
-  val: number | string;      // whatever you want to store
-  next?: ListNode | null;    // `next` is optional to support the “end” of the list
+// Represents a single weighted directed edge.
+export interface Edge {
+  from: number;
+  to: number;
+  weight: number;
 }
 /**
- * Returns true if the singly linked list is a palindrome.
+ * Bellman–Ford shortest‑path algorithm.
  *
- * @param head - The head node of the linked list (or null).
+ * @param n      Number of vertices (vertices are 0 … n‑1).
+ * @param edges  Array of directed weighted edges.
+ * @param source Index of the source vertex.
+ * @returns {distances, predecessors}
+ *          - `distances` is an array where `distances[v]` holds the
+ *            length of a shortest path from source to v.
+ *          - `predecessors` holds the previous vertex on that path
+ *            (use `-1` for the source and unreachable vertices).
+ *
+ * @throws Error if a negative cycle is reachable from source.
  */
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+export function bellmanFord(
+  n: number,
+  edges: Edge[],
+  source: number = 0
+): { distances: number[]; predecessors: number[] } {
+  // 1️⃣ BFS‑style relaxation loop.
+  const dist: number[] = Array(n).fill(Infinity);
+  const pred: number[] = Array(n).fill(-1);
 
-  let slow = head;
-  let fast = head;
-  let prev: ListNode | null = null; // will become the head of the reversed first half
+  dist[source] = 0;
 
-  // Step 1 & 2: find middle, reverse first half
-  while (fast && fast.next) {
-    // Reverse the link for `slow`'s current node
-    const nextNode = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nextNode;
-
-    fast = fast.next.next;
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        changed = true;
+      }
+    }
+    // Early exit if nothing moved this pass.
+    if (!changed) break;
   }
 
-  // Step 3: if odd length, skip the middle node
-  if (fast) {
-    slow = slow.next!;
+  // 2️⃣ Check for negative‑weight cycles.
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      const cycle: number[] = findNegCycle(n, edges, to);
+      throw new Error(
+        `Negative cycle detected: ${cycle.join(' → ')}`
+      );
+    }
   }
 
-  // Step 4: compare nodes from the two halves
-  let firstHalf = prev;
-  let secondHalf = slow;
-  while (firstHalf && secondHalf) {
-    if (firstHalf.val !== secondHalf.val) return false;
-    firstHalf = firstHalf.next!;
-    secondHalf = secondHalf.next!;
-  }
-
-  return true;
-}
-// Helper to create a list from an array
-function fromArray(arr: (number | string)[]): ListNode | null {
-  if (!arr.length) return null;
-  const head: ListNode = { val: arr[0] };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { val: arr[i] };
-    current = current.next;
-  }
-  return head;
+  return { distances: dist, predecessors: pred };
 }
 
-console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
-console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string)[] = [];
-  let fast = head;
-  let slow = head;
+/**
+ * Helper: recover a node that lies on a negative cycle reachable from `start`.
+ * Returns the cycle as a list of vertex indices in order.
+ *
+ * This is a brute‑force way – for large graphs you’ll want a more
+ * sophisticated cycle extraction, but it’s fine for teaching/compacting.
+ */
+function findNegCycle(
+  n: number,
+  edges: Edge[],
+  start: number
+): number[] {
+  const parent: number[] = Array(n).fill(-1);
+  let x = start;
+  for (let i = 0; i < n; i++) x = edges.find(e => e.to === x)?.from ?? -1;
 
-  // Push first half onto stack
-  while (fast && fast.next) {
-    stack.push(slow!.val);
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
-
-  // Skip middle element for odd length
-  if (fast) slow = slow!.next!;
-
-  // Compare the rest with stack
-  while (slow) {
-    if (stack.pop() !== slow.val) return false;
-    slow = slow.next;
-  }
-  return true;
+  const cycle: number[] = [];
+  let cur = x;
+  do {
+    cycle.push(cur);
+    cur = parent[cur];
+  } while (cur !== x && cur !== -1);
+  cycle.reverse();
+  return cycle;
 }
+import { bellmanFord, Edge } from './bellmanFord';
+
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 2, weight: -1 },
+  { from: 1, to: 3, weight: 10 },
+  { from: 2, to: 3, weight: 3 },
+  // Add more edges as needed
+];
+
+const { distances, predecessors } = bellmanFord(4, edges, 0);
+
+console.log('Distances:', distances);
+// [0, 4, 3, 6]
+
+console.log('Predecessors:', predecessors);
+// [-1, 0, 1, 2]
+
+// Reconstruct a path to vertex 3
+function pathTo(v: number) {
+  const path: number[] = [];
+  while (v !== -1) {
+    path.unshift(v);
+    v = predecessors[v];
+  }
+  return path;
+}
+
+console.log('Path 0 → 3:', pathTo(3)); // [0, 1, 2, 3]
