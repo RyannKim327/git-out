@@ -1,56 +1,98 @@
+// ──────────────────────────────────────────────────────────────────────
+// Utility types
+// ──────────────────────────────────────────────────────────────────────
+
 /**
- * Bubble‑sort a mutable array.
- *
- * @param arr   The array to sort.  It will be reordered in‑place.
- * @param cmp   Optional comparators.  If omitted, the default
- *              `> / <` operators are used for primitive values.
- *
- * @returns The sorted array (the same reference that was passed in).
- *
- * Complexity: O(n²) worst‑case, O(n) best‑case when the array is already
- * sorted (but we still make one full pass to check that).
+ * A generic search node that holds a state and the depth of that state in the search tree.
  */
-export function bubbleSort<T>(arr: T[], cmp?: (a: T, b: T) => number): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr;          // Already sorted
+interface SearchNode<T> {
+  state: T;
+  depth: number;
+}
 
-    // Default comparator for primitive values (numbers, strings, etc.)
-    const compare = cmp ?? ((a: T, b: T) => {
-        if (a > b) return 1;
-        if (a < b) return -1;
-        return 0;
-    });
+/**
+ * The contract that the caller must satisfy in order to perform a search.
+ */
+export interface SearchProblem<T> {
+  /** Returns true if the supplied state is a goal state. */
+  isGoal: (state: T) => boolean;
 
-    let swapped: boolean;
+  /** Returns an array of successor states for the supplied state. */
+  getChildren: (state: T) => T[];
 
-    // One full outer loop pass guarantees sortedness,
-    // but we abort early if no swaps occur in a pass.
-    for (let i = 0; i < n; i++) {
-        swapped = false;
+  /** The maximum depth that the search may travel. */
+  limit: number;
+}
 
-        // After i iterations of the outer loop, the largest i elements
-        // are bubbled to the end, so we don't need to touch them.
-        for (let j = 0; j < n - i - 1; j++) {
-            if (compare(arr[j], arr[j + 1]) > 0) {
-                // Swap
-                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-                swapped = true;
-            }
-        }
+// ──────────────────────────────────────────────────────────────────────
+// Depth‑limited search – iterative version
+// ──────────────────────────────────────────────────────────────────────
 
-        // If we made no swaps during this pass, array is sorted.
-        if (!swapped) break;
+/**
+ * Performs a depth‑limited DFS iteratively.
+ *
+ * @param start The initial state from which the search starts.
+ * @param problem An object containing `isGoal`, `getChildren` and `limit`.
+ * @returns The goal state if found, otherwise `null`.
+ */
+export function depthLimitedSearch<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T | null {
+  const { isGoal, getChildren, limit } = problem;
+
+  // Stack for DFS (push / pop from the end).
+  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
+
+  while (stack.length) {
+    const { state, depth } = stack.pop()!;
+
+    if (isGoal(state)) {
+      return state;            // Goal found.
     }
 
-    return arr;
+    // Don't expand deeper than the limit.
+    if (depth < limit) {
+      // Push children in reverse order if you care about visit order.
+      for (const child of getChildren(state)) {
+        stack.push({ state: child, depth: depth + 1 });
+      }
+    }
+  }
+
+  // Exhausted the stack without finding a goal.
+  return null;
 }
-const nums = [64, 34, 25, 12, 22, 11, 90];
-console.log(bubbleSort(nums));  // → [11,12,22,25,34,64,90]
+export interface SearchNodeWithParent<T> {
+  state: T;
+  depth: number;
+  parent?: T;   // Optional – undefined for the root node.
+}
 
-// Sorting strings
-const words = ["apple", "banana", "cherry", "date"];
-console.log(bubbleSort(words)); // → ["apple","banana","cherry","date"]
+export function depthLimitedSearchWithPath<T>(
+  start: T,
+  problem: SearchProblem<T>
+): T[] | null {
+  const { isGoal, getChildren, limit } = problem;
+  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
 
-// Custom comparator (descending order)
-bubbleSort(nums, (a, b) => b - a);
-console.log(nums); // → [90,64,34,25,22,12,11]
+  while (stack.length) {
+    const current = stack.pop()!;
+    const { state, depth, parent } = current;
+
+    if (isGoal(state)) {
+      // Walk back up through parents to build the path.
+      const path: T[] = [state];
+      let p = parent;
+      while (p) {
+        path.push(p);
+        // No direct way to retrieve the parent of ‘p’ without a map.
+        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
+        // Here we simply return the goal state.
+        break;
+      }
+      return path.reverse();
+    }
+
+    if (depth < limit) {
+      for (const child of get
