@@ -1,73 +1,38 @@
 /**
- * Return the median of two sorted numeric arrays.
- * Complexity: O(m + n) time, O(1) extra space (besides a few indices).
+ * Counting sort for an array of integers.
+ *
+ * @param arr The array to sort – an array of numbers.
+ * @returns A new array containing the sorted values.
  */
-export function medianOfTwoSortedLinear(a: number[], b: number[]): number {
-  const m = a.length, n = b.length;
-  const total = m + n;
-  const k = Math.floor((total - 1) / 2); // 0‑based index of first median element
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  let i = 0, j = 0, count = 0;
-  let cur = 0, next = 0;
-
-  while (count <= k) {
-    // Pick the next smallest element
-    if (i < m && (j >= n || a[i] <= b[j])) {
-      cur = next;   // shift previous value
-      next = a[i++];
-    } else {
-      cur = next;
-      next = b[j++];
-    }
-    count++;
+  // Locate the bounds of the values.
+  let min = arr[0];
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+    if (val < min) min = val;
+    if (val > max) max = val;
   }
 
-  // If total is odd, median is next
-  if (total % 2 === 1) {
-    return next;
+  const range = max - min + 1;          // Number of distinct possible values
+  const count = new Array<number>(range).fill(0);
+
+  // Count occurrences of each integer.
+  for (const value of arr) {
+    count[value - min]++;               // Shift by min so index 0 stays valid
   }
 
-  // If total is even, median is average of cur and next
-  return (cur + next) / 2;
-}
-/**
- * Median of two sorted arrays in O(log(min(m,n))) time.
- * Assumes a and b are sorted in non‑decreasing order.
- */
-export function medianOfTwoSortedBinary(a: number[], b: number[]): number {
-  // Ensure a is the smaller array
-  if (a.length > b.length) return medianOfTwoSortedBinary(b, a);
-
-  let m = a.length, n = b.length;
-  let low = 0, high = m;
-  const halfLen = Math.floor((m + n + 1) / 2);
-
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
-
-    const aLeft  = (i === 0)  ? Number.NEGATIVE_INFINITY : a[i - 1];
-    const aRight = (i === m) ? Number.POSITIVE_INFINITY : a[i];
-    const bLeft  = (j === 0)  ? Number.NEGATIVE_INFINITY : b[j - 1];
-    const bRight = (j === n) ? Number.POSITIVE_INFINITY : b[j];
-
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // Partitions are correct
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      high = i - 1; // move left in a
-    } else {
-      low = i + 1; // move right in a
+  // Overwrite the input array (or build a new one) using the counts.
+  const sorted: number[] = [];
+  for (let i = 0; i < range; i++) {
+    const currentVal = i + min;
+    const occ = count[i];
+    for (let j = 0; j < occ; j++) {
+      sorted.push(currentVal);
     }
   }
 
-  throw new Error('Input arrays are not sorted or sizes are incorrect.');
+  return sorted;
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
-
-console.log(medianOfTwoSortedLinear(arr1, arr2));   // 8
-console.log(medianOfTwoSortedBinary(arr1, arr2));    // 8
