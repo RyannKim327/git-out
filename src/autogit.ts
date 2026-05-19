@@ -1,71 +1,23 @@
-/**
- * Build the longest–prefix‑suffix (LPS) array for the pattern.
- *
- * lps[i] = length of the longest proper prefix of pattern[0..i]
- *           which is also a suffix of that substring.
- * Complexity: O(m), m = pattern.length
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps = new Array<number>(m).fill(0);
-  let length = 0;               // length of the previous longest prefix suffix
-  let i = 1;
-
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length++;
-      lps[i] = length;
-      i++;
-    } else {
-      if (length !== 0) {
-        // fall back to the previous candidate
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-
-  return lps;
+// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
+function reverseString1(s: string): string {
+  return s.split('').reverse().join('');
 }
 
-/**
- * KMP search: return all start positions where pattern occurs in text.
- * Complexity: O(n + m), n = text.length, m = pattern.length
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const lps = buildLPS(pattern);
-
-  const positions: number[] = [];
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < n) {
-    if (pattern[j] === text[i]) {
-      i++;
-      j++;
-    }
-
-    if (j === m) {
-      // full match found – record start index
-      positions.push(i - j);
-      j = lps[j - 1]; // allow for overlapping matches
-    } else if (i < n && pattern[j] !== text[i]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
-  }
-
-  return positions;
+// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
+function reverseString2(s: string): string {
+  return Array.from(s).reverse().join('');
 }
-const txt = "ABABDABACDABABCABAB";
-const pat = "ABABCABAB";
 
-const occ = kmpSearch(txt, pat);
-console.log(occ); // → [10]
+// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
+function reverseString3(s: string): string {
+  const out: string[] = [];
+  for (let i = s.length - 1; i >= 0; i--) {
+    out.push(s[i]);           // or use code points with s.codePointAt(i)
+  }
+  return out.join('');
+}
+
+// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
+const reverseString4 = (s: string) => s.split('').reverse().join('');
+console.log(reverseString1('hello')); // 'olleh'
+console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
