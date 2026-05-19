@@ -1,125 +1,71 @@
-// --- types ----------------------------------------------------------
-
-type Node = string | number;             // anything that can be compared by ===
-type Graph = Map<Node, Node[]>;          // adjacency list
-
-// an entry tracks a node and the parent that led to it
-interface QueueEntry {
-  node: Node;
-  parent: Node | null;   // parent in the search tree
-}
-
-// --- helper ---------------------------------------------------------
-
 /**
- * Simple FIFO queue built on an array for speed.
+ * Build the longest–prefix‑suffix (LPS) array for the pattern.
+ *
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ *           which is also a suffix of that substring.
+ * Complexity: O(m), m = pattern.length
  */
-class Queue<T> {
-  private items: T[] = [];
-  enqueue(item: T) { this.items.push(item); }
-  dequeue(): T | undefined { return this.items.shift(); }
-  isEmpty() { return this.items.length === 0; }
-  size() { return this.items.length; }
-}
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps = new Array<number>(m).fill(0);
+  let length = 0;               // length of the previous longest prefix suffix
+  let i = 1;
 
-// --- bidirectional BFS ----------------------------------------------
-
-export function bidirectionalSearch(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {      // null iff no path
-
-  if (start === goal) return [start];
-
-  // queues for both directions
-  const qStart = new Queue<QueueEntry>();
-  const qGoal  = new Queue<QueueEntry>();
-
-  // visited maps: node -> parent
-  const visitedStart = new Map<Node, Node | null>();
-  const visitedGoal  = new Map<Node, Node | null>();
-
-  // initialise
-  qStart.enqueue({ node: start, parent: null });
-  visitedStart.set(start, null);
-
-  qGoal.enqueue({ node: goal, parent: null });
-  visitedGoal.set(goal, null);
-
-  // work until one frontier empties
-  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
-
-    // ---- expand the smaller frontier ----
-    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
-    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
-
-    const { node: current, parent } = nextFrontier.dequeue()!;
-
-    const neighbors = graph.get(current) ?? [];
-    for (const neigh of neighbors) {
-
-      // skip already visited by this side
-      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
-      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
-
-      // mark as visited by this side
-      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
-      visited.set(neigh, current);
-      nextFrontier.enqueue({ node: neigh, parent: current });
-
-      // --- check for meeting point ---
-      if (otherVisited.has(neigh)) {
-        return buildPath(
-          start, goal, neigh, visitedStart, visitedGoal
-        );
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous candidate
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
       }
     }
   }
 
-  // nothing found
-  return null;
+  return lps;
 }
 
 /**
- * Walk back from the meeting point to the start and goal to build the full path.
+ * KMP search: return all start positions where pattern occurs in text.
+ * Complexity: O(n + m), n = text.length, m = pattern.length
  */
-function buildPath(
-  start: Node,
-  goal: Node,
-  meet: Node,
-  visitedStart: Map<Node, Node | null>,
-  visitedGoal:  Map<Node, Node | null>
-): Node[] {
+export function kmpSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const lps = buildLPS(pattern);
 
-  // walk back to start
-  const pathStart: Node[] = [];
-  let cur: Node | null = meet;
-  while (cur !== null) {
-    pathStart.push(cur);
-    cur = visitedStart.get(cur) ?? null;
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < n) {
+    if (pattern[j] === text[i]) {
+      i++;
+      j++;
+    }
+
+    if (j === m) {
+      // full match found – record start index
+      positions.push(i - j);
+      j = lps[j - 1]; // allow for overlapping matches
+    } else if (i < n && pattern[j] !== text[i]) {
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
   }
-  pathStart.reverse();    // start -> meet
 
-  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
-  const pathGoal: Node[] = [];
-  cur = visitedGoal.get(meet);
-  while (cur !== null) {
-    pathGoal.push(cur);
-    cur = visitedGoal.get(cur) ?? null;
-  }
-
-  return [...pathStart, ...pathGoal];
+  return positions;
 }
-const graph: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E', 'G']],
-  ['G', ['F']]
-]);
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
 
-const path = bidirectionalSearch(graph, 'A', 'G');
-console.log(path); // => [ 'A', 'C', 'F', 'G' ]
+const occ = kmpSearch(txt, pat);
+console.log(occ); // → [10]
