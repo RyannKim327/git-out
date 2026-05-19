@@ -1,35 +1,23 @@
-/**
- * Returns the longest common prefix of an array of strings.
- * If the array is empty, returns an empty string.
- *
- * @param words - array of strings
- * @returns longest common prefix
- */
-function longestCommonPrefix(words: string[]): string {
-  if (words.length === 0) return '';
-
-  // 1. Find the min and max strings (lexicographically)
-  let min = words[0];
-  let max = words[0];
-  for (let i = 1; i < words.length; i++) {
-    const w = words[i];
-    if (w < min) min = w;
-    if (w > max) max = w;
-  }
-
-  // 2. Find first mismatch between min and max
-  let j = 0;
-  while (j < min.length && j < max.length && min[j] === max[j]) {
-    j++;
-  }
-
-  // 3. Slice the common part
-  return min.slice(0, j);
+// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
+function reverseString1(s: string): string {
+  return s.split('').reverse().join('');
 }
-const arr = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(arr)); // → "fl"
 
-console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
-console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
-console.log(longestCommonPrefix(['single'])); // → "single"
-console.log(longestCommonPrefix([])); // → ""
+// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
+function reverseString2(s: string): string {
+  return Array.from(s).reverse().join('');
+}
+
+// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
+function reverseString3(s: string): string {
+  const out: string[] = [];
+  for (let i = s.length - 1; i >= 0; i--) {
+    out.push(s[i]);           // or use code points with s.codePointAt(i)
+  }
+  return out.join('');
+}
+
+// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
+const reverseString4 = (s: string) => s.split('').reverse().join('');
+console.log(reverseString1('hello')); // 'olleh'
+console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
