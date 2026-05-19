@@ -1,21 +1,35 @@
-const original: number[] = [1, 2, 3, 4, 5];
-original.reverse();          // original is now [5, 4, 3, 2, 1]
-const copy = [...original].reverse(); // or use original.slice().reverse()
+/*  0001‑random‑ts‑with‑input.ts  */
 
-// original remains unchanged
-function reverseArray<T>(arr: T[]): T[] {
-  const len = arr.length;
-  const half = Math.floor(len / 2);
-  const copy = [...arr]; // keep original intact
+import * as readline from 'node:readline';
 
-  for (let i = 0; i < half; i++) {
-    const j = len - 1 - i;
-    [copy[i], copy[j]] = [copy[j], copy[i]]; // swap
-  }
-  return copy;
-}
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-const reversed = reverseArray(original);
-function reverseArray<T>(arr: T[]): T[] {
-  return [...arr].reverse();
-}
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
