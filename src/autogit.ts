@@ -1,131 +1,125 @@
-/* ----------  TrieNode  ---------- */
+// --- types ----------------------------------------------------------
 
-class TrieNode<T = any> {
-  /** Holds the full value for a key that ends here. */
-  public value: T | null = null;
+type Node = string | number;             // anything that can be compared by ===
+type Graph = Map<Node, Node[]>;          // adjacency list
 
-  /** Child pointers keyed by the next character. */
-  readonly children: Map<string, TrieNode<T>> = new Map();
-
-  /** Convenience flag – true if this node marks the end of a key. */
-  get hasValue(): boolean {
-    return this.value !== null;
-  }
+// an entry tracks a node and the parent that led to it
+interface QueueEntry {
+  node: Node;
+  parent: Node | null;   // parent in the search tree
 }
 
-/* ----------  Trie  ---------- */
+// --- helper ---------------------------------------------------------
 
-class Trie<T = any> {
-  private root = new TrieNode<T>();
+/**
+ * Simple FIFO queue built on an array for speed.
+ */
+class Queue<T> {
+  private items: T[] = [];
+  enqueue(item: T) { this.items.push(item); }
+  dequeue(): T | undefined { return this.items.shift(); }
+  isEmpty() { return this.items.length === 0; }
+  size() { return this.items.length; }
+}
 
-  /**
-   * Insert a key/value pair.  Keys can be any string.
-   */
-  insert(key: string, value: T): void {
-    let node = this.root;
-    for (const ch of key) {
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode<T>());
+// --- bidirectional BFS ----------------------------------------------
+
+export function bidirectionalSearch(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {      // null iff no path
+
+  if (start === goal) return [start];
+
+  // queues for both directions
+  const qStart = new Queue<QueueEntry>();
+  const qGoal  = new Queue<QueueEntry>();
+
+  // visited maps: node -> parent
+  const visitedStart = new Map<Node, Node | null>();
+  const visitedGoal  = new Map<Node, Node | null>();
+
+  // initialise
+  qStart.enqueue({ node: start, parent: null });
+  visitedStart.set(start, null);
+
+  qGoal.enqueue({ node: goal, parent: null });
+  visitedGoal.set(goal, null);
+
+  // work until one frontier empties
+  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
+
+    // ---- expand the smaller frontier ----
+    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
+    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
+
+    const { node: current, parent } = nextFrontier.dequeue()!;
+
+    const neighbors = graph.get(current) ?? [];
+    for (const neigh of neighbors) {
+
+      // skip already visited by this side
+      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
+      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
+
+      // mark as visited by this side
+      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
+      visited.set(neigh, current);
+      nextFrontier.enqueue({ node: neigh, parent: current });
+
+      // --- check for meeting point ---
+      if (otherVisited.has(neigh)) {
+        return buildPath(
+          start, goal, neigh, visitedStart, visitedGoal
+        );
       }
-      node = node.children.get(ch)!;
-    }
-    node.value = value;
-  }
-
-  /**
-   * Returns the value stored under *key*, or `undefined` if the key
-   * isn't present.
-   */
-  get(key: string): T | undefined {
-    const node = this._findNode(key);
-    return node?.value ?? undefined;
-  }
-
-  /**
-   * Checks whether *key* exists in the trie.
-   */
-  has(key: string): boolean {
-    const node = this._findNode(key);
-    return !!node?.hasValue;
-  }
-
-  /**
-   * Delete a key.  If the key isn't present, nothing happens.
-   * The method ends up trimming unused nodes on the way back.
-   */
-  delete(key: string): void {
-    const path: TrieNode[] = [];
-    let node = this.root;
-
-    for (const ch of key) {
-      const child = node.children.get(ch);
-      if (!child) return;          // key not found
-      path.push(node);
-      node = child;
-    }
-
-    if (!node.hasValue) return;    // no value to delete
-
-    node.value = null;
-
-    // Walk backward, removing nodes that became unnecessary.
-    for (let i = key.length - 1; i >= 0; i--) {
-      const parent = path[i];
-      const ch = key[i];
-
-      const child = parent.children.get(ch)!;
-      if (child.children.size > 0 || child.hasValue) break;
-      parent.children.delete(ch);
     }
   }
 
-  /**
-   * Returns all keys that start with *prefix*.
-   */
-  startsWith(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    this._collect(node, prefix, results);
-    return results;
-  }
-
-  /* ---------  Helpers  --------- */
-
-  private _findNode(key: string): TrieNode | null {
-    let node: TrieNode | undefined = this.root;
-    for (const ch of key) {
-      node = node?.children.get(ch);
-      if (!node) return null;
-    }
-    return node;
-  }
-
-  private _collect(node: TrieNode, prefix: string, out: string[]): void {
-    if (node.hasValue) out.push(prefix);
-
-    for (const [ch, child] of node.children) {
-      this._collect(child, prefix + ch, out);
-    }
-  }
+  // nothing found
+  return null;
 }
 
-/* ----------  Usage Demo  ---------- */
+/**
+ * Walk back from the meeting point to the start and goal to build the full path.
+ */
+function buildPath(
+  start: Node,
+  goal: Node,
+  meet: Node,
+  visitedStart: Map<Node, Node | null>,
+  visitedGoal:  Map<Node, Node | null>
+): Node[] {
 
-const trie = new Trie<number>();
+  // walk back to start
+  const pathStart: Node[] = [];
+  let cur: Node | null = meet;
+  while (cur !== null) {
+    pathStart.push(cur);
+    cur = visitedStart.get(cur) ?? null;
+  }
+  pathStart.reverse();    // start -> meet
 
-trie.insert('cat', 1);
-trie.insert('car', 2);
-trie.insert('cart', 3);
-trie.insert('dog', 4);
+  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
+  const pathGoal: Node[] = [];
+  cur = visitedGoal.get(meet);
+  while (cur !== null) {
+    pathGoal.push(cur);
+    cur = visitedGoal.get(cur) ?? null;
+  }
 
-console.log(trie.get('cat'));         // 1
-console.log(trie.get('cart'));        // 3
-console.log(trie.has('carpent'));     // false
+  return [...pathStart, ...pathGoal];
+}
+const graph: Graph = new Map([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E', 'G']],
+  ['G', ['F']]
+]);
 
-console.log(trie.startsWith('ca'));   // ['cat', 'car', 'cart']
-console.log(trie.startsWith('do'));   // ['dog']
-
-trie.delete('cart');
-console.log(trie.startsWith('ca'));   // ['cat', 'car']
+const path = bidirectionalSearch(graph, 'A', 'G');
+console.log(path); // => [ 'A', 'C', 'F', 'G' ]
