@@ -1,22 +1,35 @@
 /**
- * Return true if n is prime, false otherwise.
+ * Returns the longest common prefix of an array of strings.
+ * If the array is empty, returns an empty string.
  *
- * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
- * For bigger integers you’d need BigInt and, better yet, a probabilistic test
- * (Miller‑Rabin, etc.).
+ * @param words - array of strings
+ * @returns longest common prefix
  */
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
+function longestCommonPrefix(words: string[]): string {
+  if (words.length === 0) return '';
 
-  // From here we only need to test numbers of the form 6k ± 1
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 5; i <= limit; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
+  // 1. Find the min and max strings (lexicographically)
+  let min = words[0];
+  let max = words[0];
+  for (let i = 1; i < words.length; i++) {
+    const w = words[i];
+    if (w < min) min = w;
+    if (w > max) max = w;
   }
-  return true;
+
+  // 2. Find first mismatch between min and max
+  let j = 0;
+  while (j < min.length && j < max.length && min[j] === max[j]) {
+    j++;
+  }
+
+  // 3. Slice the common part
+  return min.slice(0, j);
 }
-console.log(isPrime(11));          // true
-console.log(isPrime(12));          // false
-console.log(isPrime(1_000_003));   // true (1 M+‑prime)
+const arr = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(arr)); // → "fl"
+
+console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
+console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
+console.log(longestCommonPrefix(['single'])); // → "single"
+console.log(longestCommonPrefix([])); // → ""
