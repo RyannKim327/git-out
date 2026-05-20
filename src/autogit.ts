@@ -1,25 +1,31 @@
 /**
- * Very practical “looks‑nice‑like‑an‑email” validator.
- * Not a full RFC‑5322 parser, but catches most real‑world cases.
+ * Returns true if `s` is a palindrome.
+ *
+ * Options:
+ *   - ignoreCase   strip upper/lower differences (default: true)
+ *   - ignoreNonAlpha  remove everything that isn’t a letter/digit (default: true)
  */
-export function isValidEmail(email: string): boolean {
-  // One or more non‑space, non‑@ chars, an @, one or more non‑space @ chars,
-  // a dot, and finally one or more non‑space chars.
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
-import validator from 'validator';
-validator.isEmail(someString); // true/false
-const input = document.querySelector('#email') as HTMLInputElement;
+export function isPalindrome(
+  s: string,
+  { ignoreCase = true, ignoreNonAlpha = true } = {}
+): boolean {
+  let processed = s;
 
-function onSubmit(e: Event) {
-  e.preventDefault();
-  const email = input.value.trim();
-
-  if (!isValidEmail(email)) {
-    alert('That’s not a valid email address.');
-    return;
+  // Optional: drop punctuation, spaces, etc.
+  if (ignoreNonAlpha) {
+    processed = processed.replace(/[^a-zA-Z0-9]/g, "");
   }
 
-  // …go on with your logic
+  // Optional: treat “A” and “a” as the same.
+  if (ignoreCase) {
+    processed = processed.toLowerCase();
+  }
+
+  // Compare string to its reverse.
+  const reversed = processed.split("").reverse().join("");
+  return processed === reversed;
 }
+console.log(isPalindrome("Racecar"));                 // true
+console.log(isPalindrome("noon"));                    // true
+console.log(isPalindrome("hello"));                   // false
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
