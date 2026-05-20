@@ -1,118 +1,85 @@
-type Node = number | string;           // whatever your IDs look like
-type Graph = Record<Node, Node[]>;     // adjacency list
-
+// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
+export interface TreeNode<T> {
+  value: T;
+  left?: TreeNode<T>;   // optional because a leaf might not have children
+  right?: TreeNode<T>;
+}
 /**
- * Breadth‑first search that collects the visit order.
+ * Counts leaf nodes (nodes with no children) in a binary tree.
+ *
+ * @param root - root node of the tree
+ * @returns number of leaf nodes
  */
-export function bfsVisitOrder(
-  graph: Graph,
-  start: Node
-): Node[] {
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const order: Node[] = [];
+export function countLeavesRec<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree -> 0 leaves
 
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                // this node is a leaf
 
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-  return order;
+  // otherwise add leaves of the left and right sub‑trees
+  return countLeavesRec(root.left) + countLeavesRec(root.right);
 }
-
 /**
- * Breadth‑first search that stops at a goal node
- * and returns the *shortest path* (for unweighted graphs).
+ * Iterative breadth‑first traversal using a queue.
+ * Does the same thing as the recursive version but avoids recursion depth limits.
  */
-export function bfsShortestPath(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {
-  if (start === goal) return [start];
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const parent: Record<Node, Node | null> = {};
-  parent[start] = null;
+  let leafCount = 0;
+  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
 
   while (queue.length) {
-    const cur = queue.shift()!;
+    const node = queue.shift()!;         // dequeue
 
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        parent[neighbor] = cur;
-        if (neighbor === goal) {
-          // build the path from goal back to start
-          const path: Node[] = [goal];
-          let p: Node | null = cur;
-          while (p !== null) {
-            path.push(p);
-            p = parent[p];
-          }
-          return path.reverse();
-        }
-        queue.push(neighbor);
-      }
+    // If the node has no children, it’s a leaf
+    if (!node.left && !node.right) {
+      leafCount += 1;
+    } else {
+      // enqueue any existing children
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
   }
 
-  return null; // goal not reachable
+  return leafCount;
 }
-const graph: Graph = {
-  1: [2, 3],
-  2: [4],
-  3: [4, 5],
-  4: [],
-  5: [6],
-  6: [],
-};
-
-console.log(bfsVisitOrder(graph, 1));
-// → [1, 2, 3, 4, 5, 6]
-
-console.log(bfsShortestPath(graph, 1, 6));
-// → [1, 3, 5, 6]
-type NodeId = string | number;
-
-// Generic graph implemented as Map<id, array of ids>
-export type GenericGraph<T> = Map<T, T[]>;
-
-export function genericBfsVisitOrder<T>(
-  graph: GenericGraph<T>,
-  start: T
-): T[] {
-  const queue: T[] = [start];
-  const visited: Set<T> = new Set([start]);
-  const order: T[] = [];
-
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
-    for (const neighbour of graph.get(cur) ?? []) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
+function buildSampleTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //        / \     \
+  //       4   5     6
+  return {
+    value: 1,
+    left: {
+      value: 2,
+      left: { value: 4 },
+      right: { value: 5 }
+    },
+    right: {
+      value: 3,
+      right: { value: 6 }
     }
-  }
-  return order;
+  };
 }
-const g: GenericGraph<string> = new Map([
-  ["A", ["B", "C"]],
-  ["B", ["D"]],
-  ["C", ["D", "E"]],
-  ["D", []],
-  ["E", ["F"]],
-  ["F", []],
-]);
 
-console.log(genericBfsVisitOrder(g, "A"));
-// → ["
+const tree = buildSampleTree();
+console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
+console.log('Iterative:', countLeavesIter(tree)); // → 3
+function leafMetrics<T>(root?: TreeNode<T>) {
+  if (!root) return { leafCount: 0, leafDepthSum: 0 };
+
+  // helper that returns (#leaves, sum of leaf depths)
+  function helper(node: TreeNode<T>, depth: number): [number, number] {
+    if (!node.left && !node.right) {
+      return [1, depth];
+    }
+    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
+    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
+    return [left[0] + right[0], left[1] + right[1]];
+  }
+
+  const [cnt, depthSum] = helper(root, 0);
+  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
+}
