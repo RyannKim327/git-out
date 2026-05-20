@@ -1,32 +1,86 @@
-/**
- * Returns the second largest value in the array, or `undefined` if it can’t exist.
- * If you need the second *distinct* largest value, set `distinct = true`.
- */
-function secondLargest(nums: number[], distinct = false): number | undefined {
-  if (nums.length < 2) return undefined;          // not enough numbers
+// A graph is represented as an adjacency list.
+//   keys  – node identifiers (strings, numbers, etc.)
+//   values – array of keys this node points to
+type Graph = Record<string, string[]>
 
-  // Fast path: sort once, pick the second element
-  // (O(n log n) – fine for small arrays)
-  if (!distinct) {
-    const sorted = [...nums].sort((a, b) => b - a); // descending
-    return sorted[1];
-  }
+export function topologicalSortKahn(g: Graph): string[] {
+  // Compute indegree for every node
+  const indegree = new Map<string, number>()
+  const nodes = new Set<string>(Object.keys(g))
 
-  // O(n) single‑pass solution for distinct values
-  let max = Number.NEGATIVE_INFINITY;
-  let second = Number.NEGATIVE_INFINITY;
+  // initialise all counts to 0
+  for (const v of nodes) indegree.set(v, 0)
 
-  for (const n of nums) {
-    if (n > max) {
-      second = max;
-      max = n;
-    } else if (n < max && n > second) {
-      second = n;
+  // For each edge u → v, bump indegree of v
+  for (const u of Object.keys(g)) {
+    for (const v of g[u]) {
+      // if the neighbour isn't in `nodes` create an entry,
+      // this covers edges to nodes that have no outgoing edges
+      if (!indegree.has(v)) indegree.set(v, 0)
+      indegree.set(v, (indegree.get(v) ?? 0) + 1)
+      nodes.add(v)          // ensure isolated nodes are recorded
     }
   }
 
-  return second === Number.NEGATIVE_INFINITY ? undefined : second;
+  // enqueue all nodes that have indegree 0
+  const queue: string[] = [...indegree].filter(([_, d]) => d === 0).map(([n]) => n)
+  const result: string[] = []
+
+  while (queue.length) {
+    const n = queue.shift()!
+    result.push(n)
+
+    // For each outgoing edge n → m
+    for (const m of g[n] ?? []) {
+      indegree.set(m, (indegree.get(m) ?? 0) - 1)
+      if (indegree.get(m) === 0) queue.push(m)
+    }
+  }
+
+  if (result.length !== nodes.size) {
+    throw new Error('Graph has at least one cycle – topological sort impossible')
+  }
+  return result
 }
-console.log(secondLargest([5, 1, 7, 3]));     // → 5
-console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
-console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
+export function topologicalSortDFS(g: Graph): string[] {
+  const result: string[] = []          // hold the ordering (reverse order)
+  const visited = new Set<string>()    // permanently visited nodes
+  const temp    = new Set<string>()    // nodes that are on the current recursion stack
+
+  const visit = (node: string) => {
+    if (temp.has(node)) {
+      throw new Error(`Cycle detected – node '${node}' revisited on the same path`)
+    }
+    if (!visited.has(node)) {
+      temp.add(node)
+
+      // Recurse on all neighbours
+      for (const m of g[node] ?? []) {
+        visit(m)
+      }
+
+      temp.delete(node)
+      visited.add(node)
+      result.push(node)               // push after visiting all descendants
+    }
+  }
+
+  // A graph can have disjoint components – start from every node.
+  for (const node of Object.keys(g)) {
+    if (!visited.has(node)) visit(node)
+  }
+
+  // `result` is built in reverse; flip it to get a valid topological order
+  return result.reverse()
+}
+const example: Graph = {
+  a: ['b', 'c'],
+  b: ['d'],
+  c: ['d'],
+  d: []
+}
+
+console.log('Kahn   →', topologicalSortKahn(example))
+console.log('DFS    →', topologicalSortDFS(example))
+Kahn   → [ 'a', 'b', 'c', 'd' ]
+DFS    → [ 'a', 'b', 'c', 'd' ]
