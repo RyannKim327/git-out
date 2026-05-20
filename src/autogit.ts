@@ -1,25 +1,14 @@
-/**
- * Returns the first non‑repeating character of `s`, or `null` if every character repeats.
- *
- * @param s - Input string (may contain any Unicode characters)
- * @returns  The first unique character, or `null`
- */
-export function firstNonRepeating(s: string): string | null {
-  // Map keeps the order in which characters appear
-  const freq = new Map<string, number>();
+const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
+// or, if you only want literal space characters (not tabs, newlines, …)
+const clean = str.replaceAll(' ', '');
+const input = "  Why   are   we  still  here?  \n";
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+const withoutAllWhitespace = input.replace(/\s+/g, '');
+console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
 
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
+const withoutOnlySpaces = input.replaceAll(' ', '');
+console.log(withoutOnlySpaces);  // "Why\there? "
 
-  return null; // no unique character
-}
-console.log(firstNonRepeating("swiss"));       // "w"
-console.log(firstNonRepeating("aabbcc"));      // null
-console.log(firstNonRepeating("hello world")); // "h"
+// If you want to keep line breaks but trim spaces:
+const trimmed = input.trim();  // removes spaces at the start/end only
+const noSpaces = str.split(' ').join('');
