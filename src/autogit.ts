@@ -1,128 +1,52 @@
-type AdjList = Map<number, Set<number>>;
+/**
+ * Selection sort – returns a **new** sorted array.
+ * The original array is left untouched.
+ *
+ * @param arr   – source array
+ * @returns     – a new array sorted in ascending order
+ */
+export function selectionSort<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];          // clone so we don't mutate the caller's array
+  const n = toSort.length;
 
-class Graph {
-  private adj = new Map<number, Set<number>>();
+  for (let i = 0; i < n - 1; i++) {
+    // assume the smallest element is at i
+    let minIndex = i;
 
-  addEdge(u: number, v: number, directed = false): void {
-    if (!this.adj.has(u)) this.adj.set(u, new Set());
-    this.adj.get(u)!.add(v);
-    if (!directed) {
-      if (!this.adj.has(v)) this.adj.set(v, new Set());
-      this.adj.get(v)!.add(u);
+    // find the real smallest element in the remaining unsorted section
+    for (let j = i + 1; j < n; j++) {
+      if (toSort[j] < toSort[minIndex]) {
+        minIndex = j;
+      }
+    }
+
+    // swap the found minimum with the element at i
+    if (minIndex !== i) {
+      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
     }
   }
 
-  getNeighbors(v: number): Set<number> {
-    return this.adj.get(v) ?? new Set();
-  }
-
-  // helper: list all vertices (useful for disconnected graphs)
-  vertices(): IterableIterator<number> {
-    return this.adj.keys();
-  }
+  return toSort;
 }
-const g = new Graph();
-g.addEdge(0, 1);
-g.addEdge(0, 2);
-g.addEdge(1, 2);
-g.addEdge(1, 3);
-g.addEdge(3, 4);
-function dfsRecursive(
-  graph: Graph,
-  start: number,
-  visited = new Set<number>(),
-  action?: (node: number) => void
-): void {
-  visited.add(start);
-  action?.(start);
+const unsorted = [9, 3, 10, 2, 7];
+const sorted = selectionSort(unsorted);
 
-  for (const nb of graph.getNeighbors(start)) {
-    if (!visited.has(nb)) {
-      dfsRecursive(graph, nb, visited, action);
-    }
-  }
-}
-dfsRecursive(g, 0, undefined, console.log);
-// output: 0, 1, 2, 3, 4 (order may vary)
-function dfsIterative(
-  graph: Graph,
-  start: number,
-  action?: (node: number) => void
-): void {
-  const stack: number[] = [start];
-  const visited = new Set<number>();
+console.log(sorted);      // [2, 3, 7, 9, 10]
+console.log(unsorted);    // remains [9, 3, 10, 2, 7]
+export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];
+  const helper = (k: number) => {
+    if (k >= toSort.length - 1) return;
 
-  while (stack.length) {
-    const v = stack.pop()!; // `!` known to be non‑null
-    if (visited.has(v)) continue;
-
-    visited.add(v);
-    action?.(v);
-
-    // push neighbors reverse order if you want LIFO order same as recursion
-    for (const nb of [...graph.getNeighbors(v)].reverse()) {
-      if (!visited.has(nb)) stack.push(nb);
-    }
-  }
-}
-dfsIterative(g, 0, console.log);
-// same output as before
-function hasCycle(graph: Graph): boolean {
-  const visited = new Set<number>();
-  const stack = new Set<number>();
-
-  function visit(v: number): boolean {
-    if (stack.has(v)) return true;      // back‑edge found
-    if (visited.has(v)) return false;    // already seen, no cycle on this path
-
-    visited.add(v);
-    stack.add(v);
-
-    for (const nb of graph.getNeighbors(v)) {
-      if (visit(nb)) return true;
+    let minIdx = k;
+    for (let i = k + 1; i < toSort.length; i++) {
+      if (toSort[i] < toSort[minIdx]) minIdx = i;
     }
 
-    stack.delete(v);
-    return false;
-  }
+    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
+    helper(k + 1);
+  };
 
-  for (const v of graph.vertices()) if (visit(v)) return true;
-  return false;
+  helper(0);
+  return toSort;
 }
-function dfsWithOrders(
-  graph: Graph,
-  start: number,
-  pre?: (node: number) => void,
-  post?: (node: number) => void,
-  visited = new Set<number>()
-) {
-  visited.add(start);
-  pre?.(start);
-  for (const nb of graph.getNeighbors(start)) {
-    if (!visited.has(nb)) dfsWithOrders(graph, nb, pre, post, visited);
-  }
-  post?.(start);
-}
-function connectedComponents(graph: Graph): number[][] {
-  const visited = new Set<number>();
-  const components: number[][] = [];
-
-  function explore(v: number, comp: number[]) {
-    visited.add(v);
-    comp.push(v);
-    for (const nb of graph.getNeighbors(v)) {
-      if (!visited.has(nb)) explore(nb, comp);
-    }
-  }
-
-  for (const v of graph.vertices()) {
-    if (!visited.has(v)) {
-      const comp: number[] = [];
-      explore(v, comp);
-      components.push(comp);
-    }
-  }
-  return components;
-}
-npm i -D typescript ts-node
-npx ts-node dfs.ts
