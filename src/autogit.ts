@@ -1,58 +1,42 @@
 /**
- * Computes the prefix function (failure table) of a pattern.
- * pi[i] = the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
+ * Performs an in‑place Shell sort.
+ * @param arr - Array of numbers (or any comparable type).
+ * @param compareFn - Optional function to decide order.
+ *                     It should return <0 if a < b, >0 if a > b.
+ * @returns The same array sorted.
  */
-function buildPrefixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const pi: number[] = Array(m).fill(0);
-  let k = 0;   // mismatch counter
-
-  for (let i = 1; i < m; i++) {
-    // fall back until we either hit a match or k == 0
-    while (k > 0 && pattern[i] !== pattern[k]) {
-      k = pi[k - 1];
-    }
-    if (pattern[i] === pattern[k]) k++;
-    pi[i] = k;
-  }
-  return pi;
-}
-
-/**
- * KMP search – returns the starting indices of all matches of `needle`
- * inside `haystack`.  Does *exact* matching (no regex features).
- */
-export function kmpSearch(haystack: string, needle: string): number[] {
-  const n = haystack.length;
-  const m = needle.length;
-  if (m === 0) return [];          // nothing to find
-  if (m > n) return [];            // can't fit
-
-  const pi = buildPrefixTable(needle);
-  const matches: number[] = [];
-  let j = 0;                        // current index in needle
-
-  for (let i = 0; i < n; i++) {
-    // if mismatch, fall back using pi until match or j == 0
-    while (j > 0 && haystack[i] !== needle[j]) {
-      j = pi[j - 1];
-    }
-    if (haystack[i] === needle[j]) j++;
-
-    // full match found
-    if (j === m) {
-      matches.push(i - m + 1);
-      j = pi[j - 1];   // allow overlaps
-    }
+export function shellSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+): T[] {
+  const n = arr.length;
+  // Start with a big gap, then reduce it.
+  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
+  let gap = 1;
+  while (gap < n / 3) {
+    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
   }
 
-  return matches;
-}
-const txt = "ababcabcababc";
-const pat = "abc";
+  while (gap >= 1) {
+    // For each element from index `gap` to end,
+    // perform an insertion sort on elements that are `gap` apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
+    gap = Math.floor(gap / 3); // shrink gap
+  }
 
-console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
-function contains(haystack: string, needle: string) {
-  return haystack.indexOf(needle) !== -1;
+  return arr;
 }
+import { shellSort } from './shellSort';
+
+const data = [23, 12, 1, 8, 34, 54, 2, 3];
+console.log('Before:', data);
+shellSort(data);
+console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
