@@ -1,44 +1,32 @@
 /**
- * Return the majority element (> n/2) if it exists, or null otherwise.
- * @param arr array of numbers (or any comparable type)
+ * Returns the second largest value in the array, or `undefined` if it can’t exist.
+ * If you need the second *distinct* largest value, set `distinct = true`.
  */
-export function majorityElement<T>(arr: T[]): T | null {
-  if (!arr.length) return null;
+function secondLargest(nums: number[], distinct = false): number | undefined {
+  if (nums.length < 2) return undefined;          // not enough numbers
 
-  /* ---------- 1st pass: find candidate ---------- */
-  let candidate = arr[0];
-  let count = 0;
+  // Fast path: sort once, pick the second element
+  // (O(n log n) – fine for small arrays)
+  if (!distinct) {
+    const sorted = [...nums].sort((a, b) => b - a); // descending
+    return sorted[1];
+  }
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += (num === candidate) ? 1 : -1;
+  // O(n) single‑pass solution for distinct values
+  let max = Number.NEGATIVE_INFINITY;
+  let second = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > max) {
+      second = max;
+      max = n;
+    } else if (n < max && n > second) {
+      second = n;
     }
   }
 
-  /* ---------- 2nd pass: verify candidate ---------- */
-  let freq = 0;
-  for (const num of arr) {
-    if (num === candidate) freq++;
-  }
-
-  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
+  return second === Number.NEGATIVE_INFINITY ? undefined : second;
 }
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const majority = majorityElement(nums);
-console.log(majority); // → 3
-export function majorityElementMap<T>(arr: T[]): T | null {
-  const counts = new Map<T, number>();
-  
-  for (const val of arr) {
-    counts.set(val, (counts.get(val) ?? 0) + 1);
-  }
-
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, cnt] of counts) {
-    if (cnt > threshold) return val;
-  }
-  return null;
-}
+console.log(secondLargest([5, 1, 7, 3]));     // → 5
+console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
+console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
