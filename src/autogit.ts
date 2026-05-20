@@ -1,15 +1,14 @@
-function maxInArray(values: number[]): number | undefined {
-    if (values.length === 0) return undefined; // no elements
+const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
+// or, if you only want literal space characters (not tabs, newlines, …)
+const clean = str.replaceAll(' ', '');
+const input = "  Why   are   we  still  here?  \n";
 
-    let max = values[0];
-    for (const v of values) {
-        if (v > max) max = v;
-    }
-    return max;
-}
-const max = Math.max(...arr);
-const max = arr.reduce((a, b) => (a > b ? a : b), -Infinity);
-const testArr = [3, 41, 12, 9, 34, 88, 57];
+const withoutAllWhitespace = input.replace(/\s+/g, '');
+console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
 
-console.log(maxInArray(testArr)); // 88
-console.log(Math.max(...testArr)); // 88
+const withoutOnlySpaces = input.replaceAll(' ', '');
+console.log(withoutOnlySpaces);  // "Why\there? "
+
+// If you want to keep line breaks but trim spaces:
+const trimmed = input.trim();  // removes spaces at the start/end only
+const noSpaces = str.split(' ').join('');
