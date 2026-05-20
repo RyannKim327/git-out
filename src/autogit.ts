@@ -1,73 +1,85 @@
-/**
- * Return the median of two sorted numeric arrays.
- * Complexity: O(m + n) time, O(1) extra space (besides a few indices).
- */
-export function medianOfTwoSortedLinear(a: number[], b: number[]): number {
-  const m = a.length, n = b.length;
-  const total = m + n;
-  const k = Math.floor((total - 1) / 2); // 0‑based index of first median element
-
-  let i = 0, j = 0, count = 0;
-  let cur = 0, next = 0;
-
-  while (count <= k) {
-    // Pick the next smallest element
-    if (i < m && (j >= n || a[i] <= b[j])) {
-      cur = next;   // shift previous value
-      next = a[i++];
-    } else {
-      cur = next;
-      next = b[j++];
-    }
-    count++;
-  }
-
-  // If total is odd, median is next
-  if (total % 2 === 1) {
-    return next;
-  }
-
-  // If total is even, median is average of cur and next
-  return (cur + next) / 2;
+// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
+export interface TreeNode<T> {
+  value: T;
+  left?: TreeNode<T>;   // optional because a leaf might not have children
+  right?: TreeNode<T>;
 }
 /**
- * Median of two sorted arrays in O(log(min(m,n))) time.
- * Assumes a and b are sorted in non‑decreasing order.
+ * Counts leaf nodes (nodes with no children) in a binary tree.
+ *
+ * @param root - root node of the tree
+ * @returns number of leaf nodes
  */
-export function medianOfTwoSortedBinary(a: number[], b: number[]): number {
-  // Ensure a is the smaller array
-  if (a.length > b.length) return medianOfTwoSortedBinary(b, a);
+export function countLeavesRec<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree -> 0 leaves
 
-  let m = a.length, n = b.length;
-  let low = 0, high = m;
-  const halfLen = Math.floor((m + n + 1) / 2);
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                // this node is a leaf
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);
-    const j = halfLen - i;
+  // otherwise add leaves of the left and right sub‑trees
+  return countLeavesRec(root.left) + countLeavesRec(root.right);
+}
+/**
+ * Iterative breadth‑first traversal using a queue.
+ * Does the same thing as the recursive version but avoids recursion depth limits.
+ */
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-    const aLeft  = (i === 0)  ? Number.NEGATIVE_INFINITY : a[i - 1];
-    const aRight = (i === m) ? Number.POSITIVE_INFINITY : a[i];
-    const bLeft  = (j === 0)  ? Number.NEGATIVE_INFINITY : b[j - 1];
-    const bRight = (j === n) ? Number.POSITIVE_INFINITY : b[j];
+  let leafCount = 0;
+  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
 
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // Partitions are correct
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      high = i - 1; // move left in a
+  while (queue.length) {
+    const node = queue.shift()!;         // dequeue
+
+    // If the node has no children, it’s a leaf
+    if (!node.left && !node.right) {
+      leafCount += 1;
     } else {
-      low = i + 1; // move right in a
+      // enqueue any existing children
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
   }
 
-  throw new Error('Input arrays are not sorted or sizes are incorrect.');
+  return leafCount;
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
+function buildSampleTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //        / \     \
+  //       4   5     6
+  return {
+    value: 1,
+    left: {
+      value: 2,
+      left: { value: 4 },
+      right: { value: 5 }
+    },
+    right: {
+      value: 3,
+      right: { value: 6 }
+    }
+  };
+}
 
-console.log(medianOfTwoSortedLinear(arr1, arr2));   // 8
-console.log(medianOfTwoSortedBinary(arr1, arr2));    // 8
+const tree = buildSampleTree();
+console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
+console.log('Iterative:', countLeavesIter(tree)); // → 3
+function leafMetrics<T>(root?: TreeNode<T>) {
+  if (!root) return { leafCount: 0, leafDepthSum: 0 };
+
+  // helper that returns (#leaves, sum of leaf depths)
+  function helper(node: TreeNode<T>, depth: number): [number, number] {
+    if (!node.left && !node.right) {
+      return [1, depth];
+    }
+    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
+    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
+    return [left[0] + right[0], left[1] + right[1]];
+  }
+
+  const [cnt, depthSum] = helper(root, 0);
+  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
+}
