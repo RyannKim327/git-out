@@ -1,40 +1,44 @@
 /**
- * Interpolation Search – O(log log n) average, O(n) worst.
- *
- * @param arr   Sorted array of numbers (ascending order)
- * @param key   Value to locate
- * @returns     Index of `key` in `arr`, or -1 if absent
+ * Return the majority element (> n/2) if it exists, or null otherwise.
+ * @param arr array of numbers (or any comparable type)
  */
-export function interpolationSearch(arr: readonly number[], key: number): number {
-  if (arr.length === 0) return -1;
+export function majorityElement<T>(arr: T[]): T | null {
+  if (!arr.length) return null;
 
-  let low = 0;
-  let high = arr.length - 1;
+  /* ---------- 1st pass: find candidate ---------- */
+  let candidate = arr[0];
+  let count = 0;
 
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Avoid division by zero when arr[low] == arr[high]
-    if (arr[low] === arr[high]) {
-      return arr[low] === key ? low : -1;
-    }
-
-    // Estimation formula
-    const pos = low + Math.floor(
-      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
-    );
-
-    const val = arr[pos];
-    if (val === key) {
-      return pos;               // Key found
-    }
-    if (val < key) {
-      low = pos + 1;             // Search upper segment
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
     } else {
-      high = pos - 1;            // Search lower segment
+      count += (num === candidate) ? 1 : -1;
     }
   }
 
-  return -1; // Not found
+  /* ---------- 2nd pass: verify candidate ---------- */
+  let freq = 0;
+  for (const num of arr) {
+    if (num === candidate) freq++;
+  }
+
+  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
 }
-const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
-console.log(interpolationSearch(sorted, 31)); // → 6
-console.log(interpolationSearch(sorted, 10)); // → -1
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const majority = majorityElement(nums);
+console.log(majority); // → 3
+export function majorityElementMap<T>(arr: T[]): T | null {
+  const counts = new Map<T, number>();
+  
+  for (const val of arr) {
+    counts.set(val, (counts.get(val) ?? 0) + 1);
+  }
+
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, cnt] of counts) {
+    if (cnt > threshold) return val;
+  }
+  return null;
+}
