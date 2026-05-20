@@ -1,138 +1,122 @@
-/** The two colours that a node can be. */
-enum Color { RED, BLACK }
-
-/** Sentinel that represents all NIL leaves. It is shared by every
- *  subtree so that we never have to check for `null` – the tree knows
- *  that `NIL` is a perfectly black node with no actual key/value. */
-const NIL = new class {
-    color = Color.BLACK
-    left: this | null = null
-    right: this | null = null
-    parent: this | null = null
-    // Sentinel never carries real payload
-} as any
-
-/** A node in the tree.  We keep the children *always* defined as
- *  `RBNode` so that the rest of the code never has to deal with `null`s. */
-class RBNode<TKey, TValue> {
-    left: RBNode<TKey, TValue>
-    right: RBNode<TKey, TValue>
-    parent: RBNode<TKey, TValue>
-    color: Color
-
-    constructor(
-        public key: TKey,
-        public value: TValue,
-        color: Color = Color.RED,
-        parent: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
-    ) {
-        this.left = NIL as RBNode<TKey, TValue>
-        this.right = NIL as RBNode<TKey, TValue>
-        this.parent = parent
-        this.color = color
-    }
+/** A node that holds a value and optional left/right children. */
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-class RedBlackTree<TKey, TValue> {
-    private root: RBNode<TKey, TValue> = NIL as RBNode<TKey, TValue>
+/** A minimal generic binary search tree. */
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
 
-    /* ---------- Public API ---------- */
+  /* Comparator: returns negative if a < b, 0 if equal, positive if a > b */
+  constructor(private compare: (a: T, b: T) => number) {}
 
-    /** Insert a key/value pair.  If the key already exists, its value
-     *  is overwritten. */
-    insert(key: TKey, value: TValue): void {
-        const newNode = new RBNode(key, value)
-        let y = NIL as RBNode<TKey, TValue>
-        let x = this.root
+  /** Insert a new value. */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
 
-        // --- 1. Standard BST insertion to find the parent --- //
-        while (x !== NIL) {
-            y = x
-            if (key < x.key) {          // assuming TKey is number/string
-                x = x.left
-            } else if (key > x.key) {
-                x = x.right
-            } else {                     // key already exists → replace
-                x.value = value
-                return
-            }
+    if (!this.root) {
+      this.root = newNode;
+      return;
+    }
+
+    let current = this.root;
+    while (true) {
+      if (this.compare(value, current.value) < 0) {
+        if (!current.left) {
+          current.left = newNode;
+          break;
         }
-
-        newNode.parent = y
-        if (y === NIL) {
-            this.root = newNode
-        } else if (key < y.key) {
-            y.left = newNode
-        } else {
-            y.right = newNode
+        current = current.left;
+      } else {
+        if (!current.right) {
+          current.right = newNode;
+          break;
         }
-        newNode.left = NIL
-        newNode.right = NIL
-        newNode.color = Color.RED
-
-        // --- 2. Fix the tree to restore rbt properties --- //
-        this.fixInsert(newNode)
+        current = current.right;
+      }
     }
+  }
 
-    /** Return the value for a key, or `undefined`. */
-    get(key: TKey): TValue | undefined {
-        const node = this.search(key)
-        return node ? node.value : undefined
+  /** Search for a value – returns <node> or null. */
+  find(value: T): TreeNode<T> | null {
+    let current = this.root;
+    while (current) {
+      const cmp = this.compare(value, current.value);
+      if (cmp === 0) return current;
+      current = cmp < 0 ? current.left : current.right;
     }
+    return null;
+  }
 
-    /** Delete a key if it exists; otherwise do nothing. */
-    delete(key: TKey): void {
-        const node = this.search(key)
-        if (!node) return
-        this.deleteNode(node)
-    }
+  /** In-order traversal – returns values sorted ascending. */
+  inOrder(): T[] {
+    const result: T[] = [];
+    const walk = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      walk(node.left);
+      result.push(node.value);
+      walk(node.right);
+    };
+    walk(this.root);
+    return result;
+  }
 
-    /** In‑order traversal – useful for debugging or debugging. */
-    inorder(f: (k: TKey, v: TValue) => void): void {
-        const walk = (node: RBNode<TKey, TValue>) => {
-            if (node === NIL) return
-            walk(node.left)
-            f(node.key, node.value)
-            walk(node.right)
-        }
-        walk(this.root)
-    }
+  /** Remove a value. (Simplest version – does not handle replacement of two children.) */
+  delete(value: T): void {
+    const remove = (
+      node: TreeNode<T> | null,
+      value: T
+    ): TreeNode<T> | null => {
+      if (!node) return null;
 
-    /* ---------- Private helpers ---------- */
+      const cmp = this.compare(value, node.value);
+      if (cmp < 0) {
+        node.left = remove(node.left, value);
+      } else if (cmp > 0) {
+        node.right = remove(node.right, value);
+      } else {
+        // Node with only one child or no child
+        if (!node.left) return node.right;
+        if (!node.right) return node.left;
 
-    /** Helper to walk down the tree and find a node by key. */
-    private search(key: TKey): RBNode<TKey, TValue> | null {
-        let node = this.root
-        while (node !== NIL) {
-            if (key < node.key) node = node.left
-            else if (key > node.key) node = node.right
-            else return node
-        }
-        return null
-    }
+        // Node with two children: get the inorder successor (smallest in right subtree)
+        let succ = node.right;
+        while (succ.left) succ = succ.left;
+        node.value = succ.value;                // Copy successor’s value
+        node.right = remove(node.right, succ.value); // Delete successor
+      }
+      return node;
+    };
 
-    /* Rotations – keep the tree balanced if you’re playing with your own
-     * recursive helper.  They are basically a graft + replace.*
-     */
+    this.root = remove(this.root, value);
+  }
+}
+// A simple numeric comparator
+const numCmp = (a: number, b: number) => a - b;
 
-    private leftRotate(x: RBNode<TKey, TValue>): void {
-        const y = x.right
-        x.right = y.left
-        if (y.left !== NIL) y.left.parent = x
+// Create tree
+const tree = new BinarySearchTree<number>(numCmp);
 
-        y.parent = x.parent
-        if (x.parent === NIL) this.root = y
-        else if (x === x.parent.left) x.parent.left = y
-        else x.parent.right = y
+// Insert numbers
+[5, 3, 7, 2, 4, 6, 8].forEach(v => tree.insert(v));
 
-        y.left = x
-        x.parent = y
-    }
+// Search
+console.log(tree.find(4)?.value); // 4
+console.log(tree.find(10));       // null
 
-    private rightRotate(y: RBNode<TKey, TValue>): void {
-        const x = y.left
-        y.left = x.right
-        if (x.right !== NIL) x.right.parent = y
+// In‑order traversal should be sorted
+console.log(tree.inOrder()); // [2,3,4,5,6,7,8]
 
-        x.parent = y.parent
-        if (y.parent === NIL) this.root = x
-        else if (y === y.parent.left) y.parent.left = x
+// Delete a value
+tree.delete(5);
+console.log(tree.inOrder()); // [2,3,4,6,7,8]
+interface Person { name: string; age: number }
+
+const ageCmp = (a: Person, b: Person) => a.age - b.age;
+const personTree = new BinarySearchTree<Person>(ageCmp);
+
+personTree.insert({ name: "Alice", age: 30 });
+personTree.insert({ name: "Bob", age: 25 });
