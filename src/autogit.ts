@@ -1,45 +1,40 @@
 /**
- * Returns the longest common subsequence of a and b.
- * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
+ * Interpolation Search – O(log log n) average, O(n) worst.
+ *
+ * @param arr   Sorted array of numbers (ascending order)
+ * @param key   Value to locate
+ * @returns     Index of `key` in `arr`, or -1 if absent
  */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+export function interpolationSearch(arr: readonly number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  let low = 0;
+  let high = arr.length - 1;
 
-  // Build the table
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Avoid division by zero when arr[low] == arr[high]
+    if (arr[low] === arr[high]) {
+      return arr[low] === key ? low : -1;
     }
-  }
 
-  // Back‑track to reconstruct one LCS
-  let i = m;
-  let j = n;
-  const lcsChars: string[] = [];
+    // Estimation formula
+    const pos = low + Math.floor(
+      ((high - low) * (key - arr[low])) / (arr[high] - arr[low])
+    );
 
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // Matches – this character is part of the LCS
-      lcsChars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // move up
+    const val = arr[pos];
+    if (val === key) {
+      return pos;               // Key found
+    }
+    if (val < key) {
+      low = pos + 1;             // Search upper segment
     } else {
-      j--;          // move left
+      high = pos - 1;            // Search lower segment
     }
   }
 
-  // The chars were collected backwards, reverse them
-  return lcsChars.reverse().join('');
+  return -1; // Not found
 }
-console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
-console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
+const sorted = [3, 7, 15, 20, 23, 27, 31, 42, 56, 78, 99];
+console.log(interpolationSearch(sorted, 31)); // → 6
+console.log(interpolationSearch(sorted, 10)); // → -1
