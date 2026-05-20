@@ -1,39 +1,65 @@
 /**
- * Return a random integer *between* `min` and `max` **inclusive**.
+ * Return the intersection of two arrays.
+ * @param a  First array
+ * @param b  Second array
+ * @returns  An array containing every element that appears in **both** `a` and `b`
  *
- * @param min - lowest possible value
- * @param max - highest possible value
+ * The function is generic so it keeps the element type while still being type‑safe.
+ * For primitive values a direct equality check (`===`) is sufficient.
  */
-function randInt(min: number, max: number): number {
-  const lower = Math.ceil(min);                // in case min is decimal
-  const upper = Math.floor(max);               // in case max is decimal
-  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
+export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
+  // Build a set from the larger array – that keeps lookup O(1).
+  // (You could skip the `max` decision; it's just a micro‑optimization.)
+  const [large, small] = a.length > b.length ? [a, b] : [b, a];
+  const set = new Set(large);
+
+  // Pick elements of the smaller array that exist in the set.
+  return small.filter((x) => set.has(x));
 }
-const roll = randInt(1, 6);   // a fair 1‑to‑6 dice roll
-console.log(roll);            // 1, 2, 3, 4, 5, or 6
-/**
- * Return a random float *between* `min` (inclusive) and `max` (exclusive).
- *
- * @param min - lowest possible value
- * @param max - value we’ll never hit
- */
-function randFloat(min = 0, max = 1): number {
-  return Math.random() * (max - min) + min;
-}
-const lerp = randFloat(0, 1);   // a random number in [0, 1)
-// Simple LCG – not cryptographically secure,
-// but good enough for games, demos, tests etc.
-function lcg(seed: number) {
-  const m = 0x80000000; // 2^31
-  const a = 1103515245;
-  const c = 12345;
-  let state = seed % m;
-  return () => {
-    state = (a * state + c) % m;
-    return state / m; // raw [0,1)
-  };
+const xs = [1, 2, 3, 4];
+const ys = [3, 4, 5, 6];
+
+console.log(intersection(xs, ys)); // → [3, 4]
+import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
+
+console.log(intersection(xs, ys)); // → [3, 4]
+interface Person {
+  id: number;
+  name: string;
 }
 
-const random = lcg(123456);          // seed=123456
-const randIntSeeded = (min: number, max: number) =>
-  Math.floor(random() * (max - min + 1)) + min;
+const a: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+];
+
+const b: Person[] = [
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+  { id: 4, name: 'Dan'   },
+];
+
+const key = (p: Person) => p.id;
+
+function intersectionBy<T, K extends string | number | symbol>(
+  a: readonly T[],
+  b: readonly T[],
+  getKey: (item: T) => K
+): T[] {
+  const map = new Map<K, T>();
+  for (const item of a) {
+    map.set(getKey(item), item);
+  }
+  const result: T[] = [];
+  for (const item of b) {
+    const key = getKey(item);
+    if (map.has(key)) {
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+console.log(intersectionBy(a, b, key));
+// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
