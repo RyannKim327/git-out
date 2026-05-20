@@ -1,31 +1,18 @@
-/**
- * Returns true if `s` is a palindrome.
- *
- * Options:
- *   - ignoreCase   strip upper/lower differences (default: true)
- *   - ignoreNonAlpha  remove everything that isn’t a letter/digit (default: true)
- */
-export function isPalindrome(
-  s: string,
-  { ignoreCase = true, ignoreNonAlpha = true } = {}
-): boolean {
-  let processed = s;
-
-  // Optional: drop punctuation, spaces, etc.
-  if (ignoreNonAlpha) {
-    processed = processed.replace(/[^a-zA-Z0-9]/g, "");
-  }
-
-  // Optional: treat “A” and “a” as the same.
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  // Compare string to its reverse.
-  const reversed = processed.split("").reverse().join("");
-  return processed === reversed;
+function removeAllWhitespace(str: string): string {
+  return str.replace(/\s+/g, "");
 }
-console.log(isPalindrome("Racecar"));                 // true
-console.log(isPalindrome("noon"));                    // true
-console.log(isPalindrome("hello"));                   // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+function trimStart(str: string): string {
+  return str.replace(/^\s+/, "");
+}
+function trimEnd(str: string): string {
+  return str.replace(/\s+$/, "");
+}
+const raw = "\n  Let's   test this!  \t\n";
+console.log("original  :", raw);
+console.log("trimmed    :", raw.trim());
+console.log("no spaces :", raw.replace(/\s+/g, ""));
+original  : "
+  Let's   test this!   
+"
+trimmed    : "Let's   test this!"
+no spaces : "Letstestthis!"
