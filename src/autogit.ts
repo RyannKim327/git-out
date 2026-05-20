@@ -1,50 +1,23 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
+// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
+function reverseString1(s: string): string {
+  return s.split('').reverse().join('');
 }
 
-/**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
- */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
+function reverseString2(s: string): string {
+  return Array.from(s).reverse().join('');
+}
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
-
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
+function reverseString3(s: string): string {
+  const out: string[] = [];
+  for (let i = s.length - 1; i >= 0; i--) {
+    out.push(s[i]);           // or use code points with s.codePointAt(i)
   }
-
-  return pA; // either the intersection node or null
-}
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
+  return out.join('');
 }
 
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
-
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
-
-console.log(getIntersectionNode(a1, b1) === shared); // true
+// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
+const reverseString4 = (s: string) => s.split('').reverse().join('');
+console.log(reverseString1('hello')); // 'olleh'
+console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
