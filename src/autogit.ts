@@ -1,54 +1,118 @@
+type Node = number | string;           // whatever your IDs look like
+type Graph = Record<Node, Node[]>;     // adjacency list
+
 /**
- * Returns the largest prime factor of n.
- * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
- * represent exactly. For bigger values use BigInt (see the comment below).
+ * Breadth‑first search that collects the visit order.
  */
-function largestPrimeFactor(n: number): number {
-  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
+export function bfsVisitOrder(
+  graph: Graph,
+  start: Node
+): Node[] {
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const order: Node[] = [];
 
-  let remaining = n;
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
 
-  // Deal with factor 2 first – it’s the only even prime
-  while (remaining % 2 === 0) {
-    remaining = remaining / 2;
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
   }
-  let lastFactor = 2;
+  return order;
+}
 
-  // Now we only need to test odd numbers.
-  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
-  for (let odd = 3; odd * odd <= remaining; odd += 2) {
-    while (remaining % odd === 0) {
-      remaining = remaining / odd;
-      lastFactor = odd;
+/**
+ * Breadth‑first search that stops at a goal node
+ * and returns the *shortest path* (for unweighted graphs).
+ */
+export function bfsShortestPath(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {
+  if (start === goal) return [start];
+
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const parent: Record<Node, Node | null> = {};
+  parent[start] = null;
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        parent[neighbor] = cur;
+        if (neighbor === goal) {
+          // build the path from goal back to start
+          const path: Node[] = [goal];
+          let p: Node | null = cur;
+          while (p !== null) {
+            path.push(p);
+            p = parent[p];
+          }
+          return path.reverse();
+        }
+        queue.push(neighbor);
+      }
     }
   }
 
-  // If what’s left is > 1, it’s a prime itself and is larger than any
-  // factor we already found, so it becomes the biggest prime factor.
-  return remaining > 1 ? remaining : lastFactor;
+  return null; // goal not reachable
 }
-console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
-console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
-console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) return n;
+const graph: Graph = {
+  1: [2, 3],
+  2: [4],
+  3: [4, 5],
+  4: [],
+  5: [6],
+  6: [],
+};
 
-  let remaining = n;
-  let lastFactor = 2n;
+console.log(bfsVisitOrder(graph, 1));
+// → [1, 2, 3, 4, 5, 6]
 
-  // factor 2
-  while (remaining % 2n === 0n) {
-    remaining /= 2n;
-    lastFactor = 2n;
-  }
+console.log(bfsShortestPath(graph, 1, 6));
+// → [1, 3, 5, 6]
+type NodeId = string | number;
 
-  // odd factors
-  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
-    while (remaining % odd === 0n) {
-      remaining /= odd;
-      lastFactor = odd;
+// Generic graph implemented as Map<id, array of ids>
+export type GenericGraph<T> = Map<T, T[]>;
+
+export function genericBfsVisitOrder<T>(
+  graph: GenericGraph<T>,
+  start: T
+): T[] {
+  const queue: T[] = [start];
+  const visited: Set<T> = new Set([start]);
+  const order: T[] = [];
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
+    for (const neighbour of graph.get(cur) ?? []) {
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push(neighbour);
+      }
     }
   }
-
-  return remaining > 1n ? remaining : lastFactor;
+  return order;
 }
+const g: GenericGraph<string> = new Map([
+  ["A", ["B", "C"]],
+  ["B", ["D"]],
+  ["C", ["D", "E"]],
+  ["D", []],
+  ["E", ["F"]],
+  ["F", []],
+]);
+
+console.log(genericBfsVisitOrder(g, "A"));
+// → ["
