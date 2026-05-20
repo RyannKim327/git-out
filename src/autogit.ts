@@ -1,22 +1,71 @@
 /**
- * Return true if n is prime, false otherwise.
+ * Build the longest–prefix‑suffix (LPS) array for the pattern.
  *
- * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
- * For bigger integers you’d need BigInt and, better yet, a probabilistic test
- * (Miller‑Rabin, etc.).
+ * lps[i] = length of the longest proper prefix of pattern[0..i]
+ *           which is also a suffix of that substring.
+ * Complexity: O(m), m = pattern.length
  */
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps = new Array<number>(m).fill(0);
+  let length = 0;               // length of the previous longest prefix suffix
+  let i = 1;
 
-  // From here we only need to test numbers of the form 6k ± 1
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 5; i <= limit; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length++;
+      lps[i] = length;
+      i++;
+    } else {
+      if (length !== 0) {
+        // fall back to the previous candidate
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-  return true;
+
+  return lps;
 }
-console.log(isPrime(11));          // true
-console.log(isPrime(12));          // false
-console.log(isPrime(1_000_003));   // true (1 M+‑prime)
+
+/**
+ * KMP search: return all start positions where pattern occurs in text.
+ * Complexity: O(n + m), n = text.length, m = pattern.length
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const lps = buildLPS(pattern);
+
+  const positions: number[] = [];
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < n) {
+    if (pattern[j] === text[i]) {
+      i++;
+      j++;
+    }
+
+    if (j === m) {
+      // full match found – record start index
+      positions.push(i - j);
+      j = lps[j - 1]; // allow for overlapping matches
+    } else if (i < n && pattern[j] !== text[i]) {
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
+  }
+
+  return positions;
+}
+const txt = "ABABDABACDABABCABAB";
+const pat = "ABABCABAB";
+
+const occ = kmpSearch(txt, pat);
+console.log(occ); // → [10]
