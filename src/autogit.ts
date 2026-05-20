@@ -1,18 +1,35 @@
-function removeAllWhitespace(str: string): string {
-  return str.replace(/\s+/g, "");
-}
-function trimStart(str: string): string {
-  return str.replace(/^\s+/, "");
-}
-function trimEnd(str: string): string {
-  return str.replace(/\s+$/, "");
-}
-const raw = "\n  Let's   test this!  \t\n";
-console.log("original  :", raw);
-console.log("trimmed    :", raw.trim());
-console.log("no spaces :", raw.replace(/\s+/g, ""));
-original  : "
-  Let's   test this!   
-"
-trimmed    : "Let's   test this!"
-no spaces : "Letstestthis!"
+/*  0001‑random‑ts‑with‑input.ts  */
+
+import * as readline from 'node:readline';
+
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
+
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
