@@ -1,31 +1,38 @@
 /**
- * Returns true if `s` is a palindrome.
+ * Counting sort for an array of integers.
  *
- * Options:
- *   - ignoreCase   strip upper/lower differences (default: true)
- *   - ignoreNonAlpha  remove everything that isn’t a letter/digit (default: true)
+ * @param arr The array to sort – an array of numbers.
+ * @returns A new array containing the sorted values.
  */
-export function isPalindrome(
-  s: string,
-  { ignoreCase = true, ignoreNonAlpha = true } = {}
-): boolean {
-  let processed = s;
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  // Optional: drop punctuation, spaces, etc.
-  if (ignoreNonAlpha) {
-    processed = processed.replace(/[^a-zA-Z0-9]/g, "");
+  // Locate the bounds of the values.
+  let min = arr[0];
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+    if (val < min) min = val;
+    if (val > max) max = val;
   }
 
-  // Optional: treat “A” and “a” as the same.
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
+  const range = max - min + 1;          // Number of distinct possible values
+  const count = new Array<number>(range).fill(0);
+
+  // Count occurrences of each integer.
+  for (const value of arr) {
+    count[value - min]++;               // Shift by min so index 0 stays valid
   }
 
-  // Compare string to its reverse.
-  const reversed = processed.split("").reverse().join("");
-  return processed === reversed;
+  // Overwrite the input array (or build a new one) using the counts.
+  const sorted: number[] = [];
+  for (let i = 0; i < range; i++) {
+    const currentVal = i + min;
+    const occ = count[i];
+    for (let j = 0; j < occ; j++) {
+      sorted.push(currentVal);
+    }
+  }
+
+  return sorted;
 }
-console.log(isPalindrome("Racecar"));                 // true
-console.log(isPalindrome("noon"));                    // true
-console.log(isPalindrome("hello"));                   // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
