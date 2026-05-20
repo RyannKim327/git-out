@@ -1,46 +1,44 @@
-interface ListNode<T = unknown> {
-  value: T;
-  next?: ListNode<T>;
+/**
+ * Randomly shuffles an array in-place.
+ * Uses the Fisher–Yates algorithm.
+ */
+function shuffle<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
 }
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false; // an empty list can’t have a cycle
 
-  let slow = head;
-  let fast = head.next; // fast starts one step ahead
+/**
+ * Checks whether the array is sorted in ascending order.
+ * Works for numbers and strings (lexicographically).
+ */
+function isSorted<T extends number | string>(array: T[]): boolean {
+  for (let i = 0; i < array.length - 1; i++) {
+    if (array[i] > array[i + 1]) return false;
+  }
+  return true;
+}
 
-  while (fast && fast.next) {
-    if (slow === fast) return true; // cycle detected
+/**
+ * Bogosort: keep shuffling until the array is sorted.
+ * In practice, this is a joke algorithm because of its astronomical
+ * expected runtime, but it’s fun to see it in TypeScript.
+ */
+export function randomSort<T extends number | string>(array: T[]): T[] {
+  // We’ll operate on a copy to avoid mutating the caller’s data.
+  const arr = array.slice();
 
-    slow = slow.next!;          // move one step
-    fast = fast.next.next!; // move two steps
+  // Guard against trivial cases.
+  if (arr.length < 2) return arr;
+
+  // Keep shuffling until the array is sorted.
+  while (!isSorted(arr)) {
+    shuffle(arr);
   }
 
-  return false; // reached the end, no cycle
+  return arr;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-  let current = head;
-
-  while (current) {
-    if (visited.has(current)) return true; // we’re back at a node we saw
-    visited.add(current);
-    current = current.next;
-  }
-
-  return false;
-}
-// build a small example
-const a: ListNode = { value: 1 };
-const b: ListNode = { value: 2 };
-const c: ListNode = { value: 3 };
-
-a.next = b;
-b.next = c;
-c.next = a; // ← closes the loop
-
-console.log(hasCycle(a));          // true
-console.log(hasCycleWithSet(a));   // true
-
-// break the cycle
-c.next = undefined;
-console.log(hasCycle(a));          // false
+const unsorted = [3, 1, 4, 1, 5, 9, 2];
+const sorted = randomSort(unsorted);
+console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
