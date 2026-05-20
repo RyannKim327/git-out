@@ -1,59 +1,128 @@
-// A minimal, generic binary‑tree node
-export interface TreeNode<T = number> {
-    /** The value stored in this node.  (Can be any type.) */
-    val: T;
-    /** Left child – `null` if none. */
-    left: TreeNode<T> | null;
-    /** Right child – `null` if none. */
-    right: TreeNode<T> | null;
+type AdjList = Map<number, Set<number>>;
+
+class Graph {
+  private adj = new Map<number, Set<number>>();
+
+  addEdge(u: number, v: number, directed = false): void {
+    if (!this.adj.has(u)) this.adj.set(u, new Set());
+    this.adj.get(u)!.add(v);
+    if (!directed) {
+      if (!this.adj.has(v)) this.adj.set(v, new Set());
+      this.adj.get(v)!.add(u);
+    }
+  }
+
+  getNeighbors(v: number): Set<number> {
+    return this.adj.get(v) ?? new Set();
+  }
+
+  // helper: list all vertices (useful for disconnected graphs)
+  vertices(): IterableIterator<number> {
+    return this.adj.keys();
+  }
 }
-/**
- * Sum all the numeric values stored in a binary tree.
- *
- * @param root First node of the tree (or `null`).
- * @returns   Sum of every `val` in the tree.
- */
-export function sumTree(root: TreeNode<number> | null): number {
-    if (!root) return 0;                // base case: empty subtree
-    const left  = sumTree(root.left);   // sum of left subtree
-    const right = sumTree(root.right);  // sum of right subtree
-    return root.val + left + right;     // current node + children
+const g = new Graph();
+g.addEdge(0, 1);
+g.addEdge(0, 2);
+g.addEdge(1, 2);
+g.addEdge(1, 3);
+g.addEdge(3, 4);
+function dfsRecursive(
+  graph: Graph,
+  start: number,
+  visited = new Set<number>(),
+  action?: (node: number) => void
+): void {
+  visited.add(start);
+  action?.(start);
+
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) {
+      dfsRecursive(graph, nb, visited, action);
+    }
+  }
 }
-/**
- * Sum all the numeric values stored in a binary tree, iteratively.
- *
- * Uses an explicit stack so it never uses the call stack.
- */
-export function sumTreeIterative(root: TreeNode<number> | null): number {
-    if (!root) return 0;
+dfsRecursive(g, 0, undefined, console.log);
+// output: 0, 1, 2, 3, 4 (order may vary)
+function dfsIterative(
+  graph: Graph,
+  start: number,
+  action?: (node: number) => void
+): void {
+  const stack: number[] = [start];
+  const visited = new Set<number>();
 
-    let sum = 0;
-    const stack: Array<TreeNode<number>> = [root];
+  while (stack.length) {
+    const v = stack.pop()!; // `!` known to be non‑null
+    if (visited.has(v)) continue;
 
-    while (stack.length > 0) {
-        const node = stack.pop()!;   // pop returns |undefined|, but we know stack isn’t empty
-        sum += node.val;
+    visited.add(v);
+    action?.(v);
 
-        // Push children onto the stack – order doesn’t matter for sum
-        if (node.right) stack.push(node.right);
-        if (node.left)  stack.push(node.left);
+    // push neighbors reverse order if you want LIFO order same as recursion
+    for (const nb of [...graph.getNeighbors(v)].reverse()) {
+      if (!visited.has(nb)) stack.push(nb);
+    }
+  }
+}
+dfsIterative(g, 0, console.log);
+// same output as before
+function hasCycle(graph: Graph): boolean {
+  const visited = new Set<number>();
+  const stack = new Set<number>();
+
+  function visit(v: number): boolean {
+    if (stack.has(v)) return true;      // back‑edge found
+    if (visited.has(v)) return false;    // already seen, no cycle on this path
+
+    visited.add(v);
+    stack.add(v);
+
+    for (const nb of graph.getNeighbors(v)) {
+      if (visit(nb)) return true;
     }
 
-    return sum;
-}
-const tree: TreeNode = {
-    val: 5,
-    left: {
-        val: 3,
-        left:  { val: 2, left: null, right: null },
-        right: { val: 4, left: null, right: null },
-    },
-    right: {
-        val: 8,
-        left:  { val: 7, left: null, right: null },
-        right: { val: 9, left: null, right: null },
-    },
-};
+    stack.delete(v);
+    return false;
+  }
 
-console.log(sumTree(tree));          // → 47
-console.log(sumTreeIterative(tree)); // → 47
+  for (const v of graph.vertices()) if (visit(v)) return true;
+  return false;
+}
+function dfsWithOrders(
+  graph: Graph,
+  start: number,
+  pre?: (node: number) => void,
+  post?: (node: number) => void,
+  visited = new Set<number>()
+) {
+  visited.add(start);
+  pre?.(start);
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) dfsWithOrders(graph, nb, pre, post, visited);
+  }
+  post?.(start);
+}
+function connectedComponents(graph: Graph): number[][] {
+  const visited = new Set<number>();
+  const components: number[][] = [];
+
+  function explore(v: number, comp: number[]) {
+    visited.add(v);
+    comp.push(v);
+    for (const nb of graph.getNeighbors(v)) {
+      if (!visited.has(nb)) explore(nb, comp);
+    }
+  }
+
+  for (const v of graph.vertices()) {
+    if (!visited.has(v)) {
+      const comp: number[] = [];
+      explore(v, comp);
+      components.push(comp);
+    }
+  }
+  return components;
+}
+npm i -D typescript ts-node
+npx ts-node dfs.ts
