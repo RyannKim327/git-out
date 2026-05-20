@@ -1,125 +1,22 @@
-// --- types ----------------------------------------------------------
-
-type Node = string | number;             // anything that can be compared by ===
-type Graph = Map<Node, Node[]>;          // adjacency list
-
-// an entry tracks a node and the parent that led to it
-interface QueueEntry {
-  node: Node;
-  parent: Node | null;   // parent in the search tree
-}
-
-// --- helper ---------------------------------------------------------
-
 /**
- * Simple FIFO queue built on an array for speed.
+ * Return true if n is prime, false otherwise.
+ *
+ * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
+ * For bigger integers you’d need BigInt and, better yet, a probabilistic test
+ * (Miller‑Rabin, etc.).
  */
-class Queue<T> {
-  private items: T[] = [];
-  enqueue(item: T) { this.items.push(item); }
-  dequeue(): T | undefined { return this.items.shift(); }
-  isEmpty() { return this.items.length === 0; }
-  size() { return this.items.length; }
-}
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
 
-// --- bidirectional BFS ----------------------------------------------
-
-export function bidirectionalSearch(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {      // null iff no path
-
-  if (start === goal) return [start];
-
-  // queues for both directions
-  const qStart = new Queue<QueueEntry>();
-  const qGoal  = new Queue<QueueEntry>();
-
-  // visited maps: node -> parent
-  const visitedStart = new Map<Node, Node | null>();
-  const visitedGoal  = new Map<Node, Node | null>();
-
-  // initialise
-  qStart.enqueue({ node: start, parent: null });
-  visitedStart.set(start, null);
-
-  qGoal.enqueue({ node: goal, parent: null });
-  visitedGoal.set(goal, null);
-
-  // work until one frontier empties
-  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
-
-    // ---- expand the smaller frontier ----
-    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
-    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
-
-    const { node: current, parent } = nextFrontier.dequeue()!;
-
-    const neighbors = graph.get(current) ?? [];
-    for (const neigh of neighbors) {
-
-      // skip already visited by this side
-      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
-      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
-
-      // mark as visited by this side
-      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
-      visited.set(neigh, current);
-      nextFrontier.enqueue({ node: neigh, parent: current });
-
-      // --- check for meeting point ---
-      if (otherVisited.has(neigh)) {
-        return buildPath(
-          start, goal, neigh, visitedStart, visitedGoal
-        );
-      }
-    }
+  // From here we only need to test numbers of the form 6k ± 1
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-
-  // nothing found
-  return null;
+  return true;
 }
-
-/**
- * Walk back from the meeting point to the start and goal to build the full path.
- */
-function buildPath(
-  start: Node,
-  goal: Node,
-  meet: Node,
-  visitedStart: Map<Node, Node | null>,
-  visitedGoal:  Map<Node, Node | null>
-): Node[] {
-
-  // walk back to start
-  const pathStart: Node[] = [];
-  let cur: Node | null = meet;
-  while (cur !== null) {
-    pathStart.push(cur);
-    cur = visitedStart.get(cur) ?? null;
-  }
-  pathStart.reverse();    // start -> meet
-
-  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
-  const pathGoal: Node[] = [];
-  cur = visitedGoal.get(meet);
-  while (cur !== null) {
-    pathGoal.push(cur);
-    cur = visitedGoal.get(cur) ?? null;
-  }
-
-  return [...pathStart, ...pathGoal];
-}
-const graph: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E', 'G']],
-  ['G', ['F']]
-]);
-
-const path = bidirectionalSearch(graph, 'A', 'G');
-console.log(path); // => [ 'A', 'C', 'F', 'G' ]
+console.log(isPrime(11));          // true
+console.log(isPrime(12));          // false
+console.log(isPrime(1_000_003));   // true (1 M+‑prime)
