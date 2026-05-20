@@ -1,69 +1,23 @@
-/**
- * Swaps two elements of an array.
- */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
+// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
+function reverseString1(s: string): string {
+  return s.split('').reverse().join('');
 }
 
-/**
- * Moves the element at index `root` downwards to restore the max‑heap
- * property, assuming that the sub‑trees rooted at its children are
- * already max‑heaps.
- */
-function sink<T>(arr: T[], root: number, size: number, compare: (a: T, b: T) => number): void {
-  let largest = root;
-
-  const left  = 2 * root + 1;
-  const right = 2 * root + 2;
-
-  if (left < size && compare(arr[left], arr[largest]) > 0) {
-    largest = left;
-  }
-  if (right < size && compare(arr[right], arr[largest]) > 0) {
-    largest = right;
-  }
-
-  if (largest !== root) {
-    swap(arr, root, largest);
-    sink(arr, largest, size, compare);
-  }
+// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
+function reverseString2(s: string): string {
+  return Array.from(s).reverse().join('');
 }
 
-/**
- * Builds a max‑heap from an arbitrary array.
- */
-function buildMaxHeap<T>(arr: T[], compare: (a: T, b: T) => number): void {
-  const size = arr.length;
-  // Start from the last non‑leaf node and sink each one.
-  for (let i = Math.floor(size / 2) - 1; i >= 0; i--) {
-    sink(arr, i, size, compare);
+// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
+function reverseString3(s: string): string {
+  const out: string[] = [];
+  for (let i = s.length - 1; i >= 0; i--) {
+    out.push(s[i]);           // or use code points with s.codePointAt(i)
   }
+  return out.join('');
 }
 
-/**
- * Heap‑sort: sorts `arr` in ascending order.
- */
-export function heapSort<T>(arr: T[], compare?: (a: T, b: T) => number): void {
-  // Default to numeric ascending for numbers; for a generic compare,
-  // provide a custom function.
-  const cmp = compare ?? ((a, b) => (a as any) > (b as any) ? 1 : (a < b ? -1 : 0));
-
-  // 1️⃣ Turn the array into a max‑heap.
-  buildMaxHeap(arr, cmp);
-
-  // 2️⃣ Repeatedly pull the max element to its final slot.
-  for (let heapSize = arr.length; heapSize > 1; heapSize--) {
-    // The current max is at 0 – move it to the end.
-    swap(arr, 0, heapSize - 1);
-
-    // Restore the heap property on the reduced heap.
-    sink(arr, 0, heapSize - 1, cmp);
-  }
-}
-const data = [3, 1, 4, 1, 5, 9, 2, 6];
-heapSort(data);          // data is now [1, 1, 2, 3, 4, 5, 6, 9]
-const unsorted = [10, 4, 7, 3, 8, 2];
-heapSort(unsorted);
-console.log(unsorted); // [2, 3, 4, 7, 8, 10]
+// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
+const reverseString4 = (s: string) => s.split('').reverse().join('');
+console.log(reverseString1('hello')); // 'olleh'
+console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
