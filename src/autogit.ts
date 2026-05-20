@@ -1,35 +1,45 @@
-/*  0001‑random‑ts‑with‑input.ts  */
+/**
+ * Returns true iff every character that appears in `a`
+ * appears the same number of times in `b`.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional tweakers
+ */
+export function areAnagrams(
+  a: string,
+  b: string,
+  options?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignorePunctuation?: boolean }
+): boolean {
+  const normalize = (str: string) => {
+    let s = str;
+    if (options?.ignoreCase) s = s.toLowerCase();
+    if (options?.ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (options?.ignorePunctuation)
+      s = s.replace(/[^\w]/g, ''); // keeps letters, digits, underscore
 
-import * as readline from 'node:readline';
+    // Quick length check after normalization
+    return s;
+  };
 
-// set up an interface that pulls from stdin and pushes to stdout
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: true,
-});
+  const nsA = normalize(a);
+  const nsB = normalize(b);
 
-console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
-rl.question('> ', (dish) => {
-  // a small random‑ish twist: pick a random‑word to shout at the dish
-  const reactions = [
-    'delicious',
-    'indescribable',
-    'surprisingly tasty',
-    'flat',
-    'legendary',
-    'not for the faint‑hearted',
-    'mind‑blowing',
-  ];
-  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+  if (nsA.length !== nsB.length) return false;
 
-  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
+  // Count‑array approach – works for ASCII / extended‑Latin.
+  const freq: Record<string, number> = {};
 
-  // one more quick twist: ask for a rating, then show a playful summary
-  rl.question('\nRate it 1‑10: ', (rateStr) => {
-    const rating = parseInt(rateStr, 10) || 0;
-    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
-    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
-    rl.close();
-  });
-});
+  for (const ch of nsA) freq[ch] = (freq[ch] ?? 0) + 1;
+  for (const ch of nsB) {
+    if (!freq[ch]) return false; // missing or too many
+    freq[ch]! -= 1;
+  }
+
+  // All counts should be zero now
+  return Object.values(freq).every(v => v === 0);
+}
+console.log(areAnagrams('Listen', 'Silent', { ignoreCase: true })); // true
+console.log(areAnagrams('Dormitory', 'Dirty room', { ignoreCase: true, ignoreSpaces: true })); // true
+console.log(areAnagrams('Hello', 'Olelh', { ignoreCase: false })); // false – case matters
+console.log(areAnagrams('A!B@C', 'CBA', { ignoreCase: true, ignorePunctuation: true })); // true
