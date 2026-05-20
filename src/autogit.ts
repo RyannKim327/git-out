@@ -1,52 +1,74 @@
 /**
- * Selection sort – returns a **new** sorted array.
- * The original array is left untouched.
+ * Quick‑sort implementation.
  *
- * @param arr   – source array
- * @returns     – a new array sorted in ascending order
+ * @param arr   The array to sort – it will be mutated in place.
+ * @param compare Optional comparison function.  
+ *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+ *                If omitted, the default is a numeric comparison.
+ * @returns The same array reference, now sorted.
  */
-export function selectionSort<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];          // clone so we don't mutate the caller's array
-  const n = toSort.length;
+export function quickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to numeric comparison if no comparator is given
+  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
 
-  for (let i = 0; i < n - 1; i++) {
-    // assume the smallest element is at i
-    let minIndex = i;
+  // Recursive helper – operates on the portion of the array
+  function qs(left: number, right: number): void {
+    if (left >= right) return;
 
-    // find the real smallest element in the remaining unsorted section
-    for (let j = i + 1; j < n; j++) {
-      if (toSort[j] < toSort[minIndex]) {
-        minIndex = j;
-      }
-    }
+    // Partition returns the final index of the pivot
+    const pivotIndex = partition(left, right);
 
-    // swap the found minimum with the element at i
-    if (minIndex !== i) {
-      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
+    // Recurse on smaller side first to keep stack depth <= log₂(n)
+    if (pivotIndex - left < right - pivotIndex) {
+      qs(left, pivotIndex - 1);
+      qs(pivotIndex + 1, right);
+    } else {
+      qs(pivotIndex + 1, right);
+      qs(left, pivotIndex - 1);
     }
   }
 
-  return toSort;
-}
-const unsorted = [9, 3, 10, 2, 7];
-const sorted = selectionSort(unsorted);
+  // Lomuto‑style partition – choose rightmost element as pivot
+  function partition(left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;          // Place for swapping
 
-console.log(sorted);      // [2, 3, 7, 9, 10]
-console.log(unsorted);    // remains [9, 3, 10, 2, 7]
-export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];
-  const helper = (k: number) => {
-    if (k >= toSort.length - 1) return;
-
-    let minIdx = k;
-    for (let i = k + 1; i < toSort.length; i++) {
-      if (toSort[i] < toSort[minIdx]) minIdx = i;
+    for (let j = left; j < right; j++) {
+      if (cmp(arr[j], pivot) <= 0) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
     }
 
-    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
-    helper(k + 1);
-  };
+    // Move pivot to its final place
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
+  }
 
-  helper(0);
-  return toSort;
+  qs(0, arr.length - 1);
+  return arr;
 }
+// Numbers – default numeric comparison is fine
+const nums = [34, 7, 23, 32, 5, 62];
+console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
+
+// Strings – need a string comparator  
+const words = ['banana', 'apple', 'cherry'];
+console.log(
+  quickSort(words, (a, b) => a.localeCompare(b))
+); // ['apple', 'banana', 'cherry']
+
+// Custom objects  
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Anna', age: 27 },
+  { name: 'Bob', age: 22 },
+  { name: 'Clara', age: 35 },
+];
+
+quickSort(people, (a, b) => a.age - b.age);
+console.log(people);
+// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
