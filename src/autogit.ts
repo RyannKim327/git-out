@@ -1,42 +1,34 @@
-/**
- * Binary search on a sorted array.
- *
- * @param arr     Sorted array to search
- * @param target  Value to find
- * @param lessThan Comparator that returns true if  a < b
- * @returns Index of the target or -1 if not found
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  lessThan: (a: T, b: T) => boolean
-): number {
-  let low = 0;
-  let high = arr.length - 1;
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  while (low <= high) {
-    // middle index – use bit‑shifting to avoid overflow
-    const mid = (low + high) >> 1;
-    const midVal = arr[mid];
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
+}
 
-    if (lessThan(target, midVal)) {
-      high = mid - 1; // target is in the left half
-    } else if (lessThan(midVal, target)) {
-      low = mid + 1; // target is in the right half
-    } else {
-      return mid; // found
-    }
+function maxDepth(root: TreeNode | null): number {
+  if (root === null) return 0;           // base case: empty subtree
+  const leftDepth  = maxDepth(root.left);   // depth of left subtree
+  const rightDepth = maxDepth(root.right);  // depth of right subtree
+  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
+}
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
+  let max = 0;
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    max = Math.max(max, depth);
+
+    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
+    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
   }
 
-  return -1; // not found
+  return max;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-
-// simple number comparison
-const index = binarySearch(nums, 7, (a, b) => a < b);
-console.log(index); // 3
-
-// with strings
-const words = ['apple', 'banana', 'cherry', 'date'];
-const idx = binarySearch(words, 'cherry', (a, b) => a < b);
-console.log(idx); // 2
