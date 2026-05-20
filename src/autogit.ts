@@ -1,22 +1,32 @@
 /**
- * Return true if n is prime, false otherwise.
- *
- * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
- * For bigger integers you’d need BigInt and, better yet, a probabilistic test
- * (Miller‑Rabin, etc.).
+ * Returns the second largest value in the array, or `undefined` if it can’t exist.
+ * If you need the second *distinct* largest value, set `distinct = true`.
  */
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
-  if (n <= 3) return true;           // 2 and 3 are prime
-  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
+function secondLargest(nums: number[], distinct = false): number | undefined {
+  if (nums.length < 2) return undefined;          // not enough numbers
 
-  // From here we only need to test numbers of the form 6k ± 1
-  const limit = Math.floor(Math.sqrt(n));
-  for (let i = 5; i <= limit; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
+  // Fast path: sort once, pick the second element
+  // (O(n log n) – fine for small arrays)
+  if (!distinct) {
+    const sorted = [...nums].sort((a, b) => b - a); // descending
+    return sorted[1];
   }
-  return true;
+
+  // O(n) single‑pass solution for distinct values
+  let max = Number.NEGATIVE_INFINITY;
+  let second = Number.NEGATIVE_INFINITY;
+
+  for (const n of nums) {
+    if (n > max) {
+      second = max;
+      max = n;
+    } else if (n < max && n > second) {
+      second = n;
+    }
+  }
+
+  return second === Number.NEGATIVE_INFINITY ? undefined : second;
 }
-console.log(isPrime(11));          // true
-console.log(isPrime(12));          // false
-console.log(isPrime(1_000_003));   // true (1 M+‑prime)
+console.log(secondLargest([5, 1, 7, 3]));     // → 5
+console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
+console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
