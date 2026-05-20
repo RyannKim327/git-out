@@ -1,65 +1,70 @@
+export interface TreeNode<T> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+
 /**
- * Return the intersection of two arrays.
- * @param a  First array
- * @param b  Second array
- * @returns  An array containing every element that appears in **both** `a` and `b`
- *
- * The function is generic so it keeps the element type while still being type‑safe.
- * For primitive values a direct equality check (`===`) is sufficient.
+ * Returns the diameter (max number of edges on any path)
+ * of a binary tree rooted at `root`.
  */
-export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
-  // Build a set from the larger array – that keeps lookup O(1).
-  // (You could skip the `max` decision; it's just a micro‑optimization.)
-  const [large, small] = a.length > b.length ? [a, b] : [b, a];
-  const set = new Set(large);
+export function diameter<T>(root: TreeNode<T> | undefined): number {
+  let maxDia = 0;
 
-  // Pick elements of the smaller array that exist in the set.
-  return small.filter((x) => set.has(x));
-}
-const xs = [1, 2, 3, 4];
-const ys = [3, 4, 5, 6];
+  function depth(node?: TreeNode<T>): number {
+    if (!node) return 0;
+    const left  = depth(node.left);
+    const right = depth(node.right);
 
-console.log(intersection(xs, ys)); // → [3, 4]
-import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
+    // path that goes through this node
+    maxDia = Math.max(maxDia, left + right);
 
-console.log(intersection(xs, ys)); // → [3, 4]
-interface Person {
-  id: number;
-  name: string;
-}
-
-const a: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-];
-
-const b: Person[] = [
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-  { id: 4, name: 'Dan'   },
-];
-
-const key = (p: Person) => p.id;
-
-function intersectionBy<T, K extends string | number | symbol>(
-  a: readonly T[],
-  b: readonly T[],
-  getKey: (item: T) => K
-): T[] {
-  const map = new Map<K, T>();
-  for (const item of a) {
-    map.set(getKey(item), item);
+    // height of this subtree
+    return Math.max(left, right) + 1;
   }
-  const result: T[] = [];
-  for (const item of b) {
-    const key = getKey(item);
-    if (map.has(key)) {
-      result.push(item);
+
+  depth(root);
+  return maxDia;
+}
+function makeTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //          \   / \
+  //           4 5   6
+  //              \
+  //               7
+  return {
+    val: 1,
+    left: { val: 2, right: { val: 4 } },
+    right: {
+      val: 3,
+      left: { val: 5, right: { val: 7 } },
+      right: { val: 6 }
+    }
+  };
+}
+
+console.log(diameter(makeTree())); // outputs 5
+export function diameterIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;
+  const stack: Array<{ node: TreeNode<T>; visited: boolean }> = [{ node: root, visited: false }];
+  const heights = new Map<TreeNode<T>, number>();
+  let maxDia = 0;
+
+  while (stack.length) {
+    const { node, visited } = stack.pop()!;
+    if (visited) {
+      const lh = heights.get(node.left) ?? 0;
+      const rh = heights.get(node.right) ?? 0;
+      maxDia = Math.max(maxDia, lh + rh);
+      heights.set(node, Math.max(lh, rh) + 1);
+    } else {
+      stack.push({ node, visited: true });
+      if (node.right) stack.push({ node: node.right, visited: false });
+      if (node.left)  stack.push({ node: node.left,  visited: false });
     }
   }
-  return result;
-}
 
-console.log(intersectionBy(a, b, key));
-// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
+  return maxDia;
+}
