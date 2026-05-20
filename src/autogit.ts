@@ -1,85 +1,86 @@
-// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
-export interface TreeNode<T> {
-  value: T;
-  left?: TreeNode<T>;   // optional because a leaf might not have children
-  right?: TreeNode<T>;
-}
-/**
- * Counts leaf nodes (nodes with no children) in a binary tree.
- *
- * @param root - root node of the tree
- * @returns number of leaf nodes
- */
-export function countLeavesRec<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree -> 0 leaves
+// A graph is represented as an adjacency list.
+//   keys  – node identifiers (strings, numbers, etc.)
+//   values – array of keys this node points to
+type Graph = Record<string, string[]>
 
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                // this node is a leaf
+export function topologicalSortKahn(g: Graph): string[] {
+  // Compute indegree for every node
+  const indegree = new Map<string, number>()
+  const nodes = new Set<string>(Object.keys(g))
 
-  // otherwise add leaves of the left and right sub‑trees
-  return countLeavesRec(root.left) + countLeavesRec(root.right);
-}
-/**
- * Iterative breadth‑first traversal using a queue.
- * Does the same thing as the recursive version but avoids recursion depth limits.
- */
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+  // initialise all counts to 0
+  for (const v of nodes) indegree.set(v, 0)
 
-  let leafCount = 0;
-  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
+  // For each edge u → v, bump indegree of v
+  for (const u of Object.keys(g)) {
+    for (const v of g[u]) {
+      // if the neighbour isn't in `nodes` create an entry,
+      // this covers edges to nodes that have no outgoing edges
+      if (!indegree.has(v)) indegree.set(v, 0)
+      indegree.set(v, (indegree.get(v) ?? 0) + 1)
+      nodes.add(v)          // ensure isolated nodes are recorded
+    }
+  }
+
+  // enqueue all nodes that have indegree 0
+  const queue: string[] = [...indegree].filter(([_, d]) => d === 0).map(([n]) => n)
+  const result: string[] = []
 
   while (queue.length) {
-    const node = queue.shift()!;         // dequeue
+    const n = queue.shift()!
+    result.push(n)
 
-    // If the node has no children, it’s a leaf
-    if (!node.left && !node.right) {
-      leafCount += 1;
-    } else {
-      // enqueue any existing children
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+    // For each outgoing edge n → m
+    for (const m of g[n] ?? []) {
+      indegree.set(m, (indegree.get(m) ?? 0) - 1)
+      if (indegree.get(m) === 0) queue.push(m)
     }
   }
 
-  return leafCount;
+  if (result.length !== nodes.size) {
+    throw new Error('Graph has at least one cycle – topological sort impossible')
+  }
+  return result
 }
-function buildSampleTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //        / \     \
-  //       4   5     6
-  return {
-    value: 1,
-    left: {
-      value: 2,
-      left: { value: 4 },
-      right: { value: 5 }
-    },
-    right: {
-      value: 3,
-      right: { value: 6 }
-    }
-  };
-}
+export function topologicalSortDFS(g: Graph): string[] {
+  const result: string[] = []          // hold the ordering (reverse order)
+  const visited = new Set<string>()    // permanently visited nodes
+  const temp    = new Set<string>()    // nodes that are on the current recursion stack
 
-const tree = buildSampleTree();
-console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
-console.log('Iterative:', countLeavesIter(tree)); // → 3
-function leafMetrics<T>(root?: TreeNode<T>) {
-  if (!root) return { leafCount: 0, leafDepthSum: 0 };
-
-  // helper that returns (#leaves, sum of leaf depths)
-  function helper(node: TreeNode<T>, depth: number): [number, number] {
-    if (!node.left && !node.right) {
-      return [1, depth];
+  const visit = (node: string) => {
+    if (temp.has(node)) {
+      throw new Error(`Cycle detected – node '${node}' revisited on the same path`)
     }
-    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
-    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
-    return [left[0] + right[0], left[1] + right[1]];
+    if (!visited.has(node)) {
+      temp.add(node)
+
+      // Recurse on all neighbours
+      for (const m of g[node] ?? []) {
+        visit(m)
+      }
+
+      temp.delete(node)
+      visited.add(node)
+      result.push(node)               // push after visiting all descendants
+    }
   }
 
-  const [cnt, depthSum] = helper(root, 0);
-  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
+  // A graph can have disjoint components – start from every node.
+  for (const node of Object.keys(g)) {
+    if (!visited.has(node)) visit(node)
+  }
+
+  // `result` is built in reverse; flip it to get a valid topological order
+  return result.reverse()
 }
+const example: Graph = {
+  a: ['b', 'c'],
+  b: ['d'],
+  c: ['d'],
+  d: []
+}
+
+console.log('Kahn   →', topologicalSortKahn(example))
+console.log('DFS    →', topologicalSortDFS(example))
+Kahn   → [ 'a', 'b', 'c', 'd' ]
+DFS    → [ 'a', 'b', 'c', 'd' ]
