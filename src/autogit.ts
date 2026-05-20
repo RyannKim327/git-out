@@ -1,42 +1,22 @@
 /**
- * Performs an in‑place Shell sort.
- * @param arr - Array of numbers (or any comparable type).
- * @param compareFn - Optional function to decide order.
- *                     It should return <0 if a < b, >0 if a > b.
- * @returns The same array sorted.
+ * Return true if n is prime, false otherwise.
+ *
+ * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
+ * For bigger integers you’d need BigInt and, better yet, a probabilistic test
+ * (Miller‑Rabin, etc.).
  */
-export function shellSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
-): T[] {
-  const n = arr.length;
-  // Start with a big gap, then reduce it.
-  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
-  let gap = 1;
-  while (gap < n / 3) {
-    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
-  }
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
 
-  while (gap >= 1) {
-    // For each element from index `gap` to end,
-    // perform an insertion sort on elements that are `gap` apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    gap = Math.floor(gap / 3); // shrink gap
+  // From here we only need to test numbers of the form 6k ± 1
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-
-  return arr;
+  return true;
 }
-import { shellSort } from './shellSort';
-
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-console.log('Before:', data);
-shellSort(data);
-console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
+console.log(isPrime(11));          // true
+console.log(isPrime(12));          // false
+console.log(isPrime(1_000_003));   // true (1 M+‑prime)
