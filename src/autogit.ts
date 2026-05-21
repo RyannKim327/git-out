@@ -1,61 +1,35 @@
-/**
- * Merge‑sort for an array of T.
- *
- * @param array      – the array to sort (mutated in‑place)
- * @param compareFn – optional comparator (a, b) => number
- *                    (neg: < a, 0: equal, pos: > a)
- * @returns the sorted array (same reference as the input)
- */
-export function mergeSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  // Base case: a single element is already sorted.
-  if (array.length <= 1) return array;
+/*  0001‑random‑ts‑with‑input.ts  */
 
-  // Split the array in half.
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
+import * as readline from 'node:readline';
 
-  // Recursively sort each half then merge them.
-  mergeSort(left, compareFn);
-  mergeSort(right, compareFn);
-  merge(array, left, right, compareFn);
-  return array;               // return the same array reference
-}
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-/**
- * Merge the two sorted halves back into `out`.
- */
-function merge<T>(
-  out: T[],
-  left: T[],
-  right: T[],
-  compareFn: (a: T, b: T) => number
-) {
-  let i = 0, j = 0, k = 0;
-  while (i < left.length && j < right.length) {
-    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
-    else out[k++] = right[j++];
-  }
-  // Copy any remaining items.
-  while (i < left.length) out[k++] = left[i++];
-  while (j < right.length) out[k++] = right[j++];
-}
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
 
-/**
- * Default comparator for numbers or strings.
- */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSort(nums);            // in‑place sort
-console.log(nums);          // [5, 7, 23, 32, 34, 62]
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
 
-// With a custom comparator (e.g., reverse order)
-mergeSort(nums, (a, b) => b - a);
-console.log(nums);          // [62, 34, 32, 23, 7, 5]
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
