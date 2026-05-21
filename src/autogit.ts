@@ -1,118 +1,158 @@
-type Node = number | string;           // whatever your IDs look like
-type Graph = Record<Node, Node[]>;     // adjacency list
+// A simple hash table that stores key/value pairs.
+// Collisions are resolved via separate chaining (linked lists).
+export class SimpleHashTable<K, V> {
+  private buckets: Array<LinkedListNode<K, V> | null>;
+  private _size: number;
+  private _count: number;
+  private readonly loadFactorThreshold: number; // e.g. 0.75
 
-/**
- * Breadth‑first search that collects the visit order.
- */
-export function bfsVisitOrder(
-  graph: Graph,
-  start: Node
-): Node[] {
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const order: Node[] = [];
-
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
-
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-  }
-  return order;
-}
-
-/**
- * Breadth‑first search that stops at a goal node
- * and returns the *shortest path* (for unweighted graphs).
- */
-export function bfsShortestPath(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {
-  if (start === goal) return [start];
-
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const parent: Record<Node, Node | null> = {};
-  parent[start] = null;
-
-  while (queue.length) {
-    const cur = queue.shift()!;
-
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        parent[neighbor] = cur;
-        if (neighbor === goal) {
-          // build the path from goal back to start
-          const path: Node[] = [goal];
-          let p: Node | null = cur;
-          while (p !== null) {
-            path.push(p);
-            p = parent[p];
-          }
-          return path.reverse();
-        }
-        queue.push(neighbor);
-      }
-    }
+  constructor(initSize = 16, loadFactor = 0.75) {
+    this.buckets = new Array(initSize).fill(null);
+    this._size = initSize;
+    this._count = 0;
+    this.loadFactorThreshold = loadFactor;
   }
 
-  return null; // goal not reachable
+  // Public API
+  set(key: K, value: V): void { /* ... */ }
+  get(key: K): V | undefined { /* ... */ }
+  delete(key: K): boolean { /* ... */ }
+  has(key: K): boolean { /* ... */ }
+  clear(): void { /* ... */ }
+  get size(): number { return this._count; }
+  // Optionally:
+  // values(), keys(), entries()
 }
-const graph: Graph = {
-  1: [2, 3],
-  2: [4],
-  3: [4, 5],
-  4: [],
-  5: [6],
-  6: [],
-};
+class LinkedListNode<K, V> {
+  key: K;
+  value: V;
+  next: LinkedListNode<K, V> | null;
 
-console.log(bfsVisitOrder(graph, 1));
-// → [1, 2, 3, 4, 5, 6]
+  constructor(key: K, value: V, next: LinkedListNode<K, V> | null = null) {
+    this.key = key;
+    this.value = value;
+    this.next = next;
+  }
+}
+private getHash(key: K): number {
+  // Simple implementation: works for string & number keys.
+  const strKey = typeof key === 'string' ? key : String(key);
+  let hash = 5381; // djb2 seed
+  for (let i = 0; i < strKey.length; i++) {
+    hash = (hash * 33) ^ strKey.charCodeAt(i);
+  }
+  // Ensure positive index and wrap around bucket count.
+  return Math.abs(hash) % this._size;
+}
+set(key: K, value: V): void {
+  const index = this.getHash(key);
 
-console.log(bfsShortestPath(graph, 1, 6));
-// → [1, 3, 5, 6]
-type NodeId = string | number;
+  let node = this.buckets[index];
+  while (node) {
+    if (this.equals(node.key, key)) {
+      node.value = value;      // Update existing
+      return;
+    }
+    node = node.next;
+  }
 
-// Generic graph implemented as Map<id, array of ids>
-export type GenericGraph<T> = Map<T, T[]>;
+  // Insert new node at front of chain
+  const newNode = new LinkedListNode(key, value, this.buckets[index]);
+  this.buckets[index] = newNode;
+  this._count++;
 
-export function genericBfsVisitOrder<T>(
-  graph: GenericGraph<T>,
-  start: T
-): T[] {
-  const queue: T[] = [start];
-  const visited: Set<T> = new Set([start]);
-  const order: T[] = [];
+  if (this._count / this._size > this.loadFactorThreshold) {
+    this.resize();
+  }
+}
 
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
-    for (const neighbour of graph.get(cur) ?? []) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
+get(key: K): V | undefined {
+  const index = this.getHash(key);
+  let node = this.buckets[index];
+  while (node) {
+    if (this.equals(node.key, key)) {
+      return node.value;
+    }
+    node = node.next;
+  }
+  return undefined;
+}
+
+delete(key: K): boolean {
+  const index = this.getHash(key);
+  let node = this.buckets[index];
+  let prev: LinkedListNode<K, V> | null = null;
+
+  while (node) {
+    if (this.equals(node.key, key)) {
+      if (prev) prev.next = node.next;
+      else this.buckets[index] = node.next;
+      this._count--;
+      return true;
+    }
+    prev = node;
+    node = node.next;
+  }
+  return false;
+}
+
+has(key: K): boolean {
+  return this.get(key) !== undefined;
+}
+
+clear(): void {
+  this.buckets = new Array(this._size).fill(null);
+  this._count = 0;
+}
+private equals(a: K, b: K): boolean {
+  return a === b;
+}
+private resize(): void {
+  const oldBuckets = this.buckets;
+  this._size *= 2;                 // Classic, double the bucket count
+  this.buckets = new Array(this._size).fill(null);
+  this._count = 0;
+
+  for (const bucket of oldBuckets) {
+    let node = bucket;
+    while (node) {
+      this.set(node.key, node.value); // Re‑hash & insert
+      node = node.next;
     }
   }
-  return order;
 }
-const g: GenericGraph<string> = new Map([
-  ["A", ["B", "C"]],
-  ["B", ["D"]],
-  ["C", ["D", "E"]],
-  ["D", []],
-  ["E", ["F"]],
-  ["F", []],
-]);
+values(): V[] {
+  const vals: V[] = [];
+  for (const bucket of this.buckets) {
+    let node = bucket;
+    while (node) {
+      vals.push(node.value);
+      node = node.next;
+    }
+  }
+  return vals;
+}
+*entries(): IterableIterator<[K, V]> {
+  for (const bucket of this.buckets) {
+    let node = bucket;
+    while (node) {
+      yield [node.key, node.value];
+      node = node.next;
+    }
+  }
+}
+const ht = new SimpleHashTable<string, number>();
 
-console.log(genericBfsVisitOrder(g, "A"));
-// → ["
+ht.set('apple', 3);
+ht.set('banana', 
+
+
+
+---
+
+**Support Pollinations.AI:**
+
+---
+
+🌸 **Ad** 🌸
+Powered by Pollinations.AI free text APIs. [Support our mission](https://pollinations.ai/redirect/kofi) to keep AI accessible for everyone.
