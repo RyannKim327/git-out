@@ -1,61 +1,117 @@
 /**
- * Merge‑sort for an array of T.
- *
- * @param array      – the array to sort (mutated in‑place)
- * @param compareFn – optional comparator (a, b) => number
- *                    (neg: < a, 0: equal, pos: > a)
- * @returns the sorted array (same reference as the input)
+ * Boyer–Moore search – Typescript implementation
+ * ------------------------------------------------
+ * O(m + n) preprocessing  (m = pattern length, n = text length)
+ * O(n/m) expected search time (in practice, very fast)
  */
-export function mergeSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  // Base case: a single element is already sorted.
-  if (array.length <= 1) return array;
 
-  // Split the array in half.
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
+export class BoyerMoore {
+  /** Pattern to look for */
+  private readonly pat: string;
+  /** Length of the pattern */
+  private readonly m: number;
+  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
+  private readonly badChar: number[];
+  /** Good‑suffix shift table */
+  private readonly goodSuffix: number[];
 
-  // Recursively sort each half then merge them.
-  mergeSort(left, compareFn);
-  mergeSort(right, compareFn);
-  merge(array, left, right, compareFn);
-  return array;               // return the same array reference
-}
+  constructor(pattern: string) {
+    if (!pattern.length) throw new Error("Pattern must not be empty");
+    this.pat = pattern;
+    this.m = pattern.length;
 
-/**
- * Merge the two sorted halves back into `out`.
- */
-function merge<T>(
-  out: T[],
-  left: T[],
-  right: T[],
-  compareFn: (a: T, b: T) => number
-) {
-  let i = 0, j = 0, k = 0;
-  while (i < left.length && j < right.length) {
-    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
-    else out[k++] = right[j++];
+    this.badChar = this.buildBadCharTable();
+    this.goodSuffix = this.buildGoodSuffixTable();
   }
-  // Copy any remaining items.
-  while (i < left.length) out[k++] = left[i++];
-  while (j < right.length) out[k++] = right[j++];
+
+  /* --------------------------------------------- */
+  /* ===========  PRE‑PROCESSING  ================= */
+  /* --------------------------------------------- */
+
+  /** Build a table indexed by character code (fast array look‑ups). */
+  private buildBadCharTable(): number[] {
+    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
+    for (let i = 0; i < this.m - 1; i++) {
+      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
+    }
+    return SHIFT;
+  }
+
+  /** Build the good‑suffix table (two parts: border and suffix arrays). */
+  private buildGoodSuffixTable(): number[] {
+    const r = this.m;
+    const suffix = new Array(r + 1).fill(0);
+    const border = new Array(r + 1).fill(0);
+
+    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
+    let j = r;
+    let k = 0;
+    suffix[r] = r;
+    for (let i = r - 1; i >= 0; i--) {
+      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
+        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
+        k = border[k];
+      }
+      k++;
+      suffix[i] = k;
+    }
+
+    // Step 2 – compute border[] (largest border for each prefix length)
+    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
+
+    // Step 3 – fill goodSuffix[] using borders
+    const good = new Array(r).fill(r);
+    let jMax = 0;
+    for (let i = r - 1; i >= 0; i--) {
+      if (suffix[i] === 0) continue;
+      while (jMax + 1 <= r - i - 1) {
+        if (good[jMax] === r) good[jMax] = r - i - 1;
+        jMax++;
+      }
+    }
+    // For the remaining positions that have no suffix match
+    for (let i = 0; i < r; i++) {
+      if (good[i] === r) good[i] = r - border[i];
+    }
+
+    return good;
+  }
+
+  /* --------------------------------------------- */
+  /* ===========       SEARCH        ============= */
+  /* --------------------------------------------- */
+
+  /**
+   * Find the first occurrence of the pattern in `text`.
+   * @returns index of first match or -1 if not found.
+   */
+  public search(text: string): number {
+    const n = text.length;
+    let s = 0;               // shift of the pattern
+
+    while (s <= n - this.m) {
+      let j = this.m - 1;
+
+      // Step 4 – compare from right to left
+      while (j >= 0 && this.pat[j] === text[s + j]) j--;
+
+      if (j < 0) return s;  // match found
+
+      // compute shifts
+      const badShift = this.badChar[text.charCodeAt(s + j)];
+      const goodShift = this.goodSuffix[j];
+      s += Math.max(badShift, goodShift);
+    }
+    return -1;              // not found
+  }
+
+  /* --------------------------------------------- */
+  /* ===========  EXAMPLE USAGE  =============== */
+  /* --------------------------------------------- */
 }
 
-/**
- * Default comparator for numbers or strings.
- */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSort(nums);            // in‑place sort
-console.log(nums);          // [5, 7, 23, 32, 34, 62]
-
-// With a custom comparator (e.g., reverse order)
-mergeSort(nums, (a, b) => b - a);
-console.log(nums);          // [62, 34, 32, 23, 7, 5]
+// Example usage:
+const bm = new BoyerMoore("needle");
+const txt = "haystack needle haystack inside needlesea";
+const idx = bm.search(txt);
+console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
