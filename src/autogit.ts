@@ -1,38 +1,45 @@
 /**
- * Counting sort for an array of integers.
- *
- * @param arr The array to sort – an array of numbers.
- * @returns A new array containing the sorted values.
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  // Locate the bounds of the values.
-  let min = arr[0];
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-    if (val < min) min = val;
-    if (val > max) max = val;
-  }
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  const range = max - min + 1;          // Number of distinct possible values
-  const count = new Array<number>(range).fill(0);
-
-  // Count occurrences of each integer.
-  for (const value of arr) {
-    count[value - min]++;               // Shift by min so index 0 stays valid
-  }
-
-  // Overwrite the input array (or build a new one) using the counts.
-  const sorted: number[] = [];
-  for (let i = 0; i < range; i++) {
-    const currentVal = i + min;
-    const occ = count[i];
-    for (let j = 0; j < occ; j++) {
-      sorted.push(currentVal);
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  return sorted;
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
+    } else {
+      j--;          // move left
+    }
+  }
+
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
 }
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
