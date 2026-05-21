@@ -1,63 +1,148 @@
-/**
- * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
- *
- * @param src   the source array (contents will not be mutated)
- * @param dst   the destination array into which the merged result goes
- * @param l     left index (inclusive)
- * @param m     middle index (left sub‑range ends here)
- * @param r     right index (exclusive)
- */
-function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
-    let i = l;      // iterator for left sub‑run
-    let j = m;      // iterator for right sub‑run
-    let k = l;      // iterator for destination
+// ------------------------------------------------------------------
+// SkipList.ts
+// ------------------------------------------------------------------
+export type Comparator<K> = (a: K, b: K) => number;
 
-    while (i < m && j < r) {
-        if (src[i] <= src[j]) {
-            dst[k++] = src[i++];
-        } else {
-            dst[k++] = src[j++];
-        }
-    }
-
-    // copy any leftovers (at most one of the two while above will run)
-    while (i < m) dst[k++] = src[i++];
-    while (j < r) dst[k++] = src[j++];
+interface ListNode<K, V> {
+  key: K;
+  value: V;
+  next: Array<ListNode<K, V> | null>; // forward pointers, one per level
 }
 
-/**
- * Iterative bottom‑up merge sort.
- *
- * @remarks
- *   * `arr` is the array you want sorted—original remains untouched.
- *   * Returns a new sorted array. If you want to sort in place you
- *     could swap the references to the source and destination arrays
- *     after each pass.
- *
- * @param arr  array to sort
- * @returns    sorted copy of `arr`
- */
-export function mergeSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr.slice();   // trivial case
+export class SkipList<K, V> {
+  // These constants set the “skew” of the random level.
+  // Every additional level is ½ as likely as the previous one.
+  private static readonly P = 0.5;
+  private static readonly MAX_LEVEL = 32;
 
-    let src = arr.slice();            // working copy
-    let dst: T[] = new Array(n);      // auxiliary buffer
+  private readonly head: ListNode<K, V>;
+  private readonly tail: ListNode<K, V>;
+  private level = 0;                // current highest level that contains any nodes
+  private size = 0;                // number of key/value pairs
 
-    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
-    for (let run = 1; run < n; run <<= 1) {
-        // merge adjacent runs of current length
-        for (let start = 0; start < n; start += 2 * run) {
-            const mid = Math.min(start + run, n);
-            const end = Math.min(start + 2 * run, n);
-            merge(src, dst, start, mid, end);
-        }
+  constructor(private readonly compare: Comparator<K>) {
+    // create an array of `null` references for head and tail
+    const sentinelNext: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
 
-        // the freshly merged segments now sit in `dst`;
-        // swap src/dst to let next pass read the new data
-        [src, dst] = [dst, src];
+    this.head = { key: null as any, value: null as any, next: sentinelNext };
+    this.tail = { key: null as any, value: null as any, next: sentinelNext };
+  }
+
+  /* -----------------------------------------------------------------
+     Random level generator – geometric distribution
+     ----------------------------------------------------------------- */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < SkipList.P && lvl < SkipList.MAX_LEVEL - 1) {
+      lvl++;
+    }
+    return lvl;
+  }
+
+  /* -----------------------------------------------------------------
+     Search – returns the value for a key, or undefined if not found.
+     ----------------------------------------------------------------- */
+  get(key: K): V | undefined {
+    let current = this.head;
+
+    // walk from top level down
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
     }
 
-    // After the last pass `src` holds the sorted data (due to the final swap)
-    return src;
-}
+    const candidate = current.next[0];
+    if (candidate && this.compare(candidate.key, key) === 0) {
+      return candidate.value;
+    }
+    return undefined;
+  }
+
+  /* -----------------------------------------------------------------
+     Insert – O(log n) average
+     ----------------------------------------------------------------- */
+  set(key: K, value: V): void {
+    // build a slice of pointers that we’ll need to update
+    const update: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
+
+    let current = this.head;
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+      update[i] = current;
+    }
+
+    const next = current.next[0];
+
+    // key already present → just replace the value
+    if (next && this.compare(next.key, key) === 0) {
+      next.value = value;
+      return;
+    }
+
+    // new node: determine its height
+    const nodeLevel = this.randomLevel();
+    const newNode: ListNode<K, V> = {
+      key,
+      value,
+      next: Array(nodeLevel + 1).fill(null),
+    };
+
+    if (nodeLevel > this.level) {
+      // adjust the “head” to point to the tail on the new higher levels
+      for (let i = this.level + 1; i <= nodeLevel; i++) {
+        update[i] = this.head;
+      }
+      this.level = nodeLevel;
+    }
+
+    // link the new node into the list
+    for (let i = 0; i <= nodeLevel; i++) {
+      newNode.next[i] = update[i]!.next[i];
+      update[i]!.next[i] = newNode;
+    }
+
+    this.size++;
+  }
+
+  /* -----------------------------------------------------------------
+     Delete – O(log n) average
+     ----------------------------------------------------------------- */
+  delete(key: K): boolean {
+    const update: Array<ListNode<K, V> | null> =
+      Array(SkipList.MAX_LEVEL).fill(null);
+
+    let current = this.head;
+    for (let i = this.level; i >= 0; i--) {
+      while (
+        current.next[i] &&
+        this.compare(current.next[i]!.key, key) < 0
+      ) {
+        current = current.next[i]!;
+      }
+      update[i] = current;
+    }
+
+    const target = current.next[0];
+    if (!target || this.compare(target.key, key) !== 0) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node from every level it appears in
+    for (let i = 0; i <= target.next.length - 1; i++) {
+      if (update[i]!.next[i] !== target) break;
+      update[i]!.next[i] = target.next[i];
+    }
+
+    // trim empty top levels
+    while (this.level > 0 && this.head
