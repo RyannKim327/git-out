@@ -1,98 +1,65 @@
-// ──────────────────────────────────────────────────────────────────────
-// Utility types
-// ──────────────────────────────────────────────────────────────────────
-
 /**
- * A generic search node that holds a state and the depth of that state in the search tree.
- */
-interface SearchNode<T> {
-  state: T;
-  depth: number;
-}
-
-/**
- * The contract that the caller must satisfy in order to perform a search.
- */
-export interface SearchProblem<T> {
-  /** Returns true if the supplied state is a goal state. */
-  isGoal: (state: T) => boolean;
-
-  /** Returns an array of successor states for the supplied state. */
-  getChildren: (state: T) => T[];
-
-  /** The maximum depth that the search may travel. */
-  limit: number;
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// Depth‑limited search – iterative version
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * Performs a depth‑limited DFS iteratively.
+ * Return the intersection of two arrays.
+ * @param a  First array
+ * @param b  Second array
+ * @returns  An array containing every element that appears in **both** `a` and `b`
  *
- * @param start The initial state from which the search starts.
- * @param problem An object containing `isGoal`, `getChildren` and `limit`.
- * @returns The goal state if found, otherwise `null`.
+ * The function is generic so it keeps the element type while still being type‑safe.
+ * For primitive values a direct equality check (`===`) is sufficient.
  */
-export function depthLimitedSearch<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T | null {
-  const { isGoal, getChildren, limit } = problem;
+export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
+  // Build a set from the larger array – that keeps lookup O(1).
+  // (You could skip the `max` decision; it's just a micro‑optimization.)
+  const [large, small] = a.length > b.length ? [a, b] : [b, a];
+  const set = new Set(large);
 
-  // Stack for DFS (push / pop from the end).
-  const stack: SearchNode<T>[] = [{ state: start, depth: 0 }];
+  // Pick elements of the smaller array that exist in the set.
+  return small.filter((x) => set.has(x));
+}
+const xs = [1, 2, 3, 4];
+const ys = [3, 4, 5, 6];
 
-  while (stack.length) {
-    const { state, depth } = stack.pop()!;
+console.log(intersection(xs, ys)); // → [3, 4]
+import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
 
-    if (isGoal(state)) {
-      return state;            // Goal found.
-    }
+console.log(intersection(xs, ys)); // → [3, 4]
+interface Person {
+  id: number;
+  name: string;
+}
 
-    // Don't expand deeper than the limit.
-    if (depth < limit) {
-      // Push children in reverse order if you care about visit order.
-      for (const child of getChildren(state)) {
-        stack.push({ state: child, depth: depth + 1 });
-      }
+const a: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+];
+
+const b: Person[] = [
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+  { id: 4, name: 'Dan'   },
+];
+
+const key = (p: Person) => p.id;
+
+function intersectionBy<T, K extends string | number | symbol>(
+  a: readonly T[],
+  b: readonly T[],
+  getKey: (item: T) => K
+): T[] {
+  const map = new Map<K, T>();
+  for (const item of a) {
+    map.set(getKey(item), item);
+  }
+  const result: T[] = [];
+  for (const item of b) {
+    const key = getKey(item);
+    if (map.has(key)) {
+      result.push(item);
     }
   }
-
-  // Exhausted the stack without finding a goal.
-  return null;
-}
-export interface SearchNodeWithParent<T> {
-  state: T;
-  depth: number;
-  parent?: T;   // Optional – undefined for the root node.
+  return result;
 }
 
-export function depthLimitedSearchWithPath<T>(
-  start: T,
-  problem: SearchProblem<T>
-): T[] | null {
-  const { isGoal, getChildren, limit } = problem;
-  const stack: SearchNodeWithParent<T>[] = [{ state: start, depth: 0 }];
-
-  while (stack.length) {
-    const current = stack.pop()!;
-    const { state, depth, parent } = current;
-
-    if (isGoal(state)) {
-      // Walk back up through parents to build the path.
-      const path: T[] = [state];
-      let p = parent;
-      while (p) {
-        path.push(p);
-        // No direct way to retrieve the parent of ‘p’ without a map.
-        // For a full path reconstruction you’d keep a Map<T, T> from child to parent.
-        // Here we simply return the goal state.
-        break;
-      }
-      return path.reverse();
-    }
-
-    if (depth < limit) {
-      for (const child of get
+console.log(intersectionBy(a, b, key));
+// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
