@@ -1,117 +1,106 @@
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1️⃣ Find the middle (fast/slow trick)
+  let slow = head, fast = head, prev: ListNode | null = null;
+  while (fast && fast.next) {
+    // 2️⃣ Reverse the first half while we’re at it
+    let nxt = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nxt;
+
+    fast = fast.next.next;
+  }
+
+  // 3️⃣ If odd number of nodes skip the middle one
+  if (fast) slow = slow.next;
+
+  // 4️⃣ Compare the two halves
+  let p1 = prev, p2 = slow;
+  while (p1 && p2) {
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+  return true;
+}
+interface ListNode {
+  val: number | string;      // whatever you want to store
+  next?: ListNode | null;    // `next` is optional to support the “end” of the list
+}
 /**
- * Boyer–Moore search – Typescript implementation
- * ------------------------------------------------
- * O(m + n) preprocessing  (m = pattern length, n = text length)
- * O(n/m) expected search time (in practice, very fast)
+ * Returns true if the singly linked list is a palindrome.
+ *
+ * @param head - The head node of the linked list (or null).
  */
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → palindrome
 
-export class BoyerMoore {
-  /** Pattern to look for */
-  private readonly pat: string;
-  /** Length of the pattern */
-  private readonly m: number;
-  /** Bad‑character shift table (alphanumeric + 128 ASCII fallback) */
-  private readonly badChar: number[];
-  /** Good‑suffix shift table */
-  private readonly goodSuffix: number[];
+  let slow = head;
+  let fast = head;
+  let prev: ListNode | null = null; // will become the head of the reversed first half
 
-  constructor(pattern: string) {
-    if (!pattern.length) throw new Error("Pattern must not be empty");
-    this.pat = pattern;
-    this.m = pattern.length;
+  // Step 1 & 2: find middle, reverse first half
+  while (fast && fast.next) {
+    // Reverse the link for `slow`'s current node
+    const nextNode = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nextNode;
 
-    this.badChar = this.buildBadCharTable();
-    this.goodSuffix = this.buildGoodSuffixTable();
+    fast = fast.next.next;
   }
 
-  /* --------------------------------------------- */
-  /* ===========  PRE‑PROCESSING  ================= */
-  /* --------------------------------------------- */
-
-  /** Build a table indexed by character code (fast array look‑ups). */
-  private buildBadCharTable(): number[] {
-    const SHIFT = new Array(256).fill(this.m);   // default shift = pattern length
-    for (let i = 0; i < this.m - 1; i++) {
-      SHIFT[this.pat.charCodeAt(i)] = this.m - i - 1;
-    }
-    return SHIFT;
+  // Step 3: if odd length, skip the middle node
+  if (fast) {
+    slow = slow.next!;
   }
 
-  /** Build the good‑suffix table (two parts: border and suffix arrays). */
-  private buildGoodSuffixTable(): number[] {
-    const r = this.m;
-    const suffix = new Array(r + 1).fill(0);
-    const border = new Array(r + 1).fill(0);
-
-    // Step 1 – compute suffix[] (longest suffixes that are also prefix)
-    let j = r;
-    let k = 0;
-    suffix[r] = r;
-    for (let i = r - 1; i >= 0; i--) {
-      while (k < r && this.pat[i + k] !== this.pat[r - 1 - k]) {
-        if (suffix[i + k] === 0) suffix[i + k] = r - i - 1;
-        k = border[k];
-      }
-      k++;
-      suffix[i] = k;
-    }
-
-    // Step 2 – compute border[] (largest border for each prefix length)
-    for (let i = 0; i <= r; i++) border[i] = r - suffix[i];
-
-    // Step 3 – fill goodSuffix[] using borders
-    const good = new Array(r).fill(r);
-    let jMax = 0;
-    for (let i = r - 1; i >= 0; i--) {
-      if (suffix[i] === 0) continue;
-      while (jMax + 1 <= r - i - 1) {
-        if (good[jMax] === r) good[jMax] = r - i - 1;
-        jMax++;
-      }
-    }
-    // For the remaining positions that have no suffix match
-    for (let i = 0; i < r; i++) {
-      if (good[i] === r) good[i] = r - border[i];
-    }
-
-    return good;
+  // Step 4: compare nodes from the two halves
+  let firstHalf = prev;
+  let secondHalf = slow;
+  while (firstHalf && secondHalf) {
+    if (firstHalf.val !== secondHalf.val) return false;
+    firstHalf = firstHalf.next!;
+    secondHalf = secondHalf.next!;
   }
 
-  /* --------------------------------------------- */
-  /* ===========       SEARCH        ============= */
-  /* --------------------------------------------- */
-
-  /**
-   * Find the first occurrence of the pattern in `text`.
-   * @returns index of first match or -1 if not found.
-   */
-  public search(text: string): number {
-    const n = text.length;
-    let s = 0;               // shift of the pattern
-
-    while (s <= n - this.m) {
-      let j = this.m - 1;
-
-      // Step 4 – compare from right to left
-      while (j >= 0 && this.pat[j] === text[s + j]) j--;
-
-      if (j < 0) return s;  // match found
-
-      // compute shifts
-      const badShift = this.badChar[text.charCodeAt(s + j)];
-      const goodShift = this.goodSuffix[j];
-      s += Math.max(badShift, goodShift);
-    }
-    return -1;              // not found
+  return true;
+}
+// Helper to create a list from an array
+function fromArray(arr: (number | string)[]): ListNode | null {
+  if (!arr.length) return null;
+  const head: ListNode = { val: arr[0] };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { val: arr[i] };
+    current = current.next;
   }
-
-  /* --------------------------------------------- */
-  /* ===========  EXAMPLE USAGE  =============== */
-  /* --------------------------------------------- */
+  return head;
 }
 
-// Example usage:
-const bm = new BoyerMoore("needle");
-const txt = "haystack needle haystack inside needlesea";
-const idx = bm.search(txt);
-console.log(idx, txt.slice(idx, idx + bm['m'])); // → 9 'needle'
+console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
+console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string)[] = [];
+  let fast = head;
+  let slow = head;
+
+  // Push first half onto stack
+  while (fast && fast.next) {
+    stack.push(slow!.val);
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
+
+  // Skip middle element for odd length
+  if (fast) slow = slow!.next!;
+
+  // Compare the rest with stack
+  while (slow) {
+    if (stack.pop() !== slow.val) return false;
+    slow = slow.next;
+  }
+  return true;
+}
