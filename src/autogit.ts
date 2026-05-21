@@ -1,42 +1,74 @@
 /**
- * Performs an in‑place Shell sort.
- * @param arr - Array of numbers (or any comparable type).
- * @param compareFn - Optional function to decide order.
- *                     It should return <0 if a < b, >0 if a > b.
- * @returns The same array sorted.
+ * Quick‑sort implementation.
+ *
+ * @param arr   The array to sort – it will be mutated in place.
+ * @param compare Optional comparison function.  
+ *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+ *                If omitted, the default is a numeric comparison.
+ * @returns The same array reference, now sorted.
  */
-export function shellSort<T>(
+export function quickSort<T>(
   arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+  compare?: (a: T, b: T) => number
 ): T[] {
-  const n = arr.length;
-  // Start with a big gap, then reduce it.
-  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
-  let gap = 1;
-  while (gap < n / 3) {
-    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
-  }
+  // Default to numeric comparison if no comparator is given
+  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
 
-  while (gap >= 1) {
-    // For each element from index `gap` to end,
-    // perform an insertion sort on elements that are `gap` apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
+  // Recursive helper – operates on the portion of the array
+  function qs(left: number, right: number): void {
+    if (left >= right) return;
+
+    // Partition returns the final index of the pivot
+    const pivotIndex = partition(left, right);
+
+    // Recurse on smaller side first to keep stack depth <= log₂(n)
+    if (pivotIndex - left < right - pivotIndex) {
+      qs(left, pivotIndex - 1);
+      qs(pivotIndex + 1, right);
+    } else {
+      qs(pivotIndex + 1, right);
+      qs(left, pivotIndex - 1);
     }
-    gap = Math.floor(gap / 3); // shrink gap
   }
 
+  // Lomuto‑style partition – choose rightmost element as pivot
+  function partition(left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;          // Place for swapping
+
+    for (let j = left; j < right; j++) {
+      if (cmp(arr[j], pivot) <= 0) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    // Move pivot to its final place
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
+  }
+
+  qs(0, arr.length - 1);
   return arr;
 }
-import { shellSort } from './shellSort';
+// Numbers – default numeric comparison is fine
+const nums = [34, 7, 23, 32, 5, 62];
+console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
 
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-console.log('Before:', data);
-shellSort(data);
-console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
+// Strings – need a string comparator  
+const words = ['banana', 'apple', 'cherry'];
+console.log(
+  quickSort(words, (a, b) => a.localeCompare(b))
+); // ['apple', 'banana', 'cherry']
+
+// Custom objects  
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Anna', age: 27 },
+  { name: 'Bob', age: 22 },
+  { name: 'Clara', age: 35 },
+];
+
+quickSort(people, (a, b) => a.age - b.age);
+console.log(people);
+// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
