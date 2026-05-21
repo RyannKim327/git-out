@@ -1,88 +1,128 @@
-// ---------- Graph data ----------------------------------------------------
-type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
+type AdjList = Map<number, Set<number>>;
 
-// ---------- Tarjan's SCC implementation ----------------------------------
-class TarjanSCC {
-  private graph: Graph;            // the adjacency list
-  private index = 0;               // incremental index counter
-  private indices: Map<string, number> = new Map(); // node → index
-  private lowlink: Map<string, number> = new Map(); // node → lowlink
+class Graph {
+  private adj = new Map<number, Set<number>>();
 
-  private stack: string[] = [];    // nodes currently on the recursion stack
-  private onStack: Set<string> = new Set();
-
-  private result: string[][] = []; // list of SCCs found
-
-  constructor(g: Graph) {
-    this.graph = g;
+  addEdge(u: number, v: number, directed = false): void {
+    if (!this.adj.has(u)) this.adj.set(u, new Set());
+    this.adj.get(u)!.add(v);
+    if (!directed) {
+      if (!this.adj.has(v)) this.adj.set(v, new Set());
+      this.adj.get(v)!.add(u);
+    }
   }
 
-  public run(): string[][] {
-    // start DFS from every undiscovered node
-    for (const node of Object.keys(this.graph)) {
-      if (!this.indices.has(node)) {
-        this.strongConnect(node);
-      }
-    }
-    return this.result;
+  getNeighbors(v: number): Set<number> {
+    return this.adj.get(v) ?? new Set();
   }
 
-  private strongConnect(v: string) {
-    // set the depth index for v
-    this.indices.set(v, this.index);
-    this.lowlink.set(v, this.index);
-    this.index += 1;
+  // helper: list all vertices (useful for disconnected graphs)
+  vertices(): IterableIterator<number> {
+    return this.adj.keys();
+  }
+}
+const g = new Graph();
+g.addEdge(0, 1);
+g.addEdge(0, 2);
+g.addEdge(1, 2);
+g.addEdge(1, 3);
+g.addEdge(3, 4);
+function dfsRecursive(
+  graph: Graph,
+  start: number,
+  visited = new Set<number>(),
+  action?: (node: number) => void
+): void {
+  visited.add(start);
+  action?.(start);
 
-    this.stack.push(v);
-    this.onStack.add(v);
-
-    // consider successors of v
-    for (const w of this.graph[v] ?? []) {
-      if (!this.indices.has(w)) {
-        // success: DFS tree edge
-        this.strongConnect(w);
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.lowlink.get(w)!
-        ));
-      } else if (this.onStack.has(w)) {
-        // back edge – strengthen lowlink
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.indices.get(w)!
-        ));
-      }
-    }
-
-    // If v is the root of an SCC, pop the stack
-    if (this.lowlink.get(v) === this.indices.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = this.stack.pop()!;
-        this.onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      this.result.push(component);
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) {
+      dfsRecursive(graph, nb, visited, action);
     }
   }
 }
-const graph: Graph = {
-  '0': ['1'],
-  '1': ['2', '3'],
-  '2': ['0', '4'],
-  '3': ['4'],
-  '4': ['5'],
-  '5': ['3', '6'],
-  '6': ['7'],
-  '7': ['5'],
-};
+dfsRecursive(g, 0, undefined, console.log);
+// output: 0, 1, 2, 3, 4 (order may vary)
+function dfsIterative(
+  graph: Graph,
+  start: number,
+  action?: (node: number) => void
+): void {
+  const stack: number[] = [start];
+  const visited = new Set<number>();
 
-const tarjan = new TarjanSCC(graph);
-const sccs = tarjan.run();
+  while (stack.length) {
+    const v = stack.pop()!; // `!` known to be non‑null
+    if (visited.has(v)) continue;
 
-console.log('Strongly connected components:');
-sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
-Strongly connected components:
-0: [6, 7, 5]
-1: [0, 1, 2, 4, 3]
+    visited.add(v);
+    action?.(v);
+
+    // push neighbors reverse order if you want LIFO order same as recursion
+    for (const nb of [...graph.getNeighbors(v)].reverse()) {
+      if (!visited.has(nb)) stack.push(nb);
+    }
+  }
+}
+dfsIterative(g, 0, console.log);
+// same output as before
+function hasCycle(graph: Graph): boolean {
+  const visited = new Set<number>();
+  const stack = new Set<number>();
+
+  function visit(v: number): boolean {
+    if (stack.has(v)) return true;      // back‑edge found
+    if (visited.has(v)) return false;    // already seen, no cycle on this path
+
+    visited.add(v);
+    stack.add(v);
+
+    for (const nb of graph.getNeighbors(v)) {
+      if (visit(nb)) return true;
+    }
+
+    stack.delete(v);
+    return false;
+  }
+
+  for (const v of graph.vertices()) if (visit(v)) return true;
+  return false;
+}
+function dfsWithOrders(
+  graph: Graph,
+  start: number,
+  pre?: (node: number) => void,
+  post?: (node: number) => void,
+  visited = new Set<number>()
+) {
+  visited.add(start);
+  pre?.(start);
+  for (const nb of graph.getNeighbors(start)) {
+    if (!visited.has(nb)) dfsWithOrders(graph, nb, pre, post, visited);
+  }
+  post?.(start);
+}
+function connectedComponents(graph: Graph): number[][] {
+  const visited = new Set<number>();
+  const components: number[][] = [];
+
+  function explore(v: number, comp: number[]) {
+    visited.add(v);
+    comp.push(v);
+    for (const nb of graph.getNeighbors(v)) {
+      if (!visited.has(nb)) explore(nb, comp);
+    }
+  }
+
+  for (const v of graph.vertices()) {
+    if (!visited.has(v)) {
+      const comp: number[] = [];
+      explore(v, comp);
+      components.push(comp);
+    }
+  }
+  return components;
+}
+npm i -D typescript ts-node
+npx ts-node dfs.ts
