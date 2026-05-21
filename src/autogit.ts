@@ -1,122 +1,89 @@
-// A "comparable" type: any that supports the < and > operators.
-type Comparable = number | string | { compareTo(other: this): number };
+/**
+ * Forward Burrows–Wheeler Transform.
+ * @param input – original string
+ * @returns {bwt, index} – BWT string and index of the original string in the sorted rotation table.
+ */
+export function bwtEncode(input: string): { bwt: string; index: number } {
+    // 1️⃣ Append a sentinel that is smaller than every other char
+    const sentinel = '\0';
+    const padded = input + sentinel;
 
-interface INode<K extends Comparable, V> {
-  keys: K[];
-  values: V[];      // same length as keys
-  children: (INode<K, V> | null)[];
-  leaf: boolean;
+    // 2️⃣ Make all cyclic rotations
+    // Using an array of start indices so we never build full strings.
+    const n = padded.length;
+    const rotations = Array.from({ length: n }, (_, i) => i);
+
+    // 3️⃣ Stable sort rotations lexicographically
+    rotations.sort((a, b) => {
+        for (let offset = 0; offset < n; offset++) {
+            const ca = padded[(a + offset) % n];
+            const cb = padded[(b + offset) % n];
+            if (ca < cb) return -1;
+            if (ca > cb) return 1;
+            // equal – iterate next offset
+        }
+        return 0;       // rotations are identical – should not happen with sentinel
+    });
+
+    // 4️⃣ Build the BWT string by taking the character preceding each rotation
+    const bwt = new Array<string>(n);
+    let originalIndex = -1;
+    for (let i = 0; i < n; i++) {
+        const rotStart = rotations[i];
+        const bwtChar = padded[(rotStart + n - 1) % n]; // char before rotation
+        bwt[i] = bwtChar;
+
+        // If this rotation is the original (started at 0), remember its position
+        if (rotStart === 0) originalIndex = i;
+    }
+
+    return { bwt: bwt.join(''), index: originalIndex };
 }
-const compare = <K extends Comparable>(a: K, b: K): number => {
-  if (typeof a === 'number' || typeof a === 'string')
-    return a < b ? -1 : a > b ? 1 : 0;
-  return a.compareTo(b);
-};
+/**
+ * Inverse Burrows–Wheeler Transform.
+ * @param bwt – BWT string (length n)
+ * @param index – index of the original string in the sorted rotations
+ * @returns original string (without the sentinel)
+ */
+export function bwtDecode(bwt: string, index: number): string {
+    const n = bwt.length;
+    // 1️⃣ Build first column by sorting the BWT string
+    const first = bwt.split('').sort(); // stable because JS sort is stable (ES2019+)
 
-const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
-  // binary search – returns the position where key should be inserted
-  let low = 0, high = arr.length - 1;
-  while (low <= high) {
-    const mid = (low + high) >> 1;
-    const cmp = compare(arr[mid], key);
-    if (cmp === 0) return mid;
-    if (cmp < 0) low = mid + 1; else high = mid - 1;
-  }
-  return low; // insertion point
-};
-class BTreeNode<K extends Comparable, V> implements INode<K, V> {
-  keys: K[] = [];
-  values: V[] = [];
-  children: (BTreeNode<K, V> | null)[] = [];
-  leaf: boolean;
+    // 2️⃣ Compute the “next” array – mapping from a row in first column
+    //    to the corresponding row in last column.
+    //    This is essentially the Longest‑Common‑Prefix order of the rotations.
+    const next = new Array<number>(n);
+    const buckets = new Map<string, number[]>();
 
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
+    // Collect indices of each character in the BWT string
+    for (let i = 0; i < n; i++) {
+        const ch = bwt[i];
+        if (!buckets.has(ch)) buckets.set(ch, []);
+        buckets.get(ch)!.push(i);
+    }
+
+    // For each character, allocate its positions in the first column
+    const bucketIterators = new Map<string, number>();
+    for (const [ch, posList] of buckets.entries()) {
+        bucketIterators.set(ch, 0);
+    }
+
+    for (let i = 0; i < n; i++) {
+        const ch = first[i];
+        const idxInBlt = buckets.get(ch)![bucketIterators.get(ch)!++];
+        next[i] = idxInBlt;
+    }
+
+    // 3️⃣ Reconstruct original by following the next pointers starting from `index`
+    const result: string[] = new Array<string>(n);
+    let row = index;
+    for (let i = n - 1; i >= 0; i--) {
+        result[i] = first[row];
+        row = next[row];
+    }
+
+    // The sentinel is the first char of the reconstructed string
+    // Strip it and return the original
+    return result.join('').slice(1); // drop sentinel
 }
-export class BTree<K extends Comparable, V> {
-  readonly order: number;          // minimum number of keys per node (t)
-  private root: BTreeNode<K, V>;
-
-  constructor(order: number) {
-    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
-    this.order = order;
-    this.root = new BTreeNode<K, V>(true);   // start with a leaf
-  }
-
-  /* ---------- Public API ---------- */
-  public search(key: K): V | undefined {
-    return this.searchNode(this.root, key);
-  }
-
-  public insert(key: K, value: V): void {
-    if (this.root.keys.length === 2 * this.order - 1) {
-      // root is full – split it
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this.splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this.insertNonFull(this.root, key, value);
-  }
-
-  public delete(key: K): void {
-    this.deleteNode(this.root, key);
-    // shrink the root if it becomes empty
-    if (!this.root.leaf && this.root.keys.length === 0) {
-      this.root = this.root.children[0]!;
-    }
-  }
-
-  /* ---------- Traversal helpers (optional) ---------- */
-  public *inOrder(): IterableIterator<[K, V]> {
-    yield* this.inOrderNode(this.root);
-  }
-
-  /* ---------- Internal helpers ---------- */
-  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
-    const i = findIndex(node.keys, key);
-    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
-      return node.values[i];
-    }
-    if (node.leaf) return undefined;
-    return this.searchNode(node.children[i]!, key);
-  }
-
-  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
-    let i = node.keys.length - 1;
-    if (node.leaf) {
-      // Insert in sorted order
-      const pos = findIndex(node.keys, key);
-      node.keys.splice(pos, 0, key);
-      node.values.splice(pos, 0, value);
-    } else {
-      // Descend to the right child
-      const pos = findIndex(node.keys, key);
-      const child = node.children[pos]!;
-      if (child.keys.length === 2 * this.order - 1) {
-        this.splitChild(node, pos);
-        // After split, the middle key moves up
-        if (compare(key, node.keys[pos]) > 0) pos++;
-      }
-      this.insertNonFull(node.children[pos]!, key, value);
-    }
-  }
-
-  private splitChild(parent: BTreeNode<K, V>, idx: number) {
-    const t = this.order;
-    const y = parent.children[idx]!;               // node to split
-    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
-
-    // Move upper half of y's keys/values to z
-    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
-    z.values = y.values.splice(t, t - 1);
-
-    if (!y.leaf) {
-      z.children = y.children.splice(t, t);         // children t … 2t-1
-    }
-
-    // Insert z into parent
-    parent.children.splice(idx + 1, 0, z);
-    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
-    parent.values.splice(idx
