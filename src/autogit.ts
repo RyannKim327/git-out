@@ -1,112 +1,85 @@
-// ---------- 1️⃣  Node definition ----------
-class Node<T> {
-  /** The stored value. */
+// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
+export interface TreeNode<T> {
   value: T;
-  /** Left child – < value */
-  left: Node<T> | null = null;
-  /** Right child – > value */
-  right: Node<T> | null = null;
+  left?: TreeNode<T>;   // optional because a leaf might not have children
+  right?: TreeNode<T>;
+}
+/**
+ * Counts leaf nodes (nodes with no children) in a binary tree.
+ *
+ * @param root - root node of the tree
+ * @returns number of leaf nodes
+ */
+export function countLeavesRec<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree -> 0 leaves
 
-  constructor(value: T) {
-    this.value = value;
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                // this node is a leaf
+
+  // otherwise add leaves of the left and right sub‑trees
+  return countLeavesRec(root.left) + countLeavesRec(root.right);
+}
+/**
+ * Iterative breadth‑first traversal using a queue.
+ * Does the same thing as the recursive version but avoids recursion depth limits.
+ */
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let leafCount = 0;
+  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
+
+  while (queue.length) {
+    const node = queue.shift()!;         // dequeue
+
+    // If the node has no children, it’s a leaf
+    if (!node.left && !node.right) {
+      leafCount += 1;
+    } else {
+      // enqueue any existing children
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
+
+  return leafCount;
+}
+function buildSampleTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //        / \     \
+  //       4   5     6
+  return {
+    value: 1,
+    left: {
+      value: 2,
+      left: { value: 4 },
+      right: { value: 5 }
+    },
+    right: {
+      value: 3,
+      right: { value: 6 }
+    }
+  };
 }
 
-// ---------- 2️⃣  BinaryTree wrapper ----------
-class BinaryTree<T> {
-  /** Root of the tree (can be null if the tree is empty). */
-  root: Node<T> | null = null;
+const tree = buildSampleTree();
+console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
+console.log('Iterative:', countLeavesIter(tree)); // → 3
+function leafMetrics<T>(root?: TreeNode<T>) {
+  if (!root) return { leafCount: 0, leafDepthSum: 0 };
 
-  // Plug in the comparison logic so the tree can work with any type.
-  // By default it uses the built‑in < and > operators.
-  constructor(private compare: (a: T, b: T) => number = (a, b) => {
-    if (a === b) return 0;
-    return a < b ? -1 : 1;       // <=> -1, =0, >=>1
-  }) {}
-
-  // ---------- 3️⃣  Insert ----------
-  insert(value: T): void {
-    const newNode = new Node(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
+  // helper that returns (#leaves, sum of leaf depths)
+  function helper(node: TreeNode<T>, depth: number): [number, number] {
+    if (!node.left && !node.right) {
+      return [1, depth];
     }
-    let cur = this.root;
-    while (true) {
-      if (this.compare(value, cur.value) < 0) {
-        if (!cur.left) {
-          cur.left = newNode;
-          return;
-        }
-        cur = cur.left;
-      } else {
-        if (!cur.right) {
-          cur.right = newNode;
-          return;
-        }
-        cur = cur.right;
-      }
-    }
+    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
+    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
+    return [left[0] + right[0], left[1] + right[1]];
   }
 
-  // ---------- 4️⃣  Search ----------
-  find(value: T): Node<T> | null {
-    let cur = this.root;
-    while (cur) {
-      const cmp = this.compare(value, cur.value);
-      if (cmp === 0) return cur;
-      cur = cmp < 0 ? cur.left : cur.right;
-    }
-    return null;   // not found
-  }
-
-  // ---------- 5️⃣  Traversals ----------
-  // In‑order: left → node → right (sorted order for a BST)
-  inorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      result.push(n.value);
-      walk(n.right);
-    }
-    walk(this.root);
-    return result;
-  }
-
-  // Pre‑order: node → left → right
-  preorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      result.push(n.value);
-      walk(n.left);
-      walk(n.right);
-    }
-    walk(this.root);
-    return result;
-  }
-
-  // Post‑order: left → right → node
-  postorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      walk(n.right);
-      result.push(n.value);
-    }
-    walk(this.root);
-    return result;
-  }
+  const [cnt, depthSum] = helper(root, 0);
+  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
 }
-const nums = new BinaryTree<number>();
-[7, 3, 9, 1, 5, 8, 10].forEach(n => nums.insert(n));
-
-console.log('In‑order (sorted):', nums.inorder());    // [1,3,5,7,8,9,10]
-console.log('Pre‑order:', nums.preorder());           // [7,3,1,5,9,8,10]
-console.log('Post‑order:', nums.postorder());         // [1,5,3,8,10,9,7]
-
-const node = nums.find(5);
-console.log('Found node:', node?.value);               // 5
-console.log('Does 6 exist?', !!nums.find(6));          // false
