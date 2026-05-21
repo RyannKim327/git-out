@@ -1,32 +1,45 @@
 /**
- * Returns the second largest value in the array, or `undefined` if it can’t exist.
- * If you need the second *distinct* largest value, set `distinct = true`.
+ * Returns true iff every character that appears in `a`
+ * appears the same number of times in `b`.
+ *
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional tweakers
  */
-function secondLargest(nums: number[], distinct = false): number | undefined {
-  if (nums.length < 2) return undefined;          // not enough numbers
+export function areAnagrams(
+  a: string,
+  b: string,
+  options?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignorePunctuation?: boolean }
+): boolean {
+  const normalize = (str: string) => {
+    let s = str;
+    if (options?.ignoreCase) s = s.toLowerCase();
+    if (options?.ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (options?.ignorePunctuation)
+      s = s.replace(/[^\w]/g, ''); // keeps letters, digits, underscore
 
-  // Fast path: sort once, pick the second element
-  // (O(n log n) – fine for small arrays)
-  if (!distinct) {
-    const sorted = [...nums].sort((a, b) => b - a); // descending
-    return sorted[1];
+    // Quick length check after normalization
+    return s;
+  };
+
+  const nsA = normalize(a);
+  const nsB = normalize(b);
+
+  if (nsA.length !== nsB.length) return false;
+
+  // Count‑array approach – works for ASCII / extended‑Latin.
+  const freq: Record<string, number> = {};
+
+  for (const ch of nsA) freq[ch] = (freq[ch] ?? 0) + 1;
+  for (const ch of nsB) {
+    if (!freq[ch]) return false; // missing or too many
+    freq[ch]! -= 1;
   }
 
-  // O(n) single‑pass solution for distinct values
-  let max = Number.NEGATIVE_INFINITY;
-  let second = Number.NEGATIVE_INFINITY;
-
-  for (const n of nums) {
-    if (n > max) {
-      second = max;
-      max = n;
-    } else if (n < max && n > second) {
-      second = n;
-    }
-  }
-
-  return second === Number.NEGATIVE_INFINITY ? undefined : second;
+  // All counts should be zero now
+  return Object.values(freq).every(v => v === 0);
 }
-console.log(secondLargest([5, 1, 7, 3]));     // → 5
-console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
-console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
+console.log(areAnagrams('Listen', 'Silent', { ignoreCase: true })); // true
+console.log(areAnagrams('Dormitory', 'Dirty room', { ignoreCase: true, ignoreSpaces: true })); // true
+console.log(areAnagrams('Hello', 'Olelh', { ignoreCase: false })); // false – case matters
+console.log(areAnagrams('A!B@C', 'CBA', { ignoreCase: true, ignorePunctuation: true })); // true
