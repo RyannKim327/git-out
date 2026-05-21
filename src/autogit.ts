@@ -1,65 +1,42 @@
 /**
- * Return the intersection of two arrays.
- * @param a  First array
- * @param b  Second array
- * @returns  An array containing every element that appears in **both** `a` and `b`
- *
- * The function is generic so it keeps the element type while still being type‑safe.
- * For primitive values a direct equality check (`===`) is sufficient.
+ * Performs an in‑place Shell sort.
+ * @param arr - Array of numbers (or any comparable type).
+ * @param compareFn - Optional function to decide order.
+ *                     It should return <0 if a < b, >0 if a > b.
+ * @returns The same array sorted.
  */
-export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
-  // Build a set from the larger array – that keeps lookup O(1).
-  // (You could skip the `max` decision; it's just a micro‑optimization.)
-  const [large, small] = a.length > b.length ? [a, b] : [b, a];
-  const set = new Set(large);
-
-  // Pick elements of the smaller array that exist in the set.
-  return small.filter((x) => set.has(x));
-}
-const xs = [1, 2, 3, 4];
-const ys = [3, 4, 5, 6];
-
-console.log(intersection(xs, ys)); // → [3, 4]
-import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
-
-console.log(intersection(xs, ys)); // → [3, 4]
-interface Person {
-  id: number;
-  name: string;
-}
-
-const a: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-];
-
-const b: Person[] = [
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-  { id: 4, name: 'Dan'   },
-];
-
-const key = (p: Person) => p.id;
-
-function intersectionBy<T, K extends string | number | symbol>(
-  a: readonly T[],
-  b: readonly T[],
-  getKey: (item: T) => K
+export function shellSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
 ): T[] {
-  const map = new Map<K, T>();
-  for (const item of a) {
-    map.set(getKey(item), item);
+  const n = arr.length;
+  // Start with a big gap, then reduce it.
+  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
+  let gap = 1;
+  while (gap < n / 3) {
+    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
   }
-  const result: T[] = [];
-  for (const item of b) {
-    const key = getKey(item);
-    if (map.has(key)) {
-      result.push(item);
-    }
-  }
-  return result;
-}
 
-console.log(intersectionBy(a, b, key));
-// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
+  while (gap >= 1) {
+    // For each element from index `gap` to end,
+    // perform an insertion sort on elements that are `gap` apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
+    gap = Math.floor(gap / 3); // shrink gap
+  }
+
+  return arr;
+}
+import { shellSort } from './shellSort';
+
+const data = [23, 12, 1, 8, 34, 54, 2, 3];
+console.log('Before:', data);
+shellSort(data);
+console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
