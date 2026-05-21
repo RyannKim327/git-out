@@ -1,52 +1,44 @@
 /**
- * Selection sort – returns a **new** sorted array.
- * The original array is left untouched.
- *
- * @param arr   – source array
- * @returns     – a new array sorted in ascending order
+ * Randomly shuffles an array in-place.
+ * Uses the Fisher–Yates algorithm.
  */
-export function selectionSort<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];          // clone so we don't mutate the caller's array
-  const n = toSort.length;
+function shuffle<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
 
-  for (let i = 0; i < n - 1; i++) {
-    // assume the smallest element is at i
-    let minIndex = i;
+/**
+ * Checks whether the array is sorted in ascending order.
+ * Works for numbers and strings (lexicographically).
+ */
+function isSorted<T extends number | string>(array: T[]): boolean {
+  for (let i = 0; i < array.length - 1; i++) {
+    if (array[i] > array[i + 1]) return false;
+  }
+  return true;
+}
 
-    // find the real smallest element in the remaining unsorted section
-    for (let j = i + 1; j < n; j++) {
-      if (toSort[j] < toSort[minIndex]) {
-        minIndex = j;
-      }
-    }
+/**
+ * Bogosort: keep shuffling until the array is sorted.
+ * In practice, this is a joke algorithm because of its astronomical
+ * expected runtime, but it’s fun to see it in TypeScript.
+ */
+export function randomSort<T extends number | string>(array: T[]): T[] {
+  // We’ll operate on a copy to avoid mutating the caller’s data.
+  const arr = array.slice();
 
-    // swap the found minimum with the element at i
-    if (minIndex !== i) {
-      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
-    }
+  // Guard against trivial cases.
+  if (arr.length < 2) return arr;
+
+  // Keep shuffling until the array is sorted.
+  while (!isSorted(arr)) {
+    shuffle(arr);
   }
 
-  return toSort;
+  return arr;
 }
-const unsorted = [9, 3, 10, 2, 7];
-const sorted = selectionSort(unsorted);
-
-console.log(sorted);      // [2, 3, 7, 9, 10]
-console.log(unsorted);    // remains [9, 3, 10, 2, 7]
-export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];
-  const helper = (k: number) => {
-    if (k >= toSort.length - 1) return;
-
-    let minIdx = k;
-    for (let i = k + 1; i < toSort.length; i++) {
-      if (toSort[i] < toSort[minIdx]) minIdx = i;
-    }
-
-    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
-    helper(k + 1);
-  };
-
-  helper(0);
-  return toSort;
-}
+const unsorted = [3, 1, 4, 1, 5, 9, 2];
+const sorted = randomSort(unsorted);
+console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
