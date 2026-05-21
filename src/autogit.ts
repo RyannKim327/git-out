@@ -1,50 +1,42 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-
 /**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
+ * Returns the n‑th node from the end of a singly linked list.
+ * If n is out of bounds, returns null.
+ *
+ * @param head The head of the list.
+ * @param n    1‑based index from the end (n = 1 => tail node).
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // invalid request
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;          // n larger than list size
+    fast = fast.next;
   }
 
-  return pA; // either the intersection node or null
-}
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
+  // Move both until fast reaches the end
+  while (fast) {
+    slow = slow!.next;  // fast is non‑null here, so slow is safe
+    fast = fast.next;
   }
-  return dummy.next;
+
+  return slow;
 }
+// Build 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4 = { val: 4, next: node5 };
+let node3 = { val: 3, next: node4 };
+let node2 = { val: 2, next: node3 };
+let node1 = { val: 1, next: node2 };
 
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
-
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
-
-console.log(getIntersectionNode(a1, b1) === shared); // true
+console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
+console.log(nthFromEnd(node1, 2)?.val); // 4
+console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
+console.log(nthFromEnd(node1, 6));       // null (out of bounds)
