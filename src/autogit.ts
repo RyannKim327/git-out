@@ -1,14 +1,38 @@
-const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
-// or, if you only want literal space characters (not tabs, newlines, …)
-const clean = str.replaceAll(' ', '');
-const input = "  Why   are   we  still  here?  \n";
+/**
+ * Counting sort for an array of integers.
+ *
+ * @param arr The array to sort – an array of numbers.
+ * @returns A new array containing the sorted values.
+ */
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-const withoutAllWhitespace = input.replace(/\s+/g, '');
-console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
+  // Locate the bounds of the values.
+  let min = arr[0];
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+    if (val < min) min = val;
+    if (val > max) max = val;
+  }
 
-const withoutOnlySpaces = input.replaceAll(' ', '');
-console.log(withoutOnlySpaces);  // "Why\there? "
+  const range = max - min + 1;          // Number of distinct possible values
+  const count = new Array<number>(range).fill(0);
 
-// If you want to keep line breaks but trim spaces:
-const trimmed = input.trim();  // removes spaces at the start/end only
-const noSpaces = str.split(' ').join('');
+  // Count occurrences of each integer.
+  for (const value of arr) {
+    count[value - min]++;               // Shift by min so index 0 stays valid
+  }
+
+  // Overwrite the input array (or build a new one) using the counts.
+  const sorted: number[] = [];
+  for (let i = 0; i < range; i++) {
+    const currentVal = i + min;
+    const occ = count[i];
+    for (let j = 0; j < occ; j++) {
+      sorted.push(currentVal);
+    }
+  }
+
+  return sorted;
+}
