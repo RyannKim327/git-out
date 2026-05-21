@@ -1,34 +1,18 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
-  }
+function removeAllWhitespace(str: string): string {
+  return str.replace(/\s+/g, "");
 }
-
-function maxDepth(root: TreeNode | null): number {
-  if (root === null) return 0;           // base case: empty subtree
-  const leftDepth  = maxDepth(root.left);   // depth of left subtree
-  const rightDepth = maxDepth(root.right);  // depth of right subtree
-  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
+function trimStart(str: string): string {
+  return str.replace(/^\s+/, "");
 }
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
-  let max = 0;
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
-
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
-  }
-
-  return max;
+function trimEnd(str: string): string {
+  return str.replace(/\s+$/, "");
 }
+const raw = "\n  Let's   test this!  \t\n";
+console.log("original  :", raw);
+console.log("trimmed    :", raw.trim());
+console.log("no spaces :", raw.replace(/\s+/g, ""));
+original  : "
+  Let's   test this!   
+"
+trimmed    : "Let's   test this!"
+no spaces : "Letstestthis!"
