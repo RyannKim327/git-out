@@ -1,56 +1,95 @@
-diameter(root) = max(
-        diameter(left)                                       // purely left side
-      , diameter(right)                                      // purely right side
-      , height(left) + height(right) + 1                     // path that goes through root
-      )
-export class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+type EdgeMap = Map<number, Node>; // key = first char code of the edge
+
+export class Node {
+  // Children edges keyed by first character code
+  public children: EdgeMap = new Map();
+
+  // Edge that leads **to** this node
+  public start: number = -1;           // inclusive
+  public end: number = -1;             // exclusive
+  public suffixLink: Node | null = null;
+
+  constructor(start: number = -1, end: number = -1) {
+    this.start = start;
+    this.end   = end;
+  }
 }
-/**
- * Return [height, diameter] of the subtree rooted at `node`.
- *
- * - `height` is the number of nodes on the longest path from `node` downwards.
- * - `diameter` is the maximum number of nodes on any path that intersects the subtree.
- */
-function heightAndDiameter<T>(
-  node: TreeNode<T> | null
-): [number, number] {
-  if (!node) return [0, 0];          // height = 0, diameter = 0
+export class SuffixTree {
+  /** original text, appended with a unique terminator that does not appear elsewhere */
+  private text: string[];
 
-  const [leftH, leftD]   = heightAndDiameter(node.left);
-  const [rightH, rightD] = heightAndDiameter(node.right);
+  /** root node */
+  private root: Node = new Node();
 
-  const height = 1 + Math.max(leftH, rightH);
-  // path that goes through this node uses left subtree, node itself, right subtree
-  const throughRoot = leftH + rightH + 1;
+  /** active point */
+  private activeNode: Node = this.root;
+  private activeEdge: number | null = null;
+  private activeLength: number = 0;
 
-  const diameter = Math.max(leftD, rightD, throughRoot);
+  /** number of suffixes that have yet to be inserted for the current phase */
+  private remainder: number = 0;
 
-  return [height, diameter];
-}
-export function diameter<T>(root: TreeNode<T> | null): number {
-  // Return diameter as number of nodes on the longest path.
-  // If you prefer “edges” instead, just return `diameter - 1`.
-  const [, dia] = heightAndDiameter(root);
-  return dia;
-}
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),
-    new TreeNode(5)
-  ),
-  new TreeNode(3,
-    null,
-    new TreeNode(6)
-  )
-);
+  /** end index for leaves – shared so all leaves refer to the current suffix end */
+  private leafEnd: number = -1;
 
-console.log(diameter(root)); // → 5  (path 4‑2‑1‑3‑6)
-export function diameterInEdges<T>(root: TreeNode<T> | null): number {
-  const diaNodes = diameter(root);
-  return diaNodes > 0 ? diaNodes - 1 : 0;
-}
+  constructor(text: string) {
+    // Ensure a single terminator is appended; '#' is common
+    this.text = text.split('').concat('#');
+    this.build();
+  }
+
+  /** Core driver – runs one pass over the text */
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.extend(i);
+    }
+  }
+
+  /** Ukkonen’s “extension” for position i of the text */
+  private extend(pos: number): void {
+    this.leafEnd = pos;  // All current leaves stretch to the new char
+
+    this.remainder++;   // We have one more suffix to add
+
+    let lastNewNode: Node | null = null;
+
+    while (this.remainder > 0) {
+      if (this.activeLength === 0) {
+        // Start a new edge from the active node
+        this.activeEdge = pos;
+      }
+
+      const activeChar = this.text[this.activeEdge!];
+      const child = this.activeNode.children.get(activeChar.charCodeAt(0));
+
+      // 1. No edge starting with the active char → create a leaf
+      if (!child) {
+        const leaf = new Node(pos, Infinity); // Infinity means “extends to leafEnd”
+        this.activeNode.children.set(activeChar.charCodeAt(0), leaf);
+
+        // set suffix link for last internal node
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this.activeNode;
+          lastNewNode = null;
+        }
+      }
+      // 2. Edge exists → walk down if we have to
+      else if (this.walkDown(child, pos)) {
+        // edge fully traversed – repeat loop with updated active point
+        continue;
+      }
+      // 3. Edge exists but activeLength < edge length → split edge
+      else {
+        const edgeLen = this.edgeLength(child, pos);
+        if (this.activeLength === edgeLen) {
+          // If we are *exactly* at the end of an edge, further walk down happens
+          if (lastNewNode && this.activeNode !== this.root) {
+            lastNewNode.suffixLink = this.activeNode;
+            lastNewNode = null;
+          }
+          this.activeNode = child;
+          this.activeLength++; // effectively moving to next character on edge
+          break;               // proceed to next i
+        }
+
+        // Create internal node
