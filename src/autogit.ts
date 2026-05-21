@@ -1,21 +1,46 @@
-const original: number[] = [1, 2, 3, 4, 5];
-original.reverse();          // original is now [5, 4, 3, 2, 1]
-const copy = [...original].reverse(); // or use original.slice().reverse()
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-// original remains unchanged
-function reverseArray<T>(arr: T[]): T[] {
-  const len = arr.length;
-  const half = Math.floor(len / 2);
-  const copy = [...arr]; // keep original intact
+  // A little help‑trim: you can decide to ignore whitespace, case, etc.
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
 
-  for (let i = 0; i < half; i++) {
-    const j = len - 1 - i;
-    [copy[i], copy[j]] = [copy[j], copy[i]]; // swap
-  }
-  return copy;
+  const sortedA = normalize(a).split('').sort().join('');
+  const sortedB = normalize(b).split('').sort().join('');
+
+  return sortedA === sortedB;
 }
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-const reversed = reverseArray(original);
-function reverseArray<T>(arr: T[]): T[] {
-  return [...arr].reverse();
+  const freq = new Map<string, number>();
+
+  for (const ch of a) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
+
+  for (const ch of b) {
+    const count = freq.get(ch);
+    if (!count) return false;          // either zero or undefined
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  return freq.size === 0;
+}
+function areAnagramsAscii(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+
+  const counts = new Uint32Array(26);
+
+  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
+  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
+
+  return counts.every(v => v === 0);
+}
+const compact = (s: string) =>
+  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
+
+function areAnagramsClean(a: string, b: string): boolean {
+  return areAnagrams(compact(a), compact(b));
 }
