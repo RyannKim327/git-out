@@ -1,74 +1,65 @@
 /**
- * Quick‑sort implementation.
+ * Return the intersection of two arrays.
+ * @param a  First array
+ * @param b  Second array
+ * @returns  An array containing every element that appears in **both** `a` and `b`
  *
- * @param arr   The array to sort – it will be mutated in place.
- * @param compare Optional comparison function.  
- *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
- *                If omitted, the default is a numeric comparison.
- * @returns The same array reference, now sorted.
+ * The function is generic so it keeps the element type while still being type‑safe.
+ * For primitive values a direct equality check (`===`) is sufficient.
  */
-export function quickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Default to numeric comparison if no comparator is given
-  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
+export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
+  // Build a set from the larger array – that keeps lookup O(1).
+  // (You could skip the `max` decision; it's just a micro‑optimization.)
+  const [large, small] = a.length > b.length ? [a, b] : [b, a];
+  const set = new Set(large);
 
-  // Recursive helper – operates on the portion of the array
-  function qs(left: number, right: number): void {
-    if (left >= right) return;
-
-    // Partition returns the final index of the pivot
-    const pivotIndex = partition(left, right);
-
-    // Recurse on smaller side first to keep stack depth <= log₂(n)
-    if (pivotIndex - left < right - pivotIndex) {
-      qs(left, pivotIndex - 1);
-      qs(pivotIndex + 1, right);
-    } else {
-      qs(pivotIndex + 1, right);
-      qs(left, pivotIndex - 1);
-    }
-  }
-
-  // Lomuto‑style partition – choose rightmost element as pivot
-  function partition(left: number, right: number): number {
-    const pivot = arr[right];
-    let i = left - 1;          // Place for swapping
-
-    for (let j = left; j < right; j++) {
-      if (cmp(arr[j], pivot) <= 0) {
-        i++;
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-    }
-
-    // Move pivot to its final place
-    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
-    return i + 1;
-  }
-
-  qs(0, arr.length - 1);
-  return arr;
+  // Pick elements of the smaller array that exist in the set.
+  return small.filter((x) => set.has(x));
 }
-// Numbers – default numeric comparison is fine
-const nums = [34, 7, 23, 32, 5, 62];
-console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
+const xs = [1, 2, 3, 4];
+const ys = [3, 4, 5, 6];
 
-// Strings – need a string comparator  
-const words = ['banana', 'apple', 'cherry'];
-console.log(
-  quickSort(words, (a, b) => a.localeCompare(b))
-); // ['apple', 'banana', 'cherry']
+console.log(intersection(xs, ys)); // → [3, 4]
+import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
 
-// Custom objects  
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Anna', age: 27 },
-  { name: 'Bob', age: 22 },
-  { name: 'Clara', age: 35 },
+console.log(intersection(xs, ys)); // → [3, 4]
+interface Person {
+  id: number;
+  name: string;
+}
+
+const a: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
 ];
 
-quickSort(people, (a, b) => a.age - b.age);
-console.log(people);
-// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
+const b: Person[] = [
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+  { id: 4, name: 'Dan'   },
+];
+
+const key = (p: Person) => p.id;
+
+function intersectionBy<T, K extends string | number | symbol>(
+  a: readonly T[],
+  b: readonly T[],
+  getKey: (item: T) => K
+): T[] {
+  const map = new Map<K, T>();
+  for (const item of a) {
+    map.set(getKey(item), item);
+  }
+  const result: T[] = [];
+  for (const item of b) {
+    const key = getKey(item);
+    if (map.has(key)) {
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+console.log(intersectionBy(a, b, key));
+// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
