@@ -1,58 +1,99 @@
-/**
- * Computes the prefix function (failure table) of a pattern.
- * pi[i] = the length of the longest proper prefix of pattern[0..i]
- * that is also a suffix of pattern[0..i].
- */
-function buildPrefixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const pi: number[] = Array(m).fill(0);
-  let k = 0;   // mismatch counter
-
-  for (let i = 1; i < m; i++) {
-    // fall back until we either hit a match or k == 0
-    while (k > 0 && pattern[i] !== pattern[k]) {
-      k = pi[k - 1];
-    }
-    if (pattern[i] === pattern[k]) k++;
-    pi[i] = k;
-  }
-  return pi;
-}
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 /**
- * KMP search – returns the starting indices of all matches of `needle`
- * inside `haystack`.  Does *exact* matching (no regex features).
+ * Example of an async “network task” that you might run in Android
+ * (React‑Native runs JavaScript on a background thread for you).
  */
-export function kmpSearch(haystack: string, needle: string): number[] {
-  const n = haystack.length;
-  const m = needle.length;
-  if (m === 0) return [];          // nothing to find
-  if (m > n) return [];            // can't fit
+const App: React.FC = () => {
+  /*--- State: loading / data / error -----------------------------------*/
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-  const pi = buildPrefixTable(needle);
-  const matches: number[] = [];
-  let j = 0;                        // current index in needle
+  /*--- Effect: fire once on mount -------------------------------------*/
+  useEffect(() => {
+    /**
+     * Async function inside the effect so we can use await at a top level.
+     * It's an equivalent of Android’s AsyncTask (but without the Android
+     * boilerplate) – just a Promise chain wrapped in async/await.
+     */
+    const fetchData = async () => {
+      try {
+        // 1️⃣ Make the request
+        const response = await fetch(
+          'https://api.adviceslip.com/advice',
+        );
 
-  for (let i = 0; i < n; i++) {
-    // if mismatch, fall back using pi until match or j == 0
-    while (j > 0 && haystack[i] !== needle[j]) {
-      j = pi[j - 1];
-    }
-    if (haystack[i] === needle[j]) j++;
+        // 2️⃣ Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-    // full match found
-    if (j === m) {
-      matches.push(i - m + 1);
-      j = pi[j - 1];   // allow overlaps
-    }
-  }
+        // 3️⃣ Parse the JSON payload
+        const json = await response.json();
 
-  return matches;
-}
-const txt = "ababcabcababc";
-const pat = "abc";
+        // 4️⃣ Store the result
+        setData(json);          // data.slip.advice will be the string
+        setError(null);
+      } catch (e) {
+        // Anything that goes wrong lands here
+        console.error('Failed to fetch advice:', e);
+        setError((e as Error).message);
+        setData(null);
+      } finally {
+        // Whatever happens, loading is done
+        setLoading(false);
+      }
+    };
 
-console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
-function contains(haystack: string, needle: string) {
-  return haystack.indexOf(needle) !== -1;
-}
+    fetchData();
+
+    // Optional: cleanup if the component unmounts before fetch resolves
+    // return () => { /* cancel request if using AbortController, e.g. */ };
+  }, []); // empty deps → run once
+
+  /*--- Rendering -----------------------------------------------------*/
+  return (
+    <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.text}>Loading advice...</Text>
+        </View>
+      )}
+
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
+        </View>
+      )}
+
+      {!loading && data && (
+        <View style={styles.centered}>
+          <Text style={styles.title}>Here’s an advice for you:</Text>
+          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
+
+/*--- Styles ----------------------------------------------------------*/
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginTop: 12 },
+  title: { fontSize: 18, fontWeight: '600' },
+  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
+  error: { color: 'red' },
+});
+
+export default App;
