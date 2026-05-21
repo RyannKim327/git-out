@@ -1,33 +1,52 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-const head: ListNode<number> = { val: 1, next: null };
-head.next = { val: 2, next: null };
-head.next.next = { val: 3, next: null };      // 1 → 2 → 3
-function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+/**
+ * Selection sort – returns a **new** sorted array.
+ * The original array is left untouched.
+ *
+ * @param arr   – source array
+ * @returns     – a new array sorted in ascending order
+ */
+export function selectionSort<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];          // clone so we don't mutate the caller's array
+  const n = toSort.length;
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow?.next ?? null;   // advance by 1
-    fast = fast.next.next;       // advance by 2
+  for (let i = 0; i < n - 1; i++) {
+    // assume the smallest element is at i
+    let minIndex = i;
+
+    // find the real smallest element in the remaining unsorted section
+    for (let j = i + 1; j < n; j++) {
+      if (toSort[j] < toSort[minIndex]) {
+        minIndex = j;
+      }
+    }
+
+    // swap the found minimum with the element at i
+    if (minIndex !== i) {
+      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
+    }
   }
 
-  return slow; // could be null if the list was empty
+  return toSort;
 }
-if (fast !== null) {            // original list had even length
-  slow = slow?.next ?? null;    // bump to the second middle
-}
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-}
+const unsorted = [9, 3, 10, 2, 7];
+const sorted = selectionSort(unsorted);
 
-const list: ListNode<number> | null = {
-  val: 10,
-  next: { val: 20, next: { val: 30, next: null } },
-};
+console.log(sorted);      // [2, 3, 7, 9, 10]
+console.log(unsorted);    // remains [9, 3, 10, 2, 7]
+export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];
+  const helper = (k: number) => {
+    if (k >= toSort.length - 1) return;
 
-console.log(middle(list)?.val); // prints 20
+    let minIdx = k;
+    for (let i = k + 1; i < toSort.length; i++) {
+      if (toSort[i] < toSort[minIdx]) minIdx = i;
+    }
+
+    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
+    helper(k + 1);
+  };
+
+  helper(0);
+  return toSort;
+}
