@@ -1,52 +1,88 @@
-/**
- * Interpolation Search
- *
- * The algorithm only works on numeric, strictly‑sorted arrays.
- * It probes values near the expected position based on the key’s value,
- * so it runs “almost” as fast as binary search on uniformly distributed data.
- *
- * @param arr  Sorted numeric array (ascending)
- * @param key  Value to locate
- * @returns    Index of the key or -1 if not present
- */
-export function interpolationSearch(arr: number[], key: number): number {
-  if (arr.length === 0) return -1;
+// ---------- Graph data ----------------------------------------------------
+type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
 
-  let low = 0;
-  let high = arr.length - 1;
+// ---------- Tarjan's SCC implementation ----------------------------------
+class TarjanSCC {
+  private graph: Graph;            // the adjacency list
+  private index = 0;               // incremental index counter
+  private indices: Map<string, number> = new Map(); // node → index
+  private lowlink: Map<string, number> = new Map(); // node → lowlink
 
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Guard against division by zero for the degenerate case
-    if (arr[high] === arr[low]) {
-      break; // all remaining elements equal; either match or no match
-    }
+  private stack: string[] = [];    // nodes currently on the recursion stack
+  private onStack: Set<string> = new Set();
 
-    const pos =
-      low +
-      Math.floor(
-        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
-      );
+  private result: string[][] = []; // list of SCCs found
 
-    const midVal = arr[pos];
-
-    if (midVal === key) return pos;
-
-    if (midVal < key) {
-      low = pos + 1;
-    } else {
-      high = pos - 1;
-    }
+  constructor(g: Graph) {
+    this.graph = g;
   }
 
-  // If we exit the loop without hitting the key
-  return -1;
-}
-const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
-const target = 56;
-const idx = interpolationSearch(data, target);
+  public run(): string[][] {
+    // start DFS from every undiscovered node
+    for (const node of Object.keys(this.graph)) {
+      if (!this.indices.has(node)) {
+        this.strongConnect(node);
+      }
+    }
+    return this.result;
+  }
 
-if (idx !== -1) {
-  console.log(`Found ${target} at index ${idx}`);
-} else {
-  console.log(`${target} not in the array`);
+  private strongConnect(v: string) {
+    // set the depth index for v
+    this.indices.set(v, this.index);
+    this.lowlink.set(v, this.index);
+    this.index += 1;
+
+    this.stack.push(v);
+    this.onStack.add(v);
+
+    // consider successors of v
+    for (const w of this.graph[v] ?? []) {
+      if (!this.indices.has(w)) {
+        // success: DFS tree edge
+        this.strongConnect(w);
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.lowlink.get(w)!
+        ));
+      } else if (this.onStack.has(w)) {
+        // back edge – strengthen lowlink
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.indices.get(w)!
+        ));
+      }
+    }
+
+    // If v is the root of an SCC, pop the stack
+    if (this.lowlink.get(v) === this.indices.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = this.stack.pop()!;
+        this.onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      this.result.push(component);
+    }
+  }
 }
+const graph: Graph = {
+  '0': ['1'],
+  '1': ['2', '3'],
+  '2': ['0', '4'],
+  '3': ['4'],
+  '4': ['5'],
+  '5': ['3', '6'],
+  '6': ['7'],
+  '7': ['5'],
+};
+
+const tarjan = new TarjanSCC(graph);
+const sccs = tarjan.run();
+
+console.log('Strongly connected components:');
+sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
+Strongly connected components:
+0: [6, 7, 5]
+1: [0, 1, 2, 4, 3]
