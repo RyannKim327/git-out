@@ -1,88 +1,50 @@
-// ---------- Graph data ----------------------------------------------------
-type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
-
-// ---------- Tarjan's SCC implementation ----------------------------------
-class TarjanSCC {
-  private graph: Graph;            // the adjacency list
-  private index = 0;               // incremental index counter
-  private indices: Map<string, number> = new Map(); // node → index
-  private lowlink: Map<string, number> = new Map(); // node → lowlink
-
-  private stack: string[] = [];    // nodes currently on the recursion stack
-  private onStack: Set<string> = new Set();
-
-  private result: string[][] = []; // list of SCCs found
-
-  constructor(g: Graph) {
-    this.graph = g;
-  }
-
-  public run(): string[][] {
-    // start DFS from every undiscovered node
-    for (const node of Object.keys(this.graph)) {
-      if (!this.indices.has(node)) {
-        this.strongConnect(node);
-      }
-    }
-    return this.result;
-  }
-
-  private strongConnect(v: string) {
-    // set the depth index for v
-    this.indices.set(v, this.index);
-    this.lowlink.set(v, this.index);
-    this.index += 1;
-
-    this.stack.push(v);
-    this.onStack.add(v);
-
-    // consider successors of v
-    for (const w of this.graph[v] ?? []) {
-      if (!this.indices.has(w)) {
-        // success: DFS tree edge
-        this.strongConnect(w);
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.lowlink.get(w)!
-        ));
-      } else if (this.onStack.has(w)) {
-        // back edge – strengthen lowlink
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.indices.get(w)!
-        ));
-      }
-    }
-
-    // If v is the root of an SCC, pop the stack
-    if (this.lowlink.get(v) === this.indices.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = this.stack.pop()!;
-        this.onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      this.result.push(component);
-    }
-  }
+class ListNode {
+  constructor(public val: number = 0, public next: ListNode | null = null) {}
 }
-const graph: Graph = {
-  '0': ['1'],
-  '1': ['2', '3'],
-  '2': ['0', '4'],
-  '3': ['4'],
-  '4': ['5'],
-  '5': ['3', '6'],
-  '6': ['7'],
-  '7': ['5'],
-};
 
-const tarjan = new TarjanSCC(graph);
-const sccs = tarjan.run();
+/**
+ * Return the intersection node of two singly linked lists, or null if they
+ * never meet.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // First guard for trivial cases.
+  if (!headA || !headB) return null;
 
-console.log('Strongly connected components:');
-sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
-Strongly connected components:
-0: [6, 7, 5]
-1: [0, 1, 2, 4, 3]
+  // Two pointers that start at the heads of the two lists.
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
+
+  /**
+   * Each pointer walks until it reaches the end of its list, then jumps
+   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
+   * they will either collide (at the intersection) or simultaneously reach
+   * the tail (`null`) meaning the lists do not intersect.
+   */
+  while (pA !== pB) {
+    pA = pA === null ? headB : pA.next;
+    pB = pB === null ? headA : pB.next;
+  }
+
+  return pA; // either the intersection node or null
+}
+// Helper to build a list from an array
+function build(arr: number[]): ListNode | null {
+  let dummy = new ListNode(-1);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
+
+// Build two lists that intersect
+const shared = build([8, 9, 10]);
+
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
+
+console.log(getIntersectionNode(a1, b1) === shared); // true
