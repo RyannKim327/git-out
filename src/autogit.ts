@@ -1,46 +1,58 @@
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+/**
+ * Computes the prefix function (failure table) of a pattern.
+ * pi[i] = the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
+ */
+function buildPrefixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const pi: number[] = Array(m).fill(0);
+  let k = 0;   // mismatch counter
 
-  // A little help‑trim: you can decide to ignore whitespace, case, etc.
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
-
-  const sortedA = normalize(a).split('').sort().join('');
-  const sortedB = normalize(b).split('').sort().join('');
-
-  return sortedA === sortedB;
+  for (let i = 1; i < m; i++) {
+    // fall back until we either hit a match or k == 0
+    while (k > 0 && pattern[i] !== pattern[k]) {
+      k = pi[k - 1];
+    }
+    if (pattern[i] === pattern[k]) k++;
+    pi[i] = k;
+  }
+  return pi;
 }
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
 
-  const freq = new Map<string, number>();
+/**
+ * KMP search – returns the starting indices of all matches of `needle`
+ * inside `haystack`.  Does *exact* matching (no regex features).
+ */
+export function kmpSearch(haystack: string, needle: string): number[] {
+  const n = haystack.length;
+  const m = needle.length;
+  if (m === 0) return [];          // nothing to find
+  if (m > n) return [];            // can't fit
 
-  for (const ch of a) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  const pi = buildPrefixTable(needle);
+  const matches: number[] = [];
+  let j = 0;                        // current index in needle
+
+  for (let i = 0; i < n; i++) {
+    // if mismatch, fall back using pi until match or j == 0
+    while (j > 0 && haystack[i] !== needle[j]) {
+      j = pi[j - 1];
+    }
+    if (haystack[i] === needle[j]) j++;
+
+    // full match found
+    if (j === m) {
+      matches.push(i - m + 1);
+      j = pi[j - 1];   // allow overlaps
+    }
   }
 
-  for (const ch of b) {
-    const count = freq.get(ch);
-    if (!count) return false;          // either zero or undefined
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
-  }
-
-  return freq.size === 0;
+  return matches;
 }
-function areAnagramsAscii(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+const txt = "ababcabcababc";
+const pat = "abc";
 
-  const counts = new Uint32Array(26);
-
-  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
-  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
-
-  return counts.every(v => v === 0);
-}
-const compact = (s: string) =>
-  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
-
-function areAnagramsClean(a: string, b: string): boolean {
-  return areAnagrams(compact(a), compact(b));
+console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
+function contains(haystack: string, needle: string) {
+  return haystack.indexOf(needle) !== -1;
 }
