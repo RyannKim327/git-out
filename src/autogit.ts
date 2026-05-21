@@ -1,99 +1,98 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
 /**
- * Example of an async “network task” that you might run in Android
- * (React‑Native runs JavaScript on a background thread for you).
+ * Comparator signature: (a, b) => boolean
+ * Should return true if `a` has higher priority than `b`
+ * (i.e. `a` should come *before* `b` in the heap order).
  */
-const App: React.FC = () => {
-  /*--- State: loading / data / error -----------------------------------*/
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+type Comparator<T> = (a: T, b: T) => boolean;
 
-  /*--- Effect: fire once on mount -------------------------------------*/
-  useEffect(() => {
-    /**
-     * Async function inside the effect so we can use await at a top level.
-     * It's an equivalent of Android’s AsyncTask (but without the Android
-     * boilerplate) – just a Promise chain wrapped in async/await.
-     */
-    const fetchData = async () => {
-      try {
-        // 1️⃣ Make the request
-        const response = await fetch(
-          'https://api.adviceslip.com/advice',
-        );
+export class PriorityQueue<T> {
+  /** Encoded binary‑heap */
+  private items: T[] = [];
 
-        // 2️⃣ Check for HTTP errors
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+  constructor(private comparator: Comparator<T> = (a, b) => a < b) { }
 
-        // 3️⃣ Parse the JSON payload
-        const json = await response.json();
+  /* ---------- Properties ---------- */
 
-        // 4️⃣ Store the result
-        setData(json);          // data.slip.advice will be the string
-        setError(null);
-      } catch (e) {
-        // Anything that goes wrong lands here
-        console.error('Failed to fetch advice:', e);
-        setError((e as Error).message);
-        setData(null);
-      } finally {
-        // Whatever happens, loading is done
-        setLoading(false);
+  get size(): number { return this.items.length; }
+  get isEmpty(): boolean { return this.items.length === 0; }
+
+  /* ---------- Queries ---------- */
+
+  peek(): T | undefined { return this.items[0]; }
+
+  /* ---------- Mutations ---------- */
+
+  push(item: T): void {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (this.isEmpty) return undefined;
+
+    const top = this.items[0];
+    const last = this.items.pop()!; // array isn't empty
+
+    if (!this.isEmpty) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+
+    return top;
+  }
+
+  /* ---------- Internals ---------- */
+
+  private bubbleUp(idx: number): void {
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      if (this.comparator(this.items[idx], this.items[parentIdx])) {
+        this.swap(idx, parentIdx);
+        idx = parentIdx;
+      } else {
+        break;
       }
-    };
+    }
+  }
 
-    fetchData();
+  private bubbleDown(idx: number): void {
+    const length = this.items.length;
+    while (true) {
+      const left = idx * 2 + 1;
+      const right = left + 1;
+      let smallest = idx;
 
-    // Optional: cleanup if the component unmounts before fetch resolves
-    // return () => { /* cancel request if using AbortController, e.g. */ };
-  }, []); // empty deps → run once
+      if (left < length && this.comparator(this.items[left], this.items[smallest])) {
+        smallest = left;
+      }
+      if (right < length && this.comparator(this.items[right], this.items[smallest])) {
+        smallest = right;
+      }
 
-  /*--- Rendering -----------------------------------------------------*/
-  return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.text}>Loading advice...</Text>
-        </View>
-      )}
+      if (smallest !== idx) {
+        this.swap(idx, smallest);
+        idx = smallest;
+      } else {
+        break;
+      }
+    }
+  }
 
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
-        </View>
-      )}
+  private swap(i: number, j: number): void {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  }
+}
+const maxHeap = new PriorityQueue<number>((a, b) => a > b);
+interface Task {
+  priority: number;     // smaller number → higher priority
+  description: string;
+}
 
-      {!loading && data && (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Here’s an advice for you:</Text>
-          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-};
+const taskQueue = new PriorityQueue<Task>((a, b) => a.priority < b.priority);
+const pq = new PriorityQueue<number>((a, b) => a < b); // min‑heap
 
-/*--- Styles ----------------------------------------------------------*/
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, marginTop: 12 },
-  title: { fontSize: 18, fontWeight: '600' },
-  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
-  error: { color: 'red' },
-});
+[pq.push(5), pq.push(3), pq.push(8), pq.push(1)];
 
-export default App;
+while (!pq.isEmpty) {
+  console.log(pq.pop()); // prints: 1, 3, 5, 8
+}
