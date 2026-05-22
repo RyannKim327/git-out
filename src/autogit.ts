@@ -1,59 +1,50 @@
-// A minimal, generic binary‑tree node
-export interface TreeNode<T = number> {
-    /** The value stored in this node.  (Can be any type.) */
-    val: T;
-    /** Left child – `null` if none. */
-    left: TreeNode<T> | null;
-    /** Right child – `null` if none. */
-    right: TreeNode<T> | null;
+class ListNode {
+  constructor(public val: number = 0, public next: ListNode | null = null) {}
 }
+
 /**
- * Sum all the numeric values stored in a binary tree.
- *
- * @param root First node of the tree (or `null`).
- * @returns   Sum of every `val` in the tree.
+ * Return the intersection node of two singly linked lists, or null if they
+ * never meet.
  */
-export function sumTree(root: TreeNode<number> | null): number {
-    if (!root) return 0;                // base case: empty subtree
-    const left  = sumTree(root.left);   // sum of left subtree
-    const right = sumTree(root.right);  // sum of right subtree
-    return root.val + left + right;     // current node + children
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // First guard for trivial cases.
+  if (!headA || !headB) return null;
+
+  // Two pointers that start at the heads of the two lists.
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
+
+  /**
+   * Each pointer walks until it reaches the end of its list, then jumps
+   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
+   * they will either collide (at the intersection) or simultaneously reach
+   * the tail (`null`) meaning the lists do not intersect.
+   */
+  while (pA !== pB) {
+    pA = pA === null ? headB : pA.next;
+    pB = pB === null ? headA : pB.next;
+  }
+
+  return pA; // either the intersection node or null
 }
-/**
- * Sum all the numeric values stored in a binary tree, iteratively.
- *
- * Uses an explicit stack so it never uses the call stack.
- */
-export function sumTreeIterative(root: TreeNode<number> | null): number {
-    if (!root) return 0;
-
-    let sum = 0;
-    const stack: Array<TreeNode<number>> = [root];
-
-    while (stack.length > 0) {
-        const node = stack.pop()!;   // pop returns |undefined|, but we know stack isn’t empty
-        sum += node.val;
-
-        // Push children onto the stack – order doesn’t matter for sum
-        if (node.right) stack.push(node.right);
-        if (node.left)  stack.push(node.left);
-    }
-
-    return sum;
+// Helper to build a list from an array
+function build(arr: number[]): ListNode | null {
+  let dummy = new ListNode(-1);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
 }
-const tree: TreeNode = {
-    val: 5,
-    left: {
-        val: 3,
-        left:  { val: 2, left: null, right: null },
-        right: { val: 4, left: null, right: null },
-    },
-    right: {
-        val: 8,
-        left:  { val: 7, left: null, right: null },
-        right: { val: 9, left: null, right: null },
-    },
-};
 
-console.log(sumTree(tree));          // → 47
-console.log(sumTreeIterative(tree)); // → 47
+// Build two lists that intersect
+const shared = build([8, 9, 10]);
+
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
+
+console.log(getIntersectionNode(a1, b1) === shared); // true
