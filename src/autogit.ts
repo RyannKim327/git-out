@@ -1,32 +1,48 @@
-/**
- * Returns the longest common substring between `a` and `b`.
- * If there are several with the same length, the one that appears first in `a` is returned.
- */
-export function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+// fetch-posts.ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  // 2‑D array of zeros
-  const table = Array.from({ length: rows }, () => Array(cols).fill(0));
+async function getPosts(): Promise<Post[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
 
-  let maxLen = 0;
-  let maxEndIdxA = 0;
+  // Allow a “fetch” implementation to be swapped in, e.g. for tests
+  const fetcher = typeof globalThis.fetch === "function" ? globalThis.fetch : require("node-fetch");
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        table[i][j] = table[i - 1][j - 1] + 1;
-        if (table[i][j] > maxLen) {
-          maxLen = table[i][j];
-          maxEndIdxA = i;          // the end index (exclusive) in `a`
-        }
-      }
+  try {
+    const resp = await fetcher(url, { method: "GET" });
+
+    if (!resp.ok) {
+      // Throw an error that includes the status code and message
+      throw new Error(`API error (${resp.status}): ${resp.statusText}`);
     }
-  }
 
-  return maxLen === 0 ? '' : a.slice(maxEndIdxA - maxLen, maxEndIdxA);
+    const data: unknown = await resp.json();
+
+    // Basic runtime type guard: make sure we really got an array of posts
+    if (!Array.isArray(data)) {
+      throw new Error("Response was not an array");
+    }
+
+    // We trust the API to provide the right shape and coerce
+    return data as Post[];
+  } catch (e) {
+    // Re‑throw with a bit more context if we’re not already an Error
+    if (!(e instanceof Error)) {
+      throw new Error(String(e));
+    }
+    throw e;
+  }
 }
-console.log(longestCommonSubstring('ABABC', 'BABCA')); // → "ABC"
-console.log(longestCommonSubstring('kitten', 'sitting')); // → "itt"
-console.log(longestCommonSubstring('foo', 'bar')); // → ""
+
+// Demo: print the first five posts
+getPosts()
+  .then((posts) => {
+    posts.slice(0, 5).forEach((p) =>
+      console.log(`[${p.id}] ${p.title} (user ${p.userId})`)
+    );
+  })
+  .catch((err) => console.error("Failed to fetch posts:", err));
