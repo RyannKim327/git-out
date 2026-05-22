@@ -1,33 +1,58 @@
 /**
- * Returns `true` if the supplied value is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores all non‑alphanumeric characters
- *
- * @example
- * isPalindrome("A man, a plan, a canal: Panama") // → true
- * isPalindrome("Madam")                          // → true
- * isPalindrome("Hello")                          // → false
+ * Computes the prefix function (failure table) of a pattern.
+ * pi[i] = the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
  */
-export function isPalindrome(str: string): boolean {
-  // Keep only alphanumeric characters and lower‑case the rest.
-  const cleaned = str
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+function buildPrefixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const pi: number[] = Array(m).fill(0);
+  let k = 0;   // mismatch counter
 
-  // Two‑pointer technique: compare chars from both ends.
-  let left = 0;
-  let right = cleaned.length - 1;
-
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
+  for (let i = 1; i < m; i++) {
+    // fall back until we either hit a match or k == 0
+    while (k > 0 && pattern[i] !== pattern[k]) {
+      k = pi[k - 1];
     }
-    left++;
-    right--;
+    if (pattern[i] === pattern[k]) k++;
+    pi[i] = k;
+  }
+  return pi;
+}
+
+/**
+ * KMP search – returns the starting indices of all matches of `needle`
+ * inside `haystack`.  Does *exact* matching (no regex features).
+ */
+export function kmpSearch(haystack: string, needle: string): number[] {
+  const n = haystack.length;
+  const m = needle.length;
+  if (m === 0) return [];          // nothing to find
+  if (m > n) return [];            // can't fit
+
+  const pi = buildPrefixTable(needle);
+  const matches: number[] = [];
+  let j = 0;                        // current index in needle
+
+  for (let i = 0; i < n; i++) {
+    // if mismatch, fall back using pi until match or j == 0
+    while (j > 0 && haystack[i] !== needle[j]) {
+      j = pi[j - 1];
+    }
+    if (haystack[i] === needle[j]) j++;
+
+    // full match found
+    if (j === m) {
+      matches.push(i - m + 1);
+      j = pi[j - 1];   // allow overlaps
+    }
   }
 
-  return true;
+  return matches;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("Hello"));                         // false
+const txt = "ababcabcababc";
+const pat = "abc";
+
+console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
+function contains(haystack: string, needle: string) {
+  return haystack.indexOf(needle) !== -1;
+}
