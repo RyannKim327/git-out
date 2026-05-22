@@ -1,57 +1,44 @@
 /**
- * Build the shift table used by BMH.
- * Each entry tells us how far we can jump when the bad character
- * (the character that mismatched) appears.
+ * Randomly shuffles an array in-place.
+ * Uses the Fisher–Yates algorithm.
  */
-function buildShiftTable(pattern: string): Record<string, number> {
-  const table: Record<string, number> = {};
-  const m = pattern.length;
-
-  // every character that does NOT appear in the pattern gets a full skip
-  // (m).  Characters *inside* the pattern get a smaller value.
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern[i]] = m - 1 - i;
+function shuffle<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
-
-  return table;
 }
 
 /**
- * Classic Boyer‑Moore‑Horspool
- *
- * @param text    The text to search in
- * @param pattern The pattern to find
- * @returns Index of the first occurrence or -1
+ * Checks whether the array is sorted in ascending order.
+ * Works for numbers and strings (lexicographically).
  */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;          // empty pattern matches immediately
-  if (pattern.length > text.length) return -1;   // impossible
+function isSorted<T extends number | string>(array: T[]): boolean {
+  for (let i = 0; i < array.length - 1; i++) {
+    if (array[i] > array[i + 1]) return false;
+  }
+  return true;
+}
 
-  const shift = buildShiftTable(pattern);
-  const n = text.length;
-  const m = pattern.length;
+/**
+ * Bogosort: keep shuffling until the array is sorted.
+ * In practice, this is a joke algorithm because of its astronomical
+ * expected runtime, but it’s fun to see it in TypeScript.
+ */
+export function randomSort<T extends number | string>(array: T[]): T[] {
+  // We’ll operate on a copy to avoid mutating the caller’s data.
+  const arr = array.slice();
 
-  let i = 0;          // index in text where we start aligning the pattern
+  // Guard against trivial cases.
+  if (arr.length < 2) return arr;
 
-  while (i <= n - m) {
-    // start comparing from the end of the pattern
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      return i;  // whole pattern matched
-    }
-
-    // bad character at text[i + m - 1]
-    const badChar = text[i + m - 1];
-    const skip = shift[badChar] ?? m; // default skip is m
-    i += skip;
+  // Keep shuffling until the array is sorted.
+  while (!isSorted(arr)) {
+    shuffle(arr);
   }
 
-  return -1; // not found
+  return arr;
 }
-console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
-console.log(boyerMooreHorspool("hello world", "world")); // → 6
-console.log(boyerMooreHorspool("visible", "nope")); // → -1
+const unsorted = [3, 1, 4, 1, 5, 9, 2];
+const sorted = randomSort(unsorted);
+console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
