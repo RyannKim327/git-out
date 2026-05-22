@@ -1,54 +1,110 @@
-/**
- * Area from base and height.
- * @param base  - Base length (any positive number)
- * @param height - Height length (any positive number)
- * @returns Triangle area
- */
-function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('Base and height must be positive numbers.');
-  }
-  return (base * height) / 2;
-}
-const area = areaBaseHeight(10, 5); // 25
-console.log(`Area = ${area}`);      // Area = 25
-/**
- * Deal with three side lengths.
- * @param a - length of side a
- * @param b - length of side b
- * @param c - length of side c
- * @returns Triangle area
- */
-function areaBySides(a: number, b: number, c: number): number {
-  // Simple validity check – the sides must satisfy the triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The given sides do not form a valid triangle.');
+// ----- Min‑Heap implementation ---------------------------------------
+class MinHeap<T> {
+  private items: Array<{key: number; value: T}> = [];
+
+  private siftUp(idx: number) {
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.items[parent].key <= this.items[idx].key) break;
+      [this.items[parent], this.items[idx]] = [this.items[idx], this.items[parent]];
+      idx = parent;
+    }
   }
 
-  const s = (a + b + c) / 2;                 // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
-}
-const areaHeron = areaBySides(3, 4, 5); // 6
-console.log(`Area (Heron) = ${areaHeron}`);
-/**
- * Area from two sides and an included angle (in degrees or radians).
- * @param side1   - length of one side
- * @param side2   - length of the other side
- * @param angle   - included angle (in degrees)
- * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
- * @returns Triangle area
- */
-function areaFromSidesAndAngle(
-  side1: number,
-  side2: number,
-  angle: number,
-  inRadians = false
-): number {
-  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
+  private siftDown(idx: number, size: number) {
+    while (true) {
+      const left = (idx << 1) + 1;
+      const right = left + 1;
+      let smallest = idx;
 
-  const rad = inRadians ? angle : (angle * Math.PI) / 180;
-  return (side1 * side2 * Math.sin(rad)) / 2;
+      if (left < size && this.items[left].key < this.items[smallest].key) smallest = left;
+      if (right < size && this.items[right].key < this.items[smallest].key) smallest = right;
+
+      if (smallest === idx) break;
+      [this.items[smallest], this.items[idx]] = [this.items[idx], this.items[smallest]];
+      idx = smallest;
+    }
+  }
+
+  push(key: number, value: T) {
+    this.items.push({key, value});
+    this.siftUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    const size = this.items.length;
+    if (!size) return undefined;
+    const min = this.items[0].value;
+    this.items[0] = this.items[size - 1];
+    this.items.pop();
+    this.siftDown(0, this.items.length);
+    return min;
+  }
+
+  get size() {
+    return this.items.length;
+  }
 }
-const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
-console.log(`Area from two sides & angle = ${areaMixed}`);
+
+
+// ----- Graph representation ------------------------------------------
+type Edge = { to: number; weight: number };
+
+class Graph {
+  private adjacency: Edge[][] = [];
+
+  constructor(private nodeCount: number) {
+    this.adjacency = Array.from({length: nodeCount}, () => []);
+  }
+
+  addEdge(u: number, v: number, w: number, directed = false) {
+    this.adjacency[u].push({to: v, weight: w});
+    if (!directed) this.adjacency[v].push({to: u, weight: w});
+  }
+
+  getEdges(u: number): Edge[] {
+    return this.adjacency[u];
+  }
+}
+
+
+// ----- Dijkstra ---------------------------------------
+function dijkstra(graph: Graph, start: number): number[] {
+  const dist = Array(graph.adjacency.length).fill(Infinity);
+  const visited = new Array(graph.adjacency.length).fill(false);
+  const pq = new MinHeap<number>();
+
+  dist[start] = 0;
+  pq.push(0, start);
+
+  while (pq.size) {
+    const u = pq.pop() as number;      // current vertex
+    if (visited[u]) continue;          // skip stale entry
+    visited[u] = true;
+
+    for (const {to: v, weight: w} of graph.getEdges(u)) {
+      if (dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        pq.push(dist[v], v);
+      }
+    }
+  }
+
+  return dist; // distances from start to every vertex
+}
+
+
+// ----- Example usage ---------------------------------------
+const g = new Graph(6);
+g.addEdge(0, 1, 7);
+g.addEdge(0, 2, 9);
+g.addEdge(0, 5, 14);
+g.addEdge(1, 2, 10);
+g.addEdge(1, 3, 15);
+g.addEdge(2, 3, 11);
+g.addEdge(2, 5, 2);
+g.addEdge(3, 4, 6);
+g.addEdge(4, 5, 9);
+
+const distances = dijkstra(g, 0);
+console.log(distances); // shortest distance from vertex 0 to every other vertex
