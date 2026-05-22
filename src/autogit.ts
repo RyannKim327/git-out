@@ -1,110 +1,75 @@
-// Basic node description
-export interface Node {
-  id: string;           // unique identifier
-  // optional coordinates – handy for the heuristic
-  x?: number;
-  y?: number;
-  // all directly reachable neighbours
-  neighbors: string[];  // ids of neighbour nodes
-}
+// -------------------------------------------------------------
+// 1️⃣  O(n²) DP – intuition + implementation
+// -------------------------------------------------------------
+function lisDP(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
 
-export interface Edge {
-  from: string;      // node id
-  to: string;        // node id
-  cost: number;      // weight of the edge
-}
-class PriorityQueue<T> {
-  private items: { key: number; value: T }[] = [];
+  // dp[i]  – length of LIS that ends at index i
+  const dp: number[] = Array(n).fill(1);
+  // prev[i] – previous index in the LIS that ends at i
+  const prev: number[] = Array(n).fill(-1);
 
-  // swap helpers
-  private swap(i: number, j: number) {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
-  }
+  let bestEnd = 0; // index where the overall best LIS ends
 
-  // bubble‑up to maintain heap invariant
-  private bubbleUp(idx: number) {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.items[parent].key <= this.items[idx].key) break;
-      this.swap(parent, idx);
-      idx = parent;
+  for (let i = 0; i < n; ++i) {
+    for (let j = 0; j < i; ++j) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
     }
+    if (dp[i] > dp[bestEnd]) bestEnd = i;
   }
 
-  // bubble‑down to maintain heap invariant
-  private bubbleDown(idx: number) {
-    const last = this.items.length - 1;
-    while (true) {
-      const left = 2 * idx + 1;
-      const right = 2 * idx + 2;
-      let smallest = idx;
+  // Rebuild the sequence
+  const seq: number[] = [];
+  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
+  seq.reverse();
 
-      if (left <= last && this.items[left].key < this.items[smallest].key)
-        smallest = left;
-      if (right <= last && this.items[right].key < this.items[smallest].key)
-        smallest = right;
-
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // push a new value with a priority
-  push(value: T, key: number) {
-    this.items.push({ value, key });
-    this.bubbleUp(this.items.length - 1);
-  }
-
-  // pop the value with the smallest priority
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const root = this.items[0].value;
-    const last = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = last;
-      this.bubbleDown(0);
-    }
-    return root;
-  }
-
-  get size(): number {
-    return this.items.length;
-  }
+  return { length: dp[bestEnd], sequence: seq };
 }
-/**
- * Generic A* implementation.
- * @param nodes   Map of node id → Node
- * @param edges   Map of node id → array of out‑going edges
- * @param start   id of the start node
- * @param goal    id of the goal node
- * @param heuristic (node) ⇒ estimated distance to goal
- * @returns array of node ids that form the cheapest path, or empty array if none
- */
-export function aStar(
-  nodes: Map<string, Node>,
-  edges: Map<string, Edge[]>,
-  start: string,
-  goal: string,
-  heuristic: (nodeId: string) => number
-): string[] {
-  // G‑costs: current best known cost to each node
-  const g: Map<string, number> = new Map();
-  g.set(start, 0);
+// -------------------------------------------------------------
+// 2️⃣  O(n log n) – patience sorting + back‑tracking
+// -------------------------------------------------------------
+function lisPatience(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
 
-  // Came‑from map to rebuild the path
-  const cameFrom: Map<string, string> = new Map();
+  // tails[i] – index of the smallest tail of LIS with length i+1
+  const tails: number[] = [];
+  // parentIdx[i] – previous index in LIS that ends at i
+  const parentIdx: number[] = Array(n).fill(-1);
 
-  // Open set – priority queue keyed by F = G + H
-  const open = new PriorityQueue<string>();
-  open.push(start, heuristic(start));
+  for (let i = 0; i < n; ++i) {
+    const x = arr[i];
 
-  // Closed set: processed nodes
-  const closed = new Set<string>();
+    // Binary search: first tail >= x
+    let lo = 0, hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (arr[tails[mid]] < x) lo = mid + 1;
+      else hi = mid;
+    }
 
-  while (open.size > 0) {
-    const current = open.pop()!;
+    // lo now points to position where x will go
+    if (lo > 0) parentIdx[i] = tails[lo - 1];
 
-    // Goal found – reconstruct the path
-    if (current === goal) {
-      const path: string[] =
+    if (lo === tails.length) tails.push(i);
+    else tails[lo] = i;
+  }
+
+  // Reconstruct sequence
+  const seq: number[] = [];
+  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
+  seq.reverse();
+
+  return { length: tails.length, sequence: seq };
+}
+const example = [10, 9, 2, 5, 3, 7, 101, 18];
+
+console.log(lisDP(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+
+console.log(lisPatience(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
