@@ -1,131 +1,110 @@
-/* ----------  TrieNode  ---------- */
-
-class TrieNode<T = any> {
-  /** Holds the full value for a key that ends here. */
-  public value: T | null = null;
-
-  /** Child pointers keyed by the next character. */
-  readonly children: Map<string, TrieNode<T>> = new Map();
-
-  /** Convenience flag – true if this node marks the end of a key. */
-  get hasValue(): boolean {
-    return this.value !== null;
-  }
+// Basic node description
+export interface Node {
+  id: string;           // unique identifier
+  // optional coordinates – handy for the heuristic
+  x?: number;
+  y?: number;
+  // all directly reachable neighbours
+  neighbors: string[];  // ids of neighbour nodes
 }
 
-/* ----------  Trie  ---------- */
+export interface Edge {
+  from: string;      // node id
+  to: string;        // node id
+  cost: number;      // weight of the edge
+}
+class PriorityQueue<T> {
+  private items: { key: number; value: T }[] = [];
 
-class Trie<T = any> {
-  private root = new TrieNode<T>();
-
-  /**
-   * Insert a key/value pair.  Keys can be any string.
-   */
-  insert(key: string, value: T): void {
-    let node = this.root;
-    for (const ch of key) {
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode<T>());
-      }
-      node = node.children.get(ch)!;
-    }
-    node.value = value;
+  // swap helpers
+  private swap(i: number, j: number) {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
   }
 
-  /**
-   * Returns the value stored under *key*, or `undefined` if the key
-   * isn't present.
-   */
-  get(key: string): T | undefined {
-    const node = this._findNode(key);
-    return node?.value ?? undefined;
-  }
-
-  /**
-   * Checks whether *key* exists in the trie.
-   */
-  has(key: string): boolean {
-    const node = this._findNode(key);
-    return !!node?.hasValue;
-  }
-
-  /**
-   * Delete a key.  If the key isn't present, nothing happens.
-   * The method ends up trimming unused nodes on the way back.
-   */
-  delete(key: string): void {
-    const path: TrieNode[] = [];
-    let node = this.root;
-
-    for (const ch of key) {
-      const child = node.children.get(ch);
-      if (!child) return;          // key not found
-      path.push(node);
-      node = child;
-    }
-
-    if (!node.hasValue) return;    // no value to delete
-
-    node.value = null;
-
-    // Walk backward, removing nodes that became unnecessary.
-    for (let i = key.length - 1; i >= 0; i--) {
-      const parent = path[i];
-      const ch = key[i];
-
-      const child = parent.children.get(ch)!;
-      if (child.children.size > 0 || child.hasValue) break;
-      parent.children.delete(ch);
+  // bubble‑up to maintain heap invariant
+  private bubbleUp(idx: number) {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.items[parent].key <= this.items[idx].key) break;
+      this.swap(parent, idx);
+      idx = parent;
     }
   }
 
-  /**
-   * Returns all keys that start with *prefix*.
-   */
-  startsWith(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
+  // bubble‑down to maintain heap invariant
+  private bubbleDown(idx: number) {
+    const last = this.items.length - 1;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
 
-    const results: string[] = [];
-    this._collect(node, prefix, results);
-    return results;
+      if (left <= last && this.items[left].key < this.items[smallest].key)
+        smallest = left;
+      if (right <= last && this.items[right].key < this.items[smallest].key)
+        smallest = right;
+
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
+    }
   }
 
-  /* ---------  Helpers  --------- */
-
-  private _findNode(key: string): TrieNode | null {
-    let node: TrieNode | undefined = this.root;
-    for (const ch of key) {
-      node = node?.children.get(ch);
-      if (!node) return null;
-    }
-    return node;
+  // push a new value with a priority
+  push(value: T, key: number) {
+    this.items.push({ value, key });
+    this.bubbleUp(this.items.length - 1);
   }
 
-  private _collect(node: TrieNode, prefix: string, out: string[]): void {
-    if (node.hasValue) out.push(prefix);
-
-    for (const [ch, child] of node.children) {
-      this._collect(child, prefix + ch, out);
+  // pop the value with the smallest priority
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const root = this.items[0].value;
+    const last = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = last;
+      this.bubbleDown(0);
     }
+    return root;
+  }
+
+  get size(): number {
+    return this.items.length;
   }
 }
+/**
+ * Generic A* implementation.
+ * @param nodes   Map of node id → Node
+ * @param edges   Map of node id → array of out‑going edges
+ * @param start   id of the start node
+ * @param goal    id of the goal node
+ * @param heuristic (node) ⇒ estimated distance to goal
+ * @returns array of node ids that form the cheapest path, or empty array if none
+ */
+export function aStar(
+  nodes: Map<string, Node>,
+  edges: Map<string, Edge[]>,
+  start: string,
+  goal: string,
+  heuristic: (nodeId: string) => number
+): string[] {
+  // G‑costs: current best known cost to each node
+  const g: Map<string, number> = new Map();
+  g.set(start, 0);
 
-/* ----------  Usage Demo  ---------- */
+  // Came‑from map to rebuild the path
+  const cameFrom: Map<string, string> = new Map();
 
-const trie = new Trie<number>();
+  // Open set – priority queue keyed by F = G + H
+  const open = new PriorityQueue<string>();
+  open.push(start, heuristic(start));
 
-trie.insert('cat', 1);
-trie.insert('car', 2);
-trie.insert('cart', 3);
-trie.insert('dog', 4);
+  // Closed set: processed nodes
+  const closed = new Set<string>();
 
-console.log(trie.get('cat'));         // 1
-console.log(trie.get('cart'));        // 3
-console.log(trie.has('carpent'));     // false
+  while (open.size > 0) {
+    const current = open.pop()!;
 
-console.log(trie.startsWith('ca'));   // ['cat', 'car', 'cart']
-console.log(trie.startsWith('do'));   // ['dog']
-
-trie.delete('cart');
-console.log(trie.startsWith('ca'));   // ['cat', 'car']
+    // Goal found – reconstruct the path
+    if (current === goal) {
+      const path: string[] =
