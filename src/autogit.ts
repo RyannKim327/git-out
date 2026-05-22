@@ -1,44 +1,118 @@
+type Node = number | string;           // whatever your IDs look like
+type Graph = Record<Node, Node[]>;     // adjacency list
+
 /**
- * Randomly shuffles an array in-place.
- * Uses the Fisher–Yates algorithm.
+ * Breadth‑first search that collects the visit order.
  */
-function shuffle<T>(array: T[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+export function bfsVisitOrder(
+  graph: Graph,
+  start: Node
+): Node[] {
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const order: Node[] = [];
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
+
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
   }
+  return order;
 }
 
 /**
- * Checks whether the array is sorted in ascending order.
- * Works for numbers and strings (lexicographically).
+ * Breadth‑first search that stops at a goal node
+ * and returns the *shortest path* (for unweighted graphs).
  */
-function isSorted<T extends number | string>(array: T[]): boolean {
-  for (let i = 0; i < array.length - 1; i++) {
-    if (array[i] > array[i + 1]) return false;
+export function bfsShortestPath(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {
+  if (start === goal) return [start];
+
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const parent: Record<Node, Node | null> = {};
+  parent[start] = null;
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        parent[neighbor] = cur;
+        if (neighbor === goal) {
+          // build the path from goal back to start
+          const path: Node[] = [goal];
+          let p: Node | null = cur;
+          while (p !== null) {
+            path.push(p);
+            p = parent[p];
+          }
+          return path.reverse();
+        }
+        queue.push(neighbor);
+      }
+    }
   }
-  return true;
+
+  return null; // goal not reachable
 }
+const graph: Graph = {
+  1: [2, 3],
+  2: [4],
+  3: [4, 5],
+  4: [],
+  5: [6],
+  6: [],
+};
 
-/**
- * Bogosort: keep shuffling until the array is sorted.
- * In practice, this is a joke algorithm because of its astronomical
- * expected runtime, but it’s fun to see it in TypeScript.
- */
-export function randomSort<T extends number | string>(array: T[]): T[] {
-  // We’ll operate on a copy to avoid mutating the caller’s data.
-  const arr = array.slice();
+console.log(bfsVisitOrder(graph, 1));
+// → [1, 2, 3, 4, 5, 6]
 
-  // Guard against trivial cases.
-  if (arr.length < 2) return arr;
+console.log(bfsShortestPath(graph, 1, 6));
+// → [1, 3, 5, 6]
+type NodeId = string | number;
 
-  // Keep shuffling until the array is sorted.
-  while (!isSorted(arr)) {
-    shuffle(arr);
+// Generic graph implemented as Map<id, array of ids>
+export type GenericGraph<T> = Map<T, T[]>;
+
+export function genericBfsVisitOrder<T>(
+  graph: GenericGraph<T>,
+  start: T
+): T[] {
+  const queue: T[] = [start];
+  const visited: Set<T> = new Set([start]);
+  const order: T[] = [];
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
+    for (const neighbour of graph.get(cur) ?? []) {
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push(neighbour);
+      }
+    }
   }
-
-  return arr;
+  return order;
 }
-const unsorted = [3, 1, 4, 1, 5, 9, 2];
-const sorted = randomSort(unsorted);
-console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
+const g: GenericGraph<string> = new Map([
+  ["A", ["B", "C"]],
+  ["B", ["D"]],
+  ["C", ["D", "E"]],
+  ["D", []],
+  ["E", ["F"]],
+  ["F", []],
+]);
+
+console.log(genericBfsVisitOrder(g, "A"));
+// → ["
