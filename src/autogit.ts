@@ -1,39 +1,33 @@
-/**
- * Return a random integer *between* `min` and `max` **inclusive**.
- *
- * @param min - lowest possible value
- * @param max - highest possible value
- */
-function randInt(min: number, max: number): number {
-  const lower = Math.ceil(min);                // in case min is decimal
-  const upper = Math.floor(max);               // in case max is decimal
-  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-const roll = randInt(1, 6);   // a fair 1‑to‑6 dice roll
-console.log(roll);            // 1, 2, 3, 4, 5, or 6
-/**
- * Return a random float *between* `min` (inclusive) and `max` (exclusive).
- *
- * @param min - lowest possible value
- * @param max - value we’ll never hit
- */
-function randFloat(min = 0, max = 1): number {
-  return Math.random() * (max - min) + min;
+const head: ListNode<number> = { val: 1, next: null };
+head.next = { val: 2, next: null };
+head.next.next = { val: 3, next: null };      // 1 → 2 → 3
+function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow?.next ?? null;   // advance by 1
+    fast = fast.next.next;       // advance by 2
+  }
+
+  return slow; // could be null if the list was empty
 }
-const lerp = randFloat(0, 1);   // a random number in [0, 1)
-// Simple LCG – not cryptographically secure,
-// but good enough for games, demos, tests etc.
-function lcg(seed: number) {
-  const m = 0x80000000; // 2^31
-  const a = 1103515245;
-  const c = 12345;
-  let state = seed % m;
-  return () => {
-    state = (a * state + c) % m;
-    return state / m; // raw [0,1)
-  };
+if (fast !== null) {            // original list had even length
+  slow = slow?.next ?? null;    // bump to the second middle
+}
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
 }
 
-const random = lcg(123456);          // seed=123456
-const randIntSeeded = (min: number, max: number) =>
-  Math.floor(random() * (max - min + 1)) + min;
+const list: ListNode<number> | null = {
+  val: 10,
+  next: { val: 20, next: { val: 30, next: null } },
+};
+
+console.log(middle(list)?.val); // prints 20
