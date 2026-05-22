@@ -1,34 +1,84 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+// 1️⃣  Interfaces ----------------------------------------------------
+interface State {
+  // Unique identifier that helps us spot already‑visited nodes.
+  id: string | number;
 
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
-  }
+  // Return all children reachable from this state.
+  getChildren(): State[];
+
+  // For demo purposes, we also expose a pretty‑print.
+  toString?(): string;
 }
 
-function maxDepth(root: TreeNode | null): number {
-  if (root === null) return 0;           // base case: empty subtree
-  const leftDepth  = maxDepth(root.left);   // depth of left subtree
-  const rightDepth = maxDepth(root.right);  // depth of right subtree
-  return Math.max(leftDepth, rightDepth) + 1; // current node + the deeper side
-}
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+type GoalFn<T extends State> = (s: T) => boolean;
 
-  const stack: Array<{ node: TreeNode; depth: number }> = [{ node: root, depth: 1 }];
-  let max = 0;
+// 2️⃣  The recursive DLS ----------------------------------------------
+function depthLimitedSearch<T extends State>(
+  node: T,
+  goal: GoalFn<T>,
+  limit: number,
+  visited = new Set<T | string | number>()
+): T | null {
+  // Depth exceeded → give up.
+  if (limit < 0) return null;
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    max = Math.max(max, depth);
+  // Safe‑guard against cycles: if this node already saw, skip it.
+  if (visited.has(node.id)) return null;
 
-    if (node.left) stack.push({ node: node.left, depth: depth + 1 });
-    if (node.right) stack.push({ node: node.right, depth: depth + 1 });
+  // Mark the node as visited for this path.
+  visited.add(node.id);
+
+  // Goal found.
+  if (goal(node)) return node;
+
+  // Explore children.
+  for (const child of node.getChildren()) {
+    const result = depthLimitedSearch(child, goal, limit - 1, visited);
+    if (result !== null) return result;
   }
 
-  return max;
+  // Nothing found → backtrack.
+  return null;
+}
+class GridCell implements State {
+  constructor(
+    public x: number,
+    public y: number,
+    public goal = false
+  ) {}
+
+  get id() { return `${this.x},${this.y}`; }
+
+  getChildren(): State[] {
+    const dirs = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ];
+    return dirs
+      .map(([dx, dy]) => new GridCell(this.x + dx, this.y + dy))
+      .filter(cell => cell.x >= 0 && cell.x < 3 && cell.y >= 0 && cell.y < 3);
+  }
+
+  toString() { return `(${this.x},${this.y})${this.goal ? '*' : ''}`; }
+}
+
+// Simple goal: bottom‑right corner.
+const goalFn = (s: GridCell) => s.x === 2 && s.y === 2;
+
+const start = new GridCell(0, 0);
+const result = depthLimitedSearch(start, goalFn, 4);
+
+console.log(result?.toString() ?? 'No solution within depth 4');
+function iterativeDeepeningDFS<T extends State>(
+  start: T,
+  goal: GoalFn<T>,
+  maxLimit: number
+): T | null {
+  for (let l = 0; l <= maxLimit; l++) {
+    const res = depthLimitedSearch(start, goal, l);
+    if (res !== null) return res;      // Found a goal
+  }
+  return null;                        // Still no goal within maxLimit
 }
