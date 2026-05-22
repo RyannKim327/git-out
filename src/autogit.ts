@@ -1,44 +1,50 @@
-/**
- * Randomly shuffles an array in-place.
- * Uses the Fisher–Yates algorithm.
+/*  random-cron-example.ts
+ *
+ *  Requires:
+ *    npm install cron chalk
+ *  Compile with:
+ *    tsc random-cron-example.ts --module commonjs
+ *  Run with:
+ *    node random-cron-example.js
  */
-function shuffle<T>(array: T[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
+
+import { CronJob } from "cron";
+import chalk from "chalk";
+
+// A function that does something "random enough" each time it runs.
+function generateMagicNumber(): number {
+  // Pick a pseudo‑random integer between 1 and 100
+  return Math.floor(Math.random() * 100) + 1;
 }
 
-/**
- * Checks whether the array is sorted in ascending order.
- * Works for numbers and strings (lexicographically).
- */
-function isSorted<T extends number | string>(array: T[]): boolean {
-  for (let i = 0; i < array.length - 1; i++) {
-    if (array[i] > array[i + 1]) return false;
-  }
-  return true;
-}
+// Define a cron job that fires every minute.
+// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
+const job = new CronJob(
+  // Every minute
+  "* * * * *",
+  () => {
+    const now = new Date();
+    const magic = generateMagicNumber();
+    console.log(
+      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
+        magic
+      )}`
+    );
+  },
+  null, // onComplete callback (unused)
+  true, // start the job right away
+  "America/New_York" // time zone
+);
 
-/**
- * Bogosort: keep shuffling until the array is sorted.
- * In practice, this is a joke algorithm because of its astronomical
- * expected runtime, but it’s fun to see it in TypeScript.
- */
-export function randomSort<T extends number | string>(array: T[]): T[] {
-  // We’ll operate on a copy to avoid mutating the caller’s data.
-  const arr = array.slice();
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log(chalk.red("\nStopping the cron job..."));
+  job.stop();
+  process.exit(0);
+});
 
-  // Guard against trivial cases.
-  if (arr.length < 2) return arr;
-
-  // Keep shuffling until the array is sorted.
-  while (!isSorted(arr)) {
-    shuffle(arr);
-  }
-
-  return arr;
-}
-const unsorted = [3, 1, 4, 1, 5, 9, 2];
-const sorted = randomSort(unsorted);
-console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
+console.log(
+  chalk.blue(
+    "Random cron job started. It will output a magic number every minute."
+  )
+);
