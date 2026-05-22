@@ -1,21 +1,42 @@
-const original: number[] = [1, 2, 3, 4, 5];
-original.reverse();          // original is now [5, 4, 3, 2, 1]
-const copy = [...original].reverse(); // or use original.slice().reverse()
+/**
+ * Insertion sort (in‑place).
+ *
+ * @param arr The array you want to sort. It will be sorted *mutably*.
+ * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
+ * @returns The same array reference, now sorted.
+ */
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to JS native >/< when no comparator is supplied
+  const cmp = compare ?? ((a: T, b: T) => {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+  });
 
-// original remains unchanged
-function reverseArray<T>(arr: T[]): T[] {
-  const len = arr.length;
-  const half = Math.floor(len / 2);
-  const copy = [...arr]; // keep original intact
+  // Work from index 1 to the end; index 0 is already “sorted” by itself
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  for (let i = 0; i < half; i++) {
-    const j = len - 1 - i;
-    [copy[i], copy[j]] = [copy[j], copy[i]]; // swap
+    // Move elements that are greater than `key` one position to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place `key` in its correct spot
+    arr[j + 1] = key;
   }
-  return copy;
-}
 
-const reversed = reverseArray(original);
-function reverseArray<T>(arr: T[]): T[] {
-  return [...arr].reverse();
+  return arr;
 }
+const nums = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
+
+// With a custom comparator: sort strings by length (descending)
+const fruits = ['apple', 'kiwi', 'banana', 'fig'];
+const byLengthDesc = (a: string, b: string) => b.length - a.length;
+console.log(insertionSort(fruits, byLengthDesc));
