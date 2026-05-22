@@ -1,61 +1,56 @@
 /**
- * Merge‑sort for an array of T.
- *
- * @param array      – the array to sort (mutated in‑place)
- * @param compareFn – optional comparator (a, b) => number
- *                    (neg: < a, 0: equal, pos: > a)
- * @returns the sorted array (same reference as the input)
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
  */
-export function mergeSort<T>(
-  array: T[],
-  compareFn: (a: T, b: T) => number = defaultCompare
-): T[] {
-  // Base case: a single element is already sorted.
-  if (array.length <= 1) return array;
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-  // Split the array in half.
-  const mid = Math.floor(array.length / 2);
-  const left = array.slice(0, mid);
-  const right = array.slice(mid);
+  if (m === 0 || n < m) return result;       // edge cases
 
-  // Recursively sort each half then merge them.
-  mergeSort(left, compareFn);
-  mergeSort(right, compareFn);
-  merge(array, left, right, compareFn);
-  return array;               // return the same array reference
-}
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
 
-/**
- * Merge the two sorted halves back into `out`.
- */
-function merge<T>(
-  out: T[],
-  left: T[],
-  right: T[],
-  compareFn: (a: T, b: T) => number
-) {
-  let i = 0, j = 0, k = 0;
-  while (i < left.length && j < right.length) {
-    if (compareFn(left[i], right[j]) <= 0) out[k++] = left[i++];
-    else out[k++] = right[j++];
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
+
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
   }
-  // Copy any remaining items.
-  while (i < left.length) out[k++] = left[i++];
-  while (j < right.length) out[k++] = right[j++];
-}
 
-/**
- * Default comparator for numbers or strings.
- */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [34, 7, 23, 32, 5, 62];
-mergeSort(nums);            // in‑place sort
-console.log(nums);          // [5, 7, 23, 32, 34, 62]
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
 
-// With a custom comparator (e.g., reverse order)
-mergeSort(nums, (a, b) => b - a);
-console.log(nums);          // [62, 34, 32, 23, 7, 5]
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
+    }
+  }
+
+  return result;
+}
+const text = "abracadabra";
+const pattern = "abra";
+
+console.log(rabinKarp(text, pattern)); // → [0, 7]
