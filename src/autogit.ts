@@ -1,39 +1,68 @@
 /**
- * Return n! (n factorial)
- * Works nicely for small n (≤ 20 with a regular number type)
+ * Binary search on a sorted array.
+ * @param arr   – sorted array of comparable values
+ * @param target – value we’re looking for
+ * @returns      – index of target, or -1 if not found
  */
-const factorialRec = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRec(n - 1);
-};
+function binarySearchIter<T>(arr: T[], target: T, compareFn?: (a: T, b: T) => number): number {
+  let left = 0;
+  let right = arr.length - 1;
 
-// Example
-console.log(factorialRec(5)); // 120
-/**
- * Same result but no recursion overhead
- */
-const factorialIter = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; ++i) {
-    result *= i;
+  while (left <= right) {
+    // Using “>>> 1” gives the floor of the middle even for huge indices
+    const mid = (left + right) >>> 1;
+    const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
+      ? 1
+      : (arr[mid] as any) < (target as any)
+      ? -1
+      : 0;
+
+    if (cmp === 0) {
+      return mid;          // found
+    } else if (cmp < 0) {
+      left = mid + 1;      // target is on the right half
+    } else {
+      right = mid - 1;     // target is on the left half
+    }
   }
-  return result;
-};
 
-// Example
-console.log(factorialIter(5)); // 120
-/**
- * Uses BigInt so it never loses precision
- */
-const factorialBig = (n: number): bigint => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n; // 1n is a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-};
+  return -1; // not found
+}
+const nums = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchIter(nums, 7)); // → 3
+console.log(binarySearchIter(nums, 4)); // → -1
+const words = ["apple", "banana", "cherry", "date"];
+const index = binarySearchIter(words, "cherry", (a, b) => a.localeCompare(b));
+// → 2
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compareFn?: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): number {
+  if (left > right) return -1;            // base case: not found
 
-// Example
-console.log(factorialBig(100).toString()); // “933262154439…(ends with 00)”
+  const mid = (left + right) >>> 1;
+  const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
+      ? 1
+      : (arr[mid] as any) < (target as any)
+      ? -1
+      : 0;
+
+  if (cmp === 0) return mid;
+  return cmp < 0
+    ? binarySearchRec(arr, target, compareFn, mid + 1, right)
+    : binarySearchRec(arr, target, compareFn, left, mid - 1);
+}
+function test<T>(arr: T[], target: T, fn: (a: T[], t: T) => number) {
+  const idx = fn(arr, target);
+  console.log(`searching ${target} in [${arr}] → ${idx}`);
+}
+
+const ints = [2, 4, 6, 8, 10];
+test(ints, 8, binarySearchIter);
+test(ints, 9, binarySearchIter);
+
+const strs = ['banana', 'cherry', 'fig', 'grape'];
+test(strs, 'fig', (a, t) => binarySearchRec(a, t, (x, y) => x.localeCompare(y)));
