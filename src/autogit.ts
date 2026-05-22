@@ -1,16 +1,15 @@
-/**
- * Returns the arithmetic mean of a numeric array.
- *
- * @param values – An array of numbers.
- * @throws {Error} If the array is empty.
- */
-function mean(values: number[]): number {
-  if (values.length === 0) {
-    throw new Error("Cannot compute the mean of an empty array");
-  }
+const numbers: number[] = [42, 23, 8, 15, 16];
 
-  const sum = values.reduce((acc, v) => acc + v, 0);
-  return sum / values.length;
+// Ascending (smallest → largest)
+const asc = [...numbers].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [8, 15, 16, 23, 42]
+
+// Descending (largest → smallest)
+const desc = [...numbers].sort((a, b) => b - a);
+console.log('Descending:', desc); // [42, 23, 16, 15, 8]
+function sortNumbers(arr: number[], ascending = true): number[] {
+  return [...arr].sort((a, b) => ascending ? a - b : b - a);
 }
-const data = [10, 20, 30, 40, 50];
-console.log(mean(data)); // 30
+
+console.log(sortNumbers(numbers));      // Ascending
+console.log(sortNumbers(numbers, false)); // Descending
