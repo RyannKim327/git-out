@@ -1,48 +1,63 @@
-// fetch-posts.ts
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
-
-async function getPosts(): Promise<Post[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
-
-  // Allow a “fetch” implementation to be swapped in, e.g. for tests
-  const fetcher = typeof globalThis.fetch === "function" ? globalThis.fetch : require("node-fetch");
-
-  try {
-    const resp = await fetcher(url, { method: "GET" });
-
-    if (!resp.ok) {
-      // Throw an error that includes the status code and message
-      throw new Error(`API error (${resp.status}): ${resp.statusText}`);
+// A very basic, in‑place bubble sort for numbers
+export function bubbleSort(values: number[]): void {
+  const n = values.length;
+  for (let i = 0; i < n - 1; i++) {
+    // Last i elements are already in place
+    for (let j = 0; j < n - i - 1; j++) {
+      if (values[j] > values[j + 1]) {
+        // swap
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+      }
     }
-
-    const data: unknown = await resp.json();
-
-    // Basic runtime type guard: make sure we really got an array of posts
-    if (!Array.isArray(data)) {
-      throw new Error("Response was not an array");
-    }
-
-    // We trust the API to provide the right shape and coerce
-    return data as Post[];
-  } catch (e) {
-    // Re‑throw with a bit more context if we’re not already an Error
-    if (!(e instanceof Error)) {
-      throw new Error(String(e));
-    }
-    throw e;
   }
 }
+export function bubbleSortOptimized(values: number[]): void {
+  const n = values.length;
+  let swapped: boolean;
 
-// Demo: print the first five posts
-getPosts()
-  .then((posts) => {
-    posts.slice(0, 5).forEach((p) =>
-      console.log(`[${p.id}] ${p.title} (user ${p.userId})`)
-    );
-  })
-  .catch((err) => console.error("Failed to fetch posts:", err));
+  for (let i = 0; i < n - 1; i++) {
+    swapped = false;
+    for (let j = 0; j < n - i - 1; j++) {
+      if (values[j] > values[j + 1]) {
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+        swapped = true;
+      }
+    }
+    if (!swapped) break;
+  }
+}
+export function bubbleSort<T>(
+  values: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
+): void {
+  const n = values.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      if (compareFn(values[j], values[j + 1]) > 0) {
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+      }
+    }
+  }
+}
+interface Person { name: string; age: number; }
+
+const data: Person[] = [
+  { name: 'Zoe', age: 28 },
+  { name: 'Alex', age: 33 },
+  { name: 'Bob', age: 22 },
+];
+
+bubbleSort(data, (a, b) => a.name.localeCompare(b.name));
+
+console.log(data); // Alex, Bob, Zoe
+export function bubbleSortCopy<T>(
+  values: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
+): T[] {
+  const copy = [...values];
+  bubbleSort(copy, compareFn);
+  return copy;
+}
+const arr = [5, 1, 4, 2, 8];
+bubbleSort(arr);
+console.log(arr); // [1, 2, 4, 5, 8]
