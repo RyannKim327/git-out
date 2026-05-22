@@ -1,38 +1,29 @@
-/**
- * Counting sort for an array of integers.
- *
- * @param arr The array to sort – an array of numbers.
- * @returns A new array containing the sorted values.
- */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+// A minimal node definition
+class ListNode<T> {
+  constructor(public value: T, public next: ListNode<T> | null = null) {}
+}
 
-  // Locate the bounds of the values.
-  let min = arr[0];
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-    if (val < min) min = val;
-    if (val > max) max = val;
+// Finder function
+function length<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
+  while (current !== null) {
+    count++;
+    current = current.next;
   }
+  return count;
+}
 
-  const range = max - min + 1;          // Number of distinct possible values
-  const count = new Array<number>(range).fill(0);
+// Example usage
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
 
-  // Count occurrences of each integer.
-  for (const value of arr) {
-    count[value - min]++;               // Shift by min so index 0 stays valid
-  }
+a.next = b;
+b.next = c;
 
-  // Overwrite the input array (or build a new one) using the counts.
-  const sorted: number[] = [];
-  for (let i = 0; i < range; i++) {
-    const currentVal = i + min;
-    const occ = count[i];
-    for (let j = 0; j < occ; j++) {
-      sorted.push(currentVal);
-    }
-  }
-
-  return sorted;
+console.log(length(a)); // 3
+function lengthRec<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;
+  return 1 + lengthRec(node.next);
 }
