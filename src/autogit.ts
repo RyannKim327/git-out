@@ -1,65 +1,39 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
+/**
+ * Return n! (n factorial)
+ * Works nicely for small n (≤ 20 with a regular number type)
+ */
+const factorialRec = (n: number): number => {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRec(n - 1);
+};
 
-  constructor(value: T) {
-    this.value = value;
+// Example
+console.log(factorialRec(5)); // 120
+/**
+ * Same result but no recursion overhead
+ */
+const factorialIter = (n: number): number => {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; ++i) {
+    result *= i;
   }
-}
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+  return result;
+};
 
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
+// Example
+console.log(factorialIter(5)); // 120
+/**
+ * Uses BigInt so it never loses precision
+ */
+const factorialBig = (n: number): bigint => {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n; // 1n is a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
   }
+  return result;
+};
 
-  return prev; // new head
-}
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
-
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let current = head;
-  let newHead: ListNode<T> | null = null;
-
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
-
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
-
-    current = tmp; // move to what was next, now prev
-  }
-
-  return newHead;
-}
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-
-// Reverse
-const reversed = reverse(a);
-
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
-}
+// Example
+console.log(factorialBig(100).toString()); // “933262154439…(ends with 00)”
