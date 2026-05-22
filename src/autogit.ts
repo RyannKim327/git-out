@@ -1,46 +1,39 @@
-// src/githubUsers.ts
-import fetch, { Response } from "node-fetch";
+/**
+ * Return n! (n factorial)
+ * Works nicely for small n (≤ 20 with a regular number type)
+ */
+const factorialRec = (n: number): number => {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  return n <= 1 ? 1 : n * factorialRec(n - 1);
+};
 
-interface GithubUser {
-  login: string;
-  id: number;
-  avatar_url: string;
-  html_url: string;
-}
-
-async function fetchGithubUsers(
-  page: number = 1,
-  perPage: number = 10
-): Promise<GithubUser[]> {
-  const url = `https://api.github.com/users?since=${(page - 1) * perPage}`;
-
-  const resp: Response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "TypeScript-CLI",
-    },
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`GitHub API error ${resp.status}: ${errText}`);
+// Example
+console.log(factorialRec(5)); // 120
+/**
+ * Same result but no recursion overhead
+ */
+const factorialIter = (n: number): number => {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; ++i) {
+    result *= i;
   }
+  return result;
+};
 
-  const json = await resp.json();
-
-  // Type assertion – we know the API returns an array of GitHubUser objects
-  return json as GithubUser[];
-}
-
-async function main() {
-  try {
-    const users = await fetchGithubUsers(1, 5);
-    console.log("Top GitHub users:");
-    users.forEach((u) => console.log(`- ${u.login} (${u.html_url})`));
-  } catch (err) {
-    console.error("Something went wrong:", err);
+// Example
+console.log(factorialIter(5)); // 120
+/**
+ * Uses BigInt so it never loses precision
+ */
+const factorialBig = (n: number): bigint => {
+  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
+  let result = 1n; // 1n is a BigInt literal
+  for (let i = 2n; i <= BigInt(n); i++) {
+    result *= i;
   }
-}
+  return result;
+};
 
-main().catch((e) => console.error(e));
-
+// Example
+console.log(factorialBig(100).toString()); // “933262154439…(ends with 00)”
