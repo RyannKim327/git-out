@@ -1,122 +1,65 @@
-// A "comparable" type: any that supports the < and > operators.
-type Comparable = number | string | { compareTo(other: this): number };
+/**
+ * Return the intersection of two arrays.
+ * @param a  First array
+ * @param b  Second array
+ * @returns  An array containing every element that appears in **both** `a` and `b`
+ *
+ * The function is generic so it keeps the element type while still being type‑safe.
+ * For primitive values a direct equality check (`===`) is sufficient.
+ */
+export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
+  // Build a set from the larger array – that keeps lookup O(1).
+  // (You could skip the `max` decision; it's just a micro‑optimization.)
+  const [large, small] = a.length > b.length ? [a, b] : [b, a];
+  const set = new Set(large);
 
-interface INode<K extends Comparable, V> {
-  keys: K[];
-  values: V[];      // same length as keys
-  children: (INode<K, V> | null)[];
-  leaf: boolean;
+  // Pick elements of the smaller array that exist in the set.
+  return small.filter((x) => set.has(x));
 }
-const compare = <K extends Comparable>(a: K, b: K): number => {
-  if (typeof a === 'number' || typeof a === 'string')
-    return a < b ? -1 : a > b ? 1 : 0;
-  return a.compareTo(b);
-};
+const xs = [1, 2, 3, 4];
+const ys = [3, 4, 5, 6];
 
-const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
-  // binary search – returns the position where key should be inserted
-  let low = 0, high = arr.length - 1;
-  while (low <= high) {
-    const mid = (low + high) >> 1;
-    const cmp = compare(arr[mid], key);
-    if (cmp === 0) return mid;
-    if (cmp < 0) low = mid + 1; else high = mid - 1;
-  }
-  return low; // insertion point
-};
-class BTreeNode<K extends Comparable, V> implements INode<K, V> {
-  keys: K[] = [];
-  values: V[] = [];
-  children: (BTreeNode<K, V> | null)[] = [];
-  leaf: boolean;
+console.log(intersection(xs, ys)); // → [3, 4]
+import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
 
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
+console.log(intersection(xs, ys)); // → [3, 4]
+interface Person {
+  id: number;
+  name: string;
 }
-export class BTree<K extends Comparable, V> {
-  readonly order: number;          // minimum number of keys per node (t)
-  private root: BTreeNode<K, V>;
 
-  constructor(order: number) {
-    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
-    this.order = order;
-    this.root = new BTreeNode<K, V>(true);   // start with a leaf
+const a: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+];
+
+const b: Person[] = [
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+  { id: 4, name: 'Dan'   },
+];
+
+const key = (p: Person) => p.id;
+
+function intersectionBy<T, K extends string | number | symbol>(
+  a: readonly T[],
+  b: readonly T[],
+  getKey: (item: T) => K
+): T[] {
+  const map = new Map<K, T>();
+  for (const item of a) {
+    map.set(getKey(item), item);
   }
-
-  /* ---------- Public API ---------- */
-  public search(key: K): V | undefined {
-    return this.searchNode(this.root, key);
-  }
-
-  public insert(key: K, value: V): void {
-    if (this.root.keys.length === 2 * this.order - 1) {
-      // root is full – split it
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this.splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this.insertNonFull(this.root, key, value);
-  }
-
-  public delete(key: K): void {
-    this.deleteNode(this.root, key);
-    // shrink the root if it becomes empty
-    if (!this.root.leaf && this.root.keys.length === 0) {
-      this.root = this.root.children[0]!;
+  const result: T[] = [];
+  for (const item of b) {
+    const key = getKey(item);
+    if (map.has(key)) {
+      result.push(item);
     }
   }
+  return result;
+}
 
-  /* ---------- Traversal helpers (optional) ---------- */
-  public *inOrder(): IterableIterator<[K, V]> {
-    yield* this.inOrderNode(this.root);
-  }
-
-  /* ---------- Internal helpers ---------- */
-  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
-    const i = findIndex(node.keys, key);
-    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
-      return node.values[i];
-    }
-    if (node.leaf) return undefined;
-    return this.searchNode(node.children[i]!, key);
-  }
-
-  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
-    let i = node.keys.length - 1;
-    if (node.leaf) {
-      // Insert in sorted order
-      const pos = findIndex(node.keys, key);
-      node.keys.splice(pos, 0, key);
-      node.values.splice(pos, 0, value);
-    } else {
-      // Descend to the right child
-      const pos = findIndex(node.keys, key);
-      const child = node.children[pos]!;
-      if (child.keys.length === 2 * this.order - 1) {
-        this.splitChild(node, pos);
-        // After split, the middle key moves up
-        if (compare(key, node.keys[pos]) > 0) pos++;
-      }
-      this.insertNonFull(node.children[pos]!, key, value);
-    }
-  }
-
-  private splitChild(parent: BTreeNode<K, V>, idx: number) {
-    const t = this.order;
-    const y = parent.children[idx]!;               // node to split
-    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
-
-    // Move upper half of y's keys/values to z
-    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
-    z.values = y.values.splice(t, t - 1);
-
-    if (!y.leaf) {
-      z.children = y.children.splice(t, t);         // children t … 2t-1
-    }
-
-    // Insert z into parent
-    parent.children.splice(idx + 1, 0, z);
-    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
-    parent.values.splice(idx
+console.log(intersectionBy(a, b, key));
+// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
