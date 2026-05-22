@@ -1,35 +1,14 @@
-/**
- * Returns the longest common prefix of an array of strings.
- * If the array is empty, returns an empty string.
- *
- * @param words - array of strings
- * @returns longest common prefix
- */
-function longestCommonPrefix(words: string[]): string {
-  if (words.length === 0) return '';
+const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
+// or, if you only want literal space characters (not tabs, newlines, …)
+const clean = str.replaceAll(' ', '');
+const input = "  Why   are   we  still  here?  \n";
 
-  // 1. Find the min and max strings (lexicographically)
-  let min = words[0];
-  let max = words[0];
-  for (let i = 1; i < words.length; i++) {
-    const w = words[i];
-    if (w < min) min = w;
-    if (w > max) max = w;
-  }
+const withoutAllWhitespace = input.replace(/\s+/g, '');
+console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
 
-  // 2. Find first mismatch between min and max
-  let j = 0;
-  while (j < min.length && j < max.length && min[j] === max[j]) {
-    j++;
-  }
+const withoutOnlySpaces = input.replaceAll(' ', '');
+console.log(withoutOnlySpaces);  // "Why\there? "
 
-  // 3. Slice the common part
-  return min.slice(0, j);
-}
-const arr = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(arr)); // → "fl"
-
-console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
-console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
-console.log(longestCommonPrefix(['single'])); // → "single"
-console.log(longestCommonPrefix([])); // → ""
+// If you want to keep line breaks but trim spaces:
+const trimmed = input.trim();  // removes spaces at the start/end only
+const noSpaces = str.split(' ').join('');
