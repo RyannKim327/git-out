@@ -1,18 +1,25 @@
-function removeAllWhitespace(str: string): string {
-  return str.replace(/\s+/g, "");
+/**
+ * Very practical “looks‑nice‑like‑an‑email” validator.
+ * Not a full RFC‑5322 parser, but catches most real‑world cases.
+ */
+export function isValidEmail(email: string): boolean {
+  // One or more non‑space, non‑@ chars, an @, one or more non‑space @ chars,
+  // a dot, and finally one or more non‑space chars.
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
-function trimStart(str: string): string {
-  return str.replace(/^\s+/, "");
+import validator from 'validator';
+validator.isEmail(someString); // true/false
+const input = document.querySelector('#email') as HTMLInputElement;
+
+function onSubmit(e: Event) {
+  e.preventDefault();
+  const email = input.value.trim();
+
+  if (!isValidEmail(email)) {
+    alert('That’s not a valid email address.');
+    return;
+  }
+
+  // …go on with your logic
 }
-function trimEnd(str: string): string {
-  return str.replace(/\s+$/, "");
-}
-const raw = "\n  Let's   test this!  \t\n";
-console.log("original  :", raw);
-console.log("trimmed    :", raw.trim());
-console.log("no spaces :", raw.replace(/\s+/g, ""));
-original  : "
-  Let's   test this!   
-"
-trimmed    : "Let's   test this!"
-no spaces : "Letstestthis!"
