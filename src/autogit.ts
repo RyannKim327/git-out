@@ -1,42 +1,59 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
+// A minimal, generic binary‑tree node
+export interface TreeNode<T = number> {
+    /** The value stored in this node.  (Can be any type.) */
+    val: T;
+    /** Left child – `null` if none. */
+    left: TreeNode<T> | null;
+    /** Right child – `null` if none. */
+    right: TreeNode<T> | null;
 }
 /**
- * Returns the n‑th node from the end of a singly linked list.
- * If n is out of bounds, returns null.
+ * Sum all the numeric values stored in a binary tree.
  *
- * @param head The head of the list.
- * @param n    1‑based index from the end (n = 1 => tail node).
+ * @param root First node of the tree (or `null`).
+ * @returns   Sum of every `val` in the tree.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;           // invalid request
-
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;          // n larger than list size
-    fast = fast.next;
-  }
-
-  // Move both until fast reaches the end
-  while (fast) {
-    slow = slow!.next;  // fast is non‑null here, so slow is safe
-    fast = fast.next;
-  }
-
-  return slow;
+export function sumTree(root: TreeNode<number> | null): number {
+    if (!root) return 0;                // base case: empty subtree
+    const left  = sumTree(root.left);   // sum of left subtree
+    const right = sumTree(root.right);  // sum of right subtree
+    return root.val + left + right;     // current node + children
 }
-// Build 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4 = { val: 4, next: node5 };
-let node3 = { val: 3, next: node4 };
-let node2 = { val: 2, next: node3 };
-let node1 = { val: 1, next: node2 };
+/**
+ * Sum all the numeric values stored in a binary tree, iteratively.
+ *
+ * Uses an explicit stack so it never uses the call stack.
+ */
+export function sumTreeIterative(root: TreeNode<number> | null): number {
+    if (!root) return 0;
 
-console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
-console.log(nthFromEnd(node1, 2)?.val); // 4
-console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
-console.log(nthFromEnd(node1, 6));       // null (out of bounds)
+    let sum = 0;
+    const stack: Array<TreeNode<number>> = [root];
+
+    while (stack.length > 0) {
+        const node = stack.pop()!;   // pop returns |undefined|, but we know stack isn’t empty
+        sum += node.val;
+
+        // Push children onto the stack – order doesn’t matter for sum
+        if (node.right) stack.push(node.right);
+        if (node.left)  stack.push(node.left);
+    }
+
+    return sum;
+}
+const tree: TreeNode = {
+    val: 5,
+    left: {
+        val: 3,
+        left:  { val: 2, left: null, right: null },
+        right: { val: 4, left: null, right: null },
+    },
+    right: {
+        val: 8,
+        left:  { val: 7, left: null, right: null },
+        right: { val: 9, left: null, right: null },
+    },
+};
+
+console.log(sumTree(tree));          // → 47
+console.log(sumTreeIterative(tree)); // → 47
