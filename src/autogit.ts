@@ -1,118 +1,75 @@
-type Node = number | string;           // whatever your IDs look like
-type Graph = Record<Node, Node[]>;     // adjacency list
+// -------------------------------------------------------------
+// 1️⃣  O(n²) DP – intuition + implementation
+// -------------------------------------------------------------
+function lisDP(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
 
-/**
- * Breadth‑first search that collects the visit order.
- */
-export function bfsVisitOrder(
-  graph: Graph,
-  start: Node
-): Node[] {
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const order: Node[] = [];
+  // dp[i]  – length of LIS that ends at index i
+  const dp: number[] = Array(n).fill(1);
+  // prev[i] – previous index in the LIS that ends at i
+  const prev: number[] = Array(n).fill(-1);
 
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
+  let bestEnd = 0; // index where the overall best LIS ends
 
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
+  for (let i = 0; i < n; ++i) {
+    for (let j = 0; j < i; ++j) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
       }
     }
+    if (dp[i] > dp[bestEnd]) bestEnd = i;
   }
-  return order;
+
+  // Rebuild the sequence
+  const seq: number[] = [];
+  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
+  seq.reverse();
+
+  return { length: dp[bestEnd], sequence: seq };
 }
+// -------------------------------------------------------------
+// 2️⃣  O(n log n) – patience sorting + back‑tracking
+// -------------------------------------------------------------
+function lisPatience(arr: number[]): { length: number; sequence: number[] } {
+  const n = arr.length;
+  if (n === 0) return { length: 0, sequence: [] };
 
-/**
- * Breadth‑first search that stops at a goal node
- * and returns the *shortest path* (for unweighted graphs).
- */
-export function bfsShortestPath(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {
-  if (start === goal) return [start];
+  // tails[i] – index of the smallest tail of LIS with length i+1
+  const tails: number[] = [];
+  // parentIdx[i] – previous index in LIS that ends at i
+  const parentIdx: number[] = Array(n).fill(-1);
 
-  const queue: Node[] = [start];
-  const visited: Set<Node> = new Set([start]);
-  const parent: Record<Node, Node | null> = {};
-  parent[start] = null;
+  for (let i = 0; i < n; ++i) {
+    const x = arr[i];
 
-  while (queue.length) {
-    const cur = queue.shift()!;
-
-    for (const neighbor of graph[cur] ?? []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        parent[neighbor] = cur;
-        if (neighbor === goal) {
-          // build the path from goal back to start
-          const path: Node[] = [goal];
-          let p: Node | null = cur;
-          while (p !== null) {
-            path.push(p);
-            p = parent[p];
-          }
-          return path.reverse();
-        }
-        queue.push(neighbor);
-      }
+    // Binary search: first tail >= x
+    let lo = 0, hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (arr[tails[mid]] < x) lo = mid + 1;
+      else hi = mid;
     }
+
+    // lo now points to position where x will go
+    if (lo > 0) parentIdx[i] = tails[lo - 1];
+
+    if (lo === tails.length) tails.push(i);
+    else tails[lo] = i;
   }
 
-  return null; // goal not reachable
+  // Reconstruct sequence
+  const seq: number[] = [];
+  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
+  seq.reverse();
+
+  return { length: tails.length, sequence: seq };
 }
-const graph: Graph = {
-  1: [2, 3],
-  2: [4],
-  3: [4, 5],
-  4: [],
-  5: [6],
-  6: [],
-};
+const example = [10, 9, 2, 5, 3, 7, 101, 18];
 
-console.log(bfsVisitOrder(graph, 1));
-// → [1, 2, 3, 4, 5, 6]
+console.log(lisDP(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
 
-console.log(bfsShortestPath(graph, 1, 6));
-// → [1, 3, 5, 6]
-type NodeId = string | number;
-
-// Generic graph implemented as Map<id, array of ids>
-export type GenericGraph<T> = Map<T, T[]>;
-
-export function genericBfsVisitOrder<T>(
-  graph: GenericGraph<T>,
-  start: T
-): T[] {
-  const queue: T[] = [start];
-  const visited: Set<T> = new Set([start]);
-  const order: T[] = [];
-
-  while (queue.length) {
-    const cur = queue.shift()!;
-    order.push(cur);
-    for (const neighbour of graph.get(cur) ?? []) {
-      if (!visited.has(neighbour)) {
-        visited.add(neighbour);
-        queue.push(neighbour);
-      }
-    }
-  }
-  return order;
-}
-const g: GenericGraph<string> = new Map([
-  ["A", ["B", "C"]],
-  ["B", ["D"]],
-  ["C", ["D", "E"]],
-  ["D", []],
-  ["E", ["F"]],
-  ["F", []],
-]);
-
-console.log(genericBfsVisitOrder(g, "A"));
-// → ["
+console.log(lisPatience(example));
+// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
