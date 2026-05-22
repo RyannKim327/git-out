@@ -1,46 +1,50 @@
-interface ListNode<T = unknown> {
-  value: T;
-  next?: ListNode<T>;
+/*  random-cron-example.ts
+ *
+ *  Requires:
+ *    npm install cron chalk
+ *  Compile with:
+ *    tsc random-cron-example.ts --module commonjs
+ *  Run with:
+ *    node random-cron-example.js
+ */
+
+import { CronJob } from "cron";
+import chalk from "chalk";
+
+// A function that does something "random enough" each time it runs.
+function generateMagicNumber(): number {
+  // Pick a pseudo‑random integer between 1 and 100
+  return Math.floor(Math.random() * 100) + 1;
 }
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false; // an empty list can’t have a cycle
 
-  let slow = head;
-  let fast = head.next; // fast starts one step ahead
+// Define a cron job that fires every minute.
+// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
+const job = new CronJob(
+  // Every minute
+  "* * * * *",
+  () => {
+    const now = new Date();
+    const magic = generateMagicNumber();
+    console.log(
+      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
+        magic
+      )}`
+    );
+  },
+  null, // onComplete callback (unused)
+  true, // start the job right away
+  "America/New_York" // time zone
+);
 
-  while (fast && fast.next) {
-    if (slow === fast) return true; // cycle detected
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log(chalk.red("\nStopping the cron job..."));
+  job.stop();
+  process.exit(0);
+});
 
-    slow = slow.next!;          // move one step
-    fast = fast.next.next!; // move two steps
-  }
-
-  return false; // reached the end, no cycle
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-  let current = head;
-
-  while (current) {
-    if (visited.has(current)) return true; // we’re back at a node we saw
-    visited.add(current);
-    current = current.next;
-  }
-
-  return false;
-}
-// build a small example
-const a: ListNode = { value: 1 };
-const b: ListNode = { value: 2 };
-const c: ListNode = { value: 3 };
-
-a.next = b;
-b.next = c;
-c.next = a; // ← closes the loop
-
-console.log(hasCycle(a));          // true
-console.log(hasCycleWithSet(a));   // true
-
-// break the cycle
-c.next = undefined;
-console.log(hasCycle(a));          // false
+console.log(
+  chalk.blue(
+    "Random cron job started. It will output a magic number every minute."
+  )
+);
