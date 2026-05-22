@@ -1,42 +1,42 @@
-/**
- * Performs an in‑place Shell sort.
- * @param arr - Array of numbers (or any comparable type).
- * @param compareFn - Optional function to decide order.
- *                     It should return <0 if a < b, >0 if a > b.
- * @returns The same array sorted.
- */
-export function shellSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
-): T[] {
-  const n = arr.length;
-  // Start with a big gap, then reduce it.
-  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
-  let gap = 1;
-  while (gap < n / 3) {
-    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
-  }
-
-  while (gap >= 1) {
-    // For each element from index `gap` to end,
-    // perform an insertion sort on elements that are `gap` apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    gap = Math.floor(gap / 3); // shrink gap
-  }
-
-  return arr;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-import { shellSort } from './shellSort';
+/**
+ * Returns the n‑th node from the end of a singly linked list.
+ * If n is out of bounds, returns null.
+ *
+ * @param head The head of the list.
+ * @param n    1‑based index from the end (n = 1 => tail node).
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // invalid request
 
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-console.log('Before:', data);
-shellSort(data);
-console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
+
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;          // n larger than list size
+    fast = fast.next;
+  }
+
+  // Move both until fast reaches the end
+  while (fast) {
+    slow = slow!.next;  // fast is non‑null here, so slow is safe
+    fast = fast.next;
+  }
+
+  return slow;
+}
+// Build 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4 = { val: 4, next: node5 };
+let node3 = { val: 3, next: node4 };
+let node2 = { val: 2, next: node3 };
+let node1 = { val: 1, next: node2 };
+
+console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
+console.log(nthFromEnd(node1, 2)?.val); // 4
+console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
+console.log(nthFromEnd(node1, 6));       // null (out of bounds)
