@@ -1,56 +1,38 @@
 /**
- * Rabin‑Karp string search.
- * @param text    The string to be searched.
- * @param pattern The pattern to search for.
- * @returns      An array containing the starting indices where `pattern`
- *               occurs in `text`. If the pattern is not found, returns [].
+ * Counting sort for an array of integers.
+ *
+ * @param arr The array to sort – an array of numbers.
+ * @returns A new array containing the sorted values.
  */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const result: number[] = [];
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  if (m === 0 || n < m) return result;       // edge cases
-
-  /* ---- constants ---- */
-  const prime = 1000000007;                   // large prime modulus
-  const base = 256;                           // number of possible char values
-
-  /* ---- pre‑compute base^(m-1) % prime ---- */
-  let highestPower = 1;
-  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
-
-  /* ---- first window hash ---- */
-  let patternHash = 0;
-  let textHash = 0;
-  for (let i = 0; i < m; i++) {
-    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
-    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
+  // Locate the bounds of the values.
+  let min = arr[0];
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+    if (val < min) min = val;
+    if (val > max) max = val;
   }
 
-  /* ---- slide through text ---- */
-  for (let i = 0; i <= n - m; i++) {
-    /* match: compare hashes first, then do a full string compare to avoid false positives */
-    if (patternHash === textHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
+  const range = max - min + 1;          // Number of distinct possible values
+  const count = new Array<number>(range).fill(0);
 
-    /* roll: compute hash for next window */
-    if (i < n - m) {
-      // Remove leading character
-      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
-      // Avoid negative
-      if (textHash < 0) textHash += prime;
-      // Add trailing character
-      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
+  // Count occurrences of each integer.
+  for (const value of arr) {
+    count[value - min]++;               // Shift by min so index 0 stays valid
+  }
+
+  // Overwrite the input array (or build a new one) using the counts.
+  const sorted: number[] = [];
+  for (let i = 0; i < range; i++) {
+    const currentVal = i + min;
+    const occ = count[i];
+    for (let j = 0; j < occ; j++) {
+      sorted.push(currentVal);
     }
   }
 
-  return result;
+  return sorted;
 }
-const text = "abracadabra";
-const pattern = "abra";
-
-console.log(rabinKarp(text, pattern)); // → [0, 7]
