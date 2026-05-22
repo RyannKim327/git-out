@@ -1,65 +1,32 @@
 /**
- * Return the intersection of two arrays.
- * @param a  First array
- * @param b  Second array
- * @returns  An array containing every element that appears in **both** `a` and `b`
- *
- * The function is generic so it keeps the element type while still being type‑safe.
- * For primitive values a direct equality check (`===`) is sufficient.
+ * Returns the longest common substring between `a` and `b`.
+ * If there are several with the same length, the one that appears first in `a` is returned.
  */
-export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
-  // Build a set from the larger array – that keeps lookup O(1).
-  // (You could skip the `max` decision; it's just a micro‑optimization.)
-  const [large, small] = a.length > b.length ? [a, b] : [b, a];
-  const set = new Set(large);
+export function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-  // Pick elements of the smaller array that exist in the set.
-  return small.filter((x) => set.has(x));
-}
-const xs = [1, 2, 3, 4];
-const ys = [3, 4, 5, 6];
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  // 2‑D array of zeros
+  const table = Array.from({ length: rows }, () => Array(cols).fill(0));
 
-console.log(intersection(xs, ys)); // → [3, 4]
-import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
+  let maxLen = 0;
+  let maxEndIdxA = 0;
 
-console.log(intersection(xs, ys)); // → [3, 4]
-interface Person {
-  id: number;
-  name: string;
-}
-
-const a: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-];
-
-const b: Person[] = [
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-  { id: 4, name: 'Dan'   },
-];
-
-const key = (p: Person) => p.id;
-
-function intersectionBy<T, K extends string | number | symbol>(
-  a: readonly T[],
-  b: readonly T[],
-  getKey: (item: T) => K
-): T[] {
-  const map = new Map<K, T>();
-  for (const item of a) {
-    map.set(getKey(item), item);
-  }
-  const result: T[] = [];
-  for (const item of b) {
-    const key = getKey(item);
-    if (map.has(key)) {
-      result.push(item);
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        table[i][j] = table[i - 1][j - 1] + 1;
+        if (table[i][j] > maxLen) {
+          maxLen = table[i][j];
+          maxEndIdxA = i;          // the end index (exclusive) in `a`
+        }
+      }
     }
   }
-  return result;
-}
 
-console.log(intersectionBy(a, b, key));
-// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
+  return maxLen === 0 ? '' : a.slice(maxEndIdxA - maxLen, maxEndIdxA);
+}
+console.log(longestCommonSubstring('ABABC', 'BABCA')); // → "ABC"
+console.log(longestCommonSubstring('kitten', 'sitting')); // → "itt"
+console.log(longestCommonSubstring('foo', 'bar')); // → ""
