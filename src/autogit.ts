@@ -1,93 +1,57 @@
-/*  Boyer‑Moore string search
- *  ----------------------------------
- *  – pattern:  the string you’re looking for
- *  – text:     the larger string you scan
- *  Returns:    an array of the starting indices where pattern occurs
+/**
+ * Build the shift table used by BMH.
+ * Each entry tells us how far we can jump when the bad character
+ * (the character that mismatched) appears.
  */
-
-type BMResult = number[];
-
-function boyerMoore(text: string, pattern: string): BMResult {
-  if (pattern.length === 0) return [];
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
   const m = pattern.length;
+
+  // every character that does NOT appear in the pattern gets a full skip
+  // (m).  Characters *inside* the pattern get a smaller value.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern[i]] = m - 1 - i;
+  }
+
+  return table;
+}
+
+/**
+ * Classic Boyer‑Moore‑Horspool
+ *
+ * @param text    The text to search in
+ * @param pattern The pattern to find
+ * @returns Index of the first occurrence or -1
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern matches immediately
+  if (pattern.length > text.length) return -1;   // impossible
+
+  const shift = buildShiftTable(pattern);
   const n = text.length;
-  const result: number[] = [];
+  const m = pattern.length;
 
-  let s = 0;                  // alignment of pattern with text
-  while (s <= n - m) {        // slide pattern over text
-    let j = m - 1;            // right‑most pattern position
+  let i = 0;          // index in text where we start aligning the pattern
 
-    // compare from right to left
-    while (j >= 0 && pattern[j] === text[s + j]) {
+  while (i <= n - m) {
+    // start comparing from the end of the pattern
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
       j--;
     }
 
-    if (j < 0) {                  // whole pattern matched
-      result.push(s);
-      s += goodSuffix[0];          // shift using good‑suffix
-    } else {
-      // bad‑character rule
-      const badShift = j - badChar[text[s + j]] ?? j + 1;
-      // good‑suffix rule
-      const goodShift = goodSuffix[j + 1];
-      s += Math.max(badShift, goodShift);
+    if (j < 0) {
+      return i;  // whole pattern matched
     }
+
+    // bad character at text[i + m - 1]
+    const badChar = text[i + m - 1];
+    const skip = shift[badChar] ?? m; // default skip is m
+    i += skip;
   }
-  return result;
+
+  return -1; // not found
 }
-
-/* -------------  Bad‑character table  ----------------- */
-function buildBadCharShift(pattern: string): Record<string, number> {
-  const lastPos: Record<string, number> = {};
-  for (let i = 0; i < pattern.length; i++) {
-    lastPos[pattern[i]] = i;          // last occurrence index
-  }
-  return lastPos;
-}
-
-/* -------------  Good‑suffix table  ------------------- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const shift: number[] = new Array(m + 1).fill(m);
-  const border = new Array(m + 1).fill(0);
-  let i = m;
-  let j = m + 1;
-  border[i] = j;
-
-  // 1. Calculate borders (prefixes that are also suffixes)
-  while (i > 0) {
-    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
-      j = border[j];
-    }
-    i--; j--; border[i] = j;
-  }
-
-  // 2. Compute shift table from borders
-  for (let k = 0; k < m; k++) {
-    shift[k] = m; // default shift is pattern length
-  }
-
-  let iIdx = 0;
-  while (iIdx < m) {
-    const g = m - border[iIdx];
-    shift[g] = Math.min(shift[g], border[iIdx] + 1);
-    iIdx++;
-  }
-
-  // 3. Fill the remaining entries (when no suffix matches)
-  let last = shift[1];
-  for (let q = 2; q <= m; q++) {
-    if (shift[q] === m) shift[q] = last;
-    else last = shift[q];
-  }
-
-  return shift;
-}
-
-/* -------------  Example use ----- */
-const haystack = "ABABACABABABCAB";
-const needle = "ABABC";
-
-console.log(boyerMoore(haystack, needle));  // => [5]
+console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
+console.log(boyerMooreHorspool("hello world", "world")); // → 6
+console.log(boyerMooreHorspool("visible", "nope")); // → -1
