@@ -1,15 +1,18 @@
-const numbers: number[] = [42, 23, 8, 15, 16];
-
-// Ascending (smallest → largest)
-const asc = [...numbers].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [8, 15, 16, 23, 42]
-
-// Descending (largest → smallest)
-const desc = [...numbers].sort((a, b) => b - a);
-console.log('Descending:', desc); // [42, 23, 16, 15, 8]
-function sortNumbers(arr: number[], ascending = true): number[] {
-  return [...arr].sort((a, b) => ascending ? a - b : b - a);
+function removeAllWhitespace(str: string): string {
+  return str.replace(/\s+/g, "");
 }
-
-console.log(sortNumbers(numbers));      // Ascending
-console.log(sortNumbers(numbers, false)); // Descending
+function trimStart(str: string): string {
+  return str.replace(/^\s+/, "");
+}
+function trimEnd(str: string): string {
+  return str.replace(/\s+$/, "");
+}
+const raw = "\n  Let's   test this!  \t\n";
+console.log("original  :", raw);
+console.log("trimmed    :", raw.trim());
+console.log("no spaces :", raw.replace(/\s+/g, ""));
+original  : "
+  Let's   test this!   
+"
+trimmed    : "Let's   test this!"
+no spaces : "Letstestthis!"
