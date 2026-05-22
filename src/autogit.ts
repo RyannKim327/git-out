@@ -1,48 +1,45 @@
-// fetch-posts.ts
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
+/**
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
+ */
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-async function getPosts(): Promise<Post[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  // Allow a “fetch” implementation to be swapped in, e.g. for tests
-  const fetcher = typeof globalThis.fetch === "function" ? globalThis.fetch : require("node-fetch");
-
-  try {
-    const resp = await fetcher(url, { method: "GET" });
-
-    if (!resp.ok) {
-      // Throw an error that includes the status code and message
-      throw new Error(`API error (${resp.status}): ${resp.statusText}`);
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
-
-    const data: unknown = await resp.json();
-
-    // Basic runtime type guard: make sure we really got an array of posts
-    if (!Array.isArray(data)) {
-      throw new Error("Response was not an array");
-    }
-
-    // We trust the API to provide the right shape and coerce
-    return data as Post[];
-  } catch (e) {
-    // Re‑throw with a bit more context if we’re not already an Error
-    if (!(e instanceof Error)) {
-      throw new Error(String(e));
-    }
-    throw e;
   }
-}
 
-// Demo: print the first five posts
-getPosts()
-  .then((posts) => {
-    posts.slice(0, 5).forEach((p) =>
-      console.log(`[${p.id}] ${p.title} (user ${p.userId})`)
-    );
-  })
-  .catch((err) => console.error("Failed to fetch posts:", err));
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
+    } else {
+      j--;          // move left
+    }
+  }
+
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
+}
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
