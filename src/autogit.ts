@@ -1,122 +1,46 @@
-/** A node that holds a value and optional left/right children. */
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+// src/githubUsers.ts
+import fetch, { Response } from "node-fetch";
+
+interface GithubUser {
+  login: string;
+  id: number;
+  avatar_url: string;
+  html_url: string;
 }
-/** A minimal generic binary search tree. */
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
 
-  /* Comparator: returns negative if a < b, 0 if equal, positive if a > b */
-  constructor(private compare: (a: T, b: T) => number) {}
+async function fetchGithubUsers(
+  page: number = 1,
+  perPage: number = 10
+): Promise<GithubUser[]> {
+  const url = `https://api.github.com/users?since=${(page - 1) * perPage}`;
 
-  /** Insert a new value. */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
+  const resp: Response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "TypeScript-CLI",
+    },
+  });
 
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current = this.root;
-    while (true) {
-      if (this.compare(value, current.value) < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          break;
-        }
-        current = current.left;
-      } else {
-        if (!current.right) {
-          current.right = newNode;
-          break;
-        }
-        current = current.right;
-      }
-    }
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`GitHub API error ${resp.status}: ${errText}`);
   }
 
-  /** Search for a value – returns <node> or null. */
-  find(value: T): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const cmp = this.compare(value, current.value);
-      if (cmp === 0) return current;
-      current = cmp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
+  const json = await resp.json();
 
-  /** In-order traversal – returns values sorted ascending. */
-  inOrder(): T[] {
-    const result: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      result.push(node.value);
-      walk(node.right);
-    };
-    walk(this.root);
-    return result;
-  }
+  // Type assertion – we know the API returns an array of GitHubUser objects
+  return json as GithubUser[];
+}
 
-  /** Remove a value. (Simplest version – does not handle replacement of two children.) */
-  delete(value: T): void {
-    const remove = (
-      node: TreeNode<T> | null,
-      value: T
-    ): TreeNode<T> | null => {
-      if (!node) return null;
-
-      const cmp = this.compare(value, node.value);
-      if (cmp < 0) {
-        node.left = remove(node.left, value);
-      } else if (cmp > 0) {
-        node.right = remove(node.right, value);
-      } else {
-        // Node with only one child or no child
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
-
-        // Node with two children: get the inorder successor (smallest in right subtree)
-        let succ = node.right;
-        while (succ.left) succ = succ.left;
-        node.value = succ.value;                // Copy successor’s value
-        node.right = remove(node.right, succ.value); // Delete successor
-      }
-      return node;
-    };
-
-    this.root = remove(this.root, value);
+async function main() {
+  try {
+    const users = await fetchGithubUsers(1, 5);
+    console.log("Top GitHub users:");
+    users.forEach((u) => console.log(`- ${u.login} (${u.html_url})`));
+  } catch (err) {
+    console.error("Something went wrong:", err);
   }
 }
-// A simple numeric comparator
-const numCmp = (a: number, b: number) => a - b;
 
-// Create tree
-const tree = new BinarySearchTree<number>(numCmp);
+main().catch((e) => console.error(e));
 
-// Insert numbers
-[5, 3, 7, 2, 4, 6, 8].forEach(v => tree.insert(v));
-
-// Search
-console.log(tree.find(4)?.value); // 4
-console.log(tree.find(10));       // null
-
-// In‑order traversal should be sorted
-console.log(tree.inOrder()); // [2,3,4,5,6,7,8]
-
-// Delete a value
-tree.delete(5);
-console.log(tree.inOrder()); // [2,3,4,6,7,8]
-interface Person { name: string; age: number }
-
-const ageCmp = (a: Person, b: Person) => a.age - b.age;
-const personTree = new BinarySearchTree<Person>(ageCmp);
-
-personTree.insert({ name: "Alice", age: 30 });
-personTree.insert({ name: "Bob", age: 25 });
