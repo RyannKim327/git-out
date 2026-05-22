@@ -1,8 +1,19 @@
-function reverseWords(text: string): string {
-    // Split on any amount of whitespace, strip leading/trailing spaces
-    const words = text.trim().split(/\s+/);
-    // Reverse and join with a single space
-    return words.reverse().join(' ');
-}
+function isPalindrome(s: string): boolean {
+  // Two‑pointer scan from both ends
+  let left = 0;
+  let right = s.length - 1;
 
-console.log(reverseWords("Hello world from TypeScript")); // "TypeScript from world Hello"
+  while (left < right) {
+    // Compare the characters at the two pointers
+    if (s.charAt(left) !== s.charAt(right)) {
+      return false;          // mismatch found – not a palindrome
+    }
+    left++;
+    right--;
+  }
+
+  return true;                 // all mirrored pairs matched
+}
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+console.log(isPalindrome(""));        // true (empty string is a palindrome)
