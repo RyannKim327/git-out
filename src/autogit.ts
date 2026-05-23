@@ -1,46 +1,52 @@
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+/**
+ * Selection sort – returns a **new** sorted array.
+ * The original array is left untouched.
+ *
+ * @param arr   – source array
+ * @returns     – a new array sorted in ascending order
+ */
+export function selectionSort<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];          // clone so we don't mutate the caller's array
+  const n = toSort.length;
 
-  // A little help‑trim: you can decide to ignore whitespace, case, etc.
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
+  for (let i = 0; i < n - 1; i++) {
+    // assume the smallest element is at i
+    let minIndex = i;
 
-  const sortedA = normalize(a).split('').sort().join('');
-  const sortedB = normalize(b).split('').sort().join('');
+    // find the real smallest element in the remaining unsorted section
+    for (let j = i + 1; j < n; j++) {
+      if (toSort[j] < toSort[minIndex]) {
+        minIndex = j;
+      }
+    }
 
-  return sortedA === sortedB;
-}
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-
-  const freq = new Map<string, number>();
-
-  for (const ch of a) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+    // swap the found minimum with the element at i
+    if (minIndex !== i) {
+      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
+    }
   }
 
-  for (const ch of b) {
-    const count = freq.get(ch);
-    if (!count) return false;          // either zero or undefined
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
-  }
-
-  return freq.size === 0;
+  return toSort;
 }
-function areAnagramsAscii(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+const unsorted = [9, 3, 10, 2, 7];
+const sorted = selectionSort(unsorted);
 
-  const counts = new Uint32Array(26);
+console.log(sorted);      // [2, 3, 7, 9, 10]
+console.log(unsorted);    // remains [9, 3, 10, 2, 7]
+export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];
+  const helper = (k: number) => {
+    if (k >= toSort.length - 1) return;
 
-  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
-  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
+    let minIdx = k;
+    for (let i = k + 1; i < toSort.length; i++) {
+      if (toSort[i] < toSort[minIdx]) minIdx = i;
+    }
 
-  return counts.every(v => v === 0);
-}
-const compact = (s: string) =>
-  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
+    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
+    helper(k + 1);
+  };
 
-function areAnagramsClean(a: string, b: string): boolean {
-  return areAnagrams(compact(a), compact(b));
+  helper(0);
+  return toSort;
 }
