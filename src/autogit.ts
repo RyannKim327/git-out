@@ -1,25 +1,24 @@
-/**
- * Returns the first non‑repeating character of `s`, or `null` if every character repeats.
- *
- * @param s - Input string (may contain any Unicode characters)
- * @returns  The first unique character, or `null`
- */
-export function firstNonRepeating(s: string): string | null {
-  // Map keeps the order in which characters appear
-  const freq = new Map<string, number>();
+const numbers = [1, 2, 3, 2, 4, 1, 5];
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null; // no unique character
+// One‑liner:
+const unique = [...new Set(numbers)]; // [1, 2, 3, 4, 5]
+numbers.length = 0;                      // clear the original array
+numbers.push(...new Set(numbers));       // backfill it with unique items
+interface User {
+  id: number;
+  name: string;
 }
-console.log(firstNonRepeating("swiss"));       // "w"
-console.log(firstNonRepeating("aabbcc"));      // null
-console.log(firstNonRepeating("hello world")); // "h"
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice' }
+];
+
+const uniqueUsers = users.filter((user, i, arr) =>
+  i === arr.findIndex(u => u.id === user.id)
+);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+const byId = new Map<number, User>();
+for (const u of users) byId.set(u.id, u);
+const uniqueUsers = Array.from(byId.values());
