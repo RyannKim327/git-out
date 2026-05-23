@@ -1,50 +1,45 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
-}
-
 /**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  return pA; // either the intersection node or null
-}
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
+    } else {
+      j--;          // move left
+    }
   }
-  return dummy.next;
+
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
 }
-
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
-
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
-
-console.log(getIntersectionNode(a1, b1) === shared); // true
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
