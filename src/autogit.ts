@@ -1,25 +1,24 @@
-const str = "42";
-const num = parseInt(str, 10);  // 42
-parseInt("42 apples", 10);  // 42
-parseInt("  42", 10);       // 42
-parseInt("apple 42", 10);   // NaN
-const s = "42";
-const n1 = Number(s);   // 42
-const n2 = +s;          // 42
-Number("3.14");   // 3.14
-Number.parseFloat("3.14");  // 3.14
-function toInt(value: string): number | null {
-  const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) return null;
-  return parsed;
+const numbers = [1, 2, 3, 2, 4, 1, 5];
+
+// One‑liner:
+const unique = [...new Set(numbers)]; // [1, 2, 3, 4, 5]
+numbers.length = 0;                      // clear the original array
+numbers.push(...new Set(numbers));       // backfill it with unique items
+interface User {
+  id: number;
+  name: string;
 }
 
-const x = toInt("foo"); // null
-const y = toInt("12");  // 12
-const hex = "0xFF";
-const oct = "0o77";
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice' }
+];
 
-Number(hex);   // 255
-Number(oct);   // 63
-
-parseInt(hex, 16);  // 255
+const uniqueUsers = users.filter((user, i, arr) =>
+  i === arr.findIndex(u => u.id === user.id)
+);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+const byId = new Map<number, User>();
+for (const u of users) byId.set(u.id, u);
+const uniqueUsers = Array.from(byId.values());
