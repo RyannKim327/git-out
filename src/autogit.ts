@@ -1,40 +1,50 @@
-const fruits = ['apple', 'banana', 'cherry', 'banana'];
-
-const withoutBanana = fruits.filter(f => f !== 'banana');
-
-console.log(withoutBanana); // ['apple', 'cherry']
-// Remove the first object with id === 42
-const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
-const itemsWithout42 = items.filter(item => item.id !== 42);
-const numbers = [10, 20, 30, 40];
-const indexToRemove = 2; // 30
-
-// splice(start, deleteCount)
-numbers.splice(indexToRemove, 1);
-
-console.log(numbers); // [10, 20, 40]
-const arr = [1, 2, 3, 4, 5];
-const cond = (x: number) => x % 2 === 0; // remove evens
-
-// Find first match and splice it out
-const idx = arr.findIndex(cond);
-if (idx !== -1) arr.splice(idx, 1);
-
-console.log(arr); // [1, 3, 5]
-// Remove the first occurrence of a value
-export function removeFirst<T>(arr: T[], target: T): T[] {
-  const idx = arr.findIndex(v => v === target);
-  if (idx === -1) return [...arr]; // not found, return copy
-  const copy = [...arr];
-  copy.splice(idx, 1);
-  return copy; // or return copy and let caller decide
+class ListNode {
+  constructor(public val: number = 0, public next: ListNode | null = null) {}
 }
 
-// Remove by index (mutable)
-export function removeAt<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1);
+/**
+ * Return the intersection node of two singly linked lists, or null if they
+ * never meet.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // First guard for trivial cases.
+  if (!headA || !headB) return null;
+
+  // Two pointers that start at the heads of the two lists.
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
+
+  /**
+   * Each pointer walks until it reaches the end of its list, then jumps
+   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
+   * they will either collide (at the intersection) or simultaneously reach
+   * the tail (`null`) meaning the lists do not intersect.
+   */
+  while (pA !== pB) {
+    pA = pA === null ? headB : pA.next;
+    pB = pB === null ? headA : pB.next;
   }
+
+  return pA; // either the intersection node or null
 }
-// Keep everything except index 3
-const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
+// Helper to build a list from an array
+function build(arr: number[]): ListNode | null {
+  let dummy = new ListNode(-1);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
+}
+
+// Build two lists that intersect
+const shared = build([8, 9, 10]);
+
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
+
+console.log(getIntersectionNode(a1, b1) === shared); // true
