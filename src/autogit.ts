@@ -1,45 +1,33 @@
-// random-example.ts
-// a small TypeScript demo that pulls data from a public API using axios
-
-import axios from 'axios';
-
-// ---------- Types ----------
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
+const head: ListNode<number> = { val: 1, next: null };
+head.next = { val: 2, next: null };
+head.next.next = { val: 3, next: null };      // 1 → 2 → 3
+function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-// ---------- API wrapper ----------
-async function fetchTodo(id: number): Promise<Todo> {
-  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
-  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
-  return response.data;
-}
-
-// ---------- CLI entry point ----------
-async function main() {
-  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
-
-  try {
-    const todo = await fetchTodo(todoId);
-    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
-    console.log(`  - ${todo.title}`);
-    console.log(`  - completed: ${todo.completed}`);
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      console.error(`Request failed: ${err.message}`);
-    } else {
-      console.error(`Unexpected error:`, err);
-    }
-    process.exit(1);
+  while (fast !== null && fast.next !== null) {
+    slow = slow?.next ?? null;   // advance by 1
+    fast = fast.next.next;       // advance by 2
   }
+
+  return slow; // could be null if the list was empty
+}
+if (fast !== null) {            // original list had even length
+  slow = slow?.next ?? null;    // bump to the second middle
+}
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
 }
 
-main();
-# 1. Install deps (run once)
-npm install axios
+const list: ListNode<number> | null = {
+  val: 10,
+  next: { val: 20, next: { val: 30, next: null } },
+};
 
-# 2. Compile / run
-npx ts-node random-example.ts 5
+console.log(middle(list)?.val); // prints 20
