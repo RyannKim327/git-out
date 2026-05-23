@@ -1,131 +1,95 @@
-/* ----------  TrieNode  ---------- */
+type EdgeMap = Map<number, Node>; // key = first char code of the edge
 
-class TrieNode<T = any> {
-  /** Holds the full value for a key that ends here. */
-  public value: T | null = null;
+export class Node {
+  // Children edges keyed by first character code
+  public children: EdgeMap = new Map();
 
-  /** Child pointers keyed by the next character. */
-  readonly children: Map<string, TrieNode<T>> = new Map();
+  // Edge that leads **to** this node
+  public start: number = -1;           // inclusive
+  public end: number = -1;             // exclusive
+  public suffixLink: Node | null = null;
 
-  /** Convenience flag – true if this node marks the end of a key. */
-  get hasValue(): boolean {
-    return this.value !== null;
+  constructor(start: number = -1, end: number = -1) {
+    this.start = start;
+    this.end   = end;
   }
 }
+export class SuffixTree {
+  /** original text, appended with a unique terminator that does not appear elsewhere */
+  private text: string[];
 
-/* ----------  Trie  ---------- */
+  /** root node */
+  private root: Node = new Node();
 
-class Trie<T = any> {
-  private root = new TrieNode<T>();
+  /** active point */
+  private activeNode: Node = this.root;
+  private activeEdge: number | null = null;
+  private activeLength: number = 0;
 
-  /**
-   * Insert a key/value pair.  Keys can be any string.
-   */
-  insert(key: string, value: T): void {
-    let node = this.root;
-    for (const ch of key) {
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode<T>());
+  /** number of suffixes that have yet to be inserted for the current phase */
+  private remainder: number = 0;
+
+  /** end index for leaves – shared so all leaves refer to the current suffix end */
+  private leafEnd: number = -1;
+
+  constructor(text: string) {
+    // Ensure a single terminator is appended; '#' is common
+    this.text = text.split('').concat('#');
+    this.build();
+  }
+
+  /** Core driver – runs one pass over the text */
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.extend(i);
+    }
+  }
+
+  /** Ukkonen’s “extension” for position i of the text */
+  private extend(pos: number): void {
+    this.leafEnd = pos;  // All current leaves stretch to the new char
+
+    this.remainder++;   // We have one more suffix to add
+
+    let lastNewNode: Node | null = null;
+
+    while (this.remainder > 0) {
+      if (this.activeLength === 0) {
+        // Start a new edge from the active node
+        this.activeEdge = pos;
       }
-      node = node.children.get(ch)!;
-    }
-    node.value = value;
-  }
 
-  /**
-   * Returns the value stored under *key*, or `undefined` if the key
-   * isn't present.
-   */
-  get(key: string): T | undefined {
-    const node = this._findNode(key);
-    return node?.value ?? undefined;
-  }
+      const activeChar = this.text[this.activeEdge!];
+      const child = this.activeNode.children.get(activeChar.charCodeAt(0));
 
-  /**
-   * Checks whether *key* exists in the trie.
-   */
-  has(key: string): boolean {
-    const node = this._findNode(key);
-    return !!node?.hasValue;
-  }
+      // 1. No edge starting with the active char → create a leaf
+      if (!child) {
+        const leaf = new Node(pos, Infinity); // Infinity means “extends to leafEnd”
+        this.activeNode.children.set(activeChar.charCodeAt(0), leaf);
 
-  /**
-   * Delete a key.  If the key isn't present, nothing happens.
-   * The method ends up trimming unused nodes on the way back.
-   */
-  delete(key: string): void {
-    const path: TrieNode[] = [];
-    let node = this.root;
+        // set suffix link for last internal node
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this.activeNode;
+          lastNewNode = null;
+        }
+      }
+      // 2. Edge exists → walk down if we have to
+      else if (this.walkDown(child, pos)) {
+        // edge fully traversed – repeat loop with updated active point
+        continue;
+      }
+      // 3. Edge exists but activeLength < edge length → split edge
+      else {
+        const edgeLen = this.edgeLength(child, pos);
+        if (this.activeLength === edgeLen) {
+          // If we are *exactly* at the end of an edge, further walk down happens
+          if (lastNewNode && this.activeNode !== this.root) {
+            lastNewNode.suffixLink = this.activeNode;
+            lastNewNode = null;
+          }
+          this.activeNode = child;
+          this.activeLength++; // effectively moving to next character on edge
+          break;               // proceed to next i
+        }
 
-    for (const ch of key) {
-      const child = node.children.get(ch);
-      if (!child) return;          // key not found
-      path.push(node);
-      node = child;
-    }
-
-    if (!node.hasValue) return;    // no value to delete
-
-    node.value = null;
-
-    // Walk backward, removing nodes that became unnecessary.
-    for (let i = key.length - 1; i >= 0; i--) {
-      const parent = path[i];
-      const ch = key[i];
-
-      const child = parent.children.get(ch)!;
-      if (child.children.size > 0 || child.hasValue) break;
-      parent.children.delete(ch);
-    }
-  }
-
-  /**
-   * Returns all keys that start with *prefix*.
-   */
-  startsWith(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    this._collect(node, prefix, results);
-    return results;
-  }
-
-  /* ---------  Helpers  --------- */
-
-  private _findNode(key: string): TrieNode | null {
-    let node: TrieNode | undefined = this.root;
-    for (const ch of key) {
-      node = node?.children.get(ch);
-      if (!node) return null;
-    }
-    return node;
-  }
-
-  private _collect(node: TrieNode, prefix: string, out: string[]): void {
-    if (node.hasValue) out.push(prefix);
-
-    for (const [ch, child] of node.children) {
-      this._collect(child, prefix + ch, out);
-    }
-  }
-}
-
-/* ----------  Usage Demo  ---------- */
-
-const trie = new Trie<number>();
-
-trie.insert('cat', 1);
-trie.insert('car', 2);
-trie.insert('cart', 3);
-trie.insert('dog', 4);
-
-console.log(trie.get('cat'));         // 1
-console.log(trie.get('cart'));        // 3
-console.log(trie.has('carpent'));     // false
-
-console.log(trie.startsWith('ca'));   // ['cat', 'car', 'cart']
-console.log(trie.startsWith('do'));   // ['dog']
-
-trie.delete('cart');
-console.log(trie.startsWith('ca'));   // ['cat', 'car']
+        // Create internal node
