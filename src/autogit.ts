@@ -1,33 +1,22 @@
 /**
- * Returns `true` if the supplied value is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores all non‑alphanumeric characters
+ * Return true if n is prime, false otherwise.
  *
- * @example
- * isPalindrome("A man, a plan, a canal: Panama") // → true
- * isPalindrome("Madam")                          // → true
- * isPalindrome("Hello")                          // → false
+ * Works for values up to 2^53‑1 (the largest safe integer in JS/TS).
+ * For bigger integers you’d need BigInt and, better yet, a probabilistic test
+ * (Miller‑Rabin, etc.).
  */
-export function isPalindrome(str: string): boolean {
-  // Keep only alphanumeric characters and lower‑case the rest.
-  const cleaned = str
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;          // 0, 1 and negatives aren’t prime
+  if (n <= 3) return true;           // 2 and 3 are prime
+  if (n % 2 === 0 || n % 3 === 0) return false; // eliminate evens & multiples of 3
 
-  // Two‑pointer technique: compare chars from both ends.
-  let left = 0;
-  let right = cleaned.length - 1;
-
-  while (left < right) {
-    if (cleaned[left] !== cleaned[right]) {
-      return false;
-    }
-    left++;
-    right--;
+  // From here we only need to test numbers of the form 6k ± 1
+  const limit = Math.floor(Math.sqrt(n));
+  for (let i = 5; i <= limit; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-
   return true;
 }
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("Hello"));                         // false
+console.log(isPrime(11));          // true
+console.log(isPrime(12));          // false
+console.log(isPrime(1_000_003));   // true (1 M+‑prime)
