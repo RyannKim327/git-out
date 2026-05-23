@@ -1,112 +1,89 @@
-// Represents a single weighted directed edge.
-export interface Edge {
-  from: number;
-  to: number;
-  weight: number;
+// ------------------------------------------------------------------
+// 1️⃣  Graph representation (adjacency list)
+// ------------------------------------------------------------------
+type NodeID = string;  // or number – whatever uniquely identifies a node
+interface Graph {
+  // `edges[u]` is a list of all nodes directly reachable from `u`
+  [key: string]: NodeID[];
 }
-/**
- * Bellman–Ford shortest‑path algorithm.
- *
- * @param n      Number of vertices (vertices are 0 … n‑1).
- * @param edges  Array of directed weighted edges.
- * @param source Index of the source vertex.
- * @returns {distances, predecessors}
- *          - `distances` is an array where `distances[v]` holds the
- *            length of a shortest path from source to v.
- *          - `predecessors` holds the previous vertex on that path
- *            (use `-1` for the source and unreachable vertices).
- *
- * @throws Error if a negative cycle is reachable from source.
- */
-export function bellmanFord(
-  n: number,
-  edges: Edge[],
-  source: number = 0
-): { distances: number[]; predecessors: number[] } {
-  // 1️⃣ BFS‑style relaxation loop.
-  const dist: number[] = Array(n).fill(Infinity);
-  const pred: number[] = Array(n).fill(-1);
 
-  dist[source] = 0;
+// ------------------------------------------------------------------
+// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
+// ------------------------------------------------------------------
+function dfsRecursive(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID,
+  visited = new Set<NodeID>(),
+  path: NodeID[] = []
+): NodeID[] | null {
+  visited.add(start);
+  path.push(start);
 
-  for (let i = 0; i < n - 1; i++) {
-    let changed = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        changed = true;
+  if (start === target) return [...path];        // found it – return a copy of the path
+
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      const result = dfsRecursive(graph, neighbor, target, visited, path);
+      if (result) return result;                 // propagate the found path upwards
+    }
+  }
+
+  path.pop();                                     // backtrack
+  return null;                                    // no path from this branch
+}
+
+// ------------------------------------------------------------------
+// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
+// ------------------------------------------------------------------
+function dfsIterative(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID
+): NodeID[] | null {
+  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
+  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
+  const visited = new Set<NodeID>();
+
+  while (stack.length) {
+    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    parentMap.set(node, parent);
+
+    if (node === target) {
+      // reconstruct path
+      const path: NodeID[] = [];
+      let current: NodeID | null = target;
+      while (current !== null) {
+        path.unshift(current);
+        current = parentMap.get(current)!;
+      }
+      return path;
+    }
+
+    for (const neighbor of graph[node] ?? []) {
+      if (!visited.has(neighbor)) {
+        stack.push({ node: neighbor, parent: node });
       }
     }
-    // Early exit if nothing moved this pass.
-    if (!changed) break;
   }
 
-  // 2️⃣ Check for negative‑weight cycles.
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
-      const cycle: number[] = findNegCycle(n, edges, to);
-      throw new Error(
-        `Negative cycle detected: ${cycle.join(' → ')}`
-      );
-    }
-  }
-
-  return { distances: dist, predecessors: pred };
+  return null;          // no path found
 }
 
-/**
- * Helper: recover a node that lies on a negative cycle reachable from `start`.
- * Returns the cycle as a list of vertex indices in order.
- *
- * This is a brute‑force way – for large graphs you’ll want a more
- * sophisticated cycle extraction, but it’s fine for teaching/compacting.
- */
-function findNegCycle(
-  n: number,
-  edges: Edge[],
-  start: number
-): number[] {
-  const parent: number[] = Array(n).fill(-1);
-  let x = start;
-  for (let i = 0; i < n; i++) x = edges.find(e => e.to === x)?.from ?? -1;
+// ------------------------------------------------------------------
+// 4️⃣  Example usage
+// ------------------------------------------------------------------
+const exampleGraph: Graph = {
+  a: ["b", "c"],
+  b: ["d", "e"],
+  c: ["f"],
+  d: [],
+  e: ["f"],
+  f: []
+};
 
-  const cycle: number[] = [];
-  let cur = x;
-  do {
-    cycle.push(cur);
-    cur = parent[cur];
-  } while (cur !== x && cur !== -1);
-  cycle.reverse();
-  return cycle;
-}
-import { bellmanFord, Edge } from './bellmanFord';
-
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 2, weight: -1 },
-  { from: 1, to: 3, weight: 10 },
-  { from: 2, to: 3, weight: 3 },
-  // Add more edges as needed
-];
-
-const { distances, predecessors } = bellmanFord(4, edges, 0);
-
-console.log('Distances:', distances);
-// [0, 4, 3, 6]
-
-console.log('Predecessors:', predecessors);
-// [-1, 0, 1, 2]
-
-// Reconstruct a path to vertex 3
-function pathTo(v: number) {
-  const path: number[] = [];
-  while (v !== -1) {
-    path.unshift(v);
-    v = predecessors[v];
-  }
-  return path;
-}
-
-console.log('Path 0 → 3:', pathTo(3)); // [0, 1, 2, 3]
+console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
+console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
