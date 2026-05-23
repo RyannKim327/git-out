@@ -1,52 +1,56 @@
 /**
- * Selection sort – returns a **new** sorted array.
- * The original array is left untouched.
- *
- * @param arr   – source array
- * @returns     – a new array sorted in ascending order
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
  */
-export function selectionSort<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];          // clone so we don't mutate the caller's array
-  const n = toSort.length;
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-  for (let i = 0; i < n - 1; i++) {
-    // assume the smallest element is at i
-    let minIndex = i;
+  if (m === 0 || n < m) return result;       // edge cases
 
-    // find the real smallest element in the remaining unsorted section
-    for (let j = i + 1; j < n; j++) {
-      if (toSort[j] < toSort[minIndex]) {
-        minIndex = j;
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
+
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
+
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
+  }
+
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
       }
     }
 
-    // swap the found minimum with the element at i
-    if (minIndex !== i) {
-      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
     }
   }
 
-  return toSort;
+  return result;
 }
-const unsorted = [9, 3, 10, 2, 7];
-const sorted = selectionSort(unsorted);
+const text = "abracadabra";
+const pattern = "abra";
 
-console.log(sorted);      // [2, 3, 7, 9, 10]
-console.log(unsorted);    // remains [9, 3, 10, 2, 7]
-export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];
-  const helper = (k: number) => {
-    if (k >= toSort.length - 1) return;
-
-    let minIdx = k;
-    for (let i = k + 1; i < toSort.length; i++) {
-      if (toSort[i] < toSort[minIdx]) minIdx = i;
-    }
-
-    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
-    helper(k + 1);
-  };
-
-  helper(0);
-  return toSort;
-}
+console.log(rabinKarp(text, pattern)); // → [0, 7]
