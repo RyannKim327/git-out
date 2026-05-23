@@ -1,35 +1,33 @@
 /**
- * Returns the longest common prefix of an array of strings.
- * If the array is empty, returns an empty string.
+ * Returns `true` if the supplied value is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores all non‑alphanumeric characters
  *
- * @param words - array of strings
- * @returns longest common prefix
+ * @example
+ * isPalindrome("A man, a plan, a canal: Panama") // → true
+ * isPalindrome("Madam")                          // → true
+ * isPalindrome("Hello")                          // → false
  */
-function longestCommonPrefix(words: string[]): string {
-  if (words.length === 0) return '';
+export function isPalindrome(str: string): boolean {
+  // Keep only alphanumeric characters and lower‑case the rest.
+  const cleaned = str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 
-  // 1. Find the min and max strings (lexicographically)
-  let min = words[0];
-  let max = words[0];
-  for (let i = 1; i < words.length; i++) {
-    const w = words[i];
-    if (w < min) min = w;
-    if (w > max) max = w;
+  // Two‑pointer technique: compare chars from both ends.
+  let left = 0;
+  let right = cleaned.length - 1;
+
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
+    }
+    left++;
+    right--;
   }
 
-  // 2. Find first mismatch between min and max
-  let j = 0;
-  while (j < min.length && j < max.length && min[j] === max[j]) {
-    j++;
-  }
-
-  // 3. Slice the common part
-  return min.slice(0, j);
+  return true;
 }
-const arr = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(arr)); // → "fl"
-
-console.log(longestCommonPrefix(['dog', 'racecar', 'car'])); // → ""
-console.log(longestCommonPrefix(['inter', 'internet', 'intermediate'])); // → "inter"
-console.log(longestCommonPrefix(['single'])); // → "single"
-console.log(longestCommonPrefix([])); // → ""
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("Hello"));                         // false
