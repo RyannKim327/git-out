@@ -1,106 +1,99 @@
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true;
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-  // 1️⃣ Find the middle (fast/slow trick)
-  let slow = head, fast = head, prev: ListNode | null = null;
-  while (fast && fast.next) {
-    // 2️⃣ Reverse the first half while we’re at it
-    let nxt = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nxt;
-
-    fast = fast.next.next;
-  }
-
-  // 3️⃣ If odd number of nodes skip the middle one
-  if (fast) slow = slow.next;
-
-  // 4️⃣ Compare the two halves
-  let p1 = prev, p2 = slow;
-  while (p1 && p2) {
-    if (p1.val !== p2.val) return false;
-    p1 = p1.next!;
-    p2 = p2.next!;
-  }
-  return true;
-}
-interface ListNode {
-  val: number | string;      // whatever you want to store
-  next?: ListNode | null;    // `next` is optional to support the “end” of the list
-}
 /**
- * Returns true if the singly linked list is a palindrome.
- *
- * @param head - The head node of the linked list (or null).
+ * Example of an async “network task” that you might run in Android
+ * (React‑Native runs JavaScript on a background thread for you).
  */
-function isPalindrome(head: ListNode | null): boolean {
-  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+const App: React.FC = () => {
+  /*--- State: loading / data / error -----------------------------------*/
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-  let slow = head;
-  let fast = head;
-  let prev: ListNode | null = null; // will become the head of the reversed first half
+  /*--- Effect: fire once on mount -------------------------------------*/
+  useEffect(() => {
+    /**
+     * Async function inside the effect so we can use await at a top level.
+     * It's an equivalent of Android’s AsyncTask (but without the Android
+     * boilerplate) – just a Promise chain wrapped in async/await.
+     */
+    const fetchData = async () => {
+      try {
+        // 1️⃣ Make the request
+        const response = await fetch(
+          'https://api.adviceslip.com/advice',
+        );
 
-  // Step 1 & 2: find middle, reverse first half
-  while (fast && fast.next) {
-    // Reverse the link for `slow`'s current node
-    const nextNode = slow.next!;
-    slow.next = prev;
-    prev = slow;
-    slow = nextNode;
+        // 2️⃣ Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-    fast = fast.next.next;
-  }
+        // 3️⃣ Parse the JSON payload
+        const json = await response.json();
 
-  // Step 3: if odd length, skip the middle node
-  if (fast) {
-    slow = slow.next!;
-  }
+        // 4️⃣ Store the result
+        setData(json);          // data.slip.advice will be the string
+        setError(null);
+      } catch (e) {
+        // Anything that goes wrong lands here
+        console.error('Failed to fetch advice:', e);
+        setError((e as Error).message);
+        setData(null);
+      } finally {
+        // Whatever happens, loading is done
+        setLoading(false);
+      }
+    };
 
-  // Step 4: compare nodes from the two halves
-  let firstHalf = prev;
-  let secondHalf = slow;
-  while (firstHalf && secondHalf) {
-    if (firstHalf.val !== secondHalf.val) return false;
-    firstHalf = firstHalf.next!;
-    secondHalf = secondHalf.next!;
-  }
+    fetchData();
 
-  return true;
-}
-// Helper to create a list from an array
-function fromArray(arr: (number | string)[]): ListNode | null {
-  if (!arr.length) return null;
-  const head: ListNode = { val: arr[0] };
-  let current = head;
-  for (let i = 1; i < arr.length; i++) {
-    current.next = { val: arr[i] };
-    current = current.next;
-  }
-  return head;
-}
+    // Optional: cleanup if the component unmounts before fetch resolves
+    // return () => { /* cancel request if using AbortController, e.g. */ };
+  }, []); // empty deps → run once
 
-console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
-console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
-function isPalindromeStack(head: ListNode | null): boolean {
-  const stack: (number | string)[] = [];
-  let fast = head;
-  let slow = head;
+  /*--- Rendering -----------------------------------------------------*/
+  return (
+    <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.text}>Loading advice...</Text>
+        </View>
+      )}
 
-  // Push first half onto stack
-  while (fast && fast.next) {
-    stack.push(slow!.val);
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
+        </View>
+      )}
 
-  // Skip middle element for odd length
-  if (fast) slow = slow!.next!;
+      {!loading && data && (
+        <View style={styles.centered}>
+          <Text style={styles.title}>Here’s an advice for you:</Text>
+          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
 
-  // Compare the rest with stack
-  while (slow) {
-    if (stack.pop() !== slow.val) return false;
-    slow = slow.next;
-  }
-  return true;
-}
+/*--- Styles ----------------------------------------------------------*/
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginTop: 12 },
+  title: { fontSize: 18, fontWeight: '600' },
+  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
+  error: { color: 'red' },
+});
+
+export default App;
