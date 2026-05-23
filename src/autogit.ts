@@ -1,25 +1,56 @@
 /**
- * Returns the first non‑repeating character of `s`, or `null` if every character repeats.
- *
- * @param s - Input string (may contain any Unicode characters)
- * @returns  The first unique character, or `null`
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
  */
-export function firstNonRepeating(s: string): string | null {
-  // Map keeps the order in which characters appear
-  const freq = new Map<string, number>();
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  if (m === 0 || n < m) return result;       // edge cases
+
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
+
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
+
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
   }
 
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
     }
   }
 
-  return null; // no unique character
+  return result;
 }
-console.log(firstNonRepeating("swiss"));       // "w"
-console.log(firstNonRepeating("aabbcc"));      // null
-console.log(firstNonRepeating("hello world")); // "h"
+const text = "abracadabra";
+const pattern = "abra";
+
+console.log(rabinKarp(text, pattern)); // → [0, 7]
