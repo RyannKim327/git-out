@@ -1,63 +1,131 @@
-/**
- * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
- *
- * @param src   the source array (contents will not be mutated)
- * @param dst   the destination array into which the merged result goes
- * @param l     left index (inclusive)
- * @param m     middle index (left sub‑range ends here)
- * @param r     right index (exclusive)
- */
-function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
-    let i = l;      // iterator for left sub‑run
-    let j = m;      // iterator for right sub‑run
-    let k = l;      // iterator for destination
+/* ----------  TrieNode  ---------- */
 
-    while (i < m && j < r) {
-        if (src[i] <= src[j]) {
-            dst[k++] = src[i++];
-        } else {
-            dst[k++] = src[j++];
-        }
-    }
+class TrieNode<T = any> {
+  /** Holds the full value for a key that ends here. */
+  public value: T | null = null;
 
-    // copy any leftovers (at most one of the two while above will run)
-    while (i < m) dst[k++] = src[i++];
-    while (j < r) dst[k++] = src[j++];
+  /** Child pointers keyed by the next character. */
+  readonly children: Map<string, TrieNode<T>> = new Map();
+
+  /** Convenience flag – true if this node marks the end of a key. */
+  get hasValue(): boolean {
+    return this.value !== null;
+  }
 }
 
-/**
- * Iterative bottom‑up merge sort.
- *
- * @remarks
- *   * `arr` is the array you want sorted—original remains untouched.
- *   * Returns a new sorted array. If you want to sort in place you
- *     could swap the references to the source and destination arrays
- *     after each pass.
- *
- * @param arr  array to sort
- * @returns    sorted copy of `arr`
- */
-export function mergeSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr.slice();   // trivial case
+/* ----------  Trie  ---------- */
 
-    let src = arr.slice();            // working copy
-    let dst: T[] = new Array(n);      // auxiliary buffer
+class Trie<T = any> {
+  private root = new TrieNode<T>();
 
-    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
-    for (let run = 1; run < n; run <<= 1) {
-        // merge adjacent runs of current length
-        for (let start = 0; start < n; start += 2 * run) {
-            const mid = Math.min(start + run, n);
-            const end = Math.min(start + 2 * run, n);
-            merge(src, dst, start, mid, end);
-        }
+  /**
+   * Insert a key/value pair.  Keys can be any string.
+   */
+  insert(key: string, value: T): void {
+    let node = this.root;
+    for (const ch of key) {
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode<T>());
+      }
+      node = node.children.get(ch)!;
+    }
+    node.value = value;
+  }
 
-        // the freshly merged segments now sit in `dst`;
-        // swap src/dst to let next pass read the new data
-        [src, dst] = [dst, src];
+  /**
+   * Returns the value stored under *key*, or `undefined` if the key
+   * isn't present.
+   */
+  get(key: string): T | undefined {
+    const node = this._findNode(key);
+    return node?.value ?? undefined;
+  }
+
+  /**
+   * Checks whether *key* exists in the trie.
+   */
+  has(key: string): boolean {
+    const node = this._findNode(key);
+    return !!node?.hasValue;
+  }
+
+  /**
+   * Delete a key.  If the key isn't present, nothing happens.
+   * The method ends up trimming unused nodes on the way back.
+   */
+  delete(key: string): void {
+    const path: TrieNode[] = [];
+    let node = this.root;
+
+    for (const ch of key) {
+      const child = node.children.get(ch);
+      if (!child) return;          // key not found
+      path.push(node);
+      node = child;
     }
 
-    // After the last pass `src` holds the sorted data (due to the final swap)
-    return src;
+    if (!node.hasValue) return;    // no value to delete
+
+    node.value = null;
+
+    // Walk backward, removing nodes that became unnecessary.
+    for (let i = key.length - 1; i >= 0; i--) {
+      const parent = path[i];
+      const ch = key[i];
+
+      const child = parent.children.get(ch)!;
+      if (child.children.size > 0 || child.hasValue) break;
+      parent.children.delete(ch);
+    }
+  }
+
+  /**
+   * Returns all keys that start with *prefix*.
+   */
+  startsWith(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
+
+    const results: string[] = [];
+    this._collect(node, prefix, results);
+    return results;
+  }
+
+  /* ---------  Helpers  --------- */
+
+  private _findNode(key: string): TrieNode | null {
+    let node: TrieNode | undefined = this.root;
+    for (const ch of key) {
+      node = node?.children.get(ch);
+      if (!node) return null;
+    }
+    return node;
+  }
+
+  private _collect(node: TrieNode, prefix: string, out: string[]): void {
+    if (node.hasValue) out.push(prefix);
+
+    for (const [ch, child] of node.children) {
+      this._collect(child, prefix + ch, out);
+    }
+  }
 }
+
+/* ----------  Usage Demo  ---------- */
+
+const trie = new Trie<number>();
+
+trie.insert('cat', 1);
+trie.insert('car', 2);
+trie.insert('cart', 3);
+trie.insert('dog', 4);
+
+console.log(trie.get('cat'));         // 1
+console.log(trie.get('cart'));        // 3
+console.log(trie.has('carpent'));     // false
+
+console.log(trie.startsWith('ca'));   // ['cat', 'car', 'cart']
+console.log(trie.startsWith('do'));   // ['dog']
+
+trie.delete('cart');
+console.log(trie.startsWith('ca'));   // ['cat', 'car']
