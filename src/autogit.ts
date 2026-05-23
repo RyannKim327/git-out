@@ -1,46 +1,106 @@
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-  // A little help‑trim: you can decide to ignore whitespace, case, etc.
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
+  // 1️⃣ Find the middle (fast/slow trick)
+  let slow = head, fast = head, prev: ListNode | null = null;
+  while (fast && fast.next) {
+    // 2️⃣ Reverse the first half while we’re at it
+    let nxt = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nxt;
 
-  const sortedA = normalize(a).split('').sort().join('');
-  const sortedB = normalize(b).split('').sort().join('');
-
-  return sortedA === sortedB;
-}
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-
-  const freq = new Map<string, number>();
-
-  for (const ch of a) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+    fast = fast.next.next;
   }
 
-  for (const ch of b) {
-    const count = freq.get(ch);
-    if (!count) return false;          // either zero or undefined
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+  // 3️⃣ If odd number of nodes skip the middle one
+  if (fast) slow = slow.next;
+
+  // 4️⃣ Compare the two halves
+  let p1 = prev, p2 = slow;
+  while (p1 && p2) {
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+  return true;
+}
+interface ListNode {
+  val: number | string;      // whatever you want to store
+  next?: ListNode | null;    // `next` is optional to support the “end” of the list
+}
+/**
+ * Returns true if the singly linked list is a palindrome.
+ *
+ * @param head - The head node of the linked list (or null).
+ */
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+
+  let slow = head;
+  let fast = head;
+  let prev: ListNode | null = null; // will become the head of the reversed first half
+
+  // Step 1 & 2: find middle, reverse first half
+  while (fast && fast.next) {
+    // Reverse the link for `slow`'s current node
+    const nextNode = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nextNode;
+
+    fast = fast.next.next;
   }
 
-  return freq.size === 0;
+  // Step 3: if odd length, skip the middle node
+  if (fast) {
+    slow = slow.next!;
+  }
+
+  // Step 4: compare nodes from the two halves
+  let firstHalf = prev;
+  let secondHalf = slow;
+  while (firstHalf && secondHalf) {
+    if (firstHalf.val !== secondHalf.val) return false;
+    firstHalf = firstHalf.next!;
+    secondHalf = secondHalf.next!;
+  }
+
+  return true;
 }
-function areAnagramsAscii(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-
-  const counts = new Uint32Array(26);
-
-  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
-  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
-
-  return counts.every(v => v === 0);
+// Helper to create a list from an array
+function fromArray(arr: (number | string)[]): ListNode | null {
+  if (!arr.length) return null;
+  const head: ListNode = { val: arr[0] };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { val: arr[i] };
+    current = current.next;
+  }
+  return head;
 }
-const compact = (s: string) =>
-  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
 
-function areAnagramsClean(a: string, b: string): boolean {
-  return areAnagrams(compact(a), compact(b));
+console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
+console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string)[] = [];
+  let fast = head;
+  let slow = head;
+
+  // Push first half onto stack
+  while (fast && fast.next) {
+    stack.push(slow!.val);
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
+
+  // Skip middle element for odd length
+  if (fast) slow = slow!.next!;
+
+  // Compare the rest with stack
+  while (slow) {
+    if (stack.pop() !== slow.val) return false;
+    slow = slow.next;
+  }
+  return true;
 }
