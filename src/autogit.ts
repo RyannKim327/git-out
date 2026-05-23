@@ -1,125 +1,99 @@
-// --- types ----------------------------------------------------------
-
-type Node = string | number;             // anything that can be compared by ===
-type Graph = Map<Node, Node[]>;          // adjacency list
-
-// an entry tracks a node and the parent that led to it
-interface QueueEntry {
-  node: Node;
-  parent: Node | null;   // parent in the search tree
-}
-
-// --- helper ---------------------------------------------------------
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 /**
- * Simple FIFO queue built on an array for speed.
+ * Example of an async “network task” that you might run in Android
+ * (React‑Native runs JavaScript on a background thread for you).
  */
-class Queue<T> {
-  private items: T[] = [];
-  enqueue(item: T) { this.items.push(item); }
-  dequeue(): T | undefined { return this.items.shift(); }
-  isEmpty() { return this.items.length === 0; }
-  size() { return this.items.length; }
-}
+const App: React.FC = () => {
+  /*--- State: loading / data / error -----------------------------------*/
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-// --- bidirectional BFS ----------------------------------------------
-
-export function bidirectionalSearch(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {      // null iff no path
-
-  if (start === goal) return [start];
-
-  // queues for both directions
-  const qStart = new Queue<QueueEntry>();
-  const qGoal  = new Queue<QueueEntry>();
-
-  // visited maps: node -> parent
-  const visitedStart = new Map<Node, Node | null>();
-  const visitedGoal  = new Map<Node, Node | null>();
-
-  // initialise
-  qStart.enqueue({ node: start, parent: null });
-  visitedStart.set(start, null);
-
-  qGoal.enqueue({ node: goal, parent: null });
-  visitedGoal.set(goal, null);
-
-  // work until one frontier empties
-  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
-
-    // ---- expand the smaller frontier ----
-    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
-    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
-
-    const { node: current, parent } = nextFrontier.dequeue()!;
-
-    const neighbors = graph.get(current) ?? [];
-    for (const neigh of neighbors) {
-
-      // skip already visited by this side
-      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
-      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
-
-      // mark as visited by this side
-      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
-      visited.set(neigh, current);
-      nextFrontier.enqueue({ node: neigh, parent: current });
-
-      // --- check for meeting point ---
-      if (otherVisited.has(neigh)) {
-        return buildPath(
-          start, goal, neigh, visitedStart, visitedGoal
+  /*--- Effect: fire once on mount -------------------------------------*/
+  useEffect(() => {
+    /**
+     * Async function inside the effect so we can use await at a top level.
+     * It's an equivalent of Android’s AsyncTask (but without the Android
+     * boilerplate) – just a Promise chain wrapped in async/await.
+     */
+    const fetchData = async () => {
+      try {
+        // 1️⃣ Make the request
+        const response = await fetch(
+          'https://api.adviceslip.com/advice',
         );
+
+        // 2️⃣ Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // 3️⃣ Parse the JSON payload
+        const json = await response.json();
+
+        // 4️⃣ Store the result
+        setData(json);          // data.slip.advice will be the string
+        setError(null);
+      } catch (e) {
+        // Anything that goes wrong lands here
+        console.error('Failed to fetch advice:', e);
+        setError((e as Error).message);
+        setData(null);
+      } finally {
+        // Whatever happens, loading is done
+        setLoading(false);
       }
-    }
-  }
+    };
 
-  // nothing found
-  return null;
-}
+    fetchData();
 
-/**
- * Walk back from the meeting point to the start and goal to build the full path.
- */
-function buildPath(
-  start: Node,
-  goal: Node,
-  meet: Node,
-  visitedStart: Map<Node, Node | null>,
-  visitedGoal:  Map<Node, Node | null>
-): Node[] {
+    // Optional: cleanup if the component unmounts before fetch resolves
+    // return () => { /* cancel request if using AbortController, e.g. */ };
+  }, []); // empty deps → run once
 
-  // walk back to start
-  const pathStart: Node[] = [];
-  let cur: Node | null = meet;
-  while (cur !== null) {
-    pathStart.push(cur);
-    cur = visitedStart.get(cur) ?? null;
-  }
-  pathStart.reverse();    // start -> meet
+  /*--- Rendering -----------------------------------------------------*/
+  return (
+    <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.text}>Loading advice...</Text>
+        </View>
+      )}
 
-  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
-  const pathGoal: Node[] = [];
-  cur = visitedGoal.get(meet);
-  while (cur !== null) {
-    pathGoal.push(cur);
-    cur = visitedGoal.get(cur) ?? null;
-  }
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
+        </View>
+      )}
 
-  return [...pathStart, ...pathGoal];
-}
-const graph: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E', 'G']],
-  ['G', ['F']]
-]);
+      {!loading && data && (
+        <View style={styles.centered}>
+          <Text style={styles.title}>Here’s an advice for you:</Text>
+          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
 
-const path = bidirectionalSearch(graph, 'A', 'G');
-console.log(path); // => [ 'A', 'C', 'F', 'G' ]
+/*--- Styles ----------------------------------------------------------*/
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginTop: 12 },
+  title: { fontSize: 18, fontWeight: '600' },
+  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
+  error: { color: 'red' },
+});
+
+export default App;
