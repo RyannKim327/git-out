@@ -1,25 +1,45 @@
-/**
- * Very practical “looks‑nice‑like‑an‑email” validator.
- * Not a full RFC‑5322 parser, but catches most real‑world cases.
- */
-export function isValidEmail(email: string): boolean {
-  // One or more non‑space, non‑@ chars, an @, one or more non‑space @ chars,
-  // a dot, and finally one or more non‑space chars.
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
+// random-example.ts
+// a small TypeScript demo that pulls data from a public API using axios
+
+import axios from 'axios';
+
+// ---------- Types ----------
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
 }
-import validator from 'validator';
-validator.isEmail(someString); // true/false
-const input = document.querySelector('#email') as HTMLInputElement;
 
-function onSubmit(e: Event) {
-  e.preventDefault();
-  const email = input.value.trim();
+// ---------- API wrapper ----------
+async function fetchTodo(id: number): Promise<Todo> {
+  const url = `https://jsonplaceholder.typicode.com/todos/${id}`;
+  const response = await axios.get<Todo>(url); // TS infers response.data is Todo
+  return response.data;
+}
 
-  if (!isValidEmail(email)) {
-    alert('That’s not a valid email address.');
-    return;
+// ---------- CLI entry point ----------
+async function main() {
+  const todoId = Number(process.argv[2]) || 1; // allow a command‑line id
+
+  try {
+    const todo = await fetchTodo(todoId);
+    console.log(`Todo #${todo.id} (user ${todo.userId}):`);
+    console.log(`  - ${todo.title}`);
+    console.log(`  - completed: ${todo.completed}`);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error(`Request failed: ${err.message}`);
+    } else {
+      console.error(`Unexpected error:`, err);
+    }
+    process.exit(1);
   }
-
-  // …go on with your logic
 }
+
+main();
+# 1. Install deps (run once)
+npm install axios
+
+# 2. Compile / run
+npx ts-node random-example.ts 5
