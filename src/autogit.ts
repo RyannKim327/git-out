@@ -1,110 +1,112 @@
-// ----- Min‑Heap implementation ---------------------------------------
-class MinHeap<T> {
-  private items: Array<{key: number; value: T}> = [];
-
-  private siftUp(idx: number) {
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.items[parent].key <= this.items[idx].key) break;
-      [this.items[parent], this.items[idx]] = [this.items[idx], this.items[parent]];
-      idx = parent;
-    }
-  }
-
-  private siftDown(idx: number, size: number) {
-    while (true) {
-      const left = (idx << 1) + 1;
-      const right = left + 1;
-      let smallest = idx;
-
-      if (left < size && this.items[left].key < this.items[smallest].key) smallest = left;
-      if (right < size && this.items[right].key < this.items[smallest].key) smallest = right;
-
-      if (smallest === idx) break;
-      [this.items[smallest], this.items[idx]] = [this.items[idx], this.items[smallest]];
-      idx = smallest;
-    }
-  }
-
-  push(key: number, value: T) {
-    this.items.push({key, value});
-    this.siftUp(this.items.length - 1);
-  }
-
-  pop(): T | undefined {
-    const size = this.items.length;
-    if (!size) return undefined;
-    const min = this.items[0].value;
-    this.items[0] = this.items[size - 1];
-    this.items.pop();
-    this.siftDown(0, this.items.length);
-    return min;
-  }
-
-  get size() {
-    return this.items.length;
-  }
+// Represents a single weighted directed edge.
+export interface Edge {
+  from: number;
+  to: number;
+  weight: number;
 }
+/**
+ * Bellman–Ford shortest‑path algorithm.
+ *
+ * @param n      Number of vertices (vertices are 0 … n‑1).
+ * @param edges  Array of directed weighted edges.
+ * @param source Index of the source vertex.
+ * @returns {distances, predecessors}
+ *          - `distances` is an array where `distances[v]` holds the
+ *            length of a shortest path from source to v.
+ *          - `predecessors` holds the previous vertex on that path
+ *            (use `-1` for the source and unreachable vertices).
+ *
+ * @throws Error if a negative cycle is reachable from source.
+ */
+export function bellmanFord(
+  n: number,
+  edges: Edge[],
+  source: number = 0
+): { distances: number[]; predecessors: number[] } {
+  // 1️⃣ BFS‑style relaxation loop.
+  const dist: number[] = Array(n).fill(Infinity);
+  const pred: number[] = Array(n).fill(-1);
 
+  dist[source] = 0;
 
-// ----- Graph representation ------------------------------------------
-type Edge = { to: number; weight: number };
-
-class Graph {
-  private adjacency: Edge[][] = [];
-
-  constructor(private nodeCount: number) {
-    this.adjacency = Array.from({length: nodeCount}, () => []);
-  }
-
-  addEdge(u: number, v: number, w: number, directed = false) {
-    this.adjacency[u].push({to: v, weight: w});
-    if (!directed) this.adjacency[v].push({to: u, weight: w});
-  }
-
-  getEdges(u: number): Edge[] {
-    return this.adjacency[u];
-  }
-}
-
-
-// ----- Dijkstra ---------------------------------------
-function dijkstra(graph: Graph, start: number): number[] {
-  const dist = Array(graph.adjacency.length).fill(Infinity);
-  const visited = new Array(graph.adjacency.length).fill(false);
-  const pq = new MinHeap<number>();
-
-  dist[start] = 0;
-  pq.push(0, start);
-
-  while (pq.size) {
-    const u = pq.pop() as number;      // current vertex
-    if (visited[u]) continue;          // skip stale entry
-    visited[u] = true;
-
-    for (const {to: v, weight: w} of graph.getEdges(u)) {
-      if (dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        pq.push(dist[v], v);
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        changed = true;
       }
     }
+    // Early exit if nothing moved this pass.
+    if (!changed) break;
   }
 
-  return dist; // distances from start to every vertex
+  // 2️⃣ Check for negative‑weight cycles.
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== Infinity && dist[from] + weight < dist[to]) {
+      const cycle: number[] = findNegCycle(n, edges, to);
+      throw new Error(
+        `Negative cycle detected: ${cycle.join(' → ')}`
+      );
+    }
+  }
+
+  return { distances: dist, predecessors: pred };
 }
 
+/**
+ * Helper: recover a node that lies on a negative cycle reachable from `start`.
+ * Returns the cycle as a list of vertex indices in order.
+ *
+ * This is a brute‑force way – for large graphs you’ll want a more
+ * sophisticated cycle extraction, but it’s fine for teaching/compacting.
+ */
+function findNegCycle(
+  n: number,
+  edges: Edge[],
+  start: number
+): number[] {
+  const parent: number[] = Array(n).fill(-1);
+  let x = start;
+  for (let i = 0; i < n; i++) x = edges.find(e => e.to === x)?.from ?? -1;
 
-// ----- Example usage ---------------------------------------
-const g = new Graph(6);
-g.addEdge(0, 1, 7);
-g.addEdge(0, 2, 9);
-g.addEdge(0, 5, 14);
-g.addEdge(1, 2, 10);
-g.addEdge(1, 3, 15);
-g.addEdge(2, 3, 11);
-g.addEdge(2, 5, 2);
-g.addEdge(3, 4, 6);
-g.addEdge(4, 5, 9);
+  const cycle: number[] = [];
+  let cur = x;
+  do {
+    cycle.push(cur);
+    cur = parent[cur];
+  } while (cur !== x && cur !== -1);
+  cycle.reverse();
+  return cycle;
+}
+import { bellmanFord, Edge } from './bellmanFord';
 
-const distances = dijkstra(g, 0);
-console.log(distances); // shortest distance from vertex 0 to every other vertex
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 2, weight: -1 },
+  { from: 1, to: 3, weight: 10 },
+  { from: 2, to: 3, weight: 3 },
+  // Add more edges as needed
+];
+
+const { distances, predecessors } = bellmanFord(4, edges, 0);
+
+console.log('Distances:', distances);
+// [0, 4, 3, 6]
+
+console.log('Predecessors:', predecessors);
+// [-1, 0, 1, 2]
+
+// Reconstruct a path to vertex 3
+function pathTo(v: number) {
+  const path: number[] = [];
+  while (v !== -1) {
+    path.unshift(v);
+    v = predecessors[v];
+  }
+  return path;
+}
+
+console.log('Path 0 → 3:', pathTo(3)); // [0, 1, 2, 3]
