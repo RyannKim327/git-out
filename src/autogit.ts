@@ -1,25 +1,25 @@
 /**
- * Convert a decimal number to binary.
- *
- * @param n – the decimal number you want to convert (must be an integer ≥ 0)
- * @returns a string containing the binary representation
+ * Very practical “looks‑nice‑like‑an‑email” validator.
+ * Not a full RFC‑5322 parser, but catches most real‑world cases.
  */
-function decimalToBinary(n: number): string {
-  if (n === 0) return '0';
+export function isValidEmail(email: string): boolean {
+  // One or more non‑space, non‑@ chars, an @, one or more non‑space @ chars,
+  // a dot, and finally one or more non‑space chars.
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+import validator from 'validator';
+validator.isEmail(someString); // true/false
+const input = document.querySelector('#email') as HTMLInputElement;
 
-  let result = '';
-  let current = n;
+function onSubmit(e: Event) {
+  e.preventDefault();
+  const email = input.value.trim();
 
-  while (current > 0) {
-    result = (current % 2).toString() + result;
-    current = Math.floor(current / 2);
+  if (!isValidEmail(email)) {
+    alert('That’s not a valid email address.');
+    return;
   }
 
-  return result;
-}
-console.log(decimalToBinary(10)); // "1010"
-console.log(decimalToBinary(255)); // "11111111"
-function decimalToBinaryWithSign(n: number): string {
-  if (n < 0) return '-' + decimalToBinary(-n);
-  return decimalToBinary(n);
+  // …go on with your logic
 }
