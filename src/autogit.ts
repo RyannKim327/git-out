@@ -1,56 +1,50 @@
-// IStack defines the public contract for the stack.
-export interface IStack<T> {
-  push(item: T): void;      // add an item on top
-  pop(): T | undefined;     // remove and return the top item
-  peek(): T | undefined;    // look at the top without removing it
-  isEmpty(): boolean;       // true if the stack has no items
-  size(): number;           // current number of items
+class ListNode {
+  constructor(public val: number = 0, public next: ListNode | null = null) {}
 }
 
-// Stack is a simple array‑backed implementation.
-export class Stack<T> implements IStack<T> {
-  // the underlying storage – an array grows automatically
-  private items: T[] = [];
+/**
+ * Return the intersection node of two singly linked lists, or null if they
+ * never meet.
+ */
+function getIntersectionNode(
+  headA: ListNode | null,
+  headB: ListNode | null
+): ListNode | null {
+  // First guard for trivial cases.
+  if (!headA || !headB) return null;
 
-  constructor(initial?: T[]) {
-    // optional initial content; does a shallow copy for safety
-    if (initial) this.items = initial.slice();
+  // Two pointers that start at the heads of the two lists.
+  let pA: ListNode | null = headA;
+  let pB: ListNode | null = headB;
+
+  /**
+   * Each pointer walks until it reaches the end of its list, then jumps
+   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
+   * they will either collide (at the intersection) or simultaneously reach
+   * the tail (`null`) meaning the lists do not intersect.
+   */
+  while (pA !== pB) {
+    pA = pA === null ? headB : pA.next;
+    pB = pB === null ? headA : pB.next;
   }
 
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  pop(): T | undefined {
-    return this.items.pop();          // pop() already returns undefined if empty
-  }
-
-  peek(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    return this.items[this.items.length - 1];
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  size(): number {
-    return this.items.length;
-  }
+  return pA; // either the intersection node or null
 }
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek());   // 30
-console.log(stack.pop());    // 30
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-while (!stack.isEmpty()) {
-  console.log(stack.pop());
+// Helper to build a list from an array
+function build(arr: number[]): ListNode | null {
+  let dummy = new ListNode(-1);
+  let cur = dummy;
+  for (const v of arr) {
+    cur.next = new ListNode(v);
+    cur = cur.next;
+  }
+  return dummy.next;
 }
-// → 20
-// → 10
+
+// Build two lists that intersect
+const shared = build([8, 9, 10]);
+
+const a1 = new ListNode(3, new ListNode(7, shared));
+const b1 = new ListNode(99, new ListNode(1, shared));
+
+console.log(getIntersectionNode(a1, b1) === shared); // true
