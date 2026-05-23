@@ -1,89 +1,89 @@
-// ------------------------------------------------------------------
-// 1️⃣  Graph representation (adjacency list)
-// ------------------------------------------------------------------
-type NodeID = string;  // or number – whatever uniquely identifies a node
-interface Graph {
-  // `edges[u]` is a list of all nodes directly reachable from `u`
-  [key: string]: NodeID[];
-}
+/**
+ * Forward Burrows–Wheeler Transform.
+ * @param input – original string
+ * @returns {bwt, index} – BWT string and index of the original string in the sorted rotation table.
+ */
+export function bwtEncode(input: string): { bwt: string; index: number } {
+    // 1️⃣ Append a sentinel that is smaller than every other char
+    const sentinel = '\0';
+    const padded = input + sentinel;
 
-// ------------------------------------------------------------------
-// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
-// ------------------------------------------------------------------
-function dfsRecursive(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID,
-  visited = new Set<NodeID>(),
-  path: NodeID[] = []
-): NodeID[] | null {
-  visited.add(start);
-  path.push(start);
+    // 2️⃣ Make all cyclic rotations
+    // Using an array of start indices so we never build full strings.
+    const n = padded.length;
+    const rotations = Array.from({ length: n }, (_, i) => i);
 
-  if (start === target) return [...path];        // found it – return a copy of the path
+    // 3️⃣ Stable sort rotations lexicographically
+    rotations.sort((a, b) => {
+        for (let offset = 0; offset < n; offset++) {
+            const ca = padded[(a + offset) % n];
+            const cb = padded[(b + offset) % n];
+            if (ca < cb) return -1;
+            if (ca > cb) return 1;
+            // equal – iterate next offset
+        }
+        return 0;       // rotations are identical – should not happen with sentinel
+    });
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      const result = dfsRecursive(graph, neighbor, target, visited, path);
-      if (result) return result;                 // propagate the found path upwards
-    }
-  }
+    // 4️⃣ Build the BWT string by taking the character preceding each rotation
+    const bwt = new Array<string>(n);
+    let originalIndex = -1;
+    for (let i = 0; i < n; i++) {
+        const rotStart = rotations[i];
+        const bwtChar = padded[(rotStart + n - 1) % n]; // char before rotation
+        bwt[i] = bwtChar;
 
-  path.pop();                                     // backtrack
-  return null;                                    // no path from this branch
-}
-
-// ------------------------------------------------------------------
-// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
-// ------------------------------------------------------------------
-function dfsIterative(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID
-): NodeID[] | null {
-  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
-  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
-  const visited = new Set<NodeID>();
-
-  while (stack.length) {
-    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    parentMap.set(node, parent);
-
-    if (node === target) {
-      // reconstruct path
-      const path: NodeID[] = [];
-      let current: NodeID | null = target;
-      while (current !== null) {
-        path.unshift(current);
-        current = parentMap.get(current)!;
-      }
-      return path;
+        // If this rotation is the original (started at 0), remember its position
+        if (rotStart === 0) originalIndex = i;
     }
 
-    for (const neighbor of graph[node] ?? []) {
-      if (!visited.has(neighbor)) {
-        stack.push({ node: neighbor, parent: node });
-      }
-    }
-  }
-
-  return null;          // no path found
+    return { bwt: bwt.join(''), index: originalIndex };
 }
+/**
+ * Inverse Burrows–Wheeler Transform.
+ * @param bwt – BWT string (length n)
+ * @param index – index of the original string in the sorted rotations
+ * @returns original string (without the sentinel)
+ */
+export function bwtDecode(bwt: string, index: number): string {
+    const n = bwt.length;
+    // 1️⃣ Build first column by sorting the BWT string
+    const first = bwt.split('').sort(); // stable because JS sort is stable (ES2019+)
 
-// ------------------------------------------------------------------
-// 4️⃣  Example usage
-// ------------------------------------------------------------------
-const exampleGraph: Graph = {
-  a: ["b", "c"],
-  b: ["d", "e"],
-  c: ["f"],
-  d: [],
-  e: ["f"],
-  f: []
-};
+    // 2️⃣ Compute the “next” array – mapping from a row in first column
+    //    to the corresponding row in last column.
+    //    This is essentially the Longest‑Common‑Prefix order of the rotations.
+    const next = new Array<number>(n);
+    const buckets = new Map<string, number[]>();
 
-console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
-console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
+    // Collect indices of each character in the BWT string
+    for (let i = 0; i < n; i++) {
+        const ch = bwt[i];
+        if (!buckets.has(ch)) buckets.set(ch, []);
+        buckets.get(ch)!.push(i);
+    }
+
+    // For each character, allocate its positions in the first column
+    const bucketIterators = new Map<string, number>();
+    for (const [ch, posList] of buckets.entries()) {
+        bucketIterators.set(ch, 0);
+    }
+
+    for (let i = 0; i < n; i++) {
+        const ch = first[i];
+        const idxInBlt = buckets.get(ch)![bucketIterators.get(ch)!++];
+        next[i] = idxInBlt;
+    }
+
+    // 3️⃣ Reconstruct original by following the next pointers starting from `index`
+    const result: string[] = new Array<string>(n);
+    let row = index;
+    for (let i = n - 1; i >= 0; i--) {
+        result[i] = first[row];
+        row = next[row];
+    }
+
+    // The sentinel is the first char of the reconstructed string
+    // Strip it and return the original
+    return result.join('').slice(1); // drop sentinel
+}
