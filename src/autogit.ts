@@ -1,33 +1,26 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-const head: ListNode<number> = { val: 1, next: null };
-head.next = { val: 2, next: null };
-head.next.next = { val: 3, next: null };      // 1 → 2 → 3
-function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+/**
+ * Returns the first character that is repeated, or `undefined` if the string
+ * contains no duplicates.
+ */
+function firstRepeated(s: string): string | undefined {
+  const seen = new Set<string>();
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow?.next ?? null;   // advance by 1
-    fast = fast.next.next;       // advance by 2
+  for (const ch of s) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
   }
-
-  return slow; // could be null if the list was empty
+  return undefined;     // nothing repeated
 }
-if (fast !== null) {            // original list had even length
-  slow = slow?.next ?? null;    // bump to the second middle
-}
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-}
+console.log(firstRepeated("abca"));   // → 'a'
+console.log(firstRepeated("abcdef")); // → undefined
+console.log(firstRepeated("aabbc"));  // → 'a'
+function firstRepeatedAscii(s: string): string | undefined {
+  const seen = new Array(128).fill(false);
 
-const list: ListNode<number> | null = {
-  val: 10,
-  next: { val: 20, next: { val: 30, next: null } },
-};
-
-console.log(middle(list)?.val); // prints 20
+  for (const ch of s) {
+    const code = ch.charCodeAt(0);
+    if (seen[code]) return ch;
+    seen[code] = true;
+  }
+  return undefined;
+}
