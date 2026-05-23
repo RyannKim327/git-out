@@ -1,42 +1,84 @@
+function kthSmallest(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined; // out‑of‑range
+
+  const sorted = [...arr].sort((a, b) => a - b); // stable numeric sort
+  return sorted[k - 1];                         // k is 1‑based here
+}
 /**
- * Insertion sort (in‑place).
- *
- * @param arr The array you want to sort. It will be sorted *mutably*.
- * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
- * @returns The same array reference, now sorted.
+ * Return the k-th smallest element (1‑based) or `undefined` if out of range.
  */
-export function insertionSort<T>(
+function kthSmallestQuickSelect(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+
+  // work on a copy so the caller’s array isn’t mutated
+  const a = [...arr];
+
+  // Helper that returns the zero‑based index of the desired element
+  const select = (left: number, right: number, targetIndex: number): number => {
+    while (true) {
+      if (left === right) return a[left]; // only one element
+
+      // Pick a pivot – here we use the middle element
+      const pivotIndex = Math.floor((left + right) / 2);
+      const pivotValue = a[pivotIndex];
+
+      // Partition: elements < pivot go left, > pivot go right
+      // In‑place partitioning that keeps the pivot’s value
+      let i = left;
+      let j = right;
+      while (i <= j) {
+        while (a[i] < pivotValue) i++;
+        while (a[j] > pivotValue) j--;
+        if (i <= j) {
+          [a[i], a[j]] = [a[j], a[i]];
+          i++;
+          j--;
+        }
+      }
+
+      // After partitioning: indices [left .. j] <= pivot, [i .. right] >= pivot
+      if (targetIndex <= j) {
+        right = j;            // target in the left partition
+      } else if (targetIndex >= i) {
+        left = i;             // target in the right partition
+      } else {
+        return a[targetIndex]; // the pivot itself is the answer
+      }
+    }
+  };
+
+  // Convert k (1‑based) to zero‑based index
+  return select(0, a.length - 1, k - 1);
+}
+function kthSmallestGeneric<T>(
   arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Default to JS native >/< when no comparator is supplied
-  const cmp = compare ?? ((a: T, b: T) => {
-    if (a > b) return 1;
-    if (a < b) return -1;
-    return 0;
-  });
+  k: number,
+  compare: (a: T, b: T) => number
+): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  // Work from index 1 to the end; index 0 is already “sorted” by itself
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  const a = [...arr];
+  const targetIndex = k - 1;
+  let left = 0, right = a.length - 1;
 
-    // Move elements that are greater than `key` one position to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  while (true) {
+    if (left === right) return a[left];
+
+    const pivotIndex = Math.floor((left + right) / 2);
+    const pivotValue = a[pivotIndex];
+
+    let i = left, j = right;
+    while (i <= j) {
+      while (compare(a[i], pivotValue) < 0) i++;
+      while (compare(a[j], pivotValue) > 0) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++; j--;
+      }
     }
 
-    // Place `key` in its correct spot
-    arr[j + 1] = key;
+    if (targetIndex <= j) right = j;
+    else if (targetIndex >= i) left = i;
+    else return a[targetIndex];
   }
-
-  return arr;
 }
-const nums = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
-
-// With a custom comparator: sort strings by length (descending)
-const fruits = ['apple', 'kiwi', 'banana', 'fig'];
-const byLengthDesc = (a: string, b: string) => b.length - a.length;
-console.log(insertionSort(fruits, byLengthDesc));
