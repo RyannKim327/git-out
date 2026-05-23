@@ -1,76 +1,46 @@
-/**
- * Build the longest‑prefix‑suffix (LPS) table for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0…i]
- * that is also a suffix of this substring.
- *
- * @param pattern – string to preprocess
- * @returns array of LPS values
- */
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;                     // length of the previous longest prefix‑suffix
-  let i = 1;
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the previous longest prefix‑suffix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+  // A little help‑trim: you can decide to ignore whitespace, case, etc.
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
+
+  const sortedA = normalize(a).split('').sort().join('');
+  const sortedB = normalize(b).split('').sort().join('');
+
+  return sortedA === sortedB;
 }
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-/**
- * Classic KMP string search.
- *
- * @param text    – the text to search in
- * @param pattern – the pattern to find
- * @returns all starting indices where pattern occurs in text
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
+  const freq = new Map<string, number>();
 
-  const lps = buildLps(pattern);
-  const result: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
-
-    if (j === pattern.length) {
-      // match found at i - j
-      result.push(i - j);
-      // continue searching for the next match
-      j = lps[j - 1];
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
+  for (const ch of a) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  return result;
+  for (const ch of b) {
+    const count = freq.get(ch);
+    if (!count) return false;          // either zero or undefined
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  return freq.size === 0;
 }
-import { kmpSearch } from "./kmp";
+function areAnagramsAscii(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-const text = "abxabcabcaby";
-const pattern = "abcaby";
+  const counts = new Uint32Array(26);
 
-const matches = kmpSearch(text, pattern);
-console.log(matches); // [6]
+  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
+  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
+
+  return counts.every(v => v === 0);
+}
+const compact = (s: string) =>
+  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
+
+function areAnagramsClean(a: string, b: string): boolean {
+  return areAnagrams(compact(a), compact(b));
+}
