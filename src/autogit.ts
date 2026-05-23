@@ -1,42 +1,125 @@
+// --- types ----------------------------------------------------------
+
+type Node = string | number;             // anything that can be compared by ===
+type Graph = Map<Node, Node[]>;          // adjacency list
+
+// an entry tracks a node and the parent that led to it
+interface QueueEntry {
+  node: Node;
+  parent: Node | null;   // parent in the search tree
+}
+
+// --- helper ---------------------------------------------------------
+
 /**
- * Insertion sort (in‑place).
- *
- * @param arr The array you want to sort. It will be sorted *mutably*.
- * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
- * @returns The same array reference, now sorted.
+ * Simple FIFO queue built on an array for speed.
  */
-export function insertionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Default to JS native >/< when no comparator is supplied
-  const cmp = compare ?? ((a: T, b: T) => {
-    if (a > b) return 1;
-    if (a < b) return -1;
-    return 0;
-  });
+class Queue<T> {
+  private items: T[] = [];
+  enqueue(item: T) { this.items.push(item); }
+  dequeue(): T | undefined { return this.items.shift(); }
+  isEmpty() { return this.items.length === 0; }
+  size() { return this.items.length; }
+}
 
-  // Work from index 1 to the end; index 0 is already “sorted” by itself
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+// --- bidirectional BFS ----------------------------------------------
 
-    // Move elements that are greater than `key` one position to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+export function bidirectionalSearch(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {      // null iff no path
+
+  if (start === goal) return [start];
+
+  // queues for both directions
+  const qStart = new Queue<QueueEntry>();
+  const qGoal  = new Queue<QueueEntry>();
+
+  // visited maps: node -> parent
+  const visitedStart = new Map<Node, Node | null>();
+  const visitedGoal  = new Map<Node, Node | null>();
+
+  // initialise
+  qStart.enqueue({ node: start, parent: null });
+  visitedStart.set(start, null);
+
+  qGoal.enqueue({ node: goal, parent: null });
+  visitedGoal.set(goal, null);
+
+  // work until one frontier empties
+  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
+
+    // ---- expand the smaller frontier ----
+    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
+    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
+
+    const { node: current, parent } = nextFrontier.dequeue()!;
+
+    const neighbors = graph.get(current) ?? [];
+    for (const neigh of neighbors) {
+
+      // skip already visited by this side
+      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
+      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
+
+      // mark as visited by this side
+      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
+      visited.set(neigh, current);
+      nextFrontier.enqueue({ node: neigh, parent: current });
+
+      // --- check for meeting point ---
+      if (otherVisited.has(neigh)) {
+        return buildPath(
+          start, goal, neigh, visitedStart, visitedGoal
+        );
+      }
     }
-
-    // Place `key` in its correct spot
-    arr[j + 1] = key;
   }
 
-  return arr;
+  // nothing found
+  return null;
 }
-const nums = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
 
-// With a custom comparator: sort strings by length (descending)
-const fruits = ['apple', 'kiwi', 'banana', 'fig'];
-const byLengthDesc = (a: string, b: string) => b.length - a.length;
-console.log(insertionSort(fruits, byLengthDesc));
+/**
+ * Walk back from the meeting point to the start and goal to build the full path.
+ */
+function buildPath(
+  start: Node,
+  goal: Node,
+  meet: Node,
+  visitedStart: Map<Node, Node | null>,
+  visitedGoal:  Map<Node, Node | null>
+): Node[] {
+
+  // walk back to start
+  const pathStart: Node[] = [];
+  let cur: Node | null = meet;
+  while (cur !== null) {
+    pathStart.push(cur);
+    cur = visitedStart.get(cur) ?? null;
+  }
+  pathStart.reverse();    // start -> meet
+
+  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
+  const pathGoal: Node[] = [];
+  cur = visitedGoal.get(meet);
+  while (cur !== null) {
+    pathGoal.push(cur);
+    cur = visitedGoal.get(cur) ?? null;
+  }
+
+  return [...pathStart, ...pathGoal];
+}
+const graph: Graph = new Map([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E', 'G']],
+  ['G', ['F']]
+]);
+
+const path = bidirectionalSearch(graph, 'A', 'G');
+console.log(path); // => [ 'A', 'C', 'F', 'G' ]
