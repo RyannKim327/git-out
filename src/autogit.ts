@@ -1,44 +1,110 @@
+expand(root):
+    frontier = [root]               // first beam
+    while frontier not empty:
+        nextFrontier = []            // expanded children
+        for state in frontier:
+            children = expand(state) // domain‑specific
+            for child in children:
+                nextFrontier.push( child )
+        // keep only the best k
+        nextFrontier.sort(by heuristic) // ascending or descending depending on reward
+        frontier = nextFrontier.slice(0, k)
+        if any frontier element is a goal:
+            return that element
+    return null   // no goal found
+// beam-search.ts
+
 /**
- * Return the majority element (> n/2) if it exists, or null otherwise.
- * @param arr array of numbers (or any comparable type)
+ * Type of a node in the search tree.
+ * Replace the fields with whatever fits your problem.
  */
-export function majorityElement<T>(arr: T[]): T | null {
-  if (!arr.length) return null;
+export interface Node<Data = any> {
+  /**
+   * Represents the search state (e.g., board edges, current path).
+   * It must be something you can compare heuristically.
+   */
+  data: Data
 
-  /* ---------- 1st pass: find candidate ---------- */
-  let candidate = arr[0];
-  let count = 0;
+  /** The cost of reaching this node from the root. */
+  costFromRoot: number
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += (num === candidate) ? 1 : -1;
+  /** Predicted total cost to reach the goal. Typically cost + heuristic. */
+  totalEstimatedCost: number // for D* type f = g + h
+}
+
+/**
+ * Heuristic function that takes a node and returns a number
+ * (the lower, the better – think “expected remaining cost”).
+ */
+export type HeuristicFn<Data> = (node: Node<Data>) => number
+
+/**
+ * Expansion function – given a node, return its children.
+ */
+export type ExpandFn<Data> = (node: Node<Data>) => Node<Data>[]
+
+/**
+ * Optional: function to test if a node is a goal.
+ */
+export type IsGoalFn<Data> = (node: Node<Data>) => boolean
+
+/**
+ * Beam search implementation.
+ *
+ * @param root      The initial node.
+ * @param beamWidth The number `k` of nodes to keep per level.
+ * @param expand    Expansion function, domain‑specific.
+ * @param heuristic Optional heuristic; if omitted, plain cost is used.
+ * @param isGoal    Optional goal‑test; if omitted, you can supply an empty predicate.
+ * @returns Best goal node found, or null if none within breadth.
+ */
+export function beamSearch<Data>(
+  root: Node<Data>,
+  beamWidth: number,
+  expand: ExpandFn<Data>,
+  heuristic?: HeuristicFn<Data>,
+  isGoal?: IsGoalFn<Data>
+): Node<Data> | null {
+  // if no heuristic is given, use costFromRoot as the estimate
+  const getScore = heuristic
+    ? (node: Node<Data>) => node.totalEstimatedCost
+    : (node: Node<Data>) => node.costFromRoot
+
+  // Frontier is our beam for the current depth.
+  let frontier: Node<Data>[] = [root]
+
+  while (frontier.length > 0) {
+    // Check for goal state *before* expansion to catch the root too.
+    for (const node of frontier) {
+      if (isGoal && isGoal(node)) return node
     }
+
+    // Expand all nodes in the current beam
+    const nextFrontier: Node<Data>[] = []
+
+    for (const node of frontier) {
+      const children = expand(node)
+
+      // Attach heuristics (problem‑specific)
+      for (const child of children) {
+        child.totalEstimatedCost =
+          child.costFromRoot + (heuristic ? heuristic(child) : 0)
+        nextFrontier.push(child)
+      }
+    }
+
+    // Sort by estimated total cost ascending (lower is better)
+    nextFrontier.sort((a, b) => a.totalEstimatedCost - b.totalEstimatedCost)
+
+    // Trim to beam width
+    frontier = nextFrontier.slice(0, beamWidth)
   }
 
-  /* ---------- 2nd pass: verify candidate ---------- */
-  let freq = 0;
-  for (const num of arr) {
-    if (num === candidate) freq++;
-  }
-
-  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
+  // Nothing found
+  return null
 }
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const majority = majorityElement(nums);
-console.log(majority); // → 3
-export function majorityElementMap<T>(arr: T[]): T | null {
-  const counts = new Map<T, number>();
-  
-  for (const val of arr) {
-    counts.set(val, (counts.get(val) ?? 0) + 1);
-  }
+// toy-graph.ts
+interface GraphNode {
+  id: string
+  neighbors: Record<string, number> // neighbor id -> edge weight
 
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, cnt] of counts) {
-    if (cnt > threshold) return val;
-  }
-  return null;
-}
