@@ -1,110 +1,106 @@
-expand(root):
-    frontier = [root]               // first beam
-    while frontier not empty:
-        nextFrontier = []            // expanded children
-        for state in frontier:
-            children = expand(state) // domain‑specific
-            for child in children:
-                nextFrontier.push( child )
-        // keep only the best k
-        nextFrontier.sort(by heuristic) // ascending or descending depending on reward
-        frontier = nextFrontier.slice(0, k)
-        if any frontier element is a goal:
-            return that element
-    return null   // no goal found
-// beam-search.ts
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true;
 
-/**
- * Type of a node in the search tree.
- * Replace the fields with whatever fits your problem.
- */
-export interface Node<Data = any> {
-  /**
-   * Represents the search state (e.g., board edges, current path).
-   * It must be something you can compare heuristically.
-   */
-  data: Data
+  // 1️⃣ Find the middle (fast/slow trick)
+  let slow = head, fast = head, prev: ListNode | null = null;
+  while (fast && fast.next) {
+    // 2️⃣ Reverse the first half while we’re at it
+    let nxt = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nxt;
 
-  /** The cost of reaching this node from the root. */
-  costFromRoot: number
-
-  /** Predicted total cost to reach the goal. Typically cost + heuristic. */
-  totalEstimatedCost: number // for D* type f = g + h
-}
-
-/**
- * Heuristic function that takes a node and returns a number
- * (the lower, the better – think “expected remaining cost”).
- */
-export type HeuristicFn<Data> = (node: Node<Data>) => number
-
-/**
- * Expansion function – given a node, return its children.
- */
-export type ExpandFn<Data> = (node: Node<Data>) => Node<Data>[]
-
-/**
- * Optional: function to test if a node is a goal.
- */
-export type IsGoalFn<Data> = (node: Node<Data>) => boolean
-
-/**
- * Beam search implementation.
- *
- * @param root      The initial node.
- * @param beamWidth The number `k` of nodes to keep per level.
- * @param expand    Expansion function, domain‑specific.
- * @param heuristic Optional heuristic; if omitted, plain cost is used.
- * @param isGoal    Optional goal‑test; if omitted, you can supply an empty predicate.
- * @returns Best goal node found, or null if none within breadth.
- */
-export function beamSearch<Data>(
-  root: Node<Data>,
-  beamWidth: number,
-  expand: ExpandFn<Data>,
-  heuristic?: HeuristicFn<Data>,
-  isGoal?: IsGoalFn<Data>
-): Node<Data> | null {
-  // if no heuristic is given, use costFromRoot as the estimate
-  const getScore = heuristic
-    ? (node: Node<Data>) => node.totalEstimatedCost
-    : (node: Node<Data>) => node.costFromRoot
-
-  // Frontier is our beam for the current depth.
-  let frontier: Node<Data>[] = [root]
-
-  while (frontier.length > 0) {
-    // Check for goal state *before* expansion to catch the root too.
-    for (const node of frontier) {
-      if (isGoal && isGoal(node)) return node
-    }
-
-    // Expand all nodes in the current beam
-    const nextFrontier: Node<Data>[] = []
-
-    for (const node of frontier) {
-      const children = expand(node)
-
-      // Attach heuristics (problem‑specific)
-      for (const child of children) {
-        child.totalEstimatedCost =
-          child.costFromRoot + (heuristic ? heuristic(child) : 0)
-        nextFrontier.push(child)
-      }
-    }
-
-    // Sort by estimated total cost ascending (lower is better)
-    nextFrontier.sort((a, b) => a.totalEstimatedCost - b.totalEstimatedCost)
-
-    // Trim to beam width
-    frontier = nextFrontier.slice(0, beamWidth)
+    fast = fast.next.next;
   }
 
-  // Nothing found
-  return null
-}
-// toy-graph.ts
-interface GraphNode {
-  id: string
-  neighbors: Record<string, number> // neighbor id -> edge weight
+  // 3️⃣ If odd number of nodes skip the middle one
+  if (fast) slow = slow.next;
 
+  // 4️⃣ Compare the two halves
+  let p1 = prev, p2 = slow;
+  while (p1 && p2) {
+    if (p1.val !== p2.val) return false;
+    p1 = p1.next!;
+    p2 = p2.next!;
+  }
+  return true;
+}
+interface ListNode {
+  val: number | string;      // whatever you want to store
+  next?: ListNode | null;    // `next` is optional to support the “end” of the list
+}
+/**
+ * Returns true if the singly linked list is a palindrome.
+ *
+ * @param head - The head node of the linked list (or null).
+ */
+function isPalindrome(head: ListNode | null): boolean {
+  if (!head || !head.next) return true; // 0 or 1 node → palindrome
+
+  let slow = head;
+  let fast = head;
+  let prev: ListNode | null = null; // will become the head of the reversed first half
+
+  // Step 1 & 2: find middle, reverse first half
+  while (fast && fast.next) {
+    // Reverse the link for `slow`'s current node
+    const nextNode = slow.next!;
+    slow.next = prev;
+    prev = slow;
+    slow = nextNode;
+
+    fast = fast.next.next;
+  }
+
+  // Step 3: if odd length, skip the middle node
+  if (fast) {
+    slow = slow.next!;
+  }
+
+  // Step 4: compare nodes from the two halves
+  let firstHalf = prev;
+  let secondHalf = slow;
+  while (firstHalf && secondHalf) {
+    if (firstHalf.val !== secondHalf.val) return false;
+    firstHalf = firstHalf.next!;
+    secondHalf = secondHalf.next!;
+  }
+
+  return true;
+}
+// Helper to create a list from an array
+function fromArray(arr: (number | string)[]): ListNode | null {
+  if (!arr.length) return null;
+  const head: ListNode = { val: arr[0] };
+  let current = head;
+  for (let i = 1; i < arr.length; i++) {
+    current.next = { val: arr[i] };
+    current = current.next;
+  }
+  return head;
+}
+
+console.log(isPalindrome(fromArray([1, 2, 3, 2, 1]))); // true
+console.log(isPalindrome(fromArray([1, 2, 3, 4, 5]))); // false
+function isPalindromeStack(head: ListNode | null): boolean {
+  const stack: (number | string)[] = [];
+  let fast = head;
+  let slow = head;
+
+  // Push first half onto stack
+  while (fast && fast.next) {
+    stack.push(slow!.val);
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
+
+  // Skip middle element for odd length
+  if (fast) slow = slow!.next!;
+
+  // Compare the rest with stack
+  while (slow) {
+    if (stack.pop() !== slow.val) return false;
+    slow = slow.next;
+  }
+  return true;
+}
