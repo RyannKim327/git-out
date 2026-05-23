@@ -1,14 +1,18 @@
-const clean = str.replace(/\s+/g, '');   // removes **all** whitespace chars
-// or, if you only want literal space characters (not tabs, newlines, …)
-const clean = str.replaceAll(' ', '');
-const input = "  Why   are   we  still  here?  \n";
-
-const withoutAllWhitespace = input.replace(/\s+/g, '');
-console.log(withoutAllWhitespace);  // "Whyarewesstillhere?"
-
-const withoutOnlySpaces = input.replaceAll(' ', '');
-console.log(withoutOnlySpaces);  // "Why\there? "
-
-// If you want to keep line breaks but trim spaces:
-const trimmed = input.trim();  // removes spaces at the start/end only
-const noSpaces = str.split(' ').join('');
+function removeAllWhitespace(str: string): string {
+  return str.replace(/\s+/g, "");
+}
+function trimStart(str: string): string {
+  return str.replace(/^\s+/, "");
+}
+function trimEnd(str: string): string {
+  return str.replace(/\s+$/, "");
+}
+const raw = "\n  Let's   test this!  \t\n";
+console.log("original  :", raw);
+console.log("trimmed    :", raw.trim());
+console.log("no spaces :", raw.replace(/\s+/g, ""));
+original  : "
+  Let's   test this!   
+"
+trimmed    : "Let's   test this!"
+no spaces : "Letstestthis!"
