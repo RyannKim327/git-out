@@ -1,112 +1,89 @@
-// ---------- 1️⃣  Node definition ----------
-class Node<T> {
-  /** The stored value. */
-  value: T;
-  /** Left child – < value */
-  left: Node<T> | null = null;
-  /** Right child – > value */
-  right: Node<T> | null = null;
+/**
+ * Forward Burrows–Wheeler Transform.
+ * @param input – original string
+ * @returns {bwt, index} – BWT string and index of the original string in the sorted rotation table.
+ */
+export function bwtEncode(input: string): { bwt: string; index: number } {
+    // 1️⃣ Append a sentinel that is smaller than every other char
+    const sentinel = '\0';
+    const padded = input + sentinel;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+    // 2️⃣ Make all cyclic rotations
+    // Using an array of start indices so we never build full strings.
+    const n = padded.length;
+    const rotations = Array.from({ length: n }, (_, i) => i);
 
-// ---------- 2️⃣  BinaryTree wrapper ----------
-class BinaryTree<T> {
-  /** Root of the tree (can be null if the tree is empty). */
-  root: Node<T> | null = null;
-
-  // Plug in the comparison logic so the tree can work with any type.
-  // By default it uses the built‑in < and > operators.
-  constructor(private compare: (a: T, b: T) => number = (a, b) => {
-    if (a === b) return 0;
-    return a < b ? -1 : 1;       // <=> -1, =0, >=>1
-  }) {}
-
-  // ---------- 3️⃣  Insert ----------
-  insert(value: T): void {
-    const newNode = new Node(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-    let cur = this.root;
-    while (true) {
-      if (this.compare(value, cur.value) < 0) {
-        if (!cur.left) {
-          cur.left = newNode;
-          return;
+    // 3️⃣ Stable sort rotations lexicographically
+    rotations.sort((a, b) => {
+        for (let offset = 0; offset < n; offset++) {
+            const ca = padded[(a + offset) % n];
+            const cb = padded[(b + offset) % n];
+            if (ca < cb) return -1;
+            if (ca > cb) return 1;
+            // equal – iterate next offset
         }
-        cur = cur.left;
-      } else {
-        if (!cur.right) {
-          cur.right = newNode;
-          return;
-        }
-        cur = cur.right;
-      }
-    }
-  }
+        return 0;       // rotations are identical – should not happen with sentinel
+    });
 
-  // ---------- 4️⃣  Search ----------
-  find(value: T): Node<T> | null {
-    let cur = this.root;
-    while (cur) {
-      const cmp = this.compare(value, cur.value);
-      if (cmp === 0) return cur;
-      cur = cmp < 0 ? cur.left : cur.right;
-    }
-    return null;   // not found
-  }
+    // 4️⃣ Build the BWT string by taking the character preceding each rotation
+    const bwt = new Array<string>(n);
+    let originalIndex = -1;
+    for (let i = 0; i < n; i++) {
+        const rotStart = rotations[i];
+        const bwtChar = padded[(rotStart + n - 1) % n]; // char before rotation
+        bwt[i] = bwtChar;
 
-  // ---------- 5️⃣  Traversals ----------
-  // In‑order: left → node → right (sorted order for a BST)
-  inorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      result.push(n.value);
-      walk(n.right);
+        // If this rotation is the original (started at 0), remember its position
+        if (rotStart === 0) originalIndex = i;
     }
-    walk(this.root);
-    return result;
-  }
 
-  // Pre‑order: node → left → right
-  preorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      result.push(n.value);
-      walk(n.left);
-      walk(n.right);
-    }
-    walk(this.root);
-    return result;
-  }
-
-  // Post‑order: left → right → node
-  postorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      walk(n.right);
-      result.push(n.value);
-    }
-    walk(this.root);
-    return result;
-  }
+    return { bwt: bwt.join(''), index: originalIndex };
 }
-const nums = new BinaryTree<number>();
-[7, 3, 9, 1, 5, 8, 10].forEach(n => nums.insert(n));
+/**
+ * Inverse Burrows–Wheeler Transform.
+ * @param bwt – BWT string (length n)
+ * @param index – index of the original string in the sorted rotations
+ * @returns original string (without the sentinel)
+ */
+export function bwtDecode(bwt: string, index: number): string {
+    const n = bwt.length;
+    // 1️⃣ Build first column by sorting the BWT string
+    const first = bwt.split('').sort(); // stable because JS sort is stable (ES2019+)
 
-console.log('In‑order (sorted):', nums.inorder());    // [1,3,5,7,8,9,10]
-console.log('Pre‑order:', nums.preorder());           // [7,3,1,5,9,8,10]
-console.log('Post‑order:', nums.postorder());         // [1,5,3,8,10,9,7]
+    // 2️⃣ Compute the “next” array – mapping from a row in first column
+    //    to the corresponding row in last column.
+    //    This is essentially the Longest‑Common‑Prefix order of the rotations.
+    const next = new Array<number>(n);
+    const buckets = new Map<string, number[]>();
 
-const node = nums.find(5);
-console.log('Found node:', node?.value);               // 5
-console.log('Does 6 exist?', !!nums.find(6));          // false
+    // Collect indices of each character in the BWT string
+    for (let i = 0; i < n; i++) {
+        const ch = bwt[i];
+        if (!buckets.has(ch)) buckets.set(ch, []);
+        buckets.get(ch)!.push(i);
+    }
+
+    // For each character, allocate its positions in the first column
+    const bucketIterators = new Map<string, number>();
+    for (const [ch, posList] of buckets.entries()) {
+        bucketIterators.set(ch, 0);
+    }
+
+    for (let i = 0; i < n; i++) {
+        const ch = first[i];
+        const idxInBlt = buckets.get(ch)![bucketIterators.get(ch)!++];
+        next[i] = idxInBlt;
+    }
+
+    // 3️⃣ Reconstruct original by following the next pointers starting from `index`
+    const result: string[] = new Array<string>(n);
+    let row = index;
+    for (let i = n - 1; i >= 0; i--) {
+        result[i] = first[row];
+        row = next[row];
+    }
+
+    // The sentinel is the first char of the reconstructed string
+    // Strip it and return the original
+    return result.join('').slice(1); // drop sentinel
+}
