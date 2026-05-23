@@ -1,116 +1,110 @@
-/**
- * A binary‑heap priority queue.
- *
- * @template T  The type of the elements in the queue.
- *
- * @example
- * // min‑heap
- * const pq = new PriorityQueue<number>((a, b) => a - b);
- * pq.add(5); pq.add(2); pq.add(8);
- * console.log(pq.extract()); // 2
- *
- * // max‑heap (reverse the comparator)
- * const pqMax = new PriorityQueue<number>((a, b) => b - a);
- */
-export class PriorityQueue<T> {
-  /** The underlying array that stores the heap. */
-  private items: T[] = [];
+// ----- Min‑Heap implementation ---------------------------------------
+class MinHeap<T> {
+  private items: Array<{key: number; value: T}> = [];
 
-  /**
-   * @param compare Comparator: `a < b` returns a negative value,
-   *                `a === b` returns zero,
-   *                `a > b` returns a positive value.
-   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
-   *                or a custom comparator for objects.
-   */
-  constructor(private compare: (a: T, b: T) => number) {}
+  private siftUp(idx: number) {
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.items[parent].key <= this.items[idx].key) break;
+      [this.items[parent], this.items[idx]] = [this.items[idx], this.items[parent]];
+      idx = parent;
+    }
+  }
 
-  /** Number of elements in the queue. */
-  size(): number { return this.items.length; }
+  private siftDown(idx: number, size: number) {
+    while (true) {
+      const left = (idx << 1) + 1;
+      const right = left + 1;
+      let smallest = idx;
 
-  /** Whether the queue is empty. */
-  isEmpty(): boolean { return this.items.length === 0; }
+      if (left < size && this.items[left].key < this.items[smallest].key) smallest = left;
+      if (right < size && this.items[right].key < this.items[smallest].key) smallest = right;
 
-  /** Return the highest‑priority element without removing it. */
-  peek(): T | undefined { return this.items[0]; }
+      if (smallest === idx) break;
+      [this.items[smallest], this.items[idx]] = [this.items[idx], this.items[smallest]];
+      idx = smallest;
+    }
+  }
 
-  /** Insert a new element. */
-  add(element: T): void {
-    this.items.push(element);
+  push(key: number, value: T) {
+    this.items.push({key, value});
     this.siftUp(this.items.length - 1);
   }
 
-  /** Remove and return the element with the highest priority. */
-  extract(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const root = this.items[0];
-    const last = this.items.pop()!;
-    if (!this.isEmpty()) {
-      this.items[0] = last;
-      this.siftDown(0);
-    }
-    return root;
+  pop(): T | undefined {
+    const size = this.items.length;
+    if (!size) return undefined;
+    const min = this.items[0].value;
+    this.items[0] = this.items[size - 1];
+    this.items.pop();
+    this.siftDown(0, this.items.length);
+    return min;
   }
 
-  /* ---- Internals ---- */
-
-  /** Move a node up until the heap property holds. */
-  private siftUp(idx: number): void {
-    let childIdx = idx;
-    while (childIdx > 0) {
-      const parentIdx = Math.floor((childIdx - 1) / 2);
-      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
-        this.swap(childIdx, parentIdx);
-        childIdx = parentIdx;
-      } else break;
-    }
-  }
-
-  /** Move a node down until the heap property holds. */
-  private siftDown(idx: number): void {
-    const lastIdx = this.items.length - 1;
-    let parentIdx = idx;
-
-    while (true) {
-      const leftIdx = parentIdx * 2 + 1;
-      const rightIdx = parentIdx * 2 + 2;
-      let smallestIdx = parentIdx;
-
-      if (leftIdx <= lastIdx &&
-          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx <= lastIdx &&
-          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx !== parentIdx) {
-        this.swap(parentIdx, smallestIdx);
-        parentIdx = smallestIdx;
-      } else break;
-    }
-  }
-
-  /** Swap two indices in the array. */
-  private swap(i: number, j: number): void {
-    const tmp = this.items[i];
-    this.items[i] = this.items[j];
-    this.items[j] = tmp;
+  get size() {
+    return this.items.length;
   }
 }
-// Min‑heap of numbers
-const minQ = new PriorityQueue<number>((a, b) => a - b);
-minQ.add(10);
-minQ.add(3);
-minQ.add(7);
-console.log(minQ.extract()); // 3
-console.log(minQ.extract()); // 7
-console.log(minQ.extract()); // 10
 
-// Max‑heap of strings by length
-const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
-maxStr.add("short");
-maxStr.add("tiny");
-maxStr.add("extraordinarilylong");
-console.log(maxStr.extract()); // "extraordinarilylong"
+
+// ----- Graph representation ------------------------------------------
+type Edge = { to: number; weight: number };
+
+class Graph {
+  private adjacency: Edge[][] = [];
+
+  constructor(private nodeCount: number) {
+    this.adjacency = Array.from({length: nodeCount}, () => []);
+  }
+
+  addEdge(u: number, v: number, w: number, directed = false) {
+    this.adjacency[u].push({to: v, weight: w});
+    if (!directed) this.adjacency[v].push({to: u, weight: w});
+  }
+
+  getEdges(u: number): Edge[] {
+    return this.adjacency[u];
+  }
+}
+
+
+// ----- Dijkstra ---------------------------------------
+function dijkstra(graph: Graph, start: number): number[] {
+  const dist = Array(graph.adjacency.length).fill(Infinity);
+  const visited = new Array(graph.adjacency.length).fill(false);
+  const pq = new MinHeap<number>();
+
+  dist[start] = 0;
+  pq.push(0, start);
+
+  while (pq.size) {
+    const u = pq.pop() as number;      // current vertex
+    if (visited[u]) continue;          // skip stale entry
+    visited[u] = true;
+
+    for (const {to: v, weight: w} of graph.getEdges(u)) {
+      if (dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        pq.push(dist[v], v);
+      }
+    }
+  }
+
+  return dist; // distances from start to every vertex
+}
+
+
+// ----- Example usage ---------------------------------------
+const g = new Graph(6);
+g.addEdge(0, 1, 7);
+g.addEdge(0, 2, 9);
+g.addEdge(0, 5, 14);
+g.addEdge(1, 2, 10);
+g.addEdge(1, 3, 15);
+g.addEdge(2, 3, 11);
+g.addEdge(2, 5, 2);
+g.addEdge(3, 4, 6);
+g.addEdge(4, 5, 9);
+
+const distances = dijkstra(g, 0);
+console.log(distances); // shortest distance from vertex 0 to every other vertex
