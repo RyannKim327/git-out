@@ -1,85 +1,50 @@
-// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
-export interface TreeNode<T> {
-  value: T;
-  left?: TreeNode<T>;   // optional because a leaf might not have children
-  right?: TreeNode<T>;
-}
+currentSum = A[0]
+bestSum    = A[0]
+for each element x in A from index 1 to end
+    currentSum = max(x, currentSum + x)
+    bestSum    = max(bestSum, currentSum)
+return bestSum
 /**
- * Counts leaf nodes (nodes with no children) in a binary tree.
+ * Returns the maximum sum of a contiguous sub‑array.
  *
- * @param root - root node of the tree
- * @returns number of leaf nodes
+ * @param nums - Array of numbers (can contain negatives).
+ * @returns The maximum sub‑array sum.  For an empty array it returns 0.
  */
-export function countLeavesRec<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree -> 0 leaves
+export function maxSubarraySum(nums: number[]): number {
+  if (nums.length === 0) return 0;
 
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                // this node is a leaf
+  let currentSum = nums[0];
+  let bestSum = nums[0];
 
-  // otherwise add leaves of the left and right sub‑trees
-  return countLeavesRec(root.left) + countLeavesRec(root.right);
-}
-/**
- * Iterative breadth‑first traversal using a queue.
- * Does the same thing as the recursive version but avoids recursion depth limits.
- */
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+  for (let i = 1; i < nums.length; i++) {
+    const x = nums[i];
+    currentSum = x > currentSum + x ? x : currentSum + x;
+    // equivalently: currentSum = Math.max(x, currentSum + x);
 
-  let leafCount = 0;
-  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
-
-  while (queue.length) {
-    const node = queue.shift()!;         // dequeue
-
-    // If the node has no children, it’s a leaf
-    if (!node.left && !node.right) {
-      leafCount += 1;
-    } else {
-      // enqueue any existing children
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+    if (currentSum > bestSum) bestSum = currentSum;
   }
 
-  return leafCount;
+  return bestSum;
 }
-function buildSampleTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //        / \     \
-  //       4   5     6
-  return {
-    value: 1,
-    left: {
-      value: 2,
-      left: { value: 4 },
-      right: { value: 5 }
-    },
-    right: {
-      value: 3,
-      right: { value: 6 }
-    }
-  };
-}
+console.log(maxSubarraySum([ -2, 1, -3, 4, -1, 2, 1, -5, 4 ])); // 6
+let tempStart = 0;
+let bestStart = 0;
+let bestEnd = 0;
 
-const tree = buildSampleTree();
-console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
-console.log('Iterative:', countLeavesIter(tree)); // → 3
-function leafMetrics<T>(root?: TreeNode<T>) {
-  if (!root) return { leafCount: 0, leafDepthSum: 0 };
-
-  // helper that returns (#leaves, sum of leaf depths)
-  function helper(node: TreeNode<T>, depth: number): [number, number] {
-    if (!node.left && !node.right) {
-      return [1, depth];
-    }
-    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
-    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
-    return [left[0] + right[0], left[1] + right[1]];
+for (let i = 1; i < nums.length; i++) {
+  const x = nums[i];
+  if (x > currentSum + x) {
+    currentSum = x;
+    tempStart = i;
+  } else {
+    currentSum += x;
   }
 
-  const [cnt, depthSum] = helper(root, 0);
-  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
+  if (currentSum > bestSum) {
+    bestSum = currentSum;
+    bestStart = tempStart;
+    bestEnd = i;
+  }
 }
+
+// bestStart..bestEnd (inclusive) gives the sub‑array with max sum
