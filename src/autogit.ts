@@ -1,39 +1,45 @@
 /**
- * Return a random integer *between* `min` and `max` **inclusive**.
- *
- * @param min - lowest possible value
- * @param max - highest possible value
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
  */
-function randInt(min: number, max: number): number {
-  const lower = Math.ceil(min);                // in case min is decimal
-  const upper = Math.floor(max);               // in case max is decimal
-  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
-}
-const roll = randInt(1, 6);   // a fair 1‑to‑6 dice roll
-console.log(roll);            // 1, 2, 3, 4, 5, or 6
-/**
- * Return a random float *between* `min` (inclusive) and `max` (exclusive).
- *
- * @param min - lowest possible value
- * @param max - value we’ll never hit
- */
-function randFloat(min = 0, max = 1): number {
-  return Math.random() * (max - min) + min;
-}
-const lerp = randFloat(0, 1);   // a random number in [0, 1)
-// Simple LCG – not cryptographically secure,
-// but good enough for games, demos, tests etc.
-function lcg(seed: number) {
-  const m = 0x80000000; // 2^31
-  const a = 1103515245;
-  const c = 12345;
-  let state = seed % m;
-  return () => {
-    state = (a * state + c) % m;
-    return state / m; // raw [0,1)
-  };
-}
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-const random = lcg(123456);          // seed=123456
-const randIntSeeded = (min: number, max: number) =>
-  Math.floor(random() * (max - min + 1)) + min;
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
+    } else {
+      j--;          // move left
+    }
+  }
+
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
+}
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
