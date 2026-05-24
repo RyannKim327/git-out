@@ -1,15 +1,19 @@
-function maxInArray(values: number[]): number | undefined {
-    if (values.length === 0) return undefined; // no elements
+function isPalindrome(s: string): boolean {
+  // Two‑pointer scan from both ends
+  let left = 0;
+  let right = s.length - 1;
 
-    let max = values[0];
-    for (const v of values) {
-        if (v > max) max = v;
+  while (left < right) {
+    // Compare the characters at the two pointers
+    if (s.charAt(left) !== s.charAt(right)) {
+      return false;          // mismatch found – not a palindrome
     }
-    return max;
-}
-const max = Math.max(...arr);
-const max = arr.reduce((a, b) => (a > b ? a : b), -Infinity);
-const testArr = [3, 41, 12, 9, 34, 88, 57];
+    left++;
+    right--;
+  }
 
-console.log(maxInArray(testArr)); // 88
-console.log(Math.max(...testArr)); // 88
+  return true;                 // all mirrored pairs matched
+}
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+console.log(isPalindrome(""));        // true (empty string is a palindrome)
