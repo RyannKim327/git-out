@@ -1,75 +1,87 @@
-// -------------------------------------------------------------
-// 1️⃣  O(n²) DP – intuition + implementation
-// -------------------------------------------------------------
-function lisDP(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
+/**
+ * Radix sort for 32‑bit signed integers.
+ * Works for any array length, including 0.
+ *
+ * The algorithm:
+ *   – Split the input into positives and negatives
+ *   – Sort each group with a stable counting‑sort pass for each decimal digit (base 10)
+ *   – Negatives are sorted in reverse order of their absolute values
+ *   – Concatenate negative‑part (re‑negated) then positive‑part
+ */
+export function radixSort(nums: number[]): number[] {
+  if (nums.length === 0) return nums; // nothing to do
 
-  // dp[i]  – length of LIS that ends at index i
-  const dp: number[] = Array(n).fill(1);
-  // prev[i] – previous index in the LIS that ends at i
-  const prev: number[] = Array(n).fill(-1);
+  /* 1️⃣  Separate positives from negatives   */
+  const positives: number[] = [];
+  const negatives: number[] = [];
 
-  let bestEnd = 0; // index where the overall best LIS ends
-
-  for (let i = 0; i < n; ++i) {
-    for (let j = 0; j < i; ++j) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (dp[i] > dp[bestEnd]) bestEnd = i;
+  for (const n of nums) {
+    if (n >= 0) positives.push(n);
+    else negatives.push(Math.abs(n));  // store abs for later sorting
   }
 
-  // Rebuild the sequence
-  const seq: number[] = [];
-  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
-  seq.reverse();
+  /* 2️⃣  Sort the “unsigned” parts with an inner helper   */
+  const sortedPos = sortUnsigned(positives);
+  const sortedNeg = sortUnsigned(negatives);
 
-  return { length: dp[bestEnd], sequence: seq };
+  /* 3️⃣  Negatives need to be reversed & re‑negated       */
+  const finalNeg = sortedNeg.reverse().map(v => -v);
+
+  /* 4️⃣  Merge back together – negative values come first   */
+  return [...finalNeg, ...sortedPos];
 }
-// -------------------------------------------------------------
-// 2️⃣  O(n log n) – patience sorting + back‑tracking
-// -------------------------------------------------------------
-function lisPatience(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
 
-  // tails[i] – index of the smallest tail of LIS with length i+1
-  const tails: number[] = [];
-  // parentIdx[i] – previous index in LIS that ends at i
-  const parentIdx: number[] = Array(n).fill(-1);
+/**
+ * Internally sort an array of non‑negative numbers by radix.
+ * The routine is the same as the classic radix sort used in
+ * CS‑textbooks: a counting sort stable pass for each power of 10.
+ */
+function sortUnsigned(arr: number[]): number[] {
+  if (arr.length === 0) return arr;
 
-  for (let i = 0; i < n; ++i) {
-    const x = arr[i];
+  // Find the largest value so we know when to stop
+  const maxVal = Math.max(...arr);
 
-    // Binary search: first tail >= x
-    let lo = 0, hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (arr[tails[mid]] < x) lo = mid + 1;
-      else hi = mid;
-    }
+  let exponent = 1;   // 10⁰, 10¹, 10² …
+  let result = arr;   // we’ll keep re‑assigning
 
-    // lo now points to position where x will go
-    if (lo > 0) parentIdx[i] = tails[lo - 1];
-
-    if (lo === tails.length) tails.push(i);
-    else tails[lo] = i;
+  while (Math.floor(maxVal / exponent) > 0) {
+    result = countingSortByExponent(result, exponent);
+    exponent *= 10;
   }
 
-  // Reconstruct sequence
-  const seq: number[] = [];
-  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
-  seq.reverse();
-
-  return { length: tails.length, sequence: seq };
+  return result;
 }
-const example = [10, 9, 2, 5, 3, 7, 101, 18];
 
-console.log(lisDP(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+/**
+ * One stable counting‑sort pass for a specific digit (exponent).
+ * Digits are guaranteed to be 0–9.
+ */
+function countingSortByExponent(nums: number[], exp: number): number[] {
+  const output = new Array(nums.length);
+  const count = new Array(10).fill(0);
 
-console.log(lisPatience(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+  // 1️⃣ Count occurrences of each digit
+  for (const n of nums) {
+    const digit = Math.floor(n / exp) % 10;
+    count[digit]++;
+  }
+
+  // 2️⃣ Turn counts into cumulative counts
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
+  }
+
+  // 3️⃣ Build output array (backwards for stability)
+  for (let i = nums.length - 1; i >= 0; i--) {
+    const n = nums[i];
+    const digit = Math.floor(n / exp) % 10;
+    output[--count[digit]] = n;
+  }
+
+  return output;
+}
+const data = [170, 45, 75, 90, 802, 24, 2, 66, -3, -55];
+const sorted = radixSort(data);
+console.log(sorted);
+// → [ -55, -3, 2, 24, 45, 66, 75, 90, 170, 802 ]
