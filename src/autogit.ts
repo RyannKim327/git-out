@@ -1,46 +1,48 @@
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+// fetch-posts.ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-  // A little help‑trim: you can decide to ignore whitespace, case, etc.
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
+async function getPosts(): Promise<Post[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
 
-  const sortedA = normalize(a).split('').sort().join('');
-  const sortedB = normalize(b).split('').sort().join('');
+  // Allow a “fetch” implementation to be swapped in, e.g. for tests
+  const fetcher = typeof globalThis.fetch === "function" ? globalThis.fetch : require("node-fetch");
 
-  return sortedA === sortedB;
-}
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+  try {
+    const resp = await fetcher(url, { method: "GET" });
 
-  const freq = new Map<string, number>();
+    if (!resp.ok) {
+      // Throw an error that includes the status code and message
+      throw new Error(`API error (${resp.status}): ${resp.statusText}`);
+    }
 
-  for (const ch of a) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+    const data: unknown = await resp.json();
+
+    // Basic runtime type guard: make sure we really got an array of posts
+    if (!Array.isArray(data)) {
+      throw new Error("Response was not an array");
+    }
+
+    // We trust the API to provide the right shape and coerce
+    return data as Post[];
+  } catch (e) {
+    // Re‑throw with a bit more context if we’re not already an Error
+    if (!(e instanceof Error)) {
+      throw new Error(String(e));
+    }
+    throw e;
   }
-
-  for (const ch of b) {
-    const count = freq.get(ch);
-    if (!count) return false;          // either zero or undefined
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
-  }
-
-  return freq.size === 0;
 }
-function areAnagramsAscii(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
 
-  const counts = new Uint32Array(26);
-
-  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
-  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
-
-  return counts.every(v => v === 0);
-}
-const compact = (s: string) =>
-  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
-
-function areAnagramsClean(a: string, b: string): boolean {
-  return areAnagrams(compact(a), compact(b));
-}
+// Demo: print the first five posts
+getPosts()
+  .then((posts) => {
+    posts.slice(0, 5).forEach((p) =>
+      console.log(`[${p.id}] ${p.title} (user ${p.userId})`)
+    );
+  })
+  .catch((err) => console.error("Failed to fetch posts:", err));
