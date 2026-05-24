@@ -1,46 +1,44 @@
-// src/githubUsers.ts
-import fetch, { Response } from "node-fetch";
+// A plain, singly‑linked node.
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-interface GithubUser {
-  login: string;
-  id: number;
-  avatar_url: string;
-  html_url: string;
-}
-
-async function fetchGithubUsers(
-  page: number = 1,
-  perPage: number = 10
-): Promise<GithubUser[]> {
-  const url = `https://api.github.com/users?since=${(page - 1) * perPage}`;
-
-  const resp: Response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "TypeScript-CLI",
-    },
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`GitHub API error ${resp.status}: ${errText}`);
-  }
-
-  const json = await resp.json();
-
-  // Type assertion – we know the API returns an array of GitHubUser objects
-  return json as GithubUser[];
-}
-
-async function main() {
-  try {
-    const users = await fetchGithubUsers(1, 5);
-    console.log("Top GitHub users:");
-    users.forEach((u) => console.log(`- ${u.login} (${u.html_url})`));
-  } catch (err) {
-    console.error("Something went wrong:", err);
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
   }
 }
+/**
+ * Walks the list and counts how many nodes it contains.
+ * @param head The first node of the list (or null for an empty list).
+ * @returns How many nodes are in the list.
+ */
+function listLength<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
 
-main().catch((e) => console.error(e));
+  while (current !== null) {
+    count++;
+    current = current.next;
+  }
 
+  return count;
+}
+function listLengthRecursive<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;                // base case: nothing left
+  return 1 + listLengthRecursive(node.next); // recurse
+}
+// Build a list: 1 → 2 → 3 → null
+const third = new ListNode(3);
+const second = new ListNode(2, third);
+const first = new ListNode(1, second);
+
+console.log(listLength(first));                // 3
+console.log(listLengthRecursive(first));       // 3
+console.log(listLength(null));                // 0
+// For a doubly linked node that has .next and .prev:
+let current = head;
+while (current !== null) {
+  count++;
+  current = current.next;  // or current.prev, depending on direction
+}
