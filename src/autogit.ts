@@ -1,25 +1,89 @@
-/**
- * Returns true if the array is sorted in ascending order (strictly or non‑strictly).
- * @param arr array of items that can be compared with < and ===
- * @param allowDuplicates if true, values equal to the previous one are still OK
- */
-function isSortedAscending<T>(arr: T[], allowDuplicates = false): boolean {
-  if (arr.length < 2) return true;           // 0 or 1 element is always sorted
+// ------------------------------------------------------------------
+// 1️⃣  Graph representation (adjacency list)
+// ------------------------------------------------------------------
+type NodeID = string;  // or number – whatever uniquely identifies a node
+interface Graph {
+  // `edges[u]` is a list of all nodes directly reachable from `u`
+  [key: string]: NodeID[];
+}
 
-  for (let i = 1; i < arr.length; i++) {
-    const a = arr[i - 1];
-    const b = arr[i];
+// ------------------------------------------------------------------
+// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
+// ------------------------------------------------------------------
+function dfsRecursive(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID,
+  visited = new Set<NodeID>(),
+  path: NodeID[] = []
+): NodeID[] | null {
+  visited.add(start);
+  path.push(start);
 
-    if (a > b) return false;                 // strictly smaller check
+  if (start === target) return [...path];        // found it – return a copy of the path
 
-    if (!allowDuplicates && a === b) return false; // disallow equal values
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      const result = dfsRecursive(graph, neighbor, target, visited, path);
+      if (result) return result;                 // propagate the found path upwards
+    }
   }
-  return true;
+
+  path.pop();                                     // backtrack
+  return null;                                    // no path from this branch
 }
-console.log(isSortedAscending([1, 2, 3]));          // true
-console.log(isSortedAscending([1, 3, 2]));          // false
-console.log(isSortedAscending([1, 1, 2], false));   // false
-console.log(isSortedAscending([1, 1, 2], true));    // true
-function isSortedAscendingFunctional<T>(arr: T[]): boolean {
-  return arr.length < 2 || arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+
+// ------------------------------------------------------------------
+// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
+// ------------------------------------------------------------------
+function dfsIterative(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID
+): NodeID[] | null {
+  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
+  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
+  const visited = new Set<NodeID>();
+
+  while (stack.length) {
+    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    parentMap.set(node, parent);
+
+    if (node === target) {
+      // reconstruct path
+      const path: NodeID[] = [];
+      let current: NodeID | null = target;
+      while (current !== null) {
+        path.unshift(current);
+        current = parentMap.get(current)!;
+      }
+      return path;
+    }
+
+    for (const neighbor of graph[node] ?? []) {
+      if (!visited.has(neighbor)) {
+        stack.push({ node: neighbor, parent: node });
+      }
+    }
+  }
+
+  return null;          // no path found
 }
+
+// ------------------------------------------------------------------
+// 4️⃣  Example usage
+// ------------------------------------------------------------------
+const exampleGraph: Graph = {
+  a: ["b", "c"],
+  b: ["d", "e"],
+  c: ["f"],
+  d: [],
+  e: ["f"],
+  f: []
+};
+
+console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
+console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
