@@ -1,166 +1,35 @@
-// A node holding one element and a pointer to the next node.
-class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
+/*  0001‑random‑ts‑with‑input.ts  */
 
-// A generic linked list that knows the head and tail and its size.
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+import * as readline from 'node:readline';
 
-  /* Basic introspection ------------------------------------ */
+// set up an interface that pulls from stdin and pushes to stdout
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: true,
+});
 
-  get size()          { return this._size; }
-  get isEmpty()       { return this._size === 0; }
+console.log("Hey there! 🤖  What’s the *odd‑est* dish you’ve ever tried?");
+rl.question('> ', (dish) => {
+  // a small random‑ish twist: pick a random‑word to shout at the dish
+  const reactions = [
+    'delicious',
+    'indescribable',
+    'surprisingly tasty',
+    'flat',
+    'legendary',
+    'not for the faint‑hearted',
+    'mind‑blowing',
+  ];
+  const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
 
-  /* -----------------------------------------------------------------
-   * Mutating operations
-   * ----------------------------------------------------------------- */
+  console.log(`\nI heard you enjoyed a ${randomReaction} ${dish} ✨`);
 
-  // Add to the end (O(1)).
-  push(val: T): void {
-    const node = new ListNode(val);
-    if (this.tail) {
-      this.tail.next = node;
-      this.tail = node;
-    } else {               // list was empty
-      this.head = this.tail = node;
-    }
-    this._size++;
-  }
-
-  // Remove from the end (O(n) – we walk to the previous node).
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {      // one element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-    // walk to the node just before tail
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-
-  // Add to the front (O(1)).
-  unshift(val: T): void {
-    const node = new ListNode(val, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node;
-    this._size++;
-  }
-
-  // Remove from the front (O(1)).
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const val = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._size--;
-    return val;
-  }
-
-  // Insert after a given node (O(1)).  Handy for external use.
-  insertAfter(node: ListNode<T>, val: T): ListNode<T> {
-    const nodeToInsert = new ListNode(val, node.next);
-    node.next = nodeToInsert;
-    if (node === this.tail) this.tail = nodeToInsert;
-    this._size++;
-    return nodeToInsert;
-  }
-
-  // Remove the *first* occurrence of a value (O(n)).
-  remove(val: T): boolean {
-    if (!this.head) return false;
-
-    // deleting head
-    if (this.head.value === val) {
-      this.head = this.head.next;
-      if (!this.head) this.tail = null;
-      this._size--;
-      return true;
-    }
-
-    // walk until we find the predecessor
-    let prev = this.head;
-    while (prev.next && prev.next.value !== val) {
-      prev = prev.next;
-    }
-
-    if (!prev.next) return false; // not found
-
-    // patch over the node we’re deleting
-    prev.next = prev.next.next;
-    if (prev.next === null) this.tail = prev;
-    this._size--;
-    return true;
-  }
-
-  /* -----------------------------------------------------------------
-   * Utility helpers
-   * ----------------------------------------------------------------- */
-
-  // Return an array of all values. (Useful for tests/printing)
-  toArray(): T[] {
-    const arr: T[] = [];
-    for (const v of this) arr.push(v);
-    return arr;
-  }
-
-  // Find first node with a given value.
-  find(val: T): ListNode<T> | null {
-    for (let node of this.iterate()) {
-      if (node.value === val) return node;
-    }
-    return null;
-  }
-
-  /* -----------------------------------------------------------------
-   * Iteration
-   * ----------------------------------------------------------------- */
-
-  // Forward iterator (ES6).
-  * [Symbol.iterator](): Generator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-
-  // Iterable over nodes if you need more than just the value.
-  * iterate(): Generator<ListNode<T>> {
-    let current = this.head;
-    while (current) {
-      yield current;
-      current = current.next;
-    }
-  }
-}
-import { LinkedList } from "./LinkedList";
-
-const list = new LinkedList<number>();
-
-list.push(3);          // -> 3
-list.push(5);          // -> 3 → 5
-list.unshift(1);       // -> 1 → 3 → 5
-
-console.log(list.toArray()); // [1, 3, 5]
-
-list.remove(3);          // remove middle element
-console.log(list.toArray()); // [1, 5]
-
-console.log(list.pop()); // 5, list is now [1]
-console.log(list.shift()); // 1, list is empty
+  // one more quick twist: ask for a rating, then show a playful summary
+  rl.question('\nRate it 1‑10: ', (rateStr) => {
+    const rating = parseInt(rateStr, 10) || 0;
+    const verdict = rating >= 7 ? 'Chef‑approved!' : 'Better luck next time!';
+    console.log(`\nYou rated it a ${rating}/10... ${verdict}`);
+    rl.close();
+  });
+});
