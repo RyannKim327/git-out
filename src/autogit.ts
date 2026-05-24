@@ -1,50 +1,33 @@
-/*  random-cron-example.ts
- *
- *  Requires:
- *    npm install cron chalk
- *  Compile with:
- *    tsc random-cron-example.ts --module commonjs
- *  Run with:
- *    node random-cron-example.js
- */
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
+}
+const head: ListNode<number> = { val: 1, next: null };
+head.next = { val: 2, next: null };
+head.next.next = { val: 3, next: null };      // 1 → 2 → 3
+function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-import { CronJob } from "cron";
-import chalk from "chalk";
+  while (fast !== null && fast.next !== null) {
+    slow = slow?.next ?? null;   // advance by 1
+    fast = fast.next.next;       // advance by 2
+  }
 
-// A function that does something "random enough" each time it runs.
-function generateMagicNumber(): number {
-  // Pick a pseudo‑random integer between 1 and 100
-  return Math.floor(Math.random() * 100) + 1;
+  return slow; // could be null if the list was empty
+}
+if (fast !== null) {            // original list had even length
+  slow = slow?.next ?? null;    // bump to the second middle
+}
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
 }
 
-// Define a cron job that fires every minute.
-// The schedule string "`* * * * *`" means: every minute, every hour, every day ...
-const job = new CronJob(
-  // Every minute
-  "* * * * *",
-  () => {
-    const now = new Date();
-    const magic = generateMagicNumber();
-    console.log(
-      `${chalk.green(now.toISOString())} → Magic number: ${chalk.yellow(
-        magic
-      )}`
-    );
-  },
-  null, // onComplete callback (unused)
-  true, // start the job right away
-  "America/New_York" // time zone
-);
+const list: ListNode<number> | null = {
+  val: 10,
+  next: { val: 20, next: { val: 30, next: null } },
+};
 
-// Graceful shutdown
-process.on("SIGINT", () => {
-  console.log(chalk.red("\nStopping the cron job..."));
-  job.stop();
-  process.exit(0);
-});
-
-console.log(
-  chalk.blue(
-    "Random cron job started. It will output a magic number every minute."
-  )
-);
+console.log(middle(list)?.val); // prints 20
