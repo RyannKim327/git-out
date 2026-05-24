@@ -1,95 +1,74 @@
-type EdgeMap = Map<number, Node>; // key = first char code of the edge
+/**
+ * Quick‑sort implementation.
+ *
+ * @param arr   The array to sort – it will be mutated in place.
+ * @param compare Optional comparison function.  
+ *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+ *                If omitted, the default is a numeric comparison.
+ * @returns The same array reference, now sorted.
+ */
+export function quickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to numeric comparison if no comparator is given
+  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
 
-export class Node {
-  // Children edges keyed by first character code
-  public children: EdgeMap = new Map();
+  // Recursive helper – operates on the portion of the array
+  function qs(left: number, right: number): void {
+    if (left >= right) return;
 
-  // Edge that leads **to** this node
-  public start: number = -1;           // inclusive
-  public end: number = -1;             // exclusive
-  public suffixLink: Node | null = null;
+    // Partition returns the final index of the pivot
+    const pivotIndex = partition(left, right);
 
-  constructor(start: number = -1, end: number = -1) {
-    this.start = start;
-    this.end   = end;
-  }
-}
-export class SuffixTree {
-  /** original text, appended with a unique terminator that does not appear elsewhere */
-  private text: string[];
-
-  /** root node */
-  private root: Node = new Node();
-
-  /** active point */
-  private activeNode: Node = this.root;
-  private activeEdge: number | null = null;
-  private activeLength: number = 0;
-
-  /** number of suffixes that have yet to be inserted for the current phase */
-  private remainder: number = 0;
-
-  /** end index for leaves – shared so all leaves refer to the current suffix end */
-  private leafEnd: number = -1;
-
-  constructor(text: string) {
-    // Ensure a single terminator is appended; '#' is common
-    this.text = text.split('').concat('#');
-    this.build();
-  }
-
-  /** Core driver – runs one pass over the text */
-  private build(): void {
-    for (let i = 0; i < this.text.length; i++) {
-      this.extend(i);
+    // Recurse on smaller side first to keep stack depth <= log₂(n)
+    if (pivotIndex - left < right - pivotIndex) {
+      qs(left, pivotIndex - 1);
+      qs(pivotIndex + 1, right);
+    } else {
+      qs(pivotIndex + 1, right);
+      qs(left, pivotIndex - 1);
     }
   }
 
-  /** Ukkonen’s “extension” for position i of the text */
-  private extend(pos: number): void {
-    this.leafEnd = pos;  // All current leaves stretch to the new char
+  // Lomuto‑style partition – choose rightmost element as pivot
+  function partition(left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;          // Place for swapping
 
-    this.remainder++;   // We have one more suffix to add
-
-    let lastNewNode: Node | null = null;
-
-    while (this.remainder > 0) {
-      if (this.activeLength === 0) {
-        // Start a new edge from the active node
-        this.activeEdge = pos;
+    for (let j = left; j < right; j++) {
+      if (cmp(arr[j], pivot) <= 0) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
       }
+    }
 
-      const activeChar = this.text[this.activeEdge!];
-      const child = this.activeNode.children.get(activeChar.charCodeAt(0));
+    // Move pivot to its final place
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
+  }
 
-      // 1. No edge starting with the active char → create a leaf
-      if (!child) {
-        const leaf = new Node(pos, Infinity); // Infinity means “extends to leafEnd”
-        this.activeNode.children.set(activeChar.charCodeAt(0), leaf);
+  qs(0, arr.length - 1);
+  return arr;
+}
+// Numbers – default numeric comparison is fine
+const nums = [34, 7, 23, 32, 5, 62];
+console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
 
-        // set suffix link for last internal node
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this.activeNode;
-          lastNewNode = null;
-        }
-      }
-      // 2. Edge exists → walk down if we have to
-      else if (this.walkDown(child, pos)) {
-        // edge fully traversed – repeat loop with updated active point
-        continue;
-      }
-      // 3. Edge exists but activeLength < edge length → split edge
-      else {
-        const edgeLen = this.edgeLength(child, pos);
-        if (this.activeLength === edgeLen) {
-          // If we are *exactly* at the end of an edge, further walk down happens
-          if (lastNewNode && this.activeNode !== this.root) {
-            lastNewNode.suffixLink = this.activeNode;
-            lastNewNode = null;
-          }
-          this.activeNode = child;
-          this.activeLength++; // effectively moving to next character on edge
-          break;               // proceed to next i
-        }
+// Strings – need a string comparator  
+const words = ['banana', 'apple', 'cherry'];
+console.log(
+  quickSort(words, (a, b) => a.localeCompare(b))
+); // ['apple', 'banana', 'cherry']
 
-        // Create internal node
+// Custom objects  
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Anna', age: 27 },
+  { name: 'Bob', age: 22 },
+  { name: 'Clara', age: 35 },
+];
+
+quickSort(people, (a, b) => a.age - b.age);
+console.log(people);
+// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
