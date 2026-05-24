@@ -1,45 +1,52 @@
 /**
- * Returns the longest common subsequence of a and b.
- * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
+ * Selection sort – returns a **new** sorted array.
+ * The original array is left untouched.
+ *
+ * @param arr   – source array
+ * @returns     – a new array sorted in ascending order
  */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+export function selectionSort<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];          // clone so we don't mutate the caller's array
+  const n = toSort.length;
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i < n - 1; i++) {
+    // assume the smallest element is at i
+    let minIndex = i;
 
-  // Build the table
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+    // find the real smallest element in the remaining unsorted section
+    for (let j = i + 1; j < n; j++) {
+      if (toSort[j] < toSort[minIndex]) {
+        minIndex = j;
       }
     }
-  }
 
-  // Back‑track to reconstruct one LCS
-  let i = m;
-  let j = n;
-  const lcsChars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // Matches – this character is part of the LCS
-      lcsChars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // move up
-    } else {
-      j--;          // move left
+    // swap the found minimum with the element at i
+    if (minIndex !== i) {
+      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
     }
   }
 
-  // The chars were collected backwards, reverse them
-  return lcsChars.reverse().join('');
+  return toSort;
 }
-console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
-console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
+const unsorted = [9, 3, 10, 2, 7];
+const sorted = selectionSort(unsorted);
+
+console.log(sorted);      // [2, 3, 7, 9, 10]
+console.log(unsorted);    // remains [9, 3, 10, 2, 7]
+export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];
+  const helper = (k: number) => {
+    if (k >= toSort.length - 1) return;
+
+    let minIdx = k;
+    for (let i = k + 1; i < toSort.length; i++) {
+      if (toSort[i] < toSort[minIdx]) minIdx = i;
+    }
+
+    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
+    helper(k + 1);
+  };
+
+  helper(0);
+  return toSort;
+}
