@@ -1,25 +1,50 @@
-/**
- * Returns true if the array is sorted in ascending order (strictly or non‑strictly).
- * @param arr array of items that can be compared with < and ===
- * @param allowDuplicates if true, values equal to the previous one are still OK
- */
-function isSortedAscending<T>(arr: T[], allowDuplicates = false): boolean {
-  if (arr.length < 2) return true;           // 0 or 1 element is always sorted
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                        // empty tree → depth 0
 
-  for (let i = 1; i < arr.length; i++) {
-    const a = arr[i - 1];
-    const b = arr[i];
+  const leftDepth  = maxDepth(root.left);     // recurse on left child
+  const rightDepth = maxDepth(root.right);    // recurse on right child
 
-    if (a > b) return false;                 // strictly smaller check
+  return Math.max(leftDepth, rightDepth) + 1; // +1 for the current node
+}
+function maxDepthBFS<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-    if (!allowDuplicates && a === b) return false; // disallow equal values
+  const queue: Array<TreeNode<T>> = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length;           // nodes on this level
+    depth += 1;                               // finish the level → increment depth
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;            // safe – queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-  return true;
+
+  return depth;
 }
-console.log(isSortedAscending([1, 2, 3]));          // true
-console.log(isSortedAscending([1, 3, 2]));          // false
-console.log(isSortedAscending([1, 1, 2], false));   // false
-console.log(isSortedAscending([1, 1, 2], true));    // true
-function isSortedAscendingFunctional<T>(arr: T[]): boolean {
-  return arr.length < 2 || arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
-}
+const tree: TreeNode = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 }
+  },
+  right: {
+    value: 3,
+    right: {
+      value: 6,
+      left: { value: 7 }
+    }
+  }
+};
+
+console.log(maxDepth(tree));      // → 4
+console.log(maxDepthBFS(tree));   // → 4
