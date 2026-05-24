@@ -1,46 +1,85 @@
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-
-  // A little help‑trim: you can decide to ignore whitespace, case, etc.
-  const normalize = (s: string) =>
-    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
-
-  const sortedA = normalize(a).split('').sort().join('');
-  const sortedB = normalize(b).split('').sort().join('');
-
-  return sortedA === sortedB;
+// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
+export interface TreeNode<T> {
+  value: T;
+  left?: TreeNode<T>;   // optional because a leaf might not have children
+  right?: TreeNode<T>;
 }
-function areAnagrams(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
+/**
+ * Counts leaf nodes (nodes with no children) in a binary tree.
+ *
+ * @param root - root node of the tree
+ * @returns number of leaf nodes
+ */
+export function countLeavesRec<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree -> 0 leaves
 
-  const freq = new Map<string, number>();
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                // this node is a leaf
 
-  for (const ch of a) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  // otherwise add leaves of the left and right sub‑trees
+  return countLeavesRec(root.left) + countLeavesRec(root.right);
+}
+/**
+ * Iterative breadth‑first traversal using a queue.
+ * Does the same thing as the recursive version but avoids recursion depth limits.
+ */
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  let leafCount = 0;
+  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
+
+  while (queue.length) {
+    const node = queue.shift()!;         // dequeue
+
+    // If the node has no children, it’s a leaf
+    if (!node.left && !node.right) {
+      leafCount += 1;
+    } else {
+      // enqueue any existing children
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
 
-  for (const ch of b) {
-    const count = freq.get(ch);
-    if (!count) return false;          // either zero or undefined
-    if (count === 1) freq.delete(ch);
-    else freq.set(ch, count - 1);
+  return leafCount;
+}
+function buildSampleTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //        / \     \
+  //       4   5     6
+  return {
+    value: 1,
+    left: {
+      value: 2,
+      left: { value: 4 },
+      right: { value: 5 }
+    },
+    right: {
+      value: 3,
+      right: { value: 6 }
+    }
+  };
+}
+
+const tree = buildSampleTree();
+console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
+console.log('Iterative:', countLeavesIter(tree)); // → 3
+function leafMetrics<T>(root?: TreeNode<T>) {
+  if (!root) return { leafCount: 0, leafDepthSum: 0 };
+
+  // helper that returns (#leaves, sum of leaf depths)
+  function helper(node: TreeNode<T>, depth: number): [number, number] {
+    if (!node.left && !node.right) {
+      return [1, depth];
+    }
+    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
+    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
+    return [left[0] + right[0], left[1] + right[1]];
   }
 
-  return freq.size === 0;
-}
-function areAnagramsAscii(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-
-  const counts = new Uint32Array(26);
-
-  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
-  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
-
-  return counts.every(v => v === 0);
-}
-const compact = (s: string) =>
-  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
-
-function areAnagramsClean(a: string, b: string): boolean {
-  return areAnagrams(compact(a), compact(b));
+  const [cnt, depthSum] = helper(root, 0);
+  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
 }
