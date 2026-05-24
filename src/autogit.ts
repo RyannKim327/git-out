@@ -1,46 +1,54 @@
-interface ListNode<T = unknown> {
-  value: T;
-  next?: ListNode<T>;
-}
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  if (!head) return false; // an empty list can’t have a cycle
+/**
+ * Returns the largest prime factor of n.
+ * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
+ * represent exactly. For bigger values use BigInt (see the comment below).
+ */
+function largestPrimeFactor(n: number): number {
+  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
 
-  let slow = head;
-  let fast = head.next; // fast starts one step ahead
+  let remaining = n;
 
-  while (fast && fast.next) {
-    if (slow === fast) return true; // cycle detected
+  // Deal with factor 2 first – it’s the only even prime
+  while (remaining % 2 === 0) {
+    remaining = remaining / 2;
+  }
+  let lastFactor = 2;
 
-    slow = slow.next!;          // move one step
-    fast = fast.next.next!; // move two steps
+  // Now we only need to test odd numbers.
+  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
+  for (let odd = 3; odd * odd <= remaining; odd += 2) {
+    while (remaining % odd === 0) {
+      remaining = remaining / odd;
+      lastFactor = odd;
+    }
   }
 
-  return false; // reached the end, no cycle
+  // If what’s left is > 1, it’s a prime itself and is larger than any
+  // factor we already found, so it becomes the biggest prime factor.
+  return remaining > 1 ? remaining : lastFactor;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const visited = new Set<ListNode<T>>();
-  let current = head;
+console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
+console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
+console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  if (n <= 1n) return n;
 
-  while (current) {
-    if (visited.has(current)) return true; // we’re back at a node we saw
-    visited.add(current);
-    current = current.next;
+  let remaining = n;
+  let lastFactor = 2n;
+
+  // factor 2
+  while (remaining % 2n === 0n) {
+    remaining /= 2n;
+    lastFactor = 2n;
   }
 
-  return false;
+  // odd factors
+  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
+    while (remaining % odd === 0n) {
+      remaining /= odd;
+      lastFactor = odd;
+    }
+  }
+
+  return remaining > 1n ? remaining : lastFactor;
 }
-// build a small example
-const a: ListNode = { value: 1 };
-const b: ListNode = { value: 2 };
-const c: ListNode = { value: 3 };
-
-a.next = b;
-b.next = c;
-c.next = a; // ← closes the loop
-
-console.log(hasCycle(a));          // true
-console.log(hasCycleWithSet(a));   // true
-
-// break the cycle
-c.next = undefined;
-console.log(hasCycle(a));          // false
