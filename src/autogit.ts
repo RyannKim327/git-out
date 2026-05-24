@@ -1,54 +1,56 @@
-/**
- * Returns the largest prime factor of n.
- * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
- * represent exactly. For bigger values use BigInt (see the comment below).
- */
-function largestPrimeFactor(n: number): number {
-  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
-
-  let remaining = n;
-
-  // Deal with factor 2 first – it’s the only even prime
-  while (remaining % 2 === 0) {
-    remaining = remaining / 2;
-  }
-  let lastFactor = 2;
-
-  // Now we only need to test odd numbers.
-  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
-  for (let odd = 3; odd * odd <= remaining; odd += 2) {
-    while (remaining % odd === 0) {
-      remaining = remaining / odd;
-      lastFactor = odd;
-    }
-  }
-
-  // If what’s left is > 1, it’s a prime itself and is larger than any
-  // factor we already found, so it becomes the biggest prime factor.
-  return remaining > 1 ? remaining : lastFactor;
+// IStack defines the public contract for the stack.
+export interface IStack<T> {
+  push(item: T): void;      // add an item on top
+  pop(): T | undefined;     // remove and return the top item
+  peek(): T | undefined;    // look at the top without removing it
+  isEmpty(): boolean;       // true if the stack has no items
+  size(): number;           // current number of items
 }
-console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
-console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
-console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) return n;
 
-  let remaining = n;
-  let lastFactor = 2n;
+// Stack is a simple array‑backed implementation.
+export class Stack<T> implements IStack<T> {
+  // the underlying storage – an array grows automatically
+  private items: T[] = [];
 
-  // factor 2
-  while (remaining % 2n === 0n) {
-    remaining /= 2n;
-    lastFactor = 2n;
+  constructor(initial?: T[]) {
+    // optional initial content; does a shallow copy for safety
+    if (initial) this.items = initial.slice();
   }
 
-  // odd factors
-  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
-    while (remaining % odd === 0n) {
-      remaining /= odd;
-      lastFactor = odd;
-    }
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  return remaining > 1n ? remaining : lastFactor;
+  pop(): T | undefined {
+    return this.items.pop();          // pop() already returns undefined if empty
+  }
+
+  peek(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    return this.items[this.items.length - 1];
+  }
+
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  size(): number {
+    return this.items.length;
+  }
 }
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek());   // 30
+console.log(stack.pop());    // 30
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+while (!stack.isEmpty()) {
+  console.log(stack.pop());
+}
+// → 20
+// → 10
