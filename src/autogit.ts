@@ -1,50 +1,45 @@
-currentSum = A[0]
-bestSum    = A[0]
-for each element x in A from index 1 to end
-    currentSum = max(x, currentSum + x)
-    bestSum    = max(bestSum, currentSum)
-return bestSum
 /**
- * Returns the maximum sum of a contiguous sub‑array.
+ * Returns true iff every character that appears in `a`
+ * appears the same number of times in `b`.
  *
- * @param nums - Array of numbers (can contain negatives).
- * @returns The maximum sub‑array sum.  For an empty array it returns 0.
+ * @param a – first string
+ * @param b – second string
+ * @param options – optional tweakers
  */
-export function maxSubarraySum(nums: number[]): number {
-  if (nums.length === 0) return 0;
+export function areAnagrams(
+  a: string,
+  b: string,
+  options?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignorePunctuation?: boolean }
+): boolean {
+  const normalize = (str: string) => {
+    let s = str;
+    if (options?.ignoreCase) s = s.toLowerCase();
+    if (options?.ignoreSpaces) s = s.replace(/\s+/g, '');
+    if (options?.ignorePunctuation)
+      s = s.replace(/[^\w]/g, ''); // keeps letters, digits, underscore
 
-  let currentSum = nums[0];
-  let bestSum = nums[0];
+    // Quick length check after normalization
+    return s;
+  };
 
-  for (let i = 1; i < nums.length; i++) {
-    const x = nums[i];
-    currentSum = x > currentSum + x ? x : currentSum + x;
-    // equivalently: currentSum = Math.max(x, currentSum + x);
+  const nsA = normalize(a);
+  const nsB = normalize(b);
 
-    if (currentSum > bestSum) bestSum = currentSum;
+  if (nsA.length !== nsB.length) return false;
+
+  // Count‑array approach – works for ASCII / extended‑Latin.
+  const freq: Record<string, number> = {};
+
+  for (const ch of nsA) freq[ch] = (freq[ch] ?? 0) + 1;
+  for (const ch of nsB) {
+    if (!freq[ch]) return false; // missing or too many
+    freq[ch]! -= 1;
   }
 
-  return bestSum;
+  // All counts should be zero now
+  return Object.values(freq).every(v => v === 0);
 }
-console.log(maxSubarraySum([ -2, 1, -3, 4, -1, 2, 1, -5, 4 ])); // 6
-let tempStart = 0;
-let bestStart = 0;
-let bestEnd = 0;
-
-for (let i = 1; i < nums.length; i++) {
-  const x = nums[i];
-  if (x > currentSum + x) {
-    currentSum = x;
-    tempStart = i;
-  } else {
-    currentSum += x;
-  }
-
-  if (currentSum > bestSum) {
-    bestSum = currentSum;
-    bestStart = tempStart;
-    bestEnd = i;
-  }
-}
-
-// bestStart..bestEnd (inclusive) gives the sub‑array with max sum
+console.log(areAnagrams('Listen', 'Silent', { ignoreCase: true })); // true
+console.log(areAnagrams('Dormitory', 'Dirty room', { ignoreCase: true, ignoreSpaces: true })); // true
+console.log(areAnagrams('Hello', 'Olelh', { ignoreCase: false })); // false – case matters
+console.log(areAnagrams('A!B@C', 'CBA', { ignoreCase: true, ignorePunctuation: true })); // true
