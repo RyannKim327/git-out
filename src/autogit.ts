@@ -1,38 +1,58 @@
 /**
- * Counting sort for an array of integers.
- *
- * @param arr The array to sort – an array of numbers.
- * @returns A new array containing the sorted values.
+ * Computes the prefix function (failure table) of a pattern.
+ * pi[i] = the length of the longest proper prefix of pattern[0..i]
+ * that is also a suffix of pattern[0..i].
  */
-export function countingSort(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+function buildPrefixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const pi: number[] = Array(m).fill(0);
+  let k = 0;   // mismatch counter
 
-  // Locate the bounds of the values.
-  let min = arr[0];
-  let max = arr[0];
-  for (let i = 1; i < arr.length; i++) {
-    const val = arr[i];
-    if (val < min) min = val;
-    if (val > max) max = val;
+  for (let i = 1; i < m; i++) {
+    // fall back until we either hit a match or k == 0
+    while (k > 0 && pattern[i] !== pattern[k]) {
+      k = pi[k - 1];
+    }
+    if (pattern[i] === pattern[k]) k++;
+    pi[i] = k;
   }
+  return pi;
+}
 
-  const range = max - min + 1;          // Number of distinct possible values
-  const count = new Array<number>(range).fill(0);
+/**
+ * KMP search – returns the starting indices of all matches of `needle`
+ * inside `haystack`.  Does *exact* matching (no regex features).
+ */
+export function kmpSearch(haystack: string, needle: string): number[] {
+  const n = haystack.length;
+  const m = needle.length;
+  if (m === 0) return [];          // nothing to find
+  if (m > n) return [];            // can't fit
 
-  // Count occurrences of each integer.
-  for (const value of arr) {
-    count[value - min]++;               // Shift by min so index 0 stays valid
-  }
+  const pi = buildPrefixTable(needle);
+  const matches: number[] = [];
+  let j = 0;                        // current index in needle
 
-  // Overwrite the input array (or build a new one) using the counts.
-  const sorted: number[] = [];
-  for (let i = 0; i < range; i++) {
-    const currentVal = i + min;
-    const occ = count[i];
-    for (let j = 0; j < occ; j++) {
-      sorted.push(currentVal);
+  for (let i = 0; i < n; i++) {
+    // if mismatch, fall back using pi until match or j == 0
+    while (j > 0 && haystack[i] !== needle[j]) {
+      j = pi[j - 1];
+    }
+    if (haystack[i] === needle[j]) j++;
+
+    // full match found
+    if (j === m) {
+      matches.push(i - m + 1);
+      j = pi[j - 1];   // allow overlaps
     }
   }
 
-  return sorted;
+  return matches;
+}
+const txt = "ababcabcababc";
+const pat = "abc";
+
+console.log(kmpSearch(txt, pat));   // → [ 2, 5, 10 ]
+function contains(haystack: string, needle: string) {
+  return haystack.indexOf(needle) !== -1;
 }
