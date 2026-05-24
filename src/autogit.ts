@@ -1,26 +1,15 @@
-/**
- * Returns the first character that is repeated, or `undefined` if the string
- * contains no duplicates.
- */
-function firstRepeated(s: string): string | undefined {
-  const seen = new Set<string>();
+const original = [1, 2, 3, 4];
 
-  for (const ch of s) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
-  }
-  return undefined;     // nothing repeated
-}
-console.log(firstRepeated("abca"));   // → 'a'
-console.log(firstRepeated("abcdef")); // → undefined
-console.log(firstRepeated("aabbc"));  // → 'a'
-function firstRepeatedAscii(s: string): string | undefined {
-  const seen = new Array(128).fill(false);
+const reversed = original.slice().reverse(); // => [4, 3, 2, 1]
+const arr = [5, 4, 3];
 
-  for (const ch of s) {
-    const code = ch.charCodeAt(0);
-    if (seen[code]) return ch;
-    seen[code] = true;
-  }
-  return undefined;
-}
+// 👈 preserve arr
+const backToFront = arr.slice().reverse(); // [3, 4, 5]
+console.log(arr);          // [5, 4, 3]
+const arr = [1, 2, 3];
+arr.reverse(); // arr is now [3, 2, 1]
+const reverseArray = <T>(input: T[]): T[] =>
+  input.reduce<T[]>((acc, item) => [item, ...acc], []);
+
+const arr = [10, 20, 30];
+const rev = reverseArray(arr); // [30, 20, 10]
