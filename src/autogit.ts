@@ -1,39 +1,74 @@
 /**
- * Return n! (n factorial)
- * Works nicely for small n (≤ 20 with a regular number type)
+ * Basic node interface – adjust it to whatever
+ * your real objects look like.
  */
-const factorialRec = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRec(n - 1);
-};
+export interface Node {
+  /** Identifier (useful for debugging, not required by the algo). */
+  id: string | number;
 
-// Example
-console.log(factorialRec(5)); // 120
+  /** Reference to child nodes (empty array for leaf). */
+  children: Node[];
+}
+
 /**
- * Same result but no recursion overhead
+ * Depth‑limited search (DFS style).
+ *
+ * @param root      The node to start from.
+ * @param depthLimit  The maximum depth to explore.
+ * @param goalPredicate  Function that tells when we’ve found the target.
+ * @returns The first node that satisfies `goalPredicate`,
+ *          or `undefined` if none was found within the depth limit.
+ *
+ * The algorithm uses an explicit stack so no recursion is performed.
  */
-const factorialIter = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; ++i) {
-    result *= i;
+export function depthLimitedSearch(
+  root: Node,
+  depthLimit: number,
+  goalPredicate: (node: Node) => boolean
+): Node | undefined {
+  // Stack element: { node, depth }
+  const stack: Array<{ node: Node; depth: number }> = [{ node: root, depth: 0 }];
+
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!; // pop last element (LIFO)
+
+    // Check goal condition
+    if (goalPredicate(node)) {
+      return node;
+    }
+
+    // Stop if we’ve reached the depth limit
+    if (depth >= depthLimit) {
+      continue;
+    }
+
+    // Push children onto the stack, increasing depth
+    // If you prefer a different traversal order just
+    // change the `for` loop below (e.g. reverse the list)
+    for (const child of node.children) {
+      stack.push({ node: child, depth: depth + 1 });
+    }
   }
-  return result;
+
+  // Nothing found within the depth limit
+  return undefined;
+}
+// Create a sample tree
+const tree: Node = {
+  id: 1,
+  children: [
+    { id: 2, children: [] },
+    {
+      id: 3,
+      children: [
+        { id: 4, children: [] },
+        { id: 5, children: [] }
+      ]
+    }
+  ]
 };
 
-// Example
-console.log(factorialIter(5)); // 120
-/**
- * Uses BigInt so it never loses precision
- */
-const factorialBig = (n: number): bigint => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n; // 1n is a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
-  }
-  return result;
-};
+// Find node with id === 5 but only go 2 levels deep
+const found = depthLimitedSearch(tree, 2, n => n.id === 5);
 
-// Example
-console.log(factorialBig(100).toString()); // “933262154439…(ends with 00)”
+console.log(found); // logs the node with id 5 (or undefined if depth limit blocks it)
