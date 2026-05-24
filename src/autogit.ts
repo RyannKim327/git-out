@@ -1,52 +1,50 @@
+currentSum = A[0]
+bestSum    = A[0]
+for each element x in A from index 1 to end
+    currentSum = max(x, currentSum + x)
+    bestSum    = max(bestSum, currentSum)
+return bestSum
 /**
- * Selection sort – returns a **new** sorted array.
- * The original array is left untouched.
+ * Returns the maximum sum of a contiguous sub‑array.
  *
- * @param arr   – source array
- * @returns     – a new array sorted in ascending order
+ * @param nums - Array of numbers (can contain negatives).
+ * @returns The maximum sub‑array sum.  For an empty array it returns 0.
  */
-export function selectionSort<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];          // clone so we don't mutate the caller's array
-  const n = toSort.length;
+export function maxSubarraySum(nums: number[]): number {
+  if (nums.length === 0) return 0;
 
-  for (let i = 0; i < n - 1; i++) {
-    // assume the smallest element is at i
-    let minIndex = i;
+  let currentSum = nums[0];
+  let bestSum = nums[0];
 
-    // find the real smallest element in the remaining unsorted section
-    for (let j = i + 1; j < n; j++) {
-      if (toSort[j] < toSort[minIndex]) {
-        minIndex = j;
-      }
-    }
+  for (let i = 1; i < nums.length; i++) {
+    const x = nums[i];
+    currentSum = x > currentSum + x ? x : currentSum + x;
+    // equivalently: currentSum = Math.max(x, currentSum + x);
 
-    // swap the found minimum with the element at i
-    if (minIndex !== i) {
-      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
-    }
+    if (currentSum > bestSum) bestSum = currentSum;
   }
 
-  return toSort;
+  return bestSum;
 }
-const unsorted = [9, 3, 10, 2, 7];
-const sorted = selectionSort(unsorted);
+console.log(maxSubarraySum([ -2, 1, -3, 4, -1, 2, 1, -5, 4 ])); // 6
+let tempStart = 0;
+let bestStart = 0;
+let bestEnd = 0;
 
-console.log(sorted);      // [2, 3, 7, 9, 10]
-console.log(unsorted);    // remains [9, 3, 10, 2, 7]
-export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];
-  const helper = (k: number) => {
-    if (k >= toSort.length - 1) return;
+for (let i = 1; i < nums.length; i++) {
+  const x = nums[i];
+  if (x > currentSum + x) {
+    currentSum = x;
+    tempStart = i;
+  } else {
+    currentSum += x;
+  }
 
-    let minIdx = k;
-    for (let i = k + 1; i < toSort.length; i++) {
-      if (toSort[i] < toSort[minIdx]) minIdx = i;
-    }
-
-    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
-    helper(k + 1);
-  };
-
-  helper(0);
-  return toSort;
+  if (currentSum > bestSum) {
+    bestSum = currentSum;
+    bestStart = tempStart;
+    bestEnd = i;
+  }
 }
+
+// bestStart..bestEnd (inclusive) gives the sub‑array with max sum
