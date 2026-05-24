@@ -1,50 +1,52 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
-}
-
 /**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
+ * Selection sort – returns a **new** sorted array.
+ * The original array is left untouched.
+ *
+ * @param arr   – source array
+ * @returns     – a new array sorted in ascending order
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+export function selectionSort<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];          // clone so we don't mutate the caller's array
+  const n = toSort.length;
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+  for (let i = 0; i < n - 1; i++) {
+    // assume the smallest element is at i
+    let minIndex = i;
 
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+    // find the real smallest element in the remaining unsorted section
+    for (let j = i + 1; j < n; j++) {
+      if (toSort[j] < toSort[minIndex]) {
+        minIndex = j;
+      }
+    }
+
+    // swap the found minimum with the element at i
+    if (minIndex !== i) {
+      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
+    }
   }
 
-  return pA; // either the intersection node or null
+  return toSort;
 }
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
-  }
-  return dummy.next;
+const unsorted = [9, 3, 10, 2, 7];
+const sorted = selectionSort(unsorted);
+
+console.log(sorted);      // [2, 3, 7, 9, 10]
+console.log(unsorted);    // remains [9, 3, 10, 2, 7]
+export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
+  const toSort = [...arr];
+  const helper = (k: number) => {
+    if (k >= toSort.length - 1) return;
+
+    let minIdx = k;
+    for (let i = k + 1; i < toSort.length; i++) {
+      if (toSort[i] < toSort[minIdx]) minIdx = i;
+    }
+
+    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
+    helper(k + 1);
+  };
+
+  helper(0);
+  return toSort;
 }
-
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
-
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
-
-console.log(getIntersectionNode(a1, b1) === shared); // true
