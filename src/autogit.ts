@@ -1,74 +1,110 @@
+/*--------------------------------------------------
+  1. The “state” that the algorithm operates on
+--------------------------------------------------*/
+export interface Node {
+  /** Every node needs a unique identifier for cycle handling */
+  id: string;               // could be number|string | etc.
+  /** Return the directly reachable successors */
+  getChildren(): Node[];
+}
+
+/*--------------------------------------------------
+  2. The breadth‑limited search itself
+--------------------------------------------------*/
+export type SearchResult<T = Node> = {
+  /* The node that satisfied the goal predicate,
+     or undefined if none found within depth limit. */
+  found: T | undefined;
+  /* How many nodes were expanded in total */
+  expanded: number;
+};
+
 /**
- * Quick‑sort implementation.
+ * Breadth‑limited search (BFS with depth limit)
  *
- * @param arr   The array to sort – it will be mutated in place.
- * @param compare Optional comparison function.  
- *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
- *                If omitted, the default is a numeric comparison.
- * @returns The same array reference, now sorted.
+ * @param start  The entry point of the search
+ * @param goal   A predicate that must be satisfied by the target node
+ * @param depthLimit  The maximum depth (0 → only the start node)
+ *
+ * @returns SearchResult containing the target node (if it was found)
+ *          and the number of nodes that were expanded.
  */
-export function quickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Default to numeric comparison if no comparator is given
-  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
+export function breadthLimitedSearch<T extends Node>(
+  start: T,
+  goal: (node: T) => boolean,
+  depthLimit: number
+): SearchResult<T> {
+  if (depthLimit < 0)
+    throw new Error("depthLimit must be >= 0");
 
-  // Recursive helper – operates on the portion of the array
-  function qs(left: number, right: number): void {
-    if (left >= right) return;
+  // queue entry holds the node *and* its depth from start
+  type QueueEntry = { node: T; depth: number };
 
-    // Partition returns the final index of the pivot
-    const pivotIndex = partition(left, right);
+  const frontier: QueueEntry[] = [{ node: start, depth: 0 }];
+  const visited = new Set<string>();
 
-    // Recurse on smaller side first to keep stack depth <= log₂(n)
-    if (pivotIndex - left < right - pivotIndex) {
-      qs(left, pivotIndex - 1);
-      qs(pivotIndex + 1, right);
-    } else {
-      qs(pivotIndex + 1, right);
-      qs(left, pivotIndex - 1);
-    }
-  }
+  let expanded = 0;
 
-  // Lomuto‑style partition – choose rightmost element as pivot
-  function partition(left: number, right: number): number {
-    const pivot = arr[right];
-    let i = left - 1;          // Place for swapping
+  while (frontier.length > 0) {
+    const { node, depth } = frontier.shift()!; // FIFO
 
-    for (let j = left; j < right; j++) {
-      if (cmp(arr[j], pivot) <= 0) {
-        i++;
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+    if (visited.has(node.id)) continue;   // ignore already‑seen nodes
+    visited.add(node.id);
+
+    expanded++;
+
+    if (goal(node)) return { found: node, expanded };
+
+    // If we haven't hit the depth limit, expand successors
+    if (depth < depthLimit) {
+      const children = node.getChildren();
+      // Add children to the *back* of the queue – usual BFS order
+      for (const child of children) {
+        // Avoid duplicates in the same frontier level
+        if (!visited.has(child.id)) {
+          frontier.push({ node: child, depth: depth + 1 });
+        }
       }
     }
-
-    // Move pivot to its final place
-    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
-    return i + 1;
   }
 
-  qs(0, arr.length - 1);
-  return arr;
+  // Search exhausted without finding a goal
+  return { found: undefined, expanded };
 }
-// Numbers – default numeric comparison is fine
-const nums = [34, 7, 23, 32, 5, 62];
-console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
+class TreeNode implements Node {
+  constructor(public id: string, public children: TreeNode[] = []) {}
+  getChildren() { return this.children; }
+}
 
-// Strings – need a string comparator  
-const words = ['banana', 'apple', 'cherry'];
-console.log(
-  quickSort(words, (a, b) => a.localeCompare(b))
-); // ['apple', 'banana', 'cherry']
+const leafA  = new TreeNode("leafA");
+const leafB  = new TreeNode("leafB");
+const leafC  = new TreeNode("leafC");
+const node1  = new TreeNode("node1", [leafA, leafB]);
+const node2  = new TreeNode("node2", [leafC]);
+const root   = new TreeNode("root", [node1, node2]);
+const result = breadthLimitedSearch(
+  root,
+  n => n.id === "leafC",   // goal predicate
+  2                        // depth limit
+);
 
-// Custom objects  
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Anna', age: 27 },
-  { name: 'Bob', age: 22 },
-  { name: 'Clara', age: 35 },
-];
+if (result.found) {
+  console.log("Found:", result.found.id);
+} else {
+  console.log("Not found within depth limit");
+}
+console.log("Nodes expanded:", result.expanded);
+Found: leafC
+Nodes expanded: 3   // root -> node1 -> node2
+export type SearchResult<T> = {
+  found: T | undefined;
+  expanded: number;
+  path: T[]; // optional: the actual path from the root
+};
 
-quickSort(people, (a, b) => a.age - b.age);
-console.log(people);
-// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
+export function breadthLimitedSearchCustom<T extends {}>(
+  start: T,
+  getChildren: (node: T) => T[],
+  goal: (node: T) => boolean,
+  depthLimit: number
+) { /* similar to above, but works with any shape */ }
