@@ -1,69 +1,118 @@
+type Node = number | string;           // whatever your IDs look like
+type Graph = Record<Node, Node[]>;     // adjacency list
+
 /**
- * Swaps two elements of an array.
+ * Breadth‑first search that collects the visit order.
  */
-function swap<T>(arr: T[], i: number, j: number): void {
-  const tmp = arr[i];
-  arr[i] = arr[j];
-  arr[j] = tmp;
+export function bfsVisitOrder(
+  graph: Graph,
+  start: Node
+): Node[] {
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const order: Node[] = [];
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
+
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+  return order;
 }
 
 /**
- * Moves the element at index `root` downwards to restore the max‑heap
- * property, assuming that the sub‑trees rooted at its children are
- * already max‑heaps.
+ * Breadth‑first search that stops at a goal node
+ * and returns the *shortest path* (for unweighted graphs).
  */
-function sink<T>(arr: T[], root: number, size: number, compare: (a: T, b: T) => number): void {
-  let largest = root;
+export function bfsShortestPath(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {
+  if (start === goal) return [start];
 
-  const left  = 2 * root + 1;
-  const right = 2 * root + 2;
+  const queue: Node[] = [start];
+  const visited: Set<Node> = new Set([start]);
+  const parent: Record<Node, Node | null> = {};
+  parent[start] = null;
 
-  if (left < size && compare(arr[left], arr[largest]) > 0) {
-    largest = left;
-  }
-  if (right < size && compare(arr[right], arr[largest]) > 0) {
-    largest = right;
+  while (queue.length) {
+    const cur = queue.shift()!;
+
+    for (const neighbor of graph[cur] ?? []) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        parent[neighbor] = cur;
+        if (neighbor === goal) {
+          // build the path from goal back to start
+          const path: Node[] = [goal];
+          let p: Node | null = cur;
+          while (p !== null) {
+            path.push(p);
+            p = parent[p];
+          }
+          return path.reverse();
+        }
+        queue.push(neighbor);
+      }
+    }
   }
 
-  if (largest !== root) {
-    swap(arr, root, largest);
-    sink(arr, largest, size, compare);
-  }
+  return null; // goal not reachable
 }
+const graph: Graph = {
+  1: [2, 3],
+  2: [4],
+  3: [4, 5],
+  4: [],
+  5: [6],
+  6: [],
+};
 
-/**
- * Builds a max‑heap from an arbitrary array.
- */
-function buildMaxHeap<T>(arr: T[], compare: (a: T, b: T) => number): void {
-  const size = arr.length;
-  // Start from the last non‑leaf node and sink each one.
-  for (let i = Math.floor(size / 2) - 1; i >= 0; i--) {
-    sink(arr, i, size, compare);
+console.log(bfsVisitOrder(graph, 1));
+// → [1, 2, 3, 4, 5, 6]
+
+console.log(bfsShortestPath(graph, 1, 6));
+// → [1, 3, 5, 6]
+type NodeId = string | number;
+
+// Generic graph implemented as Map<id, array of ids>
+export type GenericGraph<T> = Map<T, T[]>;
+
+export function genericBfsVisitOrder<T>(
+  graph: GenericGraph<T>,
+  start: T
+): T[] {
+  const queue: T[] = [start];
+  const visited: Set<T> = new Set([start]);
+  const order: T[] = [];
+
+  while (queue.length) {
+    const cur = queue.shift()!;
+    order.push(cur);
+    for (const neighbour of graph.get(cur) ?? []) {
+      if (!visited.has(neighbour)) {
+        visited.add(neighbour);
+        queue.push(neighbour);
+      }
+    }
   }
+  return order;
 }
+const g: GenericGraph<string> = new Map([
+  ["A", ["B", "C"]],
+  ["B", ["D"]],
+  ["C", ["D", "E"]],
+  ["D", []],
+  ["E", ["F"]],
+  ["F", []],
+]);
 
-/**
- * Heap‑sort: sorts `arr` in ascending order.
- */
-export function heapSort<T>(arr: T[], compare?: (a: T, b: T) => number): void {
-  // Default to numeric ascending for numbers; for a generic compare,
-  // provide a custom function.
-  const cmp = compare ?? ((a, b) => (a as any) > (b as any) ? 1 : (a < b ? -1 : 0));
-
-  // 1️⃣ Turn the array into a max‑heap.
-  buildMaxHeap(arr, cmp);
-
-  // 2️⃣ Repeatedly pull the max element to its final slot.
-  for (let heapSize = arr.length; heapSize > 1; heapSize--) {
-    // The current max is at 0 – move it to the end.
-    swap(arr, 0, heapSize - 1);
-
-    // Restore the heap property on the reduced heap.
-    sink(arr, 0, heapSize - 1, cmp);
-  }
-}
-const data = [3, 1, 4, 1, 5, 9, 2, 6];
-heapSort(data);          // data is now [1, 1, 2, 3, 4, 5, 6, 9]
-const unsorted = [10, 4, 7, 3, 8, 2];
-heapSort(unsorted);
-console.log(unsorted); // [2, 3, 4, 7, 8, 10]
+console.log(genericBfsVisitOrder(g, "A"));
+// → ["
