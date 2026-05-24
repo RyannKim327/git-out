@@ -1,33 +1,38 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-const head: ListNode<number> = { val: 1, next: null };
-head.next = { val: 2, next: null };
-head.next.next = { val: 3, next: null };      // 1 → 2 → 3
-function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+/**
+ * Counting sort for an array of integers.
+ *
+ * @param arr The array to sort – an array of numbers.
+ * @returns A new array containing the sorted values.
+ */
+export function countingSort(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow?.next ?? null;   // advance by 1
-    fast = fast.next.next;       // advance by 2
+  // Locate the bounds of the values.
+  let min = arr[0];
+  let max = arr[0];
+  for (let i = 1; i < arr.length; i++) {
+    const val = arr[i];
+    if (val < min) min = val;
+    if (val > max) max = val;
   }
 
-  return slow; // could be null if the list was empty
-}
-if (fast !== null) {            // original list had even length
-  slow = slow?.next ?? null;    // bump to the second middle
-}
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-}
+  const range = max - min + 1;          // Number of distinct possible values
+  const count = new Array<number>(range).fill(0);
 
-const list: ListNode<number> | null = {
-  val: 10,
-  next: { val: 20, next: { val: 30, next: null } },
-};
+  // Count occurrences of each integer.
+  for (const value of arr) {
+    count[value - min]++;               // Shift by min so index 0 stays valid
+  }
 
-console.log(middle(list)?.val); // prints 20
+  // Overwrite the input array (or build a new one) using the counts.
+  const sorted: number[] = [];
+  for (let i = 0; i < range; i++) {
+    const currentVal = i + min;
+    const occ = count[i];
+    for (let j = 0; j < occ; j++) {
+      sorted.push(currentVal);
+    }
+  }
+
+  return sorted;
+}
