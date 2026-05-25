@@ -1,122 +1,86 @@
-// A "comparable" type: any that supports the < and > operators.
-type Comparable = number | string | { compareTo(other: this): number };
+// A graph is represented as an adjacency list.
+//   keys  – node identifiers (strings, numbers, etc.)
+//   values – array of keys this node points to
+type Graph = Record<string, string[]>
 
-interface INode<K extends Comparable, V> {
-  keys: K[];
-  values: V[];      // same length as keys
-  children: (INode<K, V> | null)[];
-  leaf: boolean;
+export function topologicalSortKahn(g: Graph): string[] {
+  // Compute indegree for every node
+  const indegree = new Map<string, number>()
+  const nodes = new Set<string>(Object.keys(g))
+
+  // initialise all counts to 0
+  for (const v of nodes) indegree.set(v, 0)
+
+  // For each edge u → v, bump indegree of v
+  for (const u of Object.keys(g)) {
+    for (const v of g[u]) {
+      // if the neighbour isn't in `nodes` create an entry,
+      // this covers edges to nodes that have no outgoing edges
+      if (!indegree.has(v)) indegree.set(v, 0)
+      indegree.set(v, (indegree.get(v) ?? 0) + 1)
+      nodes.add(v)          // ensure isolated nodes are recorded
+    }
+  }
+
+  // enqueue all nodes that have indegree 0
+  const queue: string[] = [...indegree].filter(([_, d]) => d === 0).map(([n]) => n)
+  const result: string[] = []
+
+  while (queue.length) {
+    const n = queue.shift()!
+    result.push(n)
+
+    // For each outgoing edge n → m
+    for (const m of g[n] ?? []) {
+      indegree.set(m, (indegree.get(m) ?? 0) - 1)
+      if (indegree.get(m) === 0) queue.push(m)
+    }
+  }
+
+  if (result.length !== nodes.size) {
+    throw new Error('Graph has at least one cycle – topological sort impossible')
+  }
+  return result
 }
-const compare = <K extends Comparable>(a: K, b: K): number => {
-  if (typeof a === 'number' || typeof a === 'string')
-    return a < b ? -1 : a > b ? 1 : 0;
-  return a.compareTo(b);
-};
+export function topologicalSortDFS(g: Graph): string[] {
+  const result: string[] = []          // hold the ordering (reverse order)
+  const visited = new Set<string>()    // permanently visited nodes
+  const temp    = new Set<string>()    // nodes that are on the current recursion stack
 
-const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
-  // binary search – returns the position where key should be inserted
-  let low = 0, high = arr.length - 1;
-  while (low <= high) {
-    const mid = (low + high) >> 1;
-    const cmp = compare(arr[mid], key);
-    if (cmp === 0) return mid;
-    if (cmp < 0) low = mid + 1; else high = mid - 1;
-  }
-  return low; // insertion point
-};
-class BTreeNode<K extends Comparable, V> implements INode<K, V> {
-  keys: K[] = [];
-  values: V[] = [];
-  children: (BTreeNode<K, V> | null)[] = [];
-  leaf: boolean;
-
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
-}
-export class BTree<K extends Comparable, V> {
-  readonly order: number;          // minimum number of keys per node (t)
-  private root: BTreeNode<K, V>;
-
-  constructor(order: number) {
-    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
-    this.order = order;
-    this.root = new BTreeNode<K, V>(true);   // start with a leaf
-  }
-
-  /* ---------- Public API ---------- */
-  public search(key: K): V | undefined {
-    return this.searchNode(this.root, key);
-  }
-
-  public insert(key: K, value: V): void {
-    if (this.root.keys.length === 2 * this.order - 1) {
-      // root is full – split it
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this.splitChild(newRoot, 0);
-      this.root = newRoot;
+  const visit = (node: string) => {
+    if (temp.has(node)) {
+      throw new Error(`Cycle detected – node '${node}' revisited on the same path`)
     }
-    this.insertNonFull(this.root, key, value);
-  }
+    if (!visited.has(node)) {
+      temp.add(node)
 
-  public delete(key: K): void {
-    this.deleteNode(this.root, key);
-    // shrink the root if it becomes empty
-    if (!this.root.leaf && this.root.keys.length === 0) {
-      this.root = this.root.children[0]!;
-    }
-  }
-
-  /* ---------- Traversal helpers (optional) ---------- */
-  public *inOrder(): IterableIterator<[K, V]> {
-    yield* this.inOrderNode(this.root);
-  }
-
-  /* ---------- Internal helpers ---------- */
-  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
-    const i = findIndex(node.keys, key);
-    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
-      return node.values[i];
-    }
-    if (node.leaf) return undefined;
-    return this.searchNode(node.children[i]!, key);
-  }
-
-  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
-    let i = node.keys.length - 1;
-    if (node.leaf) {
-      // Insert in sorted order
-      const pos = findIndex(node.keys, key);
-      node.keys.splice(pos, 0, key);
-      node.values.splice(pos, 0, value);
-    } else {
-      // Descend to the right child
-      const pos = findIndex(node.keys, key);
-      const child = node.children[pos]!;
-      if (child.keys.length === 2 * this.order - 1) {
-        this.splitChild(node, pos);
-        // After split, the middle key moves up
-        if (compare(key, node.keys[pos]) > 0) pos++;
+      // Recurse on all neighbours
+      for (const m of g[node] ?? []) {
+        visit(m)
       }
-      this.insertNonFull(node.children[pos]!, key, value);
+
+      temp.delete(node)
+      visited.add(node)
+      result.push(node)               // push after visiting all descendants
     }
   }
 
-  private splitChild(parent: BTreeNode<K, V>, idx: number) {
-    const t = this.order;
-    const y = parent.children[idx]!;               // node to split
-    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
+  // A graph can have disjoint components – start from every node.
+  for (const node of Object.keys(g)) {
+    if (!visited.has(node)) visit(node)
+  }
 
-    // Move upper half of y's keys/values to z
-    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
-    z.values = y.values.splice(t, t - 1);
+  // `result` is built in reverse; flip it to get a valid topological order
+  return result.reverse()
+}
+const example: Graph = {
+  a: ['b', 'c'],
+  b: ['d'],
+  c: ['d'],
+  d: []
+}
 
-    if (!y.leaf) {
-      z.children = y.children.splice(t, t);         // children t … 2t-1
-    }
-
-    // Insert z into parent
-    parent.children.splice(idx + 1, 0, z);
-    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
-    parent.values.splice(idx
+console.log('Kahn   →', topologicalSortKahn(example))
+console.log('DFS    →', topologicalSortDFS(example))
+Kahn   → [ 'a', 'b', 'c', 'd' ]
+DFS    → [ 'a', 'b', 'c', 'd' ]
