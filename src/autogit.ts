@@ -1,48 +1,85 @@
-/**
- * Checks whether a given integer is a prime number.
- * @param n - The number to test. Must be an integer.
- * @returns `true` if `n` is prime, otherwise `false`.
- */
-export function isPrime(n: number): boolean {
-  // Reject non‑integers, negatives, and the few small non‑prime numbers
-  if (!Number.isInteger(n) || n <= 1) return false;
-  if (n <= 3) return true;           // 2 and 3 are prime
-
-  // Any even number > 2 or divisible by 3 can't be prime
-  if (n % 2 === 0 || n % 3 === 0) return false;
-
-  // 6k ± 1 optimization:
-  // For numbers > 3, all primes are of the form 6k ± 1
-  // We check divisors 5, 7, 11, 13, 17, …
-  let i = 5;
-  const limit = Math.floor(Math.sqrt(n));
-
-  while (i <= limit) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-    i += 6;
-  }
-
-  return true;
+// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
+export interface TreeNode<T> {
+  value: T;
+  left?: TreeNode<T>;   // optional because a leaf might not have children
+  right?: TreeNode<T>;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(15));  // false
-console.log(isPrime(29));  // true
+/**
+ * Counts leaf nodes (nodes with no children) in a binary tree.
+ *
+ * @param root - root node of the tree
+ * @returns number of leaf nodes
+ */
+export function countLeavesRec<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                 // empty subtree -> 0 leaves
 
-// Handle non‑integers gracefully
-console.log(isPrime(7.5)); // false
-export function isPrimeBigInt(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
+  const isLeaf = !root.left && !root.right;
+  if (isLeaf) return 1;                // this node is a leaf
 
-  if (n % 2n === 0n || n % 3n === 0n) return false;
+  // otherwise add leaves of the left and right sub‑trees
+  return countLeavesRec(root.left) + countLeavesRec(root.right);
+}
+/**
+ * Iterative breadth‑first traversal using a queue.
+ * Does the same thing as the recursive version but avoids recursion depth limits.
+ */
+export function countLeavesIter<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-  let i = 5n;
-  const limit = BigInt(Math.floor(Math.sqrt(Number(n)))); // careful: can't use sqrt on bigint directly
+  let leafCount = 0;
+  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
 
-  while (i <= limit) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-    i += 6n;
+  while (queue.length) {
+    const node = queue.shift()!;         // dequeue
+
+    // If the node has no children, it’s a leaf
+    if (!node.left && !node.right) {
+      leafCount += 1;
+    } else {
+      // enqueue any existing children
+      if (node.left) queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
 
-  return true;
+  return leafCount;
+}
+function buildSampleTree(): TreeNode<number> {
+  //            1
+  //          /   \
+  //         2     3
+  //        / \     \
+  //       4   5     6
+  return {
+    value: 1,
+    left: {
+      value: 2,
+      left: { value: 4 },
+      right: { value: 5 }
+    },
+    right: {
+      value: 3,
+      right: { value: 6 }
+    }
+  };
+}
+
+const tree = buildSampleTree();
+console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
+console.log('Iterative:', countLeavesIter(tree)); // → 3
+function leafMetrics<T>(root?: TreeNode<T>) {
+  if (!root) return { leafCount: 0, leafDepthSum: 0 };
+
+  // helper that returns (#leaves, sum of leaf depths)
+  function helper(node: TreeNode<T>, depth: number): [number, number] {
+    if (!node.left && !node.right) {
+      return [1, depth];
+    }
+    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
+    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
+    return [left[0] + right[0], left[1] + right[1]];
+  }
+
+  const [cnt, depthSum] = helper(root, 0);
+  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
 }
