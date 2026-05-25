@@ -1,48 +1,33 @@
-// fetch-posts.ts
-type Post = {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-};
+/**
+ * Returns `true` if the supplied value is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores all non‑alphanumeric characters
+ *
+ * @example
+ * isPalindrome("A man, a plan, a canal: Panama") // → true
+ * isPalindrome("Madam")                          // → true
+ * isPalindrome("Hello")                          // → false
+ */
+export function isPalindrome(str: string): boolean {
+  // Keep only alphanumeric characters and lower‑case the rest.
+  const cleaned = str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 
-async function getPosts(): Promise<Post[]> {
-  const url = "https://jsonplaceholder.typicode.com/posts";
+  // Two‑pointer technique: compare chars from both ends.
+  let left = 0;
+  let right = cleaned.length - 1;
 
-  // Allow a “fetch” implementation to be swapped in, e.g. for tests
-  const fetcher = typeof globalThis.fetch === "function" ? globalThis.fetch : require("node-fetch");
-
-  try {
-    const resp = await fetcher(url, { method: "GET" });
-
-    if (!resp.ok) {
-      // Throw an error that includes the status code and message
-      throw new Error(`API error (${resp.status}): ${resp.statusText}`);
+  while (left < right) {
+    if (cleaned[left] !== cleaned[right]) {
+      return false;
     }
-
-    const data: unknown = await resp.json();
-
-    // Basic runtime type guard: make sure we really got an array of posts
-    if (!Array.isArray(data)) {
-      throw new Error("Response was not an array");
-    }
-
-    // We trust the API to provide the right shape and coerce
-    return data as Post[];
-  } catch (e) {
-    // Re‑throw with a bit more context if we’re not already an Error
-    if (!(e instanceof Error)) {
-      throw new Error(String(e));
-    }
-    throw e;
+    left++;
+    right--;
   }
-}
 
-// Demo: print the first five posts
-getPosts()
-  .then((posts) => {
-    posts.slice(0, 5).forEach((p) =>
-      console.log(`[${p.id}] ${p.title} (user ${p.userId})`)
-    );
-  })
-  .catch((err) => console.error("Failed to fetch posts:", err));
+  return true;
+}
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("Hello"));                         // false
