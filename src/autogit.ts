@@ -1,56 +1,42 @@
-diameter(root) = max(
-        diameter(left)                                       // purely left side
-      , diameter(right)                                      // purely right side
-      , height(left) + height(right) + 1                     // path that goes through root
-      )
-export class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
 /**
- * Return [height, diameter] of the subtree rooted at `node`.
+ * Insertion sort (in‑place).
  *
- * - `height` is the number of nodes on the longest path from `node` downwards.
- * - `diameter` is the maximum number of nodes on any path that intersects the subtree.
+ * @param arr The array you want to sort. It will be sorted *mutably*.
+ * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
+ * @returns The same array reference, now sorted.
  */
-function heightAndDiameter<T>(
-  node: TreeNode<T> | null
-): [number, number] {
-  if (!node) return [0, 0];          // height = 0, diameter = 0
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to JS native >/< when no comparator is supplied
+  const cmp = compare ?? ((a: T, b: T) => {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+  });
 
-  const [leftH, leftD]   = heightAndDiameter(node.left);
-  const [rightH, rightD] = heightAndDiameter(node.right);
+  // Work from index 1 to the end; index 0 is already “sorted” by itself
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  const height = 1 + Math.max(leftH, rightH);
-  // path that goes through this node uses left subtree, node itself, right subtree
-  const throughRoot = leftH + rightH + 1;
+    // Move elements that are greater than `key` one position to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-  const diameter = Math.max(leftD, rightD, throughRoot);
+    // Place `key` in its correct spot
+    arr[j + 1] = key;
+  }
 
-  return [height, diameter];
+  return arr;
 }
-export function diameter<T>(root: TreeNode<T> | null): number {
-  // Return diameter as number of nodes on the longest path.
-  // If you prefer “edges” instead, just return `diameter - 1`.
-  const [, dia] = heightAndDiameter(root);
-  return dia;
-}
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),
-    new TreeNode(5)
-  ),
-  new TreeNode(3,
-    null,
-    new TreeNode(6)
-  )
-);
+const nums = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
 
-console.log(diameter(root)); // → 5  (path 4‑2‑1‑3‑6)
-export function diameterInEdges<T>(root: TreeNode<T> | null): number {
-  const diaNodes = diameter(root);
-  return diaNodes > 0 ? diaNodes - 1 : 0;
-}
+// With a custom comparator: sort strings by length (descending)
+const fruits = ['apple', 'kiwi', 'banana', 'fig'];
+const byLengthDesc = (a: string, b: string) => b.length - a.length;
+console.log(insertionSort(fruits, byLengthDesc));
