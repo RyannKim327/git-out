@@ -1,65 +1,73 @@
 /**
- * Return the intersection of two arrays.
- * @param a  First array
- * @param b  Second array
- * @returns  An array containing every element that appears in **both** `a` and `b`
- *
- * The function is generic so it keeps the element type while still being type‑safe.
- * For primitive values a direct equality check (`===`) is sufficient.
+ * Return the median of two sorted numeric arrays.
+ * Complexity: O(m + n) time, O(1) extra space (besides a few indices).
  */
-export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
-  // Build a set from the larger array – that keeps lookup O(1).
-  // (You could skip the `max` decision; it's just a micro‑optimization.)
-  const [large, small] = a.length > b.length ? [a, b] : [b, a];
-  const set = new Set(large);
+export function medianOfTwoSortedLinear(a: number[], b: number[]): number {
+  const m = a.length, n = b.length;
+  const total = m + n;
+  const k = Math.floor((total - 1) / 2); // 0‑based index of first median element
 
-  // Pick elements of the smaller array that exist in the set.
-  return small.filter((x) => set.has(x));
-}
-const xs = [1, 2, 3, 4];
-const ys = [3, 4, 5, 6];
+  let i = 0, j = 0, count = 0;
+  let cur = 0, next = 0;
 
-console.log(intersection(xs, ys)); // → [3, 4]
-import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
-
-console.log(intersection(xs, ys)); // → [3, 4]
-interface Person {
-  id: number;
-  name: string;
-}
-
-const a: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-];
-
-const b: Person[] = [
-  { id: 2, name: 'Bob'   },
-  { id: 3, name: 'Carol' },
-  { id: 4, name: 'Dan'   },
-];
-
-const key = (p: Person) => p.id;
-
-function intersectionBy<T, K extends string | number | symbol>(
-  a: readonly T[],
-  b: readonly T[],
-  getKey: (item: T) => K
-): T[] {
-  const map = new Map<K, T>();
-  for (const item of a) {
-    map.set(getKey(item), item);
+  while (count <= k) {
+    // Pick the next smallest element
+    if (i < m && (j >= n || a[i] <= b[j])) {
+      cur = next;   // shift previous value
+      next = a[i++];
+    } else {
+      cur = next;
+      next = b[j++];
+    }
+    count++;
   }
-  const result: T[] = [];
-  for (const item of b) {
-    const key = getKey(item);
-    if (map.has(key)) {
-      result.push(item);
+
+  // If total is odd, median is next
+  if (total % 2 === 1) {
+    return next;
+  }
+
+  // If total is even, median is average of cur and next
+  return (cur + next) / 2;
+}
+/**
+ * Median of two sorted arrays in O(log(min(m,n))) time.
+ * Assumes a and b are sorted in non‑decreasing order.
+ */
+export function medianOfTwoSortedBinary(a: number[], b: number[]): number {
+  // Ensure a is the smaller array
+  if (a.length > b.length) return medianOfTwoSortedBinary(b, a);
+
+  let m = a.length, n = b.length;
+  let low = 0, high = m;
+  const halfLen = Math.floor((m + n + 1) / 2);
+
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);
+    const j = halfLen - i;
+
+    const aLeft  = (i === 0)  ? Number.NEGATIVE_INFINITY : a[i - 1];
+    const aRight = (i === m) ? Number.POSITIVE_INFINITY : a[i];
+    const bLeft  = (j === 0)  ? Number.NEGATIVE_INFINITY : b[j - 1];
+    const bRight = (j === n) ? Number.POSITIVE_INFINITY : b[j];
+
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // Partitions are correct
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
+      }
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      high = i - 1; // move left in a
+    } else {
+      low = i + 1; // move right in a
     }
   }
-  return result;
-}
 
-console.log(intersectionBy(a, b, key));
-// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
+  throw new Error('Input arrays are not sorted or sizes are incorrect.');
+}
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
+
+console.log(medianOfTwoSortedLinear(arr1, arr2));   // 8
+console.log(medianOfTwoSortedBinary(arr1, arr2));    // 8
