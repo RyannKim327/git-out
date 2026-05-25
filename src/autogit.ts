@@ -1,40 +1,88 @@
-const fruits = ['apple', 'banana', 'cherry', 'banana'];
+// ---------- Graph data ----------------------------------------------------
+type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
 
-const withoutBanana = fruits.filter(f => f !== 'banana');
+// ---------- Tarjan's SCC implementation ----------------------------------
+class TarjanSCC {
+  private graph: Graph;            // the adjacency list
+  private index = 0;               // incremental index counter
+  private indices: Map<string, number> = new Map(); // node → index
+  private lowlink: Map<string, number> = new Map(); // node → lowlink
 
-console.log(withoutBanana); // ['apple', 'cherry']
-// Remove the first object with id === 42
-const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
-const itemsWithout42 = items.filter(item => item.id !== 42);
-const numbers = [10, 20, 30, 40];
-const indexToRemove = 2; // 30
+  private stack: string[] = [];    // nodes currently on the recursion stack
+  private onStack: Set<string> = new Set();
 
-// splice(start, deleteCount)
-numbers.splice(indexToRemove, 1);
+  private result: string[][] = []; // list of SCCs found
 
-console.log(numbers); // [10, 20, 40]
-const arr = [1, 2, 3, 4, 5];
-const cond = (x: number) => x % 2 === 0; // remove evens
+  constructor(g: Graph) {
+    this.graph = g;
+  }
 
-// Find first match and splice it out
-const idx = arr.findIndex(cond);
-if (idx !== -1) arr.splice(idx, 1);
+  public run(): string[][] {
+    // start DFS from every undiscovered node
+    for (const node of Object.keys(this.graph)) {
+      if (!this.indices.has(node)) {
+        this.strongConnect(node);
+      }
+    }
+    return this.result;
+  }
 
-console.log(arr); // [1, 3, 5]
-// Remove the first occurrence of a value
-export function removeFirst<T>(arr: T[], target: T): T[] {
-  const idx = arr.findIndex(v => v === target);
-  if (idx === -1) return [...arr]; // not found, return copy
-  const copy = [...arr];
-  copy.splice(idx, 1);
-  return copy; // or return copy and let caller decide
-}
+  private strongConnect(v: string) {
+    // set the depth index for v
+    this.indices.set(v, this.index);
+    this.lowlink.set(v, this.index);
+    this.index += 1;
 
-// Remove by index (mutable)
-export function removeAt<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1);
+    this.stack.push(v);
+    this.onStack.add(v);
+
+    // consider successors of v
+    for (const w of this.graph[v] ?? []) {
+      if (!this.indices.has(w)) {
+        // success: DFS tree edge
+        this.strongConnect(w);
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.lowlink.get(w)!
+        ));
+      } else if (this.onStack.has(w)) {
+        // back edge – strengthen lowlink
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.indices.get(w)!
+        ));
+      }
+    }
+
+    // If v is the root of an SCC, pop the stack
+    if (this.lowlink.get(v) === this.indices.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = this.stack.pop()!;
+        this.onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      this.result.push(component);
+    }
   }
 }
-// Keep everything except index 3
-const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
+const graph: Graph = {
+  '0': ['1'],
+  '1': ['2', '3'],
+  '2': ['0', '4'],
+  '3': ['4'],
+  '4': ['5'],
+  '5': ['3', '6'],
+  '6': ['7'],
+  '7': ['5'],
+};
+
+const tarjan = new TarjanSCC(graph);
+const sccs = tarjan.run();
+
+console.log('Strongly connected components:');
+sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
+Strongly connected components:
+0: [6, 7, 5]
+1: [0, 1, 2, 4, 3]
