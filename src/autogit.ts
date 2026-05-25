@@ -1,54 +1,93 @@
-/**
- * Returns the largest prime factor of n.
- * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
- * represent exactly. For bigger values use BigInt (see the comment below).
+/*  Boyer‑Moore string search
+ *  ----------------------------------
+ *  – pattern:  the string you’re looking for
+ *  – text:     the larger string you scan
+ *  Returns:    an array of the starting indices where pattern occurs
  */
-function largestPrimeFactor(n: number): number {
-  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
 
-  let remaining = n;
+type BMResult = number[];
 
-  // Deal with factor 2 first – it’s the only even prime
-  while (remaining % 2 === 0) {
-    remaining = remaining / 2;
-  }
-  let lastFactor = 2;
+function boyerMoore(text: string, pattern: string): BMResult {
+  if (pattern.length === 0) return [];
+  const badChar = buildBadCharShift(pattern);
+  const goodSuffix = buildGoodSuffixShift(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
 
-  // Now we only need to test odd numbers.
-  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
-  for (let odd = 3; odd * odd <= remaining; odd += 2) {
-    while (remaining % odd === 0) {
-      remaining = remaining / odd;
-      lastFactor = odd;
+  let s = 0;                  // alignment of pattern with text
+  while (s <= n - m) {        // slide pattern over text
+    let j = m - 1;            // right‑most pattern position
+
+    // compare from right to left
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {                  // whole pattern matched
+      result.push(s);
+      s += goodSuffix[0];          // shift using good‑suffix
+    } else {
+      // bad‑character rule
+      const badShift = j - badChar[text[s + j]] ?? j + 1;
+      // good‑suffix rule
+      const goodShift = goodSuffix[j + 1];
+      s += Math.max(badShift, goodShift);
     }
   }
-
-  // If what’s left is > 1, it’s a prime itself and is larger than any
-  // factor we already found, so it becomes the biggest prime factor.
-  return remaining > 1 ? remaining : lastFactor;
+  return result;
 }
-console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
-console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
-console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) return n;
 
-  let remaining = n;
-  let lastFactor = 2n;
-
-  // factor 2
-  while (remaining % 2n === 0n) {
-    remaining /= 2n;
-    lastFactor = 2n;
+/* -------------  Bad‑character table  ----------------- */
+function buildBadCharShift(pattern: string): Record<string, number> {
+  const lastPos: Record<string, number> = {};
+  for (let i = 0; i < pattern.length; i++) {
+    lastPos[pattern[i]] = i;          // last occurrence index
   }
+  return lastPos;
+}
 
-  // odd factors
-  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
-    while (remaining % odd === 0n) {
-      remaining /= odd;
-      lastFactor = odd;
+/* -------------  Good‑suffix table  ------------------- */
+function buildGoodSuffixShift(pattern: string): number[] {
+  const m = pattern.length;
+  const shift: number[] = new Array(m + 1).fill(m);
+  const border = new Array(m + 1).fill(0);
+  let i = m;
+  let j = m + 1;
+  border[i] = j;
+
+  // 1. Calculate borders (prefixes that are also suffixes)
+  while (i > 0) {
+    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
+      j = border[j];
     }
+    i--; j--; border[i] = j;
   }
 
-  return remaining > 1n ? remaining : lastFactor;
+  // 2. Compute shift table from borders
+  for (let k = 0; k < m; k++) {
+    shift[k] = m; // default shift is pattern length
+  }
+
+  let iIdx = 0;
+  while (iIdx < m) {
+    const g = m - border[iIdx];
+    shift[g] = Math.min(shift[g], border[iIdx] + 1);
+    iIdx++;
+  }
+
+  // 3. Fill the remaining entries (when no suffix matches)
+  let last = shift[1];
+  for (let q = 2; q <= m; q++) {
+    if (shift[q] === m) shift[q] = last;
+    else last = shift[q];
+  }
+
+  return shift;
 }
+
+/* -------------  Example use ----- */
+const haystack = "ABABACABABABCAB";
+const needle = "ABABC";
+
+console.log(boyerMoore(haystack, needle));  // => [5]
