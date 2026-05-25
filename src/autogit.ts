@@ -1,88 +1,65 @@
-// ---------- Graph data ----------------------------------------------------
-type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
+/**
+ * Recursively finds the index of `target` in a sorted array.
+ * Returns the index if found, otherwise –1.
+ *
+ * @param arr   A sorted array (ascending, no duplicates needed)
+ * @param target The value you're looking for
+ * @param left  The left boundary (inclusive)
+ * @param right The right boundary (exclusive)
+ */
+function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;            // no match
 
-// ---------- Tarjan's SCC implementation ----------------------------------
-class TarjanSCC {
-  private graph: Graph;            // the adjacency list
-  private index = 0;               // incremental index counter
-  private indices: Map<string, number> = new Map(); // node → index
-  private lowlink: Map<string, number> = new Map(); // node → lowlink
+  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
 
-  private stack: string[] = [];    // nodes currently on the recursion stack
-  private onStack: Set<string> = new Set();
+  const cmp = arr[mid] === target
+    ? 0
+    : arr[mid] < target
+      ? -1
+      : 1;
 
-  private result: string[][] = []; // list of SCCs found
-
-  constructor(g: Graph) {
-    this.graph = g;
-  }
-
-  public run(): string[][] {
-    // start DFS from every undiscovered node
-    for (const node of Object.keys(this.graph)) {
-      if (!this.indices.has(node)) {
-        this.strongConnect(node);
-      }
-    }
-    return this.result;
-  }
-
-  private strongConnect(v: string) {
-    // set the depth index for v
-    this.indices.set(v, this.index);
-    this.lowlink.set(v, this.index);
-    this.index += 1;
-
-    this.stack.push(v);
-    this.onStack.add(v);
-
-    // consider successors of v
-    for (const w of this.graph[v] ?? []) {
-      if (!this.indices.has(w)) {
-        // success: DFS tree edge
-        this.strongConnect(w);
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.lowlink.get(w)!
-        ));
-      } else if (this.onStack.has(w)) {
-        // back edge – strengthen lowlink
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.indices.get(w)!
-        ));
-      }
-    }
-
-    // If v is the root of an SCC, pop the stack
-    if (this.lowlink.get(v) === this.indices.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = this.stack.pop()!;
-        this.onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      this.result.push(component);
-    }
-  }
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursive(arr, target, mid + 1, right)
+      : binarySearchRecursive(arr, target, left, mid);
 }
-const graph: Graph = {
-  '0': ['1'],
-  '1': ['2', '3'],
-  '2': ['0', '4'],
-  '3': ['4'],
-  '4': ['5'],
-  '5': ['3', '6'],
-  '6': ['7'],
-  '7': ['5'],
-};
+const nums = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchRecursive(nums, 7));  // → 3
+console.log(binarySearchRecursive(nums, 4));  // → -1
+function binarySearchRecursiveCustom<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;
 
-const tarjan = new TarjanSCC(graph);
-const sccs = tarjan.run();
+  const mid = left + ((right - left) >> 1);
+  const cmp = compare(arr[mid], target);
 
-console.log('Strongly connected components:');
-sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
-Strongly connected components:
-0: [6, 7, 5]
-1: [0, 1, 2, 4, 3]
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
+      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
+}
+interface Person { age: number; name: string; }
+const people: Person[] = [
+  { age: 22, name: 'Alice' },
+  { age: 30, name: 'Bob' },
+  { age: 45, name: 'Charlie' },
+];
+const ageToFind = 30;
+const idx = binarySearchRecursiveCustom(
+  people,
+  { age: ageToFind, name: '' },
+  (a, b) => a.age - b.age
+);
+console.log(idx); // → 1
