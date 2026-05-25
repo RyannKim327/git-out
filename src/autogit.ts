@@ -1,42 +1,41 @@
-/**
- * Performs an in‑place Shell sort.
- * @param arr - Array of numbers (or any comparable type).
- * @param compareFn - Optional function to decide order.
- *                     It should return <0 if a < b, >0 if a > b.
- * @returns The same array sorted.
- */
-export function shellSort<T>(
-  arr: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
-): T[] {
-  const n = arr.length;
-  // Start with a big gap, then reduce it.
-  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
-  let gap = 1;
-  while (gap < n / 3) {
-    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
+function charCount(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
   }
-
-  while (gap >= 1) {
-    // For each element from index `gap` to end,
-    // perform an insertion sort on elements that are `gap` apart.
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-    gap = Math.floor(gap / 3); // shrink gap
-  }
-
-  return arr;
+  return count;
 }
-import { shellSort } from './shellSort';
+function charCountSplit(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  return str.split(target).length - 1;
+}
+function charCountRegex(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  const re = new RegExp(escapeRegExp(target), 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
 
-const data = [23, 12, 1, 8, 34, 54, 2, 3];
-console.log('Before:', data);
-shellSort(data);
-console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function charCountReduce(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  return [...str].reduce((acc, ch) => acc + (ch === target ? 1 : 0), 0);
+}
+function charCountUtf16(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  const targetCode = target.charCodeAt(0);
+  let count = 0;
+  for (let i = 0, len = str.length; i < len; i++) {
+    if (str.charCodeAt(i) === targetCode) count++;
+  }
+  return count;
+}
+const text = "hello世界hello";
+
+console.log(charCount(text, 'l')); // 3
+console.log(charCountSplit(text, 'l')); // 3
+console.log(charCountRegex(text, 'l')); // 3
+console.log(charCountReduce(text, 'l')); // 3
