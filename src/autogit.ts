@@ -1,50 +1,56 @@
-class ListNode {
-  constructor(public val: number = 0, public next: ListNode | null = null) {}
-}
-
 /**
- * Return the intersection node of two singly linked lists, or null if they
- * never meet.
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
  */
-function getIntersectionNode(
-  headA: ListNode | null,
-  headB: ListNode | null
-): ListNode | null {
-  // First guard for trivial cases.
-  if (!headA || !headB) return null;
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-  // Two pointers that start at the heads of the two lists.
-  let pA: ListNode | null = headA;
-  let pB: ListNode | null = headB;
+  if (m === 0 || n < m) return result;       // edge cases
 
-  /**
-   * Each pointer walks until it reaches the end of its list, then jumps
-   * to the head of the other list. After at most two passes (`2 * (lenA + lenB)` steps)
-   * they will either collide (at the intersection) or simultaneously reach
-   * the tail (`null`) meaning the lists do not intersect.
-   */
-  while (pA !== pB) {
-    pA = pA === null ? headB : pA.next;
-    pB = pB === null ? headA : pB.next;
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
+
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
+
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
   }
 
-  return pA; // either the intersection node or null
-}
-// Helper to build a list from an array
-function build(arr: number[]): ListNode | null {
-  let dummy = new ListNode(-1);
-  let cur = dummy;
-  for (const v of arr) {
-    cur.next = new ListNode(v);
-    cur = cur.next;
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
+    }
   }
-  return dummy.next;
+
+  return result;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-// Build two lists that intersect
-const shared = build([8, 9, 10]);
-
-const a1 = new ListNode(3, new ListNode(7, shared));
-const b1 = new ListNode(99, new ListNode(1, shared));
-
-console.log(getIntersectionNode(a1, b1) === shared); // true
+console.log(rabinKarp(text, pattern)); // → [0, 7]
