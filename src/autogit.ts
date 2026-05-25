@@ -1,48 +1,32 @@
-function manualLength(str: string): number {
-  let count = 0;
-  for (const _ of str) {
-    count++;
-  }
-  return count;
-}
-console.log(manualLength('hello'));   // 5
-console.log(manualLength('👋🌍'));     // 2   (two emoji)
-function utf16Length(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charAt(i);
-    if (ch.length === 0) break;   // defensive: strings can be sliced
-    len++;
-  }
-  return len;
-}
-function codePointCount(str: string): number {
-  let i = 0;
-  let count = 0;
-  while (i < str.length) {
-    const code = str.codePointAt(i)!;
-    count++;
-    i += code > 0xffff ? 2 : 1;  // skip surrogate pair if present
-  }
-  return count;
-}
-console.log(codePointCount('hello'));     // 5
-console.log(codePointCount('👋🌍'));       // 2
-console.log(codePointCount('𝟙𝟚𝟛'));       // 3 (mathematical bold numbers)
-import GraphemeSplitter from 'grapheme-splitter';
+/**
+ * Returns the second largest value in the array, or `undefined` if it can’t exist.
+ * If you need the second *distinct* largest value, set `distinct = true`.
+ */
+function secondLargest(nums: number[], distinct = false): number | undefined {
+  if (nums.length < 2) return undefined;          // not enough numbers
 
-const splitter = new GraphemeSplitter();
+  // Fast path: sort once, pick the second element
+  // (O(n log n) – fine for small arrays)
+  if (!distinct) {
+    const sorted = [...nums].sort((a, b) => b - a); // descending
+    return sorted[1];
+  }
 
-function graphemeLength(str: string): number {
-  return splitter.splitGraphemes(str).length;
-}
-const tests = [
-  'hello',
-  '👋',
-  '👋👨‍👩‍👦', // family emoji composed of multiple code points and a zero‑width joiner
-  'a\u0301e',   // a + acute accent
-];
+  // O(n) single‑pass solution for distinct values
+  let max = Number.NEGATIVE_INFINITY;
+  let second = Number.NEGATIVE_INFINITY;
 
-for (const s of tests) {
-  console.log(`"${s}": manual=${manualLength(s)}, codePoint=${codePointCount(s)}`);
+  for (const n of nums) {
+    if (n > max) {
+      second = max;
+      max = n;
+    } else if (n < max && n > second) {
+      second = n;
+    }
+  }
+
+  return second === Number.NEGATIVE_INFINITY ? undefined : second;
 }
+console.log(secondLargest([5, 1, 7, 3]));     // → 5
+console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
+console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
