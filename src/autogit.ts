@@ -1,25 +1,48 @@
 /**
- * Returns true if the array is sorted in ascending order (strictly or non‑strictly).
- * @param arr array of items that can be compared with < and ===
- * @param allowDuplicates if true, values equal to the previous one are still OK
+ * Checks whether a given integer is a prime number.
+ * @param n - The number to test. Must be an integer.
+ * @returns `true` if `n` is prime, otherwise `false`.
  */
-function isSortedAscending<T>(arr: T[], allowDuplicates = false): boolean {
-  if (arr.length < 2) return true;           // 0 or 1 element is always sorted
+export function isPrime(n: number): boolean {
+  // Reject non‑integers, negatives, and the few small non‑prime numbers
+  if (!Number.isInteger(n) || n <= 1) return false;
+  if (n <= 3) return true;           // 2 and 3 are prime
 
-  for (let i = 1; i < arr.length; i++) {
-    const a = arr[i - 1];
-    const b = arr[i];
+  // Any even number > 2 or divisible by 3 can't be prime
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-    if (a > b) return false;                 // strictly smaller check
+  // 6k ± 1 optimization:
+  // For numbers > 3, all primes are of the form 6k ± 1
+  // We check divisors 5, 7, 11, 13, 17, …
+  let i = 5;
+  const limit = Math.floor(Math.sqrt(n));
 
-    if (!allowDuplicates && a === b) return false; // disallow equal values
+  while (i <= limit) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+    i += 6;
   }
+
   return true;
 }
-console.log(isSortedAscending([1, 2, 3]));          // true
-console.log(isSortedAscending([1, 3, 2]));          // false
-console.log(isSortedAscending([1, 1, 2], false));   // false
-console.log(isSortedAscending([1, 1, 2], true));    // true
-function isSortedAscendingFunctional<T>(arr: T[]): boolean {
-  return arr.length < 2 || arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(29));  // true
+
+// Handle non‑integers gracefully
+console.log(isPrime(7.5)); // false
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+
+  if (n % 2n === 0n || n % 3n === 0n) return false;
+
+  let i = 5n;
+  const limit = BigInt(Math.floor(Math.sqrt(Number(n)))); // careful: can't use sqrt on bigint directly
+
+  while (i <= limit) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+    i += 6n;
+  }
+
+  return true;
 }
