@@ -1,52 +1,63 @@
 /**
- * Interpolation Search
+ * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
  *
- * The algorithm only works on numeric, strictly‑sorted arrays.
- * It probes values near the expected position based on the key’s value,
- * so it runs “almost” as fast as binary search on uniformly distributed data.
- *
- * @param arr  Sorted numeric array (ascending)
- * @param key  Value to locate
- * @returns    Index of the key or -1 if not present
+ * @param src   the source array (contents will not be mutated)
+ * @param dst   the destination array into which the merged result goes
+ * @param l     left index (inclusive)
+ * @param m     middle index (left sub‑range ends here)
+ * @param r     right index (exclusive)
  */
-export function interpolationSearch(arr: number[], key: number): number {
-  if (arr.length === 0) return -1;
+function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
+    let i = l;      // iterator for left sub‑run
+    let j = m;      // iterator for right sub‑run
+    let k = l;      // iterator for destination
 
-  let low = 0;
-  let high = arr.length - 1;
-
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Guard against division by zero for the degenerate case
-    if (arr[high] === arr[low]) {
-      break; // all remaining elements equal; either match or no match
+    while (i < m && j < r) {
+        if (src[i] <= src[j]) {
+            dst[k++] = src[i++];
+        } else {
+            dst[k++] = src[j++];
+        }
     }
 
-    const pos =
-      low +
-      Math.floor(
-        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
-      );
-
-    const midVal = arr[pos];
-
-    if (midVal === key) return pos;
-
-    if (midVal < key) {
-      low = pos + 1;
-    } else {
-      high = pos - 1;
-    }
-  }
-
-  // If we exit the loop without hitting the key
-  return -1;
+    // copy any leftovers (at most one of the two while above will run)
+    while (i < m) dst[k++] = src[i++];
+    while (j < r) dst[k++] = src[j++];
 }
-const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
-const target = 56;
-const idx = interpolationSearch(data, target);
 
-if (idx !== -1) {
-  console.log(`Found ${target} at index ${idx}`);
-} else {
-  console.log(`${target} not in the array`);
+/**
+ * Iterative bottom‑up merge sort.
+ *
+ * @remarks
+ *   * `arr` is the array you want sorted—original remains untouched.
+ *   * Returns a new sorted array. If you want to sort in place you
+ *     could swap the references to the source and destination arrays
+ *     after each pass.
+ *
+ * @param arr  array to sort
+ * @returns    sorted copy of `arr`
+ */
+export function mergeSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    if (n <= 1) return arr.slice();   // trivial case
+
+    let src = arr.slice();            // working copy
+    let dst: T[] = new Array(n);      // auxiliary buffer
+
+    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
+    for (let run = 1; run < n; run <<= 1) {
+        // merge adjacent runs of current length
+        for (let start = 0; start < n; start += 2 * run) {
+            const mid = Math.min(start + run, n);
+            const end = Math.min(start + 2 * run, n);
+            merge(src, dst, start, mid, end);
+        }
+
+        // the freshly merged segments now sit in `dst`;
+        // swap src/dst to let next pass read the new data
+        [src, dst] = [dst, src];
+    }
+
+    // After the last pass `src` holds the sorted data (due to the final swap)
+    return src;
 }
