@@ -1,46 +1,57 @@
-// src/githubUsers.ts
-import fetch, { Response } from "node-fetch";
+/**
+ * Build the shift table used by BMH.
+ * Each entry tells us how far we can jump when the bad character
+ * (the character that mismatched) appears.
+ */
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-interface GithubUser {
-  login: string;
-  id: number;
-  avatar_url: string;
-  html_url: string;
-}
-
-async function fetchGithubUsers(
-  page: number = 1,
-  perPage: number = 10
-): Promise<GithubUser[]> {
-  const url = `https://api.github.com/users?since=${(page - 1) * perPage}`;
-
-  const resp: Response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "TypeScript-CLI",
-    },
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`GitHub API error ${resp.status}: ${errText}`);
+  // every character that does NOT appear in the pattern gets a full skip
+  // (m).  Characters *inside* the pattern get a smaller value.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern[i]] = m - 1 - i;
   }
 
-  const json = await resp.json();
-
-  // Type assertion – we know the API returns an array of GitHubUser objects
-  return json as GithubUser[];
+  return table;
 }
 
-async function main() {
-  try {
-    const users = await fetchGithubUsers(1, 5);
-    console.log("Top GitHub users:");
-    users.forEach((u) => console.log(`- ${u.login} (${u.html_url})`));
-  } catch (err) {
-    console.error("Something went wrong:", err);
+/**
+ * Classic Boyer‑Moore‑Horspool
+ *
+ * @param text    The text to search in
+ * @param pattern The pattern to find
+ * @returns Index of the first occurrence or -1
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern matches immediately
+  if (pattern.length > text.length) return -1;   // impossible
+
+  const shift = buildShiftTable(pattern);
+  const n = text.length;
+  const m = pattern.length;
+
+  let i = 0;          // index in text where we start aligning the pattern
+
+  while (i <= n - m) {
+    // start comparing from the end of the pattern
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return i;  // whole pattern matched
+    }
+
+    // bad character at text[i + m - 1]
+    const badChar = text[i + m - 1];
+    const skip = shift[badChar] ?? m; // default skip is m
+    i += skip;
   }
+
+  return -1; // not found
 }
-
-main().catch((e) => console.error(e));
-
+console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
+console.log(boyerMooreHorspool("hello world", "world")); // → 6
+console.log(boyerMooreHorspool("visible", "nope")); // → -1
