@@ -1,85 +1,74 @@
-// A minimal Node interface.  Feel free to add more fields (value, color, etc.).
-export interface TreeNode<T> {
-  value: T;
-  left?: TreeNode<T>;   // optional because a leaf might not have children
-  right?: TreeNode<T>;
-}
 /**
- * Counts leaf nodes (nodes with no children) in a binary tree.
+ * Quick‑sort implementation.
  *
- * @param root - root node of the tree
- * @returns number of leaf nodes
+ * @param arr   The array to sort – it will be mutated in place.
+ * @param compare Optional comparison function.  
+ *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+ *                If omitted, the default is a numeric comparison.
+ * @returns The same array reference, now sorted.
  */
-export function countLeavesRec<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                 // empty subtree -> 0 leaves
+export function quickSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to numeric comparison if no comparator is given
+  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
 
-  const isLeaf = !root.left && !root.right;
-  if (isLeaf) return 1;                // this node is a leaf
+  // Recursive helper – operates on the portion of the array
+  function qs(left: number, right: number): void {
+    if (left >= right) return;
 
-  // otherwise add leaves of the left and right sub‑trees
-  return countLeavesRec(root.left) + countLeavesRec(root.right);
-}
-/**
- * Iterative breadth‑first traversal using a queue.
- * Does the same thing as the recursive version but avoids recursion depth limits.
- */
-export function countLeavesIter<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+    // Partition returns the final index of the pivot
+    const pivotIndex = partition(left, right);
 
-  let leafCount = 0;
-  const queue: TreeNode<T>[] = [root];   // simple array as a FIFO queue
-
-  while (queue.length) {
-    const node = queue.shift()!;         // dequeue
-
-    // If the node has no children, it’s a leaf
-    if (!node.left && !node.right) {
-      leafCount += 1;
+    // Recurse on smaller side first to keep stack depth <= log₂(n)
+    if (pivotIndex - left < right - pivotIndex) {
+      qs(left, pivotIndex - 1);
+      qs(pivotIndex + 1, right);
     } else {
-      // enqueue any existing children
-      if (node.left) queue.push(node.left);
-      if (node.right) queue.push(node.right);
+      qs(pivotIndex + 1, right);
+      qs(left, pivotIndex - 1);
     }
   }
 
-  return leafCount;
-}
-function buildSampleTree(): TreeNode<number> {
-  //            1
-  //          /   \
-  //         2     3
-  //        / \     \
-  //       4   5     6
-  return {
-    value: 1,
-    left: {
-      value: 2,
-      left: { value: 4 },
-      right: { value: 5 }
-    },
-    right: {
-      value: 3,
-      right: { value: 6 }
-    }
-  };
-}
+  // Lomuto‑style partition – choose rightmost element as pivot
+  function partition(left: number, right: number): number {
+    const pivot = arr[right];
+    let i = left - 1;          // Place for swapping
 
-const tree = buildSampleTree();
-console.log('Recursive:', countLeavesRec(tree));   // → 3  (nodes 4,5,6)
-console.log('Iterative:', countLeavesIter(tree)); // → 3
-function leafMetrics<T>(root?: TreeNode<T>) {
-  if (!root) return { leafCount: 0, leafDepthSum: 0 };
-
-  // helper that returns (#leaves, sum of leaf depths)
-  function helper(node: TreeNode<T>, depth: number): [number, number] {
-    if (!node.left && !node.right) {
-      return [1, depth];
+    for (let j = left; j < right; j++) {
+      if (cmp(arr[j], pivot) <= 0) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
     }
-    const left = node.left ? helper(node.left, depth + 1) : [0, 0];
-    const right = node.right ? helper(node.right, depth + 1) : [0, 0];
-    return [left[0] + right[0], left[1] + right[1]];
+
+    // Move pivot to its final place
+    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
+    return i + 1;
   }
 
-  const [cnt, depthSum] = helper(root, 0);
-  return { leafCount: cnt, averageDepth: cnt ? depthSum / cnt : 0 };
+  qs(0, arr.length - 1);
+  return arr;
 }
+// Numbers – default numeric comparison is fine
+const nums = [34, 7, 23, 32, 5, 62];
+console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
+
+// Strings – need a string comparator  
+const words = ['banana', 'apple', 'cherry'];
+console.log(
+  quickSort(words, (a, b) => a.localeCompare(b))
+); // ['apple', 'banana', 'cherry']
+
+// Custom objects  
+interface Person { name: string; age: number; }
+const people: Person[] = [
+  { name: 'Anna', age: 27 },
+  { name: 'Bob', age: 22 },
+  { name: 'Clara', age: 35 },
+];
+
+quickSort(people, (a, b) => a.age - b.age);
+console.log(people);
+// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
