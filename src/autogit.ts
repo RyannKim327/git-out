@@ -1,57 +1,73 @@
-/**
- * Build the shift table used by BMH.
- * Each entry tells us how far we can jump when the bad character
- * (the character that mismatched) appears.
- */
-function buildShiftTable(pattern: string): Record<string, number> {
-  const table: Record<string, number> = {};
-  const m = pattern.length;
+class Node<T> {
+  constructor(
+    public val: T,
+    public next: Node<T> | null = null
+  ) {}
+}
+export class LinkedQueue<T> {
+  private head: Node<T> | null = null   // front––dequeue → head
+  private tail: Node<T> | null = null   // back––enqueue → tail
+  private _size = 0
 
-  // every character that does NOT appear in the pattern gets a full skip
-  // (m).  Characters *inside* the pattern get a smaller value.
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern[i]] = m - 1 - i;
+  /** Add an element to the back */
+  enqueue(item: T): void {
+    const newNode = new Node(item)
+    if (!this.tail) {
+      // First element: both head & tail point to it
+      this.head = this.tail = newNode
+    } else {
+      this.tail.next = newNode
+      this.tail = newNode
+    }
+    ++this._size
   }
 
-  return table;
-}
+  /** Remove and return the front element */
+  dequeue(): T {
+    if (!this.head) throw new Error('Queue is empty')
 
-/**
- * Classic Boyer‑Moore‑Horspool
- *
- * @param text    The text to search in
- * @param pattern The pattern to find
- * @returns Index of the first occurrence or -1
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;          // empty pattern matches immediately
-  if (pattern.length > text.length) return -1;   // impossible
-
-  const shift = buildShiftTable(pattern);
-  const n = text.length;
-  const m = pattern.length;
-
-  let i = 0;          // index in text where we start aligning the pattern
-
-  while (i <= n - m) {
-    // start comparing from the end of the pattern
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      return i;  // whole pattern matched
-    }
-
-    // bad character at text[i + m - 1]
-    const badChar = text[i + m - 1];
-    const skip = shift[badChar] ?? m; // default skip is m
-    i += skip;
+    const value = this.head.val
+    this.head = this.head.next
+    // If the queue becomes empty, clear tail as well
+    if (!this.head) this.tail = null
+    --this._size
+    return value
   }
 
-  return -1; // not found
+  /** Peek at front without removing */
+  peek(): T | null {
+    return this.head?.val ?? null
+  }
+
+  /** Number of elements */
+  size(): number { return this._size }
+
+  /** Convenience */
+  isEmpty(): boolean { return this._size === 0 }
 }
-console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
-console.log(boyerMooreHorspool("hello world", "world")); // → 6
-console.log(boyerMooreHorspool("visible", "nope")); // → -1
+const q = new LinkedQueue<number>()
+
+q.enqueue(10)
+q.enqueue(20)
+q.enqueue(30)
+
+console.log(q.peek()) // 10
+console.log(q.dequeue()) // 10
+console.log(q.dequeue()) // 20
+console.log(q.size()) // 1
+console.log(q.isEmpty()) // false
+
+q.dequeue() // 30
+console.log(q.isEmpty()) // true
+import { expect } from 'chai'
+const q = new LinkedQueue<string>()
+
+expect(q.isEmpty()).to.be.true
+q.enqueue('a')
+q.enqueue('b')
+expect(q.size()).to.equal(2)
+expect(q.peek()).to.equal('a')
+expect(q.dequeue()).to.equal('a')
+expect(q.dequeue()).to.equal('b')
+expect(() => q.dequeue()).to.throw('Queue is empty')
+head ──► … ──► tail
