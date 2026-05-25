@@ -1,52 +1,42 @@
-// A minimal node type – adjust if your list uses a different shape
-interface ListNode {
-  val: number | string;   // whatever data type you use
-  next: ListNode | null;
-}
-
 /**
- * Returns true iff the list starting at `head` is a palindrome.
- * Uses O(n) time and O(n) auxiliary space.
+ * Performs an in‑place Shell sort.
+ * @param arr - Array of numbers (or any comparable type).
+ * @param compareFn - Optional function to decide order.
+ *                     It should return <0 if a < b, >0 if a > b.
+ * @returns The same array sorted.
  */
-function isPalindrome(head: ListNode | null): boolean {
-  // 1. Build an array with the list's values
-  const vals: (number | string)[] = [];
-  for (let cur = head; cur; cur = cur.next) {
-    vals.push(cur.val);
+export function shellSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+): T[] {
+  const n = arr.length;
+  // Start with a big gap, then reduce it.
+  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
+  let gap = 1;
+  while (gap < n / 3) {
+    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
   }
 
-  // 2. Check against a reversed copy
-  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
-    if (vals[i] !== vals[j]) {
-      return false;
+  while (gap >= 1) {
+    // For each element from index `gap` to end,
+    // perform an insertion sort on elements that are `gap` apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-  }
-  return true;
-}
-function isPalindrome(head: ListNode | null): boolean {
-  // Find middle (slow goes 1 step, fast goes 2 steps)
-  let slow = head, fast = head;
-  while (fast?.next && fast.next.next) {
-    slow = slow!.next!;
-    fast = fast.next.next;
+    gap = Math.floor(gap / 3); // shrink gap
   }
 
-  // Reverse the second half of the list
-  let prev: ListNode | null = null;
-  let curr = slow?.next ?? null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-
-  // Compare first half and reversed second half
-  let p1 = head, p2 = prev;
-  while (p2) {           // only need to go through the second half
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
+  return arr;
 }
+import { shellSort } from './shellSort';
+
+const data = [23, 12, 1, 8, 34, 54, 2, 3];
+console.log('Before:', data);
+shellSort(data);
+console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
