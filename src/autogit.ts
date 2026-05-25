@@ -1,56 +1,54 @@
 /**
- * Rabin‑Karp string search.
- * @param text    The string to be searched.
- * @param pattern The pattern to search for.
- * @returns      An array containing the starting indices where `pattern`
- *               occurs in `text`. If the pattern is not found, returns [].
+ * Area from base and height.
+ * @param base  - Base length (any positive number)
+ * @param height - Height length (any positive number)
+ * @returns Triangle area
  */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  const result: number[] = [];
-
-  if (m === 0 || n < m) return result;       // edge cases
-
-  /* ---- constants ---- */
-  const prime = 1000000007;                   // large prime modulus
-  const base = 256;                           // number of possible char values
-
-  /* ---- pre‑compute base^(m-1) % prime ---- */
-  let highestPower = 1;
-  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
-
-  /* ---- first window hash ---- */
-  let patternHash = 0;
-  let textHash = 0;
-  for (let i = 0; i < m; i++) {
-    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
-    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
+function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('Base and height must be positive numbers.');
   }
-
-  /* ---- slide through text ---- */
-  for (let i = 0; i <= n - m; i++) {
-    /* match: compare hashes first, then do a full string compare to avoid false positives */
-    if (patternHash === textHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
-      }
-    }
-
-    /* roll: compute hash for next window */
-    if (i < n - m) {
-      // Remove leading character
-      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
-      // Avoid negative
-      if (textHash < 0) textHash += prime;
-      // Add trailing character
-      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
-    }
-  }
-
-  return result;
+  return (base * height) / 2;
 }
-const text = "abracadabra";
-const pattern = "abra";
+const area = areaBaseHeight(10, 5); // 25
+console.log(`Area = ${area}`);      // Area = 25
+/**
+ * Deal with three side lengths.
+ * @param a - length of side a
+ * @param b - length of side b
+ * @param c - length of side c
+ * @returns Triangle area
+ */
+function areaBySides(a: number, b: number, c: number): number {
+  // Simple validity check – the sides must satisfy the triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The given sides do not form a valid triangle.');
+  }
 
-console.log(rabinKarp(text, pattern)); // → [0, 7]
+  const s = (a + b + c) / 2;                 // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
+}
+const areaHeron = areaBySides(3, 4, 5); // 6
+console.log(`Area (Heron) = ${areaHeron}`);
+/**
+ * Area from two sides and an included angle (in degrees or radians).
+ * @param side1   - length of one side
+ * @param side2   - length of the other side
+ * @param angle   - included angle (in degrees)
+ * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
+ * @returns Triangle area
+ */
+function areaFromSidesAndAngle(
+  side1: number,
+  side2: number,
+  angle: number,
+  inRadians = false
+): number {
+  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
+
+  const rad = inRadians ? angle : (angle * Math.PI) / 180;
+  return (side1 * side2 * Math.sin(rad)) / 2;
+}
+const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
+console.log(`Area from two sides & angle = ${areaMixed}`);
