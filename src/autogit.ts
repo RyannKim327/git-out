@@ -1,112 +1,97 @@
-// ---------- 1️⃣  Node definition ----------
-class Node<T> {
-  /** The stored value. */
+export interface Node<T = any> {
+  /** A value stored in the node – useful for reconstruction / debugging */
   value: T;
-  /** Left child – < value */
-  left: Node<T> | null = null;
-  /** Right child – > value */
-  right: Node<T> | null = null;
 
-  constructor(value: T) {
-    this.value = value;
+  /** Returns an array of child nodes (or an empty array) */
+  children(): Node<T>[];
+}
+class IntNode implements Node<number> {
+  constructor(public value: number) {}
+  children(): IntNode[] {
+    // example: a simple binary tree
+    return [];
   }
 }
+/**
+ * Depth‑limited search.  Returns a path from `start` to one of the goal values,
+ * or `null` if no path exists within the depth limit.
+ *
+ * @param start      The node from which we start.
+ * @param isGoal     A predicate that decides if the current node is a goal.
+ * @param depthLimit How many edges you’re willing to traverse.  Zero means
+ *                   you stop immediately (only the start node is examined).
+ * @param visited    Optional set for cycle detection.
+ *
+ * @returns Array of nodes forming the path, or `null`.
+ */
+export function depthLimitedSearch<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number,
+  visited?: Set<Node<T>>
+): Array<Node<T>> | null {
+  if (depthLimit < 0) throw new Error('depthLimit must be ≥ 0');
 
-// ---------- 2️⃣  BinaryTree wrapper ----------
-class BinaryTree<T> {
-  /** Root of the tree (can be null if the tree is empty). */
-  root: Node<T> | null = null;
+  // depth‑first approach – stop when limit hits
+  function recurse(
+    current: Node<T>,
+    depth: number,
+    trail: Node<T>[],
+    visitedSet: Set<Node<T>>
+  ): Array<Node<T>> | null {
+    if (!visitedSet.has(current)) {
+      if (depthLimit === 0 && depth > 0) return null; // reached limit
 
-  // Plug in the comparison logic so the tree can work with any type.
-  // By default it uses the built‑in < and > operators.
-  constructor(private compare: (a: T, b: T) => number = (a, b) => {
-    if (a === b) return 0;
-    return a < b ? -1 : 1;       // <=> -1, =0, >=>1
-  }) {}
+      if (isGoal(current)) return [...trail, current];
 
-  // ---------- 3️⃣  Insert ----------
-  insert(value: T): void {
-    const newNode = new Node(value);
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-    let cur = this.root;
-    while (true) {
-      if (this.compare(value, cur.value) < 0) {
-        if (!cur.left) {
-          cur.left = newNode;
-          return;
-        }
-        cur = cur.left;
-      } else {
-        if (!cur.right) {
-          cur.right = newNode;
-          return;
-        }
-        cur = cur.right;
+      visitedSet.add(current);
+
+      for (const child of current.children()) {
+        const result = recurse(child, depth + 1, [...trail, current], visitedSet);
+        if (result !== null) return result;
       }
+
+      visitedSet.delete(current); // backtrack
     }
+    return null; // not found on this branch
   }
 
-  // ---------- 4️⃣  Search ----------
-  find(value: T): Node<T> | null {
-    let cur = this.root;
-    while (cur) {
-      const cmp = this.compare(value, cur.value);
-      if (cmp === 0) return cur;
-      cur = cmp < 0 ? cur.left : cur.right;
-    }
-    return null;   // not found
-  }
-
-  // ---------- 5️⃣  Traversals ----------
-  // In‑order: left → node → right (sorted order for a BST)
-  inorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      result.push(n.value);
-      walk(n.right);
-    }
-    walk(this.root);
-    return result;
-  }
-
-  // Pre‑order: node → left → right
-  preorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      result.push(n.value);
-      walk(n.left);
-      walk(n.right);
-    }
-    walk(this.root);
-    return result;
-  }
-
-  // Post‑order: left → right → node
-  postorder(): T[] {
-    const result: T[] = [];
-    function walk(n: Node<T> | null) {
-      if (!n) return;
-      walk(n.left);
-      walk(n.right);
-      result.push(n.value);
-    }
-    walk(this.root);
-    return result;
-  }
+  const visitedSet = visited ?? new Set<Node<T>>();
+  return recurse(start, 0, [], visitedSet);
 }
-const nums = new BinaryTree<number>();
-[7, 3, 9, 1, 5, 8, 10].forEach(n => nums.insert(n));
+const goalNode = (node: Node<number>) => node.value === 42;
+const path = depthLimitedSearch(root, goalNode, 10);
+if (path) {
+  console.log('Found !!', path.map(n => n.value));
+} else {
+  console.log('No path within depth limit');
+}
+export function depthLimitedSearchIter<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number
+): Array<Node<T>> | null {
+  // stack holds tuples: [current node, depth so far, path so far]
+  const stack: Array<[Node<T>, number, Node<T>[]]> = [[start, 0, []]];
 
-console.log('In‑order (sorted):', nums.inorder());    // [1,3,5,7,8,9,10]
-console.log('Pre‑order:', nums.preorder());           // [7,3,1,5,9,8,10]
-console.log('Post‑order:', nums.postorder());         // [1,5,3,8,10,9,7]
+  const visited = new Set<Node<T>>();
 
-const node = nums.find(5);
-console.log('Found node:', node?.value);               // 5
-console.log('Does 6 exist?', !!nums.find(6));          // false
+  while (stack.length) {
+    const [node, depth, path] = stack.pop()!;
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (depth > depthLimit) continue; // skip deeper branches
+
+    const newPath = [...path, node];
+
+    if (isGoal(node)) return newPath;
+
+    for (const child of node.children()) {
+      stack.push([child, depth + 1, newPath]);
+    }
+  }
+
+  return null; // nothing found
+}
