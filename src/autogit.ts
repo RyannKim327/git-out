@@ -1,122 +1,122 @@
-/** A node that holds a value and optional left/right children. */
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+// A "comparable" type: any that supports the < and > operators.
+type Comparable = number | string | { compareTo(other: this): number };
+
+interface INode<K extends Comparable, V> {
+  keys: K[];
+  values: V[];      // same length as keys
+  children: (INode<K, V> | null)[];
+  leaf: boolean;
 }
-/** A minimal generic binary search tree. */
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
+const compare = <K extends Comparable>(a: K, b: K): number => {
+  if (typeof a === 'number' || typeof a === 'string')
+    return a < b ? -1 : a > b ? 1 : 0;
+  return a.compareTo(b);
+};
 
-  /* Comparator: returns negative if a < b, 0 if equal, positive if a > b */
-  constructor(private compare: (a: T, b: T) => number) {}
-
-  /** Insert a new value. */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let current = this.root;
-    while (true) {
-      if (this.compare(value, current.value) < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          break;
-        }
-        current = current.left;
-      } else {
-        if (!current.right) {
-          current.right = newNode;
-          break;
-        }
-        current = current.right;
-      }
-    }
+const findIndex = <K extends Comparable>(arr: K[], key: K): number => {
+  // binary search – returns the position where key should be inserted
+  let low = 0, high = arr.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const cmp = compare(arr[mid], key);
+    if (cmp === 0) return mid;
+    if (cmp < 0) low = mid + 1; else high = mid - 1;
   }
+  return low; // insertion point
+};
+class BTreeNode<K extends Comparable, V> implements INode<K, V> {
+  keys: K[] = [];
+  values: V[] = [];
+  children: (BTreeNode<K, V> | null)[] = [];
+  leaf: boolean;
 
-  /** Search for a value – returns <node> or null. */
-  find(value: T): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const cmp = this.compare(value, current.value);
-      if (cmp === 0) return current;
-      current = cmp < 0 ? current.left : current.right;
-    }
-    return null;
-  }
-
-  /** In-order traversal – returns values sorted ascending. */
-  inOrder(): T[] {
-    const result: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      result.push(node.value);
-      walk(node.right);
-    };
-    walk(this.root);
-    return result;
-  }
-
-  /** Remove a value. (Simplest version – does not handle replacement of two children.) */
-  delete(value: T): void {
-    const remove = (
-      node: TreeNode<T> | null,
-      value: T
-    ): TreeNode<T> | null => {
-      if (!node) return null;
-
-      const cmp = this.compare(value, node.value);
-      if (cmp < 0) {
-        node.left = remove(node.left, value);
-      } else if (cmp > 0) {
-        node.right = remove(node.right, value);
-      } else {
-        // Node with only one child or no child
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
-
-        // Node with two children: get the inorder successor (smallest in right subtree)
-        let succ = node.right;
-        while (succ.left) succ = succ.left;
-        node.value = succ.value;                // Copy successor’s value
-        node.right = remove(node.right, succ.value); // Delete successor
-      }
-      return node;
-    };
-
-    this.root = remove(this.root, value);
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
   }
 }
-// A simple numeric comparator
-const numCmp = (a: number, b: number) => a - b;
+export class BTree<K extends Comparable, V> {
+  readonly order: number;          // minimum number of keys per node (t)
+  private root: BTreeNode<K, V>;
 
-// Create tree
-const tree = new BinarySearchTree<number>(numCmp);
+  constructor(order: number) {
+    if (order < 2) throw new Error('B‑Tree order must be ≥ 2');
+    this.order = order;
+    this.root = new BTreeNode<K, V>(true);   // start with a leaf
+  }
 
-// Insert numbers
-[5, 3, 7, 2, 4, 6, 8].forEach(v => tree.insert(v));
+  /* ---------- Public API ---------- */
+  public search(key: K): V | undefined {
+    return this.searchNode(this.root, key);
+  }
 
-// Search
-console.log(tree.find(4)?.value); // 4
-console.log(tree.find(10));       // null
+  public insert(key: K, value: V): void {
+    if (this.root.keys.length === 2 * this.order - 1) {
+      // root is full – split it
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this.splitChild(newRoot, 0);
+      this.root = newRoot;
+    }
+    this.insertNonFull(this.root, key, value);
+  }
 
-// In‑order traversal should be sorted
-console.log(tree.inOrder()); // [2,3,4,5,6,7,8]
+  public delete(key: K): void {
+    this.deleteNode(this.root, key);
+    // shrink the root if it becomes empty
+    if (!this.root.leaf && this.root.keys.length === 0) {
+      this.root = this.root.children[0]!;
+    }
+  }
 
-// Delete a value
-tree.delete(5);
-console.log(tree.inOrder()); // [2,3,4,6,7,8]
-interface Person { name: string; age: number }
+  /* ---------- Traversal helpers (optional) ---------- */
+  public *inOrder(): IterableIterator<[K, V]> {
+    yield* this.inOrderNode(this.root);
+  }
 
-const ageCmp = (a: Person, b: Person) => a.age - b.age;
-const personTree = new BinarySearchTree<Person>(ageCmp);
+  /* ---------- Internal helpers ---------- */
+  private searchNode(node: BTreeNode<K, V>, key: K): V | undefined {
+    const i = findIndex(node.keys, key);
+    if (i < node.keys.length && compare(node.keys[i], key) === 0) {
+      return node.values[i];
+    }
+    if (node.leaf) return undefined;
+    return this.searchNode(node.children[i]!, key);
+  }
 
-personTree.insert({ name: "Alice", age: 30 });
-personTree.insert({ name: "Bob", age: 25 });
+  private insertNonFull(node: BTreeNode<K, V>, key: K, value: V) {
+    let i = node.keys.length - 1;
+    if (node.leaf) {
+      // Insert in sorted order
+      const pos = findIndex(node.keys, key);
+      node.keys.splice(pos, 0, key);
+      node.values.splice(pos, 0, value);
+    } else {
+      // Descend to the right child
+      const pos = findIndex(node.keys, key);
+      const child = node.children[pos]!;
+      if (child.keys.length === 2 * this.order - 1) {
+        this.splitChild(node, pos);
+        // After split, the middle key moves up
+        if (compare(key, node.keys[pos]) > 0) pos++;
+      }
+      this.insertNonFull(node.children[pos]!, key, value);
+    }
+  }
+
+  private splitChild(parent: BTreeNode<K, V>, idx: number) {
+    const t = this.order;
+    const y = parent.children[idx]!;               // node to split
+    const z = new BTreeNode<K, V>(y.leaf);          // new sibling
+
+    // Move upper half of y's keys/values to z
+    z.keys = y.keys.splice(t, t - 1);              // keys t … 2t-2
+    z.values = y.values.splice(t, t - 1);
+
+    if (!y.leaf) {
+      z.children = y.children.splice(t, t);         // children t … 2t-1
+    }
+
+    // Insert z into parent
+    parent.children.splice(idx + 1, 0, z);
+    parent.keys.splice(idx, 0, y.keys.splice(t - 1, 1)[0]);      // median key
+    parent.values.splice(idx
