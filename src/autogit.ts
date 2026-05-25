@@ -1,116 +1,48 @@
-/**
- * A binary‑heap priority queue.
- *
- * @template T  The type of the elements in the queue.
- *
- * @example
- * // min‑heap
- * const pq = new PriorityQueue<number>((a, b) => a - b);
- * pq.add(5); pq.add(2); pq.add(8);
- * console.log(pq.extract()); // 2
- *
- * // max‑heap (reverse the comparator)
- * const pqMax = new PriorityQueue<number>((a, b) => b - a);
- */
-export class PriorityQueue<T> {
-  /** The underlying array that stores the heap. */
-  private items: T[] = [];
+// fetch-posts.ts
+type Post = {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+};
 
-  /**
-   * @param compare Comparator: `a < b` returns a negative value,
-   *                `a === b` returns zero,
-   *                `a > b` returns a positive value.
-   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
-   *                or a custom comparator for objects.
-   */
-  constructor(private compare: (a: T, b: T) => number) {}
+async function getPosts(): Promise<Post[]> {
+  const url = "https://jsonplaceholder.typicode.com/posts";
 
-  /** Number of elements in the queue. */
-  size(): number { return this.items.length; }
+  // Allow a “fetch” implementation to be swapped in, e.g. for tests
+  const fetcher = typeof globalThis.fetch === "function" ? globalThis.fetch : require("node-fetch");
 
-  /** Whether the queue is empty. */
-  isEmpty(): boolean { return this.items.length === 0; }
+  try {
+    const resp = await fetcher(url, { method: "GET" });
 
-  /** Return the highest‑priority element without removing it. */
-  peek(): T | undefined { return this.items[0]; }
-
-  /** Insert a new element. */
-  add(element: T): void {
-    this.items.push(element);
-    this.siftUp(this.items.length - 1);
-  }
-
-  /** Remove and return the element with the highest priority. */
-  extract(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const root = this.items[0];
-    const last = this.items.pop()!;
-    if (!this.isEmpty()) {
-      this.items[0] = last;
-      this.siftDown(0);
+    if (!resp.ok) {
+      // Throw an error that includes the status code and message
+      throw new Error(`API error (${resp.status}): ${resp.statusText}`);
     }
-    return root;
-  }
 
-  /* ---- Internals ---- */
+    const data: unknown = await resp.json();
 
-  /** Move a node up until the heap property holds. */
-  private siftUp(idx: number): void {
-    let childIdx = idx;
-    while (childIdx > 0) {
-      const parentIdx = Math.floor((childIdx - 1) / 2);
-      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
-        this.swap(childIdx, parentIdx);
-        childIdx = parentIdx;
-      } else break;
+    // Basic runtime type guard: make sure we really got an array of posts
+    if (!Array.isArray(data)) {
+      throw new Error("Response was not an array");
     }
-  }
 
-  /** Move a node down until the heap property holds. */
-  private siftDown(idx: number): void {
-    const lastIdx = this.items.length - 1;
-    let parentIdx = idx;
-
-    while (true) {
-      const leftIdx = parentIdx * 2 + 1;
-      const rightIdx = parentIdx * 2 + 2;
-      let smallestIdx = parentIdx;
-
-      if (leftIdx <= lastIdx &&
-          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx <= lastIdx &&
-          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx !== parentIdx) {
-        this.swap(parentIdx, smallestIdx);
-        parentIdx = smallestIdx;
-      } else break;
+    // We trust the API to provide the right shape and coerce
+    return data as Post[];
+  } catch (e) {
+    // Re‑throw with a bit more context if we’re not already an Error
+    if (!(e instanceof Error)) {
+      throw new Error(String(e));
     }
-  }
-
-  /** Swap two indices in the array. */
-  private swap(i: number, j: number): void {
-    const tmp = this.items[i];
-    this.items[i] = this.items[j];
-    this.items[j] = tmp;
+    throw e;
   }
 }
-// Min‑heap of numbers
-const minQ = new PriorityQueue<number>((a, b) => a - b);
-minQ.add(10);
-minQ.add(3);
-minQ.add(7);
-console.log(minQ.extract()); // 3
-console.log(minQ.extract()); // 7
-console.log(minQ.extract()); // 10
 
-// Max‑heap of strings by length
-const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
-maxStr.add("short");
-maxStr.add("tiny");
-maxStr.add("extraordinarilylong");
-console.log(maxStr.extract()); // "extraordinarilylong"
+// Demo: print the first five posts
+getPosts()
+  .then((posts) => {
+    posts.slice(0, 5).forEach((p) =>
+      console.log(`[${p.id}] ${p.title} (user ${p.userId})`)
+    );
+  })
+  .catch((err) => console.error("Failed to fetch posts:", err));
