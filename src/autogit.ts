@@ -1,54 +1,56 @@
-/**
- * Area from base and height.
- * @param base  - Base length (any positive number)
- * @param height - Height length (any positive number)
- * @returns Triangle area
- */
-function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('Base and height must be positive numbers.');
-  }
-  return (base * height) / 2;
+diameter(root) = max(
+        diameter(left)                                       // purely left side
+      , diameter(right)                                      // purely right side
+      , height(left) + height(right) + 1                     // path that goes through root
+      )
+export class TreeNode<T> {
+  constructor(
+    public val: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-const area = areaBaseHeight(10, 5); // 25
-console.log(`Area = ${area}`);      // Area = 25
 /**
- * Deal with three side lengths.
- * @param a - length of side a
- * @param b - length of side b
- * @param c - length of side c
- * @returns Triangle area
+ * Return [height, diameter] of the subtree rooted at `node`.
+ *
+ * - `height` is the number of nodes on the longest path from `node` downwards.
+ * - `diameter` is the maximum number of nodes on any path that intersects the subtree.
  */
-function areaBySides(a: number, b: number, c: number): number {
-  // Simple validity check – the sides must satisfy the triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The given sides do not form a valid triangle.');
-  }
+function heightAndDiameter<T>(
+  node: TreeNode<T> | null
+): [number, number] {
+  if (!node) return [0, 0];          // height = 0, diameter = 0
 
-  const s = (a + b + c) / 2;                 // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
-}
-const areaHeron = areaBySides(3, 4, 5); // 6
-console.log(`Area (Heron) = ${areaHeron}`);
-/**
- * Area from two sides and an included angle (in degrees or radians).
- * @param side1   - length of one side
- * @param side2   - length of the other side
- * @param angle   - included angle (in degrees)
- * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
- * @returns Triangle area
- */
-function areaFromSidesAndAngle(
-  side1: number,
-  side2: number,
-  angle: number,
-  inRadians = false
-): number {
-  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
+  const [leftH, leftD]   = heightAndDiameter(node.left);
+  const [rightH, rightD] = heightAndDiameter(node.right);
 
-  const rad = inRadians ? angle : (angle * Math.PI) / 180;
-  return (side1 * side2 * Math.sin(rad)) / 2;
+  const height = 1 + Math.max(leftH, rightH);
+  // path that goes through this node uses left subtree, node itself, right subtree
+  const throughRoot = leftH + rightH + 1;
+
+  const diameter = Math.max(leftD, rightD, throughRoot);
+
+  return [height, diameter];
 }
-const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
-console.log(`Area from two sides & angle = ${areaMixed}`);
+export function diameter<T>(root: TreeNode<T> | null): number {
+  // Return diameter as number of nodes on the longest path.
+  // If you prefer “edges” instead, just return `diameter - 1`.
+  const [, dia] = heightAndDiameter(root);
+  return dia;
+}
+const root = new TreeNode(1,
+  new TreeNode(2,
+    new TreeNode(4),
+    new TreeNode(5)
+  ),
+  new TreeNode(3,
+    null,
+    new TreeNode(6)
+  )
+);
+
+console.log(diameter(root)); // → 5  (path 4‑2‑1‑3‑6)
+export function diameterInEdges<T>(root: TreeNode<T> | null): number {
+  const diaNodes = diameter(root);
+  return diaNodes > 0 ? diaNodes - 1 : 0;
+}
