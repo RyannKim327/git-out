@@ -1,45 +1,56 @@
 /**
- * Returns the longest common subsequence of a and b.
- * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
+ * Rabin‑Karp string search.
+ * @param text    The string to be searched.
+ * @param pattern The pattern to search for.
+ * @returns      An array containing the starting indices where `pattern`
+ *               occurs in `text`. If the pattern is not found, returns [].
  */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  const result: number[] = [];
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  if (m === 0 || n < m) return result;       // edge cases
 
-  // Build the table
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+  /* ---- constants ---- */
+  const prime = 1000000007;                   // large prime modulus
+  const base = 256;                           // number of possible char values
+
+  /* ---- pre‑compute base^(m-1) % prime ---- */
+  let highestPower = 1;
+  for (let i = 1; i < m; i++) highestPower = (highestPower * base) % prime;
+
+  /* ---- first window hash ---- */
+  let patternHash = 0;
+  let textHash = 0;
+  for (let i = 0; i < m; i++) {
+    patternHash = (patternHash * base + pattern.charCodeAt(i)) % prime;
+    textHash   = (textHash   * base + text.charCodeAt(i))   % prime;
+  }
+
+  /* ---- slide through text ---- */
+  for (let i = 0; i <= n - m; i++) {
+    /* match: compare hashes first, then do a full string compare to avoid false positives */
+    if (patternHash === textHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
       }
     }
-  }
 
-  // Back‑track to reconstruct one LCS
-  let i = m;
-  let j = n;
-  const lcsChars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // Matches – this character is part of the LCS
-      lcsChars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // move up
-    } else {
-      j--;          // move left
+    /* roll: compute hash for next window */
+    if (i < n - m) {
+      // Remove leading character
+      textHash = (textHash - text.charCodeAt(i) * highestPower) % prime;
+      // Avoid negative
+      if (textHash < 0) textHash += prime;
+      // Add trailing character
+      textHash = (textHash * base + text.charCodeAt(i + m)) % prime;
     }
   }
 
-  // The chars were collected backwards, reverse them
-  return lcsChars.reverse().join('');
+  return result;
 }
-console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
-console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
+const text = "abracadabra";
+const pattern = "abra";
+
+console.log(rabinKarp(text, pattern)); // → [0, 7]
