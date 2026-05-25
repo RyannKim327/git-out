@@ -1,87 +1,99 @@
-/**
- * Radix sort for 32‑bit signed integers.
- * Works for any array length, including 0.
- *
- * The algorithm:
- *   – Split the input into positives and negatives
- *   – Sort each group with a stable counting‑sort pass for each decimal digit (base 10)
- *   – Negatives are sorted in reverse order of their absolute values
- *   – Concatenate negative‑part (re‑negated) then positive‑part
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length === 0) return nums; // nothing to do
-
-  /* 1️⃣  Separate positives from negatives   */
-  const positives: number[] = [];
-  const negatives: number[] = [];
-
-  for (const n of nums) {
-    if (n >= 0) positives.push(n);
-    else negatives.push(Math.abs(n));  // store abs for later sorting
-  }
-
-  /* 2️⃣  Sort the “unsigned” parts with an inner helper   */
-  const sortedPos = sortUnsigned(positives);
-  const sortedNeg = sortUnsigned(negatives);
-
-  /* 3️⃣  Negatives need to be reversed & re‑negated       */
-  const finalNeg = sortedNeg.reverse().map(v => -v);
-
-  /* 4️⃣  Merge back together – negative values come first   */
-  return [...finalNeg, ...sortedPos];
-}
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 /**
- * Internally sort an array of non‑negative numbers by radix.
- * The routine is the same as the classic radix sort used in
- * CS‑textbooks: a counting sort stable pass for each power of 10.
+ * Example of an async “network task” that you might run in Android
+ * (React‑Native runs JavaScript on a background thread for you).
  */
-function sortUnsigned(arr: number[]): number[] {
-  if (arr.length === 0) return arr;
+const App: React.FC = () => {
+  /*--- State: loading / data / error -----------------------------------*/
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-  // Find the largest value so we know when to stop
-  const maxVal = Math.max(...arr);
+  /*--- Effect: fire once on mount -------------------------------------*/
+  useEffect(() => {
+    /**
+     * Async function inside the effect so we can use await at a top level.
+     * It's an equivalent of Android’s AsyncTask (but without the Android
+     * boilerplate) – just a Promise chain wrapped in async/await.
+     */
+    const fetchData = async () => {
+      try {
+        // 1️⃣ Make the request
+        const response = await fetch(
+          'https://api.adviceslip.com/advice',
+        );
 
-  let exponent = 1;   // 10⁰, 10¹, 10² …
-  let result = arr;   // we’ll keep re‑assigning
+        // 2️⃣ Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-  while (Math.floor(maxVal / exponent) > 0) {
-    result = countingSortByExponent(result, exponent);
-    exponent *= 10;
-  }
+        // 3️⃣ Parse the JSON payload
+        const json = await response.json();
 
-  return result;
-}
+        // 4️⃣ Store the result
+        setData(json);          // data.slip.advice will be the string
+        setError(null);
+      } catch (e) {
+        // Anything that goes wrong lands here
+        console.error('Failed to fetch advice:', e);
+        setError((e as Error).message);
+        setData(null);
+      } finally {
+        // Whatever happens, loading is done
+        setLoading(false);
+      }
+    };
 
-/**
- * One stable counting‑sort pass for a specific digit (exponent).
- * Digits are guaranteed to be 0–9.
- */
-function countingSortByExponent(nums: number[], exp: number): number[] {
-  const output = new Array(nums.length);
-  const count = new Array(10).fill(0);
+    fetchData();
 
-  // 1️⃣ Count occurrences of each digit
-  for (const n of nums) {
-    const digit = Math.floor(n / exp) % 10;
-    count[digit]++;
-  }
+    // Optional: cleanup if the component unmounts before fetch resolves
+    // return () => { /* cancel request if using AbortController, e.g. */ };
+  }, []); // empty deps → run once
 
-  // 2️⃣ Turn counts into cumulative counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
+  /*--- Rendering -----------------------------------------------------*/
+  return (
+    <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.text}>Loading advice...</Text>
+        </View>
+      )}
 
-  // 3️⃣ Build output array (backwards for stability)
-  for (let i = nums.length - 1; i >= 0; i--) {
-    const n = nums[i];
-    const digit = Math.floor(n / exp) % 10;
-    output[--count[digit]] = n;
-  }
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
+        </View>
+      )}
 
-  return output;
-}
-const data = [170, 45, 75, 90, 802, 24, 2, 66, -3, -55];
-const sorted = radixSort(data);
-console.log(sorted);
-// → [ -55, -3, 2, 24, 45, 66, 75, 90, 170, 802 ]
+      {!loading && data && (
+        <View style={styles.centered}>
+          <Text style={styles.title}>Here’s an advice for you:</Text>
+          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
+
+/*--- Styles ----------------------------------------------------------*/
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginTop: 12 },
+  title: { fontSize: 18, fontWeight: '600' },
+  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
+  error: { color: 'red' },
+});
+
+export default App;
