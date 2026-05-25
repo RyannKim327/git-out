@@ -1,122 +1,112 @@
-/** A node that holds a value and optional left/right children. */
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+// ---------- 1️⃣  Node definition ----------
+class Node<T> {
+  /** The stored value. */
+  value: T;
+  /** Left child – < value */
+  left: Node<T> | null = null;
+  /** Right child – > value */
+  right: Node<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
-/** A minimal generic binary search tree. */
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
 
-  /* Comparator: returns negative if a < b, 0 if equal, positive if a > b */
-  constructor(private compare: (a: T, b: T) => number) {}
+// ---------- 2️⃣  BinaryTree wrapper ----------
+class BinaryTree<T> {
+  /** Root of the tree (can be null if the tree is empty). */
+  root: Node<T> | null = null;
 
-  /** Insert a new value. */
+  // Plug in the comparison logic so the tree can work with any type.
+  // By default it uses the built‑in < and > operators.
+  constructor(private compare: (a: T, b: T) => number = (a, b) => {
+    if (a === b) return 0;
+    return a < b ? -1 : 1;       // <=> -1, =0, >=>1
+  }) {}
+
+  // ---------- 3️⃣  Insert ----------
   insert(value: T): void {
-    const newNode = new TreeNode(value);
-
+    const newNode = new Node(value);
     if (!this.root) {
       this.root = newNode;
       return;
     }
-
-    let current = this.root;
+    let cur = this.root;
     while (true) {
-      if (this.compare(value, current.value) < 0) {
-        if (!current.left) {
-          current.left = newNode;
-          break;
+      if (this.compare(value, cur.value) < 0) {
+        if (!cur.left) {
+          cur.left = newNode;
+          return;
         }
-        current = current.left;
+        cur = cur.left;
       } else {
-        if (!current.right) {
-          current.right = newNode;
-          break;
+        if (!cur.right) {
+          cur.right = newNode;
+          return;
         }
-        current = current.right;
+        cur = cur.right;
       }
     }
   }
 
-  /** Search for a value – returns <node> or null. */
-  find(value: T): TreeNode<T> | null {
-    let current = this.root;
-    while (current) {
-      const cmp = this.compare(value, current.value);
-      if (cmp === 0) return current;
-      current = cmp < 0 ? current.left : current.right;
+  // ---------- 4️⃣  Search ----------
+  find(value: T): Node<T> | null {
+    let cur = this.root;
+    while (cur) {
+      const cmp = this.compare(value, cur.value);
+      if (cmp === 0) return cur;
+      cur = cmp < 0 ? cur.left : cur.right;
     }
-    return null;
+    return null;   // not found
   }
 
-  /** In-order traversal – returns values sorted ascending. */
-  inOrder(): T[] {
+  // ---------- 5️⃣  Traversals ----------
+  // In‑order: left → node → right (sorted order for a BST)
+  inorder(): T[] {
     const result: T[] = [];
-    const walk = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      walk(node.left);
-      result.push(node.value);
-      walk(node.right);
-    };
+    function walk(n: Node<T> | null) {
+      if (!n) return;
+      walk(n.left);
+      result.push(n.value);
+      walk(n.right);
+    }
     walk(this.root);
     return result;
   }
 
-  /** Remove a value. (Simplest version – does not handle replacement of two children.) */
-  delete(value: T): void {
-    const remove = (
-      node: TreeNode<T> | null,
-      value: T
-    ): TreeNode<T> | null => {
-      if (!node) return null;
+  // Pre‑order: node → left → right
+  preorder(): T[] {
+    const result: T[] = [];
+    function walk(n: Node<T> | null) {
+      if (!n) return;
+      result.push(n.value);
+      walk(n.left);
+      walk(n.right);
+    }
+    walk(this.root);
+    return result;
+  }
 
-      const cmp = this.compare(value, node.value);
-      if (cmp < 0) {
-        node.left = remove(node.left, value);
-      } else if (cmp > 0) {
-        node.right = remove(node.right, value);
-      } else {
-        // Node with only one child or no child
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
-
-        // Node with two children: get the inorder successor (smallest in right subtree)
-        let succ = node.right;
-        while (succ.left) succ = succ.left;
-        node.value = succ.value;                // Copy successor’s value
-        node.right = remove(node.right, succ.value); // Delete successor
-      }
-      return node;
-    };
-
-    this.root = remove(this.root, value);
+  // Post‑order: left → right → node
+  postorder(): T[] {
+    const result: T[] = [];
+    function walk(n: Node<T> | null) {
+      if (!n) return;
+      walk(n.left);
+      walk(n.right);
+      result.push(n.value);
+    }
+    walk(this.root);
+    return result;
   }
 }
-// A simple numeric comparator
-const numCmp = (a: number, b: number) => a - b;
+const nums = new BinaryTree<number>();
+[7, 3, 9, 1, 5, 8, 10].forEach(n => nums.insert(n));
 
-// Create tree
-const tree = new BinarySearchTree<number>(numCmp);
+console.log('In‑order (sorted):', nums.inorder());    // [1,3,5,7,8,9,10]
+console.log('Pre‑order:', nums.preorder());           // [7,3,1,5,9,8,10]
+console.log('Post‑order:', nums.postorder());         // [1,5,3,8,10,9,7]
 
-// Insert numbers
-[5, 3, 7, 2, 4, 6, 8].forEach(v => tree.insert(v));
-
-// Search
-console.log(tree.find(4)?.value); // 4
-console.log(tree.find(10));       // null
-
-// In‑order traversal should be sorted
-console.log(tree.inOrder()); // [2,3,4,5,6,7,8]
-
-// Delete a value
-tree.delete(5);
-console.log(tree.inOrder()); // [2,3,4,6,7,8]
-interface Person { name: string; age: number }
-
-const ageCmp = (a: Person, b: Person) => a.age - b.age;
-const personTree = new BinarySearchTree<Person>(ageCmp);
-
-personTree.insert({ name: "Alice", age: 30 });
-personTree.insert({ name: "Bob", age: 25 });
+const node = nums.find(5);
+console.log('Found node:', node?.value);               // 5
+console.log('Does 6 exist?', !!nums.find(6));          // false
