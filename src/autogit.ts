@@ -1,74 +1,125 @@
+// --- types ----------------------------------------------------------
+
+type Node = string | number;             // anything that can be compared by ===
+type Graph = Map<Node, Node[]>;          // adjacency list
+
+// an entry tracks a node and the parent that led to it
+interface QueueEntry {
+  node: Node;
+  parent: Node | null;   // parent in the search tree
+}
+
+// --- helper ---------------------------------------------------------
+
 /**
- * Quick‑sort implementation.
- *
- * @param arr   The array to sort – it will be mutated in place.
- * @param compare Optional comparison function.  
- *                Should return < 0 if a < b, 0 if a == b, > 0 if a > b.
- *                If omitted, the default is a numeric comparison.
- * @returns The same array reference, now sorted.
+ * Simple FIFO queue built on an array for speed.
  */
-export function quickSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Default to numeric comparison if no comparator is given
-  const cmp = compare ?? ((a: any, b: any) => a < b ? -1 : a > b ? 1 : 0);
+class Queue<T> {
+  private items: T[] = [];
+  enqueue(item: T) { this.items.push(item); }
+  dequeue(): T | undefined { return this.items.shift(); }
+  isEmpty() { return this.items.length === 0; }
+  size() { return this.items.length; }
+}
 
-  // Recursive helper – operates on the portion of the array
-  function qs(left: number, right: number): void {
-    if (left >= right) return;
+// --- bidirectional BFS ----------------------------------------------
 
-    // Partition returns the final index of the pivot
-    const pivotIndex = partition(left, right);
+export function bidirectionalSearch(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {      // null iff no path
 
-    // Recurse on smaller side first to keep stack depth <= log₂(n)
-    if (pivotIndex - left < right - pivotIndex) {
-      qs(left, pivotIndex - 1);
-      qs(pivotIndex + 1, right);
-    } else {
-      qs(pivotIndex + 1, right);
-      qs(left, pivotIndex - 1);
-    }
-  }
+  if (start === goal) return [start];
 
-  // Lomuto‑style partition – choose rightmost element as pivot
-  function partition(left: number, right: number): number {
-    const pivot = arr[right];
-    let i = left - 1;          // Place for swapping
+  // queues for both directions
+  const qStart = new Queue<QueueEntry>();
+  const qGoal  = new Queue<QueueEntry>();
 
-    for (let j = left; j < right; j++) {
-      if (cmp(arr[j], pivot) <= 0) {
-        i++;
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+  // visited maps: node -> parent
+  const visitedStart = new Map<Node, Node | null>();
+  const visitedGoal  = new Map<Node, Node | null>();
+
+  // initialise
+  qStart.enqueue({ node: start, parent: null });
+  visitedStart.set(start, null);
+
+  qGoal.enqueue({ node: goal, parent: null });
+  visitedGoal.set(goal, null);
+
+  // work until one frontier empties
+  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
+
+    // ---- expand the smaller frontier ----
+    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
+    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
+
+    const { node: current, parent } = nextFrontier.dequeue()!;
+
+    const neighbors = graph.get(current) ?? [];
+    for (const neigh of neighbors) {
+
+      // skip already visited by this side
+      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
+      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
+
+      // mark as visited by this side
+      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
+      visited.set(neigh, current);
+      nextFrontier.enqueue({ node: neigh, parent: current });
+
+      // --- check for meeting point ---
+      if (otherVisited.has(neigh)) {
+        return buildPath(
+          start, goal, neigh, visitedStart, visitedGoal
+        );
       }
     }
-
-    // Move pivot to its final place
-    [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
-    return i + 1;
   }
 
-  qs(0, arr.length - 1);
-  return arr;
+  // nothing found
+  return null;
 }
-// Numbers – default numeric comparison is fine
-const nums = [34, 7, 23, 32, 5, 62];
-console.log(quickSort(nums)); // [5, 7, 23, 32, 34, 62]
 
-// Strings – need a string comparator  
-const words = ['banana', 'apple', 'cherry'];
-console.log(
-  quickSort(words, (a, b) => a.localeCompare(b))
-); // ['apple', 'banana', 'cherry']
+/**
+ * Walk back from the meeting point to the start and goal to build the full path.
+ */
+function buildPath(
+  start: Node,
+  goal: Node,
+  meet: Node,
+  visitedStart: Map<Node, Node | null>,
+  visitedGoal:  Map<Node, Node | null>
+): Node[] {
 
-// Custom objects  
-interface Person { name: string; age: number; }
-const people: Person[] = [
-  { name: 'Anna', age: 27 },
-  { name: 'Bob', age: 22 },
-  { name: 'Clara', age: 35 },
-];
+  // walk back to start
+  const pathStart: Node[] = [];
+  let cur: Node | null = meet;
+  while (cur !== null) {
+    pathStart.push(cur);
+    cur = visitedStart.get(cur) ?? null;
+  }
+  pathStart.reverse();    // start -> meet
 
-quickSort(people, (a, b) => a.age - b.age);
-console.log(people);
-// [ { name: 'Bob', age: 22 }, { name: 'Anna', age: 27 }, { name: 'Clara', age: 35 } ]
+  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
+  const pathGoal: Node[] = [];
+  cur = visitedGoal.get(meet);
+  while (cur !== null) {
+    pathGoal.push(cur);
+    cur = visitedGoal.get(cur) ?? null;
+  }
+
+  return [...pathStart, ...pathGoal];
+}
+const graph: Graph = new Map([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E', 'G']],
+  ['G', ['F']]
+]);
+
+const path = bidirectionalSearch(graph, 'A', 'G');
+console.log(path); // => [ 'A', 'C', 'F', 'G' ]
