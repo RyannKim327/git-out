@@ -1,75 +1,40 @@
-// -------------------------------------------------------------
-// 1️⃣  O(n²) DP – intuition + implementation
-// -------------------------------------------------------------
-function lisDP(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
+const fruits = ['apple', 'banana', 'cherry', 'banana'];
 
-  // dp[i]  – length of LIS that ends at index i
-  const dp: number[] = Array(n).fill(1);
-  // prev[i] – previous index in the LIS that ends at i
-  const prev: number[] = Array(n).fill(-1);
+const withoutBanana = fruits.filter(f => f !== 'banana');
 
-  let bestEnd = 0; // index where the overall best LIS ends
+console.log(withoutBanana); // ['apple', 'cherry']
+// Remove the first object with id === 42
+const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
+const itemsWithout42 = items.filter(item => item.id !== 42);
+const numbers = [10, 20, 30, 40];
+const indexToRemove = 2; // 30
 
-  for (let i = 0; i < n; ++i) {
-    for (let j = 0; j < i; ++j) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-        prev[i] = j;
-      }
-    }
-    if (dp[i] > dp[bestEnd]) bestEnd = i;
-  }
+// splice(start, deleteCount)
+numbers.splice(indexToRemove, 1);
 
-  // Rebuild the sequence
-  const seq: number[] = [];
-  for (let cur = bestEnd; cur !== -1; cur = prev[cur]) seq.push(arr[cur]);
-  seq.reverse();
+console.log(numbers); // [10, 20, 40]
+const arr = [1, 2, 3, 4, 5];
+const cond = (x: number) => x % 2 === 0; // remove evens
 
-  return { length: dp[bestEnd], sequence: seq };
+// Find first match and splice it out
+const idx = arr.findIndex(cond);
+if (idx !== -1) arr.splice(idx, 1);
+
+console.log(arr); // [1, 3, 5]
+// Remove the first occurrence of a value
+export function removeFirst<T>(arr: T[], target: T): T[] {
+  const idx = arr.findIndex(v => v === target);
+  if (idx === -1) return [...arr]; // not found, return copy
+  const copy = [...arr];
+  copy.splice(idx, 1);
+  return copy; // or return copy and let caller decide
 }
-// -------------------------------------------------------------
-// 2️⃣  O(n log n) – patience sorting + back‑tracking
-// -------------------------------------------------------------
-function lisPatience(arr: number[]): { length: number; sequence: number[] } {
-  const n = arr.length;
-  if (n === 0) return { length: 0, sequence: [] };
 
-  // tails[i] – index of the smallest tail of LIS with length i+1
-  const tails: number[] = [];
-  // parentIdx[i] – previous index in LIS that ends at i
-  const parentIdx: number[] = Array(n).fill(-1);
-
-  for (let i = 0; i < n; ++i) {
-    const x = arr[i];
-
-    // Binary search: first tail >= x
-    let lo = 0, hi = tails.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (arr[tails[mid]] < x) lo = mid + 1;
-      else hi = mid;
-    }
-
-    // lo now points to position where x will go
-    if (lo > 0) parentIdx[i] = tails[lo - 1];
-
-    if (lo === tails.length) tails.push(i);
-    else tails[lo] = i;
+// Remove by index (mutable)
+export function removeAt<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1);
   }
-
-  // Reconstruct sequence
-  const seq: number[] = [];
-  for (let cur = tails[tails.length - 1]; cur !== -1; cur = parentIdx[cur]) seq.push(arr[cur]);
-  seq.reverse();
-
-  return { length: tails.length, sequence: seq };
 }
-const example = [10, 9, 2, 5, 3, 7, 101, 18];
-
-console.log(lisDP(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
-
-console.log(lisPatience(example));
-// → { length: 4, sequence: [ 2, 3, 7, 101 ] }
+// Keep everything except index 3
+const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
