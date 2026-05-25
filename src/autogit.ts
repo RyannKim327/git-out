@@ -1,99 +1,52 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
 /**
- * Example of an async “network task” that you might run in Android
- * (React‑Native runs JavaScript on a background thread for you).
+ * Interpolation Search
+ *
+ * The algorithm only works on numeric, strictly‑sorted arrays.
+ * It probes values near the expected position based on the key’s value,
+ * so it runs “almost” as fast as binary search on uniformly distributed data.
+ *
+ * @param arr  Sorted numeric array (ascending)
+ * @param key  Value to locate
+ * @returns    Index of the key or -1 if not present
  */
-const App: React.FC = () => {
-  /*--- State: loading / data / error -----------------------------------*/
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+export function interpolationSearch(arr: number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  /*--- Effect: fire once on mount -------------------------------------*/
-  useEffect(() => {
-    /**
-     * Async function inside the effect so we can use await at a top level.
-     * It's an equivalent of Android’s AsyncTask (but without the Android
-     * boilerplate) – just a Promise chain wrapped in async/await.
-     */
-    const fetchData = async () => {
-      try {
-        // 1️⃣ Make the request
-        const response = await fetch(
-          'https://api.adviceslip.com/advice',
-        );
+  let low = 0;
+  let high = arr.length - 1;
 
-        // 2️⃣ Check for HTTP errors
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Guard against division by zero for the degenerate case
+    if (arr[high] === arr[low]) {
+      break; // all remaining elements equal; either match or no match
+    }
 
-        // 3️⃣ Parse the JSON payload
-        const json = await response.json();
+    const pos =
+      low +
+      Math.floor(
+        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
+      );
 
-        // 4️⃣ Store the result
-        setData(json);          // data.slip.advice will be the string
-        setError(null);
-      } catch (e) {
-        // Anything that goes wrong lands here
-        console.error('Failed to fetch advice:', e);
-        setError((e as Error).message);
-        setData(null);
-      } finally {
-        // Whatever happens, loading is done
-        setLoading(false);
-      }
-    };
+    const midVal = arr[pos];
 
-    fetchData();
+    if (midVal === key) return pos;
 
-    // Optional: cleanup if the component unmounts before fetch resolves
-    // return () => { /* cancel request if using AbortController, e.g. */ };
-  }, []); // empty deps → run once
+    if (midVal < key) {
+      low = pos + 1;
+    } else {
+      high = pos - 1;
+    }
+  }
 
-  /*--- Rendering -----------------------------------------------------*/
-  return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.text}>Loading advice...</Text>
-        </View>
-      )}
+  // If we exit the loop without hitting the key
+  return -1;
+}
+const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
+const target = 56;
+const idx = interpolationSearch(data, target);
 
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
-        </View>
-      )}
-
-      {!loading && data && (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Here’s an advice for you:</Text>
-          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-};
-
-/*--- Styles ----------------------------------------------------------*/
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, marginTop: 12 },
-  title: { fontSize: 18, fontWeight: '600' },
-  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
-  error: { color: 'red' },
-});
-
-export default App;
+if (idx !== -1) {
+  console.log(`Found ${target} at index ${idx}`);
+} else {
+  console.log(`${target} not in the array`);
+}
