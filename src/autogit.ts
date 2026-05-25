@@ -1,93 +1,46 @@
-/*  Boyer‑Moore string search
- *  ----------------------------------
- *  – pattern:  the string you’re looking for
- *  – text:     the larger string you scan
- *  Returns:    an array of the starting indices where pattern occurs
- */
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-type BMResult = number[];
+  // A little help‑trim: you can decide to ignore whitespace, case, etc.
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
 
-function boyerMoore(text: string, pattern: string): BMResult {
-  if (pattern.length === 0) return [];
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
-  const m = pattern.length;
-  const n = text.length;
-  const result: number[] = [];
+  const sortedA = normalize(a).split('').sort().join('');
+  const sortedB = normalize(b).split('').sort().join('');
 
-  let s = 0;                  // alignment of pattern with text
-  while (s <= n - m) {        // slide pattern over text
-    let j = m - 1;            // right‑most pattern position
-
-    // compare from right to left
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {                  // whole pattern matched
-      result.push(s);
-      s += goodSuffix[0];          // shift using good‑suffix
-    } else {
-      // bad‑character rule
-      const badShift = j - badChar[text[s + j]] ?? j + 1;
-      // good‑suffix rule
-      const goodShift = goodSuffix[j + 1];
-      s += Math.max(badShift, goodShift);
-    }
-  }
-  return result;
+  return sortedA === sortedB;
 }
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-/* -------------  Bad‑character table  ----------------- */
-function buildBadCharShift(pattern: string): Record<string, number> {
-  const lastPos: Record<string, number> = {};
-  for (let i = 0; i < pattern.length; i++) {
-    lastPos[pattern[i]] = i;          // last occurrence index
+  const freq = new Map<string, number>();
+
+  for (const ch of a) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
-  return lastPos;
+
+  for (const ch of b) {
+    const count = freq.get(ch);
+    if (!count) return false;          // either zero or undefined
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  return freq.size === 0;
 }
+function areAnagramsAscii(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-/* -------------  Good‑suffix table  ------------------- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const shift: number[] = new Array(m + 1).fill(m);
-  const border = new Array(m + 1).fill(0);
-  let i = m;
-  let j = m + 1;
-  border[i] = j;
+  const counts = new Uint32Array(26);
 
-  // 1. Calculate borders (prefixes that are also suffixes)
-  while (i > 0) {
-    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
-      j = border[j];
-    }
-    i--; j--; border[i] = j;
-  }
+  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
+  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
 
-  // 2. Compute shift table from borders
-  for (let k = 0; k < m; k++) {
-    shift[k] = m; // default shift is pattern length
-  }
-
-  let iIdx = 0;
-  while (iIdx < m) {
-    const g = m - border[iIdx];
-    shift[g] = Math.min(shift[g], border[iIdx] + 1);
-    iIdx++;
-  }
-
-  // 3. Fill the remaining entries (when no suffix matches)
-  let last = shift[1];
-  for (let q = 2; q <= m; q++) {
-    if (shift[q] === m) shift[q] = last;
-    else last = shift[q];
-  }
-
-  return shift;
+  return counts.every(v => v === 0);
 }
+const compact = (s: string) =>
+  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
 
-/* -------------  Example use ----- */
-const haystack = "ABABACABABABCAB";
-const needle = "ABABC";
-
-console.log(boyerMoore(haystack, needle));  // => [5]
+function areAnagramsClean(a: string, b: string): boolean {
+  return areAnagrams(compact(a), compact(b));
+}
