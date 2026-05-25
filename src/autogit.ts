@@ -1,65 +1,54 @@
 /**
- * Recursively finds the index of `target` in a sorted array.
- * Returns the index if found, otherwise –1.
- *
- * @param arr   A sorted array (ascending, no duplicates needed)
- * @param target The value you're looking for
- * @param left  The left boundary (inclusive)
- * @param right The right boundary (exclusive)
+ * Area from base and height.
+ * @param base  - Base length (any positive number)
+ * @param height - Height length (any positive number)
+ * @returns Triangle area
  */
-function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;            // no match
-
-  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
-
-  const cmp = arr[mid] === target
-    ? 0
-    : arr[mid] < target
-      ? -1
-      : 1;
-
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursive(arr, target, mid + 1, right)
-      : binarySearchRecursive(arr, target, left, mid);
+function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('Base and height must be positive numbers.');
+  }
+  return (base * height) / 2;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchRecursive(nums, 7));  // → 3
-console.log(binarySearchRecursive(nums, 4));  // → -1
-function binarySearchRecursiveCustom<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;
+const area = areaBaseHeight(10, 5); // 25
+console.log(`Area = ${area}`);      // Area = 25
+/**
+ * Deal with three side lengths.
+ * @param a - length of side a
+ * @param b - length of side b
+ * @param c - length of side c
+ * @returns Triangle area
+ */
+function areaBySides(a: number, b: number, c: number): number {
+  // Simple validity check – the sides must satisfy the triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The given sides do not form a valid triangle.');
+  }
 
-  const mid = left + ((right - left) >> 1);
-  const cmp = compare(arr[mid], target);
-
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
-      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
+  const s = (a + b + c) / 2;                 // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
 }
-interface Person { age: number; name: string; }
-const people: Person[] = [
-  { age: 22, name: 'Alice' },
-  { age: 30, name: 'Bob' },
-  { age: 45, name: 'Charlie' },
-];
-const ageToFind = 30;
-const idx = binarySearchRecursiveCustom(
-  people,
-  { age: ageToFind, name: '' },
-  (a, b) => a.age - b.age
-);
-console.log(idx); // → 1
+const areaHeron = areaBySides(3, 4, 5); // 6
+console.log(`Area (Heron) = ${areaHeron}`);
+/**
+ * Area from two sides and an included angle (in degrees or radians).
+ * @param side1   - length of one side
+ * @param side2   - length of the other side
+ * @param angle   - included angle (in degrees)
+ * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
+ * @returns Triangle area
+ */
+function areaFromSidesAndAngle(
+  side1: number,
+  side2: number,
+  angle: number,
+  inRadians = false
+): number {
+  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
+
+  const rad = inRadians ? angle : (angle * Math.PI) / 180;
+  return (side1 * side2 * Math.sin(rad)) / 2;
+}
+const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
+console.log(`Area from two sides & angle = ${areaMixed}`);
