@@ -1,25 +1,15 @@
-/**
- * Very practical “looks‑nice‑like‑an‑email” validator.
- * Not a full RFC‑5322 parser, but catches most real‑world cases.
- */
-export function isValidEmail(email: string): boolean {
-  // One or more non‑space, non‑@ chars, an @, one or more non‑space @ chars,
-  // a dot, and finally one or more non‑space chars.
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
-import validator from 'validator';
-validator.isEmail(someString); // true/false
-const input = document.querySelector('#email') as HTMLInputElement;
+const original = [1, 2, 3, 4];
 
-function onSubmit(e: Event) {
-  e.preventDefault();
-  const email = input.value.trim();
+const reversed = original.slice().reverse(); // => [4, 3, 2, 1]
+const arr = [5, 4, 3];
 
-  if (!isValidEmail(email)) {
-    alert('That’s not a valid email address.');
-    return;
-  }
+// 👈 preserve arr
+const backToFront = arr.slice().reverse(); // [3, 4, 5]
+console.log(arr);          // [5, 4, 3]
+const arr = [1, 2, 3];
+arr.reverse(); // arr is now [3, 2, 1]
+const reverseArray = <T>(input: T[]): T[] =>
+  input.reduce<T[]>((acc, item) => [item, ...acc], []);
 
-  // …go on with your logic
-}
+const arr = [10, 20, 30];
+const rev = reverseArray(arr); // [30, 20, 10]
