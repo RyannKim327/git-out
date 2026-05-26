@@ -1,62 +1,65 @@
 /**
- * Quick‑sorts an array in place and returns the same array reference.
+ * Recursively finds the index of `target` in a sorted array.
+ * Returns the index if found, otherwise –1.
  *
- * @param array   The array to sort. It is mutated in place.
- * @param left    Index of the first element to sort (inclusive).  Default: 0.
- * @param right   Index of the last element to sort (inclusive).  Default: array.length - 1.
- * @returns       The sorted array (same reference as the argument).
+ * @param arr   A sorted array (ascending, no duplicates needed)
+ * @param target The value you're looking for
+ * @param left  The left boundary (inclusive)
+ * @param right The right boundary (exclusive)
  */
-function quickSort<T>(array: T[], left = 0, right: number = array.length - 1): T[] {
-  // Base case: if the sub‑array has one or zero elements, it’s already sorted
-  if (left >= right) return array;
+function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;            // no match
 
-  // Partition the array around a pivot and get its final index
-  const pivotIndex = partition(array, left, right);
+  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
 
-  // Recursively sort the two halves
-  quickSort(array, left, pivotIndex - 1);
-  quickSort(array, pivotIndex + 1, right);
+  const cmp = arr[mid] === target
+    ? 0
+    : arr[mid] < target
+      ? -1
+      : 1;
 
-  return array;
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursive(arr, target, mid + 1, right)
+      : binarySearchRecursive(arr, target, left, mid);
 }
+const nums = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchRecursive(nums, 7));  // → 3
+console.log(binarySearchRecursive(nums, 4));  // → -1
+function binarySearchRecursiveCustom<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;
 
-/**
- * Rearranges the elements in array[left…right] so that:
- *   – Elements < pivot sit left of the pivot
- *   – Elements >= pivot sit right of the pivot
- * Returns the final index of the pivot.
- */
-function partition<T>(array: T[], left: number, right: number): number {
-  // Take the rightmost element as pivot (last element strategy)
-  const pivot = array[right];
+  const mid = left + ((right - left) >> 1);
+  const cmp = compare(arr[mid], target);
 
-  // Index of the smaller element
-  let i = left - 1;
-
-  for (let j = left; j < right; j++) {
-    // Use the generic < operator; if needed, replace with a custom comparator.
-    if (array[j] < pivot) {
-      i++;
-      [array[i], array[j]] = [array[j], array[i]]; // swap
-    }
-  }
-
-  // Place pivot in the correct spot
-  [array[i + 1], array[right]] = [array[right], array[i + 1]];
-
-  return i + 1; // pivot final position
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
+      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
 }
-
-// ─────────────────────────────────────────────────────────────────────────────────
-
-/* Example usage */
-
-const nums = [12, 4, 5, 6, 7, 3, 1, 15];
-console.log('Before:', nums);
-
-quickSort(nums);
-console.log('After :', nums);     // → [1, 3, 4, 5, 6, 7, 12, 15]
-
-const strings = ['pear', 'apple', 'orange', 'banana'];
-quickSort(strings);
-console.log(strings); // → ['apple', 'banana', 'orange', 'pear']
+interface Person { age: number; name: string; }
+const people: Person[] = [
+  { age: 22, name: 'Alice' },
+  { age: 30, name: 'Bob' },
+  { age: 45, name: 'Charlie' },
+];
+const ageToFind = 30;
+const idx = binarySearchRecursiveCustom(
+  people,
+  { age: ageToFind, name: '' },
+  (a, b) => a.age - b.age
+);
+console.log(idx); // → 1
