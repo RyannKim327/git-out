@@ -1,110 +1,76 @@
-/*--------------------------------------------------
-  1. The “state” that the algorithm operates on
---------------------------------------------------*/
-export interface Node {
-  /** Every node needs a unique identifier for cycle handling */
-  id: string;               // could be number|string | etc.
-  /** Return the directly reachable successors */
-  getChildren(): Node[];
-}
-
-/*--------------------------------------------------
-  2. The breadth‑limited search itself
---------------------------------------------------*/
-export type SearchResult<T = Node> = {
-  /* The node that satisfied the goal predicate,
-     or undefined if none found within depth limit. */
-  found: T | undefined;
-  /* How many nodes were expanded in total */
-  expanded: number;
-};
-
+maxLeftA  ≤  minRightB
+maxLeftB  ≤  minRightA
 /**
- * Breadth‑limited search (BFS with depth limit)
+ * Returns the median of two sorted arrays.
+ * Works for arrays of different lengths, including empty arrays.
  *
- * @param start  The entry point of the search
- * @param goal   A predicate that must be satisfied by the target node
- * @param depthLimit  The maximum depth (0 → only the start node)
- *
- * @returns SearchResult containing the target node (if it was found)
- *          and the number of nodes that were expanded.
+ * Time:  O(log min(m, n))
+ * Space: O(1)
  */
-export function breadthLimitedSearch<T extends Node>(
-  start: T,
-  goal: (node: T) => boolean,
-  depthLimit: number
-): SearchResult<T> {
-  if (depthLimit < 0)
-    throw new Error("depthLimit must be >= 0");
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Make sure nums1 is the smaller array.
+  if (nums1.length > nums2.length) {
+    return findMedianSortedArrays(nums2, nums1);
+  }
 
-  // queue entry holds the node *and* its depth from start
-  type QueueEntry = { node: T; depth: number };
+  const m = nums1.length;
+  const n = nums2.length;
+  const total = m + n;
+  const half = Math.floor((total + 1) / 2);
 
-  const frontier: QueueEntry[] = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
+  let low = 0;
+  let high = m;
 
-  let expanded = 0;
+  while (low <= high) {
+    const i = Math.floor((low + high) / 2);        // Partition in nums1
+    const j = half - i;                           // Partition in nums2
 
-  while (frontier.length > 0) {
-    const { node, depth } = frontier.shift()!; // FIFO
+    const maxLeftA = i === 0 ? -Infinity : nums1[i - 1];
+    const minRightA = i === m ? Infinity : nums1[i];
 
-    if (visited.has(node.id)) continue;   // ignore already‑seen nodes
-    visited.add(node.id);
+    const maxLeftB = j === 0 ? -Infinity : nums2[j - 1];
+    const minRightB = j === n ? Infinity : nums2[j];
 
-    expanded++;
-
-    if (goal(node)) return { found: node, expanded };
-
-    // If we haven't hit the depth limit, expand successors
-    if (depth < depthLimit) {
-      const children = node.getChildren();
-      // Add children to the *back* of the queue – usual BFS order
-      for (const child of children) {
-        // Avoid duplicates in the same frontier level
-        if (!visited.has(child.id)) {
-          frontier.push({ node: child, depth: depth + 1 });
-        }
+    if (maxLeftA > minRightB) {
+      // Need to move partition i left
+      high = i - 1;
+    } else if (maxLeftB > minRightA) {
+      // Need to move partition i right
+      low = i + 1;
+    } else {
+      // Correct partition found
+      if (total % 2 === 1) {
+        return Math.max(maxLeftA, maxLeftB);
+      } else {
+        return (Math.max(maxLeftA, maxLeftB) + Math.min(minRightA, minRightB)) / 2;
       }
     }
   }
 
-  // Search exhausted without finding a goal
-  return { found: undefined, expanded };
+  // If we get here, inputs were invalid (not sorted / mismatch lengths).
+  // Depending on your use‑case you can throw an error or return NaN.
+  throw new Error("Input arrays are not valid");
 }
-class TreeNode implements Node {
-  constructor(public id: string, public children: TreeNode[] = []) {}
-  getChildren() { return this.children; }
-}
+console.log(findMedianSortedArrays([1, 3], [2]));           // 2
+console.log(findMedianSortedArrays([1, 2], [3, 4]));        // 2.5
+console.log(findMedianSortedArrays([], [1]));               // 1
+console.log(findMedianSortedArrays([1, 2, 3], [4, 5, 6])); // 3.5
+export function medianSimple(nums1: number[], nums2: number[]): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
 
-const leafA  = new TreeNode("leafA");
-const leafB  = new TreeNode("leafB");
-const leafC  = new TreeNode("leafC");
-const node1  = new TreeNode("node1", [leafA, leafB]);
-const node2  = new TreeNode("node2", [leafC]);
-const root   = new TreeNode("root", [node1, node2]);
-const result = breadthLimitedSearch(
-  root,
-  n => n.id === "leafC",   // goal predicate
-  2                        // depth limit
-);
+  while (merged.length <= Math.floor((nums1.length + nums2.length - 1) / 2)) {
+    if (i < nums1.length && (j >= nums2.length || nums1[i] <= nums2[j])) {
+      merged.push(nums1[i++]);
+    } else {
+      merged.push(nums2[j++]);
+    }
+  }
 
-if (result.found) {
-  console.log("Found:", result.found.id);
-} else {
-  console.log("Not found within depth limit");
-}
-console.log("Nodes expanded:", result.expanded);
-Found: leafC
-Nodes expanded: 3   // root -> node1 -> node2
-export type SearchResult<T> = {
-  found: T | undefined;
-  expanded: number;
-  path: T[]; // optional: the actual path from the root
-};
+  const mid = merged.length - 1;
+  const total = nums1.length + nums2.length;
 
-export function breadthLimitedSearchCustom<T extends {}>(
-  start: T,
-  getChildren: (node: T) => T[],
-  goal: (node: T) => boolean,
-  depthLimit: number
-) { /* similar to above, but works with any shape */ }
+  if (total % 2 === 1) {
+    return merged[mid];
+  }
+  // Need to peek
