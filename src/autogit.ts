@@ -1,25 +1,50 @@
-const str = "42";
-const num = parseInt(str, 10);  // 42
-parseInt("42 apples", 10);  // 42
-parseInt("  42", 10);       // 42
-parseInt("apple 42", 10);   // NaN
-const s = "42";
-const n1 = Number(s);   // 42
-const n2 = +s;          // 42
-Number("3.14");   // 3.14
-Number.parseFloat("3.14");  // 3.14
-function toInt(value: string): number | null {
-  const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) return null;
-  return parsed;
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                        // empty tree → depth 0
 
-const x = toInt("foo"); // null
-const y = toInt("12");  // 12
-const hex = "0xFF";
-const oct = "0o77";
+  const leftDepth  = maxDepth(root.left);     // recurse on left child
+  const rightDepth = maxDepth(root.right);    // recurse on right child
 
-Number(hex);   // 255
-Number(oct);   // 63
+  return Math.max(leftDepth, rightDepth) + 1; // +1 for the current node
+}
+function maxDepthBFS<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-parseInt(hex, 16);  // 255
+  const queue: Array<TreeNode<T>> = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length;           // nodes on this level
+    depth += 1;                               // finish the level → increment depth
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;            // safe – queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+const tree: TreeNode = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 }
+  },
+  right: {
+    value: 3,
+    right: {
+      value: 6,
+      left: { value: 7 }
+    }
+  }
+};
+
+console.log(maxDepth(tree));      // → 4
+console.log(maxDepthBFS(tree));   // → 4
