@@ -1,14 +1,10 @@
-const numbers: number[] = [34, 7, 23, 32, 5, 62];
+function countOccurrences(text: string, word: string): number {
+  // Normalize the case if you want a case‑insensitive count
+  const normalizedText = text.toLowerCase();
+  const normalizedWord = word.toLowerCase();
 
-// Ascending order (smallest → largest)
-const asc = [...numbers].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [5, 7, 23, 32, 34, 62]
+  // Split on any non‑word character so “hello,” and “hello” both match.
+  const words = normalizedText.split(/\b/).filter(Boolean);
 
-// Descending order (largest → smallest)
-const desc = [...numbers].sort((a, b) => b - a);
-console.log('Descending:', desc); // [62, 34, 32, 23, 7, 5]
-// Sort a copy without mutating the original array
-const ascending = numbers.slice().sort((a, b) => a - b);
-
-// Or, if you prefer a single‑line declaration:
-const descending = [...numbers].sort((a, b) => b - a);
+  return words.filter(w => w === normalizedWord).length;
+}
