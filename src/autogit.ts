@@ -1,65 +1,48 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
+function manualLength(str: string): number {
+  let count = 0;
+  for (const _ of str) {
+    count++;
   }
+  return count;
 }
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
-
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
+console.log(manualLength('hello'));   // 5
+console.log(manualLength('👋🌍'));     // 2   (two emoji)
+function utf16Length(str: string): number {
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charAt(i);
+    if (ch.length === 0) break;   // defensive: strings can be sliced
+    len++;
   }
-
-  return prev; // new head
+  return len;
 }
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
-
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let current = head;
-  let newHead: ListNode<T> | null = null;
-
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
-
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
-
-    current = tmp; // move to what was next, now prev
+function codePointCount(str: string): number {
+  let i = 0;
+  let count = 0;
+  while (i < str.length) {
+    const code = str.codePointAt(i)!;
+    count++;
+    i += code > 0xffff ? 2 : 1;  // skip surrogate pair if present
   }
-
-  return newHead;
+  return count;
 }
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
+console.log(codePointCount('hello'));     // 5
+console.log(codePointCount('👋🌍'));       // 2
+console.log(codePointCount('𝟙𝟚𝟛'));       // 3 (mathematical bold numbers)
+import GraphemeSplitter from 'grapheme-splitter';
 
-// Reverse
-const reversed = reverse(a);
+const splitter = new GraphemeSplitter();
 
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
+function graphemeLength(str: string): number {
+  return splitter.splitGraphemes(str).length;
+}
+const tests = [
+  'hello',
+  '👋',
+  '👋👨‍👩‍👦', // family emoji composed of multiple code points and a zero‑width joiner
+  'a\u0301e',   // a + acute accent
+];
+
+for (const s of tests) {
+  console.log(`"${s}": manual=${manualLength(s)}, codePoint=${codePointCount(s)}`);
 }
