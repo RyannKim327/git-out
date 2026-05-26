@@ -1,52 +1,54 @@
 /**
- * Selection sort – returns a **new** sorted array.
- * The original array is left untouched.
- *
- * @param arr   – source array
- * @returns     – a new array sorted in ascending order
+ * Area from base and height.
+ * @param base  - Base length (any positive number)
+ * @param height - Height length (any positive number)
+ * @returns Triangle area
  */
-export function selectionSort<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];          // clone so we don't mutate the caller's array
-  const n = toSort.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    // assume the smallest element is at i
-    let minIndex = i;
-
-    // find the real smallest element in the remaining unsorted section
-    for (let j = i + 1; j < n; j++) {
-      if (toSort[j] < toSort[minIndex]) {
-        minIndex = j;
-      }
-    }
-
-    // swap the found minimum with the element at i
-    if (minIndex !== i) {
-      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
-    }
+function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('Base and height must be positive numbers.');
+  }
+  return (base * height) / 2;
+}
+const area = areaBaseHeight(10, 5); // 25
+console.log(`Area = ${area}`);      // Area = 25
+/**
+ * Deal with three side lengths.
+ * @param a - length of side a
+ * @param b - length of side b
+ * @param c - length of side c
+ * @returns Triangle area
+ */
+function areaBySides(a: number, b: number, c: number): number {
+  // Simple validity check – the sides must satisfy the triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The given sides do not form a valid triangle.');
   }
 
-  return toSort;
+  const s = (a + b + c) / 2;                 // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
 }
-const unsorted = [9, 3, 10, 2, 7];
-const sorted = selectionSort(unsorted);
+const areaHeron = areaBySides(3, 4, 5); // 6
+console.log(`Area (Heron) = ${areaHeron}`);
+/**
+ * Area from two sides and an included angle (in degrees or radians).
+ * @param side1   - length of one side
+ * @param side2   - length of the other side
+ * @param angle   - included angle (in degrees)
+ * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
+ * @returns Triangle area
+ */
+function areaFromSidesAndAngle(
+  side1: number,
+  side2: number,
+  angle: number,
+  inRadians = false
+): number {
+  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
 
-console.log(sorted);      // [2, 3, 7, 9, 10]
-console.log(unsorted);    // remains [9, 3, 10, 2, 7]
-export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];
-  const helper = (k: number) => {
-    if (k >= toSort.length - 1) return;
-
-    let minIdx = k;
-    for (let i = k + 1; i < toSort.length; i++) {
-      if (toSort[i] < toSort[minIdx]) minIdx = i;
-    }
-
-    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
-    helper(k + 1);
-  };
-
-  helper(0);
-  return toSort;
+  const rad = inRadians ? angle : (angle * Math.PI) / 180;
+  return (side1 * side2 * Math.sin(rad)) / 2;
 }
+const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
+console.log(`Area from two sides & angle = ${areaMixed}`);
