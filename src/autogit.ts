@@ -1,32 +1,52 @@
+// A minimal node type – adjust if your list uses a different shape
+interface ListNode {
+  val: number | string;   // whatever data type you use
+  next: ListNode | null;
+}
+
 /**
- * Returns the longest common prefix of the supplied strings.
- * @param strs Array of strings.  An empty array yields an empty string.
+ * Returns true iff the list starting at `head` is a palindrome.
+ * Uses O(n) time and O(n) auxiliary space.
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return '';
-
-  // The prefix can never be longer than the shortest string
-  let prefix = strs[0];
-
-  for (let i = 1; i < strs.length; i++) {
-    // Trim the prefix until it matches the start of strs[i]
-    while (!strs[i].startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';          // No common prefix
-    }
+function isPalindrome(head: ListNode | null): boolean {
+  // 1. Build an array with the list's values
+  const vals: (number | string)[] = [];
+  for (let cur = head; cur; cur = cur.next) {
+    vals.push(cur.val);
   }
 
-  return prefix;
+  // 2. Check against a reversed copy
+  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
+    if (vals[i] !== vals[j]) {
+      return false;
+    }
+  }
+  return true;
 }
-function longestCommonPrefixSorted(strs: string[]): string {
-  if (!strs.length) return '';
-  // Sorting guarantees that the first and last strings differ the most
-  const sorted = [...strs].sort();
-  const first = sorted[0];
-  const last = sorted[sorted.length - 1];
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) i++;
-  return first.slice(0, i);
+function isPalindrome(head: ListNode | null): boolean {
+  // Find middle (slow goes 1 step, fast goes 2 steps)
+  let slow = head, fast = head;
+  while (fast?.next && fast.next.next) {
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
+
+  // Reverse the second half of the list
+  let prev: ListNode | null = null;
+  let curr = slow?.next ?? null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+
+  // Compare first half and reversed second half
+  let p1 = head, p2 = prev;
+  while (p2) {           // only need to go through the second half
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // → 'fl'
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));   // → ''
