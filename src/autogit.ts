@@ -1,10 +1,19 @@
-const text = "The quick brown fox jumps over the lazy dog";
+function isPalindrome(s: string): boolean {
+  // Two‑pointer scan from both ends
+  let left = 0;
+  let right = s.length - 1;
 
-const hasFox = text.includes("fox");          // true
-const hasCat = text.indexOf("cat") !== -1;    // false
-const containsLazy = /^.*lazy.*$/.test(text); // true (regex)
-function containsIgnoreCase(str: string, sub: string): boolean {
-  return str.toLowerCase().includes(sub.toLowerCase());
+  while (left < right) {
+    // Compare the characters at the two pointers
+    if (s.charAt(left) !== s.charAt(right)) {
+      return false;          // mismatch found – not a palindrome
+    }
+    left++;
+    right--;
+  }
+
+  return true;                 // all mirrored pairs matched
 }
-
-console.log(containsIgnoreCase("Hello World", "WORLD")); // true
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+console.log(isPalindrome(""));        // true (empty string is a palindrome)
