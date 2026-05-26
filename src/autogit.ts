@@ -1,129 +1,125 @@
-class Edge {
-  public start: number;          // index in text where label starts
-  public end: number | string;   // end symbol or index
-  public child: SuffixNode;
+// --- types ----------------------------------------------------------
 
-  constructor(start: number, end: number | string, child: SuffixNode) {
-    this.start = start;
-    this.end = end;          // can be a "shared" reference for leaf edges
-    this.child = child;
-  }
+type Node = string | number;             // anything that can be compared by ===
+type Graph = Map<Node, Node[]>;          // adjacency list
 
-  /** Length of the label (end is inclusive) */
-  get length(): number {
-    if (typeof this.end === 'number') {
-      return this.end - this.start + 1;
-    }
-    // leaf edge: end is shared and increments as we extend
-    return (this.end as string) === '$' ? Infinity : this.end - this.start + 1;
-  }
+// an entry tracks a node and the parent that led to it
+interface QueueEntry {
+  node: Node;
+  parent: Node | null;   // parent in the search tree
 }
 
-class SuffixNode {
-  public edges: Map<string, Edge>;   // first char → edge
-  public suffixLink?: SuffixNode;    // Ukkonen’s suffix link
-  constructor() {
-    this.edges = new Map();
-  }
+// --- helper ---------------------------------------------------------
+
+/**
+ * Simple FIFO queue built on an array for speed.
+ */
+class Queue<T> {
+  private items: T[] = [];
+  enqueue(item: T) { this.items.push(item); }
+  dequeue(): T | undefined { return this.items.shift(); }
+  isEmpty() { return this.items.length === 0; }
+  size() { return this.items.length; }
 }
-class SuffixTree {
-  private root: SuffixNode;
-  private text: string;          // original string
-  private leafEnd: number;       // shared end for all leaves
 
-  private active: ActivePoint;   // current active point
-  private remainder: number;    // # of suffixes that need insertion
+// --- bidirectional BFS ----------------------------------------------
 
-  constructor(text: string) {
-    this.text = text + '$';  // append unique terminator
-    this.leafEnd = -1;
-    this.root = new SuffixNode();
-    this.active = { node: this.root, edge: '', length: 0 };
-    this.remainder = 0;
+export function bidirectionalSearch(
+  graph: Graph,
+  start: Node,
+  goal: Node
+): Node[] | null {      // null iff no path
 
-    this.build();
-  }
+  if (start === goal) return [start];
 
-  /* -------------------------------------------------- */
-  /*  Core routine: Ukkonen’s O(n) construction        */
-  /* -------------------------------------------------- */
-  private build(): void {
-    for (let i = 0; i < this.text.length; i++) {
-      this.extend(i);
+  // queues for both directions
+  const qStart = new Queue<QueueEntry>();
+  const qGoal  = new Queue<QueueEntry>();
+
+  // visited maps: node -> parent
+  const visitedStart = new Map<Node, Node | null>();
+  const visitedGoal  = new Map<Node, Node | null>();
+
+  // initialise
+  qStart.enqueue({ node: start, parent: null });
+  visitedStart.set(start, null);
+
+  qGoal.enqueue({ node: goal, parent: null });
+  visitedGoal.set(goal, null);
+
+  // work until one frontier empties
+  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
+
+    // ---- expand the smaller frontier ----
+    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
+    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
+
+    const { node: current, parent } = nextFrontier.dequeue()!;
+
+    const neighbors = graph.get(current) ?? [];
+    for (const neigh of neighbors) {
+
+      // skip already visited by this side
+      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
+      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
+
+      // mark as visited by this side
+      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
+      visited.set(neigh, current);
+      nextFrontier.enqueue({ node: neigh, parent: current });
+
+      // --- check for meeting point ---
+      if (otherVisited.has(neigh)) {
+        return buildPath(
+          start, goal, neigh, visitedStart, visitedGoal
+        );
+      }
     }
   }
 
-  private extend(pos: number): void {
-    this.leafEnd = pos;
-    this.remainder++;
-    let lastNewNode: SuffixNode | undefined;
+  // nothing found
+  return null;
+}
 
-    while (this.remainder > 0) {
-      // 1.  If active length is zero → the active edge is the char at pos
-      if (this.active.length === 0) {
-        this.active.edge = this.text[pos];
-      }
+/**
+ * Walk back from the meeting point to the start and goal to build the full path.
+ */
+function buildPath(
+  start: Node,
+  goal: Node,
+  meet: Node,
+  visitedStart: Map<Node, Node | null>,
+  visitedGoal:  Map<Node, Node | null>
+): Node[] {
 
-      const edgeChar = this.active.edge;
-      const edge = this.active.node.edges.get(edgeChar);
+  // walk back to start
+  const pathStart: Node[] = [];
+  let cur: Node | null = meet;
+  while (cur !== null) {
+    pathStart.push(cur);
+    cur = visitedStart.get(cur) ?? null;
+  }
+  pathStart.reverse();    // start -> meet
 
-      // 2.  No edge starts with active.edge
-      if (!edge) {
-        // create new leaf edge
-        const leaf = new SuffixNode();
-        const newEdge = new Edge(pos, this.leafEnd, leaf);
-        this.active.node.edges.set(edgeChar, newEdge);
+  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
+  const pathGoal: Node[] = [];
+  cur = visitedGoal.get(meet);
+  while (cur !== null) {
+    pathGoal.push(cur);
+    cur = visitedGoal.get(cur) ?? null;
+  }
 
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this.active.node;
-          lastNewNode = undefined;
-        }
-      } else {
-        // 3.  Edge exists – walk down if needed
-        if (this.active.length >= edge.length) {
-          this.active.node = edge.child;
-          this.active.length -= edge.length;
-          this.active.edge = this.text[pos - this.remainder + 1];
-          continue;  // restart loop, remainder unchanged
-        }
+  return [...pathStart, ...pathGoal];
+}
+const graph: Graph = new Map([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E', 'G']],
+  ['G', ['F']]
+]);
 
-        // 4.  Check next char on the edge
-        const nextChar = this.text[edge.start + this.active.length];
-        if (nextChar === this.text[pos]) {
-          // 4a.  Character already present → just increment active length
-          this.active.length++;
-          if (lastNewNode) {
-            lastNewNode.suffixLink = this.active.node;
-            lastNewNode = undefined;
-          }
-          break; // done for this phase
-        }
-
-        // 4b.  Split the edge: create an intermediate node
-        const splitEnd = edge.start + this.active.length - 1;
-        const splitNode = new SuffixNode();
-        const splitEdge = new Edge(edge.start, splitEnd, splitNode);
-
-        // replace old edge with split edge
-        this.active.node.edges.set(edgeChar, splitEdge);
-
-        // old child becomes child of splitNode
-        splitNode.edges.set(nextChar, edge);
-        edge.start = splitEnd + 1; // shift start of old edge
-
-        // new leaf for current suffix
-        const leaf = new SuffixNode();
-        const newLeafEdge = new Edge(pos, this.leafEnd, leaf);
-        splitNode.edges.set(this.text[pos], newLeafEdge);
-
-        // 4c.  Suffix link handling
-        if (lastNewNode) {
-          lastNewNode.suffixLink = splitNode;
-        }
-        lastNewNode = splitNode;
-      }
-
-      this.remainder--;
-
-      // 5.  Move active point using suffix link
-      if (this.active.node === this.root &&
+const path = bidirectionalSearch(graph, 'A', 'G');
+console.log(path); // => [ 'A', 'C', 'F', 'G' ]
