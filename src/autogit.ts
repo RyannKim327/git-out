@@ -1,68 +1,97 @@
+export interface Node<T = any> {
+  /** A value stored in the node – useful for reconstruction / debugging */
+  value: T;
+
+  /** Returns an array of child nodes (or an empty array) */
+  children(): Node<T>[];
+}
+class IntNode implements Node<number> {
+  constructor(public value: number) {}
+  children(): IntNode[] {
+    // example: a simple binary tree
+    return [];
+  }
+}
 /**
- * Binary search on a sorted array.
- * @param arr   – sorted array of comparable values
- * @param target – value we’re looking for
- * @returns      – index of target, or -1 if not found
+ * Depth‑limited search.  Returns a path from `start` to one of the goal values,
+ * or `null` if no path exists within the depth limit.
+ *
+ * @param start      The node from which we start.
+ * @param isGoal     A predicate that decides if the current node is a goal.
+ * @param depthLimit How many edges you’re willing to traverse.  Zero means
+ *                   you stop immediately (only the start node is examined).
+ * @param visited    Optional set for cycle detection.
+ *
+ * @returns Array of nodes forming the path, or `null`.
  */
-function binarySearchIter<T>(arr: T[], target: T, compareFn?: (a: T, b: T) => number): number {
-  let left = 0;
-  let right = arr.length - 1;
+export function depthLimitedSearch<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number,
+  visited?: Set<Node<T>>
+): Array<Node<T>> | null {
+  if (depthLimit < 0) throw new Error('depthLimit must be ≥ 0');
 
-  while (left <= right) {
-    // Using “>>> 1” gives the floor of the middle even for huge indices
-    const mid = (left + right) >>> 1;
-    const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
-      ? 1
-      : (arr[mid] as any) < (target as any)
-      ? -1
-      : 0;
+  // depth‑first approach – stop when limit hits
+  function recurse(
+    current: Node<T>,
+    depth: number,
+    trail: Node<T>[],
+    visitedSet: Set<Node<T>>
+  ): Array<Node<T>> | null {
+    if (!visitedSet.has(current)) {
+      if (depthLimit === 0 && depth > 0) return null; // reached limit
 
-    if (cmp === 0) {
-      return mid;          // found
-    } else if (cmp < 0) {
-      left = mid + 1;      // target is on the right half
-    } else {
-      right = mid - 1;     // target is on the left half
+      if (isGoal(current)) return [...trail, current];
+
+      visitedSet.add(current);
+
+      for (const child of current.children()) {
+        const result = recurse(child, depth + 1, [...trail, current], visitedSet);
+        if (result !== null) return result;
+      }
+
+      visitedSet.delete(current); // backtrack
+    }
+    return null; // not found on this branch
+  }
+
+  const visitedSet = visited ?? new Set<Node<T>>();
+  return recurse(start, 0, [], visitedSet);
+}
+const goalNode = (node: Node<number>) => node.value === 42;
+const path = depthLimitedSearch(root, goalNode, 10);
+if (path) {
+  console.log('Found !!', path.map(n => n.value));
+} else {
+  console.log('No path within depth limit');
+}
+export function depthLimitedSearchIter<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number
+): Array<Node<T>> | null {
+  // stack holds tuples: [current node, depth so far, path so far]
+  const stack: Array<[Node<T>, number, Node<T>[]]> = [[start, 0, []]];
+
+  const visited = new Set<Node<T>>();
+
+  while (stack.length) {
+    const [node, depth, path] = stack.pop()!;
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (depth > depthLimit) continue; // skip deeper branches
+
+    const newPath = [...path, node];
+
+    if (isGoal(node)) return newPath;
+
+    for (const child of node.children()) {
+      stack.push([child, depth + 1, newPath]);
     }
   }
 
-  return -1; // not found
+  return null; // nothing found
 }
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchIter(nums, 7)); // → 3
-console.log(binarySearchIter(nums, 4)); // → -1
-const words = ["apple", "banana", "cherry", "date"];
-const index = binarySearchIter(words, "cherry", (a, b) => a.localeCompare(b));
-// → 2
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compareFn?: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): number {
-  if (left > right) return -1;            // base case: not found
-
-  const mid = (left + right) >>> 1;
-  const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
-      ? 1
-      : (arr[mid] as any) < (target as any)
-      ? -1
-      : 0;
-
-  if (cmp === 0) return mid;
-  return cmp < 0
-    ? binarySearchRec(arr, target, compareFn, mid + 1, right)
-    : binarySearchRec(arr, target, compareFn, left, mid - 1);
-}
-function test<T>(arr: T[], target: T, fn: (a: T[], t: T) => number) {
-  const idx = fn(arr, target);
-  console.log(`searching ${target} in [${arr}] → ${idx}`);
-}
-
-const ints = [2, 4, 6, 8, 10];
-test(ints, 8, binarySearchIter);
-test(ints, 9, binarySearchIter);
-
-const strs = ['banana', 'cherry', 'fig', 'grape'];
-test(strs, 'fig', (a, t) => binarySearchRec(a, t, (x, y) => x.localeCompare(y)));
