@@ -1,52 +1,70 @@
-// A minimal node type – adjust if your list uses a different shape
-interface ListNode {
-  val: number | string;   // whatever data type you use
-  next: ListNode | null;
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
+  }
 }
-
-/**
- * Returns true iff the list starting at `head` is a palindrome.
- * Uses O(n) time and O(n) auxiliary space.
- */
-function isPalindrome(head: ListNode | null): boolean {
-  // 1. Build an array with the list's values
-  const vals: (number | string)[] = [];
-  for (let cur = head; cur; cur = cur.next) {
-    vals.push(cur.val);
-  }
-
-  // 2. Check against a reversed copy
-  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
-    if (vals[i] !== vals[j]) {
-      return false;
-    }
-  }
-  return true;
+function sumNodes(root: TreeNode | null): number {
+  if (!root) return 0;
+  return root.val + sumNodes(root.left) + sumNodes(root.right);
 }
-function isPalindrome(head: ListNode | null): boolean {
-  // Find middle (slow goes 1 step, fast goes 2 steps)
-  let slow = head, fast = head;
-  while (fast?.next && fast.next.next) {
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
+// Build a small tree:
+//       1
+//      / \
+//     2   3
+//        / \
+//
+// 4   5
 
-  // Reverse the second half of the list
-  let prev: ListNode | null = null;
-  let curr = slow?.next ?? null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
+const tree = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
 
-  // Compare first half and reversed second half
-  let p1 = head, p2 = prev;
-  while (p2) {           // only need to go through the second half
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
+console.log(sumNodes(tree)); // → 15
+interface TreeNode {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
 }
+function sumNodesFunctional(root: TreeNode | undefined): number {
+  if (!root) return 0;
+  return root.value + sumNodesFunctional(root.left) + sumNodesFunctional(root.right);
+}
+const funcTree: TreeNode = {
+  value: 1,
+  left: { value: 2 },
+  right: {
+    value: 3,
+    left: { value: 4 },
+    right: { value: 5 },
+  },
+};
+
+console.log(sumNodesFunctional(funcTree)); // → 15
+function sumNodesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let sum = 0;
+  const stack: (TreeNode | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node) continue;
+
+    sum += node.val;          // inside a class node
+    // sum += node.value;      // inside a functional node
+
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+
+  return sum;
+}
+console.log(sumNodesIterative(tree)); // → 15
