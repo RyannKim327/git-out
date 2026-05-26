@@ -1,65 +1,41 @@
-/**
- * Recursively finds the index of `target` in a sorted array.
- * Returns the index if found, otherwise –1.
- *
- * @param arr   A sorted array (ascending, no duplicates needed)
- * @param target The value you're looking for
- * @param left  The left boundary (inclusive)
- * @param right The right boundary (exclusive)
- */
-function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;            // no match
-
-  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
-
-  const cmp = arr[mid] === target
-    ? 0
-    : arr[mid] < target
-      ? -1
-      : 1;
-
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursive(arr, target, mid + 1, right)
-      : binarySearchRecursive(arr, target, left, mid);
+function charCount(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
+  }
+  return count;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchRecursive(nums, 7));  // → 3
-console.log(binarySearchRecursive(nums, 4));  // → -1
-function binarySearchRecursiveCustom<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;
-
-  const mid = left + ((right - left) >> 1);
-  const cmp = compare(arr[mid], target);
-
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
-      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
+function charCountSplit(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  return str.split(target).length - 1;
 }
-interface Person { age: number; name: string; }
-const people: Person[] = [
-  { age: 22, name: 'Alice' },
-  { age: 30, name: 'Bob' },
-  { age: 45, name: 'Charlie' },
-];
-const ageToFind = 30;
-const idx = binarySearchRecursiveCustom(
-  people,
-  { age: ageToFind, name: '' },
-  (a, b) => a.age - b.age
-);
-console.log(idx); // → 1
+function charCountRegex(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  const re = new RegExp(escapeRegExp(target), 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function charCountReduce(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  return [...str].reduce((acc, ch) => acc + (ch === target ? 1 : 0), 0);
+}
+function charCountUtf16(str: string, target: string): number {
+  if (target.length !== 1) throw new Error('Target must be a single character');
+  const targetCode = target.charCodeAt(0);
+  let count = 0;
+  for (let i = 0, len = str.length; i < len; i++) {
+    if (str.charCodeAt(i) === targetCode) count++;
+  }
+  return count;
+}
+const text = "hello世界hello";
+
+console.log(charCount(text, 'l')); // 3
+console.log(charCountSplit(text, 'l')); // 3
+console.log(charCountRegex(text, 'l')); // 3
+console.log(charCountReduce(text, 'l')); // 3
