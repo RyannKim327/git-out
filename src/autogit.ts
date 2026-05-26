@@ -1,66 +1,40 @@
-/**
- * Finds the index of `key` in a sorted array `arr` using Fibonacci search.
- * @param arr  A sorted array of comparable elements.
- * @param key  The value to locate.
- * @returns The index of `key` in `arr`, or -1 if not found.
- */
-export function fibonacciSearch<T>(arr: T[], key: T): number {
-  const n = arr.length;
+const fruits = ['apple', 'banana', 'cherry', 'banana'];
 
-  // 1️⃣ Build Fibonacci numbers up to ≥ n
-  let fibMm2 = 0; // (m-2)th Fibonacci
-  let fibMm1 = 1; // (m-1)th Fibonacci
-  let fibM = fibMm2 + fibMm1; // mth Fibonacci
+const withoutBanana = fruits.filter(f => f !== 'banana');
 
-  while (fibM < n) {
-    fibMm2 = fibMm1;
-    fibMm1 = fibM;
-    fibM = fibMm2 + fibMm1;
-  }
+console.log(withoutBanana); // ['apple', 'cherry']
+// Remove the first object with id === 42
+const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
+const itemsWithout42 = items.filter(item => item.id !== 42);
+const numbers = [10, 20, 30, 40];
+const indexToRemove = 2; // 30
 
-  // 2️⃣ `offset` marks the eliminated portion from the left
-  let offset = -1;
+// splice(start, deleteCount)
+numbers.splice(indexToRemove, 1);
 
-  // 3️⃣ Main loop: keep shrinking the range
-  while (fibM > 1) {
-    const i = Math.min(offset + fibMm2, n - 1);
+console.log(numbers); // [10, 20, 40]
+const arr = [1, 2, 3, 4, 5];
+const cond = (x: number) => x % 2 === 0; // remove evens
 
-    // Debugging helper: show where we're looking
-    // console.log(`Comparing at index ${i} (value=${arr[i]})`);
+// Find first match and splice it out
+const idx = arr.findIndex(cond);
+if (idx !== -1) arr.splice(idx, 1);
 
-    if (arr[i] < key) {
-      // Move three Fibonacci steps down
-      fibM = fibMm1;
-      fibMm1 = fibMm2;
-      fibMm2 = fibM - fibMm1;
-      offset = i;
-    } else if (arr[i] > key) {
-      // Move two Fibonacci steps down
-      fibM = fibMm2;
-      fibMm1 = fibMm1 - fibMm2;
-      fibMm2 = fibM - fibMm1;
-      // offset stays the same
-    } else {
-      // Element found
-      return i;
-    }
-  }
-
-  // Check the last remaining element
-  if (fibMm1 === 1 && offset + 1 < n && arr[offset + 1] === key) {
-    return offset + 1;
-  }
-
-  // Element not found
-  return -1;
+console.log(arr); // [1, 3, 5]
+// Remove the first occurrence of a value
+export function removeFirst<T>(arr: T[], target: T): T[] {
+  const idx = arr.findIndex(v => v === target);
+  if (idx === -1) return [...arr]; // not found, return copy
+  const copy = [...arr];
+  copy.splice(idx, 1);
+  return copy; // or return copy and let caller decide
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
-console.log(fibonacciSearch(sorted, 13)); // → 6
-console.log(fibonacciSearch(sorted, 2));  // → -1
-export function fibonacciSearch<T>(
-  arr: T[],
-  key: T,
-  cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)
-): number {
-  // use cmp(a, b) instead of a < b / a > b
+
+// Remove by index (mutable)
+export function removeAt<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1);
+  }
 }
+// Keep everything except index 3
+const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
