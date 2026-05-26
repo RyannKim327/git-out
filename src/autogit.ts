@@ -1,125 +1,52 @@
-// --- types ----------------------------------------------------------
-
-type Node = string | number;             // anything that can be compared by ===
-type Graph = Map<Node, Node[]>;          // adjacency list
-
-// an entry tracks a node and the parent that led to it
-interface QueueEntry {
-  node: Node;
-  parent: Node | null;   // parent in the search tree
+// A minimal node type – adjust if your list uses a different shape
+interface ListNode {
+  val: number | string;   // whatever data type you use
+  next: ListNode | null;
 }
-
-// --- helper ---------------------------------------------------------
 
 /**
- * Simple FIFO queue built on an array for speed.
+ * Returns true iff the list starting at `head` is a palindrome.
+ * Uses O(n) time and O(n) auxiliary space.
  */
-class Queue<T> {
-  private items: T[] = [];
-  enqueue(item: T) { this.items.push(item); }
-  dequeue(): T | undefined { return this.items.shift(); }
-  isEmpty() { return this.items.length === 0; }
-  size() { return this.items.length; }
-}
+function isPalindrome(head: ListNode | null): boolean {
+  // 1. Build an array with the list's values
+  const vals: (number | string)[] = [];
+  for (let cur = head; cur; cur = cur.next) {
+    vals.push(cur.val);
+  }
 
-// --- bidirectional BFS ----------------------------------------------
-
-export function bidirectionalSearch(
-  graph: Graph,
-  start: Node,
-  goal: Node
-): Node[] | null {      // null iff no path
-
-  if (start === goal) return [start];
-
-  // queues for both directions
-  const qStart = new Queue<QueueEntry>();
-  const qGoal  = new Queue<QueueEntry>();
-
-  // visited maps: node -> parent
-  const visitedStart = new Map<Node, Node | null>();
-  const visitedGoal  = new Map<Node, Node | null>();
-
-  // initialise
-  qStart.enqueue({ node: start, parent: null });
-  visitedStart.set(start, null);
-
-  qGoal.enqueue({ node: goal, parent: null });
-  visitedGoal.set(goal, null);
-
-  // work until one frontier empties
-  while (!qStart.isEmpty() && !qGoal.isEmpty()) {
-
-    // ---- expand the smaller frontier ----
-    const nextFrontier = qStart.size() <= qGoal.size() ? qStart : qGoal;
-    const otherVisited = nextFrontier === qStart ? visitedGoal : visitedStart;
-
-    const { node: current, parent } = nextFrontier.dequeue()!;
-
-    const neighbors = graph.get(current) ?? [];
-    for (const neigh of neighbors) {
-
-      // skip already visited by this side
-      if (visitedStart.has(neigh) && nextFrontier === qStart) continue;
-      if (visitedGoal.has(neigh) && nextFrontier === qGoal) continue;
-
-      // mark as visited by this side
-      const visited = nextFrontier === qStart ? visitedStart : visitedGoal;
-      visited.set(neigh, current);
-      nextFrontier.enqueue({ node: neigh, parent: current });
-
-      // --- check for meeting point ---
-      if (otherVisited.has(neigh)) {
-        return buildPath(
-          start, goal, neigh, visitedStart, visitedGoal
-        );
-      }
+  // 2. Check against a reversed copy
+  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
+    if (vals[i] !== vals[j]) {
+      return false;
     }
   }
-
-  // nothing found
-  return null;
+  return true;
 }
-
-/**
- * Walk back from the meeting point to the start and goal to build the full path.
- */
-function buildPath(
-  start: Node,
-  goal: Node,
-  meet: Node,
-  visitedStart: Map<Node, Node | null>,
-  visitedGoal:  Map<Node, Node | null>
-): Node[] {
-
-  // walk back to start
-  const pathStart: Node[] = [];
-  let cur: Node | null = meet;
-  while (cur !== null) {
-    pathStart.push(cur);
-    cur = visitedStart.get(cur) ?? null;
-  }
-  pathStart.reverse();    // start -> meet
-
-  // walk back to goal from the meeting point (exclude meeting node to avoid duplicate)
-  const pathGoal: Node[] = [];
-  cur = visitedGoal.get(meet);
-  while (cur !== null) {
-    pathGoal.push(cur);
-    cur = visitedGoal.get(cur) ?? null;
+function isPalindrome(head: ListNode | null): boolean {
+  // Find middle (slow goes 1 step, fast goes 2 steps)
+  let slow = head, fast = head;
+  while (fast?.next && fast.next.next) {
+    slow = slow!.next!;
+    fast = fast.next.next;
   }
 
-  return [...pathStart, ...pathGoal];
-}
-const graph: Graph = new Map([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E', 'G']],
-  ['G', ['F']]
-]);
+  // Reverse the second half of the list
+  let prev: ListNode | null = null;
+  let curr = slow?.next ?? null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
 
-const path = bidirectionalSearch(graph, 'A', 'G');
-console.log(path); // => [ 'A', 'C', 'F', 'G' ]
+  // Compare first half and reversed second half
+  let p1 = head, p2 = prev;
+  while (p2) {           // only need to go through the second half
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
