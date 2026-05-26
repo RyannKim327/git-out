@@ -1,15 +1,25 @@
-const original = [1, 2, 3, 4];
+const str = "42";
+const num = parseInt(str, 10);  // 42
+parseInt("42 apples", 10);  // 42
+parseInt("  42", 10);       // 42
+parseInt("apple 42", 10);   // NaN
+const s = "42";
+const n1 = Number(s);   // 42
+const n2 = +s;          // 42
+Number("3.14");   // 3.14
+Number.parseFloat("3.14");  // 3.14
+function toInt(value: string): number | null {
+  const parsed = parseInt(value, 10);
+  if (isNaN(parsed)) return null;
+  return parsed;
+}
 
-const reversed = original.slice().reverse(); // => [4, 3, 2, 1]
-const arr = [5, 4, 3];
+const x = toInt("foo"); // null
+const y = toInt("12");  // 12
+const hex = "0xFF";
+const oct = "0o77";
 
-// 👈 preserve arr
-const backToFront = arr.slice().reverse(); // [3, 4, 5]
-console.log(arr);          // [5, 4, 3]
-const arr = [1, 2, 3];
-arr.reverse(); // arr is now [3, 2, 1]
-const reverseArray = <T>(input: T[]): T[] =>
-  input.reduce<T[]>((acc, item) => [item, ...acc], []);
+Number(hex);   // 255
+Number(oct);   // 63
 
-const arr = [10, 20, 30];
-const rev = reverseArray(arr); // [30, 20, 10]
+parseInt(hex, 16);  // 255
