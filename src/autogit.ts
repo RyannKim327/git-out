@@ -1,116 +1,63 @@
 /**
- * A binary‑heap priority queue.
+ * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
  *
- * @template T  The type of the elements in the queue.
- *
- * @example
- * // min‑heap
- * const pq = new PriorityQueue<number>((a, b) => a - b);
- * pq.add(5); pq.add(2); pq.add(8);
- * console.log(pq.extract()); // 2
- *
- * // max‑heap (reverse the comparator)
- * const pqMax = new PriorityQueue<number>((a, b) => b - a);
+ * @param src   the source array (contents will not be mutated)
+ * @param dst   the destination array into which the merged result goes
+ * @param l     left index (inclusive)
+ * @param m     middle index (left sub‑range ends here)
+ * @param r     right index (exclusive)
  */
-export class PriorityQueue<T> {
-  /** The underlying array that stores the heap. */
-  private items: T[] = [];
+function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
+    let i = l;      // iterator for left sub‑run
+    let j = m;      // iterator for right sub‑run
+    let k = l;      // iterator for destination
 
-  /**
-   * @param compare Comparator: `a < b` returns a negative value,
-   *                `a === b` returns zero,
-   *                `a > b` returns a positive value.
-   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
-   *                or a custom comparator for objects.
-   */
-  constructor(private compare: (a: T, b: T) => number) {}
-
-  /** Number of elements in the queue. */
-  size(): number { return this.items.length; }
-
-  /** Whether the queue is empty. */
-  isEmpty(): boolean { return this.items.length === 0; }
-
-  /** Return the highest‑priority element without removing it. */
-  peek(): T | undefined { return this.items[0]; }
-
-  /** Insert a new element. */
-  add(element: T): void {
-    this.items.push(element);
-    this.siftUp(this.items.length - 1);
-  }
-
-  /** Remove and return the element with the highest priority. */
-  extract(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const root = this.items[0];
-    const last = this.items.pop()!;
-    if (!this.isEmpty()) {
-      this.items[0] = last;
-      this.siftDown(0);
+    while (i < m && j < r) {
+        if (src[i] <= src[j]) {
+            dst[k++] = src[i++];
+        } else {
+            dst[k++] = src[j++];
+        }
     }
-    return root;
-  }
 
-  /* ---- Internals ---- */
-
-  /** Move a node up until the heap property holds. */
-  private siftUp(idx: number): void {
-    let childIdx = idx;
-    while (childIdx > 0) {
-      const parentIdx = Math.floor((childIdx - 1) / 2);
-      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
-        this.swap(childIdx, parentIdx);
-        childIdx = parentIdx;
-      } else break;
-    }
-  }
-
-  /** Move a node down until the heap property holds. */
-  private siftDown(idx: number): void {
-    const lastIdx = this.items.length - 1;
-    let parentIdx = idx;
-
-    while (true) {
-      const leftIdx = parentIdx * 2 + 1;
-      const rightIdx = parentIdx * 2 + 2;
-      let smallestIdx = parentIdx;
-
-      if (leftIdx <= lastIdx &&
-          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx <= lastIdx &&
-          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx !== parentIdx) {
-        this.swap(parentIdx, smallestIdx);
-        parentIdx = smallestIdx;
-      } else break;
-    }
-  }
-
-  /** Swap two indices in the array. */
-  private swap(i: number, j: number): void {
-    const tmp = this.items[i];
-    this.items[i] = this.items[j];
-    this.items[j] = tmp;
-  }
+    // copy any leftovers (at most one of the two while above will run)
+    while (i < m) dst[k++] = src[i++];
+    while (j < r) dst[k++] = src[j++];
 }
-// Min‑heap of numbers
-const minQ = new PriorityQueue<number>((a, b) => a - b);
-minQ.add(10);
-minQ.add(3);
-minQ.add(7);
-console.log(minQ.extract()); // 3
-console.log(minQ.extract()); // 7
-console.log(minQ.extract()); // 10
 
-// Max‑heap of strings by length
-const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
-maxStr.add("short");
-maxStr.add("tiny");
-maxStr.add("extraordinarilylong");
-console.log(maxStr.extract()); // "extraordinarilylong"
+/**
+ * Iterative bottom‑up merge sort.
+ *
+ * @remarks
+ *   * `arr` is the array you want sorted—original remains untouched.
+ *   * Returns a new sorted array. If you want to sort in place you
+ *     could swap the references to the source and destination arrays
+ *     after each pass.
+ *
+ * @param arr  array to sort
+ * @returns    sorted copy of `arr`
+ */
+export function mergeSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    if (n <= 1) return arr.slice();   // trivial case
+
+    let src = arr.slice();            // working copy
+    let dst: T[] = new Array(n);      // auxiliary buffer
+
+    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
+    for (let run = 1; run < n; run <<= 1) {
+        // merge adjacent runs of current length
+        for (let start = 0; start < n; start += 2 * run) {
+            const mid = Math.min(start + run, n);
+            const end = Math.min(start + 2 * run, n);
+            merge(src, dst, start, mid, end);
+        }
+
+        // the freshly merged segments now sit in `dst`;
+        // swap src/dst to let next pass read the new data
+        [src, dst] = [dst, src];
+    }
+
+    // After the last pass `src` holds the sorted data (due to the final swap)
+    return src;
+}
