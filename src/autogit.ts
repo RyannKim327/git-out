@@ -1,52 +1,57 @@
-// A minimal node type – adjust if your list uses a different shape
-interface ListNode {
-  val: number | string;   // whatever data type you use
-  next: ListNode | null;
+/**
+ * Build the shift table used by BMH.
+ * Each entry tells us how far we can jump when the bad character
+ * (the character that mismatched) appears.
+ */
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
+
+  // every character that does NOT appear in the pattern gets a full skip
+  // (m).  Characters *inside* the pattern get a smaller value.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern[i]] = m - 1 - i;
+  }
+
+  return table;
 }
 
 /**
- * Returns true iff the list starting at `head` is a palindrome.
- * Uses O(n) time and O(n) auxiliary space.
+ * Classic Boyer‑Moore‑Horspool
+ *
+ * @param text    The text to search in
+ * @param pattern The pattern to find
+ * @returns Index of the first occurrence or -1
  */
-function isPalindrome(head: ListNode | null): boolean {
-  // 1. Build an array with the list's values
-  const vals: (number | string)[] = [];
-  for (let cur = head; cur; cur = cur.next) {
-    vals.push(cur.val);
-  }
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern matches immediately
+  if (pattern.length > text.length) return -1;   // impossible
 
-  // 2. Check against a reversed copy
-  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
-    if (vals[i] !== vals[j]) {
-      return false;
+  const shift = buildShiftTable(pattern);
+  const n = text.length;
+  const m = pattern.length;
+
+  let i = 0;          // index in text where we start aligning the pattern
+
+  while (i <= n - m) {
+    // start comparing from the end of the pattern
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
     }
-  }
-  return true;
-}
-function isPalindrome(head: ListNode | null): boolean {
-  // Find middle (slow goes 1 step, fast goes 2 steps)
-  let slow = head, fast = head;
-  while (fast?.next && fast.next.next) {
-    slow = slow!.next!;
-    fast = fast.next.next;
+
+    if (j < 0) {
+      return i;  // whole pattern matched
+    }
+
+    // bad character at text[i + m - 1]
+    const badChar = text[i + m - 1];
+    const skip = shift[badChar] ?? m; // default skip is m
+    i += skip;
   }
 
-  // Reverse the second half of the list
-  let prev: ListNode | null = null;
-  let curr = slow?.next ?? null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
-  }
-
-  // Compare first half and reversed second half
-  let p1 = head, p2 = prev;
-  while (p2) {           // only need to go through the second half
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
+  return -1; // not found
 }
+console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
+console.log(boyerMooreHorspool("hello world", "world")); // → 6
+console.log(boyerMooreHorspool("visible", "nope")); // → -1
