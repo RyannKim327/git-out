@@ -1,10 +1,24 @@
-const text = "The quick brown fox jumps over the lazy dog";
+const numbers = [1, 2, 3, 2, 4, 1, 5];
 
-const hasFox = text.includes("fox");          // true
-const hasCat = text.indexOf("cat") !== -1;    // false
-const containsLazy = /^.*lazy.*$/.test(text); // true (regex)
-function containsIgnoreCase(str: string, sub: string): boolean {
-  return str.toLowerCase().includes(sub.toLowerCase());
+// One‑liner:
+const unique = [...new Set(numbers)]; // [1, 2, 3, 4, 5]
+numbers.length = 0;                      // clear the original array
+numbers.push(...new Set(numbers));       // backfill it with unique items
+interface User {
+  id: number;
+  name: string;
 }
 
-console.log(containsIgnoreCase("Hello World", "WORLD")); // true
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice' }
+];
+
+const uniqueUsers = users.filter((user, i, arr) =>
+  i === arr.findIndex(u => u.id === user.id)
+);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+const byId = new Map<number, User>();
+for (const u of users) byId.set(u.id, u);
+const uniqueUsers = Array.from(byId.values());
