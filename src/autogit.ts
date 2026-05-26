@@ -1,87 +1,129 @@
-/**
- * Radix sort for 32‑bit signed integers.
- * Works for any array length, including 0.
- *
- * The algorithm:
- *   – Split the input into positives and negatives
- *   – Sort each group with a stable counting‑sort pass for each decimal digit (base 10)
- *   – Negatives are sorted in reverse order of their absolute values
- *   – Concatenate negative‑part (re‑negated) then positive‑part
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length === 0) return nums; // nothing to do
+class Edge {
+  public start: number;          // index in text where label starts
+  public end: number | string;   // end symbol or index
+  public child: SuffixNode;
 
-  /* 1️⃣  Separate positives from negatives   */
-  const positives: number[] = [];
-  const negatives: number[] = [];
-
-  for (const n of nums) {
-    if (n >= 0) positives.push(n);
-    else negatives.push(Math.abs(n));  // store abs for later sorting
+  constructor(start: number, end: number | string, child: SuffixNode) {
+    this.start = start;
+    this.end = end;          // can be a "shared" reference for leaf edges
+    this.child = child;
   }
 
-  /* 2️⃣  Sort the “unsigned” parts with an inner helper   */
-  const sortedPos = sortUnsigned(positives);
-  const sortedNeg = sortUnsigned(negatives);
-
-  /* 3️⃣  Negatives need to be reversed & re‑negated       */
-  const finalNeg = sortedNeg.reverse().map(v => -v);
-
-  /* 4️⃣  Merge back together – negative values come first   */
-  return [...finalNeg, ...sortedPos];
+  /** Length of the label (end is inclusive) */
+  get length(): number {
+    if (typeof this.end === 'number') {
+      return this.end - this.start + 1;
+    }
+    // leaf edge: end is shared and increments as we extend
+    return (this.end as string) === '$' ? Infinity : this.end - this.start + 1;
+  }
 }
 
-/**
- * Internally sort an array of non‑negative numbers by radix.
- * The routine is the same as the classic radix sort used in
- * CS‑textbooks: a counting sort stable pass for each power of 10.
- */
-function sortUnsigned(arr: number[]): number[] {
-  if (arr.length === 0) return arr;
-
-  // Find the largest value so we know when to stop
-  const maxVal = Math.max(...arr);
-
-  let exponent = 1;   // 10⁰, 10¹, 10² …
-  let result = arr;   // we’ll keep re‑assigning
-
-  while (Math.floor(maxVal / exponent) > 0) {
-    result = countingSortByExponent(result, exponent);
-    exponent *= 10;
+class SuffixNode {
+  public edges: Map<string, Edge>;   // first char → edge
+  public suffixLink?: SuffixNode;    // Ukkonen’s suffix link
+  constructor() {
+    this.edges = new Map();
   }
-
-  return result;
 }
+class SuffixTree {
+  private root: SuffixNode;
+  private text: string;          // original string
+  private leafEnd: number;       // shared end for all leaves
 
-/**
- * One stable counting‑sort pass for a specific digit (exponent).
- * Digits are guaranteed to be 0–9.
- */
-function countingSortByExponent(nums: number[], exp: number): number[] {
-  const output = new Array(nums.length);
-  const count = new Array(10).fill(0);
+  private active: ActivePoint;   // current active point
+  private remainder: number;    // # of suffixes that need insertion
 
-  // 1️⃣ Count occurrences of each digit
-  for (const n of nums) {
-    const digit = Math.floor(n / exp) % 10;
-    count[digit]++;
+  constructor(text: string) {
+    this.text = text + '$';  // append unique terminator
+    this.leafEnd = -1;
+    this.root = new SuffixNode();
+    this.active = { node: this.root, edge: '', length: 0 };
+    this.remainder = 0;
+
+    this.build();
   }
 
-  // 2️⃣ Turn counts into cumulative counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
+  /* -------------------------------------------------- */
+  /*  Core routine: Ukkonen’s O(n) construction        */
+  /* -------------------------------------------------- */
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.extend(i);
+    }
   }
 
-  // 3️⃣ Build output array (backwards for stability)
-  for (let i = nums.length - 1; i >= 0; i--) {
-    const n = nums[i];
-    const digit = Math.floor(n / exp) % 10;
-    output[--count[digit]] = n;
-  }
+  private extend(pos: number): void {
+    this.leafEnd = pos;
+    this.remainder++;
+    let lastNewNode: SuffixNode | undefined;
 
-  return output;
-}
-const data = [170, 45, 75, 90, 802, 24, 2, 66, -3, -55];
-const sorted = radixSort(data);
-console.log(sorted);
-// → [ -55, -3, 2, 24, 45, 66, 75, 90, 170, 802 ]
+    while (this.remainder > 0) {
+      // 1.  If active length is zero → the active edge is the char at pos
+      if (this.active.length === 0) {
+        this.active.edge = this.text[pos];
+      }
+
+      const edgeChar = this.active.edge;
+      const edge = this.active.node.edges.get(edgeChar);
+
+      // 2.  No edge starts with active.edge
+      if (!edge) {
+        // create new leaf edge
+        const leaf = new SuffixNode();
+        const newEdge = new Edge(pos, this.leafEnd, leaf);
+        this.active.node.edges.set(edgeChar, newEdge);
+
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this.active.node;
+          lastNewNode = undefined;
+        }
+      } else {
+        // 3.  Edge exists – walk down if needed
+        if (this.active.length >= edge.length) {
+          this.active.node = edge.child;
+          this.active.length -= edge.length;
+          this.active.edge = this.text[pos - this.remainder + 1];
+          continue;  // restart loop, remainder unchanged
+        }
+
+        // 4.  Check next char on the edge
+        const nextChar = this.text[edge.start + this.active.length];
+        if (nextChar === this.text[pos]) {
+          // 4a.  Character already present → just increment active length
+          this.active.length++;
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this.active.node;
+            lastNewNode = undefined;
+          }
+          break; // done for this phase
+        }
+
+        // 4b.  Split the edge: create an intermediate node
+        const splitEnd = edge.start + this.active.length - 1;
+        const splitNode = new SuffixNode();
+        const splitEdge = new Edge(edge.start, splitEnd, splitNode);
+
+        // replace old edge with split edge
+        this.active.node.edges.set(edgeChar, splitEdge);
+
+        // old child becomes child of splitNode
+        splitNode.edges.set(nextChar, edge);
+        edge.start = splitEnd + 1; // shift start of old edge
+
+        // new leaf for current suffix
+        const leaf = new SuffixNode();
+        const newLeafEdge = new Edge(pos, this.leafEnd, leaf);
+        splitNode.edges.set(this.text[pos], newLeafEdge);
+
+        // 4c.  Suffix link handling
+        if (lastNewNode) {
+          lastNewNode.suffixLink = splitNode;
+        }
+        lastNewNode = splitNode;
+      }
+
+      this.remainder--;
+
+      // 5.  Move active point using suffix link
+      if (this.active.node === this.root &&
