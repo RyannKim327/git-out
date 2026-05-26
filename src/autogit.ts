@@ -1,76 +1,173 @@
-maxLeftA  ≤  minRightB
-maxLeftB  ≤  minRightA
 /**
- * Returns the median of two sorted arrays.
- * Works for arrays of different lengths, including empty arrays.
- *
- * Time:  O(log min(m, n))
- * Space: O(1)
+ * A minimal red‑black tree implementation
+ * -------------------------------------------------
+ * • Generic over key (must be comparable with `<` & `>`) and value
+ * • Internally balanced by standard RB‑tree rules
+ * • O(log n) insert, delete, search
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
+
+enum Colour {
+  RED,
+  BLACK,
+}
+
+interface RBNode<K, V> {
+  key: K;
+  value: V;
+  colour: Colour;
+  left?: RBNode<K, V>;
+  right?: RBNode<K, V>;
+  parent?: RBNode<K, V>;
+}
+
+class RedBlackTree<K, V> {
+  private root?: RBNode<K, V>;
+
+  /* ---------- Public API ---------- */
+
+  /** Look up a value by key */
+  find(key: K): V | undefined {
+    let node = this.root;
+    while (node) {
+      if (key < node.key) node = node.left;
+      else if (key > node.key) node = node.right;
+      else return node.value;
+    }
+    return undefined;
   }
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const total = m + n;
-  const half = Math.floor((total + 1) / 2);
+  /** Insert a key/value pair */
+  insert(key: K, value: V): void {
+    const newNode: RBNode<K, V> = {
+      key,
+      value,
+      colour: Colour.RED, // new nodes are always red
+    };
+    this.bstInsert(newNode);
+    this.fixInsert(newNode);
+  }
 
-  let low = 0;
-  let high = m;
+  /** Delete a node by key (no support for duplicates) */
+  delete(key: K): boolean {
+    let node = this.root;
+    while (node && node.key !== key) {
+      node = key < node.key ? node.left : node.right;
+    }
+    if (!node) return false; // not found
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);        // Partition in nums1
-    const j = half - i;                           // Partition in nums2
+    this.deleteNode(node);
+    return true;
+  }
 
-    const maxLeftA = i === 0 ? -Infinity : nums1[i - 1];
-    const minRightA = i === m ? Infinity : nums1[i];
+  /* ---------- Helper methods ---------- */
 
-    const maxLeftB = j === 0 ? -Infinity : nums2[j - 1];
-    const minRightB = j === n ? Infinity : nums2[j];
+  /** Standard BST insertion */
+  private bstInsert(z: RBNode<K, V>): void {
+    let y: RBNode<K, V> | undefined;
+    let x = this.root;
+    while (x) {
+      y = x;
+      x = z.key < x.key ? x.left : x.right;
+    }
+    z.parent = y;
+    if (!y) this.root = z; // tree was empty
+    else if (z.key < y.key) y.left = z;
+    else y.right = z;
+  }
 
-    if (maxLeftA > minRightB) {
-      // Need to move partition i left
-      high = i - 1;
-    } else if (maxLeftB > minRightA) {
-      // Need to move partition i right
-      low = i + 1;
-    } else {
-      // Correct partition found
-      if (total % 2 === 1) {
-        return Math.max(maxLeftA, maxLeftB);
+  /** Re‑balance after insertion */
+  private fixInsert(z: RBNode<K, V>): void {
+    while (
+      z.parent &&
+      z.parent.colour === Colour.RED
+    ) {
+      const parent = z.parent;
+      const grand = parent.parent;
+      if (!grand) break; // should not happen, parent is always red => grand exists
+
+      if (parent === grand.left) {
+        const y = grand.right; // uncle
+        if (y && y.colour === Colour.RED) {
+          // Case 1: uncle is red
+          parent.colour = Colour.BLACK;
+          y.colour = Colour.BLACK;
+          grand.colour = Colour.RED;
+          z = grand;
+        } else {
+          if (z === parent.right) {
+            // Case 2: z is right child
+            this.rotateLeft(parent);
+            z = parent;
+          }
+          // Case 3: z is left child
+          this.rotateRight(grand);
+          parent.colour = Colour.BLACK;
+          grand.colour = Colour.RED;
+          break;
+        }
       } else {
-        return (Math.max(maxLeftA, maxLeftB) + Math.min(minRightA, minRightB)) / 2;
+        // Mirror image of the above
+        const y = grand.left; // uncle
+        if (y && y.colour === Colour.RED) {
+          parent.colour = Colour.BLACK;
+          y.colour = Colour.BLACK;
+          grand.colour = Colour.RED;
+          z = grand;
+        } else {
+          if (z === parent.left) {
+            this.rotateRight(parent);
+            z = parent;
+          }
+          this.rotateLeft(grand);
+          parent.colour = Colour.BLACK;
+          grand.colour = Colour.RED;
+          break;
+        }
       }
     }
+    this.root!.colour = Colour.BLACK;
   }
 
-  // If we get here, inputs were invalid (not sorted / mismatch lengths).
-  // Depending on your use‑case you can throw an error or return NaN.
-  throw new Error("Input arrays are not valid");
-}
-console.log(findMedianSortedArrays([1, 3], [2]));           // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));        // 2.5
-console.log(findMedianSortedArrays([], [1]));               // 1
-console.log(findMedianSortedArrays([1, 2, 3], [4, 5, 6])); // 3.5
-export function medianSimple(nums1: number[], nums2: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-
-  while (merged.length <= Math.floor((nums1.length + nums2.length - 1) / 2)) {
-    if (i < nums1.length && (j >= nums2.length || nums1[i] <= nums2[j])) {
-      merged.push(nums1[i++]);
-    } else {
-      merged.push(nums2[j++]);
-    }
+  /* Rotation helpers */
+  private rotateLeft(x: RBNode<K, V>): void {
+    const y = x.right!;
+    x.right = y.left;
+    if (y.left) y.left.parent = x;
+    y.parent = x.parent;
+    if (!x.parent) this.root = y;
+    else if (x === x.parent.left) x.parent.left = y;
+    else x.parent.right = y;
+    y.left = x;
+    x.parent = y;
   }
 
-  const mid = merged.length - 1;
-  const total = nums1.length + nums2.length;
-
-  if (total % 2 === 1) {
-    return merged[mid];
+  private rotateRight(x: RBNode<K, V>): void {
+    const y = x.left!;
+    x.left = y.right;
+    if (y.right) y.right.parent = x;
+    y.parent = x.parent;
+    if (!x.parent) this.root = y;
+    else if (x === x.parent.right) x.parent.right = y;
+    else x.parent.left = y;
+    y.right = x;
+    x.parent = y;
   }
-  // Need to peek
+
+  /* ---------- Deletion ---------- */
+
+  /** find minimum node starting at a given node */
+  private minimum(node: RBNode<K, V>): RBNode<K, V> {
+    while (node.left) node = node.left;
+    return node;
+  }
+
+  /** transplant subtree u with subtree v */
+  private transplant(u: RBNode<K, V>, v?: RBNode<K, V>): void {
+    if (!u.parent) this.root = v;
+    else if (u === u.parent.left) u.parent.left = v;
+    else u.parent.right = v;
+    if (v) v.parent = u.parent;
+  }
+
+  /** Remove node from the tree and rebalance */
+ 
