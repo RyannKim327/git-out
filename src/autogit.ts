@@ -1,70 +1,62 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+/**
+ * Quick‑sorts an array in place and returns the same array reference.
+ *
+ * @param array   The array to sort. It is mutated in place.
+ * @param left    Index of the first element to sort (inclusive).  Default: 0.
+ * @param right   Index of the last element to sort (inclusive).  Default: array.length - 1.
+ * @returns       The sorted array (same reference as the argument).
+ */
+function quickSort<T>(array: T[], left = 0, right: number = array.length - 1): T[] {
+  // Base case: if the sub‑array has one or zero elements, it’s already sorted
+  if (left >= right) return array;
 
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
-  }
+  // Partition the array around a pivot and get its final index
+  const pivotIndex = partition(array, left, right);
+
+  // Recursively sort the two halves
+  quickSort(array, left, pivotIndex - 1);
+  quickSort(array, pivotIndex + 1, right);
+
+  return array;
 }
-function sumNodes(root: TreeNode | null): number {
-  if (!root) return 0;
-  return root.val + sumNodes(root.left) + sumNodes(root.right);
-}
-// Build a small tree:
-//       1
-//      / \
-//     2   3
-//        / \
-//
-// 4   5
 
-const tree = new TreeNode(
-  1,
-  new TreeNode(2),
-  new TreeNode(3, new TreeNode(4), new TreeNode(5))
-);
+/**
+ * Rearranges the elements in array[left…right] so that:
+ *   – Elements < pivot sit left of the pivot
+ *   – Elements >= pivot sit right of the pivot
+ * Returns the final index of the pivot.
+ */
+function partition<T>(array: T[], left: number, right: number): number {
+  // Take the rightmost element as pivot (last element strategy)
+  const pivot = array[right];
 
-console.log(sumNodes(tree)); // → 15
-interface TreeNode {
-  value: number;
-  left?: TreeNode;
-  right?: TreeNode;
-}
-function sumNodesFunctional(root: TreeNode | undefined): number {
-  if (!root) return 0;
-  return root.value + sumNodesFunctional(root.left) + sumNodesFunctional(root.right);
-}
-const funcTree: TreeNode = {
-  value: 1,
-  left: { value: 2 },
-  right: {
-    value: 3,
-    left: { value: 4 },
-    right: { value: 5 },
-  },
-};
+  // Index of the smaller element
+  let i = left - 1;
 
-console.log(sumNodesFunctional(funcTree)); // → 15
-function sumNodesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let sum = 0;
-  const stack: (TreeNode | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop();
-    if (!node) continue;
-
-    sum += node.val;          // inside a class node
-    // sum += node.value;      // inside a functional node
-
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+  for (let j = left; j < right; j++) {
+    // Use the generic < operator; if needed, replace with a custom comparator.
+    if (array[j] < pivot) {
+      i++;
+      [array[i], array[j]] = [array[j], array[i]]; // swap
+    }
   }
 
-  return sum;
+  // Place pivot in the correct spot
+  [array[i + 1], array[right]] = [array[right], array[i + 1]];
+
+  return i + 1; // pivot final position
 }
-console.log(sumNodesIterative(tree)); // → 15
+
+// ─────────────────────────────────────────────────────────────────────────────────
+
+/* Example usage */
+
+const nums = [12, 4, 5, 6, 7, 3, 1, 15];
+console.log('Before:', nums);
+
+quickSort(nums);
+console.log('After :', nums);     // → [1, 3, 4, 5, 6, 7, 12, 15]
+
+const strings = ['pear', 'apple', 'orange', 'banana'];
+quickSort(strings);
+console.log(strings); // → ['apple', 'banana', 'orange', 'pear']
