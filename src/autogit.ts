@@ -1,32 +1,47 @@
 /**
- * Returns the second largest value in the array, or `undefined` if it can’t exist.
- * If you need the second *distinct* largest value, set `distinct = true`.
+ * Merge two sorted halves into a single sorted array.
  */
-function secondLargest(nums: number[], distinct = false): number | undefined {
-  if (nums.length < 2) return undefined;          // not enough numbers
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0, j = 0;
 
-  // Fast path: sort once, pick the second element
-  // (O(n log n) – fine for small arrays)
-  if (!distinct) {
-    const sorted = [...nums].sort((a, b) => b - a); // descending
-    return sorted[1];
-  }
-
-  // O(n) single‑pass solution for distinct values
-  let max = Number.NEGATIVE_INFINITY;
-  let second = Number.NEGATIVE_INFINITY;
-
-  for (const n of nums) {
-    if (n > max) {
-      second = max;
-      max = n;
-    } else if (n < max && n > second) {
-      second = n;
+  while (i < left.length && j < right.length) {
+    // compare function should return negative if a < b,
+    // zero if equal, positive if a > b
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
   }
 
-  return second === Number.NEGATIVE_INFINITY ? undefined : second;
+  // Append any leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
-console.log(secondLargest([5, 1, 7, 3]));     // → 5
-console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
-console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
+
+/**
+ * Recursively sort the array using merge sort.
+ * `compare` is optional – if omitted, the native < operator is used.
+ */
+export function mergeSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  if (arr.length <= 1) return arr.slice();
+
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid), compare);
+  const right = mergeSort(arr.slice(mid), compare);
+
+  return merge(left, right, compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+const nums = [34, 7, 23, 32, 5, 62];
+const sortedNums = mergeSort(nums);
+console.log(sortedNums); // [5, 7, 23, 32, 34, 62]
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 25 },
+  { name: 'Carol', age: 35 },
+];
+
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
