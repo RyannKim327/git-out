@@ -1,54 +1,69 @@
 /**
- * Returns the largest prime factor of n.
- * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
- * represent exactly. For bigger values use BigInt (see the comment below).
+ * Swaps two elements of an array.
  */
-function largestPrimeFactor(n: number): number {
-  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
-
-  let remaining = n;
-
-  // Deal with factor 2 first – it’s the only even prime
-  while (remaining % 2 === 0) {
-    remaining = remaining / 2;
-  }
-  let lastFactor = 2;
-
-  // Now we only need to test odd numbers.
-  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
-  for (let odd = 3; odd * odd <= remaining; odd += 2) {
-    while (remaining % odd === 0) {
-      remaining = remaining / odd;
-      lastFactor = odd;
-    }
-  }
-
-  // If what’s left is > 1, it’s a prime itself and is larger than any
-  // factor we already found, so it becomes the biggest prime factor.
-  return remaining > 1 ? remaining : lastFactor;
+function swap<T>(arr: T[], i: number, j: number): void {
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
 }
-console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
-console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
-console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) return n;
 
-  let remaining = n;
-  let lastFactor = 2n;
+/**
+ * Moves the element at index `root` downwards to restore the max‑heap
+ * property, assuming that the sub‑trees rooted at its children are
+ * already max‑heaps.
+ */
+function sink<T>(arr: T[], root: number, size: number, compare: (a: T, b: T) => number): void {
+  let largest = root;
 
-  // factor 2
-  while (remaining % 2n === 0n) {
-    remaining /= 2n;
-    lastFactor = 2n;
+  const left  = 2 * root + 1;
+  const right = 2 * root + 2;
+
+  if (left < size && compare(arr[left], arr[largest]) > 0) {
+    largest = left;
+  }
+  if (right < size && compare(arr[right], arr[largest]) > 0) {
+    largest = right;
   }
 
-  // odd factors
-  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
-    while (remaining % odd === 0n) {
-      remaining /= odd;
-      lastFactor = odd;
-    }
+  if (largest !== root) {
+    swap(arr, root, largest);
+    sink(arr, largest, size, compare);
   }
-
-  return remaining > 1n ? remaining : lastFactor;
 }
+
+/**
+ * Builds a max‑heap from an arbitrary array.
+ */
+function buildMaxHeap<T>(arr: T[], compare: (a: T, b: T) => number): void {
+  const size = arr.length;
+  // Start from the last non‑leaf node and sink each one.
+  for (let i = Math.floor(size / 2) - 1; i >= 0; i--) {
+    sink(arr, i, size, compare);
+  }
+}
+
+/**
+ * Heap‑sort: sorts `arr` in ascending order.
+ */
+export function heapSort<T>(arr: T[], compare?: (a: T, b: T) => number): void {
+  // Default to numeric ascending for numbers; for a generic compare,
+  // provide a custom function.
+  const cmp = compare ?? ((a, b) => (a as any) > (b as any) ? 1 : (a < b ? -1 : 0));
+
+  // 1️⃣ Turn the array into a max‑heap.
+  buildMaxHeap(arr, cmp);
+
+  // 2️⃣ Repeatedly pull the max element to its final slot.
+  for (let heapSize = arr.length; heapSize > 1; heapSize--) {
+    // The current max is at 0 – move it to the end.
+    swap(arr, 0, heapSize - 1);
+
+    // Restore the heap property on the reduced heap.
+    sink(arr, 0, heapSize - 1, cmp);
+  }
+}
+const data = [3, 1, 4, 1, 5, 9, 2, 6];
+heapSort(data);          // data is now [1, 1, 2, 3, 4, 5, 6, 9]
+const unsorted = [10, 4, 7, 3, 8, 2];
+heapSort(unsorted);
+console.log(unsorted); // [2, 3, 4, 7, 8, 10]
