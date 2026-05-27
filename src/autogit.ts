@@ -1,99 +1,68 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
 /**
- * Example of an async “network task” that you might run in Android
- * (React‑Native runs JavaScript on a background thread for you).
+ * Binary search on a sorted array.
+ * @param arr   – sorted array of comparable values
+ * @param target – value we’re looking for
+ * @returns      – index of target, or -1 if not found
  */
-const App: React.FC = () => {
-  /*--- State: loading / data / error -----------------------------------*/
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+function binarySearchIter<T>(arr: T[], target: T, compareFn?: (a: T, b: T) => number): number {
+  let left = 0;
+  let right = arr.length - 1;
 
-  /*--- Effect: fire once on mount -------------------------------------*/
-  useEffect(() => {
-    /**
-     * Async function inside the effect so we can use await at a top level.
-     * It's an equivalent of Android’s AsyncTask (but without the Android
-     * boilerplate) – just a Promise chain wrapped in async/await.
-     */
-    const fetchData = async () => {
-      try {
-        // 1️⃣ Make the request
-        const response = await fetch(
-          'https://api.adviceslip.com/advice',
-        );
+  while (left <= right) {
+    // Using “>>> 1” gives the floor of the middle even for huge indices
+    const mid = (left + right) >>> 1;
+    const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
+      ? 1
+      : (arr[mid] as any) < (target as any)
+      ? -1
+      : 0;
 
-        // 2️⃣ Check for HTTP errors
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+    if (cmp === 0) {
+      return mid;          // found
+    } else if (cmp < 0) {
+      left = mid + 1;      // target is on the right half
+    } else {
+      right = mid - 1;     // target is on the left half
+    }
+  }
 
-        // 3️⃣ Parse the JSON payload
-        const json = await response.json();
+  return -1; // not found
+}
+const nums = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchIter(nums, 7)); // → 3
+console.log(binarySearchIter(nums, 4)); // → -1
+const words = ["apple", "banana", "cherry", "date"];
+const index = binarySearchIter(words, "cherry", (a, b) => a.localeCompare(b));
+// → 2
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compareFn?: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): number {
+  if (left > right) return -1;            // base case: not found
 
-        // 4️⃣ Store the result
-        setData(json);          // data.slip.advice will be the string
-        setError(null);
-      } catch (e) {
-        // Anything that goes wrong lands here
-        console.error('Failed to fetch advice:', e);
-        setError((e as Error).message);
-        setData(null);
-      } finally {
-        // Whatever happens, loading is done
-        setLoading(false);
-      }
-    };
+  const mid = (left + right) >>> 1;
+  const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
+      ? 1
+      : (arr[mid] as any) < (target as any)
+      ? -1
+      : 0;
 
-    fetchData();
+  if (cmp === 0) return mid;
+  return cmp < 0
+    ? binarySearchRec(arr, target, compareFn, mid + 1, right)
+    : binarySearchRec(arr, target, compareFn, left, mid - 1);
+}
+function test<T>(arr: T[], target: T, fn: (a: T[], t: T) => number) {
+  const idx = fn(arr, target);
+  console.log(`searching ${target} in [${arr}] → ${idx}`);
+}
 
-    // Optional: cleanup if the component unmounts before fetch resolves
-    // return () => { /* cancel request if using AbortController, e.g. */ };
-  }, []); // empty deps → run once
+const ints = [2, 4, 6, 8, 10];
+test(ints, 8, binarySearchIter);
+test(ints, 9, binarySearchIter);
 
-  /*--- Rendering -----------------------------------------------------*/
-  return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.text}>Loading advice...</Text>
-        </View>
-      )}
-
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
-        </View>
-      )}
-
-      {!loading && data && (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Here’s an advice for you:</Text>
-          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-};
-
-/*--- Styles ----------------------------------------------------------*/
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, marginTop: 12 },
-  title: { fontSize: 18, fontWeight: '600' },
-  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
-  error: { color: 'red' },
-});
-
-export default App;
+const strs = ['banana', 'cherry', 'fig', 'grape'];
+test(strs, 'fig', (a, t) => binarySearchRec(a, t, (x, y) => x.localeCompare(y)));
