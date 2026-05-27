@@ -1,65 +1,33 @@
-/**
- * Recursively finds the index of `target` in a sorted array.
- * Returns the index if found, otherwise –1.
- *
- * @param arr   A sorted array (ascending, no duplicates needed)
- * @param target The value you're looking for
- * @param left  The left boundary (inclusive)
- * @param right The right boundary (exclusive)
- */
-function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;            // no match
-
-  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
-
-  const cmp = arr[mid] === target
-    ? 0
-    : arr[mid] < target
-      ? -1
-      : 1;
-
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursive(arr, target, mid + 1, right)
-      : binarySearchRecursive(arr, target, left, mid);
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchRecursive(nums, 7));  // → 3
-console.log(binarySearchRecursive(nums, 4));  // → -1
-function binarySearchRecursiveCustom<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;
+const head: ListNode<number> = { val: 1, next: null };
+head.next = { val: 2, next: null };
+head.next.next = { val: 3, next: null };      // 1 → 2 → 3
+function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow: ListNode<T> | null = head;
+  let fast: ListNode<T> | null = head;
 
-  const mid = left + ((right - left) >> 1);
-  const cmp = compare(arr[mid], target);
+  while (fast !== null && fast.next !== null) {
+    slow = slow?.next ?? null;   // advance by 1
+    fast = fast.next.next;       // advance by 2
+  }
 
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
-      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
+  return slow; // could be null if the list was empty
 }
-interface Person { age: number; name: string; }
-const people: Person[] = [
-  { age: 22, name: 'Alice' },
-  { age: 30, name: 'Bob' },
-  { age: 45, name: 'Charlie' },
-];
-const ageToFind = 30;
-const idx = binarySearchRecursiveCustom(
-  people,
-  { age: ageToFind, name: '' },
-  (a, b) => a.age - b.age
-);
-console.log(idx); // → 1
+if (fast !== null) {            // original list had even length
+  slow = slow?.next ?? null;    // bump to the second middle
+}
+function toArray<T>(head: ListNode<T> | null): T[] {
+  const arr: T[] = [];
+  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
+  return arr;
+}
+
+const list: ListNode<number> | null = {
+  val: 10,
+  next: { val: 20, next: { val: 30, next: null } },
+};
+
+console.log(middle(list)?.val); // prints 20
