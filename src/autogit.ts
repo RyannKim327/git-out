@@ -1,54 +1,63 @@
-/**
- * Area from base and height.
- * @param base  - Base length (any positive number)
- * @param height - Height length (any positive number)
- * @returns Triangle area
- */
-function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('Base and height must be positive numbers.');
+// A very basic, in‑place bubble sort for numbers
+export function bubbleSort(values: number[]): void {
+  const n = values.length;
+  for (let i = 0; i < n - 1; i++) {
+    // Last i elements are already in place
+    for (let j = 0; j < n - i - 1; j++) {
+      if (values[j] > values[j + 1]) {
+        // swap
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+      }
+    }
   }
-  return (base * height) / 2;
 }
-const area = areaBaseHeight(10, 5); // 25
-console.log(`Area = ${area}`);      // Area = 25
-/**
- * Deal with three side lengths.
- * @param a - length of side a
- * @param b - length of side b
- * @param c - length of side c
- * @returns Triangle area
- */
-function areaBySides(a: number, b: number, c: number): number {
-  // Simple validity check – the sides must satisfy the triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The given sides do not form a valid triangle.');
+export function bubbleSortOptimized(values: number[]): void {
+  const n = values.length;
+  let swapped: boolean;
+
+  for (let i = 0; i < n - 1; i++) {
+    swapped = false;
+    for (let j = 0; j < n - i - 1; j++) {
+      if (values[j] > values[j + 1]) {
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+        swapped = true;
+      }
+    }
+    if (!swapped) break;
   }
-
-  const s = (a + b + c) / 2;                 // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
 }
-const areaHeron = areaBySides(3, 4, 5); // 6
-console.log(`Area (Heron) = ${areaHeron}`);
-/**
- * Area from two sides and an included angle (in degrees or radians).
- * @param side1   - length of one side
- * @param side2   - length of the other side
- * @param angle   - included angle (in degrees)
- * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
- * @returns Triangle area
- */
-function areaFromSidesAndAngle(
-  side1: number,
-  side2: number,
-  angle: number,
-  inRadians = false
-): number {
-  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
-
-  const rad = inRadians ? angle : (angle * Math.PI) / 180;
-  return (side1 * side2 * Math.sin(rad)) / 2;
+export function bubbleSort<T>(
+  values: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
+): void {
+  const n = values.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      if (compareFn(values[j], values[j + 1]) > 0) {
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+      }
+    }
+  }
 }
-const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
-console.log(`Area from two sides & angle = ${areaMixed}`);
+interface Person { name: string; age: number; }
+
+const data: Person[] = [
+  { name: 'Zoe', age: 28 },
+  { name: 'Alex', age: 33 },
+  { name: 'Bob', age: 22 },
+];
+
+bubbleSort(data, (a, b) => a.name.localeCompare(b.name));
+
+console.log(data); // Alex, Bob, Zoe
+export function bubbleSortCopy<T>(
+  values: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
+): T[] {
+  const copy = [...values];
+  bubbleSort(copy, compareFn);
+  return copy;
+}
+const arr = [5, 1, 4, 2, 8];
+bubbleSort(arr);
+console.log(arr); // [1, 2, 4, 5, 8]
