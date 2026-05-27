@@ -1,33 +1,57 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-const head: ListNode<number> = { val: 1, next: null };
-head.next = { val: 2, next: null };
-head.next.next = { val: 3, next: null };      // 1 → 2 → 3
-function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+/**
+ * Build the shift table used by BMH.
+ * Each entry tells us how far we can jump when the bad character
+ * (the character that mismatched) appears.
+ */
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow?.next ?? null;   // advance by 1
-    fast = fast.next.next;       // advance by 2
+  // every character that does NOT appear in the pattern gets a full skip
+  // (m).  Characters *inside* the pattern get a smaller value.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern[i]] = m - 1 - i;
   }
 
-  return slow; // could be null if the list was empty
-}
-if (fast !== null) {            // original list had even length
-  slow = slow?.next ?? null;    // bump to the second middle
-}
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
+  return table;
 }
 
-const list: ListNode<number> | null = {
-  val: 10,
-  next: { val: 20, next: { val: 30, next: null } },
-};
+/**
+ * Classic Boyer‑Moore‑Horspool
+ *
+ * @param text    The text to search in
+ * @param pattern The pattern to find
+ * @returns Index of the first occurrence or -1
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern matches immediately
+  if (pattern.length > text.length) return -1;   // impossible
 
-console.log(middle(list)?.val); // prints 20
+  const shift = buildShiftTable(pattern);
+  const n = text.length;
+  const m = pattern.length;
+
+  let i = 0;          // index in text where we start aligning the pattern
+
+  while (i <= n - m) {
+    // start comparing from the end of the pattern
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return i;  // whole pattern matched
+    }
+
+    // bad character at text[i + m - 1]
+    const badChar = text[i + m - 1];
+    const skip = shift[badChar] ?? m; // default skip is m
+    i += skip;
+  }
+
+  return -1; // not found
+}
+console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
+console.log(boyerMooreHorspool("hello world", "world")); // → 6
+console.log(boyerMooreHorspool("visible", "nope")); // → -1
