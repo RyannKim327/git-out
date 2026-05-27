@@ -1,89 +1,125 @@
-// ------------------------------------------------------------------
-// 1️⃣  Graph representation (adjacency list)
-// ------------------------------------------------------------------
-type NodeID = string;  // or number – whatever uniquely identifies a node
-interface Graph {
-  // `edges[u]` is a list of all nodes directly reachable from `u`
-  [key: string]: NodeID[];
+/**
+ * A node in the trie.
+ *
+ * - `children` holds the next character → child node mapping.
+ * - `isEndOfWord` tells us if a word ends here.
+ *
+ * The node is deliberately kept lightweight: using `Record` instead of
+ * `Map` keeps the code readable and the memory footprint small,
+ * while `children` is a plain object keyed by single characters.
+ */
+class TrieNode {
+  public children: Record<string, TrieNode> = {};
+  public isEndOfWord = false;
 }
 
-// ------------------------------------------------------------------
-// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
-// ------------------------------------------------------------------
-function dfsRecursive(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID,
-  visited = new Set<NodeID>(),
-  path: NodeID[] = []
-): NodeID[] | null {
-  visited.add(start);
-  path.push(start);
+/**
+ * Trie implementation for strings.
+ *
+ * Everything is typed, so you’ll get compile–time safety for method
+ * arguments and return values.  The interface is intentionally simple.
+ */
+export class Trie {
+  private readonly root = new TrieNode();
 
-  if (start === target) return [...path];        // found it – return a copy of the path
-
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      const result = dfsRecursive(graph, neighbor, target, visited, path);
-      if (result) return result;                 // propagate the found path upwards
+  /** Insert a word into the trie */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      if (!node.children[ch]) {
+        node.children[ch] = new TrieNode();
+      }
+      node = node.children[ch];
     }
+    node.isEndOfWord = true;
   }
 
-  path.pop();                                     // backtrack
-  return null;                                    // no path from this branch
-}
-
-// ------------------------------------------------------------------
-// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
-// ------------------------------------------------------------------
-function dfsIterative(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID
-): NodeID[] | null {
-  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
-  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
-  const visited = new Set<NodeID>();
-
-  while (stack.length) {
-    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    parentMap.set(node, parent);
-
-    if (node === target) {
-      // reconstruct path
-      const path: NodeID[] = [];
-      let current: NodeID | null = target;
-      while (current !== null) {
-        path.unshift(current);
-        current = parentMap.get(current)!;
-      }
-      return path;
+  /** Return true iff the exact word exists in the trie */
+  search(word: string): boolean {
+    let node = this.root;
+    for (const ch of word) {
+      const next = node.children[ch];
+      if (!next) return false;
+      node = next;
     }
-
-    for (const neighbor of graph[node] ?? []) {
-      if (!visited.has(neighbor)) {
-        stack.push({ node: neighbor, parent: node });
-      }
-    }
+    return node.isEndOfWord;
   }
 
-  return null;          // no path found
+  /** Return true if any word starts with the given prefix */
+  startsWith(prefix: string): boolean {
+    let node = this.root;
+    for (const ch of prefix) {
+      const next = node.children[ch];
+      if (!next) return false;
+      node = next;
+    }
+    return true;
+  }
+
+  /** (Optional) Retrieve all words that share this prefix */
+  getWordsWithPrefix(prefix: string): string[] {
+    const words: string[] = [];
+    let node = this.root;
+    for (const ch of prefix) {
+      if (!node.children[ch]) return words; // no match
+      node = node.children[ch];
+    }
+    const collect = (curNode: TrieNode, suffix: string) => {
+      if (curNode.isEndOfWord) words.push(prefix + suffix);
+      for (const [ch, child] of Object.entries(curNode.children)) {
+        collect(child, suffix + ch);
+      }
+    };
+    collect(node, '');
+    return words;
+  }
+}
+import { Trie } from './Trie';
+
+const trie = new Trie();
+
+trie.insert('apple');
+trie.insert('app');
+trie.insert('bat');
+trie.insert('batch');
+
+console.log(trie.search('app'));      // true
+console.log(trie.search('appl'));     // false
+console.log(trie.startsWith('bat'));  // true
+console.log(trie.startsWith('baq'));  // false
+
+console.log(trie.getWordsWithPrefix('ba')); // ['bat', 'batch']
+class TrieNode<V = undefined> {
+  children: Record<string, TrieNode<V>> = {};
+  isEndOfWord = false;
+  value?: V;
 }
 
-// ------------------------------------------------------------------
-// 4️⃣  Example usage
-// ------------------------------------------------------------------
-const exampleGraph: Graph = {
-  a: ["b", "c"],
-  b: ["d", "e"],
-  c: ["f"],
-  d: [],
-  e: ["f"],
-  f: []
-};
+export class Trie<V = undefined> {
+  private readonly root = new TrieNode<V>();
 
-console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
-console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
+  insert(word: string, value?: V): void {
+    let node = this.root;
+    for (const ch of word) {
+      if (!node.children[ch]) node.children[ch] = new TrieNode<V>();
+      node = node.children[ch];
+    }
+    node.isEndOfWord = true;
+    if (value !== undefined) node.value = value;
+  }
+
+  // search and startsWith prefixes unchanged
+  // but now search can optionally return the stored value
+  search(word: string): V | undefined {
+    let node = this.root;
+    for (const ch of word) {
+      const next = node.children[ch];
+      if (!next) return undefined;
+      node = next;
+    }
+    return node.isEndOfWord ? node.value : undefined;
+  }
+}
+const dict = new Trie<number>();
+dict.insert('hello', 42);
+console.log(dict.search('hello')); // 42
