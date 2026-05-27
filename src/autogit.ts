@@ -1,190 +1,42 @@
-// avl.ts
-export type Comparator<K> = (a: K, b: K) => number;
-
-export class AVLTNode<K, V> {
-  key: K;
-  value: V;
-  left: AVLTNode<K, V> | null = null;
-  right: AVLTNode<K, V> | null = null;
-  height: number = 1; // leaf nodes start with height 1
-
-  constructor(key: K, value: V) {
-    this.key = key;
-    this.value = value;
-  }
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
+/**
+ * Returns the n‑th node from the end of a singly linked list.
+ * If n is out of bounds, returns null.
+ *
+ * @param head The head of the list.
+ * @param n    1‑based index from the end (n = 1 => tail node).
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // invalid request
 
-export class AVLTree<K, V> {
-  private root: AVLTNode<K, V> | null = null;
-  private compare: Comparator<K>;
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  constructor(compareFn: Comparator<K>) {
-    this.compare = compareFn;
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;          // n larger than list size
+    fast = fast.next;
   }
 
-  /* ---------------------------------------------------------- */
-  /*  Public API                                               */
-  /* ---------------------------------------------------------- */
-
-  /** Insert or update a key/value pair */
-  insert(key: K, value: V): void {
-    this.root = this._insert(this.root, key, value);
+  // Move both until fast reaches the end
+  while (fast) {
+    slow = slow!.next;  // fast is non‑null here, so slow is safe
+    fast = fast.next;
   }
 
-  /** Delete a node by key */
-  delete(key: K): void {
-    this.root = this._delete(this.root, key);
-  }
+  return slow;
+}
+// Build 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4 = { val: 4, next: node5 };
+let node3 = { val: 3, next: node4 };
+let node2 = { val: 2, next: node3 };
+let node1 = { val: 1, next: node2 };
 
-  /** Find a value by key, or undefined if not present */
-  find(key: K): V | undefined {
-    let node = this.root;
-    while (node !== null) {
-      const cmp = this.compare(key, node.key);
-      if (cmp === 0) return node.value;
-      node = cmp < 0 ? node.left : node.right;
-    }
-    return undefined;
-  }
-
-  /** In‑order traversal: callback receives key/value pairs in ascending key order */
-  inOrder(callback: (key: K, value: V) => void): void {
-    this._inOrder(this.root, callback);
-  }
-
-  /** Return a string showing the tree structure (for debugging) */
-  pretty(): string {
-    const lines: string[] = [];
-    this._pretty(this.root, "", true, lines);
-    return lines.join("\n");
-  }
-
-  /* ---------------------------------------------------------- */
-  /*  Internal helpers                                         */
-  /* ---------------------------------------------------------- */
-
-  private height(node: AVLTNode<K, V> | null): number {
-    return node ? node.height : 0;
-  }
-
-  private updateHeight(node: AVLTNode<K, V>): void {
-    node.height = Math.max(this.height(node.left), this.height(node.right)) + 1;
-  }
-
-  private balanceFactor(node: AVLTNode<K, V>): number {
-    return this.height(node.left) - this.height(node.right);
-  }
-
-  /* ----- Rotations ----- */
-  private rotateRight(y: AVLTNode<K, V>): AVLTNode<K, V> {
-    const x = y.left!;
-    const T2 = x.right;
-
-    // Perform rotation
-    x.right = y;
-    y.left = T2;
-
-    // Update heights
-    this.updateHeight(y);
-    this.updateHeight(x);
-
-    return x; // New root
-  }
-
-  private rotateLeft(x: AVLTNode<K, V>): AVLTNode<K, V> {
-    const y = x.right!;
-    const T2 = y.left;
-
-    // Perform rotation
-    y.left = x;
-    x.right = T2;
-
-    // Update heights
-    this.updateHeight(x);
-    this.updateHeight(y);
-
-    return y; // New root
-  }
-
-  /* ----- Rebalancing ----- */
-  private rebalance(node: AVLTNode<K, V>): AVLTNode<K, V> {
-    this.updateHeight(node);
-    const bf = this.balanceFactor(node);
-
-    // Left heavy
-    if (bf > 1) {
-      if (this.balanceFactor(node.left!) < 0) {
-        node.left = this.rotateLeft(node.left!);
-      }
-      return this.rotateRight(node);
-    }
-
-    // Right heavy
-    if (bf < -1) {
-      if (this.balanceFactor(node.right!) > 0) {
-        node.right = this.rotateRight(node.right!);
-      }
-      return this.rotateLeft(node);
-    }
-
-    return node; // balanced
-  }
-
-  /* ----- Insertion ----- */
-  private _insert(node: AVLTNode<K, V> | null, key: K, value: V): AVLTNode<K, V> {
-    if (node === null) {
-      return new AVLTNode(key, value);
-    }
-
-    const cmp = this.compare(key, node.key);
-
-    if (cmp < 0) {
-      node.left = this._insert(node.left, key, value);
-    } else if (cmp > 0) {
-      node.right = this._insert(node.right, key, value);
-    } else {
-      // Existing key – replace value
-      node.value = value;
-      return node;
-    }
-
-    return this.rebalance(node);
-  }
-
-  /* ----- Deletion ----- */
-  private _delete(node: AVLTNode<K, V> | null, key: K): AVLTNode<K, V> | null {
-    if (node === null) {
-      return null;
-    }
-
-    const cmp = this.compare(key, node.key);
-
-    if (cmp < 0) {
-      node.left = this._delete(node.left, key);
-    } else if (cmp > 0) {
-      node.right = this._delete(node.right, key);
-    } else {
-      // Node found – handle three cases
-      if (node.left === null && node.right === null) {
-        return null; // 0 children
-      } else if (node.left === null) {
-        return node.right; // 1 child (right)
-      } else if (node.right === null) {
-        return node.left; // 1 child (left)
-      } else {
-        // 2 children – choose in-order predecessor (max left)
-        let predecessor = node.left;
-        while (predecessor.right !== null) {
-          predecessor = predecessor.right;
-        }
-        node.key = predecessor.key;
-        node.value = predecessor.value;
-        node.left = this._delete(node.left, predecessor.key);
-      }
-    }
-
-    return this.rebalance(node);
-  }
-
-  /* ----- Traversal ----- */
-  private _inOrder
+console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
+console.log(nthFromEnd(node1, 2)?.val); // 4
+console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
+console.log(nthFromEnd(node1, 6));       // null (out of bounds)
