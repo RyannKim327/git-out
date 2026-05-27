@@ -1,42 +1,54 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
 /**
- * Returns the n‑th node from the end of a singly linked list.
- * If n is out of bounds, returns null.
- *
- * @param head The head of the list.
- * @param n    1‑based index from the end (n = 1 => tail node).
+ * Returns the largest prime factor of n.
+ * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
+ * represent exactly. For bigger values use BigInt (see the comment below).
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;           // invalid request
+function largestPrimeFactor(n: number): number {
+  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
+  let remaining = n;
 
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;          // n larger than list size
-    fast = fast.next;
+  // Deal with factor 2 first – it’s the only even prime
+  while (remaining % 2 === 0) {
+    remaining = remaining / 2;
+  }
+  let lastFactor = 2;
+
+  // Now we only need to test odd numbers.
+  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
+  for (let odd = 3; odd * odd <= remaining; odd += 2) {
+    while (remaining % odd === 0) {
+      remaining = remaining / odd;
+      lastFactor = odd;
+    }
   }
 
-  // Move both until fast reaches the end
-  while (fast) {
-    slow = slow!.next;  // fast is non‑null here, so slow is safe
-    fast = fast.next;
-  }
-
-  return slow;
+  // If what’s left is > 1, it’s a prime itself and is larger than any
+  // factor we already found, so it becomes the biggest prime factor.
+  return remaining > 1 ? remaining : lastFactor;
 }
-// Build 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4 = { val: 4, next: node5 };
-let node3 = { val: 3, next: node4 };
-let node2 = { val: 2, next: node3 };
-let node1 = { val: 1, next: node2 };
+console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
+console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
+console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  if (n <= 1n) return n;
 
-console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
-console.log(nthFromEnd(node1, 2)?.val); // 4
-console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
-console.log(nthFromEnd(node1, 6));       // null (out of bounds)
+  let remaining = n;
+  let lastFactor = 2n;
+
+  // factor 2
+  while (remaining % 2n === 0n) {
+    remaining /= 2n;
+    lastFactor = 2n;
+  }
+
+  // odd factors
+  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
+    while (remaining % odd === 0n) {
+      remaining /= odd;
+      lastFactor = odd;
+    }
+  }
+
+  return remaining > 1n ? remaining : lastFactor;
+}
