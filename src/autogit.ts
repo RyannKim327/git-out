@@ -1,54 +1,84 @@
-/**
- * Returns the largest prime factor of n.
- * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
- * represent exactly. For bigger values use BigInt (see the comment below).
- */
-function largestPrimeFactor(n: number): number {
-  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
+function kthSmallest(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined; // out‑of‑range
 
-  let remaining = n;
-
-  // Deal with factor 2 first – it’s the only even prime
-  while (remaining % 2 === 0) {
-    remaining = remaining / 2;
-  }
-  let lastFactor = 2;
-
-  // Now we only need to test odd numbers.
-  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
-  for (let odd = 3; odd * odd <= remaining; odd += 2) {
-    while (remaining % odd === 0) {
-      remaining = remaining / odd;
-      lastFactor = odd;
-    }
-  }
-
-  // If what’s left is > 1, it’s a prime itself and is larger than any
-  // factor we already found, so it becomes the biggest prime factor.
-  return remaining > 1 ? remaining : lastFactor;
+  const sorted = [...arr].sort((a, b) => a - b); // stable numeric sort
+  return sorted[k - 1];                         // k is 1‑based here
 }
-console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
-console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
-console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) return n;
+/**
+ * Return the k-th smallest element (1‑based) or `undefined` if out of range.
+ */
+function kthSmallestQuickSelect(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  let remaining = n;
-  let lastFactor = 2n;
+  // work on a copy so the caller’s array isn’t mutated
+  const a = [...arr];
 
-  // factor 2
-  while (remaining % 2n === 0n) {
-    remaining /= 2n;
-    lastFactor = 2n;
-  }
+  // Helper that returns the zero‑based index of the desired element
+  const select = (left: number, right: number, targetIndex: number): number => {
+    while (true) {
+      if (left === right) return a[left]; // only one element
 
-  // odd factors
-  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
-    while (remaining % odd === 0n) {
-      remaining /= odd;
-      lastFactor = odd;
+      // Pick a pivot – here we use the middle element
+      const pivotIndex = Math.floor((left + right) / 2);
+      const pivotValue = a[pivotIndex];
+
+      // Partition: elements < pivot go left, > pivot go right
+      // In‑place partitioning that keeps the pivot’s value
+      let i = left;
+      let j = right;
+      while (i <= j) {
+        while (a[i] < pivotValue) i++;
+        while (a[j] > pivotValue) j--;
+        if (i <= j) {
+          [a[i], a[j]] = [a[j], a[i]];
+          i++;
+          j--;
+        }
+      }
+
+      // After partitioning: indices [left .. j] <= pivot, [i .. right] >= pivot
+      if (targetIndex <= j) {
+        right = j;            // target in the left partition
+      } else if (targetIndex >= i) {
+        left = i;             // target in the right partition
+      } else {
+        return a[targetIndex]; // the pivot itself is the answer
+      }
     }
-  }
+  };
 
-  return remaining > 1n ? remaining : lastFactor;
+  // Convert k (1‑based) to zero‑based index
+  return select(0, a.length - 1, k - 1);
+}
+function kthSmallestGeneric<T>(
+  arr: T[],
+  k: number,
+  compare: (a: T, b: T) => number
+): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+
+  const a = [...arr];
+  const targetIndex = k - 1;
+  let left = 0, right = a.length - 1;
+
+  while (true) {
+    if (left === right) return a[left];
+
+    const pivotIndex = Math.floor((left + right) / 2);
+    const pivotValue = a[pivotIndex];
+
+    let i = left, j = right;
+    while (i <= j) {
+      while (compare(a[i], pivotValue) < 0) i++;
+      while (compare(a[j], pivotValue) > 0) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++; j--;
+      }
+    }
+
+    if (targetIndex <= j) right = j;
+    else if (targetIndex >= i) left = i;
+    else return a[targetIndex];
+  }
 }
