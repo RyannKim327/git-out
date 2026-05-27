@@ -1,110 +1,45 @@
-/*--------------------------------------------------
-  1. The “state” that the algorithm operates on
---------------------------------------------------*/
-export interface Node {
-  /** Every node needs a unique identifier for cycle handling */
-  id: string;               // could be number|string | etc.
-  /** Return the directly reachable successors */
-  getChildren(): Node[];
-}
-
-/*--------------------------------------------------
-  2. The breadth‑limited search itself
---------------------------------------------------*/
-export type SearchResult<T = Node> = {
-  /* The node that satisfied the goal predicate,
-     or undefined if none found within depth limit. */
-  found: T | undefined;
-  /* How many nodes were expanded in total */
-  expanded: number;
-};
-
 /**
- * Breadth‑limited search (BFS with depth limit)
- *
- * @param start  The entry point of the search
- * @param goal   A predicate that must be satisfied by the target node
- * @param depthLimit  The maximum depth (0 → only the start node)
- *
- * @returns SearchResult containing the target node (if it was found)
- *          and the number of nodes that were expanded.
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
  */
-export function breadthLimitedSearch<T extends Node>(
-  start: T,
-  goal: (node: T) => boolean,
-  depthLimit: number
-): SearchResult<T> {
-  if (depthLimit < 0)
-    throw new Error("depthLimit must be >= 0");
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  // queue entry holds the node *and* its depth from start
-  type QueueEntry = { node: T; depth: number };
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  const frontier: QueueEntry[] = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
-
-  let expanded = 0;
-
-  while (frontier.length > 0) {
-    const { node, depth } = frontier.shift()!; // FIFO
-
-    if (visited.has(node.id)) continue;   // ignore already‑seen nodes
-    visited.add(node.id);
-
-    expanded++;
-
-    if (goal(node)) return { found: node, expanded };
-
-    // If we haven't hit the depth limit, expand successors
-    if (depth < depthLimit) {
-      const children = node.getChildren();
-      // Add children to the *back* of the queue – usual BFS order
-      for (const child of children) {
-        // Avoid duplicates in the same frontier level
-        if (!visited.has(child.id)) {
-          frontier.push({ node: child, depth: depth + 1 });
-        }
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
   }
 
-  // Search exhausted without finding a goal
-  return { found: undefined, expanded };
-}
-class TreeNode implements Node {
-  constructor(public id: string, public children: TreeNode[] = []) {}
-  getChildren() { return this.children; }
-}
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
 
-const leafA  = new TreeNode("leafA");
-const leafB  = new TreeNode("leafB");
-const leafC  = new TreeNode("leafC");
-const node1  = new TreeNode("node1", [leafA, leafB]);
-const node2  = new TreeNode("node2", [leafC]);
-const root   = new TreeNode("root", [node1, node2]);
-const result = breadthLimitedSearch(
-  root,
-  n => n.id === "leafC",   // goal predicate
-  2                        // depth limit
-);
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
+    } else {
+      j--;          // move left
+    }
+  }
 
-if (result.found) {
-  console.log("Found:", result.found.id);
-} else {
-  console.log("Not found within depth limit");
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
 }
-console.log("Nodes expanded:", result.expanded);
-Found: leafC
-Nodes expanded: 3   // root -> node1 -> node2
-export type SearchResult<T> = {
-  found: T | undefined;
-  expanded: number;
-  path: T[]; // optional: the actual path from the root
-};
-
-export function breadthLimitedSearchCustom<T extends {}>(
-  start: T,
-  getChildren: (node: T) => T[],
-  goal: (node: T) => boolean,
-  depthLimit: number
-) { /* similar to above, but works with any shape */ }
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
