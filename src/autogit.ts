@@ -1,32 +1,46 @@
-/**
- * Returns the second largest value in the array, or `undefined` if it can’t exist.
- * If you need the second *distinct* largest value, set `distinct = true`.
- */
-function secondLargest(nums: number[], distinct = false): number | undefined {
-  if (nums.length < 2) return undefined;          // not enough numbers
+// src/githubUsers.ts
+import fetch, { Response } from "node-fetch";
 
-  // Fast path: sort once, pick the second element
-  // (O(n log n) – fine for small arrays)
-  if (!distinct) {
-    const sorted = [...nums].sort((a, b) => b - a); // descending
-    return sorted[1];
-  }
-
-  // O(n) single‑pass solution for distinct values
-  let max = Number.NEGATIVE_INFINITY;
-  let second = Number.NEGATIVE_INFINITY;
-
-  for (const n of nums) {
-    if (n > max) {
-      second = max;
-      max = n;
-    } else if (n < max && n > second) {
-      second = n;
-    }
-  }
-
-  return second === Number.NEGATIVE_INFINITY ? undefined : second;
+interface GithubUser {
+  login: string;
+  id: number;
+  avatar_url: string;
+  html_url: string;
 }
-console.log(secondLargest([5, 1, 7, 3]));     // → 5
-console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
-console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
+
+async function fetchGithubUsers(
+  page: number = 1,
+  perPage: number = 10
+): Promise<GithubUser[]> {
+  const url = `https://api.github.com/users?since=${(page - 1) * perPage}`;
+
+  const resp: Response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "TypeScript-CLI",
+    },
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`GitHub API error ${resp.status}: ${errText}`);
+  }
+
+  const json = await resp.json();
+
+  // Type assertion – we know the API returns an array of GitHubUser objects
+  return json as GithubUser[];
+}
+
+async function main() {
+  try {
+    const users = await fetchGithubUsers(1, 5);
+    console.log("Top GitHub users:");
+    users.forEach((u) => console.log(`- ${u.login} (${u.html_url})`));
+  } catch (err) {
+    console.error("Something went wrong:", err);
+  }
+}
+
+main().catch((e) => console.error(e));
+
