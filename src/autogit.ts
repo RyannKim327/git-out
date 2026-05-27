@@ -1,63 +1,44 @@
-/**
- * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
- *
- * @param src   the source array (contents will not be mutated)
- * @param dst   the destination array into which the merged result goes
- * @param l     left index (inclusive)
- * @param m     middle index (left sub‑range ends here)
- * @param r     right index (exclusive)
- */
-function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
-    let i = l;      // iterator for left sub‑run
-    let j = m;      // iterator for right sub‑run
-    let k = l;      // iterator for destination
+// A plain, singly‑linked node.
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-    while (i < m && j < r) {
-        if (src[i] <= src[j]) {
-            dst[k++] = src[i++];
-        } else {
-            dst[k++] = src[j++];
-        }
-    }
-
-    // copy any leftovers (at most one of the two while above will run)
-    while (i < m) dst[k++] = src[i++];
-    while (j < r) dst[k++] = src[j++];
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
+  }
 }
-
 /**
- * Iterative bottom‑up merge sort.
- *
- * @remarks
- *   * `arr` is the array you want sorted—original remains untouched.
- *   * Returns a new sorted array. If you want to sort in place you
- *     could swap the references to the source and destination arrays
- *     after each pass.
- *
- * @param arr  array to sort
- * @returns    sorted copy of `arr`
+ * Walks the list and counts how many nodes it contains.
+ * @param head The first node of the list (or null for an empty list).
+ * @returns How many nodes are in the list.
  */
-export function mergeSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr.slice();   // trivial case
+function listLength<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
 
-    let src = arr.slice();            // working copy
-    let dst: T[] = new Array(n);      // auxiliary buffer
+  while (current !== null) {
+    count++;
+    current = current.next;
+  }
 
-    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
-    for (let run = 1; run < n; run <<= 1) {
-        // merge adjacent runs of current length
-        for (let start = 0; start < n; start += 2 * run) {
-            const mid = Math.min(start + run, n);
-            const end = Math.min(start + 2 * run, n);
-            merge(src, dst, start, mid, end);
-        }
+  return count;
+}
+function listLengthRecursive<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;                // base case: nothing left
+  return 1 + listLengthRecursive(node.next); // recurse
+}
+// Build a list: 1 → 2 → 3 → null
+const third = new ListNode(3);
+const second = new ListNode(2, third);
+const first = new ListNode(1, second);
 
-        // the freshly merged segments now sit in `dst`;
-        // swap src/dst to let next pass read the new data
-        [src, dst] = [dst, src];
-    }
-
-    // After the last pass `src` holds the sorted data (due to the final swap)
-    return src;
+console.log(listLength(first));                // 3
+console.log(listLengthRecursive(first));       // 3
+console.log(listLength(null));                // 0
+// For a doubly linked node that has .next and .prev:
+let current = head;
+while (current !== null) {
+  count++;
+  current = current.next;  // or current.prev, depending on direction
 }
