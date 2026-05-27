@@ -1,76 +1,99 @@
-maxLeftA  ≤  minRightB
-maxLeftB  ≤  minRightA
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
 /**
- * Returns the median of two sorted arrays.
- * Works for arrays of different lengths, including empty arrays.
- *
- * Time:  O(log min(m, n))
- * Space: O(1)
+ * Example of an async “network task” that you might run in Android
+ * (React‑Native runs JavaScript on a background thread for you).
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Make sure nums1 is the smaller array.
-  if (nums1.length > nums2.length) {
-    return findMedianSortedArrays(nums2, nums1);
-  }
+const App: React.FC = () => {
+  /*--- State: loading / data / error -----------------------------------*/
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-  const m = nums1.length;
-  const n = nums2.length;
-  const total = m + n;
-  const half = Math.floor((total + 1) / 2);
+  /*--- Effect: fire once on mount -------------------------------------*/
+  useEffect(() => {
+    /**
+     * Async function inside the effect so we can use await at a top level.
+     * It's an equivalent of Android’s AsyncTask (but without the Android
+     * boilerplate) – just a Promise chain wrapped in async/await.
+     */
+    const fetchData = async () => {
+      try {
+        // 1️⃣ Make the request
+        const response = await fetch(
+          'https://api.adviceslip.com/advice',
+        );
 
-  let low = 0;
-  let high = m;
+        // 2️⃣ Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-  while (low <= high) {
-    const i = Math.floor((low + high) / 2);        // Partition in nums1
-    const j = half - i;                           // Partition in nums2
+        // 3️⃣ Parse the JSON payload
+        const json = await response.json();
 
-    const maxLeftA = i === 0 ? -Infinity : nums1[i - 1];
-    const minRightA = i === m ? Infinity : nums1[i];
-
-    const maxLeftB = j === 0 ? -Infinity : nums2[j - 1];
-    const minRightB = j === n ? Infinity : nums2[j];
-
-    if (maxLeftA > minRightB) {
-      // Need to move partition i left
-      high = i - 1;
-    } else if (maxLeftB > minRightA) {
-      // Need to move partition i right
-      low = i + 1;
-    } else {
-      // Correct partition found
-      if (total % 2 === 1) {
-        return Math.max(maxLeftA, maxLeftB);
-      } else {
-        return (Math.max(maxLeftA, maxLeftB) + Math.min(minRightA, minRightB)) / 2;
+        // 4️⃣ Store the result
+        setData(json);          // data.slip.advice will be the string
+        setError(null);
+      } catch (e) {
+        // Anything that goes wrong lands here
+        console.error('Failed to fetch advice:', e);
+        setError((e as Error).message);
+        setData(null);
+      } finally {
+        // Whatever happens, loading is done
+        setLoading(false);
       }
-    }
-  }
+    };
 
-  // If we get here, inputs were invalid (not sorted / mismatch lengths).
-  // Depending on your use‑case you can throw an error or return NaN.
-  throw new Error("Input arrays are not valid");
-}
-console.log(findMedianSortedArrays([1, 3], [2]));           // 2
-console.log(findMedianSortedArrays([1, 2], [3, 4]));        // 2.5
-console.log(findMedianSortedArrays([], [1]));               // 1
-console.log(findMedianSortedArrays([1, 2, 3], [4, 5, 6])); // 3.5
-export function medianSimple(nums1: number[], nums2: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
+    fetchData();
 
-  while (merged.length <= Math.floor((nums1.length + nums2.length - 1) / 2)) {
-    if (i < nums1.length && (j >= nums2.length || nums1[i] <= nums2[j])) {
-      merged.push(nums1[i++]);
-    } else {
-      merged.push(nums2[j++]);
-    }
-  }
+    // Optional: cleanup if the component unmounts before fetch resolves
+    // return () => { /* cancel request if using AbortController, e.g. */ };
+  }, []); // empty deps → run once
 
-  const mid = merged.length - 1;
-  const total = nums1.length + nums2.length;
+  /*--- Rendering -----------------------------------------------------*/
+  return (
+    <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.text}>Loading advice...</Text>
+        </View>
+      )}
 
-  if (total % 2 === 1) {
-    return merged[mid];
-  }
-  // Need to peek
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
+        </View>
+      )}
+
+      {!loading && data && (
+        <View style={styles.centered}>
+          <Text style={styles.title}>Here’s an advice for you:</Text>
+          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
+
+/*--- Styles ----------------------------------------------------------*/
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginTop: 12 },
+  title: { fontSize: 18, fontWeight: '600' },
+  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
+  error: { color: 'red' },
+});
+
+export default App;
