@@ -1,88 +1,45 @@
-// ---------- Graph data ----------------------------------------------------
-type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
+/**
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
+ */
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-// ---------- Tarjan's SCC implementation ----------------------------------
-class TarjanSCC {
-  private graph: Graph;            // the adjacency list
-  private index = 0;               // incremental index counter
-  private indices: Map<string, number> = new Map(); // node → index
-  private lowlink: Map<string, number> = new Map(); // node → lowlink
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  private stack: string[] = [];    // nodes currently on the recursion stack
-  private onStack: Set<string> = new Set();
-
-  private result: string[][] = []; // list of SCCs found
-
-  constructor(g: Graph) {
-    this.graph = g;
-  }
-
-  public run(): string[][] {
-    // start DFS from every undiscovered node
-    for (const node of Object.keys(this.graph)) {
-      if (!this.indices.has(node)) {
-        this.strongConnect(node);
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
-    return this.result;
   }
 
-  private strongConnect(v: string) {
-    // set the depth index for v
-    this.indices.set(v, this.index);
-    this.lowlink.set(v, this.index);
-    this.index += 1;
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
 
-    this.stack.push(v);
-    this.onStack.add(v);
-
-    // consider successors of v
-    for (const w of this.graph[v] ?? []) {
-      if (!this.indices.has(w)) {
-        // success: DFS tree edge
-        this.strongConnect(w);
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.lowlink.get(w)!
-        ));
-      } else if (this.onStack.has(w)) {
-        // back edge – strengthen lowlink
-        this.lowlink.set(v, Math.min(
-          this.lowlink.get(v)!,
-          this.indices.get(w)!
-        ));
-      }
-    }
-
-    // If v is the root of an SCC, pop the stack
-    if (this.lowlink.get(v) === this.indices.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = this.stack.pop()!;
-        this.onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      this.result.push(component);
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
+    } else {
+      j--;          // move left
     }
   }
+
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
 }
-const graph: Graph = {
-  '0': ['1'],
-  '1': ['2', '3'],
-  '2': ['0', '4'],
-  '3': ['4'],
-  '4': ['5'],
-  '5': ['3', '6'],
-  '6': ['7'],
-  '7': ['5'],
-};
-
-const tarjan = new TarjanSCC(graph);
-const sccs = tarjan.run();
-
-console.log('Strongly connected components:');
-sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
-Strongly connected components:
-0: [6, 7, 5]
-1: [0, 1, 2, 4, 3]
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
