@@ -1,44 +1,32 @@
-// A plain, singly‑linked node.
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
-  }
-}
 /**
- * Walks the list and counts how many nodes it contains.
- * @param head The first node of the list (or null for an empty list).
- * @returns How many nodes are in the list.
+ * Returns the second largest value in the array, or `undefined` if it can’t exist.
+ * If you need the second *distinct* largest value, set `distinct = true`.
  */
-function listLength<T>(head: ListNode<T> | null): number {
-  let count = 0;
-  let current = head;
+function secondLargest(nums: number[], distinct = false): number | undefined {
+  if (nums.length < 2) return undefined;          // not enough numbers
 
-  while (current !== null) {
-    count++;
-    current = current.next;
+  // Fast path: sort once, pick the second element
+  // (O(n log n) – fine for small arrays)
+  if (!distinct) {
+    const sorted = [...nums].sort((a, b) => b - a); // descending
+    return sorted[1];
   }
 
-  return count;
-}
-function listLengthRecursive<T>(node: ListNode<T> | null): number {
-  if (!node) return 0;                // base case: nothing left
-  return 1 + listLengthRecursive(node.next); // recurse
-}
-// Build a list: 1 → 2 → 3 → null
-const third = new ListNode(3);
-const second = new ListNode(2, third);
-const first = new ListNode(1, second);
+  // O(n) single‑pass solution for distinct values
+  let max = Number.NEGATIVE_INFINITY;
+  let second = Number.NEGATIVE_INFINITY;
 
-console.log(listLength(first));                // 3
-console.log(listLengthRecursive(first));       // 3
-console.log(listLength(null));                // 0
-// For a doubly linked node that has .next and .prev:
-let current = head;
-while (current !== null) {
-  count++;
-  current = current.next;  // or current.prev, depending on direction
+  for (const n of nums) {
+    if (n > max) {
+      second = max;
+      max = n;
+    } else if (n < max && n > second) {
+      second = n;
+    }
+  }
+
+  return second === Number.NEGATIVE_INFINITY ? undefined : second;
 }
+console.log(secondLargest([5, 1, 7, 3]));     // → 5
+console.log(secondLargest([5, 5, 3, 5]));     // → 5  (second largest in sorted order)
+console.log(secondLargest([5, 5, 3, 5], true)); // → 3  (second distinct largest)
