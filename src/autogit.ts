@@ -1,44 +1,52 @@
 /**
- * Return the majority element (> n/2) if it exists, or null otherwise.
- * @param arr array of numbers (or any comparable type)
+ * Interpolation Search
+ *
+ * The algorithm only works on numeric, strictly‑sorted arrays.
+ * It probes values near the expected position based on the key’s value,
+ * so it runs “almost” as fast as binary search on uniformly distributed data.
+ *
+ * @param arr  Sorted numeric array (ascending)
+ * @param key  Value to locate
+ * @returns    Index of the key or -1 if not present
  */
-export function majorityElement<T>(arr: T[]): T | null {
-  if (!arr.length) return null;
+export function interpolationSearch(arr: number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  /* ---------- 1st pass: find candidate ---------- */
-  let candidate = arr[0];
-  let count = 0;
+  let low = 0;
+  let high = arr.length - 1;
 
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Guard against division by zero for the degenerate case
+    if (arr[high] === arr[low]) {
+      break; // all remaining elements equal; either match or no match
+    }
+
+    const pos =
+      low +
+      Math.floor(
+        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
+      );
+
+    const midVal = arr[pos];
+
+    if (midVal === key) return pos;
+
+    if (midVal < key) {
+      low = pos + 1;
     } else {
-      count += (num === candidate) ? 1 : -1;
+      high = pos - 1;
     }
   }
 
-  /* ---------- 2nd pass: verify candidate ---------- */
-  let freq = 0;
-  for (const num of arr) {
-    if (num === candidate) freq++;
-  }
-
-  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
+  // If we exit the loop without hitting the key
+  return -1;
 }
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const majority = majorityElement(nums);
-console.log(majority); // → 3
-export function majorityElementMap<T>(arr: T[]): T | null {
-  const counts = new Map<T, number>();
-  
-  for (const val of arr) {
-    counts.set(val, (counts.get(val) ?? 0) + 1);
-  }
+const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
+const target = 56;
+const idx = interpolationSearch(data, target);
 
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, cnt] of counts) {
-    if (cnt > threshold) return val;
-  }
-  return null;
+if (idx !== -1) {
+  console.log(`Found ${target} at index ${idx}`);
+} else {
+  console.log(`${target} not in the array`);
 }
