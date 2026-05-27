@@ -1,54 +1,44 @@
 /**
- * Returns the largest prime factor of n.
- * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
- * represent exactly. For bigger values use BigInt (see the comment below).
+ * Return the majority element (> n/2) if it exists, or null otherwise.
+ * @param arr array of numbers (or any comparable type)
  */
-function largestPrimeFactor(n: number): number {
-  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
+export function majorityElement<T>(arr: T[]): T | null {
+  if (!arr.length) return null;
 
-  let remaining = n;
+  /* ---------- 1st pass: find candidate ---------- */
+  let candidate = arr[0];
+  let count = 0;
 
-  // Deal with factor 2 first – it’s the only even prime
-  while (remaining % 2 === 0) {
-    remaining = remaining / 2;
-  }
-  let lastFactor = 2;
-
-  // Now we only need to test odd numbers.
-  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
-  for (let odd = 3; odd * odd <= remaining; odd += 2) {
-    while (remaining % odd === 0) {
-      remaining = remaining / odd;
-      lastFactor = odd;
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += (num === candidate) ? 1 : -1;
     }
   }
 
-  // If what’s left is > 1, it’s a prime itself and is larger than any
-  // factor we already found, so it becomes the biggest prime factor.
-  return remaining > 1 ? remaining : lastFactor;
+  /* ---------- 2nd pass: verify candidate ---------- */
+  let freq = 0;
+  for (const num of arr) {
+    if (num === candidate) freq++;
+  }
+
+  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
 }
-console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
-console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
-console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
-function largestPrimeFactorBigInt(n: bigint): bigint {
-  if (n <= 1n) return n;
-
-  let remaining = n;
-  let lastFactor = 2n;
-
-  // factor 2
-  while (remaining % 2n === 0n) {
-    remaining /= 2n;
-    lastFactor = 2n;
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const majority = majorityElement(nums);
+console.log(majority); // → 3
+export function majorityElementMap<T>(arr: T[]): T | null {
+  const counts = new Map<T, number>();
+  
+  for (const val of arr) {
+    counts.set(val, (counts.get(val) ?? 0) + 1);
   }
 
-  // odd factors
-  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
-    while (remaining % odd === 0n) {
-      remaining /= odd;
-      lastFactor = odd;
-    }
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, cnt] of counts) {
+    if (cnt > threshold) return val;
   }
-
-  return remaining > 1n ? remaining : lastFactor;
+  return null;
 }
