@@ -1,45 +1,42 @@
 /**
- * Returns the longest common subsequence of a and b.
- * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
+ * Insertion sort (in‑place).
+ *
+ * @param arr The array you want to sort. It will be sorted *mutably*.
+ * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
+ * @returns The same array reference, now sorted.
  */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to JS native >/< when no comparator is supplied
+  const cmp = compare ?? ((a: T, b: T) => {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+  });
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  // Work from index 1 to the end; index 0 is already “sorted” by itself
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  // Build the table
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Back‑track to reconstruct one LCS
-  let i = m;
-  let j = n;
-  const lcsChars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // Matches – this character is part of the LCS
-      lcsChars.push(a[i - 1]);
-      i--;
+    // Move elements that are greater than `key` one position to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
       j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // move up
-    } else {
-      j--;          // move left
     }
+
+    // Place `key` in its correct spot
+    arr[j + 1] = key;
   }
 
-  // The chars were collected backwards, reverse them
-  return lcsChars.reverse().join('');
+  return arr;
 }
-console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
-console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
+const nums = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
+
+// With a custom comparator: sort strings by length (descending)
+const fruits = ['apple', 'kiwi', 'banana', 'fig'];
+const byLengthDesc = (a: string, b: string) => b.length - a.length;
+console.log(insertionSort(fruits, byLengthDesc));
