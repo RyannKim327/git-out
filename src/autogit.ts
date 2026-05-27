@@ -1,18 +1,11 @@
-/**
- * Removes all a, e, i, o, u (both lowercase and uppercase) from the input.
- */
-function removeVowels(input: string): string {
-  return input.replace(/[aeiou]/gi, '');
-}
+const a = "Hello, ";
+const b = "world!";
 
-// Example
-const raw = "Hello, World! 123";
-const clean = removeVowels(raw);
-console.log(clean); // "Hll, Wrld! 123"
-function removeVowelsManual(input: string): string {
-  const vowels = new Set(['a', 'e', 'i', 'o', 'u']);
-  return input
-    .split('')
-    .filter(ch => !vowels.has(ch.toLowerCase()))
-    .join('');
+// 1. Using the + operator
+const c1 = a + b;              // "Hello, world!"
+
+// 2. Using a template literal
+const c2 = `${a}${b}`;         // "Hello, world!"
+function greet(firstName: string, lastName: string): string {
+  return firstName + " " + lastName;          // or `${firstName} ${lastName}`
 }
