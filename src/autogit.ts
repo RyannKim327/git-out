@@ -1,125 +1,40 @@
-/**
- * A node in the trie.
- *
- * - `children` holds the next character → child node mapping.
- * - `isEndOfWord` tells us if a word ends here.
- *
- * The node is deliberately kept lightweight: using `Record` instead of
- * `Map` keeps the code readable and the memory footprint small,
- * while `children` is a plain object keyed by single characters.
- */
-class TrieNode {
-  public children: Record<string, TrieNode> = {};
-  public isEndOfWord = false;
+const fruits = ['apple', 'banana', 'cherry', 'banana'];
+
+const withoutBanana = fruits.filter(f => f !== 'banana');
+
+console.log(withoutBanana); // ['apple', 'cherry']
+// Remove the first object with id === 42
+const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
+const itemsWithout42 = items.filter(item => item.id !== 42);
+const numbers = [10, 20, 30, 40];
+const indexToRemove = 2; // 30
+
+// splice(start, deleteCount)
+numbers.splice(indexToRemove, 1);
+
+console.log(numbers); // [10, 20, 40]
+const arr = [1, 2, 3, 4, 5];
+const cond = (x: number) => x % 2 === 0; // remove evens
+
+// Find first match and splice it out
+const idx = arr.findIndex(cond);
+if (idx !== -1) arr.splice(idx, 1);
+
+console.log(arr); // [1, 3, 5]
+// Remove the first occurrence of a value
+export function removeFirst<T>(arr: T[], target: T): T[] {
+  const idx = arr.findIndex(v => v === target);
+  if (idx === -1) return [...arr]; // not found, return copy
+  const copy = [...arr];
+  copy.splice(idx, 1);
+  return copy; // or return copy and let caller decide
 }
 
-/**
- * Trie implementation for strings.
- *
- * Everything is typed, so you’ll get compile–time safety for method
- * arguments and return values.  The interface is intentionally simple.
- */
-export class Trie {
-  private readonly root = new TrieNode();
-
-  /** Insert a word into the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      if (!node.children[ch]) {
-        node.children[ch] = new TrieNode();
-      }
-      node = node.children[ch];
-    }
-    node.isEndOfWord = true;
-  }
-
-  /** Return true iff the exact word exists in the trie */
-  search(word: string): boolean {
-    let node = this.root;
-    for (const ch of word) {
-      const next = node.children[ch];
-      if (!next) return false;
-      node = next;
-    }
-    return node.isEndOfWord;
-  }
-
-  /** Return true if any word starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    let node = this.root;
-    for (const ch of prefix) {
-      const next = node.children[ch];
-      if (!next) return false;
-      node = next;
-    }
-    return true;
-  }
-
-  /** (Optional) Retrieve all words that share this prefix */
-  getWordsWithPrefix(prefix: string): string[] {
-    const words: string[] = [];
-    let node = this.root;
-    for (const ch of prefix) {
-      if (!node.children[ch]) return words; // no match
-      node = node.children[ch];
-    }
-    const collect = (curNode: TrieNode, suffix: string) => {
-      if (curNode.isEndOfWord) words.push(prefix + suffix);
-      for (const [ch, child] of Object.entries(curNode.children)) {
-        collect(child, suffix + ch);
-      }
-    };
-    collect(node, '');
-    return words;
+// Remove by index (mutable)
+export function removeAt<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1);
   }
 }
-import { Trie } from './Trie';
-
-const trie = new Trie();
-
-trie.insert('apple');
-trie.insert('app');
-trie.insert('bat');
-trie.insert('batch');
-
-console.log(trie.search('app'));      // true
-console.log(trie.search('appl'));     // false
-console.log(trie.startsWith('bat'));  // true
-console.log(trie.startsWith('baq'));  // false
-
-console.log(trie.getWordsWithPrefix('ba')); // ['bat', 'batch']
-class TrieNode<V = undefined> {
-  children: Record<string, TrieNode<V>> = {};
-  isEndOfWord = false;
-  value?: V;
-}
-
-export class Trie<V = undefined> {
-  private readonly root = new TrieNode<V>();
-
-  insert(word: string, value?: V): void {
-    let node = this.root;
-    for (const ch of word) {
-      if (!node.children[ch]) node.children[ch] = new TrieNode<V>();
-      node = node.children[ch];
-    }
-    node.isEndOfWord = true;
-    if (value !== undefined) node.value = value;
-  }
-
-  // search and startsWith prefixes unchanged
-  // but now search can optionally return the stored value
-  search(word: string): V | undefined {
-    let node = this.root;
-    for (const ch of word) {
-      const next = node.children[ch];
-      if (!next) return undefined;
-      node = next;
-    }
-    return node.isEndOfWord ? node.value : undefined;
-  }
-}
-const dict = new Trie<number>();
-dict.insert('hello', 42);
-console.log(dict.search('hello')); // 42
+// Keep everything except index 3
+const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
