@@ -1,84 +1,88 @@
-function kthSmallest(arr: number[], k: number): number | undefined {
-  if (k < 1 || k > arr.length) return undefined; // out‑of‑range
+// ---------- Graph data ----------------------------------------------------
+type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
 
-  const sorted = [...arr].sort((a, b) => a - b); // stable numeric sort
-  return sorted[k - 1];                         // k is 1‑based here
-}
-/**
- * Return the k-th smallest element (1‑based) or `undefined` if out of range.
- */
-function kthSmallestQuickSelect(arr: number[], k: number): number | undefined {
-  if (k < 1 || k > arr.length) return undefined;
+// ---------- Tarjan's SCC implementation ----------------------------------
+class TarjanSCC {
+  private graph: Graph;            // the adjacency list
+  private index = 0;               // incremental index counter
+  private indices: Map<string, number> = new Map(); // node → index
+  private lowlink: Map<string, number> = new Map(); // node → lowlink
 
-  // work on a copy so the caller’s array isn’t mutated
-  const a = [...arr];
+  private stack: string[] = [];    // nodes currently on the recursion stack
+  private onStack: Set<string> = new Set();
 
-  // Helper that returns the zero‑based index of the desired element
-  const select = (left: number, right: number, targetIndex: number): number => {
-    while (true) {
-      if (left === right) return a[left]; // only one element
+  private result: string[][] = []; // list of SCCs found
 
-      // Pick a pivot – here we use the middle element
-      const pivotIndex = Math.floor((left + right) / 2);
-      const pivotValue = a[pivotIndex];
+  constructor(g: Graph) {
+    this.graph = g;
+  }
 
-      // Partition: elements < pivot go left, > pivot go right
-      // In‑place partitioning that keeps the pivot’s value
-      let i = left;
-      let j = right;
-      while (i <= j) {
-        while (a[i] < pivotValue) i++;
-        while (a[j] > pivotValue) j--;
-        if (i <= j) {
-          [a[i], a[j]] = [a[j], a[i]];
-          i++;
-          j--;
-        }
-      }
-
-      // After partitioning: indices [left .. j] <= pivot, [i .. right] >= pivot
-      if (targetIndex <= j) {
-        right = j;            // target in the left partition
-      } else if (targetIndex >= i) {
-        left = i;             // target in the right partition
-      } else {
-        return a[targetIndex]; // the pivot itself is the answer
+  public run(): string[][] {
+    // start DFS from every undiscovered node
+    for (const node of Object.keys(this.graph)) {
+      if (!this.indices.has(node)) {
+        this.strongConnect(node);
       }
     }
-  };
+    return this.result;
+  }
 
-  // Convert k (1‑based) to zero‑based index
-  return select(0, a.length - 1, k - 1);
-}
-function kthSmallestGeneric<T>(
-  arr: T[],
-  k: number,
-  compare: (a: T, b: T) => number
-): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
+  private strongConnect(v: string) {
+    // set the depth index for v
+    this.indices.set(v, this.index);
+    this.lowlink.set(v, this.index);
+    this.index += 1;
 
-  const a = [...arr];
-  const targetIndex = k - 1;
-  let left = 0, right = a.length - 1;
+    this.stack.push(v);
+    this.onStack.add(v);
 
-  while (true) {
-    if (left === right) return a[left];
-
-    const pivotIndex = Math.floor((left + right) / 2);
-    const pivotValue = a[pivotIndex];
-
-    let i = left, j = right;
-    while (i <= j) {
-      while (compare(a[i], pivotValue) < 0) i++;
-      while (compare(a[j], pivotValue) > 0) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++; j--;
+    // consider successors of v
+    for (const w of this.graph[v] ?? []) {
+      if (!this.indices.has(w)) {
+        // success: DFS tree edge
+        this.strongConnect(w);
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.lowlink.get(w)!
+        ));
+      } else if (this.onStack.has(w)) {
+        // back edge – strengthen lowlink
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.indices.get(w)!
+        ));
       }
     }
 
-    if (targetIndex <= j) right = j;
-    else if (targetIndex >= i) left = i;
-    else return a[targetIndex];
+    // If v is the root of an SCC, pop the stack
+    if (this.lowlink.get(v) === this.indices.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = this.stack.pop()!;
+        this.onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      this.result.push(component);
+    }
   }
 }
+const graph: Graph = {
+  '0': ['1'],
+  '1': ['2', '3'],
+  '2': ['0', '4'],
+  '3': ['4'],
+  '4': ['5'],
+  '5': ['3', '6'],
+  '6': ['7'],
+  '7': ['5'],
+};
+
+const tarjan = new TarjanSCC(graph);
+const sccs = tarjan.run();
+
+console.log('Strongly connected components:');
+sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
+Strongly connected components:
+0: [6, 7, 5]
+1: [0, 1, 2, 4, 3]
