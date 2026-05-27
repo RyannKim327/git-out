@@ -1,22 +1,42 @@
-// Regular number factorial (fast for small n, but beware of JS number limits)
-function factorialRecursive(n: number): number {
-  if (n < 0)
-    throw new Error('factorial is defined only for non‑negative integers');
-
-  // the base case
-  if (n === 0 || n === 1) return 1;
-
-  // recursive call
-  return n * factorialRecursive(n - 1);
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-// BigInt variant – no loss of precision up to very large n
-function factorialRecursiveBigInt(n: bigint): bigint {
-  if (n < 0n)
-    throw new Error('factorial is defined only for non‑negative integers');
+/**
+ * Returns the n‑th node from the end of a singly linked list.
+ * If n is out of bounds, returns null.
+ *
+ * @param head The head of the list.
+ * @param n    1‑based index from the end (n = 1 => tail node).
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // invalid request
 
-  if (n === 0n || n === 1n) return 1n;
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
 
-  return n * factorialRecursiveBigInt(n - 1n);
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;          // n larger than list size
+    fast = fast.next;
+  }
+
+  // Move both until fast reaches the end
+  while (fast) {
+    slow = slow!.next;  // fast is non‑null here, so slow is safe
+    fast = fast.next;
+  }
+
+  return slow;
 }
-console.log(factorialRecursive(5));          // 120
-console.log(factorialRecursiveBigInt(20n));   // 2432902008176640000n
+// Build 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4 = { val: 4, next: node5 };
+let node3 = { val: 3, next: node4 };
+let node2 = { val: 2, next: node3 };
+let node1 = { val: 1, next: node2 };
+
+console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
+console.log(nthFromEnd(node1, 2)?.val); // 4
+console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
+console.log(nthFromEnd(node1, 6));       // null (out of bounds)
