@@ -1,99 +1,32 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
 /**
- * Example of an async “network task” that you might run in Android
- * (React‑Native runs JavaScript on a background thread for you).
+ * Returns the longest common substring between `a` and `b`.
+ * If there are several with the same length, the one that appears first in `a` is returned.
  */
-const App: React.FC = () => {
-  /*--- State: loading / data / error -----------------------------------*/
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+export function longestCommonSubstring(a: string, b: string): string {
+  if (!a || !b) return '';
 
-  /*--- Effect: fire once on mount -------------------------------------*/
-  useEffect(() => {
-    /**
-     * Async function inside the effect so we can use await at a top level.
-     * It's an equivalent of Android’s AsyncTask (but without the Android
-     * boilerplate) – just a Promise chain wrapped in async/await.
-     */
-    const fetchData = async () => {
-      try {
-        // 1️⃣ Make the request
-        const response = await fetch(
-          'https://api.adviceslip.com/advice',
-        );
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  // 2‑D array of zeros
+  const table = Array.from({ length: rows }, () => Array(cols).fill(0));
 
-        // 2️⃣ Check for HTTP errors
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+  let maxLen = 0;
+  let maxEndIdxA = 0;
+
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        table[i][j] = table[i - 1][j - 1] + 1;
+        if (table[i][j] > maxLen) {
+          maxLen = table[i][j];
+          maxEndIdxA = i;          // the end index (exclusive) in `a`
         }
-
-        // 3️⃣ Parse the JSON payload
-        const json = await response.json();
-
-        // 4️⃣ Store the result
-        setData(json);          // data.slip.advice will be the string
-        setError(null);
-      } catch (e) {
-        // Anything that goes wrong lands here
-        console.error('Failed to fetch advice:', e);
-        setError((e as Error).message);
-        setData(null);
-      } finally {
-        // Whatever happens, loading is done
-        setLoading(false);
       }
-    };
+    }
+  }
 
-    fetchData();
-
-    // Optional: cleanup if the component unmounts before fetch resolves
-    // return () => { /* cancel request if using AbortController, e.g. */ };
-  }, []); // empty deps → run once
-
-  /*--- Rendering -----------------------------------------------------*/
-  return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.text}>Loading advice...</Text>
-        </View>
-      )}
-
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
-        </View>
-      )}
-
-      {!loading && data && (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Here’s an advice for you:</Text>
-          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-};
-
-/*--- Styles ----------------------------------------------------------*/
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, marginTop: 12 },
-  title: { fontSize: 18, fontWeight: '600' },
-  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
-  error: { color: 'red' },
-});
-
-export default App;
+  return maxLen === 0 ? '' : a.slice(maxEndIdxA - maxLen, maxEndIdxA);
+}
+console.log(longestCommonSubstring('ABABC', 'BABCA')); // → "ABC"
+console.log(longestCommonSubstring('kitten', 'sitting')); // → "itt"
+console.log(longestCommonSubstring('foo', 'bar')); // → ""
