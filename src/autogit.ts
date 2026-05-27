@@ -1,42 +1,59 @@
 /**
- * Insertion sort (in‑place).
+ * Sort an array of non‑negative integers using counting sort.
  *
- * @param arr The array you want to sort. It will be sorted *mutably*.
- * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
- * @returns The same array reference, now sorted.
+ * @param arr   The array of numbers to sort.
+ * @param maxVal   The maximum possible value in `arr` (inclusive).
+ * @returns A new sorted array.
  */
-export function insertionSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  // Default to JS native >/< when no comparator is supplied
-  const cmp = compare ?? ((a: T, b: T) => {
-    if (a > b) return 1;
-    if (a < b) return -1;
-    return 0;
-  });
+function countingSort(arr: number[], maxVal: number): number[] {
+  // 1. Count occurrences
+  const count = new Array(maxVal + 1).fill(0);
+  for (const v of arr) count[v]++;
 
-  // Work from index 1 to the end; index 0 is already “sorted” by itself
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Move elements that are greater than `key` one position to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  // 2. Build the output
+  const result: number[] = [];
+  for (let val = 0; val <= maxVal; val++) {
+    const occurrences = count[val];
+    if (occurrences > 0) {
+      // push `occurrences` copies of `val`
+      for (let i = 0; i < occurrences; i++) result.push(val);
     }
-
-    // Place `key` in its correct spot
-    arr[j + 1] = key;
   }
-
-  return arr;
+  return result;
 }
-const nums = [8, 3, 5, 4, 6, 1];
-console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
+const unsorted = [12, 4, 2, 99, 0, 5];
+const sorted = countingSort(unsorted, 99);
+console.log(sorted); // [0, 2, 4, 5, 12, 99]
+/**
+ * Sort an array of integers (positive, zero, or negative) using counting sort.
+ *
+ * @param arr The array of numbers to sort.
+ * @returns A new sorted array.
+ */
+function countingSortExtended(arr: number[]): number[] {
+  if (arr.length === 0) return [];
 
-// With a custom comparator: sort strings by length (descending)
-const fruits = ['apple', 'kiwi', 'banana', 'fig'];
-const byLengthDesc = (a: string, b: string) => b.length - a.length;
-console.log(insertionSort(fruits, byLengthDesc));
+  const min = Math.min(...arr);
+  const max = Math.max(...arr);
+  const shift = -min;                     // number of places to shift everything
+
+  const countSize = max + shift + 1;      // inclusive range after shift
+  const count: number[] = new Array(countSize).fill(0);
+
+  // 1. Count occurrences (with shift)
+  for (const v of arr) count[v + shift]++;
+
+  // 2. Build the output, turning the index back into a real value
+  const result: number[] = [];
+  for (let i = 0; i < countSize; i++) {
+    const occurrences = count[i];
+    if (occurrences > 0) {
+      const realValue = i + min;          // undo the shift
+      for (let j = 0; j < occurrences; j++) result.push(realValue);
+    }
+  }
+  return result;
+}
+const arr = [7, -3, 0, 5, -1, 7];
+const sorted = countingSortExtended(arr);
+console.log(sorted); // [-3, -1, 0, 5, 7, 7]
