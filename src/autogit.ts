@@ -1,54 +1,76 @@
 /**
- * Area from base and height.
- * @param base  - Base length (any positive number)
- * @param height - Height length (any positive number)
- * @returns Triangle area
+ * Build the longest‑prefix‑suffix (LPS) table for a pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0…i]
+ * that is also a suffix of this substring.
+ *
+ * @param pattern – string to preprocess
+ * @returns array of LPS values
  */
-function areaBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('Base and height must be positive numbers.');
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;                     // length of the previous longest prefix‑suffix
+  let i = 1;
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back to the previous longest prefix‑suffix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
   }
-  return (base * height) / 2;
+  return lps;
 }
-const area = areaBaseHeight(10, 5); // 25
-console.log(`Area = ${area}`);      // Area = 25
+
 /**
- * Deal with three side lengths.
- * @param a - length of side a
- * @param b - length of side b
- * @param c - length of side c
- * @returns Triangle area
+ * Classic KMP string search.
+ *
+ * @param text    – the text to search in
+ * @param pattern – the pattern to find
+ * @returns all starting indices where pattern occurs in text
  */
-function areaBySides(a: number, b: number, c: number): number {
-  // Simple validity check – the sides must satisfy the triangle inequality
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The given sides do not form a valid triangle.');
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];
+
+  const lps = buildLps(pattern);
+  const result: number[] = [];
+
+  let i = 0; // index for text
+  let j = 0; // index for pattern
+
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+    }
+
+    if (j === pattern.length) {
+      // match found at i - j
+      result.push(i - j);
+      // continue searching for the next match
+      j = lps[j - 1];
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
+    }
   }
 
-  const s = (a + b + c) / 2;                 // semi‑perimeter
-  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
-  return area;
+  return result;
 }
-const areaHeron = areaBySides(3, 4, 5); // 6
-console.log(`Area (Heron) = ${areaHeron}`);
-/**
- * Area from two sides and an included angle (in degrees or radians).
- * @param side1   - length of one side
- * @param side2   - length of the other side
- * @param angle   - included angle (in degrees)
- * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
- * @returns Triangle area
- */
-function areaFromSidesAndAngle(
-  side1: number,
-  side2: number,
-  angle: number,
-  inRadians = false
-): number {
-  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
+import { kmpSearch } from "./kmp";
 
-  const rad = inRadians ? angle : (angle * Math.PI) / 180;
-  return (side1 * side2 * Math.sin(rad)) / 2;
-}
-const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
-console.log(`Area from two sides & angle = ${areaMixed}`);
+const text = "abxabcabcaby";
+const pattern = "abcaby";
+
+const matches = kmpSearch(text, pattern);
+console.log(matches); // [6]
