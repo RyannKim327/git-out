@@ -1,31 +1,18 @@
 /**
- * Returns true if `s` is a palindrome.
- *
- * Options:
- *   - ignoreCase   strip upper/lower differences (default: true)
- *   - ignoreNonAlpha  remove everything that isn’t a letter/digit (default: true)
+ * Removes all a, e, i, o, u (both lowercase and uppercase) from the input.
  */
-export function isPalindrome(
-  s: string,
-  { ignoreCase = true, ignoreNonAlpha = true } = {}
-): boolean {
-  let processed = s;
-
-  // Optional: drop punctuation, spaces, etc.
-  if (ignoreNonAlpha) {
-    processed = processed.replace(/[^a-zA-Z0-9]/g, "");
-  }
-
-  // Optional: treat “A” and “a” as the same.
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  // Compare string to its reverse.
-  const reversed = processed.split("").reverse().join("");
-  return processed === reversed;
+function removeVowels(input: string): string {
+  return input.replace(/[aeiou]/gi, '');
 }
-console.log(isPalindrome("Racecar"));                 // true
-console.log(isPalindrome("noon"));                    // true
-console.log(isPalindrome("hello"));                   // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+
+// Example
+const raw = "Hello, World! 123";
+const clean = removeVowels(raw);
+console.log(clean); // "Hll, Wrld! 123"
+function removeVowelsManual(input: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u']);
+  return input
+    .split('')
+    .filter(ch => !vowels.has(ch.toLowerCase()))
+    .join('');
+}
