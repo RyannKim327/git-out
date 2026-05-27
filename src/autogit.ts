@@ -1,25 +1,44 @@
-const str = "42";
-const num = parseInt(str, 10);  // 42
-parseInt("42 apples", 10);  // 42
-parseInt("  42", 10);       // 42
-parseInt("apple 42", 10);   // NaN
-const s = "42";
-const n1 = Number(s);   // 42
-const n2 = +s;          // 42
-Number("3.14");   // 3.14
-Number.parseFloat("3.14");  // 3.14
-function toInt(value: string): number | null {
-  const parsed = parseInt(value, 10);
-  if (isNaN(parsed)) return null;
-  return parsed;
+// A plain, singly‑linked node.
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
+
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
+  }
 }
+/**
+ * Walks the list and counts how many nodes it contains.
+ * @param head The first node of the list (or null for an empty list).
+ * @returns How many nodes are in the list.
+ */
+function listLength<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
 
-const x = toInt("foo"); // null
-const y = toInt("12");  // 12
-const hex = "0xFF";
-const oct = "0o77";
+  while (current !== null) {
+    count++;
+    current = current.next;
+  }
 
-Number(hex);   // 255
-Number(oct);   // 63
+  return count;
+}
+function listLengthRecursive<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;                // base case: nothing left
+  return 1 + listLengthRecursive(node.next); // recurse
+}
+// Build a list: 1 → 2 → 3 → null
+const third = new ListNode(3);
+const second = new ListNode(2, third);
+const first = new ListNode(1, second);
 
-parseInt(hex, 16);  // 255
+console.log(listLength(first));                // 3
+console.log(listLengthRecursive(first));       // 3
+console.log(listLength(null));                // 0
+// For a doubly linked node that has .next and .prev:
+let current = head;
+while (current !== null) {
+  count++;
+  current = current.next;  // or current.prev, depending on direction
+}
