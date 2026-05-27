@@ -1,46 +1,19 @@
-// src/githubUsers.ts
-import fetch, { Response } from "node-fetch";
+function isPalindrome(s: string): boolean {
+  // Two‑pointer scan from both ends
+  let left = 0;
+  let right = s.length - 1;
 
-interface GithubUser {
-  login: string;
-  id: number;
-  avatar_url: string;
-  html_url: string;
-}
-
-async function fetchGithubUsers(
-  page: number = 1,
-  perPage: number = 10
-): Promise<GithubUser[]> {
-  const url = `https://api.github.com/users?since=${(page - 1) * perPage}`;
-
-  const resp: Response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "TypeScript-CLI",
-    },
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`GitHub API error ${resp.status}: ${errText}`);
+  while (left < right) {
+    // Compare the characters at the two pointers
+    if (s.charAt(left) !== s.charAt(right)) {
+      return false;          // mismatch found – not a palindrome
+    }
+    left++;
+    right--;
   }
 
-  const json = await resp.json();
-
-  // Type assertion – we know the API returns an array of GitHubUser objects
-  return json as GithubUser[];
+  return true;                 // all mirrored pairs matched
 }
-
-async function main() {
-  try {
-    const users = await fetchGithubUsers(1, 5);
-    console.log("Top GitHub users:");
-    users.forEach((u) => console.log(`- ${u.login} (${u.html_url})`));
-  } catch (err) {
-    console.error("Something went wrong:", err);
-  }
-}
-
-main().catch((e) => console.error(e));
-
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+console.log(isPalindrome(""));        // true (empty string is a palindrome)
