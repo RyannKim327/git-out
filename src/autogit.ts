@@ -1,87 +1,65 @@
-/**
- * Radix sort for 32‑bit signed integers.
- * Works for any array length, including 0.
- *
- * The algorithm:
- *   – Split the input into positives and negatives
- *   – Sort each group with a stable counting‑sort pass for each decimal digit (base 10)
- *   – Negatives are sorted in reverse order of their absolute values
- *   – Concatenate negative‑part (re‑negated) then positive‑part
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length === 0) return nums; // nothing to do
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
+  prev: ListNode<T> | null = null;
 
-  /* 1️⃣  Separate positives from negatives   */
-  const positives: number[] = [];
-  const negatives: number[] = [];
-
-  for (const n of nums) {
-    if (n >= 0) positives.push(n);
-    else negatives.push(Math.abs(n));  // store abs for later sorting
+  constructor(value: T) {
+    this.value = value;
   }
-
-  /* 2️⃣  Sort the “unsigned” parts with an inner helper   */
-  const sortedPos = sortUnsigned(positives);
-  const sortedNeg = sortUnsigned(negatives);
-
-  /* 3️⃣  Negatives need to be reversed & re‑negated       */
-  const finalNeg = sortedNeg.reverse().map(v => -v);
-
-  /* 4️⃣  Merge back together – negative values come first   */
-  return [...finalNeg, ...sortedPos];
 }
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-/**
- * Internally sort an array of non‑negative numbers by radix.
- * The routine is the same as the classic radix sort used in
- * CS‑textbooks: a counting sort stable pass for each power of 10.
- */
-function sortUnsigned(arr: number[]): number[] {
-  if (arr.length === 0) return arr;
-
-  // Find the largest value so we know when to stop
-  const maxVal = Math.max(...arr);
-
-  let exponent = 1;   // 10⁰, 10¹, 10² …
-  let result = arr;   // we’ll keep re‑assigning
-
-  while (Math.floor(maxVal / exponent) > 0) {
-    result = countingSortByExponent(result, exponent);
-    exponent *= 10;
+  while (curr) {
+    const next = curr.next;    // keep a handle on the rest
+    curr.next = prev;          // reverse the arrow
+    prev = curr;               // advance prev
+    curr = next;               // advance curr
   }
 
-  return result;
+  return prev; // new head
 }
+function reverseRecursive<T>(
+  node: ListNode<T> | null,
+  prev: ListNode<T> | null = null
+): ListNode<T> | null {
+  if (!node) return prev;
 
-/**
- * One stable counting‑sort pass for a specific digit (exponent).
- * Digits are guaranteed to be 0–9.
- */
-function countingSortByExponent(nums: number[], exp: number): number[] {
-  const output = new Array(nums.length);
-  const count = new Array(10).fill(0);
-
-  // 1️⃣ Count occurrences of each digit
-  for (const n of nums) {
-    const digit = Math.floor(n / exp) % 10;
-    count[digit]++;
-  }
-
-  // 2️⃣ Turn counts into cumulative counts
-  for (let i = 1; i < 10; i++) {
-    count[i] += count[i - 1];
-  }
-
-  // 3️⃣ Build output array (backwards for stability)
-  for (let i = nums.length - 1; i >= 0; i--) {
-    const n = nums[i];
-    const digit = Math.floor(n / exp) % 10;
-    output[--count[digit]] = n;
-  }
-
-  return output;
+  const next = node.next;
+  node.next = prev;
+  return reverseRecursive(next, node);
 }
-const data = [170, 45, 75, 90, 802, 24, 2, 66, -3, -55];
-const sorted = radixSort(data);
-console.log(sorted);
-// → [ -55, -3, 2, 24, 45, 66, 75, 90, 170, 802 ]
+function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let current = head;
+  let newHead: ListNode<T> | null = null;
+
+  while (current) {
+    // swap next and prev
+    const tmp = current.next;
+    current.next = current.prev;
+    current.prev = tmp;
+
+    // once we flip at the old head, that becomes the new head
+    if (!tmp) newHead = current;
+
+    current = tmp; // move to what was next, now prev
+  }
+
+  return newHead;
+}
+// Building a tiny list: 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+// Reverse
+const reversed = reverse(a);
+
+// Log values in order
+let node = reversed;
+while (node) {
+  console.log(node.value); // 3, 2, 1
+  node = node.next;
+}
