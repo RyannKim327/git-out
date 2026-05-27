@@ -1,76 +1,65 @@
-/**
- * Build the longest‑prefix‑suffix (LPS) table for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0…i]
- * that is also a suffix of this substring.
- *
- * @param pattern – string to preprocess
- * @returns array of LPS values
- */
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;                     // length of the previous longest prefix‑suffix
-  let i = 1;
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
+  prev: ListNode<T> | null = null;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the previous longest prefix‑suffix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
+  constructor(value: T) {
+    this.value = value;
   }
-  return lps;
 }
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-/**
- * Classic KMP string search.
- *
- * @param text    – the text to search in
- * @param pattern – the pattern to find
- * @returns all starting indices where pattern occurs in text
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
-
-  const lps = buildLps(pattern);
-  const result: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
-
-    if (j === pattern.length) {
-      // match found at i - j
-      result.push(i - j);
-      // continue searching for the next match
-      j = lps[j - 1];
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
-    }
+  while (curr) {
+    const next = curr.next;    // keep a handle on the rest
+    curr.next = prev;          // reverse the arrow
+    prev = curr;               // advance prev
+    curr = next;               // advance curr
   }
 
-  return result;
+  return prev; // new head
 }
-import { kmpSearch } from "./kmp";
+function reverseRecursive<T>(
+  node: ListNode<T> | null,
+  prev: ListNode<T> | null = null
+): ListNode<T> | null {
+  if (!node) return prev;
 
-const text = "abxabcabcaby";
-const pattern = "abcaby";
+  const next = node.next;
+  node.next = prev;
+  return reverseRecursive(next, node);
+}
+function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let current = head;
+  let newHead: ListNode<T> | null = null;
 
-const matches = kmpSearch(text, pattern);
-console.log(matches); // [6]
+  while (current) {
+    // swap next and prev
+    const tmp = current.next;
+    current.next = current.prev;
+    current.prev = tmp;
+
+    // once we flip at the old head, that becomes the new head
+    if (!tmp) newHead = current;
+
+    current = tmp; // move to what was next, now prev
+  }
+
+  return newHead;
+}
+// Building a tiny list: 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+// Reverse
+const reversed = reverse(a);
+
+// Log values in order
+let node = reversed;
+while (node) {
+  console.log(node.value); // 3, 2, 1
+  node = node.next;
+}
