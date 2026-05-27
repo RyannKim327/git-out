@@ -1,8 +1,16 @@
-function reverseWords(text: string): string {
-    // Split on any amount of whitespace, strip leading/trailing spaces
-    const words = text.trim().split(/\s+/);
-    // Reverse and join with a single space
-    return words.reverse().join(' ');
-}
+/**
+ * Returns the arithmetic mean of a numeric array.
+ *
+ * @param values – An array of numbers.
+ * @throws {Error} If the array is empty.
+ */
+function mean(values: number[]): number {
+  if (values.length === 0) {
+    throw new Error("Cannot compute the mean of an empty array");
+  }
 
-console.log(reverseWords("Hello world from TypeScript")); // "TypeScript from world Hello"
+  const sum = values.reduce((acc, v) => acc + v, 0);
+  return sum / values.length;
+}
+const data = [10, 20, 30, 40, 50];
+console.log(mean(data)); // 30
