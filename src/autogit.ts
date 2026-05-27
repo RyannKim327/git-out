@@ -1,40 +1,110 @@
+/*--------------------------------------------------
+  1. The “state” that the algorithm operates on
+--------------------------------------------------*/
+export interface Node {
+  /** Every node needs a unique identifier for cycle handling */
+  id: string;               // could be number|string | etc.
+  /** Return the directly reachable successors */
+  getChildren(): Node[];
+}
+
+/*--------------------------------------------------
+  2. The breadth‑limited search itself
+--------------------------------------------------*/
+export type SearchResult<T = Node> = {
+  /* The node that satisfied the goal predicate,
+     or undefined if none found within depth limit. */
+  found: T | undefined;
+  /* How many nodes were expanded in total */
+  expanded: number;
+};
+
 /**
- * Returns true if `s` is a palindrome, otherwise false.
- * Handles case‑sensitivity and ignores anything that is not a
- * letter or digit (you can drop that part if you need a stricter check).
+ * Breadth‑limited search (BFS with depth limit)
  *
- * No string‑to‑array conversion, no stack, no helper string – just two indices.
+ * @param start  The entry point of the search
+ * @param goal   A predicate that must be satisfied by the target node
+ * @param depthLimit  The maximum depth (0 → only the start node)
+ *
+ * @returns SearchResult containing the target node (if it was found)
+ *          and the number of nodes that were expanded.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export function breadthLimitedSearch<T extends Node>(
+  start: T,
+  goal: (node: T) => boolean,
+  depthLimit: number
+): SearchResult<T> {
+  if (depthLimit < 0)
+    throw new Error("depthLimit must be >= 0");
 
-  while (left < right) {
-    // Skip characters that aren’t alphanumeric
-    while (left < right && !isAlnum(s.charAt(left))) left++;
-    while (left < right && !isAlnum(s.charAt(right))) right--;
+  // queue entry holds the node *and* its depth from start
+  type QueueEntry = { node: T; depth: number };
 
-    // Compare after normalising case
-    if (left < right && s.charAt(left).toLowerCase() !== s.charAt(right).toLowerCase())
-      return false;
+  const frontier: QueueEntry[] = [{ node: start, depth: 0 }];
+  const visited = new Set<string>();
 
-    left++;
-    right--;
+  let expanded = 0;
+
+  while (frontier.length > 0) {
+    const { node, depth } = frontier.shift()!; // FIFO
+
+    if (visited.has(node.id)) continue;   // ignore already‑seen nodes
+    visited.add(node.id);
+
+    expanded++;
+
+    if (goal(node)) return { found: node, expanded };
+
+    // If we haven't hit the depth limit, expand successors
+    if (depth < depthLimit) {
+      const children = node.getChildren();
+      // Add children to the *back* of the queue – usual BFS order
+      for (const child of children) {
+        // Avoid duplicates in the same frontier level
+        if (!visited.has(child.id)) {
+          frontier.push({ node: child, depth: depth + 1 });
+        }
+      }
+    }
   }
-  return true;
+
+  // Search exhausted without finding a goal
+  return { found: undefined, expanded };
+}
+class TreeNode implements Node {
+  constructor(public id: string, public children: TreeNode[] = []) {}
+  getChildren() { return this.children; }
 }
 
-function isAlnum(ch: string): boolean {
-  const code = ch.charCodeAt(0);
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
+const leafA  = new TreeNode("leafA");
+const leafB  = new TreeNode("leafB");
+const leafC  = new TreeNode("leafC");
+const node1  = new TreeNode("node1", [leafA, leafB]);
+const node2  = new TreeNode("node2", [leafC]);
+const root   = new TreeNode("root", [node1, node2]);
+const result = breadthLimitedSearch(
+  root,
+  n => n.id === "leafC",   // goal predicate
+  2                        // depth limit
+);
 
-// Example:
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
+if (result.found) {
+  console.log("Found:", result.found.id);
+} else {
+  console.log("Not found within depth limit");
+}
+console.log("Nodes expanded:", result.expanded);
+Found: leafC
+Nodes expanded: 3   // root -> node1 -> node2
+export type SearchResult<T> = {
+  found: T | undefined;
+  expanded: number;
+  path: T[]; // optional: the actual path from the root
+};
+
+export function breadthLimitedSearchCustom<T extends {}>(
+  start: T,
+  getChildren: (node: T) => T[],
+  goal: (node: T) => boolean,
+  depthLimit: number
+) { /* similar to above, but works with any shape */ }
