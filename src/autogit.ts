@@ -1,110 +1,54 @@
-// ----- Min‑Heap implementation ---------------------------------------
-class MinHeap<T> {
-  private items: Array<{key: number; value: T}> = [];
+/**
+ * Returns the largest prime factor of n.
+ * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
+ * represent exactly. For bigger values use BigInt (see the comment below).
+ */
+function largestPrimeFactor(n: number): number {
+  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
 
-  private siftUp(idx: number) {
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.items[parent].key <= this.items[idx].key) break;
-      [this.items[parent], this.items[idx]] = [this.items[idx], this.items[parent]];
-      idx = parent;
+  let remaining = n;
+
+  // Deal with factor 2 first – it’s the only even prime
+  while (remaining % 2 === 0) {
+    remaining = remaining / 2;
+  }
+  let lastFactor = 2;
+
+  // Now we only need to test odd numbers.
+  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
+  for (let odd = 3; odd * odd <= remaining; odd += 2) {
+    while (remaining % odd === 0) {
+      remaining = remaining / odd;
+      lastFactor = odd;
     }
   }
 
-  private siftDown(idx: number, size: number) {
-    while (true) {
-      const left = (idx << 1) + 1;
-      const right = left + 1;
-      let smallest = idx;
+  // If what’s left is > 1, it’s a prime itself and is larger than any
+  // factor we already found, so it becomes the biggest prime factor.
+  return remaining > 1 ? remaining : lastFactor;
+}
+console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
+console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
+console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  if (n <= 1n) return n;
 
-      if (left < size && this.items[left].key < this.items[smallest].key) smallest = left;
-      if (right < size && this.items[right].key < this.items[smallest].key) smallest = right;
+  let remaining = n;
+  let lastFactor = 2n;
 
-      if (smallest === idx) break;
-      [this.items[smallest], this.items[idx]] = [this.items[idx], this.items[smallest]];
-      idx = smallest;
+  // factor 2
+  while (remaining % 2n === 0n) {
+    remaining /= 2n;
+    lastFactor = 2n;
+  }
+
+  // odd factors
+  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
+    while (remaining % odd === 0n) {
+      remaining /= odd;
+      lastFactor = odd;
     }
   }
 
-  push(key: number, value: T) {
-    this.items.push({key, value});
-    this.siftUp(this.items.length - 1);
-  }
-
-  pop(): T | undefined {
-    const size = this.items.length;
-    if (!size) return undefined;
-    const min = this.items[0].value;
-    this.items[0] = this.items[size - 1];
-    this.items.pop();
-    this.siftDown(0, this.items.length);
-    return min;
-  }
-
-  get size() {
-    return this.items.length;
-  }
+  return remaining > 1n ? remaining : lastFactor;
 }
-
-
-// ----- Graph representation ------------------------------------------
-type Edge = { to: number; weight: number };
-
-class Graph {
-  private adjacency: Edge[][] = [];
-
-  constructor(private nodeCount: number) {
-    this.adjacency = Array.from({length: nodeCount}, () => []);
-  }
-
-  addEdge(u: number, v: number, w: number, directed = false) {
-    this.adjacency[u].push({to: v, weight: w});
-    if (!directed) this.adjacency[v].push({to: u, weight: w});
-  }
-
-  getEdges(u: number): Edge[] {
-    return this.adjacency[u];
-  }
-}
-
-
-// ----- Dijkstra ---------------------------------------
-function dijkstra(graph: Graph, start: number): number[] {
-  const dist = Array(graph.adjacency.length).fill(Infinity);
-  const visited = new Array(graph.adjacency.length).fill(false);
-  const pq = new MinHeap<number>();
-
-  dist[start] = 0;
-  pq.push(0, start);
-
-  while (pq.size) {
-    const u = pq.pop() as number;      // current vertex
-    if (visited[u]) continue;          // skip stale entry
-    visited[u] = true;
-
-    for (const {to: v, weight: w} of graph.getEdges(u)) {
-      if (dist[u] + w < dist[v]) {
-        dist[v] = dist[u] + w;
-        pq.push(dist[v], v);
-      }
-    }
-  }
-
-  return dist; // distances from start to every vertex
-}
-
-
-// ----- Example usage ---------------------------------------
-const g = new Graph(6);
-g.addEdge(0, 1, 7);
-g.addEdge(0, 2, 9);
-g.addEdge(0, 5, 14);
-g.addEdge(1, 2, 10);
-g.addEdge(1, 3, 15);
-g.addEdge(2, 3, 11);
-g.addEdge(2, 5, 2);
-g.addEdge(3, 4, 6);
-g.addEdge(4, 5, 9);
-
-const distances = dijkstra(g, 0);
-console.log(distances); // shortest distance from vertex 0 to every other vertex
