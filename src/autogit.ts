@@ -1,110 +1,46 @@
-// Basic node description
-export interface Node {
-  id: string;           // unique identifier
-  // optional coordinates – handy for the heuristic
-  x?: number;
-  y?: number;
-  // all directly reachable neighbours
-  neighbors: string[];  // ids of neighbour nodes
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+
+  // A little help‑trim: you can decide to ignore whitespace, case, etc.
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
+
+  const sortedA = normalize(a).split('').sort().join('');
+  const sortedB = normalize(b).split('').sort().join('');
+
+  return sortedA === sortedB;
 }
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-export interface Edge {
-  from: string;      // node id
-  to: string;        // node id
-  cost: number;      // weight of the edge
+  const freq = new Map<string, number>();
+
+  for (const ch of a) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
+
+  for (const ch of b) {
+    const count = freq.get(ch);
+    if (!count) return false;          // either zero or undefined
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  return freq.size === 0;
 }
-class PriorityQueue<T> {
-  private items: { key: number; value: T }[] = [];
+function areAnagramsAscii(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-  // swap helpers
-  private swap(i: number, j: number) {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
-  }
+  const counts = new Uint32Array(26);
 
-  // bubble‑up to maintain heap invariant
-  private bubbleUp(idx: number) {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.items[parent].key <= this.items[idx].key) break;
-      this.swap(parent, idx);
-      idx = parent;
-    }
-  }
+  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
+  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
 
-  // bubble‑down to maintain heap invariant
-  private bubbleDown(idx: number) {
-    const last = this.items.length - 1;
-    while (true) {
-      const left = 2 * idx + 1;
-      const right = 2 * idx + 2;
-      let smallest = idx;
-
-      if (left <= last && this.items[left].key < this.items[smallest].key)
-        smallest = left;
-      if (right <= last && this.items[right].key < this.items[smallest].key)
-        smallest = right;
-
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // push a new value with a priority
-  push(value: T, key: number) {
-    this.items.push({ value, key });
-    this.bubbleUp(this.items.length - 1);
-  }
-
-  // pop the value with the smallest priority
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const root = this.items[0].value;
-    const last = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = last;
-      this.bubbleDown(0);
-    }
-    return root;
-  }
-
-  get size(): number {
-    return this.items.length;
-  }
+  return counts.every(v => v === 0);
 }
-/**
- * Generic A* implementation.
- * @param nodes   Map of node id → Node
- * @param edges   Map of node id → array of out‑going edges
- * @param start   id of the start node
- * @param goal    id of the goal node
- * @param heuristic (node) ⇒ estimated distance to goal
- * @returns array of node ids that form the cheapest path, or empty array if none
- */
-export function aStar(
-  nodes: Map<string, Node>,
-  edges: Map<string, Edge[]>,
-  start: string,
-  goal: string,
-  heuristic: (nodeId: string) => number
-): string[] {
-  // G‑costs: current best known cost to each node
-  const g: Map<string, number> = new Map();
-  g.set(start, 0);
+const compact = (s: string) =>
+  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
 
-  // Came‑from map to rebuild the path
-  const cameFrom: Map<string, string> = new Map();
-
-  // Open set – priority queue keyed by F = G + H
-  const open = new PriorityQueue<string>();
-  open.push(start, heuristic(start));
-
-  // Closed set: processed nodes
-  const closed = new Set<string>();
-
-  while (open.size > 0) {
-    const current = open.pop()!;
-
-    // Goal found – reconstruct the path
-    if (current === goal) {
-      const path: string[] =
+function areAnagramsClean(a: string, b: string): boolean {
+  return areAnagrams(compact(a), compact(b));
+}
