@@ -1,122 +1,105 @@
-/**
- * Burrows–Wheeler transform – the forward transform.
- *
- * @param {string} input – Text to be encoded. Must contain a single unique
- *                         end‑of‑file marker, conventionally `$`.
- * @returns {string} – The last column of the sorted cyclic rotation matrix.
- *
- * The algorithm:
- *   1. Generate all cyclic rotations of the input.
- *   2. Sort the rotations lexicographically.
- *   3. Take the last character of each sorted rotation; that series
- *      is the BWT output.
- *
- * The implementation is deliberately thin: it builds an array of
- * strings, sorts it with the native `Array.prototype.sort`,
- * and then extracts the last character from each row.
- */
-export function bwt(input: string): string {
-    // Guard: we assume the caller used a unique EOF symbol.
-    if (!input.includes('$')) {
-        throw new Error("Input must contain exactly one unique EOF marker ('$').");
-    }
+// 1️⃣  Define the graph
 
-    const n = input.length;
-    const rotations: string[] = new Array(n);
-
-    // Build all rotations in O(n²) time & O(n²) memory – fine for demo use.
-    // For large data you’d use a more memory‑efficient approach.
-    for (let i = 0; i < n; i++) {
-        const rotation = input.slice(i) + input.slice(0, i); // cyclic shift
-        rotations[i] = rotation;
-    }
-
-    // Step 2: lexicographically sort the rotations.
-    rotations.sort();
-
-    // Step 3: construct output from last characters.
-    let bwt = '';
-    for (const rot of rotations) {
-        bwt += rot[rot.length - 1];
-    }
-
-    return bwt;
+/** One directed edge with a weight. */
+interface Edge {
+  from: number;   // source vertex index
+  to: number;     // destination vertex index
+  weight: number; // edge weight
 }
 
-/**
- * Inverse Burrows–Wheeler transform – reconstructs the original
- * string from the BWT output.
- *
- * @param {string} encoded – BWT output string *without* the EOF marker.
- * @returns {string} – The original string, including the EOF marker.
- *
- * The classic "LF‑mapping" or "last–first relation" is used:
- *   1. The first column of the sorted rotation matrix is just the
- *      encoded string sorted.
- *   2. By repeatedly following the mapping from last → first, you
- *      rebuild the original text backwards.
- *
- * The algorithm below runs in O(n) time and uses O(n) additional
- * space. It is straightforward – no fancy data structures or external
- * libraries required.
+/** The graph is just a list of edges – we’re not building adjacency lists because
+ *  Bellman‑Ford inherits its own relaxation loop from every edge.
  */
-export function inverseBwt(encoded: string): string {
-    const n = encoded.length;
+type EdgeList = Edge[];
 
-    // The first column (F) is the encoded string sorted.
-    const first = encoded.split('').sort();
+/** Number of vertices is needed for the outer loop. */
+type VertexCount = number;
+/**
+ * bellmanFord(source, n, edges)
+ *
+ * @param source  Index of the source vertex (0‑based)
+ * @param n       Total number of vertices
+ * @param edges   List of all directed edges
+ *
+ * @returns An object:
+ *   – `dist`   array of shortest distances from `source`
+ *   – `prev`   previous vertex on the optimal path (for path reconstruction)
+ *   – `hasNegativeCycle` flag
+ */
+function bellmanFord(
+  source: number,
+  n: VertexCount,
+  edges: EdgeList,
+): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
+  const INF = Number.POSITIVE_INFINITY;
+  const dist = Array(n).fill(INF);
+  const prev = Array<VertexCount | null>(n).fill(null);
 
-    // Build a mapping from each character in *encoded* to the
-    // positions it occupies in *first*.  Because the text can
-    // contain repeated characters, we need to map the *i‑th*
-    // occurrence in the first column to the *i‑th* occurrence in
-    // the last column.
-    const occCount: Map<string, number[]> = new Map();
+  dist[source] = 0;
 
-    // Count occurrences in the first column.
-    for (const ch of first) {
-        if (!occCount.has(ch)) occCount.set(ch, []);
-        occCount.get(ch)!.push(0);           // we'll replace with actual idx
+  // Relax all edges (n‑1) times
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
+
+    for (const { from, to, weight } of edges) {
+      const d = dist[from] + weight;
+      if (d < dist[to]) {
+        dist[to] = d;
+        prev[to] = from;
+        changed = true;
+      }
     }
 
-    // Again count occurrences in the encoded (last column) and
-    // record the mapping to the first column.
-    const indexMap: number[] = new Array(n);
-    const seen: Map<string, number> = new Map();
+    // Early exit if no distance updates: the graph has no further changes
+    if (!changed) break;
+  }
 
-    for (let i = 0; i < n; i++) {
-        const ch = encoded[i];
-        const count = seen.get(ch) ?? 0;
-        const mappedIdx = occCount.get(ch)![count];
-        indexMap[i] = mappedIdx;
-        seen.set(ch, count + 1);
+  // Check for negative‑weight cycles reachable from `source`
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
     }
+  }
 
-    // Reconstruct the string by walking the mapping starting from
-    // the EOF marker '$'.  We walk backwards: each step gives the
-    // character that precedes the current one in the original string.
-    let i = encoded.indexOf('$');
-    if (i === -1) throw new Error("The BWT input must contain an EOF marker ('$').");
+  return { dist, prev, hasNegativeCycle };
+}
+// Example graph
+const edges: EdgeList = [
+  { from: 0, to: 1, weight: 5 },
+  { from: 0, to: 2, weight: 4 },
+  { from: 1, to: 2, weight: -2 },
+  { from: 1, to: 3, weight: 3 },
+  { from: 2, to: 1, weight: -1 },
+  { from: 2, to: 3, weight: 2 },
+  { from: 3, to: 0, weight: 2 },
+];
 
-    let original = '';
-    for (let step = 0; step < n; step++) {
-        const ch = encoded[i];
-        original = ch + original;          // prepend
-        if (ch === '$') break;             // reached the sentinel
-        i = indexMap[i];
-    }
+// 4 vertices (0‑3)
+const result = bellmanFord(0, 4, edges);
 
-    return original;
+console.log('Distances:', result.dist);
+console.log('Previous vertex on path:', result.prev);
+console.log('Negative cycle?', result.hasNegativeCycle);
+function reconstructPath(
+  source: number,
+  target: number,
+  prev: (number | null)[],
+): number[] | null {
+  const path: number[] = [];
+  let at = target;
+
+  while (at !== null && at !== source) {
+    path.push(at);
+    at = prev[at];
+  }
+
+  if (at !== source) return null; // no path
+
+  path.push(source);
+  return path.reverse();
 }
 
-/** Quick demo */
-(() => {
-    const text = "banana$";          // note the unique EOF marker
-    console.log("Original:     ", text);
-
-    const encoded = bwt(text);
-    console.log("BWT result:   ", encoded);
-
-    const decoded = inverseBwt(encoded);
-    console.log("Decoded:      ", decoded);
-})();
+const path = reconstructPath(0, 3, result.prev);
+console.log('Path from 0 to 3:', path);
