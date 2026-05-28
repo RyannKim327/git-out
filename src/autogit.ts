@@ -1,105 +1,73 @@
-// 1️⃣  Define the graph
-
-/** One directed edge with a weight. */
-interface Edge {
-  from: number;   // source vertex index
-  to: number;     // destination vertex index
-  weight: number; // edge weight
+class Node<T> {
+  constructor(
+    public val: T,
+    public next: Node<T> | null = null
+  ) {}
 }
+export class LinkedQueue<T> {
+  private head: Node<T> | null = null   // front––dequeue → head
+  private tail: Node<T> | null = null   // back––enqueue → tail
+  private _size = 0
 
-/** The graph is just a list of edges – we’re not building adjacency lists because
- *  Bellman‑Ford inherits its own relaxation loop from every edge.
- */
-type EdgeList = Edge[];
-
-/** Number of vertices is needed for the outer loop. */
-type VertexCount = number;
-/**
- * bellmanFord(source, n, edges)
- *
- * @param source  Index of the source vertex (0‑based)
- * @param n       Total number of vertices
- * @param edges   List of all directed edges
- *
- * @returns An object:
- *   – `dist`   array of shortest distances from `source`
- *   – `prev`   previous vertex on the optimal path (for path reconstruction)
- *   – `hasNegativeCycle` flag
- */
-function bellmanFord(
-  source: number,
-  n: VertexCount,
-  edges: EdgeList,
-): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
-  const INF = Number.POSITIVE_INFINITY;
-  const dist = Array(n).fill(INF);
-  const prev = Array<VertexCount | null>(n).fill(null);
-
-  dist[source] = 0;
-
-  // Relax all edges (n‑1) times
-  for (let i = 0; i < n - 1; i++) {
-    let changed = false;
-
-    for (const { from, to, weight } of edges) {
-      const d = dist[from] + weight;
-      if (d < dist[to]) {
-        dist[to] = d;
-        prev[to] = from;
-        changed = true;
-      }
+  /** Add an element to the back */
+  enqueue(item: T): void {
+    const newNode = new Node(item)
+    if (!this.tail) {
+      // First element: both head & tail point to it
+      this.head = this.tail = newNode
+    } else {
+      this.tail.next = newNode
+      this.tail = newNode
     }
-
-    // Early exit if no distance updates: the graph has no further changes
-    if (!changed) break;
+    ++this._size
   }
 
-  // Check for negative‑weight cycles reachable from `source`
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
+  /** Remove and return the front element */
+  dequeue(): T {
+    if (!this.head) throw new Error('Queue is empty')
+
+    const value = this.head.val
+    this.head = this.head.next
+    // If the queue becomes empty, clear tail as well
+    if (!this.head) this.tail = null
+    --this._size
+    return value
   }
 
-  return { dist, prev, hasNegativeCycle };
+  /** Peek at front without removing */
+  peek(): T | null {
+    return this.head?.val ?? null
+  }
+
+  /** Number of elements */
+  size(): number { return this._size }
+
+  /** Convenience */
+  isEmpty(): boolean { return this._size === 0 }
 }
-// Example graph
-const edges: EdgeList = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 4 },
-  { from: 1, to: 2, weight: -2 },
-  { from: 1, to: 3, weight: 3 },
-  { from: 2, to: 1, weight: -1 },
-  { from: 2, to: 3, weight: 2 },
-  { from: 3, to: 0, weight: 2 },
-];
+const q = new LinkedQueue<number>()
 
-// 4 vertices (0‑3)
-const result = bellmanFord(0, 4, edges);
+q.enqueue(10)
+q.enqueue(20)
+q.enqueue(30)
 
-console.log('Distances:', result.dist);
-console.log('Previous vertex on path:', result.prev);
-console.log('Negative cycle?', result.hasNegativeCycle);
-function reconstructPath(
-  source: number,
-  target: number,
-  prev: (number | null)[],
-): number[] | null {
-  const path: number[] = [];
-  let at = target;
+console.log(q.peek()) // 10
+console.log(q.dequeue()) // 10
+console.log(q.dequeue()) // 20
+console.log(q.size()) // 1
+console.log(q.isEmpty()) // false
 
-  while (at !== null && at !== source) {
-    path.push(at);
-    at = prev[at];
-  }
+q.dequeue() // 30
+console.log(q.isEmpty()) // true
+import { expect } from 'chai'
+const q = new LinkedQueue<string>()
 
-  if (at !== source) return null; // no path
-
-  path.push(source);
-  return path.reverse();
-}
-
-const path = reconstructPath(0, 3, result.prev);
-console.log('Path from 0 to 3:', path);
+expect(q.isEmpty()).to.be.true
+q.enqueue('a')
+q.enqueue('b')
+expect(q.size()).to.equal(2)
+expect(q.peek()).to.equal('a')
+expect(q.dequeue()).to.equal('a')
+expect(q.dequeue()).to.equal('b')
+expect(() => q.dequeue()).to.throw('Queue is empty')
+head ──► … ──► tail
