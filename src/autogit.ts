@@ -1,59 +1,99 @@
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
 /**
- * Sort an array of non‑negative integers using counting sort.
- *
- * @param arr   The array of numbers to sort.
- * @param maxVal   The maximum possible value in `arr` (inclusive).
- * @returns A new sorted array.
+ * Example of an async “network task” that you might run in Android
+ * (React‑Native runs JavaScript on a background thread for you).
  */
-function countingSort(arr: number[], maxVal: number): number[] {
-  // 1. Count occurrences
-  const count = new Array(maxVal + 1).fill(0);
-  for (const v of arr) count[v]++;
+const App: React.FC = () => {
+  /*--- State: loading / data / error -----------------------------------*/
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-  // 2. Build the output
-  const result: number[] = [];
-  for (let val = 0; val <= maxVal; val++) {
-    const occurrences = count[val];
-    if (occurrences > 0) {
-      // push `occurrences` copies of `val`
-      for (let i = 0; i < occurrences; i++) result.push(val);
-    }
-  }
-  return result;
-}
-const unsorted = [12, 4, 2, 99, 0, 5];
-const sorted = countingSort(unsorted, 99);
-console.log(sorted); // [0, 2, 4, 5, 12, 99]
-/**
- * Sort an array of integers (positive, zero, or negative) using counting sort.
- *
- * @param arr The array of numbers to sort.
- * @returns A new sorted array.
- */
-function countingSortExtended(arr: number[]): number[] {
-  if (arr.length === 0) return [];
+  /*--- Effect: fire once on mount -------------------------------------*/
+  useEffect(() => {
+    /**
+     * Async function inside the effect so we can use await at a top level.
+     * It's an equivalent of Android’s AsyncTask (but without the Android
+     * boilerplate) – just a Promise chain wrapped in async/await.
+     */
+    const fetchData = async () => {
+      try {
+        // 1️⃣ Make the request
+        const response = await fetch(
+          'https://api.adviceslip.com/advice',
+        );
 
-  const min = Math.min(...arr);
-  const max = Math.max(...arr);
-  const shift = -min;                     // number of places to shift everything
+        // 2️⃣ Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-  const countSize = max + shift + 1;      // inclusive range after shift
-  const count: number[] = new Array(countSize).fill(0);
+        // 3️⃣ Parse the JSON payload
+        const json = await response.json();
 
-  // 1. Count occurrences (with shift)
-  for (const v of arr) count[v + shift]++;
+        // 4️⃣ Store the result
+        setData(json);          // data.slip.advice will be the string
+        setError(null);
+      } catch (e) {
+        // Anything that goes wrong lands here
+        console.error('Failed to fetch advice:', e);
+        setError((e as Error).message);
+        setData(null);
+      } finally {
+        // Whatever happens, loading is done
+        setLoading(false);
+      }
+    };
 
-  // 2. Build the output, turning the index back into a real value
-  const result: number[] = [];
-  for (let i = 0; i < countSize; i++) {
-    const occurrences = count[i];
-    if (occurrences > 0) {
-      const realValue = i + min;          // undo the shift
-      for (let j = 0; j < occurrences; j++) result.push(realValue);
-    }
-  }
-  return result;
-}
-const arr = [7, -3, 0, 5, -1, 7];
-const sorted = countingSortExtended(arr);
-console.log(sorted); // [-3, -1, 0, 5, 7, 7]
+    fetchData();
+
+    // Optional: cleanup if the component unmounts before fetch resolves
+    // return () => { /* cancel request if using AbortController, e.g. */ };
+  }, []); // empty deps → run once
+
+  /*--- Rendering -----------------------------------------------------*/
+  return (
+    <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.text}>Loading advice...</Text>
+        </View>
+      )}
+
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
+        </View>
+      )}
+
+      {!loading && data && (
+        <View style={styles.centered}>
+          <Text style={styles.title}>Here’s an advice for you:</Text>
+          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
+
+/*--- Styles ----------------------------------------------------------*/
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginTop: 12 },
+  title: { fontSize: 18, fontWeight: '600' },
+  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
+  error: { color: 'red' },
+});
+
+export default App;
