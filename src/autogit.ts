@@ -1,42 +1,48 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
 /**
- * Returns the n‑th node from the end of a singly linked list.
- * If n is out of bounds, returns null.
- *
- * @param head The head of the list.
- * @param n    1‑based index from the end (n = 1 => tail node).
+ * Checks whether a given integer is a prime number.
+ * @param n - The number to test. Must be an integer.
+ * @returns `true` if `n` is prime, otherwise `false`.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;           // invalid request
+export function isPrime(n: number): boolean {
+  // Reject non‑integers, negatives, and the few small non‑prime numbers
+  if (!Number.isInteger(n) || n <= 1) return false;
+  if (n <= 3) return true;           // 2 and 3 are prime
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
+  // Any even number > 2 or divisible by 3 can't be prime
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;          // n larger than list size
-    fast = fast.next;
+  // 6k ± 1 optimization:
+  // For numbers > 3, all primes are of the form 6k ± 1
+  // We check divisors 5, 7, 11, 13, 17, …
+  let i = 5;
+  const limit = Math.floor(Math.sqrt(n));
+
+  while (i <= limit) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+    i += 6;
   }
 
-  // Move both until fast reaches the end
-  while (fast) {
-    slow = slow!.next;  // fast is non‑null here, so slow is safe
-    fast = fast.next;
-  }
-
-  return slow;
+  return true;
 }
-// Build 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4 = { val: 4, next: node5 };
-let node3 = { val: 3, next: node4 };
-let node2 = { val: 2, next: node3 };
-let node1 = { val: 1, next: node2 };
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(29));  // true
 
-console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
-console.log(nthFromEnd(node1, 2)?.val); // 4
-console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
-console.log(nthFromEnd(node1, 6));       // null (out of bounds)
+// Handle non‑integers gracefully
+console.log(isPrime(7.5)); // false
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+
+  if (n % 2n === 0n || n % 3n === 0n) return false;
+
+  let i = 5n;
+  const limit = BigInt(Math.floor(Math.sqrt(Number(n)))); // careful: can't use sqrt on bigint directly
+
+  while (i <= limit) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+    i += 6n;
+  }
+
+  return true;
+}
