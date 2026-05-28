@@ -1,52 +1,54 @@
+// src/api.ts
+import axios, { AxiosResponse } from "axios";
+
+/** Simple DTO for demonstration purposes */
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 /**
- * Interpolation Search
- *
- * The algorithm only works on numeric, strictly‑sorted arrays.
- * It probes values near the expected position based on the key’s value,
- * so it runs “almost” as fast as binary search on uniformly distributed data.
- *
- * @param arr  Sorted numeric array (ascending)
- * @param key  Value to locate
- * @returns    Index of the key or -1 if not present
+ * Fetch a single TODO item by ID.
+ * Returns a Todo object or throws an ^ if anything goes wrong.
  */
-export function interpolationSearch(arr: number[], key: number): number {
-  if (arr.length === 0) return -1;
+export async function fetchTodoById(id: number): Promise<Todo> {
+  const resp: AxiosResponse<Todo> = await axios.get(
+    `https://jsonplaceholder.typicode.com/todos/${id}`
+  );
+  return resp.data;
+}
 
-  let low = 0;
-  let high = arr.length - 1;
-
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Guard against division by zero for the degenerate case
-    if (arr[high] === arr[low]) {
-      break; // all remaining elements equal; either match or no match
+/**
+ * Create a brand‑new TODO item.
+ * Returns the server‑side representation (including the newly minted ID).
+ */
+export async function createTodo(payload: Omit<Todo, "id">): Promise<Todo> {
+  const resp: AxiosResponse<Todo> = await axios.post(
+    "https://jsonplaceholder.typicode.com/todos",
+    payload,
+    {
+      headers: { "Content-Type": "application/json" }
     }
+  );
+  return resp.data;
+}
+// src/index.ts
+import { fetchTodoById, createTodo } from "./api";
 
-    const pos =
-      low +
-      Math.floor(
-        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
-      );
+(async () => {
+  try {
+    const todo = await fetchTodoById(1);
+    console.log("Fetched TODO:", todo);
 
-    const midVal = arr[pos];
-
-    if (midVal === key) return pos;
-
-    if (midVal < key) {
-      low = pos + 1;
-    } else {
-      high = pos - 1;
-    }
+    const newTodo = await createTodo({
+      userId: 1,
+      title: "Buy coffee",
+      completed: false
+    });
+    console.log("Created TODO:", newTodo);
+  } catch (err) {
+    console.error("Something went wrong:", err);
   }
-
-  // If we exit the loop without hitting the key
-  return -1;
-}
-const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
-const target = 56;
-const idx = interpolationSearch(data, target);
-
-if (idx !== -1) {
-  console.log(`Found ${target} at index ${idx}`);
-} else {
-  console.log(`${target} not in the array`);
-}
+})();
