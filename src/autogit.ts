@@ -1,55 +1,116 @@
-ListA: a → b → c → d ──┐
-                         │
-ListB: x → y ───────────┘  (points to `c` above)
-type ListNode<T> = { value: T; next: ListNode<T> | null };
+/**
+ * A binary‑heap priority queue.
+ *
+ * @template T  The type of the elements in the queue.
+ *
+ * @example
+ * // min‑heap
+ * const pq = new PriorityQueue<number>((a, b) => a - b);
+ * pq.add(5); pq.add(2); pq.add(8);
+ * console.log(pq.extract()); // 2
+ *
+ * // max‑heap (reverse the comparator)
+ * const pqMax = new PriorityQueue<number>((a, b) => b - a);
+ */
+export class PriorityQueue<T> {
+  /** The underlying array that stores the heap. */
+  private items: T[] = [];
 
-function intersectionHash<T>(a: ListNode<T> | null, b: ListNode<T> | null): ListNode<T> | null {
-  const seen = new Set<ListNode<T>>();
+  /**
+   * @param compare Comparator: `a < b` returns a negative value,
+   *                `a === b` returns zero,
+   *                `a > b` returns a positive value.
+   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
+   *                or a custom comparator for objects.
+   */
+  constructor(private compare: (a: T, b: T) => number) {}
 
-  for (let p = a; p; p = p.next) {
-    seen.add(p);
+  /** Number of elements in the queue. */
+  size(): number { return this.items.length; }
+
+  /** Whether the queue is empty. */
+  isEmpty(): boolean { return this.items.length === 0; }
+
+  /** Return the highest‑priority element without removing it. */
+  peek(): T | undefined { return this.items[0]; }
+
+  /** Insert a new element. */
+  add(element: T): void {
+    this.items.push(element);
+    this.siftUp(this.items.length - 1);
   }
 
-  for (let q = b; q; q = q.next) {
-    if (seen.has(q)) return q;   // first shared node
+  /** Remove and return the element with the highest priority. */
+  extract(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const root = this.items[0];
+    const last = this.items.pop()!;
+    if (!this.isEmpty()) {
+      this.items[0] = last;
+      this.siftDown(0);
+    }
+    return root;
   }
-  return null;                    // no intersection
-}
-function intersectionTwoPointer<T>(headA: ListNode<T> | null, headB: ListNode<T> | null): ListNode<T> | null {
-  if (!headA || !headB) return null;
 
-  let p: ListNode<T> | null = headA;
-  let q: ListNode<T> | null = headB;
+  /* ---- Internals ---- */
 
-  // After at most lengthA + lengthB steps, p and q will be either:
-  //   • the intersection node, or
-  //   • null (if the lists never meet)
-  while (p !== q) {
-    p = p ? p.next : headB;   // drop to the head of the other list when hitting the end
-    q = q ? q.next : headA;
+  /** Move a node up until the heap property holds. */
+  private siftUp(idx: number): void {
+    let childIdx = idx;
+    while (childIdx > 0) {
+      const parentIdx = Math.floor((childIdx - 1) / 2);
+      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
+        this.swap(childIdx, parentIdx);
+        childIdx = parentIdx;
+      } else break;
+    }
   }
-  return p;   // either the intersection node or null
-}
-// Helpers
-function makeLinkedList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null;
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = { value: arr[i], next: head };
+
+  /** Move a node down until the heap property holds. */
+  private siftDown(idx: number): void {
+    const lastIdx = this.items.length - 1;
+    let parentIdx = idx;
+
+    while (true) {
+      const leftIdx = parentIdx * 2 + 1;
+      const rightIdx = parentIdx * 2 + 2;
+      let smallestIdx = parentIdx;
+
+      if (leftIdx <= lastIdx &&
+          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
+        smallestIdx = leftIdx;
+      }
+      if (rightIdx <= lastIdx &&
+          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx !== parentIdx) {
+        this.swap(parentIdx, smallestIdx);
+        parentIdx = smallestIdx;
+      } else break;
+    }
   }
-  return head;
+
+  /** Swap two indices in the array. */
+  private swap(i: number, j: number): void {
+    const tmp = this.items[i];
+    this.items[i] = this.items[j];
+    this.items[j] = tmp;
+  }
 }
+// Min‑heap of numbers
+const minQ = new PriorityQueue<number>((a, b) => a - b);
+minQ.add(10);
+minQ.add(3);
+minQ.add(7);
+console.log(minQ.extract()); // 3
+console.log(minQ.extract()); // 7
+console.log(minQ.extract()); // 10
 
-function attachTail<T>(head: ListNode<T> | null, tail: ListNode<T> | null): ListNode<T> | null {
-  if (!head) return tail;
-  let p = head;
-  while (p.next) p = p.next;
-  p.next = tail;
-  return head;
-}
-
-// Build example from the diagram
-const shared = makeLinkedList([8, 9, 10]);          // nodes to share
-const listA = attachTail(makeLinkedList([1, 2, 3]), shared);
-const listB = attachTail(makeLinkedList([4, 5]), shared);
-
-console.log(intersectionTwoPointer(listA, listB) === shared);   // true
+// Max‑heap of strings by length
+const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
+maxStr.add("short");
+maxStr.add("tiny");
+maxStr.add("extraordinarilylong");
+console.log(maxStr.extract()); // "extraordinarilylong"
