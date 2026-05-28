@@ -1,33 +1,70 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-const head: ListNode<number> = { val: 1, next: null };
-head.next = { val: 2, next: null };
-head.next.next = { val: 3, next: null };      // 1 → 2 → 3
-function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow?.next ?? null;   // advance by 1
-    fast = fast.next.next;       // advance by 2
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
+}
+function sumNodes(root: TreeNode | null): number {
+  if (!root) return 0;
+  return root.val + sumNodes(root.left) + sumNodes(root.right);
+}
+// Build a small tree:
+//       1
+//      / \
+//     2   3
+//        / \
+//
+// 4   5
 
-  return slow; // could be null if the list was empty
-}
-if (fast !== null) {            // original list had even length
-  slow = slow?.next ?? null;    // bump to the second middle
-}
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-}
+const tree = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
 
-const list: ListNode<number> | null = {
-  val: 10,
-  next: { val: 20, next: { val: 30, next: null } },
+console.log(sumNodes(tree)); // → 15
+interface TreeNode {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
+}
+function sumNodesFunctional(root: TreeNode | undefined): number {
+  if (!root) return 0;
+  return root.value + sumNodesFunctional(root.left) + sumNodesFunctional(root.right);
+}
+const funcTree: TreeNode = {
+  value: 1,
+  left: { value: 2 },
+  right: {
+    value: 3,
+    left: { value: 4 },
+    right: { value: 5 },
+  },
 };
 
-console.log(middle(list)?.val); // prints 20
+console.log(sumNodesFunctional(funcTree)); // → 15
+function sumNodesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let sum = 0;
+  const stack: (TreeNode | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node) continue;
+
+    sum += node.val;          // inside a class node
+    // sum += node.value;      // inside a functional node
+
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+
+  return sum;
+}
+console.log(sumNodesIterative(tree)); // → 15
