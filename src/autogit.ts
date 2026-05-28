@@ -1,99 +1,48 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-
 /**
- * Example of an async “network task” that you might run in Android
- * (React‑Native runs JavaScript on a background thread for you).
+ * Checks whether a given integer is a prime number.
+ * @param n - The number to test. Must be an integer.
+ * @returns `true` if `n` is prime, otherwise `false`.
  */
-const App: React.FC = () => {
-  /*--- State: loading / data / error -----------------------------------*/
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+export function isPrime(n: number): boolean {
+  // Reject non‑integers, negatives, and the few small non‑prime numbers
+  if (!Number.isInteger(n) || n <= 1) return false;
+  if (n <= 3) return true;           // 2 and 3 are prime
 
-  /*--- Effect: fire once on mount -------------------------------------*/
-  useEffect(() => {
-    /**
-     * Async function inside the effect so we can use await at a top level.
-     * It's an equivalent of Android’s AsyncTask (but without the Android
-     * boilerplate) – just a Promise chain wrapped in async/await.
-     */
-    const fetchData = async () => {
-      try {
-        // 1️⃣ Make the request
-        const response = await fetch(
-          'https://api.adviceslip.com/advice',
-        );
+  // Any even number > 2 or divisible by 3 can't be prime
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-        // 2️⃣ Check for HTTP errors
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+  // 6k ± 1 optimization:
+  // For numbers > 3, all primes are of the form 6k ± 1
+  // We check divisors 5, 7, 11, 13, 17, …
+  let i = 5;
+  const limit = Math.floor(Math.sqrt(n));
 
-        // 3️⃣ Parse the JSON payload
-        const json = await response.json();
+  while (i <= limit) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+    i += 6;
+  }
 
-        // 4️⃣ Store the result
-        setData(json);          // data.slip.advice will be the string
-        setError(null);
-      } catch (e) {
-        // Anything that goes wrong lands here
-        console.error('Failed to fetch advice:', e);
-        setError((e as Error).message);
-        setData(null);
-      } finally {
-        // Whatever happens, loading is done
-        setLoading(false);
-      }
-    };
+  return true;
+}
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(29));  // true
 
-    fetchData();
+// Handle non‑integers gracefully
+console.log(isPrime(7.5)); // false
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
 
-    // Optional: cleanup if the component unmounts before fetch resolves
-    // return () => { /* cancel request if using AbortController, e.g. */ };
-  }, []); // empty deps → run once
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  /*--- Rendering -----------------------------------------------------*/
-  return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.text}>Loading advice...</Text>
-        </View>
-      )}
+  let i = 5n;
+  const limit = BigInt(Math.floor(Math.sqrt(Number(n)))); // careful: can't use sqrt on bigint directly
 
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
-        </View>
-      )}
+  while (i <= limit) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+    i += 6n;
+  }
 
-      {!loading && data && (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Here’s an advice for you:</Text>
-          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-};
-
-/*--- Styles ----------------------------------------------------------*/
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, marginTop: 12 },
-  title: { fontSize: 18, fontWeight: '600' },
-  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
-  error: { color: 'red' },
-});
-
-export default App;
+  return true;
+}
