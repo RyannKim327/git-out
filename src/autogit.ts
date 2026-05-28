@@ -1,99 +1,125 @@
-// App.tsx
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+/**
+ * A node in the trie.
+ *
+ * - `children` holds the next character → child node mapping.
+ * - `isEndOfWord` tells us if a word ends here.
+ *
+ * The node is deliberately kept lightweight: using `Record` instead of
+ * `Map` keeps the code readable and the memory footprint small,
+ * while `children` is a plain object keyed by single characters.
+ */
+class TrieNode {
+  public children: Record<string, TrieNode> = {};
+  public isEndOfWord = false;
+}
 
 /**
- * Example of an async “network task” that you might run in Android
- * (React‑Native runs JavaScript on a background thread for you).
+ * Trie implementation for strings.
+ *
+ * Everything is typed, so you’ll get compile–time safety for method
+ * arguments and return values.  The interface is intentionally simple.
  */
-const App: React.FC = () => {
-  /*--- State: loading / data / error -----------------------------------*/
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<any>(null);
+export class Trie {
+  private readonly root = new TrieNode();
 
-  /*--- Effect: fire once on mount -------------------------------------*/
-  useEffect(() => {
-    /**
-     * Async function inside the effect so we can use await at a top level.
-     * It's an equivalent of Android’s AsyncTask (but without the Android
-     * boilerplate) – just a Promise chain wrapped in async/await.
-     */
-    const fetchData = async () => {
-      try {
-        // 1️⃣ Make the request
-        const response = await fetch(
-          'https://api.adviceslip.com/advice',
-        );
+  /** Insert a word into the trie */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      if (!node.children[ch]) {
+        node.children[ch] = new TrieNode();
+      }
+      node = node.children[ch];
+    }
+    node.isEndOfWord = true;
+  }
 
-        // 2️⃣ Check for HTTP errors
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+  /** Return true iff the exact word exists in the trie */
+  search(word: string): boolean {
+    let node = this.root;
+    for (const ch of word) {
+      const next = node.children[ch];
+      if (!next) return false;
+      node = next;
+    }
+    return node.isEndOfWord;
+  }
 
-        // 3️⃣ Parse the JSON payload
-        const json = await response.json();
+  /** Return true if any word starts with the given prefix */
+  startsWith(prefix: string): boolean {
+    let node = this.root;
+    for (const ch of prefix) {
+      const next = node.children[ch];
+      if (!next) return false;
+      node = next;
+    }
+    return true;
+  }
 
-        // 4️⃣ Store the result
-        setData(json);          // data.slip.advice will be the string
-        setError(null);
-      } catch (e) {
-        // Anything that goes wrong lands here
-        console.error('Failed to fetch advice:', e);
-        setError((e as Error).message);
-        setData(null);
-      } finally {
-        // Whatever happens, loading is done
-        setLoading(false);
+  /** (Optional) Retrieve all words that share this prefix */
+  getWordsWithPrefix(prefix: string): string[] {
+    const words: string[] = [];
+    let node = this.root;
+    for (const ch of prefix) {
+      if (!node.children[ch]) return words; // no match
+      node = node.children[ch];
+    }
+    const collect = (curNode: TrieNode, suffix: string) => {
+      if (curNode.isEndOfWord) words.push(prefix + suffix);
+      for (const [ch, child] of Object.entries(curNode.children)) {
+        collect(child, suffix + ch);
       }
     };
+    collect(node, '');
+    return words;
+  }
+}
+import { Trie } from './Trie';
 
-    fetchData();
+const trie = new Trie();
 
-    // Optional: cleanup if the component unmounts before fetch resolves
-    // return () => { /* cancel request if using AbortController, e.g. */ };
-  }, []); // empty deps → run once
+trie.insert('apple');
+trie.insert('app');
+trie.insert('bat');
+trie.insert('batch');
 
-  /*--- Rendering -----------------------------------------------------*/
-  return (
-    <SafeAreaView style={styles.container}>
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.text}>Loading advice...</Text>
-        </View>
-      )}
+console.log(trie.search('app'));      // true
+console.log(trie.search('appl'));     // false
+console.log(trie.startsWith('bat'));  // true
+console.log(trie.startsWith('baq'));  // false
 
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
-        </View>
-      )}
+console.log(trie.getWordsWithPrefix('ba')); // ['bat', 'batch']
+class TrieNode<V = undefined> {
+  children: Record<string, TrieNode<V>> = {};
+  isEndOfWord = false;
+  value?: V;
+}
 
-      {!loading && data && (
-        <View style={styles.centered}>
-          <Text style={styles.title}>Here’s an advice for you:</Text>
-          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-};
+export class Trie<V = undefined> {
+  private readonly root = new TrieNode<V>();
 
-/*--- Styles ----------------------------------------------------------*/
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 16, marginTop: 12 },
-  title: { fontSize: 18, fontWeight: '600' },
-  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
-  error: { color: 'red' },
-});
+  insert(word: string, value?: V): void {
+    let node = this.root;
+    for (const ch of word) {
+      if (!node.children[ch]) node.children[ch] = new TrieNode<V>();
+      node = node.children[ch];
+    }
+    node.isEndOfWord = true;
+    if (value !== undefined) node.value = value;
+  }
 
-export default App;
+  // search and startsWith prefixes unchanged
+  // but now search can optionally return the stored value
+  search(word: string): V | undefined {
+    let node = this.root;
+    for (const ch of word) {
+      const next = node.children[ch];
+      if (!next) return undefined;
+      node = next;
+    }
+    return node.isEndOfWord ? node.value : undefined;
+  }
+}
+const dict = new Trie<number>();
+dict.insert('hello', 42);
+console.log(dict.search('hello')); // 42
