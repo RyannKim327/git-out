@@ -1,48 +1,52 @@
 /**
- * Checks whether a given integer is a prime number.
- * @param n - The number to test. Must be an integer.
- * @returns `true` if `n` is prime, otherwise `false`.
+ * Interpolation Search
+ *
+ * The algorithm only works on numeric, strictly‑sorted arrays.
+ * It probes values near the expected position based on the key’s value,
+ * so it runs “almost” as fast as binary search on uniformly distributed data.
+ *
+ * @param arr  Sorted numeric array (ascending)
+ * @param key  Value to locate
+ * @returns    Index of the key or -1 if not present
  */
-export function isPrime(n: number): boolean {
-  // Reject non‑integers, negatives, and the few small non‑prime numbers
-  if (!Number.isInteger(n) || n <= 1) return false;
-  if (n <= 3) return true;           // 2 and 3 are prime
+export function interpolationSearch(arr: number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // Any even number > 2 or divisible by 3 can't be prime
-  if (n % 2 === 0 || n % 3 === 0) return false;
+  let low = 0;
+  let high = arr.length - 1;
 
-  // 6k ± 1 optimization:
-  // For numbers > 3, all primes are of the form 6k ± 1
-  // We check divisors 5, 7, 11, 13, 17, …
-  let i = 5;
-  const limit = Math.floor(Math.sqrt(n));
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Guard against division by zero for the degenerate case
+    if (arr[high] === arr[low]) {
+      break; // all remaining elements equal; either match or no match
+    }
 
-  while (i <= limit) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-    i += 6;
+    const pos =
+      low +
+      Math.floor(
+        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
+      );
+
+    const midVal = arr[pos];
+
+    if (midVal === key) return pos;
+
+    if (midVal < key) {
+      low = pos + 1;
+    } else {
+      high = pos - 1;
+    }
   }
 
-  return true;
+  // If we exit the loop without hitting the key
+  return -1;
 }
-console.log(isPrime(2));   // true
-console.log(isPrime(15));  // false
-console.log(isPrime(29));  // true
+const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
+const target = 56;
+const idx = interpolationSearch(data, target);
 
-// Handle non‑integers gracefully
-console.log(isPrime(7.5)); // false
-export function isPrimeBigInt(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-
-  if (n % 2n === 0n || n % 3n === 0n) return false;
-
-  let i = 5n;
-  const limit = BigInt(Math.floor(Math.sqrt(Number(n)))); // careful: can't use sqrt on bigint directly
-
-  while (i <= limit) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-    i += 6n;
-  }
-
-  return true;
+if (idx !== -1) {
+  console.log(`Found ${target} at index ${idx}`);
+} else {
+  console.log(`${target} not in the array`);
 }
