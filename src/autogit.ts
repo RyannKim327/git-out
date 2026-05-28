@@ -1,86 +1,52 @@
-// A graph is represented as an adjacency list.
-//   keys  – node identifiers (strings, numbers, etc.)
-//   values – array of keys this node points to
-type Graph = Record<string, string[]>
+/**
+ * Interpolation Search
+ *
+ * The algorithm only works on numeric, strictly‑sorted arrays.
+ * It probes values near the expected position based on the key’s value,
+ * so it runs “almost” as fast as binary search on uniformly distributed data.
+ *
+ * @param arr  Sorted numeric array (ascending)
+ * @param key  Value to locate
+ * @returns    Index of the key or -1 if not present
+ */
+export function interpolationSearch(arr: number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-export function topologicalSortKahn(g: Graph): string[] {
-  // Compute indegree for every node
-  const indegree = new Map<string, number>()
-  const nodes = new Set<string>(Object.keys(g))
+  let low = 0;
+  let high = arr.length - 1;
 
-  // initialise all counts to 0
-  for (const v of nodes) indegree.set(v, 0)
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Guard against division by zero for the degenerate case
+    if (arr[high] === arr[low]) {
+      break; // all remaining elements equal; either match or no match
+    }
 
-  // For each edge u → v, bump indegree of v
-  for (const u of Object.keys(g)) {
-    for (const v of g[u]) {
-      // if the neighbour isn't in `nodes` create an entry,
-      // this covers edges to nodes that have no outgoing edges
-      if (!indegree.has(v)) indegree.set(v, 0)
-      indegree.set(v, (indegree.get(v) ?? 0) + 1)
-      nodes.add(v)          // ensure isolated nodes are recorded
+    const pos =
+      low +
+      Math.floor(
+        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
+      );
+
+    const midVal = arr[pos];
+
+    if (midVal === key) return pos;
+
+    if (midVal < key) {
+      low = pos + 1;
+    } else {
+      high = pos - 1;
     }
   }
 
-  // enqueue all nodes that have indegree 0
-  const queue: string[] = [...indegree].filter(([_, d]) => d === 0).map(([n]) => n)
-  const result: string[] = []
-
-  while (queue.length) {
-    const n = queue.shift()!
-    result.push(n)
-
-    // For each outgoing edge n → m
-    for (const m of g[n] ?? []) {
-      indegree.set(m, (indegree.get(m) ?? 0) - 1)
-      if (indegree.get(m) === 0) queue.push(m)
-    }
-  }
-
-  if (result.length !== nodes.size) {
-    throw new Error('Graph has at least one cycle – topological sort impossible')
-  }
-  return result
+  // If we exit the loop without hitting the key
+  return -1;
 }
-export function topologicalSortDFS(g: Graph): string[] {
-  const result: string[] = []          // hold the ordering (reverse order)
-  const visited = new Set<string>()    // permanently visited nodes
-  const temp    = new Set<string>()    // nodes that are on the current recursion stack
+const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
+const target = 56;
+const idx = interpolationSearch(data, target);
 
-  const visit = (node: string) => {
-    if (temp.has(node)) {
-      throw new Error(`Cycle detected – node '${node}' revisited on the same path`)
-    }
-    if (!visited.has(node)) {
-      temp.add(node)
-
-      // Recurse on all neighbours
-      for (const m of g[node] ?? []) {
-        visit(m)
-      }
-
-      temp.delete(node)
-      visited.add(node)
-      result.push(node)               // push after visiting all descendants
-    }
-  }
-
-  // A graph can have disjoint components – start from every node.
-  for (const node of Object.keys(g)) {
-    if (!visited.has(node)) visit(node)
-  }
-
-  // `result` is built in reverse; flip it to get a valid topological order
-  return result.reverse()
+if (idx !== -1) {
+  console.log(`Found ${target} at index ${idx}`);
+} else {
+  console.log(`${target} not in the array`);
 }
-const example: Graph = {
-  a: ['b', 'c'],
-  b: ['d'],
-  c: ['d'],
-  d: []
-}
-
-console.log('Kahn   →', topologicalSortKahn(example))
-console.log('DFS    →', topologicalSortDFS(example))
-Kahn   → [ 'a', 'b', 'c', 'd' ]
-DFS    → [ 'a', 'b', 'c', 'd' ]
