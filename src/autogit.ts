@@ -1,47 +1,44 @@
 /**
- * Merge two sorted halves into a single sorted array.
+ * Return the majority element (> n/2) if it exists, or null otherwise.
+ * @param arr array of numbers (or any comparable type)
  */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0, j = 0;
+export function majorityElement<T>(arr: T[]): T | null {
+  if (!arr.length) return null;
 
-  while (i < left.length && j < right.length) {
-    // compare function should return negative if a < b,
-    // zero if equal, positive if a > b
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
+  /* ---------- 1st pass: find candidate ---------- */
+  let candidate = arr[0];
+  let count = 0;
+
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
     } else {
-      result.push(right[j++]);
+      count += (num === candidate) ? 1 : -1;
     }
   }
 
-  // Append any leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  /* ---------- 2nd pass: verify candidate ---------- */
+  let freq = 0;
+  for (const num of arr) {
+    if (num === candidate) freq++;
+  }
+
+  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
 }
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const majority = majorityElement(nums);
+console.log(majority); // → 3
+export function majorityElementMap<T>(arr: T[]): T | null {
+  const counts = new Map<T, number>();
+  
+  for (const val of arr) {
+    counts.set(val, (counts.get(val) ?? 0) + 1);
+  }
 
-/**
- * Recursively sort the array using merge sort.
- * `compare` is optional – if omitted, the native < operator is used.
- */
-export function mergeSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  if (arr.length <= 1) return arr.slice();
-
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), compare);
-  const right = mergeSort(arr.slice(mid), compare);
-
-  return merge(left, right, compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, cnt] of counts) {
+    if (cnt > threshold) return val;
+  }
+  return null;
 }
-const nums = [34, 7, 23, 32, 5, 62];
-const sortedNums = mergeSort(nums);
-console.log(sortedNums); // [5, 7, 23, 32, 34, 62]
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 25 },
-  { name: 'Carol', age: 35 },
-];
-
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
