@@ -1,89 +1,110 @@
-// ------------------------------------------------------------------
-// 1️⃣  Graph representation (adjacency list)
-// ------------------------------------------------------------------
-type NodeID = string;  // or number – whatever uniquely identifies a node
-interface Graph {
-  // `edges[u]` is a list of all nodes directly reachable from `u`
-  [key: string]: NodeID[];
+// Basic node description
+export interface Node {
+  id: string;           // unique identifier
+  // optional coordinates – handy for the heuristic
+  x?: number;
+  y?: number;
+  // all directly reachable neighbours
+  neighbors: string[];  // ids of neighbour nodes
 }
 
-// ------------------------------------------------------------------
-// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
-// ------------------------------------------------------------------
-function dfsRecursive(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID,
-  visited = new Set<NodeID>(),
-  path: NodeID[] = []
-): NodeID[] | null {
-  visited.add(start);
-  path.push(start);
+export interface Edge {
+  from: string;      // node id
+  to: string;        // node id
+  cost: number;      // weight of the edge
+}
+class PriorityQueue<T> {
+  private items: { key: number; value: T }[] = [];
 
-  if (start === target) return [...path];        // found it – return a copy of the path
+  // swap helpers
+  private swap(i: number, j: number) {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  }
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      const result = dfsRecursive(graph, neighbor, target, visited, path);
-      if (result) return result;                 // propagate the found path upwards
+  // bubble‑up to maintain heap invariant
+  private bubbleUp(idx: number) {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.items[parent].key <= this.items[idx].key) break;
+      this.swap(parent, idx);
+      idx = parent;
     }
   }
 
-  path.pop();                                     // backtrack
-  return null;                                    // no path from this branch
-}
+  // bubble‑down to maintain heap invariant
+  private bubbleDown(idx: number) {
+    const last = this.items.length - 1;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
 
-// ------------------------------------------------------------------
-// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
-// ------------------------------------------------------------------
-function dfsIterative(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID
-): NodeID[] | null {
-  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
-  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
-  const visited = new Set<NodeID>();
+      if (left <= last && this.items[left].key < this.items[smallest].key)
+        smallest = left;
+      if (right <= last && this.items[right].key < this.items[smallest].key)
+        smallest = right;
 
-  while (stack.length) {
-    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    parentMap.set(node, parent);
-
-    if (node === target) {
-      // reconstruct path
-      const path: NodeID[] = [];
-      let current: NodeID | null = target;
-      while (current !== null) {
-        path.unshift(current);
-        current = parentMap.get(current)!;
-      }
-      return path;
-    }
-
-    for (const neighbor of graph[node] ?? []) {
-      if (!visited.has(neighbor)) {
-        stack.push({ node: neighbor, parent: node });
-      }
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
     }
   }
 
-  return null;          // no path found
+  // push a new value with a priority
+  push(value: T, key: number) {
+    this.items.push({ value, key });
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  // pop the value with the smallest priority
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const root = this.items[0].value;
+    const last = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+    return root;
+  }
+
+  get size(): number {
+    return this.items.length;
+  }
 }
+/**
+ * Generic A* implementation.
+ * @param nodes   Map of node id → Node
+ * @param edges   Map of node id → array of out‑going edges
+ * @param start   id of the start node
+ * @param goal    id of the goal node
+ * @param heuristic (node) ⇒ estimated distance to goal
+ * @returns array of node ids that form the cheapest path, or empty array if none
+ */
+export function aStar(
+  nodes: Map<string, Node>,
+  edges: Map<string, Edge[]>,
+  start: string,
+  goal: string,
+  heuristic: (nodeId: string) => number
+): string[] {
+  // G‑costs: current best known cost to each node
+  const g: Map<string, number> = new Map();
+  g.set(start, 0);
 
-// ------------------------------------------------------------------
-// 4️⃣  Example usage
-// ------------------------------------------------------------------
-const exampleGraph: Graph = {
-  a: ["b", "c"],
-  b: ["d", "e"],
-  c: ["f"],
-  d: [],
-  e: ["f"],
-  f: []
-};
+  // Came‑from map to rebuild the path
+  const cameFrom: Map<string, string> = new Map();
 
-console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
-console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
+  // Open set – priority queue keyed by F = G + H
+  const open = new PriorityQueue<string>();
+  open.push(start, heuristic(start));
+
+  // Closed set: processed nodes
+  const closed = new Set<string>();
+
+  while (open.size > 0) {
+    const current = open.pop()!;
+
+    // Goal found – reconstruct the path
+    if (current === goal) {
+      const path: string[] =
