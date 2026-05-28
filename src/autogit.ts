@@ -1,125 +1,116 @@
 /**
- * A node in the trie.
+ * A binary‑heap priority queue.
  *
- * - `children` holds the next character → child node mapping.
- * - `isEndOfWord` tells us if a word ends here.
+ * @template T  The type of the elements in the queue.
  *
- * The node is deliberately kept lightweight: using `Record` instead of
- * `Map` keeps the code readable and the memory footprint small,
- * while `children` is a plain object keyed by single characters.
+ * @example
+ * // min‑heap
+ * const pq = new PriorityQueue<number>((a, b) => a - b);
+ * pq.add(5); pq.add(2); pq.add(8);
+ * console.log(pq.extract()); // 2
+ *
+ * // max‑heap (reverse the comparator)
+ * const pqMax = new PriorityQueue<number>((a, b) => b - a);
  */
-class TrieNode {
-  public children: Record<string, TrieNode> = {};
-  public isEndOfWord = false;
-}
+export class PriorityQueue<T> {
+  /** The underlying array that stores the heap. */
+  private items: T[] = [];
 
-/**
- * Trie implementation for strings.
- *
- * Everything is typed, so you’ll get compile–time safety for method
- * arguments and return values.  The interface is intentionally simple.
- */
-export class Trie {
-  private readonly root = new TrieNode();
+  /**
+   * @param compare Comparator: `a < b` returns a negative value,
+   *                `a === b` returns zero,
+   *                `a > b` returns a positive value.
+   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
+   *                or a custom comparator for objects.
+   */
+  constructor(private compare: (a: T, b: T) => number) {}
 
-  /** Insert a word into the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      if (!node.children[ch]) {
-        node.children[ch] = new TrieNode();
+  /** Number of elements in the queue. */
+  size(): number { return this.items.length; }
+
+  /** Whether the queue is empty. */
+  isEmpty(): boolean { return this.items.length === 0; }
+
+  /** Return the highest‑priority element without removing it. */
+  peek(): T | undefined { return this.items[0]; }
+
+  /** Insert a new element. */
+  add(element: T): void {
+    this.items.push(element);
+    this.siftUp(this.items.length - 1);
+  }
+
+  /** Remove and return the element with the highest priority. */
+  extract(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const root = this.items[0];
+    const last = this.items.pop()!;
+    if (!this.isEmpty()) {
+      this.items[0] = last;
+      this.siftDown(0);
+    }
+    return root;
+  }
+
+  /* ---- Internals ---- */
+
+  /** Move a node up until the heap property holds. */
+  private siftUp(idx: number): void {
+    let childIdx = idx;
+    while (childIdx > 0) {
+      const parentIdx = Math.floor((childIdx - 1) / 2);
+      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
+        this.swap(childIdx, parentIdx);
+        childIdx = parentIdx;
+      } else break;
+    }
+  }
+
+  /** Move a node down until the heap property holds. */
+  private siftDown(idx: number): void {
+    const lastIdx = this.items.length - 1;
+    let parentIdx = idx;
+
+    while (true) {
+      const leftIdx = parentIdx * 2 + 1;
+      const rightIdx = parentIdx * 2 + 2;
+      let smallestIdx = parentIdx;
+
+      if (leftIdx <= lastIdx &&
+          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
+        smallestIdx = leftIdx;
       }
-      node = node.children[ch];
-    }
-    node.isEndOfWord = true;
-  }
-
-  /** Return true iff the exact word exists in the trie */
-  search(word: string): boolean {
-    let node = this.root;
-    for (const ch of word) {
-      const next = node.children[ch];
-      if (!next) return false;
-      node = next;
-    }
-    return node.isEndOfWord;
-  }
-
-  /** Return true if any word starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    let node = this.root;
-    for (const ch of prefix) {
-      const next = node.children[ch];
-      if (!next) return false;
-      node = next;
-    }
-    return true;
-  }
-
-  /** (Optional) Retrieve all words that share this prefix */
-  getWordsWithPrefix(prefix: string): string[] {
-    const words: string[] = [];
-    let node = this.root;
-    for (const ch of prefix) {
-      if (!node.children[ch]) return words; // no match
-      node = node.children[ch];
-    }
-    const collect = (curNode: TrieNode, suffix: string) => {
-      if (curNode.isEndOfWord) words.push(prefix + suffix);
-      for (const [ch, child] of Object.entries(curNode.children)) {
-        collect(child, suffix + ch);
+      if (rightIdx <= lastIdx &&
+          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
+        smallestIdx = rightIdx;
       }
-    };
-    collect(node, '');
-    return words;
-  }
-}
-import { Trie } from './Trie';
 
-const trie = new Trie();
-
-trie.insert('apple');
-trie.insert('app');
-trie.insert('bat');
-trie.insert('batch');
-
-console.log(trie.search('app'));      // true
-console.log(trie.search('appl'));     // false
-console.log(trie.startsWith('bat'));  // true
-console.log(trie.startsWith('baq'));  // false
-
-console.log(trie.getWordsWithPrefix('ba')); // ['bat', 'batch']
-class TrieNode<V = undefined> {
-  children: Record<string, TrieNode<V>> = {};
-  isEndOfWord = false;
-  value?: V;
-}
-
-export class Trie<V = undefined> {
-  private readonly root = new TrieNode<V>();
-
-  insert(word: string, value?: V): void {
-    let node = this.root;
-    for (const ch of word) {
-      if (!node.children[ch]) node.children[ch] = new TrieNode<V>();
-      node = node.children[ch];
+      if (smallestIdx !== parentIdx) {
+        this.swap(parentIdx, smallestIdx);
+        parentIdx = smallestIdx;
+      } else break;
     }
-    node.isEndOfWord = true;
-    if (value !== undefined) node.value = value;
   }
 
-  // search and startsWith prefixes unchanged
-  // but now search can optionally return the stored value
-  search(word: string): V | undefined {
-    let node = this.root;
-    for (const ch of word) {
-      const next = node.children[ch];
-      if (!next) return undefined;
-      node = next;
-    }
-    return node.isEndOfWord ? node.value : undefined;
+  /** Swap two indices in the array. */
+  private swap(i: number, j: number): void {
+    const tmp = this.items[i];
+    this.items[i] = this.items[j];
+    this.items[j] = tmp;
   }
 }
-const dict = new Trie<number>();
-dict.insert('hello', 42);
-console.log(dict.search('hello')); // 42
+// Min‑heap of numbers
+const minQ = new PriorityQueue<number>((a, b) => a - b);
+minQ.add(10);
+minQ.add(3);
+minQ.add(7);
+console.log(minQ.extract()); // 3
+console.log(minQ.extract()); // 7
+console.log(minQ.extract()); // 10
+
+// Max‑heap of strings by length
+const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
+maxStr.add("short");
+maxStr.add("tiny");
+maxStr.add("extraordinarilylong");
+console.log(maxStr.extract()); // "extraordinarilylong"
