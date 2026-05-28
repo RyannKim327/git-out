@@ -1,106 +1,52 @@
-type HeapItem<T> = { value: T; priority: number };
-
-class MaxHeap<T> {
-  private heap: HeapItem<T>[] = [];
-
-  get size() { return this.heap.length; }
-
-  push(item: T, priority: number) {
-    this.heap.push({ value: item, priority });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  pop(): HeapItem<T> | undefined {
-    if (!this.heap.length) return;
-    const top = this.heap[0];
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return top;
-  }
-
-  private bubbleUp(idx: number) {
-    const item = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = ((idx + 1) >> 1) - 1;
-      const parent = this.heap[parentIdx];
-      if (item.priority <= parent.priority) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = item;
-  }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const item = this.heap[idx];
-    while (true) {
-      let leftIdx = (idx << 1) + 1;
-      let rightIdx = leftIdx + 1;
-      let swapIdx = -1;
-
-      if (leftIdx < length) {
-        const left = this.heap[leftIdx];
-        if (left.priority > item.priority) swapIdx = leftIdx;
-      }
-      if (rightIdx < length) {
-        const right = this.heap[rightIdx];
-        if (
-          (swapIdx === -1 && right.priority > item.priority) ||
-          (swapIdx !== -1 && right.priority > this.heap[swapIdx].priority)
-        ) swapIdx = rightIdx;
-      }
-
-      if (swapIdx === -1) break;
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = item;
-  }
-}
 /**
- * A generic beam‑search helper.
+ * Interpolation Search
  *
- * @param initialState   The starting state.
- * @param expandFn       (state, depth) => Array<{ nextState, scoreDelta }>
- * @param beamWidth      k – how many hypotheses to keep per depth.
- * @param maxDepth       how many expansion steps to run (or until you hit an end condition).
- * @param scoreCombiner  (oldScore, delta) => newScore (typically newScore = oldScore + delta).
+ * The algorithm only works on numeric, strictly‑sorted arrays.
+ * It probes values near the expected position based on the key’s value,
+ * so it runs “almost” as fast as binary search on uniformly distributed data.
+ *
+ * @param arr  Sorted numeric array (ascending)
+ * @param key  Value to locate
+ * @returns    Index of the key or -1 if not present
  */
-async function beamSearch<State>(
-  initialState: State,
-  expandFn: (state: State, depth: number) => Promise<Array<{ nextState: State; scoreDelta: number }>>,
-  beamWidth: number,
-  maxDepth: number,
-  scoreCombiner = (old: number, delta: number) => old + delta
-): Promise<Array<{ state: State; score: number }>> {
-  type BeamEntry = { state: State; score: number };
+export function interpolationSearch(arr: number[], key: number): number {
+  if (arr.length === 0) return -1;
 
-  // start with the root
-  let beam: BeamEntry[] = [{ state: initialState, score: 0 }];
+  let low = 0;
+  let high = arr.length - 1;
 
-  for (let depth = 0; depth < maxDepth && beam.length; depth++) {
-    const candidates: BeamEntry[] = [];
-
-    // expand every element in the current beam
-    for (const entry of beam) {
-      const expansions = await expandFn(entry.state, depth);
-
-      for (const { nextState, scoreDelta } of expansions) {
-        const newScore = scoreCombiner(entry.score, scoreDelta);
-        candidates.push({ state: nextState, score: newScore });
-      }
+  while (low <= high && key >= arr[low] && key <= arr[high]) {
+    // Guard against division by zero for the degenerate case
+    if (arr[high] === arr[low]) {
+      break; // all remaining elements equal; either match or no match
     }
 
-    // keep only the top k by score
-    // for **higher** scores better, use descending
-    // for **lower** scores better, reverse the compare
-    const sorted = candidates.sort((a, b) => b.score - a.score);
+    const pos =
+      low +
+      Math.floor(
+        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
+      );
 
-    beam = sorted.slice(0, beamWidth);
+    const midVal = arr[pos];
+
+    if (midVal === key) return pos;
+
+    if (midVal < key) {
+      low = pos + 1;
+    } else {
+      high = pos - 1;
+    }
   }
 
-  return beam;
+  // If we exit the loop without hitting the key
+  return -1;
+}
+const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
+const target = 56;
+const idx = interpolationSearch(data, target);
+
+if (idx !== -1) {
+  console.log(`Found ${target} at index ${idx}`);
+} else {
+  console.log(`${target} not in the array`);
 }
