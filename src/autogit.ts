@@ -1,166 +1,65 @@
-// A node holding one element and a pointer to the next node.
 class ListNode<T> {
-  constructor(
-    public value: T,
-    public next: ListNode<T> | null = null
-  ) {}
-}
+  value: T;
+  next: ListNode<T> | null = null;
+  prev: ListNode<T> | null = null;
 
-// A generic linked list that knows the head and tail and its size.
-export class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-
-  /* Basic introspection ------------------------------------ */
-
-  get size()          { return this._size; }
-  get isEmpty()       { return this._size === 0; }
-
-  /* -----------------------------------------------------------------
-   * Mutating operations
-   * ----------------------------------------------------------------- */
-
-  // Add to the end (O(1)).
-  push(val: T): void {
-    const node = new ListNode(val);
-    if (this.tail) {
-      this.tail.next = node;
-      this.tail = node;
-    } else {               // list was empty
-      this.head = this.tail = node;
-    }
-    this._size++;
-  }
-
-  // Remove from the end (O(n) – we walk to the previous node).
-  pop(): T | undefined {
-    if (!this.head) return undefined;
-    if (this.head === this.tail) {      // one element
-      const val = this.head.value;
-      this.head = this.tail = null;
-      this._size = 0;
-      return val;
-    }
-    // walk to the node just before tail
-    let current = this.head;
-    while (current.next !== this.tail) {
-      current = current.next!;
-    }
-    const val = this.tail!.value;
-    current.next = null;
-    this.tail = current;
-    this._size--;
-    return val;
-  }
-
-  // Add to the front (O(1)).
-  unshift(val: T): void {
-    const node = new ListNode(val, this.head);
-    this.head = node;
-    if (!this.tail) this.tail = node;
-    this._size++;
-  }
-
-  // Remove from the front (O(1)).
-  shift(): T | undefined {
-    if (!this.head) return undefined;
-    const val = this.head.value;
-    this.head = this.head.next;
-    if (!this.head) this.tail = null; // list became empty
-    this._size--;
-    return val;
-  }
-
-  // Insert after a given node (O(1)).  Handy for external use.
-  insertAfter(node: ListNode<T>, val: T): ListNode<T> {
-    const nodeToInsert = new ListNode(val, node.next);
-    node.next = nodeToInsert;
-    if (node === this.tail) this.tail = nodeToInsert;
-    this._size++;
-    return nodeToInsert;
-  }
-
-  // Remove the *first* occurrence of a value (O(n)).
-  remove(val: T): boolean {
-    if (!this.head) return false;
-
-    // deleting head
-    if (this.head.value === val) {
-      this.head = this.head.next;
-      if (!this.head) this.tail = null;
-      this._size--;
-      return true;
-    }
-
-    // walk until we find the predecessor
-    let prev = this.head;
-    while (prev.next && prev.next.value !== val) {
-      prev = prev.next;
-    }
-
-    if (!prev.next) return false; // not found
-
-    // patch over the node we’re deleting
-    prev.next = prev.next.next;
-    if (prev.next === null) this.tail = prev;
-    this._size--;
-    return true;
-  }
-
-  /* -----------------------------------------------------------------
-   * Utility helpers
-   * ----------------------------------------------------------------- */
-
-  // Return an array of all values. (Useful for tests/printing)
-  toArray(): T[] {
-    const arr: T[] = [];
-    for (const v of this) arr.push(v);
-    return arr;
-  }
-
-  // Find first node with a given value.
-  find(val: T): ListNode<T> | null {
-    for (let node of this.iterate()) {
-      if (node.value === val) return node;
-    }
-    return null;
-  }
-
-  /* -----------------------------------------------------------------
-   * Iteration
-   * ----------------------------------------------------------------- */
-
-  // Forward iterator (ES6).
-  * [Symbol.iterator](): Generator<T> {
-    let current = this.head;
-    while (current) {
-      yield current.value;
-      current = current.next;
-    }
-  }
-
-  // Iterable over nodes if you need more than just the value.
-  * iterate(): Generator<ListNode<T>> {
-    let current = this.head;
-    while (current) {
-      yield current;
-      current = current.next;
-    }
+  constructor(value: T) {
+    this.value = value;
   }
 }
-import { LinkedList } from "./LinkedList";
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-const list = new LinkedList<number>();
+  while (curr) {
+    const next = curr.next;    // keep a handle on the rest
+    curr.next = prev;          // reverse the arrow
+    prev = curr;               // advance prev
+    curr = next;               // advance curr
+  }
 
-list.push(3);          // -> 3
-list.push(5);          // -> 3 → 5
-list.unshift(1);       // -> 1 → 3 → 5
+  return prev; // new head
+}
+function reverseRecursive<T>(
+  node: ListNode<T> | null,
+  prev: ListNode<T> | null = null
+): ListNode<T> | null {
+  if (!node) return prev;
 
-console.log(list.toArray()); // [1, 3, 5]
+  const next = node.next;
+  node.next = prev;
+  return reverseRecursive(next, node);
+}
+function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let current = head;
+  let newHead: ListNode<T> | null = null;
 
-list.remove(3);          // remove middle element
-console.log(list.toArray()); // [1, 5]
+  while (current) {
+    // swap next and prev
+    const tmp = current.next;
+    current.next = current.prev;
+    current.prev = tmp;
 
-console.log(list.pop()); // 5, list is now [1]
-console.log(list.shift()); // 1, list is empty
+    // once we flip at the old head, that becomes the new head
+    if (!tmp) newHead = current;
+
+    current = tmp; // move to what was next, now prev
+  }
+
+  return newHead;
+}
+// Building a tiny list: 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+// Reverse
+const reversed = reverse(a);
+
+// Log values in order
+let node = reversed;
+while (node) {
+  console.log(node.value); // 3, 2, 1
+  node = node.next;
+}
