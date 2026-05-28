@@ -1,65 +1,57 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
+/**
+ * Build the shift table used by BMH.
+ * Each entry tells us how far we can jump when the bad character
+ * (the character that mismatched) appears.
+ */
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
-
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
+  // every character that does NOT appear in the pattern gets a full skip
+  // (m).  Characters *inside* the pattern get a smaller value.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern[i]] = m - 1 - i;
   }
 
-  return prev; // new head
+  return table;
 }
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
 
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let current = head;
-  let newHead: ListNode<T> | null = null;
+/**
+ * Classic Boyer‑Moore‑Horspool
+ *
+ * @param text    The text to search in
+ * @param pattern The pattern to find
+ * @returns Index of the first occurrence or -1
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern matches immediately
+  if (pattern.length > text.length) return -1;   // impossible
 
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
+  const shift = buildShiftTable(pattern);
+  const n = text.length;
+  const m = pattern.length;
 
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
+  let i = 0;          // index in text where we start aligning the pattern
 
-    current = tmp; // move to what was next, now prev
+  while (i <= n - m) {
+    // start comparing from the end of the pattern
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return i;  // whole pattern matched
+    }
+
+    // bad character at text[i + m - 1]
+    const badChar = text[i + m - 1];
+    const skip = shift[badChar] ?? m; // default skip is m
+    i += skip;
   }
 
-  return newHead;
+  return -1; // not found
 }
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-
-// Reverse
-const reversed = reverse(a);
-
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
-}
+console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
+console.log(boyerMooreHorspool("hello world", "world")); // → 6
+console.log(boyerMooreHorspool("visible", "nope")); // → -1
