@@ -1,62 +1,89 @@
-/**
- * Quick‑sorts an array in place and returns the same array reference.
- *
- * @param array   The array to sort. It is mutated in place.
- * @param left    Index of the first element to sort (inclusive).  Default: 0.
- * @param right   Index of the last element to sort (inclusive).  Default: array.length - 1.
- * @returns       The sorted array (same reference as the argument).
- */
-function quickSort<T>(array: T[], left = 0, right: number = array.length - 1): T[] {
-  // Base case: if the sub‑array has one or zero elements, it’s already sorted
-  if (left >= right) return array;
-
-  // Partition the array around a pivot and get its final index
-  const pivotIndex = partition(array, left, right);
-
-  // Recursively sort the two halves
-  quickSort(array, left, pivotIndex - 1);
-  quickSort(array, pivotIndex + 1, right);
-
-  return array;
+// ------------------------------------------------------------------
+// 1️⃣  Graph representation (adjacency list)
+// ------------------------------------------------------------------
+type NodeID = string;  // or number – whatever uniquely identifies a node
+interface Graph {
+  // `edges[u]` is a list of all nodes directly reachable from `u`
+  [key: string]: NodeID[];
 }
 
-/**
- * Rearranges the elements in array[left…right] so that:
- *   – Elements < pivot sit left of the pivot
- *   – Elements >= pivot sit right of the pivot
- * Returns the final index of the pivot.
- */
-function partition<T>(array: T[], left: number, right: number): number {
-  // Take the rightmost element as pivot (last element strategy)
-  const pivot = array[right];
+// ------------------------------------------------------------------
+// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
+// ------------------------------------------------------------------
+function dfsRecursive(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID,
+  visited = new Set<NodeID>(),
+  path: NodeID[] = []
+): NodeID[] | null {
+  visited.add(start);
+  path.push(start);
 
-  // Index of the smaller element
-  let i = left - 1;
+  if (start === target) return [...path];        // found it – return a copy of the path
 
-  for (let j = left; j < right; j++) {
-    // Use the generic < operator; if needed, replace with a custom comparator.
-    if (array[j] < pivot) {
-      i++;
-      [array[i], array[j]] = [array[j], array[i]]; // swap
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      const result = dfsRecursive(graph, neighbor, target, visited, path);
+      if (result) return result;                 // propagate the found path upwards
     }
   }
 
-  // Place pivot in the correct spot
-  [array[i + 1], array[right]] = [array[right], array[i + 1]];
-
-  return i + 1; // pivot final position
+  path.pop();                                     // backtrack
+  return null;                                    // no path from this branch
 }
 
-// ─────────────────────────────────────────────────────────────────────────────────
+// ------------------------------------------------------------------
+// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
+// ------------------------------------------------------------------
+function dfsIterative(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID
+): NodeID[] | null {
+  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
+  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
+  const visited = new Set<NodeID>();
 
-/* Example usage */
+  while (stack.length) {
+    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
 
-const nums = [12, 4, 5, 6, 7, 3, 1, 15];
-console.log('Before:', nums);
+    if (visited.has(node)) continue;
+    visited.add(node);
+    parentMap.set(node, parent);
 
-quickSort(nums);
-console.log('After :', nums);     // → [1, 3, 4, 5, 6, 7, 12, 15]
+    if (node === target) {
+      // reconstruct path
+      const path: NodeID[] = [];
+      let current: NodeID | null = target;
+      while (current !== null) {
+        path.unshift(current);
+        current = parentMap.get(current)!;
+      }
+      return path;
+    }
 
-const strings = ['pear', 'apple', 'orange', 'banana'];
-quickSort(strings);
-console.log(strings); // → ['apple', 'banana', 'orange', 'pear']
+    for (const neighbor of graph[node] ?? []) {
+      if (!visited.has(neighbor)) {
+        stack.push({ node: neighbor, parent: node });
+      }
+    }
+  }
+
+  return null;          // no path found
+}
+
+// ------------------------------------------------------------------
+// 4️⃣  Example usage
+// ------------------------------------------------------------------
+const exampleGraph: Graph = {
+  a: ["b", "c"],
+  b: ["d", "e"],
+  c: ["f"],
+  d: [],
+  e: ["f"],
+  f: []
+};
+
+console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
+console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
