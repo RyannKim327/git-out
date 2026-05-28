@@ -1,167 +1,110 @@
-/** 
- * A single node in the skip list.  
- * `references` holds forward pointers for each level (index 0 = lowest level).  
- */
-class SkipNode<K extends number | string, V> {
-    key: K
-    value: V
-    references: (SkipNode<K, V> | null)[]
-    level: number
-
-    constructor(key: K, value: V, level: number) {
-        this.key = key
-        this.value = value
-        this.level = level
-        // one element per level, all initially null
-        this.references = Array.from({ length: level + 1 }, () => null)
-    }
+// Basic node description
+export interface Node {
+  id: string;           // unique identifier
+  // optional coordinates – handy for the heuristic
+  x?: number;
+  y?: number;
+  // all directly reachable neighbours
+  neighbors: string[];  // ids of neighbour nodes
 }
 
-/** 
- * Skip list parameters – tailor these to your workload.
- */
-const MAX_LEVEL = 16           // biggest stack of levels
-const P_FACTOR = 0.5           // probability used when randomising level
+export interface Edge {
+  from: string;      // node id
+  to: string;        // node id
+  cost: number;      // weight of the edge
+}
+class PriorityQueue<T> {
+  private items: { key: number; value: T }[] = [];
 
+  // swap helpers
+  private swap(i: number, j: number) {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  }
+
+  // bubble‑up to maintain heap invariant
+  private bubbleUp(idx: number) {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.items[parent].key <= this.items[idx].key) break;
+      this.swap(parent, idx);
+      idx = parent;
+    }
+  }
+
+  // bubble‑down to maintain heap invariant
+  private bubbleDown(idx: number) {
+    const last = this.items.length - 1;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
+
+      if (left <= last && this.items[left].key < this.items[smallest].key)
+        smallest = left;
+      if (right <= last && this.items[right].key < this.items[smallest].key)
+        smallest = right;
+
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
+    }
+  }
+
+  // push a new value with a priority
+  push(value: T, key: number) {
+    this.items.push({ value, key });
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  // pop the value with the smallest priority
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const root = this.items[0].value;
+    const last = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+    return root;
+  }
+
+  get size(): number {
+    return this.items.length;
+  }
+}
 /**
- * Compare two keys; for numbers the comparator is trivial  
- * – change it if you want a custom ordering.
+ * Generic A* implementation.
+ * @param nodes   Map of node id → Node
+ * @param edges   Map of node id → array of out‑going edges
+ * @param start   id of the start node
+ * @param goal    id of the goal node
+ * @param heuristic (node) ⇒ estimated distance to goal
+ * @returns array of node ids that form the cheapest path, or empty array if none
  */
-function compareKeys<K extends number | string>(a: K, b: K): number {
-    return a < b ? -1 : a > b ? 1 : 0
-}
+export function aStar(
+  nodes: Map<string, Node>,
+  edges: Map<string, Edge[]>,
+  start: string,
+  goal: string,
+  heuristic: (nodeId: string) => number
+): string[] {
+  // G‑costs: current best known cost to each node
+  const g: Map<string, number> = new Map();
+  g.set(start, 0);
 
-/**
- * A simple pseudo‑random level picker.
- * 0‑based levels, i.e. 0 = base level.
- */
-function randomLevel(): number {
-    let lvl = 0
-    while (Math.random() < P_FACTOR && lvl < MAX_LEVEL - 1) {
-        lvl++
-    }
-    return lvl
-}
+  // Came‑from map to rebuild the path
+  const cameFrom: Map<string, string> = new Map();
 
-/**
- * The skip list itself.
- */
-class SkipList<K extends number | string, V> {
-    private head: SkipNode<K, V>
-    private size: number = 0
+  // Open set – priority queue keyed by F = G + H
+  const open = new PriorityQueue<string>();
+  open.push(start, heuristic(start));
 
-    constructor() {
-        // head carries MIN_VALUE to simplify edge handling
-        this.head = new SkipNode(K as any, null as any, MAX_LEVEL - 1)
-    }
+  // Closed set: processed nodes
+  const closed = new Set<string>();
 
-    /** number of elements */
-    get length() { return this.size }
+  while (open.size > 0) {
+    const current = open.pop()!;
 
-    /** search for a key → value or undefined */
-    find(key: K): V | undefined {
-        let current: SkipNode<K, V> | null = this.head
-        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
-            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
-                current = current.references[level]!
-            }
-        }
-        current = current.references[0]!
-        if (current && compareKeys(current.key, key) === 0) {
-            return current.value
-        }
-        return undefined
-    }
-
-    /** insert or update a key/value pair */
-    insert(key: K, value: V): void {
-        // array of nodes that need to be updated on each level
-        const update: (SkipNode<K, V> | null)[] = Array.from({ length: MAX_LEVEL }, () => null)
-        let current: SkipNode<K, V> | null = this.head
-
-        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
-            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
-                current = current.references[level]!
-            }
-            update[level] = current
-        }
-
-        current = current.references[0]!
-
-        // key already present → replace value
-        if (current && compareKeys(current.key, key) === 0) {
-            current.value = value
-            return
-        }
-
-        const nodeLevel = randomLevel()
-        const newNode = new SkipNode(key, value, nodeLevel)
-
-        for (let i = 0; i <= nodeLevel; i++) {
-            newNode.references[i] = update[i]!.references[i]!
-            update[i]!.references[i] = newNode
-        }
-
-        this.size++
-    }
-
-    /** remove a key → true if removed, false if not found */
-    delete(key: K): boolean {
-        const update: (SkipNode<K, V> | null)[] = Array.from({ length: MAX_LEVEL }, () => null)
-        let current: SkipNode<K, V> | null = this.head
-
-        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
-            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
-                current = current.references[level]!
-            }
-            update[level] = current
-        }
-
-        current = current.references[0]!
-
-        if (!current || compareKeys(current.key, key) !== 0) {
-            return false
-        }
-
-        for (let i = 0; i <= current.level; i++) {
-            update[i]!.references[i] = current.references[i]
-        }
-
-        this.size--
-        return true
-    }
-
-    /** iterate over the list in ascending key order */
-    [Symbol.iterator](): Iterator<[K, V]> {
-        let node: SkipNode<K, V> | null = this.head.references[0]
-        return {
-            next: () => {
-                if (!node) return { done: true, value: undefined as any }
-                const value = [node.key, node.value]
-                node = node.references[0]
-                return { done: false, value }
-            },
-        }
-    }
-}
-
-/** Sample usage ---------------------------------------------------- */
-const list = new SkipList<number, string>()
-list.insert(20, "twenty")
-list.insert(5,  "five")
-list.insert(15, "fifteen")
-list.insert(30, "thirty")
-
-console.log("find 15:", list.find(15))        // => "fifteen"
-console.log("length:", list.length)           // => 4
-
-list.delete(5)
-console.log("after delete 5, length:", list.length) // => 3
-
-for (const [k, v] of list) {
-    console.log(k, v)
-}
-// prints:
-// 15 fifteen
-// 20 twenty
-// 30 thirty
+    // Goal found – reconstruct the path
+    if (current === goal) {
+      const path: string[] =
