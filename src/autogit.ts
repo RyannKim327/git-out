@@ -1,173 +1,166 @@
-/**
- * A minimal red‑black tree implementation
- * -------------------------------------------------
- * • Generic over key (must be comparable with `<` & `>`) and value
- * • Internally balanced by standard RB‑tree rules
- * • O(log n) insert, delete, search
- */
-
-enum Colour {
-  RED,
-  BLACK,
+// A node holding one element and a pointer to the next node.
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
-interface RBNode<K, V> {
-  key: K;
-  value: V;
-  colour: Colour;
-  left?: RBNode<K, V>;
-  right?: RBNode<K, V>;
-  parent?: RBNode<K, V>;
-}
+// A generic linked list that knows the head and tail and its size.
+export class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-class RedBlackTree<K, V> {
-  private root?: RBNode<K, V>;
+  /* Basic introspection ------------------------------------ */
 
-  /* ---------- Public API ---------- */
+  get size()          { return this._size; }
+  get isEmpty()       { return this._size === 0; }
 
-  /** Look up a value by key */
-  find(key: K): V | undefined {
-    let node = this.root;
-    while (node) {
-      if (key < node.key) node = node.left;
-      else if (key > node.key) node = node.right;
-      else return node.value;
+  /* -----------------------------------------------------------------
+   * Mutating operations
+   * ----------------------------------------------------------------- */
+
+  // Add to the end (O(1)).
+  push(val: T): void {
+    const node = new ListNode(val);
+    if (this.tail) {
+      this.tail.next = node;
+      this.tail = node;
+    } else {               // list was empty
+      this.head = this.tail = node;
     }
-    return undefined;
+    this._size++;
   }
 
-  /** Insert a key/value pair */
-  insert(key: K, value: V): void {
-    const newNode: RBNode<K, V> = {
-      key,
-      value,
-      colour: Colour.RED, // new nodes are always red
-    };
-    this.bstInsert(newNode);
-    this.fixInsert(newNode);
+  // Remove from the end (O(n) – we walk to the previous node).
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (this.head === this.tail) {      // one element
+      const val = this.head.value;
+      this.head = this.tail = null;
+      this._size = 0;
+      return val;
+    }
+    // walk to the node just before tail
+    let current = this.head;
+    while (current.next !== this.tail) {
+      current = current.next!;
+    }
+    const val = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._size--;
+    return val;
   }
 
-  /** Delete a node by key (no support for duplicates) */
-  delete(key: K): boolean {
-    let node = this.root;
-    while (node && node.key !== key) {
-      node = key < node.key ? node.left : node.right;
-    }
-    if (!node) return false; // not found
+  // Add to the front (O(1)).
+  unshift(val: T): void {
+    const node = new ListNode(val, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node;
+    this._size++;
+  }
 
-    this.deleteNode(node);
+  // Remove from the front (O(1)).
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const val = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null; // list became empty
+    this._size--;
+    return val;
+  }
+
+  // Insert after a given node (O(1)).  Handy for external use.
+  insertAfter(node: ListNode<T>, val: T): ListNode<T> {
+    const nodeToInsert = new ListNode(val, node.next);
+    node.next = nodeToInsert;
+    if (node === this.tail) this.tail = nodeToInsert;
+    this._size++;
+    return nodeToInsert;
+  }
+
+  // Remove the *first* occurrence of a value (O(n)).
+  remove(val: T): boolean {
+    if (!this.head) return false;
+
+    // deleting head
+    if (this.head.value === val) {
+      this.head = this.head.next;
+      if (!this.head) this.tail = null;
+      this._size--;
+      return true;
+    }
+
+    // walk until we find the predecessor
+    let prev = this.head;
+    while (prev.next && prev.next.value !== val) {
+      prev = prev.next;
+    }
+
+    if (!prev.next) return false; // not found
+
+    // patch over the node we’re deleting
+    prev.next = prev.next.next;
+    if (prev.next === null) this.tail = prev;
+    this._size--;
     return true;
   }
 
-  /* ---------- Helper methods ---------- */
+  /* -----------------------------------------------------------------
+   * Utility helpers
+   * ----------------------------------------------------------------- */
 
-  /** Standard BST insertion */
-  private bstInsert(z: RBNode<K, V>): void {
-    let y: RBNode<K, V> | undefined;
-    let x = this.root;
-    while (x) {
-      y = x;
-      x = z.key < x.key ? x.left : x.right;
+  // Return an array of all values. (Useful for tests/printing)
+  toArray(): T[] {
+    const arr: T[] = [];
+    for (const v of this) arr.push(v);
+    return arr;
+  }
+
+  // Find first node with a given value.
+  find(val: T): ListNode<T> | null {
+    for (let node of this.iterate()) {
+      if (node.value === val) return node;
     }
-    z.parent = y;
-    if (!y) this.root = z; // tree was empty
-    else if (z.key < y.key) y.left = z;
-    else y.right = z;
+    return null;
   }
 
-  /** Re‑balance after insertion */
-  private fixInsert(z: RBNode<K, V>): void {
-    while (
-      z.parent &&
-      z.parent.colour === Colour.RED
-    ) {
-      const parent = z.parent;
-      const grand = parent.parent;
-      if (!grand) break; // should not happen, parent is always red => grand exists
+  /* -----------------------------------------------------------------
+   * Iteration
+   * ----------------------------------------------------------------- */
 
-      if (parent === grand.left) {
-        const y = grand.right; // uncle
-        if (y && y.colour === Colour.RED) {
-          // Case 1: uncle is red
-          parent.colour = Colour.BLACK;
-          y.colour = Colour.BLACK;
-          grand.colour = Colour.RED;
-          z = grand;
-        } else {
-          if (z === parent.right) {
-            // Case 2: z is right child
-            this.rotateLeft(parent);
-            z = parent;
-          }
-          // Case 3: z is left child
-          this.rotateRight(grand);
-          parent.colour = Colour.BLACK;
-          grand.colour = Colour.RED;
-          break;
-        }
-      } else {
-        // Mirror image of the above
-        const y = grand.left; // uncle
-        if (y && y.colour === Colour.RED) {
-          parent.colour = Colour.BLACK;
-          y.colour = Colour.BLACK;
-          grand.colour = Colour.RED;
-          z = grand;
-        } else {
-          if (z === parent.left) {
-            this.rotateRight(parent);
-            z = parent;
-          }
-          this.rotateLeft(grand);
-          parent.colour = Colour.BLACK;
-          grand.colour = Colour.RED;
-          break;
-        }
-      }
+  // Forward iterator (ES6).
+  * [Symbol.iterator](): Generator<T> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
     }
-    this.root!.colour = Colour.BLACK;
   }
 
-  /* Rotation helpers */
-  private rotateLeft(x: RBNode<K, V>): void {
-    const y = x.right!;
-    x.right = y.left;
-    if (y.left) y.left.parent = x;
-    y.parent = x.parent;
-    if (!x.parent) this.root = y;
-    else if (x === x.parent.left) x.parent.left = y;
-    else x.parent.right = y;
-    y.left = x;
-    x.parent = y;
+  // Iterable over nodes if you need more than just the value.
+  * iterate(): Generator<ListNode<T>> {
+    let current = this.head;
+    while (current) {
+      yield current;
+      current = current.next;
+    }
   }
+}
+import { LinkedList } from "./LinkedList";
 
-  private rotateRight(x: RBNode<K, V>): void {
-    const y = x.left!;
-    x.left = y.right;
-    if (y.right) y.right.parent = x;
-    y.parent = x.parent;
-    if (!x.parent) this.root = y;
-    else if (x === x.parent.right) x.parent.right = y;
-    else x.parent.left = y;
-    y.right = x;
-    x.parent = y;
-  }
+const list = new LinkedList<number>();
 
-  /* ---------- Deletion ---------- */
+list.push(3);          // -> 3
+list.push(5);          // -> 3 → 5
+list.unshift(1);       // -> 1 → 3 → 5
 
-  /** find minimum node starting at a given node */
-  private minimum(node: RBNode<K, V>): RBNode<K, V> {
-    while (node.left) node = node.left;
-    return node;
-  }
+console.log(list.toArray()); // [1, 3, 5]
 
-  /** transplant subtree u with subtree v */
-  private transplant(u: RBNode<K, V>, v?: RBNode<K, V>): void {
-    if (!u.parent) this.root = v;
-    else if (u === u.parent.left) u.parent.left = v;
-    else u.parent.right = v;
-    if (v) v.parent = u.parent;
-  }
+list.remove(3);          // remove middle element
+console.log(list.toArray()); // [1, 5]
 
-  /** Remove node from the tree and rebalance */
- 
+console.log(list.pop()); // 5, list is now [1]
+console.log(list.shift()); // 1, list is empty
