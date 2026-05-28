@@ -1,52 +1,52 @@
+// A minimal node type – adjust if your list uses a different shape
+interface ListNode {
+  val: number | string;   // whatever data type you use
+  next: ListNode | null;
+}
+
 /**
- * Selection sort – returns a **new** sorted array.
- * The original array is left untouched.
- *
- * @param arr   – source array
- * @returns     – a new array sorted in ascending order
+ * Returns true iff the list starting at `head` is a palindrome.
+ * Uses O(n) time and O(n) auxiliary space.
  */
-export function selectionSort<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];          // clone so we don't mutate the caller's array
-  const n = toSort.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    // assume the smallest element is at i
-    let minIndex = i;
-
-    // find the real smallest element in the remaining unsorted section
-    for (let j = i + 1; j < n; j++) {
-      if (toSort[j] < toSort[minIndex]) {
-        minIndex = j;
-      }
-    }
-
-    // swap the found minimum with the element at i
-    if (minIndex !== i) {
-      [toSort[i], toSort[minIndex]] = [toSort[minIndex], toSort[i]];
-    }
+function isPalindrome(head: ListNode | null): boolean {
+  // 1. Build an array with the list's values
+  const vals: (number | string)[] = [];
+  for (let cur = head; cur; cur = cur.next) {
+    vals.push(cur.val);
   }
 
-  return toSort;
-}
-const unsorted = [9, 3, 10, 2, 7];
-const sorted = selectionSort(unsorted);
-
-console.log(sorted);      // [2, 3, 7, 9, 10]
-console.log(unsorted);    // remains [9, 3, 10, 2, 7]
-export function selectionSortRecursive<T>(arr: readonly T[]): T[] {
-  const toSort = [...arr];
-  const helper = (k: number) => {
-    if (k >= toSort.length - 1) return;
-
-    let minIdx = k;
-    for (let i = k + 1; i < toSort.length; i++) {
-      if (toSort[i] < toSort[minIdx]) minIdx = i;
+  // 2. Check against a reversed copy
+  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
+    if (vals[i] !== vals[j]) {
+      return false;
     }
+  }
+  return true;
+}
+function isPalindrome(head: ListNode | null): boolean {
+  // Find middle (slow goes 1 step, fast goes 2 steps)
+  let slow = head, fast = head;
+  while (fast?.next && fast.next.next) {
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
 
-    if (minIdx !== k) [toSort[k], toSort[minIdx]] = [toSort[minIdx], toSort[k]];
-    helper(k + 1);
-  };
+  // Reverse the second half of the list
+  let prev: ListNode | null = null;
+  let curr = slow?.next ?? null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
 
-  helper(0);
-  return toSort;
+  // Compare first half and reversed second half
+  let p1 = head, p2 = prev;
+  while (p2) {           // only need to go through the second half
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
 }
