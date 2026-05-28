@@ -1,33 +1,47 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-const head: ListNode<number> = { val: 1, next: null };
-head.next = { val: 2, next: null };
-head.next.next = { val: 3, next: null };      // 1 → 2 → 3
-function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+/**
+ * Merge two sorted halves into a single sorted array.
+ */
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0, j = 0;
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow?.next ?? null;   // advance by 1
-    fast = fast.next.next;       // advance by 2
+  while (i < left.length && j < right.length) {
+    // compare function should return negative if a < b,
+    // zero if equal, positive if a > b
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
 
-  return slow; // could be null if the list was empty
-}
-if (fast !== null) {            // original list had even length
-  slow = slow?.next ?? null;    // bump to the second middle
-}
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
+  // Append any leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
-const list: ListNode<number> | null = {
-  val: 10,
-  next: { val: 20, next: { val: 30, next: null } },
-};
+/**
+ * Recursively sort the array using merge sort.
+ * `compare` is optional – if omitted, the native < operator is used.
+ */
+export function mergeSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  if (arr.length <= 1) return arr.slice();
 
-console.log(middle(list)?.val); // prints 20
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid), compare);
+  const right = mergeSort(arr.slice(mid), compare);
+
+  return merge(left, right, compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+const nums = [34, 7, 23, 32, 5, 62];
+const sortedNums = mergeSort(nums);
+console.log(sortedNums); // [5, 7, 23, 32, 34, 62]
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 25 },
+  { name: 'Carol', age: 35 },
+];
+
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
