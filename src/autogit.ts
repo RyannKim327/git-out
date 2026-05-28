@@ -1,23 +1,46 @@
-// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
-function reverseString1(s: string): string {
-  return s.split('').reverse().join('');
-}
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
 
-// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
-function reverseString2(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+  // A little help‑trim: you can decide to ignore whitespace, case, etc.
+  const normalize = (s: string) =>
+    s.replace(/\s+/g, '').toLowerCase(); // removes spaces, lower‑cases
 
-// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
-function reverseString3(s: string): string {
-  const out: string[] = [];
-  for (let i = s.length - 1; i >= 0; i--) {
-    out.push(s[i]);           // or use code points with s.codePointAt(i)
+  const sortedA = normalize(a).split('').sort().join('');
+  const sortedB = normalize(b).split('').sort().join('');
+
+  return sortedA === sortedB;
+}
+function areAnagrams(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+
+  const freq = new Map<string, number>();
+
+  for (const ch of a) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
-  return out.join('');
-}
 
-// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
-const reverseString4 = (s: string) => s.split('').reverse().join('');
-console.log(reverseString1('hello')); // 'olleh'
-console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
+  for (const ch of b) {
+    const count = freq.get(ch);
+    if (!count) return false;          // either zero or undefined
+    if (count === 1) freq.delete(ch);
+    else freq.set(ch, count - 1);
+  }
+
+  return freq.size === 0;
+}
+function areAnagramsAscii(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+
+  const counts = new Uint32Array(26);
+
+  for (const ch of a) counts[ch.charCodeAt(0) - 97]++; // 'a' => 0
+  for (const ch of b) counts[ch.charCodeAt(0) - 97]--;
+
+  return counts.every(v => v === 0);
+}
+const compact = (s: string) =>
+  s.replace(/[^a-z0-9]/gi, '').toLowerCase(); // strip punctuation
+
+function areAnagramsClean(a: string, b: string): boolean {
+  return areAnagrams(compact(a), compact(b));
+}
