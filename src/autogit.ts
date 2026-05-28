@@ -1,63 +1,44 @@
-// A very basic, in‑place bubble sort for numbers
-export function bubbleSort(values: number[]): void {
-  const n = values.length;
-  for (let i = 0; i < n - 1; i++) {
-    // Last i elements are already in place
-    for (let j = 0; j < n - i - 1; j++) {
-      if (values[j] > values[j + 1]) {
-        // swap
-        [values[j], values[j + 1]] = [values[j + 1], values[j]];
-      }
+/**
+ * Return the majority element (> n/2) if it exists, or null otherwise.
+ * @param arr array of numbers (or any comparable type)
+ */
+export function majorityElement<T>(arr: T[]): T | null {
+  if (!arr.length) return null;
+
+  /* ---------- 1st pass: find candidate ---------- */
+  let candidate = arr[0];
+  let count = 0;
+
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += (num === candidate) ? 1 : -1;
     }
   }
-}
-export function bubbleSortOptimized(values: number[]): void {
-  const n = values.length;
-  let swapped: boolean;
 
-  for (let i = 0; i < n - 1; i++) {
-    swapped = false;
-    for (let j = 0; j < n - i - 1; j++) {
-      if (values[j] > values[j + 1]) {
-        [values[j], values[j + 1]] = [values[j + 1], values[j]];
-        swapped = true;
-      }
-    }
-    if (!swapped) break;
+  /* ---------- 2nd pass: verify candidate ---------- */
+  let freq = 0;
+  for (const num of arr) {
+    if (num === candidate) freq++;
   }
+
+  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
 }
-export function bubbleSort<T>(
-  values: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
-): void {
-  const n = values.length;
-  for (let i = 0; i < n - 1; i++) {
-    for (let j = 0; j < n - i - 1; j++) {
-      if (compareFn(values[j], values[j + 1]) > 0) {
-        [values[j], values[j + 1]] = [values[j + 1], values[j]];
-      }
-    }
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const majority = majorityElement(nums);
+console.log(majority); // → 3
+export function majorityElementMap<T>(arr: T[]): T | null {
+  const counts = new Map<T, number>();
+  
+  for (const val of arr) {
+    counts.set(val, (counts.get(val) ?? 0) + 1);
   }
+
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, cnt] of counts) {
+    if (cnt > threshold) return val;
+  }
+  return null;
 }
-interface Person { name: string; age: number; }
-
-const data: Person[] = [
-  { name: 'Zoe', age: 28 },
-  { name: 'Alex', age: 33 },
-  { name: 'Bob', age: 22 },
-];
-
-bubbleSort(data, (a, b) => a.name.localeCompare(b.name));
-
-console.log(data); // Alex, Bob, Zoe
-export function bubbleSortCopy<T>(
-  values: T[],
-  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
-): T[] {
-  const copy = [...values];
-  bubbleSort(copy, compareFn);
-  return copy;
-}
-const arr = [5, 1, 4, 2, 8];
-bubbleSort(arr);
-console.log(arr); // [1, 2, 4, 5, 8]
