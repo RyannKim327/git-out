@@ -1,105 +1,84 @@
-// 1️⃣  Define the graph
+function kthSmallest(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined; // out‑of‑range
 
-/** One directed edge with a weight. */
-interface Edge {
-  from: number;   // source vertex index
-  to: number;     // destination vertex index
-  weight: number; // edge weight
+  const sorted = [...arr].sort((a, b) => a - b); // stable numeric sort
+  return sorted[k - 1];                         // k is 1‑based here
 }
-
-/** The graph is just a list of edges – we’re not building adjacency lists because
- *  Bellman‑Ford inherits its own relaxation loop from every edge.
- */
-type EdgeList = Edge[];
-
-/** Number of vertices is needed for the outer loop. */
-type VertexCount = number;
 /**
- * bellmanFord(source, n, edges)
- *
- * @param source  Index of the source vertex (0‑based)
- * @param n       Total number of vertices
- * @param edges   List of all directed edges
- *
- * @returns An object:
- *   – `dist`   array of shortest distances from `source`
- *   – `prev`   previous vertex on the optimal path (for path reconstruction)
- *   – `hasNegativeCycle` flag
+ * Return the k-th smallest element (1‑based) or `undefined` if out of range.
  */
-function bellmanFord(
-  source: number,
-  n: VertexCount,
-  edges: EdgeList,
-): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
-  const INF = Number.POSITIVE_INFINITY;
-  const dist = Array(n).fill(INF);
-  const prev = Array<VertexCount | null>(n).fill(null);
+function kthSmallestQuickSelect(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  dist[source] = 0;
+  // work on a copy so the caller’s array isn’t mutated
+  const a = [...arr];
 
-  // Relax all edges (n‑1) times
-  for (let i = 0; i < n - 1; i++) {
-    let changed = false;
+  // Helper that returns the zero‑based index of the desired element
+  const select = (left: number, right: number, targetIndex: number): number => {
+    while (true) {
+      if (left === right) return a[left]; // only one element
 
-    for (const { from, to, weight } of edges) {
-      const d = dist[from] + weight;
-      if (d < dist[to]) {
-        dist[to] = d;
-        prev[to] = from;
-        changed = true;
+      // Pick a pivot – here we use the middle element
+      const pivotIndex = Math.floor((left + right) / 2);
+      const pivotValue = a[pivotIndex];
+
+      // Partition: elements < pivot go left, > pivot go right
+      // In‑place partitioning that keeps the pivot’s value
+      let i = left;
+      let j = right;
+      while (i <= j) {
+        while (a[i] < pivotValue) i++;
+        while (a[j] > pivotValue) j--;
+        if (i <= j) {
+          [a[i], a[j]] = [a[j], a[i]];
+          i++;
+          j--;
+        }
+      }
+
+      // After partitioning: indices [left .. j] <= pivot, [i .. right] >= pivot
+      if (targetIndex <= j) {
+        right = j;            // target in the left partition
+      } else if (targetIndex >= i) {
+        left = i;             // target in the right partition
+      } else {
+        return a[targetIndex]; // the pivot itself is the answer
+      }
+    }
+  };
+
+  // Convert k (1‑based) to zero‑based index
+  return select(0, a.length - 1, k - 1);
+}
+function kthSmallestGeneric<T>(
+  arr: T[],
+  k: number,
+  compare: (a: T, b: T) => number
+): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+
+  const a = [...arr];
+  const targetIndex = k - 1;
+  let left = 0, right = a.length - 1;
+
+  while (true) {
+    if (left === right) return a[left];
+
+    const pivotIndex = Math.floor((left + right) / 2);
+    const pivotValue = a[pivotIndex];
+
+    let i = left, j = right;
+    while (i <= j) {
+      while (compare(a[i], pivotValue) < 0) i++;
+      while (compare(a[j], pivotValue) > 0) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++; j--;
       }
     }
 
-    // Early exit if no distance updates: the graph has no further changes
-    if (!changed) break;
+    if (targetIndex <= j) right = j;
+    else if (targetIndex >= i) left = i;
+    else return a[targetIndex];
   }
-
-  // Check for negative‑weight cycles reachable from `source`
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegativeCycle };
 }
-// Example graph
-const edges: EdgeList = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 4 },
-  { from: 1, to: 2, weight: -2 },
-  { from: 1, to: 3, weight: 3 },
-  { from: 2, to: 1, weight: -1 },
-  { from: 2, to: 3, weight: 2 },
-  { from: 3, to: 0, weight: 2 },
-];
-
-// 4 vertices (0‑3)
-const result = bellmanFord(0, 4, edges);
-
-console.log('Distances:', result.dist);
-console.log('Previous vertex on path:', result.prev);
-console.log('Negative cycle?', result.hasNegativeCycle);
-function reconstructPath(
-  source: number,
-  target: number,
-  prev: (number | null)[],
-): number[] | null {
-  const path: number[] = [];
-  let at = target;
-
-  while (at !== null && at !== source) {
-    path.push(at);
-    at = prev[at];
-  }
-
-  if (at !== source) return null; // no path
-
-  path.push(source);
-  return path.reverse();
-}
-
-const path = reconstructPath(0, 3, result.prev);
-console.log('Path from 0 to 3:', path);
