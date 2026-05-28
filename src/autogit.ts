@@ -1,65 +1,62 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
+/**
+ * Quick‑sorts an array in place and returns the same array reference.
+ *
+ * @param array   The array to sort. It is mutated in place.
+ * @param left    Index of the first element to sort (inclusive).  Default: 0.
+ * @param right   Index of the last element to sort (inclusive).  Default: array.length - 1.
+ * @returns       The sorted array (same reference as the argument).
+ */
+function quickSort<T>(array: T[], left = 0, right: number = array.length - 1): T[] {
+  // Base case: if the sub‑array has one or zero elements, it’s already sorted
+  if (left >= right) return array;
 
-  constructor(value: T) {
-    this.value = value;
-  }
+  // Partition the array around a pivot and get its final index
+  const pivotIndex = partition(array, left, right);
+
+  // Recursively sort the two halves
+  quickSort(array, left, pivotIndex - 1);
+  quickSort(array, pivotIndex + 1, right);
+
+  return array;
 }
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
 
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
-  }
+/**
+ * Rearranges the elements in array[left…right] so that:
+ *   – Elements < pivot sit left of the pivot
+ *   – Elements >= pivot sit right of the pivot
+ * Returns the final index of the pivot.
+ */
+function partition<T>(array: T[], left: number, right: number): number {
+  // Take the rightmost element as pivot (last element strategy)
+  const pivot = array[right];
 
-  return prev; // new head
-}
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
+  // Index of the smaller element
+  let i = left - 1;
 
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let current = head;
-  let newHead: ListNode<T> | null = null;
-
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
-
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
-
-    current = tmp; // move to what was next, now prev
+  for (let j = left; j < right; j++) {
+    // Use the generic < operator; if needed, replace with a custom comparator.
+    if (array[j] < pivot) {
+      i++;
+      [array[i], array[j]] = [array[j], array[i]]; // swap
+    }
   }
 
-  return newHead;
-}
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
+  // Place pivot in the correct spot
+  [array[i + 1], array[right]] = [array[right], array[i + 1]];
 
-// Reverse
-const reversed = reverse(a);
-
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
+  return i + 1; // pivot final position
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────
+
+/* Example usage */
+
+const nums = [12, 4, 5, 6, 7, 3, 1, 15];
+console.log('Before:', nums);
+
+quickSort(nums);
+console.log('After :', nums);     // → [1, 3, 4, 5, 6, 7, 12, 15]
+
+const strings = ['pear', 'apple', 'orange', 'banana'];
+quickSort(strings);
+console.log(strings); // → ['apple', 'banana', 'orange', 'pear']
