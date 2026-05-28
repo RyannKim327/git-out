@@ -1,167 +1,166 @@
-/** 
- * A single node in the skip list.  
- * `references` holds forward pointers for each level (index 0 = lowest level).  
- */
-class SkipNode<K extends number | string, V> {
-    key: K
-    value: V
-    references: (SkipNode<K, V> | null)[]
-    level: number
-
-    constructor(key: K, value: V, level: number) {
-        this.key = key
-        this.value = value
-        this.level = level
-        // one element per level, all initially null
-        this.references = Array.from({ length: level + 1 }, () => null)
-    }
+// A node holding one element and a pointer to the next node.
+class ListNode<T> {
+  constructor(
+    public value: T,
+    public next: ListNode<T> | null = null
+  ) {}
 }
 
-/** 
- * Skip list parameters – tailor these to your workload.
- */
-const MAX_LEVEL = 16           // biggest stack of levels
-const P_FACTOR = 0.5           // probability used when randomising level
+// A generic linked list that knows the head and tail and its size.
+export class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-/**
- * Compare two keys; for numbers the comparator is trivial  
- * – change it if you want a custom ordering.
- */
-function compareKeys<K extends number | string>(a: K, b: K): number {
-    return a < b ? -1 : a > b ? 1 : 0
+  /* Basic introspection ------------------------------------ */
+
+  get size()          { return this._size; }
+  get isEmpty()       { return this._size === 0; }
+
+  /* -----------------------------------------------------------------
+   * Mutating operations
+   * ----------------------------------------------------------------- */
+
+  // Add to the end (O(1)).
+  push(val: T): void {
+    const node = new ListNode(val);
+    if (this.tail) {
+      this.tail.next = node;
+      this.tail = node;
+    } else {               // list was empty
+      this.head = this.tail = node;
+    }
+    this._size++;
+  }
+
+  // Remove from the end (O(n) – we walk to the previous node).
+  pop(): T | undefined {
+    if (!this.head) return undefined;
+    if (this.head === this.tail) {      // one element
+      const val = this.head.value;
+      this.head = this.tail = null;
+      this._size = 0;
+      return val;
+    }
+    // walk to the node just before tail
+    let current = this.head;
+    while (current.next !== this.tail) {
+      current = current.next!;
+    }
+    const val = this.tail!.value;
+    current.next = null;
+    this.tail = current;
+    this._size--;
+    return val;
+  }
+
+  // Add to the front (O(1)).
+  unshift(val: T): void {
+    const node = new ListNode(val, this.head);
+    this.head = node;
+    if (!this.tail) this.tail = node;
+    this._size++;
+  }
+
+  // Remove from the front (O(1)).
+  shift(): T | undefined {
+    if (!this.head) return undefined;
+    const val = this.head.value;
+    this.head = this.head.next;
+    if (!this.head) this.tail = null; // list became empty
+    this._size--;
+    return val;
+  }
+
+  // Insert after a given node (O(1)).  Handy for external use.
+  insertAfter(node: ListNode<T>, val: T): ListNode<T> {
+    const nodeToInsert = new ListNode(val, node.next);
+    node.next = nodeToInsert;
+    if (node === this.tail) this.tail = nodeToInsert;
+    this._size++;
+    return nodeToInsert;
+  }
+
+  // Remove the *first* occurrence of a value (O(n)).
+  remove(val: T): boolean {
+    if (!this.head) return false;
+
+    // deleting head
+    if (this.head.value === val) {
+      this.head = this.head.next;
+      if (!this.head) this.tail = null;
+      this._size--;
+      return true;
+    }
+
+    // walk until we find the predecessor
+    let prev = this.head;
+    while (prev.next && prev.next.value !== val) {
+      prev = prev.next;
+    }
+
+    if (!prev.next) return false; // not found
+
+    // patch over the node we’re deleting
+    prev.next = prev.next.next;
+    if (prev.next === null) this.tail = prev;
+    this._size--;
+    return true;
+  }
+
+  /* -----------------------------------------------------------------
+   * Utility helpers
+   * ----------------------------------------------------------------- */
+
+  // Return an array of all values. (Useful for tests/printing)
+  toArray(): T[] {
+    const arr: T[] = [];
+    for (const v of this) arr.push(v);
+    return arr;
+  }
+
+  // Find first node with a given value.
+  find(val: T): ListNode<T> | null {
+    for (let node of this.iterate()) {
+      if (node.value === val) return node;
+    }
+    return null;
+  }
+
+  /* -----------------------------------------------------------------
+   * Iteration
+   * ----------------------------------------------------------------- */
+
+  // Forward iterator (ES6).
+  * [Symbol.iterator](): Generator<T> {
+    let current = this.head;
+    while (current) {
+      yield current.value;
+      current = current.next;
+    }
+  }
+
+  // Iterable over nodes if you need more than just the value.
+  * iterate(): Generator<ListNode<T>> {
+    let current = this.head;
+    while (current) {
+      yield current;
+      current = current.next;
+    }
+  }
 }
+import { LinkedList } from "./LinkedList";
 
-/**
- * A simple pseudo‑random level picker.
- * 0‑based levels, i.e. 0 = base level.
- */
-function randomLevel(): number {
-    let lvl = 0
-    while (Math.random() < P_FACTOR && lvl < MAX_LEVEL - 1) {
-        lvl++
-    }
-    return lvl
-}
+const list = new LinkedList<number>();
 
-/**
- * The skip list itself.
- */
-class SkipList<K extends number | string, V> {
-    private head: SkipNode<K, V>
-    private size: number = 0
+list.push(3);          // -> 3
+list.push(5);          // -> 3 → 5
+list.unshift(1);       // -> 1 → 3 → 5
 
-    constructor() {
-        // head carries MIN_VALUE to simplify edge handling
-        this.head = new SkipNode(K as any, null as any, MAX_LEVEL - 1)
-    }
+console.log(list.toArray()); // [1, 3, 5]
 
-    /** number of elements */
-    get length() { return this.size }
+list.remove(3);          // remove middle element
+console.log(list.toArray()); // [1, 5]
 
-    /** search for a key → value or undefined */
-    find(key: K): V | undefined {
-        let current: SkipNode<K, V> | null = this.head
-        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
-            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
-                current = current.references[level]!
-            }
-        }
-        current = current.references[0]!
-        if (current && compareKeys(current.key, key) === 0) {
-            return current.value
-        }
-        return undefined
-    }
-
-    /** insert or update a key/value pair */
-    insert(key: K, value: V): void {
-        // array of nodes that need to be updated on each level
-        const update: (SkipNode<K, V> | null)[] = Array.from({ length: MAX_LEVEL }, () => null)
-        let current: SkipNode<K, V> | null = this.head
-
-        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
-            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
-                current = current.references[level]!
-            }
-            update[level] = current
-        }
-
-        current = current.references[0]!
-
-        // key already present → replace value
-        if (current && compareKeys(current.key, key) === 0) {
-            current.value = value
-            return
-        }
-
-        const nodeLevel = randomLevel()
-        const newNode = new SkipNode(key, value, nodeLevel)
-
-        for (let i = 0; i <= nodeLevel; i++) {
-            newNode.references[i] = update[i]!.references[i]!
-            update[i]!.references[i] = newNode
-        }
-
-        this.size++
-    }
-
-    /** remove a key → true if removed, false if not found */
-    delete(key: K): boolean {
-        const update: (SkipNode<K, V> | null)[] = Array.from({ length: MAX_LEVEL }, () => null)
-        let current: SkipNode<K, V> | null = this.head
-
-        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
-            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
-                current = current.references[level]!
-            }
-            update[level] = current
-        }
-
-        current = current.references[0]!
-
-        if (!current || compareKeys(current.key, key) !== 0) {
-            return false
-        }
-
-        for (let i = 0; i <= current.level; i++) {
-            update[i]!.references[i] = current.references[i]
-        }
-
-        this.size--
-        return true
-    }
-
-    /** iterate over the list in ascending key order */
-    [Symbol.iterator](): Iterator<[K, V]> {
-        let node: SkipNode<K, V> | null = this.head.references[0]
-        return {
-            next: () => {
-                if (!node) return { done: true, value: undefined as any }
-                const value = [node.key, node.value]
-                node = node.references[0]
-                return { done: false, value }
-            },
-        }
-    }
-}
-
-/** Sample usage ---------------------------------------------------- */
-const list = new SkipList<number, string>()
-list.insert(20, "twenty")
-list.insert(5,  "five")
-list.insert(15, "fifteen")
-list.insert(30, "thirty")
-
-console.log("find 15:", list.find(15))        // => "fifteen"
-console.log("length:", list.length)           // => 4
-
-list.delete(5)
-console.log("after delete 5, length:", list.length) // => 3
-
-for (const [k, v] of list) {
-    console.log(k, v)
-}
-// prints:
-// 15 fifteen
-// 20 twenty
-// 30 thirty
+console.log(list.pop()); // 5, list is now [1]
+console.log(list.shift()); // 1, list is empty
