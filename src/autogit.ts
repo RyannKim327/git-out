@@ -1,52 +1,23 @@
-/**
- * Interpolation Search
- *
- * The algorithm only works on numeric, strictly‑sorted arrays.
- * It probes values near the expected position based on the key’s value,
- * so it runs “almost” as fast as binary search on uniformly distributed data.
- *
- * @param arr  Sorted numeric array (ascending)
- * @param key  Value to locate
- * @returns    Index of the key or -1 if not present
- */
-export function interpolationSearch(arr: number[], key: number): number {
-  if (arr.length === 0) return -1;
+// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
+function reverseString1(s: string): string {
+  return s.split('').reverse().join('');
+}
 
-  let low = 0;
-  let high = arr.length - 1;
+// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
+function reverseString2(s: string): string {
+  return Array.from(s).reverse().join('');
+}
 
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Guard against division by zero for the degenerate case
-    if (arr[high] === arr[low]) {
-      break; // all remaining elements equal; either match or no match
-    }
-
-    const pos =
-      low +
-      Math.floor(
-        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
-      );
-
-    const midVal = arr[pos];
-
-    if (midVal === key) return pos;
-
-    if (midVal < key) {
-      low = pos + 1;
-    } else {
-      high = pos - 1;
-    }
+// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
+function reverseString3(s: string): string {
+  const out: string[] = [];
+  for (let i = s.length - 1; i >= 0; i--) {
+    out.push(s[i]);           // or use code points with s.codePointAt(i)
   }
-
-  // If we exit the loop without hitting the key
-  return -1;
+  return out.join('');
 }
-const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
-const target = 56;
-const idx = interpolationSearch(data, target);
 
-if (idx !== -1) {
-  console.log(`Found ${target} at index ${idx}`);
-} else {
-  console.log(`${target} not in the array`);
-}
+// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
+const reverseString4 = (s: string) => s.split('').reverse().join('');
+console.log(reverseString1('hello')); // 'olleh'
+console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
