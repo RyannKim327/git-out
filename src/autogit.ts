@@ -1,65 +1,14 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
+const numbers: number[] = [34, 7, 23, 32, 5, 62];
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+// Ascending order (smallest → largest)
+const asc = [...numbers].sort((a, b) => a - b);
+console.log('Ascending:', asc); // [5, 7, 23, 32, 34, 62]
 
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
-  }
+// Descending order (largest → smallest)
+const desc = [...numbers].sort((a, b) => b - a);
+console.log('Descending:', desc); // [62, 34, 32, 23, 7, 5]
+// Sort a copy without mutating the original array
+const ascending = numbers.slice().sort((a, b) => a - b);
 
-  return prev; // new head
-}
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
-
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let current = head;
-  let newHead: ListNode<T> | null = null;
-
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
-
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
-
-    current = tmp; // move to what was next, now prev
-  }
-
-  return newHead;
-}
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
-
-// Reverse
-const reversed = reverse(a);
-
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
-}
+// Or, if you prefer a single‑line declaration:
+const descending = [...numbers].sort((a, b) => b - a);
