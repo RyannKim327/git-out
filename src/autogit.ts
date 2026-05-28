@@ -1,57 +1,105 @@
-/**
- * Build the shift table used by BMH.
- * Each entry tells us how far we can jump when the bad character
- * (the character that mismatched) appears.
- */
-function buildShiftTable(pattern: string): Record<string, number> {
-  const table: Record<string, number> = {};
-  const m = pattern.length;
+// 1️⃣  Define the graph
 
-  // every character that does NOT appear in the pattern gets a full skip
-  // (m).  Characters *inside* the pattern get a smaller value.
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern[i]] = m - 1 - i;
-  }
-
-  return table;
+/** One directed edge with a weight. */
+interface Edge {
+  from: number;   // source vertex index
+  to: number;     // destination vertex index
+  weight: number; // edge weight
 }
 
+/** The graph is just a list of edges – we’re not building adjacency lists because
+ *  Bellman‑Ford inherits its own relaxation loop from every edge.
+ */
+type EdgeList = Edge[];
+
+/** Number of vertices is needed for the outer loop. */
+type VertexCount = number;
 /**
- * Classic Boyer‑Moore‑Horspool
+ * bellmanFord(source, n, edges)
  *
- * @param text    The text to search in
- * @param pattern The pattern to find
- * @returns Index of the first occurrence or -1
+ * @param source  Index of the source vertex (0‑based)
+ * @param n       Total number of vertices
+ * @param edges   List of all directed edges
+ *
+ * @returns An object:
+ *   – `dist`   array of shortest distances from `source`
+ *   – `prev`   previous vertex on the optimal path (for path reconstruction)
+ *   – `hasNegativeCycle` flag
  */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;          // empty pattern matches immediately
-  if (pattern.length > text.length) return -1;   // impossible
+function bellmanFord(
+  source: number,
+  n: VertexCount,
+  edges: EdgeList,
+): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
+  const INF = Number.POSITIVE_INFINITY;
+  const dist = Array(n).fill(INF);
+  const prev = Array<VertexCount | null>(n).fill(null);
 
-  const shift = buildShiftTable(pattern);
-  const n = text.length;
-  const m = pattern.length;
+  dist[source] = 0;
 
-  let i = 0;          // index in text where we start aligning the pattern
+  // Relax all edges (n‑1) times
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
 
-  while (i <= n - m) {
-    // start comparing from the end of the pattern
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
+    for (const { from, to, weight } of edges) {
+      const d = dist[from] + weight;
+      if (d < dist[to]) {
+        dist[to] = d;
+        prev[to] = from;
+        changed = true;
+      }
     }
 
-    if (j < 0) {
-      return i;  // whole pattern matched
-    }
-
-    // bad character at text[i + m - 1]
-    const badChar = text[i + m - 1];
-    const skip = shift[badChar] ?? m; // default skip is m
-    i += skip;
+    // Early exit if no distance updates: the graph has no further changes
+    if (!changed) break;
   }
 
-  return -1; // not found
+  // Check for negative‑weight cycles reachable from `source`
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, prev, hasNegativeCycle };
 }
-console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
-console.log(boyerMooreHorspool("hello world", "world")); // → 6
-console.log(boyerMooreHorspool("visible", "nope")); // → -1
+// Example graph
+const edges: EdgeList = [
+  { from: 0, to: 1, weight: 5 },
+  { from: 0, to: 2, weight: 4 },
+  { from: 1, to: 2, weight: -2 },
+  { from: 1, to: 3, weight: 3 },
+  { from: 2, to: 1, weight: -1 },
+  { from: 2, to: 3, weight: 2 },
+  { from: 3, to: 0, weight: 2 },
+];
+
+// 4 vertices (0‑3)
+const result = bellmanFord(0, 4, edges);
+
+console.log('Distances:', result.dist);
+console.log('Previous vertex on path:', result.prev);
+console.log('Negative cycle?', result.hasNegativeCycle);
+function reconstructPath(
+  source: number,
+  target: number,
+  prev: (number | null)[],
+): number[] | null {
+  const path: number[] = [];
+  let at = target;
+
+  while (at !== null && at !== source) {
+    path.push(at);
+    at = prev[at];
+  }
+
+  if (at !== source) return null; // no path
+
+  path.push(source);
+  return path.reverse();
+}
+
+const path = reconstructPath(0, 3, result.prev);
+console.log('Path from 0 to 3:', path);
