@@ -1,25 +1,105 @@
-/**
- * Returns true if the array is sorted in ascending order (strictly or non‑strictly).
- * @param arr array of items that can be compared with < and ===
- * @param allowDuplicates if true, values equal to the previous one are still OK
+// 1️⃣  Define the graph
+
+/** One directed edge with a weight. */
+interface Edge {
+  from: number;   // source vertex index
+  to: number;     // destination vertex index
+  weight: number; // edge weight
+}
+
+/** The graph is just a list of edges – we’re not building adjacency lists because
+ *  Bellman‑Ford inherits its own relaxation loop from every edge.
  */
-function isSortedAscending<T>(arr: T[], allowDuplicates = false): boolean {
-  if (arr.length < 2) return true;           // 0 or 1 element is always sorted
+type EdgeList = Edge[];
 
-  for (let i = 1; i < arr.length; i++) {
-    const a = arr[i - 1];
-    const b = arr[i];
+/** Number of vertices is needed for the outer loop. */
+type VertexCount = number;
+/**
+ * bellmanFord(source, n, edges)
+ *
+ * @param source  Index of the source vertex (0‑based)
+ * @param n       Total number of vertices
+ * @param edges   List of all directed edges
+ *
+ * @returns An object:
+ *   – `dist`   array of shortest distances from `source`
+ *   – `prev`   previous vertex on the optimal path (for path reconstruction)
+ *   – `hasNegativeCycle` flag
+ */
+function bellmanFord(
+  source: number,
+  n: VertexCount,
+  edges: EdgeList,
+): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
+  const INF = Number.POSITIVE_INFINITY;
+  const dist = Array(n).fill(INF);
+  const prev = Array<VertexCount | null>(n).fill(null);
 
-    if (a > b) return false;                 // strictly smaller check
+  dist[source] = 0;
 
-    if (!allowDuplicates && a === b) return false; // disallow equal values
+  // Relax all edges (n‑1) times
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
+
+    for (const { from, to, weight } of edges) {
+      const d = dist[from] + weight;
+      if (d < dist[to]) {
+        dist[to] = d;
+        prev[to] = from;
+        changed = true;
+      }
+    }
+
+    // Early exit if no distance updates: the graph has no further changes
+    if (!changed) break;
   }
-  return true;
+
+  // Check for negative‑weight cycles reachable from `source`
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, prev, hasNegativeCycle };
 }
-console.log(isSortedAscending([1, 2, 3]));          // true
-console.log(isSortedAscending([1, 3, 2]));          // false
-console.log(isSortedAscending([1, 1, 2], false));   // false
-console.log(isSortedAscending([1, 1, 2], true));    // true
-function isSortedAscendingFunctional<T>(arr: T[]): boolean {
-  return arr.length < 2 || arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+// Example graph
+const edges: EdgeList = [
+  { from: 0, to: 1, weight: 5 },
+  { from: 0, to: 2, weight: 4 },
+  { from: 1, to: 2, weight: -2 },
+  { from: 1, to: 3, weight: 3 },
+  { from: 2, to: 1, weight: -1 },
+  { from: 2, to: 3, weight: 2 },
+  { from: 3, to: 0, weight: 2 },
+];
+
+// 4 vertices (0‑3)
+const result = bellmanFord(0, 4, edges);
+
+console.log('Distances:', result.dist);
+console.log('Previous vertex on path:', result.prev);
+console.log('Negative cycle?', result.hasNegativeCycle);
+function reconstructPath(
+  source: number,
+  target: number,
+  prev: (number | null)[],
+): number[] | null {
+  const path: number[] = [];
+  let at = target;
+
+  while (at !== null && at !== source) {
+    path.push(at);
+    at = prev[at];
+  }
+
+  if (at !== source) return null; // no path
+
+  path.push(source);
+  return path.reverse();
 }
+
+const path = reconstructPath(0, 3, result.prev);
+console.log('Path from 0 to 3:', path);
