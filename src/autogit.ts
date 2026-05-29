@@ -1,105 +1,71 @@
-// 1️⃣  Define the graph
-
-/** One directed edge with a weight. */
-interface Edge {
-  from: number;   // source vertex index
-  to: number;     // destination vertex index
-  weight: number; // edge weight
-}
-
-/** The graph is just a list of edges – we’re not building adjacency lists because
- *  Bellman‑Ford inherits its own relaxation loop from every edge.
- */
-type EdgeList = Edge[];
-
-/** Number of vertices is needed for the outer loop. */
-type VertexCount = number;
 /**
- * bellmanFord(source, n, edges)
- *
- * @param source  Index of the source vertex (0‑based)
- * @param n       Total number of vertices
- * @param edges   List of all directed edges
- *
- * @returns An object:
- *   – `dist`   array of shortest distances from `source`
- *   – `prev`   previous vertex on the optimal path (for path reconstruction)
- *   – `hasNegativeCycle` flag
+ * Returns true if `a` and `b` are anagrams of each other
+ * (ignoring case, whitespace and all non‑letters).
  */
-function bellmanFord(
-  source: number,
-  n: VertexCount,
-  edges: EdgeList,
-): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
-  const INF = Number.POSITIVE_INFINITY;
-  const dist = Array(n).fill(INF);
-  const prev = Array<VertexCount | null>(n).fill(null);
+function isAnagram(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z]/g, '')          // keep only letters
+      .split('')
+      .sort()
+      .join('');
 
-  dist[source] = 0;
-
-  // Relax all edges (n‑1) times
-  for (let i = 0; i < n - 1; i++) {
-    let changed = false;
-
-    for (const { from, to, weight } of edges) {
-      const d = dist[from] + weight;
-      if (d < dist[to]) {
-        dist[to] = d;
-        prev[to] = from;
-        changed = true;
-      }
-    }
-
-    // Early exit if no distance updates: the graph has no further changes
-    if (!changed) break;
-  }
-
-  // Check for negative‑weight cycles reachable from `source`
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegativeCycle };
+  return clean(a) === clean(b);
 }
-// Example graph
-const edges: EdgeList = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 4 },
-  { from: 1, to: 2, weight: -2 },
-  { from: 1, to: 3, weight: 3 },
-  { from: 2, to: 1, weight: -1 },
-  { from: 2, to: 3, weight: 2 },
-  { from: 3, to: 0, weight: 2 },
-];
+export function areAnagrams(a: string, b: string): boolean {
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z]/g, '') // drop everything except letters
+      .split('')
+      .sort()
+      .join('');
 
-// 4 vertices (0‑3)
-const result = bellmanFord(0, 4, edges);
+  return normalize(a) === normalize(b);
+}
+export function areAnagramsLinear(a: string, b: string): boolean {
+  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
 
-console.log('Distances:', result.dist);
-console.log('Previous vertex on path:', result.prev);
-console.log('Negative cycle?', result.hasNegativeCycle);
-function reconstructPath(
-  source: number,
-  target: number,
-  prev: (number | null)[],
-): number[] | null {
-  const path: number[] = [];
-  let at = target;
+  const na = normalize(a);
+  const nb = normalize(b);
 
-  while (at !== null && at !== source) {
-    path.push(at);
-    at = prev[at];
+  if (na.length !== nb.length) return false;
+
+  const freq: Record<string, number> = {};
+
+  for (const ch of na) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  if (at !== source) return null; // no path
+  for (const ch of nb) {
+    if (!freq[ch]) return false;
+    freq[ch]!--;
+  }
 
-  path.push(source);
-  return path.reverse();
+  return true;
 }
+export function areAnagramsWithMap(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.replace(/[^a-z]/gi, '').toLowerCase();
 
-const path = reconstructPath(0, 3, result.prev);
-console.log('Path from 0 to 3:', path);
+  if (clean(a).length !== clean(b).length) return false;
+
+  const map = new Map<string, number>();
+
+  for (const ch of clean(a)) {
+    map.set(ch, (map.get(ch) ?? 0) + 1);
+  }
+
+  for (const ch of clean(b)) {
+    const cur = map.get(ch);
+    if (!cur) return false;
+    if (cur === 1) map.delete(ch);
+    else map.set(ch, cur - 1);
+  }
+
+  return map.size === 0;
+}
+console.log(isAnagram('listen', 'silent'));   // true
+console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
+console.log(isAnagram('hello', 'world'));     // false
