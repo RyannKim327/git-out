@@ -1,63 +1,105 @@
-/**
- * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
- *
- * @param src   the source array (contents will not be mutated)
- * @param dst   the destination array into which the merged result goes
- * @param l     left index (inclusive)
- * @param m     middle index (left sub‑range ends here)
- * @param r     right index (exclusive)
- */
-function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
-    let i = l;      // iterator for left sub‑run
-    let j = m;      // iterator for right sub‑run
-    let k = l;      // iterator for destination
+// 1️⃣  Define the graph
 
-    while (i < m && j < r) {
-        if (src[i] <= src[j]) {
-            dst[k++] = src[i++];
-        } else {
-            dst[k++] = src[j++];
-        }
-    }
-
-    // copy any leftovers (at most one of the two while above will run)
-    while (i < m) dst[k++] = src[i++];
-    while (j < r) dst[k++] = src[j++];
+/** One directed edge with a weight. */
+interface Edge {
+  from: number;   // source vertex index
+  to: number;     // destination vertex index
+  weight: number; // edge weight
 }
 
-/**
- * Iterative bottom‑up merge sort.
- *
- * @remarks
- *   * `arr` is the array you want sorted—original remains untouched.
- *   * Returns a new sorted array. If you want to sort in place you
- *     could swap the references to the source and destination arrays
- *     after each pass.
- *
- * @param arr  array to sort
- * @returns    sorted copy of `arr`
+/** The graph is just a list of edges – we’re not building adjacency lists because
+ *  Bellman‑Ford inherits its own relaxation loop from every edge.
  */
-export function mergeSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    if (n <= 1) return arr.slice();   // trivial case
+type EdgeList = Edge[];
 
-    let src = arr.slice();            // working copy
-    let dst: T[] = new Array(n);      // auxiliary buffer
+/** Number of vertices is needed for the outer loop. */
+type VertexCount = number;
+/**
+ * bellmanFord(source, n, edges)
+ *
+ * @param source  Index of the source vertex (0‑based)
+ * @param n       Total number of vertices
+ * @param edges   List of all directed edges
+ *
+ * @returns An object:
+ *   – `dist`   array of shortest distances from `source`
+ *   – `prev`   previous vertex on the optimal path (for path reconstruction)
+ *   – `hasNegativeCycle` flag
+ */
+function bellmanFord(
+  source: number,
+  n: VertexCount,
+  edges: EdgeList,
+): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
+  const INF = Number.POSITIVE_INFINITY;
+  const dist = Array(n).fill(INF);
+  const prev = Array<VertexCount | null>(n).fill(null);
 
-    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
-    for (let run = 1; run < n; run <<= 1) {
-        // merge adjacent runs of current length
-        for (let start = 0; start < n; start += 2 * run) {
-            const mid = Math.min(start + run, n);
-            const end = Math.min(start + 2 * run, n);
-            merge(src, dst, start, mid, end);
-        }
+  dist[source] = 0;
 
-        // the freshly merged segments now sit in `dst`;
-        // swap src/dst to let next pass read the new data
-        [src, dst] = [dst, src];
+  // Relax all edges (n‑1) times
+  for (let i = 0; i < n - 1; i++) {
+    let changed = false;
+
+    for (const { from, to, weight } of edges) {
+      const d = dist[from] + weight;
+      if (d < dist[to]) {
+        dist[to] = d;
+        prev[to] = from;
+        changed = true;
+      }
     }
 
-    // After the last pass `src` holds the sorted data (due to the final swap)
-    return src;
+    // Early exit if no distance updates: the graph has no further changes
+    if (!changed) break;
+  }
+
+  // Check for negative‑weight cycles reachable from `source`
+  let hasNegativeCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] + weight < dist[to]) {
+      hasNegativeCycle = true;
+      break;
+    }
+  }
+
+  return { dist, prev, hasNegativeCycle };
 }
+// Example graph
+const edges: EdgeList = [
+  { from: 0, to: 1, weight: 5 },
+  { from: 0, to: 2, weight: 4 },
+  { from: 1, to: 2, weight: -2 },
+  { from: 1, to: 3, weight: 3 },
+  { from: 2, to: 1, weight: -1 },
+  { from: 2, to: 3, weight: 2 },
+  { from: 3, to: 0, weight: 2 },
+];
+
+// 4 vertices (0‑3)
+const result = bellmanFord(0, 4, edges);
+
+console.log('Distances:', result.dist);
+console.log('Previous vertex on path:', result.prev);
+console.log('Negative cycle?', result.hasNegativeCycle);
+function reconstructPath(
+  source: number,
+  target: number,
+  prev: (number | null)[],
+): number[] | null {
+  const path: number[] = [];
+  let at = target;
+
+  while (at !== null && at !== source) {
+    path.push(at);
+    at = prev[at];
+  }
+
+  if (at !== source) return null; // no path
+
+  path.push(source);
+  return path.reverse();
+}
+
+const path = reconstructPath(0, 3, result.prev);
+console.log('Path from 0 to 3:', path);
