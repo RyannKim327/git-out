@@ -1,24 +1,11 @@
-const numbers = [1, 2, 3, 2, 4, 1, 5];
+const a = "Hello, ";
+const b = "world!";
 
-// One‑liner:
-const unique = [...new Set(numbers)]; // [1, 2, 3, 4, 5]
-numbers.length = 0;                      // clear the original array
-numbers.push(...new Set(numbers));       // backfill it with unique items
-interface User {
-  id: number;
-  name: string;
+// 1. Using the + operator
+const c1 = a + b;              // "Hello, world!"
+
+// 2. Using a template literal
+const c2 = `${a}${b}`;         // "Hello, world!"
+function greet(firstName: string, lastName: string): string {
+  return firstName + " " + lastName;          // or `${firstName} ${lastName}`
 }
-
-const users: User[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 1, name: 'Alice' }
-];
-
-const uniqueUsers = users.filter((user, i, arr) =>
-  i === arr.findIndex(u => u.id === user.id)
-);
-// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
-const byId = new Map<number, User>();
-for (const u of users) byId.set(u.id, u);
-const uniqueUsers = Array.from(byId.values());
