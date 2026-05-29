@@ -1,65 +1,93 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
+/*  Boyer‑Moore string search
+ *  ----------------------------------
+ *  – pattern:  the string you’re looking for
+ *  – text:     the larger string you scan
+ *  Returns:    an array of the starting indices where pattern occurs
+ */
 
-  constructor(value: T) {
-    this.value = value;
+type BMResult = number[];
+
+function boyerMoore(text: string, pattern: string): BMResult {
+  if (pattern.length === 0) return [];
+  const badChar = buildBadCharShift(pattern);
+  const goodSuffix = buildGoodSuffixShift(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
+
+  let s = 0;                  // alignment of pattern with text
+  while (s <= n - m) {        // slide pattern over text
+    let j = m - 1;            // right‑most pattern position
+
+    // compare from right to left
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {                  // whole pattern matched
+      result.push(s);
+      s += goodSuffix[0];          // shift using good‑suffix
+    } else {
+      // bad‑character rule
+      const badShift = j - badChar[text[s + j]] ?? j + 1;
+      // good‑suffix rule
+      const goodShift = goodSuffix[j + 1];
+      s += Math.max(badShift, goodShift);
+    }
   }
+  return result;
 }
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
 
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
+/* -------------  Bad‑character table  ----------------- */
+function buildBadCharShift(pattern: string): Record<string, number> {
+  const lastPos: Record<string, number> = {};
+  for (let i = 0; i < pattern.length; i++) {
+    lastPos[pattern[i]] = i;          // last occurrence index
+  }
+  return lastPos;
+}
+
+/* -------------  Good‑suffix table  ------------------- */
+function buildGoodSuffixShift(pattern: string): number[] {
+  const m = pattern.length;
+  const shift: number[] = new Array(m + 1).fill(m);
+  const border = new Array(m + 1).fill(0);
+  let i = m;
+  let j = m + 1;
+  border[i] = j;
+
+  // 1. Calculate borders (prefixes that are also suffixes)
+  while (i > 0) {
+    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
+      j = border[j];
+    }
+    i--; j--; border[i] = j;
   }
 
-  return prev; // new head
-}
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
-
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let current = head;
-  let newHead: ListNode<T> | null = null;
-
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
-
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
-
-    current = tmp; // move to what was next, now prev
+  // 2. Compute shift table from borders
+  for (let k = 0; k < m; k++) {
+    shift[k] = m; // default shift is pattern length
   }
 
-  return newHead;
-}
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
+  let iIdx = 0;
+  while (iIdx < m) {
+    const g = m - border[iIdx];
+    shift[g] = Math.min(shift[g], border[iIdx] + 1);
+    iIdx++;
+  }
 
-// Reverse
-const reversed = reverse(a);
+  // 3. Fill the remaining entries (when no suffix matches)
+  let last = shift[1];
+  for (let q = 2; q <= m; q++) {
+    if (shift[q] === m) shift[q] = last;
+    else last = shift[q];
+  }
 
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
+  return shift;
 }
+
+/* -------------  Example use ----- */
+const haystack = "ABABACABABABCAB";
+const needle = "ABABC";
+
+console.log(boyerMoore(haystack, needle));  // => [5]
