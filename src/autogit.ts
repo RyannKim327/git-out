@@ -1,110 +1,62 @@
-// Basic node description
-export interface Node {
-  id: string;           // unique identifier
-  // optional coordinates – handy for the heuristic
-  x?: number;
-  y?: number;
-  // all directly reachable neighbours
-  neighbors: string[];  // ids of neighbour nodes
-}
-
-export interface Edge {
-  from: string;      // node id
-  to: string;        // node id
-  cost: number;      // weight of the edge
-}
-class PriorityQueue<T> {
-  private items: { key: number; value: T }[] = [];
-
-  // swap helpers
-  private swap(i: number, j: number) {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
-  }
-
-  // bubble‑up to maintain heap invariant
-  private bubbleUp(idx: number) {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.items[parent].key <= this.items[idx].key) break;
-      this.swap(parent, idx);
-      idx = parent;
-    }
-  }
-
-  // bubble‑down to maintain heap invariant
-  private bubbleDown(idx: number) {
-    const last = this.items.length - 1;
-    while (true) {
-      const left = 2 * idx + 1;
-      const right = 2 * idx + 2;
-      let smallest = idx;
-
-      if (left <= last && this.items[left].key < this.items[smallest].key)
-        smallest = left;
-      if (right <= last && this.items[right].key < this.items[smallest].key)
-        smallest = right;
-
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // push a new value with a priority
-  push(value: T, key: number) {
-    this.items.push({ value, key });
-    this.bubbleUp(this.items.length - 1);
-  }
-
-  // pop the value with the smallest priority
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const root = this.items[0].value;
-    const last = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = last;
-      this.bubbleDown(0);
-    }
-    return root;
-  }
-
-  get size(): number {
-    return this.items.length;
-  }
-}
 /**
- * Generic A* implementation.
- * @param nodes   Map of node id → Node
- * @param edges   Map of node id → array of out‑going edges
- * @param start   id of the start node
- * @param goal    id of the goal node
- * @param heuristic (node) ⇒ estimated distance to goal
- * @returns array of node ids that form the cheapest path, or empty array if none
+ * Quick‑sorts an array in place and returns the same array reference.
+ *
+ * @param array   The array to sort. It is mutated in place.
+ * @param left    Index of the first element to sort (inclusive).  Default: 0.
+ * @param right   Index of the last element to sort (inclusive).  Default: array.length - 1.
+ * @returns       The sorted array (same reference as the argument).
  */
-export function aStar(
-  nodes: Map<string, Node>,
-  edges: Map<string, Edge[]>,
-  start: string,
-  goal: string,
-  heuristic: (nodeId: string) => number
-): string[] {
-  // G‑costs: current best known cost to each node
-  const g: Map<string, number> = new Map();
-  g.set(start, 0);
+function quickSort<T>(array: T[], left = 0, right: number = array.length - 1): T[] {
+  // Base case: if the sub‑array has one or zero elements, it’s already sorted
+  if (left >= right) return array;
 
-  // Came‑from map to rebuild the path
-  const cameFrom: Map<string, string> = new Map();
+  // Partition the array around a pivot and get its final index
+  const pivotIndex = partition(array, left, right);
 
-  // Open set – priority queue keyed by F = G + H
-  const open = new PriorityQueue<string>();
-  open.push(start, heuristic(start));
+  // Recursively sort the two halves
+  quickSort(array, left, pivotIndex - 1);
+  quickSort(array, pivotIndex + 1, right);
 
-  // Closed set: processed nodes
-  const closed = new Set<string>();
+  return array;
+}
 
-  while (open.size > 0) {
-    const current = open.pop()!;
+/**
+ * Rearranges the elements in array[left…right] so that:
+ *   – Elements < pivot sit left of the pivot
+ *   – Elements >= pivot sit right of the pivot
+ * Returns the final index of the pivot.
+ */
+function partition<T>(array: T[], left: number, right: number): number {
+  // Take the rightmost element as pivot (last element strategy)
+  const pivot = array[right];
 
-    // Goal found – reconstruct the path
-    if (current === goal) {
-      const path: string[] =
+  // Index of the smaller element
+  let i = left - 1;
+
+  for (let j = left; j < right; j++) {
+    // Use the generic < operator; if needed, replace with a custom comparator.
+    if (array[j] < pivot) {
+      i++;
+      [array[i], array[j]] = [array[j], array[i]]; // swap
+    }
+  }
+
+  // Place pivot in the correct spot
+  [array[i + 1], array[right]] = [array[right], array[i + 1]];
+
+  return i + 1; // pivot final position
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
+
+/* Example usage */
+
+const nums = [12, 4, 5, 6, 7, 3, 1, 15];
+console.log('Before:', nums);
+
+quickSort(nums);
+console.log('After :', nums);     // → [1, 3, 4, 5, 6, 7, 12, 15]
+
+const strings = ['pear', 'apple', 'orange', 'banana'];
+quickSort(strings);
+console.log(strings); // → ['apple', 'banana', 'orange', 'pear']
