@@ -1,93 +1,54 @@
-/*  Boyer‑Moore string search
- *  ----------------------------------
- *  – pattern:  the string you’re looking for
- *  – text:     the larger string you scan
- *  Returns:    an array of the starting indices where pattern occurs
+/**
+ * Area from base and height.
+ * @param base  - Base length (any positive number)
+ * @param height - Height length (any positive number)
+ * @returns Triangle area
  */
-
-type BMResult = number[];
-
-function boyerMoore(text: string, pattern: string): BMResult {
-  if (pattern.length === 0) return [];
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
-  const m = pattern.length;
-  const n = text.length;
-  const result: number[] = [];
-
-  let s = 0;                  // alignment of pattern with text
-  while (s <= n - m) {        // slide pattern over text
-    let j = m - 1;            // right‑most pattern position
-
-    // compare from right to left
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {                  // whole pattern matched
-      result.push(s);
-      s += goodSuffix[0];          // shift using good‑suffix
-    } else {
-      // bad‑character rule
-      const badShift = j - badChar[text[s + j]] ?? j + 1;
-      // good‑suffix rule
-      const goodShift = goodSuffix[j + 1];
-      s += Math.max(badShift, goodShift);
-    }
+function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('Base and height must be positive numbers.');
   }
-  return result;
+  return (base * height) / 2;
 }
-
-/* -------------  Bad‑character table  ----------------- */
-function buildBadCharShift(pattern: string): Record<string, number> {
-  const lastPos: Record<string, number> = {};
-  for (let i = 0; i < pattern.length; i++) {
-    lastPos[pattern[i]] = i;          // last occurrence index
+const area = areaBaseHeight(10, 5); // 25
+console.log(`Area = ${area}`);      // Area = 25
+/**
+ * Deal with three side lengths.
+ * @param a - length of side a
+ * @param b - length of side b
+ * @param c - length of side c
+ * @returns Triangle area
+ */
+function areaBySides(a: number, b: number, c: number): number {
+  // Simple validity check – the sides must satisfy the triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The given sides do not form a valid triangle.');
   }
-  return lastPos;
+
+  const s = (a + b + c) / 2;                 // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
 }
+const areaHeron = areaBySides(3, 4, 5); // 6
+console.log(`Area (Heron) = ${areaHeron}`);
+/**
+ * Area from two sides and an included angle (in degrees or radians).
+ * @param side1   - length of one side
+ * @param side2   - length of the other side
+ * @param angle   - included angle (in degrees)
+ * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
+ * @returns Triangle area
+ */
+function areaFromSidesAndAngle(
+  side1: number,
+  side2: number,
+  angle: number,
+  inRadians = false
+): number {
+  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
 
-/* -------------  Good‑suffix table  ------------------- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const shift: number[] = new Array(m + 1).fill(m);
-  const border = new Array(m + 1).fill(0);
-  let i = m;
-  let j = m + 1;
-  border[i] = j;
-
-  // 1. Calculate borders (prefixes that are also suffixes)
-  while (i > 0) {
-    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
-      j = border[j];
-    }
-    i--; j--; border[i] = j;
-  }
-
-  // 2. Compute shift table from borders
-  for (let k = 0; k < m; k++) {
-    shift[k] = m; // default shift is pattern length
-  }
-
-  let iIdx = 0;
-  while (iIdx < m) {
-    const g = m - border[iIdx];
-    shift[g] = Math.min(shift[g], border[iIdx] + 1);
-    iIdx++;
-  }
-
-  // 3. Fill the remaining entries (when no suffix matches)
-  let last = shift[1];
-  for (let q = 2; q <= m; q++) {
-    if (shift[q] === m) shift[q] = last;
-    else last = shift[q];
-  }
-
-  return shift;
+  const rad = inRadians ? angle : (angle * Math.PI) / 180;
+  return (side1 * side2 * Math.sin(rad)) / 2;
 }
-
-/* -------------  Example use ----- */
-const haystack = "ABABACABABABCAB";
-const needle = "ABABC";
-
-console.log(boyerMoore(haystack, needle));  // => [5]
+const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
+console.log(`Area from two sides & angle = ${areaMixed}`);
