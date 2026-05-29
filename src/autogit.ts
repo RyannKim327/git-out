@@ -1,129 +1,99 @@
-class Edge {
-  public start: number;          // index in text where label starts
-  public end: number | string;   // end symbol or index
-  public child: SuffixNode;
+// App.tsx
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-  constructor(start: number, end: number | string, child: SuffixNode) {
-    this.start = start;
-    this.end = end;          // can be a "shared" reference for leaf edges
-    this.child = child;
-  }
+/**
+ * Example of an async “network task” that you might run in Android
+ * (React‑Native runs JavaScript on a background thread for you).
+ */
+const App: React.FC = () => {
+  /*--- State: loading / data / error -----------------------------------*/
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<any>(null);
 
-  /** Length of the label (end is inclusive) */
-  get length(): number {
-    if (typeof this.end === 'number') {
-      return this.end - this.start + 1;
-    }
-    // leaf edge: end is shared and increments as we extend
-    return (this.end as string) === '$' ? Infinity : this.end - this.start + 1;
-  }
-}
+  /*--- Effect: fire once on mount -------------------------------------*/
+  useEffect(() => {
+    /**
+     * Async function inside the effect so we can use await at a top level.
+     * It's an equivalent of Android’s AsyncTask (but without the Android
+     * boilerplate) – just a Promise chain wrapped in async/await.
+     */
+    const fetchData = async () => {
+      try {
+        // 1️⃣ Make the request
+        const response = await fetch(
+          'https://api.adviceslip.com/advice',
+        );
 
-class SuffixNode {
-  public edges: Map<string, Edge>;   // first char → edge
-  public suffixLink?: SuffixNode;    // Ukkonen’s suffix link
-  constructor() {
-    this.edges = new Map();
-  }
-}
-class SuffixTree {
-  private root: SuffixNode;
-  private text: string;          // original string
-  private leafEnd: number;       // shared end for all leaves
+        // 2️⃣ Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-  private active: ActivePoint;   // current active point
-  private remainder: number;    // # of suffixes that need insertion
+        // 3️⃣ Parse the JSON payload
+        const json = await response.json();
 
-  constructor(text: string) {
-    this.text = text + '$';  // append unique terminator
-    this.leafEnd = -1;
-    this.root = new SuffixNode();
-    this.active = { node: this.root, edge: '', length: 0 };
-    this.remainder = 0;
-
-    this.build();
-  }
-
-  /* -------------------------------------------------- */
-  /*  Core routine: Ukkonen’s O(n) construction        */
-  /* -------------------------------------------------- */
-  private build(): void {
-    for (let i = 0; i < this.text.length; i++) {
-      this.extend(i);
-    }
-  }
-
-  private extend(pos: number): void {
-    this.leafEnd = pos;
-    this.remainder++;
-    let lastNewNode: SuffixNode | undefined;
-
-    while (this.remainder > 0) {
-      // 1.  If active length is zero → the active edge is the char at pos
-      if (this.active.length === 0) {
-        this.active.edge = this.text[pos];
+        // 4️⃣ Store the result
+        setData(json);          // data.slip.advice will be the string
+        setError(null);
+      } catch (e) {
+        // Anything that goes wrong lands here
+        console.error('Failed to fetch advice:', e);
+        setError((e as Error).message);
+        setData(null);
+      } finally {
+        // Whatever happens, loading is done
+        setLoading(false);
       }
+    };
 
-      const edgeChar = this.active.edge;
-      const edge = this.active.node.edges.get(edgeChar);
+    fetchData();
 
-      // 2.  No edge starts with active.edge
-      if (!edge) {
-        // create new leaf edge
-        const leaf = new SuffixNode();
-        const newEdge = new Edge(pos, this.leafEnd, leaf);
-        this.active.node.edges.set(edgeChar, newEdge);
+    // Optional: cleanup if the component unmounts before fetch resolves
+    // return () => { /* cancel request if using AbortController, e.g. */ };
+  }, []); // empty deps → run once
 
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this.active.node;
-          lastNewNode = undefined;
-        }
-      } else {
-        // 3.  Edge exists – walk down if needed
-        if (this.active.length >= edge.length) {
-          this.active.node = edge.child;
-          this.active.length -= edge.length;
-          this.active.edge = this.text[pos - this.remainder + 1];
-          continue;  // restart loop, remainder unchanged
-        }
+  /*--- Rendering -----------------------------------------------------*/
+  return (
+    <SafeAreaView style={styles.container}>
+      {loading && (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.text}>Loading advice...</Text>
+        </View>
+      )}
 
-        // 4.  Check next char on the edge
-        const nextChar = this.text[edge.start + this.active.length];
-        if (nextChar === this.text[pos]) {
-          // 4a.  Character already present → just increment active length
-          this.active.length++;
-          if (lastNewNode) {
-            lastNewNode.suffixLink = this.active.node;
-            lastNewNode = undefined;
-          }
-          break; // done for this phase
-        }
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={[styles.text, styles.error]}>Error: {error}</Text>
+        </View>
+      )}
 
-        // 4b.  Split the edge: create an intermediate node
-        const splitEnd = edge.start + this.active.length - 1;
-        const splitNode = new SuffixNode();
-        const splitEdge = new Edge(edge.start, splitEnd, splitNode);
+      {!loading && data && (
+        <View style={styles.centered}>
+          <Text style={styles.title}>Here’s an advice for you:</Text>
+          <Text style={styles.advice}>{data.slip?.advice ?? '—'}</Text>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+};
 
-        // replace old edge with split edge
-        this.active.node.edges.set(edgeChar, splitEdge);
+/*--- Styles ----------------------------------------------------------*/
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginTop: 12 },
+  title: { fontSize: 18, fontWeight: '600' },
+  advice: { fontSize: 18, fontWeight: '400', marginTop: 6, textAlign: 'center' },
+  error: { color: 'red' },
+});
 
-        // old child becomes child of splitNode
-        splitNode.edges.set(nextChar, edge);
-        edge.start = splitEnd + 1; // shift start of old edge
-
-        // new leaf for current suffix
-        const leaf = new SuffixNode();
-        const newLeafEdge = new Edge(pos, this.leafEnd, leaf);
-        splitNode.edges.set(this.text[pos], newLeafEdge);
-
-        // 4c.  Suffix link handling
-        if (lastNewNode) {
-          lastNewNode.suffixLink = splitNode;
-        }
-        lastNewNode = splitNode;
-      }
-
-      this.remainder--;
-
-      // 5.  Move active point using suffix link
-      if (this.active.node === this.root &&
+export default App;
