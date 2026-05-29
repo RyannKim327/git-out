@@ -1,65 +1,44 @@
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
+/**
+ * Return the majority element (> n/2) if it exists, or null otherwise.
+ * @param arr array of numbers (or any comparable type)
+ */
+export function majorityElement<T>(arr: T[]): T | null {
+  if (!arr.length) return null;
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
+  /* ---------- 1st pass: find candidate ---------- */
+  let candidate = arr[0];
+  let count = 0;
 
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
-  }
-
-  return prev; // new head
-}
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
-
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let current = head;
-  let newHead: ListNode<T> | null = null;
-
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
-
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
-
-    current = tmp; // move to what was next, now prev
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += (num === candidate) ? 1 : -1;
+    }
   }
 
-  return newHead;
+  /* ---------- 2nd pass: verify candidate ---------- */
+  let freq = 0;
+  for (const num of arr) {
+    if (num === candidate) freq++;
+  }
+
+  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
 }
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const majority = majorityElement(nums);
+console.log(majority); // → 3
+export function majorityElementMap<T>(arr: T[]): T | null {
+  const counts = new Map<T, number>();
+  
+  for (const val of arr) {
+    counts.set(val, (counts.get(val) ?? 0) + 1);
+  }
 
-// Reverse
-const reversed = reverse(a);
-
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, cnt] of counts) {
+    if (cnt > threshold) return val;
+  }
+  return null;
 }
