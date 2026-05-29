@@ -1,50 +1,65 @@
-interface TreeNode<T = number> {
+class ListNode<T> {
   value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+  next: ListNode<T> | null = null;
+  prev: ListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                        // empty tree → depth 0
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-  const leftDepth  = maxDepth(root.left);     // recurse on left child
-  const rightDepth = maxDepth(root.right);    // recurse on right child
-
-  return Math.max(leftDepth, rightDepth) + 1; // +1 for the current node
-}
-function maxDepthBFS<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
-
-  const queue: Array<TreeNode<T>> = [root];
-  let depth = 0;
-
-  while (queue.length) {
-    const levelSize = queue.length;           // nodes on this level
-    depth += 1;                               // finish the level → increment depth
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;            // safe – queue is non‑empty
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+  while (curr) {
+    const next = curr.next;    // keep a handle on the rest
+    curr.next = prev;          // reverse the arrow
+    prev = curr;               // advance prev
+    curr = next;               // advance curr
   }
 
-  return depth;
+  return prev; // new head
 }
-const tree: TreeNode = {
-  value: 1,
-  left: {
-    value: 2,
-    left: { value: 4 },
-    right: { value: 5 }
-  },
-  right: {
-    value: 3,
-    right: {
-      value: 6,
-      left: { value: 7 }
-    }
-  }
-};
+function reverseRecursive<T>(
+  node: ListNode<T> | null,
+  prev: ListNode<T> | null = null
+): ListNode<T> | null {
+  if (!node) return prev;
 
-console.log(maxDepth(tree));      // → 4
-console.log(maxDepthBFS(tree));   // → 4
+  const next = node.next;
+  node.next = prev;
+  return reverseRecursive(next, node);
+}
+function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let current = head;
+  let newHead: ListNode<T> | null = null;
+
+  while (current) {
+    // swap next and prev
+    const tmp = current.next;
+    current.next = current.prev;
+    current.prev = tmp;
+
+    // once we flip at the old head, that becomes the new head
+    if (!tmp) newHead = current;
+
+    current = tmp; // move to what was next, now prev
+  }
+
+  return newHead;
+}
+// Building a tiny list: 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+// Reverse
+const reversed = reverse(a);
+
+// Log values in order
+let node = reversed;
+while (node) {
+  console.log(node.value); // 3, 2, 1
+  node = node.next;
+}
