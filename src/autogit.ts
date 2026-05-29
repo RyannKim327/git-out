@@ -1,71 +1,42 @@
 /**
- * Returns true if `a` and `b` are anagrams of each other
- * (ignoring case, whitespace and all non‑letters).
+ * Insertion sort (in‑place).
+ *
+ * @param arr The array you want to sort. It will be sorted *mutably*.
+ * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
+ * @returns The same array reference, now sorted.
  */
-function isAnagram(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z]/g, '')          // keep only letters
-      .split('')
-      .sort()
-      .join('');
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to JS native >/< when no comparator is supplied
+  const cmp = compare ?? ((a: T, b: T) => {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+  });
 
-  return clean(a) === clean(b);
-}
-export function areAnagrams(a: string, b: string): boolean {
-  const normalize = (str: string) =>
-    str
-      .toLowerCase()
-      .replace(/[^a-z]/g, '') // drop everything except letters
-      .split('')
-      .sort()
-      .join('');
+  // Work from index 1 to the end; index 0 is already “sorted” by itself
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  return normalize(a) === normalize(b);
-}
-export function areAnagramsLinear(a: string, b: string): boolean {
-  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
+    // Move elements that are greater than `key` one position to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-  const na = normalize(a);
-  const nb = normalize(b);
-
-  if (na.length !== nb.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of na) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+    // Place `key` in its correct spot
+    arr[j + 1] = key;
   }
 
-  for (const ch of nb) {
-    if (!freq[ch]) return false;
-    freq[ch]!--;
-  }
-
-  return true;
+  return arr;
 }
-export function areAnagramsWithMap(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.replace(/[^a-z]/gi, '').toLowerCase();
+const nums = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
 
-  if (clean(a).length !== clean(b).length) return false;
-
-  const map = new Map<string, number>();
-
-  for (const ch of clean(a)) {
-    map.set(ch, (map.get(ch) ?? 0) + 1);
-  }
-
-  for (const ch of clean(b)) {
-    const cur = map.get(ch);
-    if (!cur) return false;
-    if (cur === 1) map.delete(ch);
-    else map.set(ch, cur - 1);
-  }
-
-  return map.size === 0;
-}
-console.log(isAnagram('listen', 'silent'));   // true
-console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
-console.log(isAnagram('hello', 'world'));     // false
+// With a custom comparator: sort strings by length (descending)
+const fruits = ['apple', 'kiwi', 'banana', 'fig'];
+const byLengthDesc = (a: string, b: string) => b.length - a.length;
+console.log(insertionSort(fruits, byLengthDesc));
