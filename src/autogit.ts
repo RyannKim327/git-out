@@ -1,110 +1,25 @@
-/*--------------------------------------------------
-  1. The “state” that the algorithm operates on
---------------------------------------------------*/
-export interface Node {
-  /** Every node needs a unique identifier for cycle handling */
-  id: string;               // could be number|string | etc.
-  /** Return the directly reachable successors */
-  getChildren(): Node[];
-}
-
-/*--------------------------------------------------
-  2. The breadth‑limited search itself
---------------------------------------------------*/
-export type SearchResult<T = Node> = {
-  /* The node that satisfied the goal predicate,
-     or undefined if none found within depth limit. */
-  found: T | undefined;
-  /* How many nodes were expanded in total */
-  expanded: number;
-};
-
 /**
- * Breadth‑limited search (BFS with depth limit)
- *
- * @param start  The entry point of the search
- * @param goal   A predicate that must be satisfied by the target node
- * @param depthLimit  The maximum depth (0 → only the start node)
- *
- * @returns SearchResult containing the target node (if it was found)
- *          and the number of nodes that were expanded.
+ * Returns true if the array is sorted in ascending order (strictly or non‑strictly).
+ * @param arr array of items that can be compared with < and ===
+ * @param allowDuplicates if true, values equal to the previous one are still OK
  */
-export function breadthLimitedSearch<T extends Node>(
-  start: T,
-  goal: (node: T) => boolean,
-  depthLimit: number
-): SearchResult<T> {
-  if (depthLimit < 0)
-    throw new Error("depthLimit must be >= 0");
+function isSortedAscending<T>(arr: T[], allowDuplicates = false): boolean {
+  if (arr.length < 2) return true;           // 0 or 1 element is always sorted
 
-  // queue entry holds the node *and* its depth from start
-  type QueueEntry = { node: T; depth: number };
+  for (let i = 1; i < arr.length; i++) {
+    const a = arr[i - 1];
+    const b = arr[i];
 
-  const frontier: QueueEntry[] = [{ node: start, depth: 0 }];
-  const visited = new Set<string>();
+    if (a > b) return false;                 // strictly smaller check
 
-  let expanded = 0;
-
-  while (frontier.length > 0) {
-    const { node, depth } = frontier.shift()!; // FIFO
-
-    if (visited.has(node.id)) continue;   // ignore already‑seen nodes
-    visited.add(node.id);
-
-    expanded++;
-
-    if (goal(node)) return { found: node, expanded };
-
-    // If we haven't hit the depth limit, expand successors
-    if (depth < depthLimit) {
-      const children = node.getChildren();
-      // Add children to the *back* of the queue – usual BFS order
-      for (const child of children) {
-        // Avoid duplicates in the same frontier level
-        if (!visited.has(child.id)) {
-          frontier.push({ node: child, depth: depth + 1 });
-        }
-      }
-    }
+    if (!allowDuplicates && a === b) return false; // disallow equal values
   }
-
-  // Search exhausted without finding a goal
-  return { found: undefined, expanded };
+  return true;
 }
-class TreeNode implements Node {
-  constructor(public id: string, public children: TreeNode[] = []) {}
-  getChildren() { return this.children; }
+console.log(isSortedAscending([1, 2, 3]));          // true
+console.log(isSortedAscending([1, 3, 2]));          // false
+console.log(isSortedAscending([1, 1, 2], false));   // false
+console.log(isSortedAscending([1, 1, 2], true));    // true
+function isSortedAscendingFunctional<T>(arr: T[]): boolean {
+  return arr.length < 2 || arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
 }
-
-const leafA  = new TreeNode("leafA");
-const leafB  = new TreeNode("leafB");
-const leafC  = new TreeNode("leafC");
-const node1  = new TreeNode("node1", [leafA, leafB]);
-const node2  = new TreeNode("node2", [leafC]);
-const root   = new TreeNode("root", [node1, node2]);
-const result = breadthLimitedSearch(
-  root,
-  n => n.id === "leafC",   // goal predicate
-  2                        // depth limit
-);
-
-if (result.found) {
-  console.log("Found:", result.found.id);
-} else {
-  console.log("Not found within depth limit");
-}
-console.log("Nodes expanded:", result.expanded);
-Found: leafC
-Nodes expanded: 3   // root -> node1 -> node2
-export type SearchResult<T> = {
-  found: T | undefined;
-  expanded: number;
-  path: T[]; // optional: the actual path from the root
-};
-
-export function breadthLimitedSearchCustom<T extends {}>(
-  start: T,
-  getChildren: (node: T) => T[],
-  goal: (node: T) => boolean,
-  depthLimit: number
-) { /* similar to above, but works with any shape */ }
