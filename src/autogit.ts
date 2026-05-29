@@ -1,39 +1,54 @@
 /**
- * Return n! (n factorial)
- * Works nicely for small n (≤ 20 with a regular number type)
+ * Area from base and height.
+ * @param base  - Base length (any positive number)
+ * @param height - Height length (any positive number)
+ * @returns Triangle area
  */
-const factorialRec = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRec(n - 1);
-};
-
-// Example
-console.log(factorialRec(5)); // 120
-/**
- * Same result but no recursion overhead
- */
-const factorialIter = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; ++i) {
-    result *= i;
+function areaBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('Base and height must be positive numbers.');
   }
-  return result;
-};
-
-// Example
-console.log(factorialIter(5)); // 120
+  return (base * height) / 2;
+}
+const area = areaBaseHeight(10, 5); // 25
+console.log(`Area = ${area}`);      // Area = 25
 /**
- * Uses BigInt so it never loses precision
+ * Deal with three side lengths.
+ * @param a - length of side a
+ * @param b - length of side b
+ * @param c - length of side c
+ * @returns Triangle area
  */
-const factorialBig = (n: number): bigint => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n; // 1n is a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+function areaBySides(a: number, b: number, c: number): number {
+  // Simple validity check – the sides must satisfy the triangle inequality
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The given sides do not form a valid triangle.');
   }
-  return result;
-};
 
-// Example
-console.log(factorialBig(100).toString()); // “933262154439…(ends with 00)”
+  const s = (a + b + c) / 2;                 // semi‑perimeter
+  const area = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+  return area;
+}
+const areaHeron = areaBySides(3, 4, 5); // 6
+console.log(`Area (Heron) = ${areaHeron}`);
+/**
+ * Area from two sides and an included angle (in degrees or radians).
+ * @param side1   - length of one side
+ * @param side2   - length of the other side
+ * @param angle   - included angle (in degrees)
+ * @param inRadians - optional flag indicating input is supplied in radians; defaults to false (degrees)
+ * @returns Triangle area
+ */
+function areaFromSidesAndAngle(
+  side1: number,
+  side2: number,
+  angle: number,
+  inRadians = false
+): number {
+  if (side1 <= 0 || side2 <= 0) throw new Error('Side lengths must be positive.');
+
+  const rad = inRadians ? angle : (angle * Math.PI) / 180;
+  return (side1 * side2 * Math.sin(rad)) / 2;
+}
+const areaMixed = areaFromSidesAndAngle(5, 7, 60); // 15.25
+console.log(`Area from two sides & angle = ${areaMixed}`);
