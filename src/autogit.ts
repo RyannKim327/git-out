@@ -1,22 +1,56 @@
-// Regular number factorial (fast for small n, but beware of JS number limits)
-function factorialRecursive(n: number): number {
-  if (n < 0)
-    throw new Error('factorial is defined only for non‑negative integers');
-
-  // the base case
-  if (n === 0 || n === 1) return 1;
-
-  // recursive call
-  return n * factorialRecursive(n - 1);
+// IStack defines the public contract for the stack.
+export interface IStack<T> {
+  push(item: T): void;      // add an item on top
+  pop(): T | undefined;     // remove and return the top item
+  peek(): T | undefined;    // look at the top without removing it
+  isEmpty(): boolean;       // true if the stack has no items
+  size(): number;           // current number of items
 }
-// BigInt variant – no loss of precision up to very large n
-function factorialRecursiveBigInt(n: bigint): bigint {
-  if (n < 0n)
-    throw new Error('factorial is defined only for non‑negative integers');
 
-  if (n === 0n || n === 1n) return 1n;
+// Stack is a simple array‑backed implementation.
+export class Stack<T> implements IStack<T> {
+  // the underlying storage – an array grows automatically
+  private items: T[] = [];
 
-  return n * factorialRecursiveBigInt(n - 1n);
+  constructor(initial?: T[]) {
+    // optional initial content; does a shallow copy for safety
+    if (initial) this.items = initial.slice();
+  }
+
+  push(item: T): void {
+    this.items.push(item);
+  }
+
+  pop(): T | undefined {
+    return this.items.pop();          // pop() already returns undefined if empty
+  }
+
+  peek(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    return this.items[this.items.length - 1];
+  }
+
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  size(): number {
+    return this.items.length;
+  }
 }
-console.log(factorialRecursive(5));          // 120
-console.log(factorialRecursiveBigInt(20n));   // 2432902008176640000n
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek());   // 30
+console.log(stack.pop());    // 30
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+while (!stack.isEmpty()) {
+  console.log(stack.pop());
+}
+// → 20
+// → 10
