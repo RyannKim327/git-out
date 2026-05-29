@@ -1,45 +1,24 @@
-/**
- * Returns the longest common subsequence of a and b.
- * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
- */
-export function longestCommonSubsequence(a: string, b: string): string {
-  const m = a.length;
-  const n = b.length;
+const numbers = [1, 2, 3, 2, 4, 1, 5];
 
-  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
-  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-
-  // Build the table
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Back‑track to reconstruct one LCS
-  let i = m;
-  let j = n;
-  const lcsChars: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (a[i - 1] === b[j - 1]) {
-      // Matches – this character is part of the LCS
-      lcsChars.push(a[i - 1]);
-      i--;
-      j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;          // move up
-    } else {
-      j--;          // move left
-    }
-  }
-
-  // The chars were collected backwards, reverse them
-  return lcsChars.reverse().join('');
+// One‑liner:
+const unique = [...new Set(numbers)]; // [1, 2, 3, 4, 5]
+numbers.length = 0;                      // clear the original array
+numbers.push(...new Set(numbers));       // backfill it with unique items
+interface User {
+  id: number;
+  name: string;
 }
-console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
-console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
+
+const users: User[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 1, name: 'Alice' }
+];
+
+const uniqueUsers = users.filter((user, i, arr) =>
+  i === arr.findIndex(u => u.id === user.id)
+);
+// [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }]
+const byId = new Map<number, User>();
+for (const u of users) byId.set(u.id, u);
+const uniqueUsers = Array.from(byId.values());
