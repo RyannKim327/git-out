@@ -1,45 +1,45 @@
 /**
- * Very common “good enough” email regex.
- *
- * It accepts most real‑world addresses, rejects obvious
- * malformed strings, and stays within a tiny, readable
- * pattern.  It isn’t RFC‑5322 exhaustive, but that’s usually
- * the sweet spot for UI‑side validation.
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
  */
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-/**
- * Validate an e‑mail string.
- * @param value – value to test
- * @returns true  if it looks like an e‑mail, false otherwise
- */
-export function isValidEmail(value: string): boolean {
-  return emailRegex.test(value);
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
+    } else {
+      j--;          // move left
+    }
+  }
+
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
 }
-const stricterEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-import { useState } from 'react';
-import { isValidEmail } from './email-utils';
-
-export default function EmailInput() {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setEmail(val);
-    setError(val && !isValidEmail(val) ? 'Invalid address' : null);
-  };
-
-  return (
-    <div>
-      <input
-        type="email"
-        value={email}
-        onChange={handleChange}
-        aria-invalid={!!error}
-        aria-describedby={error ? 'email-error' : undefined}
-      />
-      {error && <div id="email-error" style={{color: 'red'}}>{error}</div>}
-    </div>
-  );
-}
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
