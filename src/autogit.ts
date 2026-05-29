@@ -1,73 +1,45 @@
-class Node<T> {
-  constructor(
-    public val: T,
-    public next: Node<T> | null = null
-  ) {}
+/**
+ * Very common “good enough” email regex.
+ *
+ * It accepts most real‑world addresses, rejects obvious
+ * malformed strings, and stays within a tiny, readable
+ * pattern.  It isn’t RFC‑5322 exhaustive, but that’s usually
+ * the sweet spot for UI‑side validation.
+ */
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Validate an e‑mail string.
+ * @param value – value to test
+ * @returns true  if it looks like an e‑mail, false otherwise
+ */
+export function isValidEmail(value: string): boolean {
+  return emailRegex.test(value);
 }
-export class LinkedQueue<T> {
-  private head: Node<T> | null = null   // front––dequeue → head
-  private tail: Node<T> | null = null   // back––enqueue → tail
-  private _size = 0
+const stricterEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+import { useState } from 'react';
+import { isValidEmail } from './email-utils';
 
-  /** Add an element to the back */
-  enqueue(item: T): void {
-    const newNode = new Node(item)
-    if (!this.tail) {
-      // First element: both head & tail point to it
-      this.head = this.tail = newNode
-    } else {
-      this.tail.next = newNode
-      this.tail = newNode
-    }
-    ++this._size
-  }
+export default function EmailInput() {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  /** Remove and return the front element */
-  dequeue(): T {
-    if (!this.head) throw new Error('Queue is empty')
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setEmail(val);
+    setError(val && !isValidEmail(val) ? 'Invalid address' : null);
+  };
 
-    const value = this.head.val
-    this.head = this.head.next
-    // If the queue becomes empty, clear tail as well
-    if (!this.head) this.tail = null
-    --this._size
-    return value
-  }
-
-  /** Peek at front without removing */
-  peek(): T | null {
-    return this.head?.val ?? null
-  }
-
-  /** Number of elements */
-  size(): number { return this._size }
-
-  /** Convenience */
-  isEmpty(): boolean { return this._size === 0 }
+  return (
+    <div>
+      <input
+        type="email"
+        value={email}
+        onChange={handleChange}
+        aria-invalid={!!error}
+        aria-describedby={error ? 'email-error' : undefined}
+      />
+      {error && <div id="email-error" style={{color: 'red'}}>{error}</div>}
+    </div>
+  );
 }
-const q = new LinkedQueue<number>()
-
-q.enqueue(10)
-q.enqueue(20)
-q.enqueue(30)
-
-console.log(q.peek()) // 10
-console.log(q.dequeue()) // 10
-console.log(q.dequeue()) // 20
-console.log(q.size()) // 1
-console.log(q.isEmpty()) // false
-
-q.dequeue() // 30
-console.log(q.isEmpty()) // true
-import { expect } from 'chai'
-const q = new LinkedQueue<string>()
-
-expect(q.isEmpty()).to.be.true
-q.enqueue('a')
-q.enqueue('b')
-expect(q.size()).to.equal(2)
-expect(q.peek()).to.equal('a')
-expect(q.dequeue()).to.equal('a')
-expect(q.dequeue()).to.equal('b')
-expect(() => q.dequeue()).to.throw('Queue is empty')
-head ──► … ──► tail
