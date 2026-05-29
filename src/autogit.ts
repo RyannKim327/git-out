@@ -1,44 +1,42 @@
 /**
- * Randomly shuffles an array in-place.
- * Uses the Fisher–Yates algorithm.
+ * Insertion sort (in‑place).
+ *
+ * @param arr The array you want to sort. It will be sorted *mutably*.
+ * @param compare Optional comparator. If omitted, numeric or string ascending order is used.
+ * @returns The same array reference, now sorted.
  */
-function shuffle<T>(array: T[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-}
+export function insertionSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  // Default to JS native >/< when no comparator is supplied
+  const cmp = compare ?? ((a: T, b: T) => {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+  });
 
-/**
- * Checks whether the array is sorted in ascending order.
- * Works for numbers and strings (lexicographically).
- */
-function isSorted<T extends number | string>(array: T[]): boolean {
-  for (let i = 0; i < array.length - 1; i++) {
-    if (array[i] > array[i + 1]) return false;
-  }
-  return true;
-}
+  // Work from index 1 to the end; index 0 is already “sorted” by itself
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-/**
- * Bogosort: keep shuffling until the array is sorted.
- * In practice, this is a joke algorithm because of its astronomical
- * expected runtime, but it’s fun to see it in TypeScript.
- */
-export function randomSort<T extends number | string>(array: T[]): T[] {
-  // We’ll operate on a copy to avoid mutating the caller’s data.
-  const arr = array.slice();
+    // Move elements that are greater than `key` one position to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-  // Guard against trivial cases.
-  if (arr.length < 2) return arr;
-
-  // Keep shuffling until the array is sorted.
-  while (!isSorted(arr)) {
-    shuffle(arr);
+    // Place `key` in its correct spot
+    arr[j + 1] = key;
   }
 
   return arr;
 }
-const unsorted = [3, 1, 4, 1, 5, 9, 2];
-const sorted = randomSort(unsorted);
-console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
+const nums = [8, 3, 5, 4, 6, 1];
+console.log(insertionSort(nums)); // -> [1, 3, 4, 5, 6, 8]
+
+// With a custom comparator: sort strings by length (descending)
+const fruits = ['apple', 'kiwi', 'banana', 'fig'];
+const byLengthDesc = (a: string, b: string) => b.length - a.length;
+console.log(insertionSort(fruits, byLengthDesc));
