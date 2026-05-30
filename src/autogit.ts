@@ -1,71 +1,25 @@
 /**
- * Returns true if `a` and `b` are anagrams of each other
- * (ignoring case, whitespace and all non‑letters).
+ * Convert a decimal number to binary.
+ *
+ * @param n – the decimal number you want to convert (must be an integer ≥ 0)
+ * @returns a string containing the binary representation
  */
-function isAnagram(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z]/g, '')          // keep only letters
-      .split('')
-      .sort()
-      .join('');
+function decimalToBinary(n: number): string {
+  if (n === 0) return '0';
 
-  return clean(a) === clean(b);
-}
-export function areAnagrams(a: string, b: string): boolean {
-  const normalize = (str: string) =>
-    str
-      .toLowerCase()
-      .replace(/[^a-z]/g, '') // drop everything except letters
-      .split('')
-      .sort()
-      .join('');
+  let result = '';
+  let current = n;
 
-  return normalize(a) === normalize(b);
-}
-export function areAnagramsLinear(a: string, b: string): boolean {
-  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
-
-  const na = normalize(a);
-  const nb = normalize(b);
-
-  if (na.length !== nb.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of na) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+  while (current > 0) {
+    result = (current % 2).toString() + result;
+    current = Math.floor(current / 2);
   }
 
-  for (const ch of nb) {
-    if (!freq[ch]) return false;
-    freq[ch]!--;
-  }
-
-  return true;
+  return result;
 }
-export function areAnagramsWithMap(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.replace(/[^a-z]/gi, '').toLowerCase();
-
-  if (clean(a).length !== clean(b).length) return false;
-
-  const map = new Map<string, number>();
-
-  for (const ch of clean(a)) {
-    map.set(ch, (map.get(ch) ?? 0) + 1);
-  }
-
-  for (const ch of clean(b)) {
-    const cur = map.get(ch);
-    if (!cur) return false;
-    if (cur === 1) map.delete(ch);
-    else map.set(ch, cur - 1);
-  }
-
-  return map.size === 0;
+console.log(decimalToBinary(10)); // "1010"
+console.log(decimalToBinary(255)); // "11111111"
+function decimalToBinaryWithSign(n: number): string {
+  if (n < 0) return '-' + decimalToBinary(-n);
+  return decimalToBinary(n);
 }
-console.log(isAnagram('listen', 'silent'));   // true
-console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
-console.log(isAnagram('hello', 'world'));     // false
