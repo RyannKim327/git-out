@@ -1,76 +1,68 @@
 /**
- * Build the longest‑prefix‑suffix (LPS) table for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0…i]
- * that is also a suffix of this substring.
- *
- * @param pattern – string to preprocess
- * @returns array of LPS values
+ * Binary search on a sorted array.
+ * @param arr   – sorted array of comparable values
+ * @param target – value we’re looking for
+ * @returns      – index of target, or -1 if not found
  */
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;                     // length of the previous longest prefix‑suffix
-  let i = 1;
+function binarySearchIter<T>(arr: T[], target: T, compareFn?: (a: T, b: T) => number): number {
+  let left = 0;
+  let right = arr.length - 1;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
+  while (left <= right) {
+    // Using “>>> 1” gives the floor of the middle even for huge indices
+    const mid = (left + right) >>> 1;
+    const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
+      ? 1
+      : (arr[mid] as any) < (target as any)
+      ? -1
+      : 0;
+
+    if (cmp === 0) {
+      return mid;          // found
+    } else if (cmp < 0) {
+      left = mid + 1;      // target is on the right half
     } else {
-      if (len !== 0) {
-        // fall back to the previous longest prefix‑suffix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
-}
-
-/**
- * Classic KMP string search.
- *
- * @param text    – the text to search in
- * @param pattern – the pattern to find
- * @returns all starting indices where pattern occurs in text
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
-
-  const lps = buildLps(pattern);
-  const result: number[] = [];
-
-  let i = 0; // index for text
-  let j = 0; // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
-
-    if (j === pattern.length) {
-      // match found at i - j
-      result.push(i - j);
-      // continue searching for the next match
-      j = lps[j - 1];
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
-      }
+      right = mid - 1;     // target is on the left half
     }
   }
 
-  return result;
+  return -1; // not found
 }
-import { kmpSearch } from "./kmp";
+const nums = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchIter(nums, 7)); // → 3
+console.log(binarySearchIter(nums, 4)); // → -1
+const words = ["apple", "banana", "cherry", "date"];
+const index = binarySearchIter(words, "cherry", (a, b) => a.localeCompare(b));
+// → 2
+function binarySearchRec<T>(
+  arr: T[],
+  target: T,
+  compareFn?: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): number {
+  if (left > right) return -1;            // base case: not found
 
-const text = "abxabcabcaby";
-const pattern = "abcaby";
+  const mid = (left + right) >>> 1;
+  const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
+      ? 1
+      : (arr[mid] as any) < (target as any)
+      ? -1
+      : 0;
 
-const matches = kmpSearch(text, pattern);
-console.log(matches); // [6]
+  if (cmp === 0) return mid;
+  return cmp < 0
+    ? binarySearchRec(arr, target, compareFn, mid + 1, right)
+    : binarySearchRec(arr, target, compareFn, left, mid - 1);
+}
+function test<T>(arr: T[], target: T, fn: (a: T[], t: T) => number) {
+  const idx = fn(arr, target);
+  console.log(`searching ${target} in [${arr}] → ${idx}`);
+}
+
+const ints = [2, 4, 6, 8, 10];
+test(ints, 8, binarySearchIter);
+test(ints, 9, binarySearchIter);
+
+const strs = ['banana', 'cherry', 'fig', 'grape'];
+test(strs, 'fig', (a, t) => binarySearchRec(a, t, (x, y) => x.localeCompare(y)));
