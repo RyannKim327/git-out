@@ -1,65 +1,87 @@
 /**
- * Recursively finds the index of `target` in a sorted array.
- * Returns the index if found, otherwise –1.
+ * Radix sort for 32‑bit signed integers.
+ * Works for any array length, including 0.
  *
- * @param arr   A sorted array (ascending, no duplicates needed)
- * @param target The value you're looking for
- * @param left  The left boundary (inclusive)
- * @param right The right boundary (exclusive)
+ * The algorithm:
+ *   – Split the input into positives and negatives
+ *   – Sort each group with a stable counting‑sort pass for each decimal digit (base 10)
+ *   – Negatives are sorted in reverse order of their absolute values
+ *   – Concatenate negative‑part (re‑negated) then positive‑part
  */
-function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;            // no match
+export function radixSort(nums: number[]): number[] {
+  if (nums.length === 0) return nums; // nothing to do
 
-  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
+  /* 1️⃣  Separate positives from negatives   */
+  const positives: number[] = [];
+  const negatives: number[] = [];
 
-  const cmp = arr[mid] === target
-    ? 0
-    : arr[mid] < target
-      ? -1
-      : 1;
+  for (const n of nums) {
+    if (n >= 0) positives.push(n);
+    else negatives.push(Math.abs(n));  // store abs for later sorting
+  }
 
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursive(arr, target, mid + 1, right)
-      : binarySearchRecursive(arr, target, left, mid);
+  /* 2️⃣  Sort the “unsigned” parts with an inner helper   */
+  const sortedPos = sortUnsigned(positives);
+  const sortedNeg = sortUnsigned(negatives);
+
+  /* 3️⃣  Negatives need to be reversed & re‑negated       */
+  const finalNeg = sortedNeg.reverse().map(v => -v);
+
+  /* 4️⃣  Merge back together – negative values come first   */
+  return [...finalNeg, ...sortedPos];
 }
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchRecursive(nums, 7));  // → 3
-console.log(binarySearchRecursive(nums, 4));  // → -1
-function binarySearchRecursiveCustom<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;
 
-  const mid = left + ((right - left) >> 1);
-  const cmp = compare(arr[mid], target);
+/**
+ * Internally sort an array of non‑negative numbers by radix.
+ * The routine is the same as the classic radix sort used in
+ * CS‑textbooks: a counting sort stable pass for each power of 10.
+ */
+function sortUnsigned(arr: number[]): number[] {
+  if (arr.length === 0) return arr;
 
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
-      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
+  // Find the largest value so we know when to stop
+  const maxVal = Math.max(...arr);
+
+  let exponent = 1;   // 10⁰, 10¹, 10² …
+  let result = arr;   // we’ll keep re‑assigning
+
+  while (Math.floor(maxVal / exponent) > 0) {
+    result = countingSortByExponent(result, exponent);
+    exponent *= 10;
+  }
+
+  return result;
 }
-interface Person { age: number; name: string; }
-const people: Person[] = [
-  { age: 22, name: 'Alice' },
-  { age: 30, name: 'Bob' },
-  { age: 45, name: 'Charlie' },
-];
-const ageToFind = 30;
-const idx = binarySearchRecursiveCustom(
-  people,
-  { age: ageToFind, name: '' },
-  (a, b) => a.age - b.age
-);
-console.log(idx); // → 1
+
+/**
+ * One stable counting‑sort pass for a specific digit (exponent).
+ * Digits are guaranteed to be 0–9.
+ */
+function countingSortByExponent(nums: number[], exp: number): number[] {
+  const output = new Array(nums.length);
+  const count = new Array(10).fill(0);
+
+  // 1️⃣ Count occurrences of each digit
+  for (const n of nums) {
+    const digit = Math.floor(n / exp) % 10;
+    count[digit]++;
+  }
+
+  // 2️⃣ Turn counts into cumulative counts
+  for (let i = 1; i < 10; i++) {
+    count[i] += count[i - 1];
+  }
+
+  // 3️⃣ Build output array (backwards for stability)
+  for (let i = nums.length - 1; i >= 0; i--) {
+    const n = nums[i];
+    const digit = Math.floor(n / exp) % 10;
+    output[--count[digit]] = n;
+  }
+
+  return output;
+}
+const data = [170, 45, 75, 90, 802, 24, 2, 66, -3, -55];
+const sorted = radixSort(data);
+console.log(sorted);
+// → [ -55, -3, 2, 24, 45, 66, 75, 90, 170, 802 ]
