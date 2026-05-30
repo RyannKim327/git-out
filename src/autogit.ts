@@ -1,105 +1,44 @@
-// 1️⃣  Define the graph
+// A plain, singly‑linked node.
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-/** One directed edge with a weight. */
-interface Edge {
-  from: number;   // source vertex index
-  to: number;     // destination vertex index
-  weight: number; // edge weight
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
+  }
 }
-
-/** The graph is just a list of edges – we’re not building adjacency lists because
- *  Bellman‑Ford inherits its own relaxation loop from every edge.
- */
-type EdgeList = Edge[];
-
-/** Number of vertices is needed for the outer loop. */
-type VertexCount = number;
 /**
- * bellmanFord(source, n, edges)
- *
- * @param source  Index of the source vertex (0‑based)
- * @param n       Total number of vertices
- * @param edges   List of all directed edges
- *
- * @returns An object:
- *   – `dist`   array of shortest distances from `source`
- *   – `prev`   previous vertex on the optimal path (for path reconstruction)
- *   – `hasNegativeCycle` flag
+ * Walks the list and counts how many nodes it contains.
+ * @param head The first node of the list (or null for an empty list).
+ * @returns How many nodes are in the list.
  */
-function bellmanFord(
-  source: number,
-  n: VertexCount,
-  edges: EdgeList,
-): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
-  const INF = Number.POSITIVE_INFINITY;
-  const dist = Array(n).fill(INF);
-  const prev = Array<VertexCount | null>(n).fill(null);
+function listLength<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
 
-  dist[source] = 0;
-
-  // Relax all edges (n‑1) times
-  for (let i = 0; i < n - 1; i++) {
-    let changed = false;
-
-    for (const { from, to, weight } of edges) {
-      const d = dist[from] + weight;
-      if (d < dist[to]) {
-        dist[to] = d;
-        prev[to] = from;
-        changed = true;
-      }
-    }
-
-    // Early exit if no distance updates: the graph has no further changes
-    if (!changed) break;
+  while (current !== null) {
+    count++;
+    current = current.next;
   }
 
-  // Check for negative‑weight cycles reachable from `source`
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
-    }
-  }
-
-  return { dist, prev, hasNegativeCycle };
+  return count;
 }
-// Example graph
-const edges: EdgeList = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 4 },
-  { from: 1, to: 2, weight: -2 },
-  { from: 1, to: 3, weight: 3 },
-  { from: 2, to: 1, weight: -1 },
-  { from: 2, to: 3, weight: 2 },
-  { from: 3, to: 0, weight: 2 },
-];
-
-// 4 vertices (0‑3)
-const result = bellmanFord(0, 4, edges);
-
-console.log('Distances:', result.dist);
-console.log('Previous vertex on path:', result.prev);
-console.log('Negative cycle?', result.hasNegativeCycle);
-function reconstructPath(
-  source: number,
-  target: number,
-  prev: (number | null)[],
-): number[] | null {
-  const path: number[] = [];
-  let at = target;
-
-  while (at !== null && at !== source) {
-    path.push(at);
-    at = prev[at];
-  }
-
-  if (at !== source) return null; // no path
-
-  path.push(source);
-  return path.reverse();
+function listLengthRecursive<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;                // base case: nothing left
+  return 1 + listLengthRecursive(node.next); // recurse
 }
+// Build a list: 1 → 2 → 3 → null
+const third = new ListNode(3);
+const second = new ListNode(2, third);
+const first = new ListNode(1, second);
 
-const path = reconstructPath(0, 3, result.prev);
-console.log('Path from 0 to 3:', path);
+console.log(listLength(first));                // 3
+console.log(listLengthRecursive(first));       // 3
+console.log(listLength(null));                // 0
+// For a doubly linked node that has .next and .prev:
+let current = head;
+while (current !== null) {
+  count++;
+  current = current.next;  // or current.prev, depending on direction
+}
