@@ -1,21 +1,50 @@
-function countChar(str: string, char: string): number {
-  if (char.length !== 1) throw new Error('char must be a single character');
-  return str.split(char).length - 1;
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-function countChar(str: string, char: string): number {
-  let count = 0;
-  for (const c of str) {
-    if (c === char) count++;
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                        // empty tree → depth 0
+
+  const leftDepth  = maxDepth(root.left);     // recurse on left child
+  const rightDepth = maxDepth(root.right);    // recurse on right child
+
+  return Math.max(leftDepth, rightDepth) + 1; // +1 for the current node
+}
+function maxDepthBFS<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
+
+  const queue: Array<TreeNode<T>> = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length;           // nodes on this level
+    depth += 1;                               // finish the level → increment depth
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;            // safe – queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-  return count;
+
+  return depth;
 }
-function countChar(str: string, char: string): number {
-  const escaped = char.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); // escape special chars
-  const regex = new RegExp(escaped, 'g');
-  const matches = str.match(regex);
-  return matches ? matches.length : 0;
-}
-const sentence = "hello world";
-console.log(countChar(sentence, 'l')); // 3
-console.log(countChar(sentence, ' ')); // 1
-console.log(countChar(sentence, 'z')); // 0
+const tree: TreeNode = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 }
+  },
+  right: {
+    value: 3,
+    right: {
+      value: 6,
+      left: { value: 7 }
+    }
+  }
+};
+
+console.log(maxDepth(tree));      // → 4
+console.log(maxDepthBFS(tree));   // → 4
