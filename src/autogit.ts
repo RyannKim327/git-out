@@ -1,32 +1,50 @@
-/**
- * Returns the longest common substring between `a` and `b`.
- * If there are several with the same length, the one that appears first in `a` is returned.
- */
-export function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+function maxDepth<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;                        // empty tree → depth 0
 
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  // 2‑D array of zeros
-  const table = Array.from({ length: rows }, () => Array(cols).fill(0));
+  const leftDepth  = maxDepth(root.left);     // recurse on left child
+  const rightDepth = maxDepth(root.right);    // recurse on right child
 
-  let maxLen = 0;
-  let maxEndIdxA = 0;
+  return Math.max(leftDepth, rightDepth) + 1; // +1 for the current node
+}
+function maxDepthBFS<T>(root?: TreeNode<T>): number {
+  if (!root) return 0;
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        table[i][j] = table[i - 1][j - 1] + 1;
-        if (table[i][j] > maxLen) {
-          maxLen = table[i][j];
-          maxEndIdxA = i;          // the end index (exclusive) in `a`
-        }
-      }
+  const queue: Array<TreeNode<T>> = [root];
+  let depth = 0;
+
+  while (queue.length) {
+    const levelSize = queue.length;           // nodes on this level
+    depth += 1;                               // finish the level → increment depth
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;            // safe – queue is non‑empty
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
   }
 
-  return maxLen === 0 ? '' : a.slice(maxEndIdxA - maxLen, maxEndIdxA);
+  return depth;
 }
-console.log(longestCommonSubstring('ABABC', 'BABCA')); // → "ABC"
-console.log(longestCommonSubstring('kitten', 'sitting')); // → "itt"
-console.log(longestCommonSubstring('foo', 'bar')); // → ""
+const tree: TreeNode = {
+  value: 1,
+  left: {
+    value: 2,
+    left: { value: 4 },
+    right: { value: 5 }
+  },
+  right: {
+    value: 3,
+    right: {
+      value: 6,
+      left: { value: 7 }
+    }
+  }
+};
+
+console.log(maxDepth(tree));      // → 4
+console.log(maxDepthBFS(tree));   // → 4
