@@ -1,116 +1,54 @@
 /**
- * A binary‑heap priority queue.
- *
- * @template T  The type of the elements in the queue.
- *
- * @example
- * // min‑heap
- * const pq = new PriorityQueue<number>((a, b) => a - b);
- * pq.add(5); pq.add(2); pq.add(8);
- * console.log(pq.extract()); // 2
- *
- * // max‑heap (reverse the comparator)
- * const pqMax = new PriorityQueue<number>((a, b) => b - a);
+ * Returns the largest prime factor of n.
+ * Works for numbers up to < 2^53 – that’s the largest integer a JS `number` can
+ * represent exactly. For bigger values use BigInt (see the comment below).
  */
-export class PriorityQueue<T> {
-  /** The underlying array that stores the heap. */
-  private items: T[] = [];
+function largestPrimeFactor(n: number): number {
+  if (n <= 1) return n;          // 0 or 1 have no prime factors at all
 
-  /**
-   * @param compare Comparator: `a < b` returns a negative value,
-   *                `a === b` returns zero,
-   *                `a > b` returns a positive value.
-   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
-   *                or a custom comparator for objects.
-   */
-  constructor(private compare: (a: T, b: T) => number) {}
+  let remaining = n;
 
-  /** Number of elements in the queue. */
-  size(): number { return this.items.length; }
-
-  /** Whether the queue is empty. */
-  isEmpty(): boolean { return this.items.length === 0; }
-
-  /** Return the highest‑priority element without removing it. */
-  peek(): T | undefined { return this.items[0]; }
-
-  /** Insert a new element. */
-  add(element: T): void {
-    this.items.push(element);
-    this.siftUp(this.items.length - 1);
+  // Deal with factor 2 first – it’s the only even prime
+  while (remaining % 2 === 0) {
+    remaining = remaining / 2;
   }
+  let lastFactor = 2;
 
-  /** Remove and return the element with the highest priority. */
-  extract(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const root = this.items[0];
-    const last = this.items.pop()!;
-    if (!this.isEmpty()) {
-      this.items[0] = last;
-      this.siftDown(0);
-    }
-    return root;
-  }
-
-  /* ---- Internals ---- */
-
-  /** Move a node up until the heap property holds. */
-  private siftUp(idx: number): void {
-    let childIdx = idx;
-    while (childIdx > 0) {
-      const parentIdx = Math.floor((childIdx - 1) / 2);
-      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
-        this.swap(childIdx, parentIdx);
-        childIdx = parentIdx;
-      } else break;
+  // Now we only need to test odd numbers.
+  // We stop once we’ve divided down to 1 or we’ve reached √remaining.
+  for (let odd = 3; odd * odd <= remaining; odd += 2) {
+    while (remaining % odd === 0) {
+      remaining = remaining / odd;
+      lastFactor = odd;
     }
   }
 
-  /** Move a node down until the heap property holds. */
-  private siftDown(idx: number): void {
-    const lastIdx = this.items.length - 1;
-    let parentIdx = idx;
-
-    while (true) {
-      const leftIdx = parentIdx * 2 + 1;
-      const rightIdx = parentIdx * 2 + 2;
-      let smallestIdx = parentIdx;
-
-      if (leftIdx <= lastIdx &&
-          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx <= lastIdx &&
-          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx !== parentIdx) {
-        this.swap(parentIdx, smallestIdx);
-        parentIdx = smallestIdx;
-      } else break;
-    }
-  }
-
-  /** Swap two indices in the array. */
-  private swap(i: number, j: number): void {
-    const tmp = this.items[i];
-    this.items[i] = this.items[j];
-    this.items[j] = tmp;
-  }
+  // If what’s left is > 1, it’s a prime itself and is larger than any
+  // factor we already found, so it becomes the biggest prime factor.
+  return remaining > 1 ? remaining : lastFactor;
 }
-// Min‑heap of numbers
-const minQ = new PriorityQueue<number>((a, b) => a - b);
-minQ.add(10);
-minQ.add(3);
-minQ.add(7);
-console.log(minQ.extract()); // 3
-console.log(minQ.extract()); // 7
-console.log(minQ.extract()); // 10
+console.log(largestPrimeFactor(60));   // 5 (60 = 2 × 2 × 3 × 5)
+console.log(largestPrimeFactor(63));   // 7 (63 = 3 × 3 × 7)
+console.log(largestPrimeFactor(13195)); // 29 (13195 = 5 × 7 × 13 × 29)
+function largestPrimeFactorBigInt(n: bigint): bigint {
+  if (n <= 1n) return n;
 
-// Max‑heap of strings by length
-const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
-maxStr.add("short");
-maxStr.add("tiny");
-maxStr.add("extraordinarilylong");
-console.log(maxStr.extract()); // "extraordinarilylong"
+  let remaining = n;
+  let lastFactor = 2n;
+
+  // factor 2
+  while (remaining % 2n === 0n) {
+    remaining /= 2n;
+    lastFactor = 2n;
+  }
+
+  // odd factors
+  for (let odd = 3n; odd * odd <= remaining; odd += 2n) {
+    while (remaining % odd === 0n) {
+      remaining /= odd;
+      lastFactor = odd;
+    }
+  }
+
+  return remaining > 1n ? remaining : lastFactor;
+}
