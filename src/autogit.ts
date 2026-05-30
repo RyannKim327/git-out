@@ -1,97 +1,84 @@
-export interface Node<T = any> {
-  /** A value stored in the node – useful for reconstruction / debugging */
-  value: T;
+function kthSmallest(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined; // out‑of‑range
 
-  /** Returns an array of child nodes (or an empty array) */
-  children(): Node<T>[];
-}
-class IntNode implements Node<number> {
-  constructor(public value: number) {}
-  children(): IntNode[] {
-    // example: a simple binary tree
-    return [];
-  }
+  const sorted = [...arr].sort((a, b) => a - b); // stable numeric sort
+  return sorted[k - 1];                         // k is 1‑based here
 }
 /**
- * Depth‑limited search.  Returns a path from `start` to one of the goal values,
- * or `null` if no path exists within the depth limit.
- *
- * @param start      The node from which we start.
- * @param isGoal     A predicate that decides if the current node is a goal.
- * @param depthLimit How many edges you’re willing to traverse.  Zero means
- *                   you stop immediately (only the start node is examined).
- * @param visited    Optional set for cycle detection.
- *
- * @returns Array of nodes forming the path, or `null`.
+ * Return the k-th smallest element (1‑based) or `undefined` if out of range.
  */
-export function depthLimitedSearch<T = any>(
-  start: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  depthLimit: number,
-  visited?: Set<Node<T>>
-): Array<Node<T>> | null {
-  if (depthLimit < 0) throw new Error('depthLimit must be ≥ 0');
+function kthSmallestQuickSelect(arr: number[], k: number): number | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  // depth‑first approach – stop when limit hits
-  function recurse(
-    current: Node<T>,
-    depth: number,
-    trail: Node<T>[],
-    visitedSet: Set<Node<T>>
-  ): Array<Node<T>> | null {
-    if (!visitedSet.has(current)) {
-      if (depthLimit === 0 && depth > 0) return null; // reached limit
+  // work on a copy so the caller’s array isn’t mutated
+  const a = [...arr];
 
-      if (isGoal(current)) return [...trail, current];
+  // Helper that returns the zero‑based index of the desired element
+  const select = (left: number, right: number, targetIndex: number): number => {
+    while (true) {
+      if (left === right) return a[left]; // only one element
 
-      visitedSet.add(current);
+      // Pick a pivot – here we use the middle element
+      const pivotIndex = Math.floor((left + right) / 2);
+      const pivotValue = a[pivotIndex];
 
-      for (const child of current.children()) {
-        const result = recurse(child, depth + 1, [...trail, current], visitedSet);
-        if (result !== null) return result;
+      // Partition: elements < pivot go left, > pivot go right
+      // In‑place partitioning that keeps the pivot’s value
+      let i = left;
+      let j = right;
+      while (i <= j) {
+        while (a[i] < pivotValue) i++;
+        while (a[j] > pivotValue) j--;
+        if (i <= j) {
+          [a[i], a[j]] = [a[j], a[i]];
+          i++;
+          j--;
+        }
       }
 
-      visitedSet.delete(current); // backtrack
+      // After partitioning: indices [left .. j] <= pivot, [i .. right] >= pivot
+      if (targetIndex <= j) {
+        right = j;            // target in the left partition
+      } else if (targetIndex >= i) {
+        left = i;             // target in the right partition
+      } else {
+        return a[targetIndex]; // the pivot itself is the answer
+      }
     }
-    return null; // not found on this branch
-  }
+  };
 
-  const visitedSet = visited ?? new Set<Node<T>>();
-  return recurse(start, 0, [], visitedSet);
+  // Convert k (1‑based) to zero‑based index
+  return select(0, a.length - 1, k - 1);
 }
-const goalNode = (node: Node<number>) => node.value === 42;
-const path = depthLimitedSearch(root, goalNode, 10);
-if (path) {
-  console.log('Found !!', path.map(n => n.value));
-} else {
-  console.log('No path within depth limit');
-}
-export function depthLimitedSearchIter<T = any>(
-  start: Node<T>,
-  isGoal: (node: Node<T>) => boolean,
-  depthLimit: number
-): Array<Node<T>> | null {
-  // stack holds tuples: [current node, depth so far, path so far]
-  const stack: Array<[Node<T>, number, Node<T>[]]> = [[start, 0, []]];
+function kthSmallestGeneric<T>(
+  arr: T[],
+  k: number,
+  compare: (a: T, b: T) => number
+): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  const visited = new Set<Node<T>>();
+  const a = [...arr];
+  const targetIndex = k - 1;
+  let left = 0, right = a.length - 1;
 
-  while (stack.length) {
-    const [node, depth, path] = stack.pop()!;
+  while (true) {
+    if (left === right) return a[left];
 
-    if (visited.has(node)) continue;
-    visited.add(node);
+    const pivotIndex = Math.floor((left + right) / 2);
+    const pivotValue = a[pivotIndex];
 
-    if (depth > depthLimit) continue; // skip deeper branches
-
-    const newPath = [...path, node];
-
-    if (isGoal(node)) return newPath;
-
-    for (const child of node.children()) {
-      stack.push([child, depth + 1, newPath]);
+    let i = left, j = right;
+    while (i <= j) {
+      while (compare(a[i], pivotValue) < 0) i++;
+      while (compare(a[j], pivotValue) > 0) j--;
+      if (i <= j) {
+        [a[i], a[j]] = [a[j], a[i]];
+        i++; j--;
+      }
     }
-  }
 
-  return null; // nothing found
+    if (targetIndex <= j) right = j;
+    else if (targetIndex >= i) left = i;
+    else return a[targetIndex];
+  }
 }
