@@ -1,103 +1,40 @@
-/** A single key‑value entry in the table. */
-interface Entry<K, V> {
-  key: K;
-  value: V;
+/**
+ * Returns true if `s` is a palindrome, otherwise false.
+ * Handles case‑sensitivity and ignores anything that is not a
+ * letter or digit (you can drop that part if you need a stricter check).
+ *
+ * No string‑to‑array conversion, no stack, no helper string – just two indices.
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    // Skip characters that aren’t alphanumeric
+    while (left < right && !isAlnum(s.charAt(left))) left++;
+    while (left < right && !isAlnum(s.charAt(right))) right--;
+
+    // Compare after normalising case
+    if (left < right && s.charAt(left).toLowerCase() !== s.charAt(right).toLowerCase())
+      return false;
+
+    left++;
+    right--;
+  }
+  return true;
 }
 
-/** A bucket holds one or more entries that hash to the same slot. */
-type Bucket<K, V> = Entry<K, V>[];
-function hashKey(key: string | number, capacity: number): number {
-  let h = 0;
-  const str = typeof key === 'number' ? String(key) : key;
-
-  for (const ch of str) {
-    h = (h * 31 + ch.charCodeAt(0)) >>> 0; // >>> 0 ensures unsigned 32‑bit
-  }
-  return h % capacity;
+function isAlnum(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
 }
-class HashTable<K extends string | number, V> {
-  private buckets: Bucket<K, V>[];
-  private capacity: number;
-  private _size: number = 0;
 
-  /** @param capacity initial number of buckets (defaults to 53, a prime). */
-  constructor(capacity: number = 53) {
-    this.capacity = capacity;
-    this.buckets = Array.from({ length: capacity }, () => []);
-  }
-
-  get size() { return this._size; }
-
-  /* ---------- basic operations ---------- */
-
-  set(key: K, value: V): void {
-    const idx = hashKey(key, this.capacity);
-    const bucket = this.buckets[idx];
-
-    for (const entry of bucket) {
-      if (entry.key === key) {
-        entry.value = value; // update
-        return;
-      }
-    }
-
-    bucket.push({ key, value }); // insert new
-    this._size++;
-  }
-
-  get(key: K): V | undefined {
-    const idx = hashKey(key, this.capacity);
-    const bucket = this.buckets[idx];
-
-    for (const entry of bucket) {
-      if (entry.key === key) return entry.value;
-    }
-    return undefined;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = hashKey(key, this.capacity);
-    const bucket = this.buckets[idx];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i].key === key) {
-        bucket.splice(i, 1);
-        this._size--;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /* ---------- iteration helpers ---------- */
-
-  *entries(): Generator<[K, V]> {
-    for (const bucket of this.buckets) {
-      for (const e of bucket) {
-        yield [e.key, e.value];
-      }
-    }
-  }
-
-  [Symbol.iterator](): Iterator<[K, V]> {
-    return this.entries();
-  }
-}
-const ht = new HashTable<string, number>();
-
-ht.set('Alice', 23);
-ht.set('Bob', 35);
-ht.set('Charlie', 42);
-ht.set('Alice', 24);   // update
-
-console.log(ht.get('Alice'));   // 24
-console.log(ht.get('Bob'));     // 35
-console.log(ht.has('Dave'));    // false
-
-ht.delete('Charlie');
-console.log([...ht]);           // [['Alice', 24], ['Bob', 35]]
-console.log(ht.size);           // 2
+// Example:
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
