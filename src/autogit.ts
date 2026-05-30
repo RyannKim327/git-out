@@ -1,89 +1,65 @@
-// ------------------------------------------------------------------
-// 1️⃣  Graph representation (adjacency list)
-// ------------------------------------------------------------------
-type NodeID = string;  // or number – whatever uniquely identifies a node
-interface Graph {
-  // `edges[u]` is a list of all nodes directly reachable from `u`
-  [key: string]: NodeID[];
+/**
+ * Return the intersection of two arrays.
+ * @param a  First array
+ * @param b  Second array
+ * @returns  An array containing every element that appears in **both** `a` and `b`
+ *
+ * The function is generic so it keeps the element type while still being type‑safe.
+ * For primitive values a direct equality check (`===`) is sufficient.
+ */
+export function intersection<T>(a: readonly T[], b: readonly T[]): T[] {
+  // Build a set from the larger array – that keeps lookup O(1).
+  // (You could skip the `max` decision; it's just a micro‑optimization.)
+  const [large, small] = a.length > b.length ? [a, b] : [b, a];
+  const set = new Set(large);
+
+  // Pick elements of the smaller array that exist in the set.
+  return small.filter((x) => set.has(x));
+}
+const xs = [1, 2, 3, 4];
+const ys = [3, 4, 5, 6];
+
+console.log(intersection(xs, ys)); // → [3, 4]
+import { intersection } from 'lodash'; // or lodash/fp if you prefer FP style
+
+console.log(intersection(xs, ys)); // → [3, 4]
+interface Person {
+  id: number;
+  name: string;
 }
 
-// ------------------------------------------------------------------
-// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
-// ------------------------------------------------------------------
-function dfsRecursive(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID,
-  visited = new Set<NodeID>(),
-  path: NodeID[] = []
-): NodeID[] | null {
-  visited.add(start);
-  path.push(start);
+const a: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+];
 
-  if (start === target) return [...path];        // found it – return a copy of the path
+const b: Person[] = [
+  { id: 2, name: 'Bob'   },
+  { id: 3, name: 'Carol' },
+  { id: 4, name: 'Dan'   },
+];
 
-  for (const neighbor of graph[start] ?? []) {
-    if (!visited.has(neighbor)) {
-      const result = dfsRecursive(graph, neighbor, target, visited, path);
-      if (result) return result;                 // propagate the found path upwards
+const key = (p: Person) => p.id;
+
+function intersectionBy<T, K extends string | number | symbol>(
+  a: readonly T[],
+  b: readonly T[],
+  getKey: (item: T) => K
+): T[] {
+  const map = new Map<K, T>();
+  for (const item of a) {
+    map.set(getKey(item), item);
+  }
+  const result: T[] = [];
+  for (const item of b) {
+    const key = getKey(item);
+    if (map.has(key)) {
+      result.push(item);
     }
   }
-
-  path.pop();                                     // backtrack
-  return null;                                    // no path from this branch
+  return result;
 }
 
-// ------------------------------------------------------------------
-// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
-// ------------------------------------------------------------------
-function dfsIterative(
-  graph: Graph,
-  start: NodeID,
-  target: NodeID
-): NodeID[] | null {
-  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
-  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
-  const visited = new Set<NodeID>();
-
-  while (stack.length) {
-    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-    parentMap.set(node, parent);
-
-    if (node === target) {
-      // reconstruct path
-      const path: NodeID[] = [];
-      let current: NodeID | null = target;
-      while (current !== null) {
-        path.unshift(current);
-        current = parentMap.get(current)!;
-      }
-      return path;
-    }
-
-    for (const neighbor of graph[node] ?? []) {
-      if (!visited.has(neighbor)) {
-        stack.push({ node: neighbor, parent: node });
-      }
-    }
-  }
-
-  return null;          // no path found
-}
-
-// ------------------------------------------------------------------
-// 4️⃣  Example usage
-// ------------------------------------------------------------------
-const exampleGraph: Graph = {
-  a: ["b", "c"],
-  b: ["d", "e"],
-  c: ["f"],
-  d: [],
-  e: ["f"],
-  f: []
-};
-
-console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
-console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
+console.log(intersectionBy(a, b, key));
+// → [{ id: 2, name: 'Bob' }, { id: 3, name: 'Carol' }]
