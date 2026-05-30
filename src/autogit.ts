@@ -1,22 +1,14 @@
-// Regular number factorial (fast for small n, but beware of JS number limits)
-function factorialRecursive(n: number): number {
-  if (n < 0)
-    throw new Error('factorial is defined only for non‑negative integers');
+// Example string
+const s = "  Hello,\tworld!\n  This is a test.  ";
 
-  // the base case
-  if (n === 0 || n === 1) return 1;
+// 1. Trim
+const trimmed = s.trim(); // "Hello,\tworld!\n  This is a test."
 
-  // recursive call
-  return n * factorialRecursive(n - 1);
-}
-// BigInt variant – no loss of precision up to very large n
-function factorialRecursiveBigInt(n: bigint): bigint {
-  if (n < 0n)
-    throw new Error('factorial is defined only for non‑negative integers');
+// 2. Remove all whitespace
+const noWhitespace = s.replace(/\s+/g, ''); // "Hello,world!Thisisatest."
 
-  if (n === 0n || n === 1n) return 1n;
+// 3. Remove only spaces
+const noSpaces = s.replaceAll(' ', ''); // keeps tabs and newlines
 
-  return n * factorialRecursiveBigInt(n - 1n);
-}
-console.log(factorialRecursive(5));          // 120
-console.log(factorialRecursiveBigInt(20n));   // 2432902008176640000n
+// 4. Keep only alphanumerics (example use‑case)
+const alnum = s.replace(/[^a-zA-Z0-9]+/g, ''); // "Hello,world!Thisisatest."
