@@ -1,50 +1,76 @@
-interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Build the longest‑prefix‑suffix (LPS) table for a pattern.
+ * lps[i] = length of the longest proper prefix of pattern[0…i]
+ * that is also a suffix of this substring.
+ *
+ * @param pattern – string to preprocess
+ * @returns array of LPS values
+ */
+function buildLps(pattern: string): number[] {
+  const lps = new Array(pattern.length).fill(0);
+  let len = 0;                     // length of the previous longest prefix‑suffix
+  let i = 1;
+
+  while (i < pattern.length) {
+    if (pattern[i] === pattern[len]) {
+      len++;
+      lps[i] = len;
+      i++;
+    } else {
+      if (len !== 0) {
+        // fall back to the previous longest prefix‑suffix
+        len = lps[len - 1];
+      } else {
+        lps[i] = 0;
+        i++;
+      }
+    }
+  }
+  return lps;
 }
-function maxDepth<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;                        // empty tree → depth 0
 
-  const leftDepth  = maxDepth(root.left);     // recurse on left child
-  const rightDepth = maxDepth(root.right);    // recurse on right child
+/**
+ * Classic KMP string search.
+ *
+ * @param text    – the text to search in
+ * @param pattern – the pattern to find
+ * @returns all starting indices where pattern occurs in text
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];
 
-  return Math.max(leftDepth, rightDepth) + 1; // +1 for the current node
-}
-function maxDepthBFS<T>(root?: TreeNode<T>): number {
-  if (!root) return 0;
+  const lps = buildLps(pattern);
+  const result: number[] = [];
 
-  const queue: Array<TreeNode<T>> = [root];
-  let depth = 0;
+  let i = 0; // index for text
+  let j = 0; // index for pattern
 
-  while (queue.length) {
-    const levelSize = queue.length;           // nodes on this level
-    depth += 1;                               // finish the level → increment depth
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i++;
+      j++;
+    }
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;            // safe – queue is non‑empty
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+    if (j === pattern.length) {
+      // match found at i - j
+      result.push(i - j);
+      // continue searching for the next match
+      j = lps[j - 1];
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i++;
+      }
     }
   }
 
-  return depth;
+  return result;
 }
-const tree: TreeNode = {
-  value: 1,
-  left: {
-    value: 2,
-    left: { value: 4 },
-    right: { value: 5 }
-  },
-  right: {
-    value: 3,
-    right: {
-      value: 6,
-      left: { value: 7 }
-    }
-  }
-};
+import { kmpSearch } from "./kmp";
 
-console.log(maxDepth(tree));      // → 4
-console.log(maxDepthBFS(tree));   // → 4
+const text = "abxabcabcaby";
+const pattern = "abcaby";
+
+const matches = kmpSearch(text, pattern);
+console.log(matches); // [6]
