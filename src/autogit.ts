@@ -1,25 +1,11 @@
-/**
- * Returns the first non‑repeating character of `s`, or `null` if every character repeats.
- *
- * @param s - Input string (may contain any Unicode characters)
- * @returns  The first unique character, or `null`
- */
-export function firstNonRepeating(s: string): string | null {
-  // Map keeps the order in which characters appear
-  const freq = new Map<string, number>();
+const a = "Hello, ";
+const b = "world!";
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+// 1. Using the + operator
+const c1 = a + b;              // "Hello, world!"
 
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null; // no unique character
+// 2. Using a template literal
+const c2 = `${a}${b}`;         // "Hello, world!"
+function greet(firstName: string, lastName: string): string {
+  return firstName + " " + lastName;          // or `${firstName} ${lastName}`
 }
-console.log(firstNonRepeating("swiss"));       // "w"
-console.log(firstNonRepeating("aabbcc"));      // null
-console.log(firstNonRepeating("hello world")); // "h"
