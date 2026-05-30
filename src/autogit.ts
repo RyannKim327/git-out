@@ -1,40 +1,63 @@
-const fruits = ['apple', 'banana', 'cherry', 'banana'];
+/**
+ * Merge two sorted sub‑ranges of `src` [l..m) and [m..r) into `dst[l..r)`.
+ *
+ * @param src   the source array (contents will not be mutated)
+ * @param dst   the destination array into which the merged result goes
+ * @param l     left index (inclusive)
+ * @param m     middle index (left sub‑range ends here)
+ * @param r     right index (exclusive)
+ */
+function merge<T>(src: T[], dst: T[], l: number, m: number, r: number): void {
+    let i = l;      // iterator for left sub‑run
+    let j = m;      // iterator for right sub‑run
+    let k = l;      // iterator for destination
 
-const withoutBanana = fruits.filter(f => f !== 'banana');
+    while (i < m && j < r) {
+        if (src[i] <= src[j]) {
+            dst[k++] = src[i++];
+        } else {
+            dst[k++] = src[j++];
+        }
+    }
 
-console.log(withoutBanana); // ['apple', 'cherry']
-// Remove the first object with id === 42
-const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
-const itemsWithout42 = items.filter(item => item.id !== 42);
-const numbers = [10, 20, 30, 40];
-const indexToRemove = 2; // 30
-
-// splice(start, deleteCount)
-numbers.splice(indexToRemove, 1);
-
-console.log(numbers); // [10, 20, 40]
-const arr = [1, 2, 3, 4, 5];
-const cond = (x: number) => x % 2 === 0; // remove evens
-
-// Find first match and splice it out
-const idx = arr.findIndex(cond);
-if (idx !== -1) arr.splice(idx, 1);
-
-console.log(arr); // [1, 3, 5]
-// Remove the first occurrence of a value
-export function removeFirst<T>(arr: T[], target: T): T[] {
-  const idx = arr.findIndex(v => v === target);
-  if (idx === -1) return [...arr]; // not found, return copy
-  const copy = [...arr];
-  copy.splice(idx, 1);
-  return copy; // or return copy and let caller decide
+    // copy any leftovers (at most one of the two while above will run)
+    while (i < m) dst[k++] = src[i++];
+    while (j < r) dst[k++] = src[j++];
 }
 
-// Remove by index (mutable)
-export function removeAt<T>(arr: T[], index: number): void {
-  if (index >= 0 && index < arr.length) {
-    arr.splice(index, 1);
-  }
+/**
+ * Iterative bottom‑up merge sort.
+ *
+ * @remarks
+ *   * `arr` is the array you want sorted—original remains untouched.
+ *   * Returns a new sorted array. If you want to sort in place you
+ *     could swap the references to the source and destination arrays
+ *     after each pass.
+ *
+ * @param arr  array to sort
+ * @returns    sorted copy of `arr`
+ */
+export function mergeSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    if (n <= 1) return arr.slice();   // trivial case
+
+    let src = arr.slice();            // working copy
+    let dst: T[] = new Array(n);      // auxiliary buffer
+
+    // run lengths: 1, 2, 4, 8, ... until we cover the entire array
+    for (let run = 1; run < n; run <<= 1) {
+        // merge adjacent runs of current length
+        for (let start = 0; start < n; start += 2 * run) {
+            const mid = Math.min(start + run, n);
+            const end = Math.min(start + 2 * run, n);
+            merge(src, dst, start, mid, end);
+        }
+
+        // the freshly merged segments now sit in `dst`;
+        // swap src/dst to let next pass read the new data
+        [src, dst] = [dst, src];
+    }
+
+    // After the last pass `src` holds the sorted data (due to the final swap)
+    return src;
 }
-// Keep everything except index 3
-const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
