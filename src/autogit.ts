@@ -1,54 +1,71 @@
-// src/api.ts
-import axios, { AxiosResponse } from "axios";
-
-/** Simple DTO for demonstration purposes */
-interface Todo {
-  userId: number;
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
 /**
- * Fetch a single TODO item by ID.
- * Returns a Todo object or throws an ^ if anything goes wrong.
+ * Returns true if `a` and `b` are anagrams of each other
+ * (ignoring case, whitespace and all non‑letters).
  */
-export async function fetchTodoById(id: number): Promise<Todo> {
-  const resp: AxiosResponse<Todo> = await axios.get(
-    `https://jsonplaceholder.typicode.com/todos/${id}`
-  );
-  return resp.data;
+function isAnagram(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z]/g, '')          // keep only letters
+      .split('')
+      .sort()
+      .join('');
+
+  return clean(a) === clean(b);
 }
+export function areAnagrams(a: string, b: string): boolean {
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z]/g, '') // drop everything except letters
+      .split('')
+      .sort()
+      .join('');
 
-/**
- * Create a brand‑new TODO item.
- * Returns the server‑side representation (including the newly minted ID).
- */
-export async function createTodo(payload: Omit<Todo, "id">): Promise<Todo> {
-  const resp: AxiosResponse<Todo> = await axios.post(
-    "https://jsonplaceholder.typicode.com/todos",
-    payload,
-    {
-      headers: { "Content-Type": "application/json" }
-    }
-  );
-  return resp.data;
+  return normalize(a) === normalize(b);
 }
-// src/index.ts
-import { fetchTodoById, createTodo } from "./api";
+export function areAnagramsLinear(a: string, b: string): boolean {
+  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
 
-(async () => {
-  try {
-    const todo = await fetchTodoById(1);
-    console.log("Fetched TODO:", todo);
+  const na = normalize(a);
+  const nb = normalize(b);
 
-    const newTodo = await createTodo({
-      userId: 1,
-      title: "Buy coffee",
-      completed: false
-    });
-    console.log("Created TODO:", newTodo);
-  } catch (err) {
-    console.error("Something went wrong:", err);
+  if (na.length !== nb.length) return false;
+
+  const freq: Record<string, number> = {};
+
+  for (const ch of na) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
-})();
+
+  for (const ch of nb) {
+    if (!freq[ch]) return false;
+    freq[ch]!--;
+  }
+
+  return true;
+}
+export function areAnagramsWithMap(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.replace(/[^a-z]/gi, '').toLowerCase();
+
+  if (clean(a).length !== clean(b).length) return false;
+
+  const map = new Map<string, number>();
+
+  for (const ch of clean(a)) {
+    map.set(ch, (map.get(ch) ?? 0) + 1);
+  }
+
+  for (const ch of clean(b)) {
+    const cur = map.get(ch);
+    if (!cur) return false;
+    if (cur === 1) map.delete(ch);
+    else map.set(ch, cur - 1);
+  }
+
+  return map.size === 0;
+}
+console.log(isAnagram('listen', 'silent'));   // true
+console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
+console.log(isAnagram('hello', 'world'));     // false
