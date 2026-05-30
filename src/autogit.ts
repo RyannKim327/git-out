@@ -1,68 +1,89 @@
-/**
- * Binary search on a sorted array.
- * @param arr   – sorted array of comparable values
- * @param target – value we’re looking for
- * @returns      – index of target, or -1 if not found
- */
-function binarySearchIter<T>(arr: T[], target: T, compareFn?: (a: T, b: T) => number): number {
-  let left = 0;
-  let right = arr.length - 1;
+// ------------------------------------------------------------------
+// 1️⃣  Graph representation (adjacency list)
+// ------------------------------------------------------------------
+type NodeID = string;  // or number – whatever uniquely identifies a node
+interface Graph {
+  // `edges[u]` is a list of all nodes directly reachable from `u`
+  [key: string]: NodeID[];
+}
 
-  while (left <= right) {
-    // Using “>>> 1” gives the floor of the middle even for huge indices
-    const mid = (left + right) >>> 1;
-    const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
-      ? 1
-      : (arr[mid] as any) < (target as any)
-      ? -1
-      : 0;
+// ------------------------------------------------------------------
+// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
+// ------------------------------------------------------------------
+function dfsRecursive(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID,
+  visited = new Set<NodeID>(),
+  path: NodeID[] = []
+): NodeID[] | null {
+  visited.add(start);
+  path.push(start);
 
-    if (cmp === 0) {
-      return mid;          // found
-    } else if (cmp < 0) {
-      left = mid + 1;      // target is on the right half
-    } else {
-      right = mid - 1;     // target is on the left half
+  if (start === target) return [...path];        // found it – return a copy of the path
+
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      const result = dfsRecursive(graph, neighbor, target, visited, path);
+      if (result) return result;                 // propagate the found path upwards
     }
   }
 
-  return -1; // not found
-}
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchIter(nums, 7)); // → 3
-console.log(binarySearchIter(nums, 4)); // → -1
-const words = ["apple", "banana", "cherry", "date"];
-const index = binarySearchIter(words, "cherry", (a, b) => a.localeCompare(b));
-// → 2
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compareFn?: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): number {
-  if (left > right) return -1;            // base case: not found
-
-  const mid = (left + right) >>> 1;
-  const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
-      ? 1
-      : (arr[mid] as any) < (target as any)
-      ? -1
-      : 0;
-
-  if (cmp === 0) return mid;
-  return cmp < 0
-    ? binarySearchRec(arr, target, compareFn, mid + 1, right)
-    : binarySearchRec(arr, target, compareFn, left, mid - 1);
-}
-function test<T>(arr: T[], target: T, fn: (a: T[], t: T) => number) {
-  const idx = fn(arr, target);
-  console.log(`searching ${target} in [${arr}] → ${idx}`);
+  path.pop();                                     // backtrack
+  return null;                                    // no path from this branch
 }
 
-const ints = [2, 4, 6, 8, 10];
-test(ints, 8, binarySearchIter);
-test(ints, 9, binarySearchIter);
+// ------------------------------------------------------------------
+// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
+// ------------------------------------------------------------------
+function dfsIterative(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID
+): NodeID[] | null {
+  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
+  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
+  const visited = new Set<NodeID>();
 
-const strs = ['banana', 'cherry', 'fig', 'grape'];
-test(strs, 'fig', (a, t) => binarySearchRec(a, t, (x, y) => x.localeCompare(y)));
+  while (stack.length) {
+    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    parentMap.set(node, parent);
+
+    if (node === target) {
+      // reconstruct path
+      const path: NodeID[] = [];
+      let current: NodeID | null = target;
+      while (current !== null) {
+        path.unshift(current);
+        current = parentMap.get(current)!;
+      }
+      return path;
+    }
+
+    for (const neighbor of graph[node] ?? []) {
+      if (!visited.has(neighbor)) {
+        stack.push({ node: neighbor, parent: node });
+      }
+    }
+  }
+
+  return null;          // no path found
+}
+
+// ------------------------------------------------------------------
+// 4️⃣  Example usage
+// ------------------------------------------------------------------
+const exampleGraph: Graph = {
+  a: ["b", "c"],
+  b: ["d", "e"],
+  c: ["f"],
+  d: [],
+  e: ["f"],
+  f: []
+};
+
+console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
+console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
