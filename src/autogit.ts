@@ -1,40 +1,42 @@
 /**
- * Returns true if `s` is a palindrome, otherwise false.
- * Handles case‑sensitivity and ignores anything that is not a
- * letter or digit (you can drop that part if you need a stricter check).
- *
- * No string‑to‑array conversion, no stack, no helper string – just two indices.
+ * Performs an in‑place Shell sort.
+ * @param arr - Array of numbers (or any comparable type).
+ * @param compareFn - Optional function to decide order.
+ *                     It should return <0 if a < b, >0 if a > b.
+ * @returns The same array sorted.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip characters that aren’t alphanumeric
-    while (left < right && !isAlnum(s.charAt(left))) left++;
-    while (left < right && !isAlnum(s.charAt(right))) right--;
-
-    // Compare after normalising case
-    if (left < right && s.charAt(left).toLowerCase() !== s.charAt(right).toLowerCase())
-      return false;
-
-    left++;
-    right--;
+export function shellSort<T>(
+  arr: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+): T[] {
+  const n = arr.length;
+  // Start with a big gap, then reduce it.
+  // The classic 1, 4, 10, 23… sequence (Knuth) works nicely.
+  let gap = 1;
+  while (gap < n / 3) {
+    gap = 3 * gap + 1; // 1, 4, 10, 31, 94...
   }
-  return true;
-}
 
-function isAlnum(ch: string): boolean {
-  const code = ch.charCodeAt(0);
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
+  while (gap >= 1) {
+    // For each element from index `gap` to end,
+    // perform an insertion sort on elements that are `gap` apart.
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      while (j >= gap && compareFn(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
+    gap = Math.floor(gap / 3); // shrink gap
+  }
 
-// Example:
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
+  return arr;
+}
+import { shellSort } from './shellSort';
+
+const data = [23, 12, 1, 8, 34, 54, 2, 3];
+console.log('Before:', data);
+shellSort(data);
+console.log('After:', data);   // [1, 2, 3, 8, 12, 23, 34, 54]
