@@ -1,74 +1,129 @@
-/**
- * Basic node interface – adjust it to whatever
- * your real objects look like.
- */
-export interface Node {
-  /** Identifier (useful for debugging, not required by the algo). */
-  id: string | number;
+class Edge {
+  public start: number;          // index in text where label starts
+  public end: number | string;   // end symbol or index
+  public child: SuffixNode;
 
-  /** Reference to child nodes (empty array for leaf). */
-  children: Node[];
+  constructor(start: number, end: number | string, child: SuffixNode) {
+    this.start = start;
+    this.end = end;          // can be a "shared" reference for leaf edges
+    this.child = child;
+  }
+
+  /** Length of the label (end is inclusive) */
+  get length(): number {
+    if (typeof this.end === 'number') {
+      return this.end - this.start + 1;
+    }
+    // leaf edge: end is shared and increments as we extend
+    return (this.end as string) === '$' ? Infinity : this.end - this.start + 1;
+  }
 }
 
-/**
- * Depth‑limited search (DFS style).
- *
- * @param root      The node to start from.
- * @param depthLimit  The maximum depth to explore.
- * @param goalPredicate  Function that tells when we’ve found the target.
- * @returns The first node that satisfies `goalPredicate`,
- *          or `undefined` if none was found within the depth limit.
- *
- * The algorithm uses an explicit stack so no recursion is performed.
- */
-export function depthLimitedSearch(
-  root: Node,
-  depthLimit: number,
-  goalPredicate: (node: Node) => boolean
-): Node | undefined {
-  // Stack element: { node, depth }
-  const stack: Array<{ node: Node; depth: number }> = [{ node: root, depth: 0 }];
+class SuffixNode {
+  public edges: Map<string, Edge>;   // first char → edge
+  public suffixLink?: SuffixNode;    // Ukkonen’s suffix link
+  constructor() {
+    this.edges = new Map();
+  }
+}
+class SuffixTree {
+  private root: SuffixNode;
+  private text: string;          // original string
+  private leafEnd: number;       // shared end for all leaves
 
-  while (stack.length > 0) {
-    const { node, depth } = stack.pop()!; // pop last element (LIFO)
+  private active: ActivePoint;   // current active point
+  private remainder: number;    // # of suffixes that need insertion
 
-    // Check goal condition
-    if (goalPredicate(node)) {
-      return node;
-    }
+  constructor(text: string) {
+    this.text = text + '$';  // append unique terminator
+    this.leafEnd = -1;
+    this.root = new SuffixNode();
+    this.active = { node: this.root, edge: '', length: 0 };
+    this.remainder = 0;
 
-    // Stop if we’ve reached the depth limit
-    if (depth >= depthLimit) {
-      continue;
-    }
+    this.build();
+  }
 
-    // Push children onto the stack, increasing depth
-    // If you prefer a different traversal order just
-    // change the `for` loop below (e.g. reverse the list)
-    for (const child of node.children) {
-      stack.push({ node: child, depth: depth + 1 });
+  /* -------------------------------------------------- */
+  /*  Core routine: Ukkonen’s O(n) construction        */
+  /* -------------------------------------------------- */
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.extend(i);
     }
   }
 
-  // Nothing found within the depth limit
-  return undefined;
-}
-// Create a sample tree
-const tree: Node = {
-  id: 1,
-  children: [
-    { id: 2, children: [] },
-    {
-      id: 3,
-      children: [
-        { id: 4, children: [] },
-        { id: 5, children: [] }
-      ]
-    }
-  ]
-};
+  private extend(pos: number): void {
+    this.leafEnd = pos;
+    this.remainder++;
+    let lastNewNode: SuffixNode | undefined;
 
-// Find node with id === 5 but only go 2 levels deep
-const found = depthLimitedSearch(tree, 2, n => n.id === 5);
+    while (this.remainder > 0) {
+      // 1.  If active length is zero → the active edge is the char at pos
+      if (this.active.length === 0) {
+        this.active.edge = this.text[pos];
+      }
 
-console.log(found); // logs the node with id 5 (or undefined if depth limit blocks it)
+      const edgeChar = this.active.edge;
+      const edge = this.active.node.edges.get(edgeChar);
+
+      // 2.  No edge starts with active.edge
+      if (!edge) {
+        // create new leaf edge
+        const leaf = new SuffixNode();
+        const newEdge = new Edge(pos, this.leafEnd, leaf);
+        this.active.node.edges.set(edgeChar, newEdge);
+
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this.active.node;
+          lastNewNode = undefined;
+        }
+      } else {
+        // 3.  Edge exists – walk down if needed
+        if (this.active.length >= edge.length) {
+          this.active.node = edge.child;
+          this.active.length -= edge.length;
+          this.active.edge = this.text[pos - this.remainder + 1];
+          continue;  // restart loop, remainder unchanged
+        }
+
+        // 4.  Check next char on the edge
+        const nextChar = this.text[edge.start + this.active.length];
+        if (nextChar === this.text[pos]) {
+          // 4a.  Character already present → just increment active length
+          this.active.length++;
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this.active.node;
+            lastNewNode = undefined;
+          }
+          break; // done for this phase
+        }
+
+        // 4b.  Split the edge: create an intermediate node
+        const splitEnd = edge.start + this.active.length - 1;
+        const splitNode = new SuffixNode();
+        const splitEdge = new Edge(edge.start, splitEnd, splitNode);
+
+        // replace old edge with split edge
+        this.active.node.edges.set(edgeChar, splitEdge);
+
+        // old child becomes child of splitNode
+        splitNode.edges.set(nextChar, edge);
+        edge.start = splitEnd + 1; // shift start of old edge
+
+        // new leaf for current suffix
+        const leaf = new SuffixNode();
+        const newLeafEdge = new Edge(pos, this.leafEnd, leaf);
+        splitNode.edges.set(this.text[pos], newLeafEdge);
+
+        // 4c.  Suffix link handling
+        if (lastNewNode) {
+          lastNewNode.suffixLink = splitNode;
+        }
+        lastNewNode = splitNode;
+      }
+
+      this.remainder--;
+
+      // 5.  Move active point using suffix link
+      if (this.active.node === this.root &&
