@@ -1,68 +1,32 @@
 /**
- * Binary search on a sorted array.
- * @param arr   – sorted array of comparable values
- * @param target – value we’re looking for
- * @returns      – index of target, or -1 if not found
+ * Returns the longest common prefix of the supplied strings.
+ * @param strs Array of strings.  An empty array yields an empty string.
  */
-function binarySearchIter<T>(arr: T[], target: T, compareFn?: (a: T, b: T) => number): number {
-  let left = 0;
-  let right = arr.length - 1;
+export function longestCommonPrefix(strs: string[]): string {
+  if (strs.length === 0) return '';
 
-  while (left <= right) {
-    // Using “>>> 1” gives the floor of the middle even for huge indices
-    const mid = (left + right) >>> 1;
-    const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
-      ? 1
-      : (arr[mid] as any) < (target as any)
-      ? -1
-      : 0;
+  // The prefix can never be longer than the shortest string
+  let prefix = strs[0];
 
-    if (cmp === 0) {
-      return mid;          // found
-    } else if (cmp < 0) {
-      left = mid + 1;      // target is on the right half
-    } else {
-      right = mid - 1;     // target is on the left half
+  for (let i = 1; i < strs.length; i++) {
+    // Trim the prefix until it matches the start of strs[i]
+    while (!strs[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';          // No common prefix
     }
   }
 
-  return -1; // not found
+  return prefix;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchIter(nums, 7)); // → 3
-console.log(binarySearchIter(nums, 4)); // → -1
-const words = ["apple", "banana", "cherry", "date"];
-const index = binarySearchIter(words, "cherry", (a, b) => a.localeCompare(b));
-// → 2
-function binarySearchRec<T>(
-  arr: T[],
-  target: T,
-  compareFn?: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): number {
-  if (left > right) return -1;            // base case: not found
-
-  const mid = (left + right) >>> 1;
-  const cmp = compareFn ? compareFn(arr[mid], target) : (arr[mid] as any) > (target as any)
-      ? 1
-      : (arr[mid] as any) < (target as any)
-      ? -1
-      : 0;
-
-  if (cmp === 0) return mid;
-  return cmp < 0
-    ? binarySearchRec(arr, target, compareFn, mid + 1, right)
-    : binarySearchRec(arr, target, compareFn, left, mid - 1);
+function longestCommonPrefixSorted(strs: string[]): string {
+  if (!strs.length) return '';
+  // Sorting guarantees that the first and last strings differ the most
+  const sorted = [...strs].sort();
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  let i = 0;
+  while (i < first.length && i < last.length && first[i] === last[i]) i++;
+  return first.slice(0, i);
 }
-function test<T>(arr: T[], target: T, fn: (a: T[], t: T) => number) {
-  const idx = fn(arr, target);
-  console.log(`searching ${target} in [${arr}] → ${idx}`);
-}
-
-const ints = [2, 4, 6, 8, 10];
-test(ints, 8, binarySearchIter);
-test(ints, 9, binarySearchIter);
-
-const strs = ['banana', 'cherry', 'fig', 'grape'];
-test(strs, 'fig', (a, t) => binarySearchRec(a, t, (x, y) => x.localeCompare(y)));
+console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // → 'fl'
+console.log(longestCommonPrefix(['dog', 'racecar', 'car']));   // → ''
