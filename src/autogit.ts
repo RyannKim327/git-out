@@ -1,129 +1,103 @@
-class Edge {
-  public start: number;          // index in text where label starts
-  public end: number | string;   // end symbol or index
-  public child: SuffixNode;
-
-  constructor(start: number, end: number | string, child: SuffixNode) {
-    this.start = start;
-    this.end = end;          // can be a "shared" reference for leaf edges
-    this.child = child;
-  }
-
-  /** Length of the label (end is inclusive) */
-  get length(): number {
-    if (typeof this.end === 'number') {
-      return this.end - this.start + 1;
-    }
-    // leaf edge: end is shared and increments as we extend
-    return (this.end as string) === '$' ? Infinity : this.end - this.start + 1;
-  }
+/** A single key‑value entry in the table. */
+interface Entry<K, V> {
+  key: K;
+  value: V;
 }
 
-class SuffixNode {
-  public edges: Map<string, Edge>;   // first char → edge
-  public suffixLink?: SuffixNode;    // Ukkonen’s suffix link
-  constructor() {
-    this.edges = new Map();
+/** A bucket holds one or more entries that hash to the same slot. */
+type Bucket<K, V> = Entry<K, V>[];
+function hashKey(key: string | number, capacity: number): number {
+  let h = 0;
+  const str = typeof key === 'number' ? String(key) : key;
+
+  for (const ch of str) {
+    h = (h * 31 + ch.charCodeAt(0)) >>> 0; // >>> 0 ensures unsigned 32‑bit
   }
+  return h % capacity;
 }
-class SuffixTree {
-  private root: SuffixNode;
-  private text: string;          // original string
-  private leafEnd: number;       // shared end for all leaves
+class HashTable<K extends string | number, V> {
+  private buckets: Bucket<K, V>[];
+  private capacity: number;
+  private _size: number = 0;
 
-  private active: ActivePoint;   // current active point
-  private remainder: number;    // # of suffixes that need insertion
-
-  constructor(text: string) {
-    this.text = text + '$';  // append unique terminator
-    this.leafEnd = -1;
-    this.root = new SuffixNode();
-    this.active = { node: this.root, edge: '', length: 0 };
-    this.remainder = 0;
-
-    this.build();
+  /** @param capacity initial number of buckets (defaults to 53, a prime). */
+  constructor(capacity: number = 53) {
+    this.capacity = capacity;
+    this.buckets = Array.from({ length: capacity }, () => []);
   }
 
-  /* -------------------------------------------------- */
-  /*  Core routine: Ukkonen’s O(n) construction        */
-  /* -------------------------------------------------- */
-  private build(): void {
-    for (let i = 0; i < this.text.length; i++) {
-      this.extend(i);
+  get size() { return this._size; }
+
+  /* ---------- basic operations ---------- */
+
+  set(key: K, value: V): void {
+    const idx = hashKey(key, this.capacity);
+    const bucket = this.buckets[idx];
+
+    for (const entry of bucket) {
+      if (entry.key === key) {
+        entry.value = value; // update
+        return;
+      }
+    }
+
+    bucket.push({ key, value }); // insert new
+    this._size++;
+  }
+
+  get(key: K): V | undefined {
+    const idx = hashKey(key, this.capacity);
+    const bucket = this.buckets[idx];
+
+    for (const entry of bucket) {
+      if (entry.key === key) return entry.value;
+    }
+    return undefined;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  delete(key: K): boolean {
+    const idx = hashKey(key, this.capacity);
+    const bucket = this.buckets[idx];
+
+    for (let i = 0; i < bucket.length; i++) {
+      if (bucket[i].key === key) {
+        bucket.splice(i, 1);
+        this._size--;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* ---------- iteration helpers ---------- */
+
+  *entries(): Generator<[K, V]> {
+    for (const bucket of this.buckets) {
+      for (const e of bucket) {
+        yield [e.key, e.value];
+      }
     }
   }
 
-  private extend(pos: number): void {
-    this.leafEnd = pos;
-    this.remainder++;
-    let lastNewNode: SuffixNode | undefined;
+  [Symbol.iterator](): Iterator<[K, V]> {
+    return this.entries();
+  }
+}
+const ht = new HashTable<string, number>();
 
-    while (this.remainder > 0) {
-      // 1.  If active length is zero → the active edge is the char at pos
-      if (this.active.length === 0) {
-        this.active.edge = this.text[pos];
-      }
+ht.set('Alice', 23);
+ht.set('Bob', 35);
+ht.set('Charlie', 42);
+ht.set('Alice', 24);   // update
 
-      const edgeChar = this.active.edge;
-      const edge = this.active.node.edges.get(edgeChar);
+console.log(ht.get('Alice'));   // 24
+console.log(ht.get('Bob'));     // 35
+console.log(ht.has('Dave'));    // false
 
-      // 2.  No edge starts with active.edge
-      if (!edge) {
-        // create new leaf edge
-        const leaf = new SuffixNode();
-        const newEdge = new Edge(pos, this.leafEnd, leaf);
-        this.active.node.edges.set(edgeChar, newEdge);
-
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this.active.node;
-          lastNewNode = undefined;
-        }
-      } else {
-        // 3.  Edge exists – walk down if needed
-        if (this.active.length >= edge.length) {
-          this.active.node = edge.child;
-          this.active.length -= edge.length;
-          this.active.edge = this.text[pos - this.remainder + 1];
-          continue;  // restart loop, remainder unchanged
-        }
-
-        // 4.  Check next char on the edge
-        const nextChar = this.text[edge.start + this.active.length];
-        if (nextChar === this.text[pos]) {
-          // 4a.  Character already present → just increment active length
-          this.active.length++;
-          if (lastNewNode) {
-            lastNewNode.suffixLink = this.active.node;
-            lastNewNode = undefined;
-          }
-          break; // done for this phase
-        }
-
-        // 4b.  Split the edge: create an intermediate node
-        const splitEnd = edge.start + this.active.length - 1;
-        const splitNode = new SuffixNode();
-        const splitEdge = new Edge(edge.start, splitEnd, splitNode);
-
-        // replace old edge with split edge
-        this.active.node.edges.set(edgeChar, splitEdge);
-
-        // old child becomes child of splitNode
-        splitNode.edges.set(nextChar, edge);
-        edge.start = splitEnd + 1; // shift start of old edge
-
-        // new leaf for current suffix
-        const leaf = new SuffixNode();
-        const newLeafEdge = new Edge(pos, this.leafEnd, leaf);
-        splitNode.edges.set(this.text[pos], newLeafEdge);
-
-        // 4c.  Suffix link handling
-        if (lastNewNode) {
-          lastNewNode.suffixLink = splitNode;
-        }
-        lastNewNode = splitNode;
-      }
-
-      this.remainder--;
-
-      // 5.  Move active point using suffix link
-      if (this.active.node === this.root &&
+ht.delete('Charlie');
+console.log([...ht]);           // [['Alice', 24], ['Bob', 35]]
+console.log(ht.size);           // 2
