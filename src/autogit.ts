@@ -1,57 +1,71 @@
 /**
- * Build the shift table used by BMH.
- * Each entry tells us how far we can jump when the bad character
- * (the character that mismatched) appears.
+ * Returns true if `a` and `b` are anagrams of each other
+ * (ignoring case, whitespace and all non‑letters).
  */
-function buildShiftTable(pattern: string): Record<string, number> {
-  const table: Record<string, number> = {};
-  const m = pattern.length;
+function isAnagram(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z]/g, '')          // keep only letters
+      .split('')
+      .sort()
+      .join('');
 
-  // every character that does NOT appear in the pattern gets a full skip
-  // (m).  Characters *inside* the pattern get a smaller value.
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern[i]] = m - 1 - i;
+  return clean(a) === clean(b);
+}
+export function areAnagrams(a: string, b: string): boolean {
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z]/g, '') // drop everything except letters
+      .split('')
+      .sort()
+      .join('');
+
+  return normalize(a) === normalize(b);
+}
+export function areAnagramsLinear(a: string, b: string): boolean {
+  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
+
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  if (na.length !== nb.length) return false;
+
+  const freq: Record<string, number> = {};
+
+  for (const ch of na) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  return table;
-}
-
-/**
- * Classic Boyer‑Moore‑Horspool
- *
- * @param text    The text to search in
- * @param pattern The pattern to find
- * @returns Index of the first occurrence or -1
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;          // empty pattern matches immediately
-  if (pattern.length > text.length) return -1;   // impossible
-
-  const shift = buildShiftTable(pattern);
-  const n = text.length;
-  const m = pattern.length;
-
-  let i = 0;          // index in text where we start aligning the pattern
-
-  while (i <= n - m) {
-    // start comparing from the end of the pattern
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      return i;  // whole pattern matched
-    }
-
-    // bad character at text[i + m - 1]
-    const badChar = text[i + m - 1];
-    const skip = shift[badChar] ?? m; // default skip is m
-    i += skip;
+  for (const ch of nb) {
+    if (!freq[ch]) return false;
+    freq[ch]!--;
   }
 
-  return -1; // not found
+  return true;
 }
-console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
-console.log(boyerMooreHorspool("hello world", "world")); // → 6
-console.log(boyerMooreHorspool("visible", "nope")); // → -1
+export function areAnagramsWithMap(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.replace(/[^a-z]/gi, '').toLowerCase();
+
+  if (clean(a).length !== clean(b).length) return false;
+
+  const map = new Map<string, number>();
+
+  for (const ch of clean(a)) {
+    map.set(ch, (map.get(ch) ?? 0) + 1);
+  }
+
+  for (const ch of clean(b)) {
+    const cur = map.get(ch);
+    if (!cur) return false;
+    if (cur === 1) map.delete(ch);
+    else map.set(ch, cur - 1);
+  }
+
+  return map.size === 0;
+}
+console.log(isAnagram('listen', 'silent'));   // true
+console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
+console.log(isAnagram('hello', 'world'));     // false
