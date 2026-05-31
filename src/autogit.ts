@@ -1,42 +1,69 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
 /**
- * Returns the n‑th node from the end of a singly linked list.
- * If n is out of bounds, returns null.
- *
- * @param head The head of the list.
- * @param n    1‑based index from the end (n = 1 => tail node).
+ * Swaps two elements of an array.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;           // invalid request
-
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
-
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;          // n larger than list size
-    fast = fast.next;
-  }
-
-  // Move both until fast reaches the end
-  while (fast) {
-    slow = slow!.next;  // fast is non‑null here, so slow is safe
-    fast = fast.next;
-  }
-
-  return slow;
+function swap<T>(arr: T[], i: number, j: number): void {
+  const tmp = arr[i];
+  arr[i] = arr[j];
+  arr[j] = tmp;
 }
-// Build 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4 = { val: 4, next: node5 };
-let node3 = { val: 3, next: node4 };
-let node2 = { val: 2, next: node3 };
-let node1 = { val: 1, next: node2 };
 
-console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
-console.log(nthFromEnd(node1, 2)?.val); // 4
-console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
-console.log(nthFromEnd(node1, 6));       // null (out of bounds)
+/**
+ * Moves the element at index `root` downwards to restore the max‑heap
+ * property, assuming that the sub‑trees rooted at its children are
+ * already max‑heaps.
+ */
+function sink<T>(arr: T[], root: number, size: number, compare: (a: T, b: T) => number): void {
+  let largest = root;
+
+  const left  = 2 * root + 1;
+  const right = 2 * root + 2;
+
+  if (left < size && compare(arr[left], arr[largest]) > 0) {
+    largest = left;
+  }
+  if (right < size && compare(arr[right], arr[largest]) > 0) {
+    largest = right;
+  }
+
+  if (largest !== root) {
+    swap(arr, root, largest);
+    sink(arr, largest, size, compare);
+  }
+}
+
+/**
+ * Builds a max‑heap from an arbitrary array.
+ */
+function buildMaxHeap<T>(arr: T[], compare: (a: T, b: T) => number): void {
+  const size = arr.length;
+  // Start from the last non‑leaf node and sink each one.
+  for (let i = Math.floor(size / 2) - 1; i >= 0; i--) {
+    sink(arr, i, size, compare);
+  }
+}
+
+/**
+ * Heap‑sort: sorts `arr` in ascending order.
+ */
+export function heapSort<T>(arr: T[], compare?: (a: T, b: T) => number): void {
+  // Default to numeric ascending for numbers; for a generic compare,
+  // provide a custom function.
+  const cmp = compare ?? ((a, b) => (a as any) > (b as any) ? 1 : (a < b ? -1 : 0));
+
+  // 1️⃣ Turn the array into a max‑heap.
+  buildMaxHeap(arr, cmp);
+
+  // 2️⃣ Repeatedly pull the max element to its final slot.
+  for (let heapSize = arr.length; heapSize > 1; heapSize--) {
+    // The current max is at 0 – move it to the end.
+    swap(arr, 0, heapSize - 1);
+
+    // Restore the heap property on the reduced heap.
+    sink(arr, 0, heapSize - 1, cmp);
+  }
+}
+const data = [3, 1, 4, 1, 5, 9, 2, 6];
+heapSort(data);          // data is now [1, 1, 2, 3, 4, 5, 6, 9]
+const unsorted = [10, 4, 7, 3, 8, 2];
+heapSort(unsorted);
+console.log(unsorted); // [2, 3, 4, 7, 8, 10]
