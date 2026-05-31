@@ -1,110 +1,57 @@
-// Basic node description
-export interface Node {
-  id: string;           // unique identifier
-  // optional coordinates – handy for the heuristic
-  x?: number;
-  y?: number;
-  // all directly reachable neighbours
-  neighbors: string[];  // ids of neighbour nodes
-}
-
-export interface Edge {
-  from: string;      // node id
-  to: string;        // node id
-  cost: number;      // weight of the edge
-}
-class PriorityQueue<T> {
-  private items: { key: number; value: T }[] = [];
-
-  // swap helpers
-  private swap(i: number, j: number) {
-    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
-  }
-
-  // bubble‑up to maintain heap invariant
-  private bubbleUp(idx: number) {
-    while (idx > 0) {
-      const parent = Math.floor((idx - 1) / 2);
-      if (this.items[parent].key <= this.items[idx].key) break;
-      this.swap(parent, idx);
-      idx = parent;
-    }
-  }
-
-  // bubble‑down to maintain heap invariant
-  private bubbleDown(idx: number) {
-    const last = this.items.length - 1;
-    while (true) {
-      const left = 2 * idx + 1;
-      const right = 2 * idx + 2;
-      let smallest = idx;
-
-      if (left <= last && this.items[left].key < this.items[smallest].key)
-        smallest = left;
-      if (right <= last && this.items[right].key < this.items[smallest].key)
-        smallest = right;
-
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // push a new value with a priority
-  push(value: T, key: number) {
-    this.items.push({ value, key });
-    this.bubbleUp(this.items.length - 1);
-  }
-
-  // pop the value with the smallest priority
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const root = this.items[0].value;
-    const last = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = last;
-      this.bubbleDown(0);
-    }
-    return root;
-  }
-
-  get size(): number {
-    return this.items.length;
-  }
-}
 /**
- * Generic A* implementation.
- * @param nodes   Map of node id → Node
- * @param edges   Map of node id → array of out‑going edges
- * @param start   id of the start node
- * @param goal    id of the goal node
- * @param heuristic (node) ⇒ estimated distance to goal
- * @returns array of node ids that form the cheapest path, or empty array if none
+ * Build the shift table used by BMH.
+ * Each entry tells us how far we can jump when the bad character
+ * (the character that mismatched) appears.
  */
-export function aStar(
-  nodes: Map<string, Node>,
-  edges: Map<string, Edge[]>,
-  start: string,
-  goal: string,
-  heuristic: (nodeId: string) => number
-): string[] {
-  // G‑costs: current best known cost to each node
-  const g: Map<string, number> = new Map();
-  g.set(start, 0);
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-  // Came‑from map to rebuild the path
-  const cameFrom: Map<string, string> = new Map();
+  // every character that does NOT appear in the pattern gets a full skip
+  // (m).  Characters *inside* the pattern get a smaller value.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern[i]] = m - 1 - i;
+  }
 
-  // Open set – priority queue keyed by F = G + H
-  const open = new PriorityQueue<string>();
-  open.push(start, heuristic(start));
+  return table;
+}
 
-  // Closed set: processed nodes
-  const closed = new Set<string>();
+/**
+ * Classic Boyer‑Moore‑Horspool
+ *
+ * @param text    The text to search in
+ * @param pattern The pattern to find
+ * @returns Index of the first occurrence or -1
+ */
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern matches immediately
+  if (pattern.length > text.length) return -1;   // impossible
 
-  while (open.size > 0) {
-    const current = open.pop()!;
+  const shift = buildShiftTable(pattern);
+  const n = text.length;
+  const m = pattern.length;
 
-    // Goal found – reconstruct the path
-    if (current === goal) {
-      const path: string[] =
+  let i = 0;          // index in text where we start aligning the pattern
+
+  while (i <= n - m) {
+    // start comparing from the end of the pattern
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return i;  // whole pattern matched
+    }
+
+    // bad character at text[i + m - 1]
+    const badChar = text[i + m - 1];
+    const skip = shift[badChar] ?? m; // default skip is m
+    i += skip;
+  }
+
+  return -1; // not found
+}
+console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
+console.log(boyerMooreHorspool("hello world", "world")); // → 6
+console.log(boyerMooreHorspool("visible", "nope")); // → -1
