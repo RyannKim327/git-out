@@ -1,93 +1,97 @@
-/*  Boyer‑Moore string search
- *  ----------------------------------
- *  – pattern:  the string you’re looking for
- *  – text:     the larger string you scan
- *  Returns:    an array of the starting indices where pattern occurs
+export interface Node<T = any> {
+  /** A value stored in the node – useful for reconstruction / debugging */
+  value: T;
+
+  /** Returns an array of child nodes (or an empty array) */
+  children(): Node<T>[];
+}
+class IntNode implements Node<number> {
+  constructor(public value: number) {}
+  children(): IntNode[] {
+    // example: a simple binary tree
+    return [];
+  }
+}
+/**
+ * Depth‑limited search.  Returns a path from `start` to one of the goal values,
+ * or `null` if no path exists within the depth limit.
+ *
+ * @param start      The node from which we start.
+ * @param isGoal     A predicate that decides if the current node is a goal.
+ * @param depthLimit How many edges you’re willing to traverse.  Zero means
+ *                   you stop immediately (only the start node is examined).
+ * @param visited    Optional set for cycle detection.
+ *
+ * @returns Array of nodes forming the path, or `null`.
  */
+export function depthLimitedSearch<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number,
+  visited?: Set<Node<T>>
+): Array<Node<T>> | null {
+  if (depthLimit < 0) throw new Error('depthLimit must be ≥ 0');
 
-type BMResult = number[];
+  // depth‑first approach – stop when limit hits
+  function recurse(
+    current: Node<T>,
+    depth: number,
+    trail: Node<T>[],
+    visitedSet: Set<Node<T>>
+  ): Array<Node<T>> | null {
+    if (!visitedSet.has(current)) {
+      if (depthLimit === 0 && depth > 0) return null; // reached limit
 
-function boyerMoore(text: string, pattern: string): BMResult {
-  if (pattern.length === 0) return [];
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
-  const m = pattern.length;
-  const n = text.length;
-  const result: number[] = [];
+      if (isGoal(current)) return [...trail, current];
 
-  let s = 0;                  // alignment of pattern with text
-  while (s <= n - m) {        // slide pattern over text
-    let j = m - 1;            // right‑most pattern position
+      visitedSet.add(current);
 
-    // compare from right to left
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
+      for (const child of current.children()) {
+        const result = recurse(child, depth + 1, [...trail, current], visitedSet);
+        if (result !== null) return result;
+      }
+
+      visitedSet.delete(current); // backtrack
     }
+    return null; // not found on this branch
+  }
 
-    if (j < 0) {                  // whole pattern matched
-      result.push(s);
-      s += goodSuffix[0];          // shift using good‑suffix
-    } else {
-      // bad‑character rule
-      const badShift = j - badChar[text[s + j]] ?? j + 1;
-      // good‑suffix rule
-      const goodShift = goodSuffix[j + 1];
-      s += Math.max(badShift, goodShift);
+  const visitedSet = visited ?? new Set<Node<T>>();
+  return recurse(start, 0, [], visitedSet);
+}
+const goalNode = (node: Node<number>) => node.value === 42;
+const path = depthLimitedSearch(root, goalNode, 10);
+if (path) {
+  console.log('Found !!', path.map(n => n.value));
+} else {
+  console.log('No path within depth limit');
+}
+export function depthLimitedSearchIter<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number
+): Array<Node<T>> | null {
+  // stack holds tuples: [current node, depth so far, path so far]
+  const stack: Array<[Node<T>, number, Node<T>[]]> = [[start, 0, []]];
+
+  const visited = new Set<Node<T>>();
+
+  while (stack.length) {
+    const [node, depth, path] = stack.pop()!;
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (depth > depthLimit) continue; // skip deeper branches
+
+    const newPath = [...path, node];
+
+    if (isGoal(node)) return newPath;
+
+    for (const child of node.children()) {
+      stack.push([child, depth + 1, newPath]);
     }
   }
-  return result;
+
+  return null; // nothing found
 }
-
-/* -------------  Bad‑character table  ----------------- */
-function buildBadCharShift(pattern: string): Record<string, number> {
-  const lastPos: Record<string, number> = {};
-  for (let i = 0; i < pattern.length; i++) {
-    lastPos[pattern[i]] = i;          // last occurrence index
-  }
-  return lastPos;
-}
-
-/* -------------  Good‑suffix table  ------------------- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const shift: number[] = new Array(m + 1).fill(m);
-  const border = new Array(m + 1).fill(0);
-  let i = m;
-  let j = m + 1;
-  border[i] = j;
-
-  // 1. Calculate borders (prefixes that are also suffixes)
-  while (i > 0) {
-    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
-      j = border[j];
-    }
-    i--; j--; border[i] = j;
-  }
-
-  // 2. Compute shift table from borders
-  for (let k = 0; k < m; k++) {
-    shift[k] = m; // default shift is pattern length
-  }
-
-  let iIdx = 0;
-  while (iIdx < m) {
-    const g = m - border[iIdx];
-    shift[g] = Math.min(shift[g], border[iIdx] + 1);
-    iIdx++;
-  }
-
-  // 3. Fill the remaining entries (when no suffix matches)
-  let last = shift[1];
-  for (let q = 2; q <= m; q++) {
-    if (shift[q] === m) shift[q] = last;
-    else last = shift[q];
-  }
-
-  return shift;
-}
-
-/* -------------  Example use ----- */
-const haystack = "ABABACABABABCAB";
-const needle = "ABABC";
-
-console.log(boyerMoore(haystack, needle));  // => [5]
