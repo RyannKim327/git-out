@@ -1,56 +1,65 @@
-// IStack defines the public contract for the stack.
-export interface IStack<T> {
-  push(item: T): void;      // add an item on top
-  pop(): T | undefined;     // remove and return the top item
-  peek(): T | undefined;    // look at the top without removing it
-  isEmpty(): boolean;       // true if the stack has no items
-  size(): number;           // current number of items
+/**
+ * Recursively finds the index of `target` in a sorted array.
+ * Returns the index if found, otherwise –1.
+ *
+ * @param arr   A sorted array (ascending, no duplicates needed)
+ * @param target The value you're looking for
+ * @param left  The left boundary (inclusive)
+ * @param right The right boundary (exclusive)
+ */
+function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;            // no match
+
+  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
+
+  const cmp = arr[mid] === target
+    ? 0
+    : arr[mid] < target
+      ? -1
+      : 1;
+
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursive(arr, target, mid + 1, right)
+      : binarySearchRecursive(arr, target, left, mid);
 }
+const nums = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchRecursive(nums, 7));  // → 3
+console.log(binarySearchRecursive(nums, 4));  // → -1
+function binarySearchRecursiveCustom<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;
 
-// Stack is a simple array‑backed implementation.
-export class Stack<T> implements IStack<T> {
-  // the underlying storage – an array grows automatically
-  private items: T[] = [];
+  const mid = left + ((right - left) >> 1);
+  const cmp = compare(arr[mid], target);
 
-  constructor(initial?: T[]) {
-    // optional initial content; does a shallow copy for safety
-    if (initial) this.items = initial.slice();
-  }
-
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  pop(): T | undefined {
-    return this.items.pop();          // pop() already returns undefined if empty
-  }
-
-  peek(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    return this.items[this.items.length - 1];
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  size(): number {
-    return this.items.length;
-  }
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
+      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
 }
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek());   // 30
-console.log(stack.pop());    // 30
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-while (!stack.isEmpty()) {
-  console.log(stack.pop());
-}
-// → 20
-// → 10
+interface Person { age: number; name: string; }
+const people: Person[] = [
+  { age: 22, name: 'Alice' },
+  { age: 30, name: 'Bob' },
+  { age: 45, name: 'Charlie' },
+];
+const ageToFind = 30;
+const idx = binarySearchRecursiveCustom(
+  people,
+  { age: ageToFind, name: '' },
+  (a, b) => a.age - b.age
+);
+console.log(idx); // → 1
