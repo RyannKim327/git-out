@@ -1,74 +1,158 @@
-/**
- * Basic node interface – adjust it to whatever
- * your real objects look like.
- */
-export interface Node {
-  /** Identifier (useful for debugging, not required by the algo). */
-  id: string | number;
+/* ── BinaryTree.ts ────────────────────────────────────────────────────── */
 
-  /** Reference to child nodes (empty array for leaf). */
-  children: Node[];
+/* 1️⃣  Node definition ---------------------------------------------- */
+class TreeNode<T> {
+  /** The value stored in this node. */
+  value: T;
+  /** Left child (values < this.value). */
+  left: TreeNode<T> | null = null;
+  /** Right child (values > this.value). */
+  right: TreeNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
 
-/**
- * Depth‑limited search (DFS style).
- *
- * @param root      The node to start from.
- * @param depthLimit  The maximum depth to explore.
- * @param goalPredicate  Function that tells when we’ve found the target.
- * @returns The first node that satisfies `goalPredicate`,
- *          or `undefined` if none was found within the depth limit.
- *
- * The algorithm uses an explicit stack so no recursion is performed.
- */
-export function depthLimitedSearch(
-  root: Node,
-  depthLimit: number,
-  goalPredicate: (node: Node) => boolean
-): Node | undefined {
-  // Stack element: { node, depth }
-  const stack: Array<{ node: Node; depth: number }> = [{ node: root, depth: 0 }];
+/* 2️⃣  The tree itself ---------------------------------------------- */
+class BinarySearchTree<T> {
+  root: TreeNode<T> | null = null;
 
-  while (stack.length > 0) {
-    const { node, depth } = stack.pop()!; // pop last element (LIFO)
+  /* ── Helper for comparing values ───────────────────────────────────── */
+  private compare(a: T, b: T): number {
+    // Because we’ve made `T` generic we need a way to compare.
+    // Here we assume that `T` is either a number or a string.
+    // If you need something fancier, provide your own comparator.
+    if (a < b) return -1;
+    if (a > b) return 1;
+    return 0;
+  }
 
-    // Check goal condition
-    if (goalPredicate(node)) {
-      return node;
+  /* ── Insert a value ─────────────────────────────────────────────── */
+  insert(value: T): void {
+    const newNode = new TreeNode(value);
+
+    if (!this.root) {
+      this.root = newNode;
+      return;
     }
 
-    // Stop if we’ve reached the depth limit
-    if (depth >= depthLimit) {
-      continue;
-    }
-
-    // Push children onto the stack, increasing depth
-    // If you prefer a different traversal order just
-    // change the `for` loop below (e.g. reverse the list)
-    for (const child of node.children) {
-      stack.push({ node: child, depth: depth + 1 });
+    let curr = this.root;
+    while (true) {
+      const cmp = this.compare(value, curr.value);
+      if (cmp < 0) {            // go left
+        if (!curr.left) {
+          curr.left = newNode;
+          break;
+        }
+        curr = curr.left;
+      } else {                  // go right (duplicates go right)
+        if (!curr.right) {
+          curr.right = newNode;
+          break;
+        }
+        curr = curr.right;
+      }
     }
   }
 
-  // Nothing found within the depth limit
-  return undefined;
-}
-// Create a sample tree
-const tree: Node = {
-  id: 1,
-  children: [
-    { id: 2, children: [] },
-    {
-      id: 3,
-      children: [
-        { id: 4, children: [] },
-        { id: 5, children: [] }
-      ]
+  /* ── Search for a value ──────────────────────────────────────────── */
+  find(value: T): TreeNode<T> | null {
+    let curr = this.root;
+
+    while (curr) {
+      const cmp = this.compare(value, curr.value);
+      if (cmp === 0) return curr;
+      curr = cmp < 0 ? curr.left : curr.right;
     }
-  ]
-};
 
-// Find node with id === 5 but only go 2 levels deep
-const found = depthLimitedSearch(tree, 2, n => n.id === 5);
+    return null; // not found
+  }
 
-console.log(found); // logs the node with id 5 (or undefined if depth limit blocks it)
+  /* ── In‑order traversal (returns sorted array) --------------------- */
+  inOrder(): T[] {
+    const out: T[] = [];
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      out.push(node.value);
+      walk(node.right);
+    }
+    walk(this.root);
+    return out;
+  }
+
+  /* ── Pre‑order traversal (root, left, right) ---------------------- */
+  preOrder(): T[] {
+    const out: T[] = [];
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      out.push(node.value);
+      walk(node.left);
+      walk(node.right);
+    }
+    walk(this.root);
+    return out;
+  }
+
+  /* ── Post‑order traversal (left, right, root) --------------------- */
+  postOrder(): T[] {
+    const out: T[] = [];
+    function walk(node: TreeNode<T> | null) {
+      if (!node) return;
+      walk(node.left);
+      walk(node.right);
+      out.push(node.value);
+    }
+    walk(this.root);
+    return out;
+  }
+
+  /* ── Pretty‑print for debugging ------------------------------------ */
+  private static indent(str: string, level: number): string {
+    return '  '.repeat(level) + str;
+  }
+
+  /* eslint-disable no-console */
+  print(): void {
+    function walk(node: TreeNode<any> | null, level: number) {
+      if (!node) return;
+      console.log(BinarySearchTree.indent(`┗─ ${node.value}`, level));
+      walk(node.left, level + 1);
+      walk(node.right, level + 1);
+    }
+    if (!this.root) console.log('<empty tree>');
+    else walk(this.root, 0);
+  }
+}
+
+/* ── Usage example ---------------------------------------------------- */
+const bst = new BinarySearchTree<number>();
+
+[7, 3, 9, 1, 5, 8, 10].forEach(num => bst.insert(num));
+
+console.log('In‑order:', bst.inOrder());      // [1,3,5,7,8,9,10]
+console.log('Pre‑order:', bst.preOrder());    // [7,3,1,5,9,8,10]
+console.log('Post‑order:', bst.postOrder());  // [1,5,3,8,10,9,7]
+
+const node = bst.find(5);
+console.log('Found node:', node?.value);      // 5
+
+console.log('\nTree structure:');
+bst.print();
+
+/* ── Output ───────────────────────────────────────────────────────────
+In-order: [ 1, 3, 5, 7, 8, 9, 10 ]
+Pre-order: [ 7, 3, 1, 5, 9, 8, 10 ]
+Post-order: [ 1, 5, 3, 8, 10, 9, 7 ]
+Found node: 5
+
+Tree structure:
+┗─ 7
+  ┗─ 3
+    ┗─ 1
+    ┗─ 5
+  ┗─ 9
+    ┗─ 8
+    ┗─ 10
+ *─────────────────────── */
