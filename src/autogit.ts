@@ -1,105 +1,93 @@
-// 1️⃣  Define the graph
-
-/** One directed edge with a weight. */
-interface Edge {
-  from: number;   // source vertex index
-  to: number;     // destination vertex index
-  weight: number; // edge weight
-}
-
-/** The graph is just a list of edges – we’re not building adjacency lists because
- *  Bellman‑Ford inherits its own relaxation loop from every edge.
+/*  Boyer‑Moore string search
+ *  ----------------------------------
+ *  – pattern:  the string you’re looking for
+ *  – text:     the larger string you scan
+ *  Returns:    an array of the starting indices where pattern occurs
  */
-type EdgeList = Edge[];
 
-/** Number of vertices is needed for the outer loop. */
-type VertexCount = number;
-/**
- * bellmanFord(source, n, edges)
- *
- * @param source  Index of the source vertex (0‑based)
- * @param n       Total number of vertices
- * @param edges   List of all directed edges
- *
- * @returns An object:
- *   – `dist`   array of shortest distances from `source`
- *   – `prev`   previous vertex on the optimal path (for path reconstruction)
- *   – `hasNegativeCycle` flag
- */
-function bellmanFord(
-  source: number,
-  n: VertexCount,
-  edges: EdgeList,
-): { dist: number[]; prev: (number | null)[]; hasNegativeCycle: boolean } {
-  const INF = Number.POSITIVE_INFINITY;
-  const dist = Array(n).fill(INF);
-  const prev = Array<VertexCount | null>(n).fill(null);
+type BMResult = number[];
 
-  dist[source] = 0;
+function boyerMoore(text: string, pattern: string): BMResult {
+  if (pattern.length === 0) return [];
+  const badChar = buildBadCharShift(pattern);
+  const goodSuffix = buildGoodSuffixShift(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
 
-  // Relax all edges (n‑1) times
-  for (let i = 0; i < n - 1; i++) {
-    let changed = false;
+  let s = 0;                  // alignment of pattern with text
+  while (s <= n - m) {        // slide pattern over text
+    let j = m - 1;            // right‑most pattern position
 
-    for (const { from, to, weight } of edges) {
-      const d = dist[from] + weight;
-      if (d < dist[to]) {
-        dist[to] = d;
-        prev[to] = from;
-        changed = true;
-      }
+    // compare from right to left
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
     }
 
-    // Early exit if no distance updates: the graph has no further changes
-    if (!changed) break;
-  }
-
-  // Check for negative‑weight cycles reachable from `source`
-  let hasNegativeCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] + weight < dist[to]) {
-      hasNegativeCycle = true;
-      break;
+    if (j < 0) {                  // whole pattern matched
+      result.push(s);
+      s += goodSuffix[0];          // shift using good‑suffix
+    } else {
+      // bad‑character rule
+      const badShift = j - badChar[text[s + j]] ?? j + 1;
+      // good‑suffix rule
+      const goodShift = goodSuffix[j + 1];
+      s += Math.max(badShift, goodShift);
     }
   }
-
-  return { dist, prev, hasNegativeCycle };
+  return result;
 }
-// Example graph
-const edges: EdgeList = [
-  { from: 0, to: 1, weight: 5 },
-  { from: 0, to: 2, weight: 4 },
-  { from: 1, to: 2, weight: -2 },
-  { from: 1, to: 3, weight: 3 },
-  { from: 2, to: 1, weight: -1 },
-  { from: 2, to: 3, weight: 2 },
-  { from: 3, to: 0, weight: 2 },
-];
 
-// 4 vertices (0‑3)
-const result = bellmanFord(0, 4, edges);
+/* -------------  Bad‑character table  ----------------- */
+function buildBadCharShift(pattern: string): Record<string, number> {
+  const lastPos: Record<string, number> = {};
+  for (let i = 0; i < pattern.length; i++) {
+    lastPos[pattern[i]] = i;          // last occurrence index
+  }
+  return lastPos;
+}
 
-console.log('Distances:', result.dist);
-console.log('Previous vertex on path:', result.prev);
-console.log('Negative cycle?', result.hasNegativeCycle);
-function reconstructPath(
-  source: number,
-  target: number,
-  prev: (number | null)[],
-): number[] | null {
-  const path: number[] = [];
-  let at = target;
+/* -------------  Good‑suffix table  ------------------- */
+function buildGoodSuffixShift(pattern: string): number[] {
+  const m = pattern.length;
+  const shift: number[] = new Array(m + 1).fill(m);
+  const border = new Array(m + 1).fill(0);
+  let i = m;
+  let j = m + 1;
+  border[i] = j;
 
-  while (at !== null && at !== source) {
-    path.push(at);
-    at = prev[at];
+  // 1. Calculate borders (prefixes that are also suffixes)
+  while (i > 0) {
+    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
+      j = border[j];
+    }
+    i--; j--; border[i] = j;
   }
 
-  if (at !== source) return null; // no path
+  // 2. Compute shift table from borders
+  for (let k = 0; k < m; k++) {
+    shift[k] = m; // default shift is pattern length
+  }
 
-  path.push(source);
-  return path.reverse();
+  let iIdx = 0;
+  while (iIdx < m) {
+    const g = m - border[iIdx];
+    shift[g] = Math.min(shift[g], border[iIdx] + 1);
+    iIdx++;
+  }
+
+  // 3. Fill the remaining entries (when no suffix matches)
+  let last = shift[1];
+  for (let q = 2; q <= m; q++) {
+    if (shift[q] === m) shift[q] = last;
+    else last = shift[q];
+  }
+
+  return shift;
 }
 
-const path = reconstructPath(0, 3, result.prev);
-console.log('Path from 0 to 3:', path);
+/* -------------  Example use ----- */
+const haystack = "ABABACABABABCAB";
+const needle = "ABABC";
+
+console.log(boyerMoore(haystack, needle));  // => [5]
