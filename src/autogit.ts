@@ -1,50 +1,62 @@
-currentSum = A[0]
-bestSum    = A[0]
-for each element x in A from index 1 to end
-    currentSum = max(x, currentSum + x)
-    bestSum    = max(bestSum, currentSum)
-return bestSum
 /**
- * Returns the maximum sum of a contiguous sub‑array.
+ * Quick‑sorts an array in place and returns the same array reference.
  *
- * @param nums - Array of numbers (can contain negatives).
- * @returns The maximum sub‑array sum.  For an empty array it returns 0.
+ * @param array   The array to sort. It is mutated in place.
+ * @param left    Index of the first element to sort (inclusive).  Default: 0.
+ * @param right   Index of the last element to sort (inclusive).  Default: array.length - 1.
+ * @returns       The sorted array (same reference as the argument).
  */
-export function maxSubarraySum(nums: number[]): number {
-  if (nums.length === 0) return 0;
+function quickSort<T>(array: T[], left = 0, right: number = array.length - 1): T[] {
+  // Base case: if the sub‑array has one or zero elements, it’s already sorted
+  if (left >= right) return array;
 
-  let currentSum = nums[0];
-  let bestSum = nums[0];
+  // Partition the array around a pivot and get its final index
+  const pivotIndex = partition(array, left, right);
 
-  for (let i = 1; i < nums.length; i++) {
-    const x = nums[i];
-    currentSum = x > currentSum + x ? x : currentSum + x;
-    // equivalently: currentSum = Math.max(x, currentSum + x);
+  // Recursively sort the two halves
+  quickSort(array, left, pivotIndex - 1);
+  quickSort(array, pivotIndex + 1, right);
 
-    if (currentSum > bestSum) bestSum = currentSum;
-  }
-
-  return bestSum;
-}
-console.log(maxSubarraySum([ -2, 1, -3, 4, -1, 2, 1, -5, 4 ])); // 6
-let tempStart = 0;
-let bestStart = 0;
-let bestEnd = 0;
-
-for (let i = 1; i < nums.length; i++) {
-  const x = nums[i];
-  if (x > currentSum + x) {
-    currentSum = x;
-    tempStart = i;
-  } else {
-    currentSum += x;
-  }
-
-  if (currentSum > bestSum) {
-    bestSum = currentSum;
-    bestStart = tempStart;
-    bestEnd = i;
-  }
+  return array;
 }
 
-// bestStart..bestEnd (inclusive) gives the sub‑array with max sum
+/**
+ * Rearranges the elements in array[left…right] so that:
+ *   – Elements < pivot sit left of the pivot
+ *   – Elements >= pivot sit right of the pivot
+ * Returns the final index of the pivot.
+ */
+function partition<T>(array: T[], left: number, right: number): number {
+  // Take the rightmost element as pivot (last element strategy)
+  const pivot = array[right];
+
+  // Index of the smaller element
+  let i = left - 1;
+
+  for (let j = left; j < right; j++) {
+    // Use the generic < operator; if needed, replace with a custom comparator.
+    if (array[j] < pivot) {
+      i++;
+      [array[i], array[j]] = [array[j], array[i]]; // swap
+    }
+  }
+
+  // Place pivot in the correct spot
+  [array[i + 1], array[right]] = [array[right], array[i + 1]];
+
+  return i + 1; // pivot final position
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────
+
+/* Example usage */
+
+const nums = [12, 4, 5, 6, 7, 3, 1, 15];
+console.log('Before:', nums);
+
+quickSort(nums);
+console.log('After :', nums);     // → [1, 3, 4, 5, 6, 7, 12, 15]
+
+const strings = ['pear', 'apple', 'orange', 'banana'];
+quickSort(strings);
+console.log(strings); // → ['apple', 'banana', 'orange', 'pear']
