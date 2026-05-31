@@ -1,14 +1,65 @@
-const numbers: number[] = [34, 7, 23, 32, 5, 62];
+/**
+ * Recursively finds the index of `target` in a sorted array.
+ * Returns the index if found, otherwise –1.
+ *
+ * @param arr   A sorted array (ascending, no duplicates needed)
+ * @param target The value you're looking for
+ * @param left  The left boundary (inclusive)
+ * @param right The right boundary (exclusive)
+ */
+function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;            // no match
 
-// Ascending order (smallest → largest)
-const asc = [...numbers].sort((a, b) => a - b);
-console.log('Ascending:', asc); // [5, 7, 23, 32, 34, 62]
+  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
 
-// Descending order (largest → smallest)
-const desc = [...numbers].sort((a, b) => b - a);
-console.log('Descending:', desc); // [62, 34, 32, 23, 7, 5]
-// Sort a copy without mutating the original array
-const ascending = numbers.slice().sort((a, b) => a - b);
+  const cmp = arr[mid] === target
+    ? 0
+    : arr[mid] < target
+      ? -1
+      : 1;
 
-// Or, if you prefer a single‑line declaration:
-const descending = [...numbers].sort((a, b) => b - a);
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursive(arr, target, mid + 1, right)
+      : binarySearchRecursive(arr, target, left, mid);
+}
+const nums = [1, 3, 5, 7, 9, 11];
+console.log(binarySearchRecursive(nums, 7));  // → 3
+console.log(binarySearchRecursive(nums, 4));  // → -1
+function binarySearchRecursiveCustom<T>(
+  arr: readonly T[],
+  target: T,
+  compare: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length
+): number {
+  if (left >= right) return -1;
+
+  const mid = left + ((right - left) >> 1);
+  const cmp = compare(arr[mid], target);
+
+  return cmp === 0
+    ? mid
+    : cmp < 0
+      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
+      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
+}
+interface Person { age: number; name: string; }
+const people: Person[] = [
+  { age: 22, name: 'Alice' },
+  { age: 30, name: 'Bob' },
+  { age: 45, name: 'Charlie' },
+];
+const ageToFind = 30;
+const idx = binarySearchRecursiveCustom(
+  people,
+  { age: ageToFind, name: '' },
+  (a, b) => a.age - b.age
+);
+console.log(idx); // → 1
