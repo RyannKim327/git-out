@@ -1,42 +1,110 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
+// Basic node description
+export interface Node {
+  id: string;           // unique identifier
+  // optional coordinates – handy for the heuristic
+  x?: number;
+  y?: number;
+  // all directly reachable neighbours
+  neighbors: string[];  // ids of neighbour nodes
+}
+
+export interface Edge {
+  from: string;      // node id
+  to: string;        // node id
+  cost: number;      // weight of the edge
+}
+class PriorityQueue<T> {
+  private items: { key: number; value: T }[] = [];
+
+  // swap helpers
+  private swap(i: number, j: number) {
+    [this.items[i], this.items[j]] = [this.items[j], this.items[i]];
+  }
+
+  // bubble‑up to maintain heap invariant
+  private bubbleUp(idx: number) {
+    while (idx > 0) {
+      const parent = Math.floor((idx - 1) / 2);
+      if (this.items[parent].key <= this.items[idx].key) break;
+      this.swap(parent, idx);
+      idx = parent;
+    }
+  }
+
+  // bubble‑down to maintain heap invariant
+  private bubbleDown(idx: number) {
+    const last = this.items.length - 1;
+    while (true) {
+      const left = 2 * idx + 1;
+      const right = 2 * idx + 2;
+      let smallest = idx;
+
+      if (left <= last && this.items[left].key < this.items[smallest].key)
+        smallest = left;
+      if (right <= last && this.items[right].key < this.items[smallest].key)
+        smallest = right;
+
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
+    }
+  }
+
+  // push a new value with a priority
+  push(value: T, key: number) {
+    this.items.push({ value, key });
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  // pop the value with the smallest priority
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const root = this.items[0].value;
+    const last = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = last;
+      this.bubbleDown(0);
+    }
+    return root;
+  }
+
+  get size(): number {
+    return this.items.length;
+  }
 }
 /**
- * Returns the n‑th node from the end of a singly linked list.
- * If n is out of bounds, returns null.
- *
- * @param head The head of the list.
- * @param n    1‑based index from the end (n = 1 => tail node).
+ * Generic A* implementation.
+ * @param nodes   Map of node id → Node
+ * @param edges   Map of node id → array of out‑going edges
+ * @param start   id of the start node
+ * @param goal    id of the goal node
+ * @param heuristic (node) ⇒ estimated distance to goal
+ * @returns array of node ids that form the cheapest path, or empty array if none
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;           // invalid request
+export function aStar(
+  nodes: Map<string, Node>,
+  edges: Map<string, Edge[]>,
+  start: string,
+  goal: string,
+  heuristic: (nodeId: string) => number
+): string[] {
+  // G‑costs: current best known cost to each node
+  const g: Map<string, number> = new Map();
+  g.set(start, 0);
 
-  let fast: ListNode<T> | null = head;
-  let slow: ListNode<T> | null = head;
+  // Came‑from map to rebuild the path
+  const cameFrom: Map<string, string> = new Map();
 
-  // Move fast n steps forward
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;          // n larger than list size
-    fast = fast.next;
-  }
+  // Open set – priority queue keyed by F = G + H
+  const open = new PriorityQueue<string>();
+  open.push(start, heuristic(start));
 
-  // Move both until fast reaches the end
-  while (fast) {
-    slow = slow!.next;  // fast is non‑null here, so slow is safe
-    fast = fast.next;
-  }
+  // Closed set: processed nodes
+  const closed = new Set<string>();
 
-  return slow;
-}
-// Build 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4 = { val: 4, next: node5 };
-let node3 = { val: 3, next: node4 };
-let node2 = { val: 2, next: node3 };
-let node1 = { val: 1, next: node2 };
+  while (open.size > 0) {
+    const current = open.pop()!;
 
-console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
-console.log(nthFromEnd(node1, 2)?.val); // 4
-console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
-console.log(nthFromEnd(node1, 6));       // null (out of bounds)
+    // Goal found – reconstruct the path
+    if (current === goal) {
+      const path: string[] =
