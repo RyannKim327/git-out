@@ -1,57 +1,14 @@
-/**
- * Build the shift table used by BMH.
- * Each entry tells us how far we can jump when the bad character
- * (the character that mismatched) appears.
- */
-function buildShiftTable(pattern: string): Record<string, number> {
-  const table: Record<string, number> = {};
-  const m = pattern.length;
+// Example string
+const s = "  Hello,\tworld!\n  This is a test.  ";
 
-  // every character that does NOT appear in the pattern gets a full skip
-  // (m).  Characters *inside* the pattern get a smaller value.
-  for (let i = 0; i < m - 1; i++) {
-    table[pattern[i]] = m - 1 - i;
-  }
+// 1. Trim
+const trimmed = s.trim(); // "Hello,\tworld!\n  This is a test."
 
-  return table;
-}
+// 2. Remove all whitespace
+const noWhitespace = s.replace(/\s+/g, ''); // "Hello,world!Thisisatest."
 
-/**
- * Classic Boyer‑Moore‑Horspool
- *
- * @param text    The text to search in
- * @param pattern The pattern to find
- * @returns Index of the first occurrence or -1
- */
-export function boyerMooreHorspool(text: string, pattern: string): number {
-  if (pattern.length === 0) return 0;          // empty pattern matches immediately
-  if (pattern.length > text.length) return -1;   // impossible
+// 3. Remove only spaces
+const noSpaces = s.replaceAll(' ', ''); // keeps tabs and newlines
 
-  const shift = buildShiftTable(pattern);
-  const n = text.length;
-  const m = pattern.length;
-
-  let i = 0;          // index in text where we start aligning the pattern
-
-  while (i <= n - m) {
-    // start comparing from the end of the pattern
-    let j = m - 1;
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      return i;  // whole pattern matched
-    }
-
-    // bad character at text[i + m - 1]
-    const badChar = text[i + m - 1];
-    const skip = shift[badChar] ?? m; // default skip is m
-    i += skip;
-  }
-
-  return -1; // not found
-}
-console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
-console.log(boyerMooreHorspool("hello world", "world")); // → 6
-console.log(boyerMooreHorspool("visible", "nope")); // → -1
+// 4. Keep only alphanumerics (example use‑case)
+const alnum = s.replace(/[^a-zA-Z0-9]+/g, ''); // "Hello,world!Thisisatest."
