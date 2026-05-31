@@ -1,47 +1,57 @@
 /**
- * Merge two sorted halves into a single sorted array.
+ * Build the shift table used by BMH.
+ * Each entry tells us how far we can jump when the bad character
+ * (the character that mismatched) appears.
  */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0, j = 0;
+function buildShiftTable(pattern: string): Record<string, number> {
+  const table: Record<string, number> = {};
+  const m = pattern.length;
 
-  while (i < left.length && j < right.length) {
-    // compare function should return negative if a < b,
-    // zero if equal, positive if a > b
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
+  // every character that does NOT appear in the pattern gets a full skip
+  // (m).  Characters *inside* the pattern get a smaller value.
+  for (let i = 0; i < m - 1; i++) {
+    table[pattern[i]] = m - 1 - i;
   }
 
-  // Append any leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  return table;
 }
 
 /**
- * Recursively sort the array using merge sort.
- * `compare` is optional – if omitted, the native < operator is used.
+ * Classic Boyer‑Moore‑Horspool
+ *
+ * @param text    The text to search in
+ * @param pattern The pattern to find
+ * @returns Index of the first occurrence or -1
  */
-export function mergeSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  if (arr.length <= 1) return arr.slice();
+export function boyerMooreHorspool(text: string, pattern: string): number {
+  if (pattern.length === 0) return 0;          // empty pattern matches immediately
+  if (pattern.length > text.length) return -1;   // impossible
 
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), compare);
-  const right = mergeSort(arr.slice(mid), compare);
+  const shift = buildShiftTable(pattern);
+  const n = text.length;
+  const m = pattern.length;
 
-  return merge(left, right, compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+  let i = 0;          // index in text where we start aligning the pattern
+
+  while (i <= n - m) {
+    // start comparing from the end of the pattern
+    let j = m - 1;
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      return i;  // whole pattern matched
+    }
+
+    // bad character at text[i + m - 1]
+    const badChar = text[i + m - 1];
+    const skip = shift[badChar] ?? m; // default skip is m
+    i += skip;
+  }
+
+  return -1; // not found
 }
-const nums = [34, 7, 23, 32, 5, 62];
-const sortedNums = mergeSort(nums);
-console.log(sortedNums); // [5, 7, 23, 32, 34, 62]
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 25 },
-  { name: 'Carol', age: 35 },
-];
-
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+console.log(boyerMooreHorspool("ABAAACD", "AAC")); // → 4
+console.log(boyerMooreHorspool("hello world", "world")); // → 6
+console.log(boyerMooreHorspool("visible", "nope")); // → -1
