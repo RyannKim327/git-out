@@ -1,31 +1,42 @@
-/**
- * Returns true if `s` is a palindrome.
- *
- * Options:
- *   - ignoreCase   strip upper/lower differences (default: true)
- *   - ignoreNonAlpha  remove everything that isn’t a letter/digit (default: true)
- */
-export function isPalindrome(
-  s: string,
-  { ignoreCase = true, ignoreNonAlpha = true } = {}
-): boolean {
-  let processed = s;
-
-  // Optional: drop punctuation, spaces, etc.
-  if (ignoreNonAlpha) {
-    processed = processed.replace(/[^a-zA-Z0-9]/g, "");
-  }
-
-  // Optional: treat “A” and “a” as the same.
-  if (ignoreCase) {
-    processed = processed.toLowerCase();
-  }
-
-  // Compare string to its reverse.
-  const reversed = processed.split("").reverse().join("");
-  return processed === reversed;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-console.log(isPalindrome("Racecar"));                 // true
-console.log(isPalindrome("noon"));                    // true
-console.log(isPalindrome("hello"));                   // false
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+/**
+ * Returns the n‑th node from the end of a singly linked list.
+ * If n is out of bounds, returns null.
+ *
+ * @param head The head of the list.
+ * @param n    1‑based index from the end (n = 1 => tail node).
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;           // invalid request
+
+  let fast: ListNode<T> | null = head;
+  let slow: ListNode<T> | null = head;
+
+  // Move fast n steps forward
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;          // n larger than list size
+    fast = fast.next;
+  }
+
+  // Move both until fast reaches the end
+  while (fast) {
+    slow = slow!.next;  // fast is non‑null here, so slow is safe
+    fast = fast.next;
+  }
+
+  return slow;
+}
+// Build 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4 = { val: 4, next: node5 };
+let node3 = { val: 3, next: node4 };
+let node2 = { val: 2, next: node3 };
+let node1 = { val: 1, next: node2 };
+
+console.log(nthFromEnd(node1, 1)?.val); // 5 (tail)
+console.log(nthFromEnd(node1, 2)?.val); // 4
+console.log(nthFromEnd(node1, 5)?.val); // 1 (head)
+console.log(nthFromEnd(node1, 6));       // null (out of bounds)
