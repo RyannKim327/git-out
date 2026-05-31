@@ -1,33 +1,45 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-const head: ListNode<number> = { val: 1, next: null };
-head.next = { val: 2, next: null };
-head.next.next = { val: 3, next: null };      // 1 → 2 → 3
-function middle<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow: ListNode<T> | null = head;
-  let fast: ListNode<T> | null = head;
+/**
+ * Returns `true` if `s` is a palindrome.
+ *
+ * Options:
+ *   - ignoreCase   – treat uppercase and lowercase as the same.
+ *   - ignoreNonAlnum – strip out everything that isn’t a letter or digit.
+ *
+ * This keeps the function flexible while still being straightforward.
+ */
+export function isPalindrome(
+  s: string,
+  {
+    ignoreCase = true,
+    ignoreNonAlnum = false,
+  }: { ignoreCase?: boolean; ignoreNonAlnum?: boolean } = {}
+): boolean {
+  // Normalise the string
+  let normalized = s;
 
-  while (fast !== null && fast.next !== null) {
-    slow = slow?.next ?? null;   // advance by 1
-    fast = fast.next.next;       // advance by 2
+  if (ignoreNonAlnum) {
+    // Keep only alphanumerics
+    normalized = normalized.replace(/[^a-z0-9]/gi, "");
   }
 
-  return slow; // could be null if the list was empty
-}
-if (fast !== null) {            // original list had even length
-  slow = slow?.next ?? null;    // bump to the second middle
-}
-function toArray<T>(head: ListNode<T> | null): T[] {
-  const arr: T[] = [];
-  for (let cur = head; cur; cur = cur.next) arr.push(cur.val);
-  return arr;
-}
+  if (ignoreCase) {
+    normalized = normalized.toLowerCase();
+  }
 
-const list: ListNode<number> | null = {
-  val: 10,
-  next: { val: 20, next: { val: 30, next: null } },
-};
+  // Compare characters from start and end moving toward the centre
+  const len = normalized.length;
+  for (let i = 0; i < len / 2; i++) {
+    if (normalized[i] !== normalized[len - 1 - i]) {
+      return false; // early out on first mismatch
+    }
+  }
 
-console.log(middle(list)?.val); // prints 20
+  return true;
+}
+console.log(isPalindrome("RaceCar"));                         // true
+console.log(isPalindrome("RaceCar", { ignoreNonAlnum: true }));// true
+console.log(isPalindrome("A man, a plan, a canal: Panama"));   // false by default
+console.log(isPalindrome("A man, a plan, a canal: Panama", {
+  ignoreCase: true,
+  ignoreNonAlnum: true,
+}));                                                     // true
