@@ -1,25 +1,44 @@
 /**
- * Returns true if the array is sorted in ascending order (strictly or non‑strictly).
- * @param arr array of items that can be compared with < and ===
- * @param allowDuplicates if true, values equal to the previous one are still OK
+ * Return the majority element (> n/2) if it exists, or null otherwise.
+ * @param arr array of numbers (or any comparable type)
  */
-function isSortedAscending<T>(arr: T[], allowDuplicates = false): boolean {
-  if (arr.length < 2) return true;           // 0 or 1 element is always sorted
+export function majorityElement<T>(arr: T[]): T | null {
+  if (!arr.length) return null;
 
-  for (let i = 1; i < arr.length; i++) {
-    const a = arr[i - 1];
-    const b = arr[i];
+  /* ---------- 1st pass: find candidate ---------- */
+  let candidate = arr[0];
+  let count = 0;
 
-    if (a > b) return false;                 // strictly smaller check
-
-    if (!allowDuplicates && a === b) return false; // disallow equal values
+  for (const num of arr) {
+    if (count === 0) {
+      candidate = num;
+      count = 1;
+    } else {
+      count += (num === candidate) ? 1 : -1;
+    }
   }
-  return true;
+
+  /* ---------- 2nd pass: verify candidate ---------- */
+  let freq = 0;
+  for (const num of arr) {
+    if (num === candidate) freq++;
+  }
+
+  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
 }
-console.log(isSortedAscending([1, 2, 3]));          // true
-console.log(isSortedAscending([1, 3, 2]));          // false
-console.log(isSortedAscending([1, 1, 2], false));   // false
-console.log(isSortedAscending([1, 1, 2], true));    // true
-function isSortedAscendingFunctional<T>(arr: T[]): boolean {
-  return arr.length < 2 || arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
+const nums = [3, 1, 3, 3, 2, 3, 3];
+const majority = majorityElement(nums);
+console.log(majority); // → 3
+export function majorityElementMap<T>(arr: T[]): T | null {
+  const counts = new Map<T, number>();
+  
+  for (const val of arr) {
+    counts.set(val, (counts.get(val) ?? 0) + 1);
+  }
+
+  const threshold = Math.floor(arr.length / 2);
+  for (const [val, cnt] of counts) {
+    if (cnt > threshold) return val;
+  }
+  return null;
 }
