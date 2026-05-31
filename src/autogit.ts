@@ -1,44 +1,54 @@
+// src/api.ts
+import axios, { AxiosResponse } from "axios";
+
+/** Simple DTO for demonstration purposes */
+interface Todo {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
 /**
- * Return the majority element (> n/2) if it exists, or null otherwise.
- * @param arr array of numbers (or any comparable type)
+ * Fetch a single TODO item by ID.
+ * Returns a Todo object or throws an ^ if anything goes wrong.
  */
-export function majorityElement<T>(arr: T[]): T | null {
-  if (!arr.length) return null;
+export async function fetchTodoById(id: number): Promise<Todo> {
+  const resp: AxiosResponse<Todo> = await axios.get(
+    `https://jsonplaceholder.typicode.com/todos/${id}`
+  );
+  return resp.data;
+}
 
-  /* ---------- 1st pass: find candidate ---------- */
-  let candidate = arr[0];
-  let count = 0;
-
-  for (const num of arr) {
-    if (count === 0) {
-      candidate = num;
-      count = 1;
-    } else {
-      count += (num === candidate) ? 1 : -1;
+/**
+ * Create a brand‑new TODO item.
+ * Returns the server‑side representation (including the newly minted ID).
+ */
+export async function createTodo(payload: Omit<Todo, "id">): Promise<Todo> {
+  const resp: AxiosResponse<Todo> = await axios.post(
+    "https://jsonplaceholder.typicode.com/todos",
+    payload,
+    {
+      headers: { "Content-Type": "application/json" }
     }
-  }
-
-  /* ---------- 2nd pass: verify candidate ---------- */
-  let freq = 0;
-  for (const num of arr) {
-    if (num === candidate) freq++;
-  }
-
-  return (freq > Math.floor(arr.length / 2)) ? candidate : null;
+  );
+  return resp.data;
 }
-const nums = [3, 1, 3, 3, 2, 3, 3];
-const majority = majorityElement(nums);
-console.log(majority); // → 3
-export function majorityElementMap<T>(arr: T[]): T | null {
-  const counts = new Map<T, number>();
-  
-  for (const val of arr) {
-    counts.set(val, (counts.get(val) ?? 0) + 1);
-  }
+// src/index.ts
+import { fetchTodoById, createTodo } from "./api";
 
-  const threshold = Math.floor(arr.length / 2);
-  for (const [val, cnt] of counts) {
-    if (cnt > threshold) return val;
+(async () => {
+  try {
+    const todo = await fetchTodoById(1);
+    console.log("Fetched TODO:", todo);
+
+    const newTodo = await createTodo({
+      userId: 1,
+      title: "Buy coffee",
+      completed: false
+    });
+    console.log("Created TODO:", newTodo);
+  } catch (err) {
+    console.error("Something went wrong:", err);
   }
-  return null;
-}
+})();
