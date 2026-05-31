@@ -1,32 +1,89 @@
-/**
- * Returns the longest common substring between `a` and `b`.
- * If there are several with the same length, the one that appears first in `a` is returned.
- */
-export function longestCommonSubstring(a: string, b: string): string {
-  if (!a || !b) return '';
+// ------------------------------------------------------------------
+// 1️⃣  Graph representation (adjacency list)
+// ------------------------------------------------------------------
+type NodeID = string;  // or number – whatever uniquely identifies a node
+interface Graph {
+  // `edges[u]` is a list of all nodes directly reachable from `u`
+  [key: string]: NodeID[];
+}
 
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  // 2‑D array of zeros
-  const table = Array.from({ length: rows }, () => Array(cols).fill(0));
+// ------------------------------------------------------------------
+// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
+// ------------------------------------------------------------------
+function dfsRecursive(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID,
+  visited = new Set<NodeID>(),
+  path: NodeID[] = []
+): NodeID[] | null {
+  visited.add(start);
+  path.push(start);
 
-  let maxLen = 0;
-  let maxEndIdxA = 0;
+  if (start === target) return [...path];        // found it – return a copy of the path
 
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        table[i][j] = table[i - 1][j - 1] + 1;
-        if (table[i][j] > maxLen) {
-          maxLen = table[i][j];
-          maxEndIdxA = i;          // the end index (exclusive) in `a`
-        }
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      const result = dfsRecursive(graph, neighbor, target, visited, path);
+      if (result) return result;                 // propagate the found path upwards
+    }
+  }
+
+  path.pop();                                     // backtrack
+  return null;                                    // no path from this branch
+}
+
+// ------------------------------------------------------------------
+// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
+// ------------------------------------------------------------------
+function dfsIterative(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID
+): NodeID[] | null {
+  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
+  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
+  const visited = new Set<NodeID>();
+
+  while (stack.length) {
+    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    parentMap.set(node, parent);
+
+    if (node === target) {
+      // reconstruct path
+      const path: NodeID[] = [];
+      let current: NodeID | null = target;
+      while (current !== null) {
+        path.unshift(current);
+        current = parentMap.get(current)!;
+      }
+      return path;
+    }
+
+    for (const neighbor of graph[node] ?? []) {
+      if (!visited.has(neighbor)) {
+        stack.push({ node: neighbor, parent: node });
       }
     }
   }
 
-  return maxLen === 0 ? '' : a.slice(maxEndIdxA - maxLen, maxEndIdxA);
+  return null;          // no path found
 }
-console.log(longestCommonSubstring('ABABC', 'BABCA')); // → "ABC"
-console.log(longestCommonSubstring('kitten', 'sitting')); // → "itt"
-console.log(longestCommonSubstring('foo', 'bar')); // → ""
+
+// ------------------------------------------------------------------
+// 4️⃣  Example usage
+// ------------------------------------------------------------------
+const exampleGraph: Graph = {
+  a: ["b", "c"],
+  b: ["d", "e"],
+  c: ["f"],
+  d: [],
+  e: ["f"],
+  f: []
+};
+
+console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
+console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
