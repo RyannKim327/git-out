@@ -1,65 +1,66 @@
 /**
- * Recursively finds the index of `target` in a sorted array.
- * Returns the index if found, otherwise –1.
- *
- * @param arr   A sorted array (ascending, no duplicates needed)
- * @param target The value you're looking for
- * @param left  The left boundary (inclusive)
- * @param right The right boundary (exclusive)
+ * Finds the index of `key` in a sorted array `arr` using Fibonacci search.
+ * @param arr  A sorted array of comparable elements.
+ * @param key  The value to locate.
+ * @returns The index of `key` in `arr`, or -1 if not found.
  */
-function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  left = 0,
-  right = arr.length
-): number {
-  if (left >= right) return -1;            // no match
+export function fibonacciSearch<T>(arr: T[], key: T): number {
+  const n = arr.length;
 
-  const mid = left + ((right - left) >> 1); // safer midpoint, avoid overflow
+  // 1️⃣ Build Fibonacci numbers up to ≥ n
+  let fibMm2 = 0; // (m-2)th Fibonacci
+  let fibMm1 = 1; // (m-1)th Fibonacci
+  let fibM = fibMm2 + fibMm1; // mth Fibonacci
 
-  const cmp = arr[mid] === target
-    ? 0
-    : arr[mid] < target
-      ? -1
-      : 1;
+  while (fibM < n) {
+    fibMm2 = fibMm1;
+    fibMm1 = fibM;
+    fibM = fibMm2 + fibMm1;
+  }
 
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursive(arr, target, mid + 1, right)
-      : binarySearchRecursive(arr, target, left, mid);
+  // 2️⃣ `offset` marks the eliminated portion from the left
+  let offset = -1;
+
+  // 3️⃣ Main loop: keep shrinking the range
+  while (fibM > 1) {
+    const i = Math.min(offset + fibMm2, n - 1);
+
+    // Debugging helper: show where we're looking
+    // console.log(`Comparing at index ${i} (value=${arr[i]})`);
+
+    if (arr[i] < key) {
+      // Move three Fibonacci steps down
+      fibM = fibMm1;
+      fibMm1 = fibMm2;
+      fibMm2 = fibM - fibMm1;
+      offset = i;
+    } else if (arr[i] > key) {
+      // Move two Fibonacci steps down
+      fibM = fibMm2;
+      fibMm1 = fibMm1 - fibMm2;
+      fibMm2 = fibM - fibMm1;
+      // offset stays the same
+    } else {
+      // Element found
+      return i;
+    }
+  }
+
+  // Check the last remaining element
+  if (fibMm1 === 1 && offset + 1 < n && arr[offset + 1] === key) {
+    return offset + 1;
+  }
+
+  // Element not found
+  return -1;
 }
-const nums = [1, 3, 5, 7, 9, 11];
-console.log(binarySearchRecursive(nums, 7));  // → 3
-console.log(binarySearchRecursive(nums, 4));  // → -1
-function binarySearchRecursiveCustom<T>(
-  arr: readonly T[],
-  target: T,
-  compare: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length
+const sorted = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+console.log(fibonacciSearch(sorted, 13)); // → 6
+console.log(fibonacciSearch(sorted, 2));  // → -1
+export function fibonacciSearch<T>(
+  arr: T[],
+  key: T,
+  cmp = (a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0)
 ): number {
-  if (left >= right) return -1;
-
-  const mid = left + ((right - left) >> 1);
-  const cmp = compare(arr[mid], target);
-
-  return cmp === 0
-    ? mid
-    : cmp < 0
-      ? binarySearchRecursiveCustom(arr, target, compare, mid + 1, right)
-      : binarySearchRecursiveCustom(arr, target, compare, left, mid);
+  // use cmp(a, b) instead of a < b / a > b
 }
-interface Person { age: number; name: string; }
-const people: Person[] = [
-  { age: 22, name: 'Alice' },
-  { age: 30, name: 'Bob' },
-  { age: 45, name: 'Charlie' },
-];
-const ageToFind = 30;
-const idx = binarySearchRecursiveCustom(
-  people,
-  { age: ageToFind, name: '' },
-  (a, b) => a.age - b.age
-);
-console.log(idx); // → 1
