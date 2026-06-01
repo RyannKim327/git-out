@@ -1,36 +1,52 @@
-// src/index.ts
-import { CronJob } from 'cron';
+// A minimal node type – adjust if your list uses a different shape
+interface ListNode {
+  val: number | string;   // whatever data type you use
+  next: ListNode | null;
+}
 
 /**
- * This job fires every minute (the pattern '* * * * *' means:
- *  ────── minute   0-59
- *  ───── hour     0-23
- *  ──── day of month 1-31
- *  ── month    1-12
- *  ───── day of week 0-7 (0/7 = Sunday)
+ * Returns true iff the list starting at `head` is a palindrome.
+ * Uses O(n) time and O(n) auxiliary space.
  */
-const randomJob = new CronJob(
-  '* * * * *',              // cron syntax
-  () => {
-    const now = new Date();
-    const rand = Math.floor(Math.random() * 100); // 0‑99
-    console.log(`[${now.toLocaleTimeString()}] Random number: ${rand}`);
-  },
-  null,
-  true,                     // start the job right after creation
-  'America/New_York'        // optional timezone
-);
+function isPalindrome(head: ListNode | null): boolean {
+  // 1. Build an array with the list's values
+  const vals: (number | string)[] = [];
+  for (let cur = head; cur; cur = cur.next) {
+    vals.push(cur.val);
+  }
 
-// keep the Node process alive—if you’re in an express server or other
-// long‑running app you won’t need this manual loop.
-setInterval(() => {}, 1000);
-# Install dependencies
-npm install typescript cron @types/node
-# Optional: add a tsconfig.json if you don’t have one yet
-npx tsc --init
+  // 2. Check against a reversed copy
+  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
+    if (vals[i] !== vals[j]) {
+      return false;
+    }
+  }
+  return true;
+}
+function isPalindrome(head: ListNode | null): boolean {
+  // Find middle (slow goes 1 step, fast goes 2 steps)
+  let slow = head, fast = head;
+  while (fast?.next && fast.next.next) {
+    slow = slow!.next!;
+    fast = fast.next.next;
+  }
 
-# Compile (or just run with ts-node)
-npx ts-node src/index.ts
-[10:05:00 AM] Random number: 42
-[10:06:00 AM] Random number: 7
-...
+  // Reverse the second half of the list
+  let prev: ListNode | null = null;
+  let curr = slow?.next ?? null;
+  while (curr) {
+    const next = curr.next;
+    curr.next = prev;
+    prev = curr;
+    curr = next;
+  }
+
+  // Compare first half and reversed second half
+  let p1 = head, p2 = prev;
+  while (p2) {           // only need to go through the second half
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
