@@ -1,93 +1,45 @@
-/*  Boyer‑Moore string search
- *  ----------------------------------
- *  – pattern:  the string you’re looking for
- *  – text:     the larger string you scan
- *  Returns:    an array of the starting indices where pattern occurs
- */
+function countWordSplit(text: string, word: string, ignoreCase = false): number {
+  // Normalize to a single delimiter so we don’t double‑count
+  const delim = ignoreCase ? text.toLowerCase() : text;
+  const target = ignoreCase ? word.toLowerCase() : word;
 
-type BMResult = number[];
+  // Split on a regex that matches the word exactly
+  const parts = delim.split(new RegExp(`\\b${target}\\b`, 'g'));
+  // If the word never appears, parts.length will be 1
+  return parts.length - 1;
+}
+function countWordMatch(text: string, word: string, ignoreCase = false): number {
+  const flags = ignoreCase ? 'gi' : 'g';
+  const matches = text.match(new RegExp(`\\b${word}\\b`, flags));
+  return matches ? matches.length : 0;
+}
+function countWordManual(text: string, word: string, ignoreCase = false): number {
+  const t = ignoreCase ? text.toLowerCase() : text;
+  const w = ignoreCase ? word.toLowerCase() : word;
+  const wLen = w.length;
 
-function boyerMoore(text: string, pattern: string): BMResult {
-  if (pattern.length === 0) return [];
-  const badChar = buildBadCharShift(pattern);
-  const goodSuffix = buildGoodSuffixShift(pattern);
-  const m = pattern.length;
-  const n = text.length;
-  const result: number[] = [];
+  let count = 0;
+  for (let i = 0; i <= t.length - wLen; i++) {
+    // Word boundary logic: check chars before/after
+    const before = i === 0 || !/\w/.test(t[i - 1]);
+    const after  = i + wLen === t.length || !/\w/.test(t[i + wLen]);
 
-  let s = 0;                  // alignment of pattern with text
-  while (s <= n - m) {        // slide pattern over text
-    let j = m - 1;            // right‑most pattern position
-
-    // compare from right to left
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {                  // whole pattern matched
-      result.push(s);
-      s += goodSuffix[0];          // shift using good‑suffix
-    } else {
-      // bad‑character rule
-      const badShift = j - badChar[text[s + j]] ?? j + 1;
-      // good‑suffix rule
-      const goodShift = goodSuffix[j + 1];
-      s += Math.max(badShift, goodShift);
+    if (before && after && t.substr(i, wLen) === w) {
+      count++;
+      i += wLen - 1; // skip past this occurrence
     }
   }
-  return result;
+  return count;
 }
-
-/* -------------  Bad‑character table  ----------------- */
-function buildBadCharShift(pattern: string): Record<string, number> {
-  const lastPos: Record<string, number> = {};
-  for (let i = 0; i < pattern.length; i++) {
-    lastPos[pattern[i]] = i;          // last occurrence index
-  }
-  return lastPos;
+function countOverlapping(text: string, word: string, ignoreCase = false): number {
+  const flags = ignoreCase ? 'gi' : 'g';
+  const regex = new RegExp(`(?=${word})`, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
+const str = "The cat sat on the cat's mat. Cat bites tar.";
+const word = "cat";
 
-/* -------------  Good‑suffix table  ------------------- */
-function buildGoodSuffixShift(pattern: string): number[] {
-  const m = pattern.length;
-  const shift: number[] = new Array(m + 1).fill(m);
-  const border = new Array(m + 1).fill(0);
-  let i = m;
-  let j = m + 1;
-  border[i] = j;
-
-  // 1. Calculate borders (prefixes that are also suffixes)
-  while (i > 0) {
-    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
-      j = border[j];
-    }
-    i--; j--; border[i] = j;
-  }
-
-  // 2. Compute shift table from borders
-  for (let k = 0; k < m; k++) {
-    shift[k] = m; // default shift is pattern length
-  }
-
-  let iIdx = 0;
-  while (iIdx < m) {
-    const g = m - border[iIdx];
-    shift[g] = Math.min(shift[g], border[iIdx] + 1);
-    iIdx++;
-  }
-
-  // 3. Fill the remaining entries (when no suffix matches)
-  let last = shift[1];
-  for (let q = 2; q <= m; q++) {
-    if (shift[q] === m) shift[q] = last;
-    else last = shift[q];
-  }
-
-  return shift;
-}
-
-/* -------------  Example use ----- */
-const haystack = "ABABACABABABCAB";
-const needle = "ABABC";
-
-console.log(boyerMoore(haystack, needle));  // => [5]
+console.log(countWordSplit(str, word, true));   // 3
+console.log(countWordMatch(str, word, true));   // 3
+console.log(countWordManual(str, word, true));  // 3
