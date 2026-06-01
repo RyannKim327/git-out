@@ -1,71 +1,45 @@
-/**
- * Returns true if `a` and `b` are anagrams of each other
- * (ignoring case, whitespace and all non‑letters).
- */
-function isAnagram(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z]/g, '')          // keep only letters
-      .split('')
-      .sort()
-      .join('');
+function countWordSplit(text: string, word: string, ignoreCase = false): number {
+  // Normalize to a single delimiter so we don’t double‑count
+  const delim = ignoreCase ? text.toLowerCase() : text;
+  const target = ignoreCase ? word.toLowerCase() : word;
 
-  return clean(a) === clean(b);
+  // Split on a regex that matches the word exactly
+  const parts = delim.split(new RegExp(`\\b${target}\\b`, 'g'));
+  // If the word never appears, parts.length will be 1
+  return parts.length - 1;
 }
-export function areAnagrams(a: string, b: string): boolean {
-  const normalize = (str: string) =>
-    str
-      .toLowerCase()
-      .replace(/[^a-z]/g, '') // drop everything except letters
-      .split('')
-      .sort()
-      .join('');
-
-  return normalize(a) === normalize(b);
+function countWordMatch(text: string, word: string, ignoreCase = false): number {
+  const flags = ignoreCase ? 'gi' : 'g';
+  const matches = text.match(new RegExp(`\\b${word}\\b`, flags));
+  return matches ? matches.length : 0;
 }
-export function areAnagramsLinear(a: string, b: string): boolean {
-  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
+function countWordManual(text: string, word: string, ignoreCase = false): number {
+  const t = ignoreCase ? text.toLowerCase() : text;
+  const w = ignoreCase ? word.toLowerCase() : word;
+  const wLen = w.length;
 
-  const na = normalize(a);
-  const nb = normalize(b);
+  let count = 0;
+  for (let i = 0; i <= t.length - wLen; i++) {
+    // Word boundary logic: check chars before/after
+    const before = i === 0 || !/\w/.test(t[i - 1]);
+    const after  = i + wLen === t.length || !/\w/.test(t[i + wLen]);
 
-  if (na.length !== nb.length) return false;
-
-  const freq: Record<string, number> = {};
-
-  for (const ch of na) {
-    freq[ch] = (freq[ch] ?? 0) + 1;
+    if (before && after && t.substr(i, wLen) === w) {
+      count++;
+      i += wLen - 1; // skip past this occurrence
+    }
   }
-
-  for (const ch of nb) {
-    if (!freq[ch]) return false;
-    freq[ch]!--;
-  }
-
-  return true;
+  return count;
 }
-export function areAnagramsWithMap(a: string, b: string): boolean {
-  const clean = (s: string) =>
-    s.replace(/[^a-z]/gi, '').toLowerCase();
-
-  if (clean(a).length !== clean(b).length) return false;
-
-  const map = new Map<string, number>();
-
-  for (const ch of clean(a)) {
-    map.set(ch, (map.get(ch) ?? 0) + 1);
-  }
-
-  for (const ch of clean(b)) {
-    const cur = map.get(ch);
-    if (!cur) return false;
-    if (cur === 1) map.delete(ch);
-    else map.set(ch, cur - 1);
-  }
-
-  return map.size === 0;
+function countOverlapping(text: string, word: string, ignoreCase = false): number {
+  const flags = ignoreCase ? 'gi' : 'g';
+  const regex = new RegExp(`(?=${word})`, flags);
+  const matches = text.match(regex);
+  return matches ? matches.length : 0;
 }
-console.log(isAnagram('listen', 'silent'));   // true
-console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
-console.log(isAnagram('hello', 'world'));     // false
+const str = "The cat sat on the cat's mat. Cat bites tar.";
+const word = "cat";
+
+console.log(countWordSplit(str, word, true));   // 3
+console.log(countWordMatch(str, word, true));   // 3
+console.log(countWordManual(str, word, true));  // 3
