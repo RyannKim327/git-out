@@ -1,116 +1,65 @@
-/**
- * A binary‑heap priority queue.
- *
- * @template T  The type of the elements in the queue.
- *
- * @example
- * // min‑heap
- * const pq = new PriorityQueue<number>((a, b) => a - b);
- * pq.add(5); pq.add(2); pq.add(8);
- * console.log(pq.extract()); // 2
- *
- * // max‑heap (reverse the comparator)
- * const pqMax = new PriorityQueue<number>((a, b) => b - a);
- */
-export class PriorityQueue<T> {
-  /** The underlying array that stores the heap. */
-  private items: T[] = [];
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
+  prev: ListNode<T> | null = null;
 
-  /**
-   * @param compare Comparator: `a < b` returns a negative value,
-   *                `a === b` returns zero,
-   *                `a > b` returns a positive value.
-   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
-   *                or a custom comparator for objects.
-   */
-  constructor(private compare: (a: T, b: T) => number) {}
-
-  /** Number of elements in the queue. */
-  size(): number { return this.items.length; }
-
-  /** Whether the queue is empty. */
-  isEmpty(): boolean { return this.items.length === 0; }
-
-  /** Return the highest‑priority element without removing it. */
-  peek(): T | undefined { return this.items[0]; }
-
-  /** Insert a new element. */
-  add(element: T): void {
-    this.items.push(element);
-    this.siftUp(this.items.length - 1);
-  }
-
-  /** Remove and return the element with the highest priority. */
-  extract(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const root = this.items[0];
-    const last = this.items.pop()!;
-    if (!this.isEmpty()) {
-      this.items[0] = last;
-      this.siftDown(0);
-    }
-    return root;
-  }
-
-  /* ---- Internals ---- */
-
-  /** Move a node up until the heap property holds. */
-  private siftUp(idx: number): void {
-    let childIdx = idx;
-    while (childIdx > 0) {
-      const parentIdx = Math.floor((childIdx - 1) / 2);
-      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
-        this.swap(childIdx, parentIdx);
-        childIdx = parentIdx;
-      } else break;
-    }
-  }
-
-  /** Move a node down until the heap property holds. */
-  private siftDown(idx: number): void {
-    const lastIdx = this.items.length - 1;
-    let parentIdx = idx;
-
-    while (true) {
-      const leftIdx = parentIdx * 2 + 1;
-      const rightIdx = parentIdx * 2 + 2;
-      let smallestIdx = parentIdx;
-
-      if (leftIdx <= lastIdx &&
-          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx <= lastIdx &&
-          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx !== parentIdx) {
-        this.swap(parentIdx, smallestIdx);
-        parentIdx = smallestIdx;
-      } else break;
-    }
-  }
-
-  /** Swap two indices in the array. */
-  private swap(i: number, j: number): void {
-    const tmp = this.items[i];
-    this.items[i] = this.items[j];
-    this.items[j] = tmp;
+  constructor(value: T) {
+    this.value = value;
   }
 }
-// Min‑heap of numbers
-const minQ = new PriorityQueue<number>((a, b) => a - b);
-minQ.add(10);
-minQ.add(3);
-minQ.add(7);
-console.log(minQ.extract()); // 3
-console.log(minQ.extract()); // 7
-console.log(minQ.extract()); // 10
+function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null;
+  let curr = head;
 
-// Max‑heap of strings by length
-const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
-maxStr.add("short");
-maxStr.add("tiny");
-maxStr.add("extraordinarilylong");
-console.log(maxStr.extract()); // "extraordinarilylong"
+  while (curr) {
+    const next = curr.next;    // keep a handle on the rest
+    curr.next = prev;          // reverse the arrow
+    prev = curr;               // advance prev
+    curr = next;               // advance curr
+  }
+
+  return prev; // new head
+}
+function reverseRecursive<T>(
+  node: ListNode<T> | null,
+  prev: ListNode<T> | null = null
+): ListNode<T> | null {
+  if (!node) return prev;
+
+  const next = node.next;
+  node.next = prev;
+  return reverseRecursive(next, node);
+}
+function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let current = head;
+  let newHead: ListNode<T> | null = null;
+
+  while (current) {
+    // swap next and prev
+    const tmp = current.next;
+    current.next = current.prev;
+    current.prev = tmp;
+
+    // once we flip at the old head, that becomes the new head
+    if (!tmp) newHead = current;
+
+    current = tmp; // move to what was next, now prev
+  }
+
+  return newHead;
+}
+// Building a tiny list: 1 → 2 → 3
+const a = new ListNode(1);
+const b = new ListNode(2);
+const c = new ListNode(3);
+a.next = b; b.next = c;
+
+// Reverse
+const reversed = reverse(a);
+
+// Log values in order
+let node = reversed;
+while (node) {
+  console.log(node.value); // 3, 2, 1
+  node = node.next;
+}
