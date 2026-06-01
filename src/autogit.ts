@@ -1,51 +1,48 @@
-// Simple binary tree node
-export interface TreeNode<T = unknown> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-export function countLeavesRec<T>(root: TreeNode<T> | undefined): number {
-  // No tree = no leaves
-  if (!root) return 0;
+/**
+ * Checks whether a given integer is a prime number.
+ * @param n - The number to test. Must be an integer.
+ * @returns `true` if `n` is prime, otherwise `false`.
+ */
+export function isPrime(n: number): boolean {
+  // Reject non‑integers, negatives, and the few small non‑prime numbers
+  if (!Number.isInteger(n) || n <= 1) return false;
+  if (n <= 3) return true;           // 2 and 3 are prime
 
-  // If both children are missing → leaf
-  if (!root.left && !root.right) return 1;
+  // Any even number > 2 or divisible by 3 can't be prime
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-  // Recurse on children and add the results
-  return countLeavesRec(root.left) + countLeavesRec(root.right);
-}
-export function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;
+  // 6k ± 1 optimization:
+  // For numbers > 3, all primes are of the form 6k ± 1
+  // We check divisors 5, 7, 11, 13, 17, …
+  let i = 5;
+  const limit = Math.floor(Math.sqrt(n));
 
-  let leaves = 0;
-  const stack: Array<TreeNode<T>> = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-
-    // A leaf if both children are missing
-    if (!node.left && !node.right) {
-      leaves++;
-    } else {
-      // Push existing children onto the stack
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
-    }
+  while (i <= limit) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+    i += 6;
   }
 
-  return leaves;
+  return true;
 }
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const tree: TreeNode<string> = {
-  val: 'a',
-  left: { val: 'b', left: { val: 'd' } },
-  right: { val: 'c' },
-};
+console.log(isPrime(2));   // true
+console.log(isPrime(15));  // false
+console.log(isPrime(29));  // true
 
-console.log(countLeavesRec(tree)); // 2  (nodes d & c)
-console.log(countLeavesIter(tree)); // 2
+// Handle non‑integers gracefully
+console.log(isPrime(7.5)); // false
+export function isPrimeBigInt(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+
+  if (n % 2n === 0n || n % 3n === 0n) return false;
+
+  let i = 5n;
+  const limit = BigInt(Math.floor(Math.sqrt(Number(n)))); // careful: can't use sqrt on bigint directly
+
+  while (i <= limit) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+    i += 6n;
+  }
+
+  return true;
+}
