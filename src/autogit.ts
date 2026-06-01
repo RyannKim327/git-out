@@ -1,56 +1,40 @@
-// IStack defines the public contract for the stack.
-export interface IStack<T> {
-  push(item: T): void;      // add an item on top
-  pop(): T | undefined;     // remove and return the top item
-  peek(): T | undefined;    // look at the top without removing it
-  isEmpty(): boolean;       // true if the stack has no items
-  size(): number;           // current number of items
+const fruits = ['apple', 'banana', 'cherry', 'banana'];
+
+const withoutBanana = fruits.filter(f => f !== 'banana');
+
+console.log(withoutBanana); // ['apple', 'cherry']
+// Remove the first object with id === 42
+const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
+const itemsWithout42 = items.filter(item => item.id !== 42);
+const numbers = [10, 20, 30, 40];
+const indexToRemove = 2; // 30
+
+// splice(start, deleteCount)
+numbers.splice(indexToRemove, 1);
+
+console.log(numbers); // [10, 20, 40]
+const arr = [1, 2, 3, 4, 5];
+const cond = (x: number) => x % 2 === 0; // remove evens
+
+// Find first match and splice it out
+const idx = arr.findIndex(cond);
+if (idx !== -1) arr.splice(idx, 1);
+
+console.log(arr); // [1, 3, 5]
+// Remove the first occurrence of a value
+export function removeFirst<T>(arr: T[], target: T): T[] {
+  const idx = arr.findIndex(v => v === target);
+  if (idx === -1) return [...arr]; // not found, return copy
+  const copy = [...arr];
+  copy.splice(idx, 1);
+  return copy; // or return copy and let caller decide
 }
 
-// Stack is a simple array‑backed implementation.
-export class Stack<T> implements IStack<T> {
-  // the underlying storage – an array grows automatically
-  private items: T[] = [];
-
-  constructor(initial?: T[]) {
-    // optional initial content; does a shallow copy for safety
-    if (initial) this.items = initial.slice();
-  }
-
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  pop(): T | undefined {
-    return this.items.pop();          // pop() already returns undefined if empty
-  }
-
-  peek(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    return this.items[this.items.length - 1];
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  size(): number {
-    return this.items.length;
+// Remove by index (mutable)
+export function removeAt<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1);
   }
 }
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek());   // 30
-console.log(stack.pop());    // 30
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-while (!stack.isEmpty()) {
-  console.log(stack.pop());
-}
-// → 20
-// → 10
+// Keep everything except index 3
+const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
