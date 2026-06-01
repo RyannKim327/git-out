@@ -1,72 +1,116 @@
-hash(s) = (s[0] * B^(m‑1) + s[1] * B^(m‑2) + … + s[m‑1]) mod M
-hT = ((hT - leftChar * B^(m-1)) * B + newChar) mod M
 /**
- * Rabin‑Karp string search
+ * A binary‑heap priority queue.
  *
- * @param text    The string to search within
- * @param pattern The substring to look for
- * @returns      An array of starting indices where pattern occurs in text
+ * @template T  The type of the elements in the queue.
+ *
+ * @example
+ * // min‑heap
+ * const pq = new PriorityQueue<number>((a, b) => a - b);
+ * pq.add(5); pq.add(2); pq.add(8);
+ * console.log(pq.extract()); // 2
+ *
+ * // max‑heap (reverse the comparator)
+ * const pqMax = new PriorityQueue<number>((a, b) => b - a);
  */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
+export class PriorityQueue<T> {
+  /** The underlying array that stores the heap. */
+  private items: T[] = [];
 
-  if (m === 0 || n < m) return [];
+  /**
+   * @param compare Comparator: `a < b` returns a negative value,
+   *                `a === b` returns zero,
+   *                `a > b` returns a positive value.
+   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
+   *                or a custom comparator for objects.
+   */
+  constructor(private compare: (a: T, b: T) => number) {}
 
-  /* --------------------------------
-   * 1️⃣ Choose base and modulus
-   *
-   * Base (B) should be > alphabet size.  257 works for extended ASCII.
-   * Modulus (M) should be a large prime; 1e9+7 is common and fits 32‑bit int.
-   * -------------------------------- */
-  const B = 257;                       // base
-  const M = 1_000_000_007;             // large prime modulus
+  /** Number of elements in the queue. */
+  size(): number { return this.items.length; }
 
-  /* --------------------------------
-   * 2️⃣ Pre‑compute (B^(m‑1)) mod M
-   *      this is the weight of the leftmost character in a window
-   * -------------------------------- */
-  let highestPower = 1;
-  for (let i = 0; i < m - 1; i++) {
-    highestPower = (highestPower * B) % M;
+  /** Whether the queue is empty. */
+  isEmpty(): boolean { return this.items.length === 0; }
+
+  /** Return the highest‑priority element without removing it. */
+  peek(): T | undefined { return this.items[0]; }
+
+  /** Insert a new element. */
+  add(element: T): void {
+    this.items.push(element);
+    this.siftUp(this.items.length - 1);
   }
 
-  /* --------------------------------
-   * 3️⃣ Helper: compute hash of a string slice
-   * -------------------------------- */
-  const stringHash = (s: string): number => {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) {
-      h = (h * B + s.charCodeAt(i)) % M;
+  /** Remove and return the element with the highest priority. */
+  extract(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    const root = this.items[0];
+    const last = this.items.pop()!;
+    if (!this.isEmpty()) {
+      this.items[0] = last;
+      this.siftDown(0);
     }
-    return h;
-  };
+    return root;
+  }
 
-  /* --------------------------------
-   * 4️⃣ Initial hashes
-   * -------------------------------- */
-  const patternHash = stringHash(pattern);
-  let windowHash = stringHash(text.slice(0, m));
+  /* ---- Internals ---- */
 
-  /* --------------------------------
-   * 5️⃣ Sliding window
-   * -------------------------------- */
-  const result: number[] = [];
-  for (let i = 0; i <= n - m; i++) {
-    // a hash match → double‑check with a literal comparison
-    if (windowHash === patternHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
+  /** Move a node up until the heap property holds. */
+  private siftUp(idx: number): void {
+    let childIdx = idx;
+    while (childIdx > 0) {
+      const parentIdx = Math.floor((childIdx - 1) / 2);
+      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
+        this.swap(childIdx, parentIdx);
+        childIdx = parentIdx;
+      } else break;
+    }
+  }
+
+  /** Move a node down until the heap property holds. */
+  private siftDown(idx: number): void {
+    const lastIdx = this.items.length - 1;
+    let parentIdx = idx;
+
+    while (true) {
+      const leftIdx = parentIdx * 2 + 1;
+      const rightIdx = parentIdx * 2 + 2;
+      let smallestIdx = parentIdx;
+
+      if (leftIdx <= lastIdx &&
+          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
+        smallestIdx = leftIdx;
       }
+      if (rightIdx <= lastIdx &&
+          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
+        smallestIdx = rightIdx;
+      }
+
+      if (smallestIdx !== parentIdx) {
+        this.swap(parentIdx, smallestIdx);
+        parentIdx = smallestIdx;
+      } else break;
     }
+  }
 
-    // prepare hash for next window
-    if (i < n - m) {
-      const leftCharCode = text.charCodeAt(i);
-      const rightCharCode = text.charCodeAt(i + m);
+  /** Swap two indices in the array. */
+  private swap(i: number, j: number): void {
+    const tmp = this.items[i];
+    this.items[i] = this.items[j];
+    this.items[j] = tmp;
+  }
+}
+// Min‑heap of numbers
+const minQ = new PriorityQueue<number>((a, b) => a - b);
+minQ.add(10);
+minQ.add(3);
+minQ.add(7);
+console.log(minQ.extract()); // 3
+console.log(minQ.extract()); // 7
+console.log(minQ.extract()); // 10
 
-      // delete leftmost contribution
-      windowHash = (windowHash - leftCharCode * highestPower) % M;
-      if (windowHash < 0) windowHash += M; // keep positive
-
-      // shift left (multiply by
+// Max‑heap of strings by length
+const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
+maxStr.add("short");
+maxStr.add("tiny");
+maxStr.add("extraordinarilylong");
+console.log(maxStr.extract()); // "extraordinarilylong"
