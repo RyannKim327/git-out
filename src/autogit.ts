@@ -1,52 +1,40 @@
 /**
- * Interpolation Search
+ * Returns true if `s` is a palindrome, otherwise false.
+ * Handles case‑sensitivity and ignores anything that is not a
+ * letter or digit (you can drop that part if you need a stricter check).
  *
- * The algorithm only works on numeric, strictly‑sorted arrays.
- * It probes values near the expected position based on the key’s value,
- * so it runs “almost” as fast as binary search on uniformly distributed data.
- *
- * @param arr  Sorted numeric array (ascending)
- * @param key  Value to locate
- * @returns    Index of the key or -1 if not present
+ * No string‑to‑array conversion, no stack, no helper string – just two indices.
  */
-export function interpolationSearch(arr: number[], key: number): number {
-  if (arr.length === 0) return -1;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  let low = 0;
-  let high = arr.length - 1;
+  while (left < right) {
+    // Skip characters that aren’t alphanumeric
+    while (left < right && !isAlnum(s.charAt(left))) left++;
+    while (left < right && !isAlnum(s.charAt(right))) right--;
 
-  while (low <= high && key >= arr[low] && key <= arr[high]) {
-    // Guard against division by zero for the degenerate case
-    if (arr[high] === arr[low]) {
-      break; // all remaining elements equal; either match or no match
-    }
+    // Compare after normalising case
+    if (left < right && s.charAt(left).toLowerCase() !== s.charAt(right).toLowerCase())
+      return false;
 
-    const pos =
-      low +
-      Math.floor(
-        ((key - arr[low]) * (high - low)) / (arr[high] - arr[low]),
-      );
-
-    const midVal = arr[pos];
-
-    if (midVal === key) return pos;
-
-    if (midVal < key) {
-      low = pos + 1;
-    } else {
-      high = pos - 1;
-    }
+    left++;
+    right--;
   }
-
-  // If we exit the loop without hitting the key
-  return -1;
+  return true;
 }
-const data = [3, 8, 15, 23, 42, 56, 78, 91, 105];
-const target = 56;
-const idx = interpolationSearch(data, target);
 
-if (idx !== -1) {
-  console.log(`Found ${target} at index ${idx}`);
-} else {
-  console.log(`${target} not in the array`);
+function isAlnum(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
 }
+
+// Example:
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
