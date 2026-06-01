@@ -1,33 +1,72 @@
-function maxInArray(nums: number[]): number | undefined {
-  if (nums.length === 0) return undefined;   // nothing to compare
+hash(s) = (s[0] * B^(m‑1) + s[1] * B^(m‑2) + … + s[m‑1]) mod M
+hT = ((hT - leftChar * B^(m-1)) * B + newChar) mod M
+/**
+ * Rabin‑Karp string search
+ *
+ * @param text    The string to search within
+ * @param pattern The substring to look for
+ * @returns      An array of starting indices where pattern occurs in text
+ */
+export function rabinKarp(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
 
-  let max = nums[0];
-  for (let i = 1; i < nums.length; i++) {
-    if (nums[i] > max) max = nums[i];
+  if (m === 0 || n < m) return [];
+
+  /* --------------------------------
+   * 1️⃣ Choose base and modulus
+   *
+   * Base (B) should be > alphabet size.  257 works for extended ASCII.
+   * Modulus (M) should be a large prime; 1e9+7 is common and fits 32‑bit int.
+   * -------------------------------- */
+  const B = 257;                       // base
+  const M = 1_000_000_007;             // large prime modulus
+
+  /* --------------------------------
+   * 2️⃣ Pre‑compute (B^(m‑1)) mod M
+   *      this is the weight of the leftmost character in a window
+   * -------------------------------- */
+  let highestPower = 1;
+  for (let i = 0; i < m - 1; i++) {
+    highestPower = (highestPower * B) % M;
   }
-  return max;
-}
-function maxInArray(nums: number[]): number | undefined {
-  return nums.length ? Math.max(...nums) : undefined;
-}
-function maxInArray(nums: number[]): number | undefined {
-  return nums.reduce<number | undefined>((acc, cur) => {
-    return acc === undefined ? cur : cur > acc ? cur : acc;
-  }, undefined);
-}
-type Comparator<T> = (a: T, b: T) => number;
 
-function maxBy<T>(arr: T[], cmp: Comparator<T>): T | undefined {
-  if (arr.length === 0) return undefined;
-  return arr.reduce((max, cur) => (cmp(cur, max) > 0 ? cur : max));
-}
-const values = [5, 12, 3, 9];
-const maxVal = maxBy(values, (a, b) => a - b); // 12
+  /* --------------------------------
+   * 3️⃣ Helper: compute hash of a string slice
+   * -------------------------------- */
+  const stringHash = (s: string): number => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h * B + s.charCodeAt(i)) % M;
+    }
+    return h;
+  };
 
-const users = [
-  { id: 1, name: 'Alice' },
-  { id: 42, name: 'Bob' },
-  { id: 7, name: 'Carol' }
-];
-const top = maxBy(users, (a, b) => a.id - b.id);
-// top => { id: 42, name: 'Bob' }
+  /* --------------------------------
+   * 4️⃣ Initial hashes
+   * -------------------------------- */
+  const patternHash = stringHash(pattern);
+  let windowHash = stringHash(text.slice(0, m));
+
+  /* --------------------------------
+   * 5️⃣ Sliding window
+   * -------------------------------- */
+  const result: number[] = [];
+  for (let i = 0; i <= n - m; i++) {
+    // a hash match → double‑check with a literal comparison
+    if (windowHash === patternHash) {
+      if (text.substr(i, m) === pattern) {
+        result.push(i);
+      }
+    }
+
+    // prepare hash for next window
+    if (i < n - m) {
+      const leftCharCode = text.charCodeAt(i);
+      const rightCharCode = text.charCodeAt(i + m);
+
+      // delete leftmost contribution
+      windowHash = (windowHash - leftCharCode * highestPower) % M;
+      if (windowHash < 0) windowHash += M; // keep positive
+
+      // shift left (multiply by
