@@ -1,56 +1,70 @@
-// IStack defines the public contract for the stack.
-export interface IStack<T> {
-  push(item: T): void;      // add an item on top
-  pop(): T | undefined;     // remove and return the top item
-  peek(): T | undefined;    // look at the top without removing it
-  isEmpty(): boolean;       // true if the stack has no items
-  size(): number;           // current number of items
-}
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 
-// Stack is a simple array‑backed implementation.
-export class Stack<T> implements IStack<T> {
-  // the underlying storage – an array grows automatically
-  private items: T[] = [];
-
-  constructor(initial?: T[]) {
-    // optional initial content; does a shallow copy for safety
-    if (initial) this.items = initial.slice();
-  }
-
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  pop(): T | undefined {
-    return this.items.pop();          // pop() already returns undefined if empty
-  }
-
-  peek(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    return this.items[this.items.length - 1];
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  size(): number {
-    return this.items.length;
+  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
+    this.val = val;
+    this.left = left;
+    this.right = right;
   }
 }
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek());   // 30
-console.log(stack.pop());    // 30
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-while (!stack.isEmpty()) {
-  console.log(stack.pop());
+function sumNodes(root: TreeNode | null): number {
+  if (!root) return 0;
+  return root.val + sumNodes(root.left) + sumNodes(root.right);
 }
-// → 20
-// → 10
+// Build a small tree:
+//       1
+//      / \
+//     2   3
+//        / \
+//
+// 4   5
+
+const tree = new TreeNode(
+  1,
+  new TreeNode(2),
+  new TreeNode(3, new TreeNode(4), new TreeNode(5))
+);
+
+console.log(sumNodes(tree)); // → 15
+interface TreeNode {
+  value: number;
+  left?: TreeNode;
+  right?: TreeNode;
+}
+function sumNodesFunctional(root: TreeNode | undefined): number {
+  if (!root) return 0;
+  return root.value + sumNodesFunctional(root.left) + sumNodesFunctional(root.right);
+}
+const funcTree: TreeNode = {
+  value: 1,
+  left: { value: 2 },
+  right: {
+    value: 3,
+    left: { value: 4 },
+    right: { value: 5 },
+  },
+};
+
+console.log(sumNodesFunctional(funcTree)); // → 15
+function sumNodesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let sum = 0;
+  const stack: (TreeNode | null)[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node) continue;
+
+    sum += node.val;          // inside a class node
+    // sum += node.value;      // inside a functional node
+
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+
+  return sum;
+}
+console.log(sumNodesIterative(tree)); // → 15
