@@ -1,32 +1,71 @@
 /**
- * Returns the longest common prefix of the supplied strings.
- * @param strs Array of strings.  An empty array yields an empty string.
+ * Returns true if `a` and `b` are anagrams of each other
+ * (ignoring case, whitespace and all non‑letters).
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return '';
+function isAnagram(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z]/g, '')          // keep only letters
+      .split('')
+      .sort()
+      .join('');
 
-  // The prefix can never be longer than the shortest string
-  let prefix = strs[0];
+  return clean(a) === clean(b);
+}
+export function areAnagrams(a: string, b: string): boolean {
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z]/g, '') // drop everything except letters
+      .split('')
+      .sort()
+      .join('');
 
-  for (let i = 1; i < strs.length; i++) {
-    // Trim the prefix until it matches the start of strs[i]
-    while (!strs[i].startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';          // No common prefix
-    }
+  return normalize(a) === normalize(b);
+}
+export function areAnagramsLinear(a: string, b: string): boolean {
+  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
+
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  if (na.length !== nb.length) return false;
+
+  const freq: Record<string, number> = {};
+
+  for (const ch of na) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  return prefix;
+  for (const ch of nb) {
+    if (!freq[ch]) return false;
+    freq[ch]!--;
+  }
+
+  return true;
 }
-function longestCommonPrefixSorted(strs: string[]): string {
-  if (!strs.length) return '';
-  // Sorting guarantees that the first and last strings differ the most
-  const sorted = [...strs].sort();
-  const first = sorted[0];
-  const last = sorted[sorted.length - 1];
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) i++;
-  return first.slice(0, i);
+export function areAnagramsWithMap(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.replace(/[^a-z]/gi, '').toLowerCase();
+
+  if (clean(a).length !== clean(b).length) return false;
+
+  const map = new Map<string, number>();
+
+  for (const ch of clean(a)) {
+    map.set(ch, (map.get(ch) ?? 0) + 1);
+  }
+
+  for (const ch of clean(b)) {
+    const cur = map.get(ch);
+    if (!cur) return false;
+    if (cur === 1) map.delete(ch);
+    else map.set(ch, cur - 1);
+  }
+
+  return map.size === 0;
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // → 'fl'
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));   // → ''
+console.log(isAnagram('listen', 'silent'));   // true
+console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
+console.log(isAnagram('hello', 'world'));     // false
