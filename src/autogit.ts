@@ -1,44 +1,51 @@
-// A plain, singly‑linked node.
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+// Simple binary tree node
+export interface TreeNode<T = unknown> {
+  val: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
+export function countLeavesRec<T>(root: TreeNode<T> | undefined): number {
+  // No tree = no leaves
+  if (!root) return 0;
 
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
+  // If both children are missing → leaf
+  if (!root.left && !root.right) return 1;
+
+  // Recurse on children and add the results
+  return countLeavesRec(root.left) + countLeavesRec(root.right);
+}
+export function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
+  if (!root) return 0;
+
+  let leaves = 0;
+  const stack: Array<TreeNode<T>> = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+
+    // A leaf if both children are missing
+    if (!node.left && !node.right) {
+      leaves++;
+    } else {
+      // Push existing children onto the stack
+      if (node.left) stack.push(node.left);
+      if (node.right) stack.push(node.right);
+    }
   }
-}
-/**
- * Walks the list and counts how many nodes it contains.
- * @param head The first node of the list (or null for an empty list).
- * @returns How many nodes are in the list.
- */
-function listLength<T>(head: ListNode<T> | null): number {
-  let count = 0;
-  let current = head;
 
-  while (current !== null) {
-    count++;
-    current = current.next;
-  }
+  return leaves;
+}
+// Build a tiny tree:
+//       a
+//      / \
+//     b   c
+//    /
+//   d
+const tree: TreeNode<string> = {
+  val: 'a',
+  left: { val: 'b', left: { val: 'd' } },
+  right: { val: 'c' },
+};
 
-  return count;
-}
-function listLengthRecursive<T>(node: ListNode<T> | null): number {
-  if (!node) return 0;                // base case: nothing left
-  return 1 + listLengthRecursive(node.next); // recurse
-}
-// Build a list: 1 → 2 → 3 → null
-const third = new ListNode(3);
-const second = new ListNode(2, third);
-const first = new ListNode(1, second);
-
-console.log(listLength(first));                // 3
-console.log(listLengthRecursive(first));       // 3
-console.log(listLength(null));                // 0
-// For a doubly linked node that has .next and .prev:
-let current = head;
-while (current !== null) {
-  count++;
-  current = current.next;  // or current.prev, depending on direction
-}
+console.log(countLeavesRec(tree)); // 2  (nodes d & c)
+console.log(countLeavesIter(tree)); // 2
