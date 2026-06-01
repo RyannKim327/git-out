@@ -1,44 +1,15 @@
-// A plain, singly‑linked node.
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+function randInt(min: number, max: number): number {
+  // Ensure we get whole numbers
+  const lower = Math.ceil(min);
+  const upper = Math.floor(max);
 
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
-  }
+  // Math.random() is [0, 1) – 0 inclusive, 1 exclusive
+  // Multiply by (upper - lower + 1) to get the right span
+  // Then add lower to shift into the desired range
+  return Math.floor(Math.random() * (upper - lower + 1)) + lower;
 }
-/**
- * Walks the list and counts how many nodes it contains.
- * @param head The first node of the list (or null for an empty list).
- * @returns How many nodes are in the list.
- */
-function listLength<T>(head: ListNode<T> | null): number {
-  let count = 0;
-  let current = head;
-
-  while (current !== null) {
-    count++;
-    current = current.next;
-  }
-
-  return count;
-}
-function listLengthRecursive<T>(node: ListNode<T> | null): number {
-  if (!node) return 0;                // base case: nothing left
-  return 1 + listLengthRecursive(node.next); // recurse
-}
-// Build a list: 1 → 2 → 3 → null
-const third = new ListNode(3);
-const second = new ListNode(2, third);
-const first = new ListNode(1, second);
-
-console.log(listLength(first));                // 3
-console.log(listLengthRecursive(first));       // 3
-console.log(listLength(null));                // 0
-// For a doubly linked node that has .next and .prev:
-let current = head;
-while (current !== null) {
-  count++;
-  current = current.next;  // or current.prev, depending on direction
+const random = randInt(10, 20);  // could be 10, 11, …, or 20
+console.log(random);
+function randFloat(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
 }
