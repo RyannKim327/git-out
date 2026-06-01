@@ -1,52 +1,69 @@
-// A minimal node type – adjust if your list uses a different shape
-interface ListNode {
-  val: number | string;   // whatever data type you use
-  next: ListNode | null;
-}
-
 /**
- * Returns true iff the list starting at `head` is a palindrome.
- * Uses O(n) time and O(n) auxiliary space.
+ * Bottom‑up merge‑sort (iterative).
+ *
+ * @param arr          The array to sort – mutated in‑place.
+ * @param compare      Optional compare function.  Defaults to numeric comparison.
+ *
+ * If you want a sort that works for arbitrary objects just provide a
+ * compare function just like `Array.prototype.sort` expects:
+ *   - negative if a < b
+ *   - 0  if a == b
+ *   - positive if a > b
  */
-function isPalindrome(head: ListNode | null): boolean {
-  // 1. Build an array with the list's values
-  const vals: (number | string)[] = [];
-  for (let cur = head; cur; cur = cur.next) {
-    vals.push(cur.val);
-  }
+export function mergeSortIterative<T>(arr: T[], compare?: (a: T, b: T) => number): void {
+  const n = arr.length;
+  if (n <= 1) return; // already sorted
 
-  // 2. Check against a reversed copy
-  for (let i = 0, j = vals.length - 1; i < j; i++, j--) {
-    if (vals[i] !== vals[j]) {
-      return false;
+  // fall back to the natural < > if no comparator given
+  const cmp = compare ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+
+  // auxiliary buffer – we'll read from one and write to the other
+  const buffer = arr.slice(); // clone → same length, owns data
+
+  // "width" is the size of the runs we merge.  Starts at 1 and doubles each pass.
+  for (let width = 1; width < n; width <<= 1) {
+    // For every pair of runs at this width:
+    for (let leftStart = 0; leftStart < n; leftStart += width << 1) {
+      const mid = Math.min(leftStart + width, n);          // end of first run
+      const rightEnd = Math.min(leftStart + (width << 1), n); // end of second run
+      const rightStart = mid;                            // start of second run
+
+      // Merge arr[leftStart:mid] and arr[mid:rightEnd] into buffer
+      let i = leftStart;  // pointer into first run (in arr or buffer)
+      let j = rightStart; // pointer into second run
+      let k = leftStart;  // write pointer into buffer
+
+      // Decide which source (arr or buffer) contains the current runs.
+      // On the first pass, arr contains the data; from the second pass onwards,
+      // buffer holds the sorted runs from the previous width.
+      const src = (width === 1) ? arr : buffer; // runs are in src for this pass
+      const dst = buffer;                       // always write into buffer
+
+      while (i < mid && j < rightEnd) {
+        if (cmp(src[i] as any, src[j] as any) <= 0) {
+          dst[k++] = src[i++];
+        } else {
+          dst[k++] = src[j++];
+        }
+      }
+      // copy the rest of the left run (if any)
+      while (i < mid) {
+        dst[k++] = src[i++];
+      }
+      // copy the rest of the right run (if any)
+      while (j < rightEnd) {
+        dst[k++] = src[j++];
+      }
     }
-  }
-  return true;
-}
-function isPalindrome(head: ListNode | null): boolean {
-  // Find middle (slow goes 1 step, fast goes 2 steps)
-  let slow = head, fast = head;
-  while (fast?.next && fast.next.next) {
-    slow = slow!.next!;
-    fast = fast.next.next;
-  }
 
-  // Reverse the second half of the list
-  let prev: ListNode | null = null;
-  let curr = slow?.next ?? null;
-  while (curr) {
-    const next = curr.next;
-    curr.next = prev;
-    prev = curr;
-    curr = next;
+    // After each full pass, swap arr and buffer.
+    // The “source” for the next pass becomes the array that was just written into.
+    for (let i = 0; i < n; i++) {
+      arr[i] = buffer[i];
+    }
+    // (No need to copy back – we overwrite `arr` each time.)
   }
-
-  // Compare first half and reversed second half
-  let p1 = head, p2 = prev;
-  while (p2) {           // only need to go through the second half
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
 }
+const arr = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(arr);
+console.log(arr); // [3, 9, 10, 27, 38, 43, 82]
