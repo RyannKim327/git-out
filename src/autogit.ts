@@ -1,39 +1,56 @@
-/**
- * Return n! (n factorial)
- * Works nicely for small n (≤ 20 with a regular number type)
- */
-const factorialRec = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  return n <= 1 ? 1 : n * factorialRec(n - 1);
-};
+// IStack defines the public contract for the stack.
+export interface IStack<T> {
+  push(item: T): void;      // add an item on top
+  pop(): T | undefined;     // remove and return the top item
+  peek(): T | undefined;    // look at the top without removing it
+  isEmpty(): boolean;       // true if the stack has no items
+  size(): number;           // current number of items
+}
 
-// Example
-console.log(factorialRec(5)); // 120
-/**
- * Same result but no recursion overhead
- */
-const factorialIter = (n: number): number => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; ++i) {
-    result *= i;
+// Stack is a simple array‑backed implementation.
+export class Stack<T> implements IStack<T> {
+  // the underlying storage – an array grows automatically
+  private items: T[] = [];
+
+  constructor(initial?: T[]) {
+    // optional initial content; does a shallow copy for safety
+    if (initial) this.items = initial.slice();
   }
-  return result;
-};
 
-// Example
-console.log(factorialIter(5)); // 120
-/**
- * Uses BigInt so it never loses precision
- */
-const factorialBig = (n: number): bigint => {
-  if (n < 0) throw new Error('Factorial is not defined for negative numbers');
-  let result = 1n; // 1n is a BigInt literal
-  for (let i = 2n; i <= BigInt(n); i++) {
-    result *= i;
+  push(item: T): void {
+    this.items.push(item);
   }
-  return result;
-};
 
-// Example
-console.log(factorialBig(100).toString()); // “933262154439…(ends with 00)”
+  pop(): T | undefined {
+    return this.items.pop();          // pop() already returns undefined if empty
+  }
+
+  peek(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    return this.items[this.items.length - 1];
+  }
+
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  size(): number {
+    return this.items.length;
+  }
+}
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek());   // 30
+console.log(stack.pop());    // 30
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+while (!stack.isEmpty()) {
+  console.log(stack.pop());
+}
+// → 20
+// → 10
