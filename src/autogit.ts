@@ -1,36 +1,56 @@
-// src/index.ts
-import { CronJob } from 'cron';
+// IStack defines the public contract for the stack.
+export interface IStack<T> {
+  push(item: T): void;      // add an item on top
+  pop(): T | undefined;     // remove and return the top item
+  peek(): T | undefined;    // look at the top without removing it
+  isEmpty(): boolean;       // true if the stack has no items
+  size(): number;           // current number of items
+}
 
-/**
- * This job fires every minute (the pattern '* * * * *' means:
- *  ────── minute   0-59
- *  ───── hour     0-23
- *  ──── day of month 1-31
- *  ── month    1-12
- *  ───── day of week 0-7 (0/7 = Sunday)
- */
-const randomJob = new CronJob(
-  '* * * * *',              // cron syntax
-  () => {
-    const now = new Date();
-    const rand = Math.floor(Math.random() * 100); // 0‑99
-    console.log(`[${now.toLocaleTimeString()}] Random number: ${rand}`);
-  },
-  null,
-  true,                     // start the job right after creation
-  'America/New_York'        // optional timezone
-);
+// Stack is a simple array‑backed implementation.
+export class Stack<T> implements IStack<T> {
+  // the underlying storage – an array grows automatically
+  private items: T[] = [];
 
-// keep the Node process alive—if you’re in an express server or other
-// long‑running app you won’t need this manual loop.
-setInterval(() => {}, 1000);
-# Install dependencies
-npm install typescript cron @types/node
-# Optional: add a tsconfig.json if you don’t have one yet
-npx tsc --init
+  constructor(initial?: T[]) {
+    // optional initial content; does a shallow copy for safety
+    if (initial) this.items = initial.slice();
+  }
 
-# Compile (or just run with ts-node)
-npx ts-node src/index.ts
-[10:05:00 AM] Random number: 42
-[10:06:00 AM] Random number: 7
-...
+  push(item: T): void {
+    this.items.push(item);
+  }
+
+  pop(): T | undefined {
+    return this.items.pop();          // pop() already returns undefined if empty
+  }
+
+  peek(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    return this.items[this.items.length - 1];
+  }
+
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  size(): number {
+    return this.items.length;
+  }
+}
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek());   // 30
+console.log(stack.pop());    // 30
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+while (!stack.isEmpty()) {
+  console.log(stack.pop());
+}
+// → 20
+// → 10
