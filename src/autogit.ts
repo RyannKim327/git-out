@@ -1,23 +1,89 @@
-// 1️⃣  The classic way – split the text into an array, reverse that array, then join it back together.
-function reverseString1(s: string): string {
-  return s.split('').reverse().join('');
+// ------------------------------------------------------------------
+// 1️⃣  Graph representation (adjacency list)
+// ------------------------------------------------------------------
+type NodeID = string;  // or number – whatever uniquely identifies a node
+interface Graph {
+  // `edges[u]` is a list of all nodes directly reachable from `u`
+  [key: string]: NodeID[];
 }
 
-// 2️⃣  For full Unicode safety you can build the array from code points instead of UTF‑16 units.
-function reverseString2(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+// ------------------------------------------------------------------
+// 2️⃣  Recursive DFS: useful for small‑to‑medium graphs
+// ------------------------------------------------------------------
+function dfsRecursive(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID,
+  visited = new Set<NodeID>(),
+  path: NodeID[] = []
+): NodeID[] | null {
+  visited.add(start);
+  path.push(start);
 
-// 3️⃣  A bit more manual but shows the underlying steps; handy if you want to tweak the logic.
-function reverseString3(s: string): string {
-  const out: string[] = [];
-  for (let i = s.length - 1; i >= 0; i--) {
-    out.push(s[i]);           // or use code points with s.codePointAt(i)
+  if (start === target) return [...path];        // found it – return a copy of the path
+
+  for (const neighbor of graph[start] ?? []) {
+    if (!visited.has(neighbor)) {
+      const result = dfsRecursive(graph, neighbor, target, visited, path);
+      if (result) return result;                 // propagate the found path upwards
+    }
   }
-  return out.join('');
+
+  path.pop();                                     // backtrack
+  return null;                                    // no path from this branch
 }
 
-// 4️⃣  One‑liner with a helper slice call (works well for ASCII).
-const reverseString4 = (s: string) => s.split('').reverse().join('');
-console.log(reverseString1('hello')); // 'olleh'
-console.log(reverseString2('👍🏼👋')); // '👋🏼👍'
+// ------------------------------------------------------------------
+// 3️⃣  Iterative DFS: safer for deep graphs or limited stack sizes
+// ------------------------------------------------------------------
+function dfsIterative(
+  graph: Graph,
+  start: NodeID,
+  target: NodeID
+): NodeID[] | null {
+  const stack: { node: NodeID; parent: NodeID | null }[] = [{ node: start, parent: null }];
+  const parentMap = new Map<NodeID, NodeID | null>();   // to rebuild the path once target is found
+  const visited = new Set<NodeID>();
+
+  while (stack.length) {
+    const { node, parent } = stack.pop()!; // !! – stack is non‑empty here
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+    parentMap.set(node, parent);
+
+    if (node === target) {
+      // reconstruct path
+      const path: NodeID[] = [];
+      let current: NodeID | null = target;
+      while (current !== null) {
+        path.unshift(current);
+        current = parentMap.get(current)!;
+      }
+      return path;
+    }
+
+    for (const neighbor of graph[node] ?? []) {
+      if (!visited.has(neighbor)) {
+        stack.push({ node: neighbor, parent: node });
+      }
+    }
+  }
+
+  return null;          // no path found
+}
+
+// ------------------------------------------------------------------
+// 4️⃣  Example usage
+// ------------------------------------------------------------------
+const exampleGraph: Graph = {
+  a: ["b", "c"],
+  b: ["d", "e"],
+  c: ["f"],
+  d: [],
+  e: ["f"],
+  f: []
+};
+
+console.log(dfsRecursive(exampleGraph, "a", "f"));   // -> [ 'a', 'b', 'e', 'f' ]
+console.log(dfsIterative(exampleGraph, "a", "f"));   // -> same path, may be different order
