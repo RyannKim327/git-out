@@ -1,44 +1,71 @@
-// A plain, singly‑linked node.
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
-  }
-}
 /**
- * Walks the list and counts how many nodes it contains.
- * @param head The first node of the list (or null for an empty list).
- * @returns How many nodes are in the list.
+ * Returns true if `a` and `b` are anagrams of each other
+ * (ignoring case, whitespace and all non‑letters).
  */
-function listLength<T>(head: ListNode<T> | null): number {
-  let count = 0;
-  let current = head;
+function isAnagram(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z]/g, '')          // keep only letters
+      .split('')
+      .sort()
+      .join('');
 
-  while (current !== null) {
-    count++;
-    current = current.next;
+  return clean(a) === clean(b);
+}
+export function areAnagrams(a: string, b: string): boolean {
+  const normalize = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z]/g, '') // drop everything except letters
+      .split('')
+      .sort()
+      .join('');
+
+  return normalize(a) === normalize(b);
+}
+export function areAnagramsLinear(a: string, b: string): boolean {
+  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z]/g, '');
+
+  const na = normalize(a);
+  const nb = normalize(b);
+
+  if (na.length !== nb.length) return false;
+
+  const freq: Record<string, number> = {};
+
+  for (const ch of na) {
+    freq[ch] = (freq[ch] ?? 0) + 1;
   }
 
-  return count;
-}
-function listLengthRecursive<T>(node: ListNode<T> | null): number {
-  if (!node) return 0;                // base case: nothing left
-  return 1 + listLengthRecursive(node.next); // recurse
-}
-// Build a list: 1 → 2 → 3 → null
-const third = new ListNode(3);
-const second = new ListNode(2, third);
-const first = new ListNode(1, second);
+  for (const ch of nb) {
+    if (!freq[ch]) return false;
+    freq[ch]!--;
+  }
 
-console.log(listLength(first));                // 3
-console.log(listLengthRecursive(first));       // 3
-console.log(listLength(null));                // 0
-// For a doubly linked node that has .next and .prev:
-let current = head;
-while (current !== null) {
-  count++;
-  current = current.next;  // or current.prev, depending on direction
+  return true;
 }
+export function areAnagramsWithMap(a: string, b: string): boolean {
+  const clean = (s: string) =>
+    s.replace(/[^a-z]/gi, '').toLowerCase();
+
+  if (clean(a).length !== clean(b).length) return false;
+
+  const map = new Map<string, number>();
+
+  for (const ch of clean(a)) {
+    map.set(ch, (map.get(ch) ?? 0) + 1);
+  }
+
+  for (const ch of clean(b)) {
+    const cur = map.get(ch);
+    if (!cur) return false;
+    if (cur === 1) map.delete(ch);
+    else map.set(ch, cur - 1);
+  }
+
+  return map.size === 0;
+}
+console.log(isAnagram('listen', 'silent'));   // true
+console.log(isAnagram('Hello', 'O hell'));    // true (ignores spaces & case)
+console.log(isAnagram('hello', 'world'));     // false
