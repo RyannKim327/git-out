@@ -1,51 +1,93 @@
-// Simple binary tree node
-export interface TreeNode<T = unknown> {
-  val: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
-export function countLeavesRec<T>(root: TreeNode<T> | undefined): number {
-  // No tree = no leaves
-  if (!root) return 0;
+/*  Boyer‑Moore string search
+ *  ----------------------------------
+ *  – pattern:  the string you’re looking for
+ *  – text:     the larger string you scan
+ *  Returns:    an array of the starting indices where pattern occurs
+ */
 
-  // If both children are missing → leaf
-  if (!root.left && !root.right) return 1;
+type BMResult = number[];
 
-  // Recurse on children and add the results
-  return countLeavesRec(root.left) + countLeavesRec(root.right);
-}
-export function countLeavesIter<T>(root: TreeNode<T> | undefined): number {
-  if (!root) return 0;
+function boyerMoore(text: string, pattern: string): BMResult {
+  if (pattern.length === 0) return [];
+  const badChar = buildBadCharShift(pattern);
+  const goodSuffix = buildGoodSuffixShift(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
 
-  let leaves = 0;
-  const stack: Array<TreeNode<T>> = [root];
+  let s = 0;                  // alignment of pattern with text
+  while (s <= n - m) {        // slide pattern over text
+    let j = m - 1;            // right‑most pattern position
 
-  while (stack.length) {
-    const node = stack.pop()!;
+    // compare from right to left
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
 
-    // A leaf if both children are missing
-    if (!node.left && !node.right) {
-      leaves++;
+    if (j < 0) {                  // whole pattern matched
+      result.push(s);
+      s += goodSuffix[0];          // shift using good‑suffix
     } else {
-      // Push existing children onto the stack
-      if (node.left) stack.push(node.left);
-      if (node.right) stack.push(node.right);
+      // bad‑character rule
+      const badShift = j - badChar[text[s + j]] ?? j + 1;
+      // good‑suffix rule
+      const goodShift = goodSuffix[j + 1];
+      s += Math.max(badShift, goodShift);
     }
   }
-
-  return leaves;
+  return result;
 }
-// Build a tiny tree:
-//       a
-//      / \
-//     b   c
-//    /
-//   d
-const tree: TreeNode<string> = {
-  val: 'a',
-  left: { val: 'b', left: { val: 'd' } },
-  right: { val: 'c' },
-};
 
-console.log(countLeavesRec(tree)); // 2  (nodes d & c)
-console.log(countLeavesIter(tree)); // 2
+/* -------------  Bad‑character table  ----------------- */
+function buildBadCharShift(pattern: string): Record<string, number> {
+  const lastPos: Record<string, number> = {};
+  for (let i = 0; i < pattern.length; i++) {
+    lastPos[pattern[i]] = i;          // last occurrence index
+  }
+  return lastPos;
+}
+
+/* -------------  Good‑suffix table  ------------------- */
+function buildGoodSuffixShift(pattern: string): number[] {
+  const m = pattern.length;
+  const shift: number[] = new Array(m + 1).fill(m);
+  const border = new Array(m + 1).fill(0);
+  let i = m;
+  let j = m + 1;
+  border[i] = j;
+
+  // 1. Calculate borders (prefixes that are also suffixes)
+  while (i > 0) {
+    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
+      j = border[j];
+    }
+    i--; j--; border[i] = j;
+  }
+
+  // 2. Compute shift table from borders
+  for (let k = 0; k < m; k++) {
+    shift[k] = m; // default shift is pattern length
+  }
+
+  let iIdx = 0;
+  while (iIdx < m) {
+    const g = m - border[iIdx];
+    shift[g] = Math.min(shift[g], border[iIdx] + 1);
+    iIdx++;
+  }
+
+  // 3. Fill the remaining entries (when no suffix matches)
+  let last = shift[1];
+  for (let q = 2; q <= m; q++) {
+    if (shift[q] === m) shift[q] = last;
+    else last = shift[q];
+  }
+
+  return shift;
+}
+
+/* -------------  Example use ----- */
+const haystack = "ABABACABABABCAB";
+const needle = "ABABC";
+
+console.log(boyerMoore(haystack, needle));  // => [5]
