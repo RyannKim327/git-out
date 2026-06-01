@@ -1,70 +1,44 @@
-class TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+// A plain, singly‑linked node.
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-  constructor(val: number, left: TreeNode | null = null, right: TreeNode | null = null) {
-    this.val = val;
-    this.left = left;
-    this.right = right;
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
   }
 }
-function sumNodes(root: TreeNode | null): number {
-  if (!root) return 0;
-  return root.val + sumNodes(root.left) + sumNodes(root.right);
-}
-// Build a small tree:
-//       1
-//      / \
-//     2   3
-//        / \
-//
-// 4   5
+/**
+ * Walks the list and counts how many nodes it contains.
+ * @param head The first node of the list (or null for an empty list).
+ * @returns How many nodes are in the list.
+ */
+function listLength<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
 
-const tree = new TreeNode(
-  1,
-  new TreeNode(2),
-  new TreeNode(3, new TreeNode(4), new TreeNode(5))
-);
-
-console.log(sumNodes(tree)); // → 15
-interface TreeNode {
-  value: number;
-  left?: TreeNode;
-  right?: TreeNode;
-}
-function sumNodesFunctional(root: TreeNode | undefined): number {
-  if (!root) return 0;
-  return root.value + sumNodesFunctional(root.left) + sumNodesFunctional(root.right);
-}
-const funcTree: TreeNode = {
-  value: 1,
-  left: { value: 2 },
-  right: {
-    value: 3,
-    left: { value: 4 },
-    right: { value: 5 },
-  },
-};
-
-console.log(sumNodesFunctional(funcTree)); // → 15
-function sumNodesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let sum = 0;
-  const stack: (TreeNode | null)[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop();
-    if (!node) continue;
-
-    sum += node.val;          // inside a class node
-    // sum += node.value;      // inside a functional node
-
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+  while (current !== null) {
+    count++;
+    current = current.next;
   }
 
-  return sum;
+  return count;
 }
-console.log(sumNodesIterative(tree)); // → 15
+function listLengthRecursive<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;                // base case: nothing left
+  return 1 + listLengthRecursive(node.next); // recurse
+}
+// Build a list: 1 → 2 → 3 → null
+const third = new ListNode(3);
+const second = new ListNode(2, third);
+const first = new ListNode(1, second);
+
+console.log(listLength(first));                // 3
+console.log(listLengthRecursive(first));       // 3
+console.log(listLength(null));                // 0
+// For a doubly linked node that has .next and .prev:
+let current = head;
+while (current !== null) {
+  count++;
+  current = current.next;  // or current.prev, depending on direction
+}
