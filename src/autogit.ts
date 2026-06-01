@@ -1,56 +1,45 @@
-diameter(root) = max(
-        diameter(left)                                       // purely left side
-      , diameter(right)                                      // purely right side
-      , height(left) + height(right) + 1                     // path that goes through root
-      )
-export class TreeNode<T> {
-  constructor(
-    public val: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+function reverseWords(str: string): string {
+  // `trim()` removes leading/trailing whitespace, and `split(/\s+/)` collapses
+  // multiple separators into one array element.
+  const words = str.trim().split(/\s+/);
+  return words.reverse().join(' ');
 }
-/**
- * Return [height, diameter] of the subtree rooted at `node`.
- *
- * - `height` is the number of nodes on the longest path from `node` downwards.
- * - `diameter` is the maximum number of nodes on any path that intersects the subtree.
- */
-function heightAndDiameter<T>(
-  node: TreeNode<T> | null
-): [number, number] {
-  if (!node) return [0, 0];          // height = 0, diameter = 0
 
-  const [leftH, leftD]   = heightAndDiameter(node.left);
-  const [rightH, rightD] = heightAndDiameter(node.right);
+// Example
+console.log(reverseWords('Hello world from TypeScript'));
+// → 'TypeScript from world Hello'
+function reverseWordsReducer(str: string): string {
+  const words: string[] = [];
+  let word = '';
 
-  const height = 1 + Math.max(leftH, rightH);
-  // path that goes through this node uses left subtree, node itself, right subtree
-  const throughRoot = leftH + rightH + 1;
+  // Walk the string backwards
+  for (let i = str.length - 1; i >= 0; i--) {
+    const ch = str[i];
 
-  const diameter = Math.max(leftD, rightD, throughRoot);
+    if (ch.match(/\s/)) {
+      // When we hit whitespace, push a word if we’ve accumulated one
+      if (word) {
+        words.push(word.split('').reverse().join(''));
+        word = '';
+      }
+    } else {
+      // Build the word backwards
+      word += ch;
+    }
+  }
 
-  return [height, diameter];
+  // Push the final word (if any)
+  if (word) {
+    words.push(word.split('').reverse().join(''));
+  }
+
+  return words.join(' ');
 }
-export function diameter<T>(root: TreeNode<T> | null): number {
-  // Return diameter as number of nodes on the longest path.
-  // If you prefer “edges” instead, just return `diameter - 1`.
-  const [, dia] = heightAndDiameter(root);
-  return dia;
-}
-const root = new TreeNode(1,
-  new TreeNode(2,
-    new TreeNode(4),
-    new TreeNode(5)
-  ),
-  new TreeNode(3,
-    null,
-    new TreeNode(6)
-  )
-);
 
-console.log(diameter(root)); // → 5  (path 4‑2‑1‑3‑6)
-export function diameterInEdges<T>(root: TreeNode<T> | null): number {
-  const diaNodes = diameter(root);
-  return diaNodes > 0 ? diaNodes - 1 : 0;
-}
+console.log(reverseWordsReducer('TypeScript 2024:    Enjoy   coding!'));
+// → 'coding! Enjoy 2024: TypeScript'
+const reverse = (s: string) => s.match(/\S+/g)?.reverse().join(' ') ?? '';
+console.log(reverseWords(''));               // ''
+console.log(reverseWords('   '));             // ''
+console.log(reverseWords('single'));          // 'single'
+console.log(reverseWords('a b   c d'));       // 'd c b a'
