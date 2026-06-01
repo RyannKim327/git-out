@@ -1,40 +1,57 @@
-/**
- * Returns true if `s` is a palindrome, otherwise false.
- * Handles case‑sensitivity and ignores anything that is not a
- * letter or digit (you can drop that part if you need a stricter check).
- *
- * No string‑to‑array conversion, no stack, no helper string – just two indices.
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+// Simple directed graph helper
+class Graph {
+  private edges = new Map<string, string[]>();
 
-  while (left < right) {
-    // Skip characters that aren’t alphanumeric
-    while (left < right && !isAlnum(s.charAt(left))) left++;
-    while (left < right && !isAlnum(s.charAt(right))) right--;
-
-    // Compare after normalising case
-    if (left < right && s.charAt(left).toLowerCase() !== s.charAt(right).toLowerCase())
-      return false;
-
-    left++;
-    right--;
+  addVertex(v: string) {
+    if (!this.edges.has(v)) this.edges.set(v, []);
   }
-  return true;
-}
 
-function isAlnum(ch: string): boolean {
-  const code = ch.charCodeAt(0);
-  // 0-9
-  if (code >= 48 && code <= 57) return true;
-  // A-Z
-  if (code >= 65 && code <= 90) return true;
-  // a-z
-  if (code >= 97 && code <= 122) return true;
-  return false;
-}
+  addEdge(from: string, to: string) {
+    this.addVertex(from);
+    this.addVertex(to);
+    this.edges.get(from)!.push(to);
+  }
 
-// Example:
-console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
-console.log(isPalindrome("race a car"));                      // false
+  neighbors(v: string): string[] {
+    return this.edges.get(v) ?? [];
+  }
+
+  vertices(): string[] {
+    return Array.from(this.edges.keys());
+  }
+}
+function bfs(start: string, graph: Graph): string[] {
+  const queue: string[] = [start];
+  const visited = new Set<string>([start]);
+  const order: string[] = [];
+
+  while (queue.length) {
+    const current = queue.shift()!; // queue never empty here
+    order.push(current);
+
+    for (const next of graph.neighbors(current)) {
+      if (!visited.has(next)) {
+        visited.add(next);
+        queue.push(next);
+      }
+    }
+  }
+  return order;
+}
+// Build a quick sample graph
+const g = new Graph();
+g.addEdge("A", "B");
+g.addEdge("A", "C");
+g.addEdge("B", "D");
+g.addEdge("C", "D");
+g.addEdge("C", "E");
+g.addEdge("E", "F");
+
+// Run BFS from A
+const visitedOrder = bfs("A", g);
+console.log(visitedOrder);
+// → ["A", "B", "C", "D", "E", "F"]
+Level 0:  A
+Level 1:  B  C
+Level 2:  D  E
+Level 3:  F
