@@ -1,86 +1,129 @@
-// A graph is represented as an adjacency list.
-//   keys  – node identifiers (strings, numbers, etc.)
-//   values – array of keys this node points to
-type Graph = Record<string, string[]>
+class Edge {
+  public start: number;          // index in text where label starts
+  public end: number | string;   // end symbol or index
+  public child: SuffixNode;
 
-export function topologicalSortKahn(g: Graph): string[] {
-  // Compute indegree for every node
-  const indegree = new Map<string, number>()
-  const nodes = new Set<string>(Object.keys(g))
+  constructor(start: number, end: number | string, child: SuffixNode) {
+    this.start = start;
+    this.end = end;          // can be a "shared" reference for leaf edges
+    this.child = child;
+  }
 
-  // initialise all counts to 0
-  for (const v of nodes) indegree.set(v, 0)
-
-  // For each edge u → v, bump indegree of v
-  for (const u of Object.keys(g)) {
-    for (const v of g[u]) {
-      // if the neighbour isn't in `nodes` create an entry,
-      // this covers edges to nodes that have no outgoing edges
-      if (!indegree.has(v)) indegree.set(v, 0)
-      indegree.set(v, (indegree.get(v) ?? 0) + 1)
-      nodes.add(v)          // ensure isolated nodes are recorded
+  /** Length of the label (end is inclusive) */
+  get length(): number {
+    if (typeof this.end === 'number') {
+      return this.end - this.start + 1;
     }
+    // leaf edge: end is shared and increments as we extend
+    return (this.end as string) === '$' ? Infinity : this.end - this.start + 1;
   }
-
-  // enqueue all nodes that have indegree 0
-  const queue: string[] = [...indegree].filter(([_, d]) => d === 0).map(([n]) => n)
-  const result: string[] = []
-
-  while (queue.length) {
-    const n = queue.shift()!
-    result.push(n)
-
-    // For each outgoing edge n → m
-    for (const m of g[n] ?? []) {
-      indegree.set(m, (indegree.get(m) ?? 0) - 1)
-      if (indegree.get(m) === 0) queue.push(m)
-    }
-  }
-
-  if (result.length !== nodes.size) {
-    throw new Error('Graph has at least one cycle – topological sort impossible')
-  }
-  return result
 }
-export function topologicalSortDFS(g: Graph): string[] {
-  const result: string[] = []          // hold the ordering (reverse order)
-  const visited = new Set<string>()    // permanently visited nodes
-  const temp    = new Set<string>()    // nodes that are on the current recursion stack
 
-  const visit = (node: string) => {
-    if (temp.has(node)) {
-      throw new Error(`Cycle detected – node '${node}' revisited on the same path`)
+class SuffixNode {
+  public edges: Map<string, Edge>;   // first char → edge
+  public suffixLink?: SuffixNode;    // Ukkonen’s suffix link
+  constructor() {
+    this.edges = new Map();
+  }
+}
+class SuffixTree {
+  private root: SuffixNode;
+  private text: string;          // original string
+  private leafEnd: number;       // shared end for all leaves
+
+  private active: ActivePoint;   // current active point
+  private remainder: number;    // # of suffixes that need insertion
+
+  constructor(text: string) {
+    this.text = text + '$';  // append unique terminator
+    this.leafEnd = -1;
+    this.root = new SuffixNode();
+    this.active = { node: this.root, edge: '', length: 0 };
+    this.remainder = 0;
+
+    this.build();
+  }
+
+  /* -------------------------------------------------- */
+  /*  Core routine: Ukkonen’s O(n) construction        */
+  /* -------------------------------------------------- */
+  private build(): void {
+    for (let i = 0; i < this.text.length; i++) {
+      this.extend(i);
     }
-    if (!visited.has(node)) {
-      temp.add(node)
+  }
 
-      // Recurse on all neighbours
-      for (const m of g[node] ?? []) {
-        visit(m)
+  private extend(pos: number): void {
+    this.leafEnd = pos;
+    this.remainder++;
+    let lastNewNode: SuffixNode | undefined;
+
+    while (this.remainder > 0) {
+      // 1.  If active length is zero → the active edge is the char at pos
+      if (this.active.length === 0) {
+        this.active.edge = this.text[pos];
       }
 
-      temp.delete(node)
-      visited.add(node)
-      result.push(node)               // push after visiting all descendants
-    }
-  }
+      const edgeChar = this.active.edge;
+      const edge = this.active.node.edges.get(edgeChar);
 
-  // A graph can have disjoint components – start from every node.
-  for (const node of Object.keys(g)) {
-    if (!visited.has(node)) visit(node)
-  }
+      // 2.  No edge starts with active.edge
+      if (!edge) {
+        // create new leaf edge
+        const leaf = new SuffixNode();
+        const newEdge = new Edge(pos, this.leafEnd, leaf);
+        this.active.node.edges.set(edgeChar, newEdge);
 
-  // `result` is built in reverse; flip it to get a valid topological order
-  return result.reverse()
-}
-const example: Graph = {
-  a: ['b', 'c'],
-  b: ['d'],
-  c: ['d'],
-  d: []
-}
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this.active.node;
+          lastNewNode = undefined;
+        }
+      } else {
+        // 3.  Edge exists – walk down if needed
+        if (this.active.length >= edge.length) {
+          this.active.node = edge.child;
+          this.active.length -= edge.length;
+          this.active.edge = this.text[pos - this.remainder + 1];
+          continue;  // restart loop, remainder unchanged
+        }
 
-console.log('Kahn   →', topologicalSortKahn(example))
-console.log('DFS    →', topologicalSortDFS(example))
-Kahn   → [ 'a', 'b', 'c', 'd' ]
-DFS    → [ 'a', 'b', 'c', 'd' ]
+        // 4.  Check next char on the edge
+        const nextChar = this.text[edge.start + this.active.length];
+        if (nextChar === this.text[pos]) {
+          // 4a.  Character already present → just increment active length
+          this.active.length++;
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this.active.node;
+            lastNewNode = undefined;
+          }
+          break; // done for this phase
+        }
+
+        // 4b.  Split the edge: create an intermediate node
+        const splitEnd = edge.start + this.active.length - 1;
+        const splitNode = new SuffixNode();
+        const splitEdge = new Edge(edge.start, splitEnd, splitNode);
+
+        // replace old edge with split edge
+        this.active.node.edges.set(edgeChar, splitEdge);
+
+        // old child becomes child of splitNode
+        splitNode.edges.set(nextChar, edge);
+        edge.start = splitEnd + 1; // shift start of old edge
+
+        // new leaf for current suffix
+        const leaf = new SuffixNode();
+        const newLeafEdge = new Edge(pos, this.leafEnd, leaf);
+        splitNode.edges.set(this.text[pos], newLeafEdge);
+
+        // 4c.  Suffix link handling
+        if (lastNewNode) {
+          lastNewNode.suffixLink = splitNode;
+        }
+        lastNewNode = splitNode;
+      }
+
+      this.remainder--;
+
+      // 5.  Move active point using suffix link
+      if (this.active.node === this.root &&
