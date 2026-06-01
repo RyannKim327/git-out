@@ -1,45 +1,40 @@
 /**
- * Very common “good enough” email regex.
+ * Returns true if `s` is a palindrome, otherwise false.
+ * Handles case‑sensitivity and ignores anything that is not a
+ * letter or digit (you can drop that part if you need a stricter check).
  *
- * It accepts most real‑world addresses, rejects obvious
- * malformed strings, and stays within a tiny, readable
- * pattern.  It isn’t RFC‑5322 exhaustive, but that’s usually
- * the sweet spot for UI‑side validation.
+ * No string‑to‑array conversion, no stack, no helper string – just two indices.
  */
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-/**
- * Validate an e‑mail string.
- * @param value – value to test
- * @returns true  if it looks like an e‑mail, false otherwise
- */
-export function isValidEmail(value: string): boolean {
-  return emailRegex.test(value);
+  while (left < right) {
+    // Skip characters that aren’t alphanumeric
+    while (left < right && !isAlnum(s.charAt(left))) left++;
+    while (left < right && !isAlnum(s.charAt(right))) right--;
+
+    // Compare after normalising case
+    if (left < right && s.charAt(left).toLowerCase() !== s.charAt(right).toLowerCase())
+      return false;
+
+    left++;
+    right--;
+  }
+  return true;
 }
-const stricterEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-import { useState } from 'react';
-import { isValidEmail } from './email-utils';
 
-export default function EmailInput() {
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setEmail(val);
-    setError(val && !isValidEmail(val) ? 'Invalid address' : null);
-  };
-
-  return (
-    <div>
-      <input
-        type="email"
-        value={email}
-        onChange={handleChange}
-        aria-invalid={!!error}
-        aria-describedby={error ? 'email-error' : undefined}
-      />
-      {error && <div id="email-error" style={{color: 'red'}}>{error}</div>}
-    </div>
-  );
+function isAlnum(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
 }
+
+// Example:
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
