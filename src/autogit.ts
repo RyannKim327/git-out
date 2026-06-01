@@ -1,45 +1,25 @@
-function countWordSplit(text: string, word: string, ignoreCase = false): number {
-  // Normalize to a single delimiter so we don’t double‑count
-  const delim = ignoreCase ? text.toLowerCase() : text;
-  const target = ignoreCase ? word.toLowerCase() : word;
+/**
+ * Returns true if the array is sorted in ascending order (strictly or non‑strictly).
+ * @param arr array of items that can be compared with < and ===
+ * @param allowDuplicates if true, values equal to the previous one are still OK
+ */
+function isSortedAscending<T>(arr: T[], allowDuplicates = false): boolean {
+  if (arr.length < 2) return true;           // 0 or 1 element is always sorted
 
-  // Split on a regex that matches the word exactly
-  const parts = delim.split(new RegExp(`\\b${target}\\b`, 'g'));
-  // If the word never appears, parts.length will be 1
-  return parts.length - 1;
-}
-function countWordMatch(text: string, word: string, ignoreCase = false): number {
-  const flags = ignoreCase ? 'gi' : 'g';
-  const matches = text.match(new RegExp(`\\b${word}\\b`, flags));
-  return matches ? matches.length : 0;
-}
-function countWordManual(text: string, word: string, ignoreCase = false): number {
-  const t = ignoreCase ? text.toLowerCase() : text;
-  const w = ignoreCase ? word.toLowerCase() : word;
-  const wLen = w.length;
+  for (let i = 1; i < arr.length; i++) {
+    const a = arr[i - 1];
+    const b = arr[i];
 
-  let count = 0;
-  for (let i = 0; i <= t.length - wLen; i++) {
-    // Word boundary logic: check chars before/after
-    const before = i === 0 || !/\w/.test(t[i - 1]);
-    const after  = i + wLen === t.length || !/\w/.test(t[i + wLen]);
+    if (a > b) return false;                 // strictly smaller check
 
-    if (before && after && t.substr(i, wLen) === w) {
-      count++;
-      i += wLen - 1; // skip past this occurrence
-    }
+    if (!allowDuplicates && a === b) return false; // disallow equal values
   }
-  return count;
+  return true;
 }
-function countOverlapping(text: string, word: string, ignoreCase = false): number {
-  const flags = ignoreCase ? 'gi' : 'g';
-  const regex = new RegExp(`(?=${word})`, flags);
-  const matches = text.match(regex);
-  return matches ? matches.length : 0;
+console.log(isSortedAscending([1, 2, 3]));          // true
+console.log(isSortedAscending([1, 3, 2]));          // false
+console.log(isSortedAscending([1, 1, 2], false));   // false
+console.log(isSortedAscending([1, 1, 2], true));    // true
+function isSortedAscendingFunctional<T>(arr: T[]): boolean {
+  return arr.length < 2 || arr.every((v, i, a) => i === 0 || a[i - 1] <= v);
 }
-const str = "The cat sat on the cat's mat. Cat bites tar.";
-const word = "cat";
-
-console.log(countWordSplit(str, word, true));   // 3
-console.log(countWordMatch(str, word, true));   // 3
-console.log(countWordManual(str, word, true));  // 3
