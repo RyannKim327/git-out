@@ -1,65 +1,44 @@
+// A plain, singly‑linked node.
 class ListNode<T> {
   value: T;
   next: ListNode<T> | null = null;
-  prev: ListNode<T> | null = null;
 
-  constructor(value: T) {
+  constructor(value: T, next: ListNode<T> | null = null) {
     this.value = value;
+    this.next = next;
   }
 }
-function reverse<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null;
-  let curr = head;
-
-  while (curr) {
-    const next = curr.next;    // keep a handle on the rest
-    curr.next = prev;          // reverse the arrow
-    prev = curr;               // advance prev
-    curr = next;               // advance curr
-  }
-
-  return prev; // new head
-}
-function reverseRecursive<T>(
-  node: ListNode<T> | null,
-  prev: ListNode<T> | null = null
-): ListNode<T> | null {
-  if (!node) return prev;
-
-  const next = node.next;
-  node.next = prev;
-  return reverseRecursive(next, node);
-}
-function reverseDoubly<T>(head: ListNode<T> | null): ListNode<T> | null {
+/**
+ * Walks the list and counts how many nodes it contains.
+ * @param head The first node of the list (or null for an empty list).
+ * @returns How many nodes are in the list.
+ */
+function listLength<T>(head: ListNode<T> | null): number {
+  let count = 0;
   let current = head;
-  let newHead: ListNode<T> | null = null;
 
-  while (current) {
-    // swap next and prev
-    const tmp = current.next;
-    current.next = current.prev;
-    current.prev = tmp;
-
-    // once we flip at the old head, that becomes the new head
-    if (!tmp) newHead = current;
-
-    current = tmp; // move to what was next, now prev
+  while (current !== null) {
+    count++;
+    current = current.next;
   }
 
-  return newHead;
+  return count;
 }
-// Building a tiny list: 1 → 2 → 3
-const a = new ListNode(1);
-const b = new ListNode(2);
-const c = new ListNode(3);
-a.next = b; b.next = c;
+function listLengthRecursive<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;                // base case: nothing left
+  return 1 + listLengthRecursive(node.next); // recurse
+}
+// Build a list: 1 → 2 → 3 → null
+const third = new ListNode(3);
+const second = new ListNode(2, third);
+const first = new ListNode(1, second);
 
-// Reverse
-const reversed = reverse(a);
-
-// Log values in order
-let node = reversed;
-while (node) {
-  console.log(node.value); // 3, 2, 1
-  node = node.next;
+console.log(listLength(first));                // 3
+console.log(listLengthRecursive(first));       // 3
+console.log(listLength(null));                // 0
+// For a doubly linked node that has .next and .prev:
+let current = head;
+while (current !== null) {
+  count++;
+  current = current.next;  // or current.prev, depending on direction
 }
