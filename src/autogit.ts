@@ -1,76 +1,97 @@
-/**
- * Build the longest‑prefix‑suffix (LPS) table for a pattern.
- * lps[i] = length of the longest proper prefix of pattern[0…i]
- * that is also a suffix of this substring.
- *
- * @param pattern – string to preprocess
- * @returns array of LPS values
- */
-function buildLps(pattern: string): number[] {
-  const lps = new Array(pattern.length).fill(0);
-  let len = 0;                     // length of the previous longest prefix‑suffix
-  let i = 1;
+export interface Node<T = any> {
+  /** A value stored in the node – useful for reconstruction / debugging */
+  value: T;
 
-  while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
-      len++;
-      lps[i] = len;
-      i++;
-    } else {
-      if (len !== 0) {
-        // fall back to the previous longest prefix‑suffix
-        len = lps[len - 1];
-      } else {
-        lps[i] = 0;
-        i++;
-      }
-    }
-  }
-  return lps;
+  /** Returns an array of child nodes (or an empty array) */
+  children(): Node<T>[];
 }
-
+class IntNode implements Node<number> {
+  constructor(public value: number) {}
+  children(): IntNode[] {
+    // example: a simple binary tree
+    return [];
+  }
+}
 /**
- * Classic KMP string search.
+ * Depth‑limited search.  Returns a path from `start` to one of the goal values,
+ * or `null` if no path exists within the depth limit.
  *
- * @param text    – the text to search in
- * @param pattern – the pattern to find
- * @returns all starting indices where pattern occurs in text
+ * @param start      The node from which we start.
+ * @param isGoal     A predicate that decides if the current node is a goal.
+ * @param depthLimit How many edges you’re willing to traverse.  Zero means
+ *                   you stop immediately (only the start node is examined).
+ * @param visited    Optional set for cycle detection.
+ *
+ * @returns Array of nodes forming the path, or `null`.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];
+export function depthLimitedSearch<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number,
+  visited?: Set<Node<T>>
+): Array<Node<T>> | null {
+  if (depthLimit < 0) throw new Error('depthLimit must be ≥ 0');
 
-  const lps = buildLps(pattern);
-  const result: number[] = [];
+  // depth‑first approach – stop when limit hits
+  function recurse(
+    current: Node<T>,
+    depth: number,
+    trail: Node<T>[],
+    visitedSet: Set<Node<T>>
+  ): Array<Node<T>> | null {
+    if (!visitedSet.has(current)) {
+      if (depthLimit === 0 && depth > 0) return null; // reached limit
 
-  let i = 0; // index for text
-  let j = 0; // index for pattern
+      if (isGoal(current)) return [...trail, current];
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i++;
-      j++;
-    }
+      visitedSet.add(current);
 
-    if (j === pattern.length) {
-      // match found at i - j
-      result.push(i - j);
-      // continue searching for the next match
-      j = lps[j - 1];
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i++;
+      for (const child of current.children()) {
+        const result = recurse(child, depth + 1, [...trail, current], visitedSet);
+        if (result !== null) return result;
       }
+
+      visitedSet.delete(current); // backtrack
     }
+    return null; // not found on this branch
   }
 
-  return result;
+  const visitedSet = visited ?? new Set<Node<T>>();
+  return recurse(start, 0, [], visitedSet);
 }
-import { kmpSearch } from "./kmp";
+const goalNode = (node: Node<number>) => node.value === 42;
+const path = depthLimitedSearch(root, goalNode, 10);
+if (path) {
+  console.log('Found !!', path.map(n => n.value));
+} else {
+  console.log('No path within depth limit');
+}
+export function depthLimitedSearchIter<T = any>(
+  start: Node<T>,
+  isGoal: (node: Node<T>) => boolean,
+  depthLimit: number
+): Array<Node<T>> | null {
+  // stack holds tuples: [current node, depth so far, path so far]
+  const stack: Array<[Node<T>, number, Node<T>[]]> = [[start, 0, []]];
 
-const text = "abxabcabcaby";
-const pattern = "abcaby";
+  const visited = new Set<Node<T>>();
 
-const matches = kmpSearch(text, pattern);
-console.log(matches); // [6]
+  while (stack.length) {
+    const [node, depth, path] = stack.pop()!;
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (depth > depthLimit) continue; // skip deeper branches
+
+    const newPath = [...path, node];
+
+    if (isGoal(node)) return newPath;
+
+    for (const child of node.children()) {
+      stack.push([child, depth + 1, newPath]);
+    }
+  }
+
+  return null; // nothing found
+}
