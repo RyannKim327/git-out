@@ -1,119 +1,93 @@
+type LISResult = { l: number; seq: number[] };
+
 /**
- * Return the k‑th smallest element of an array (1‑based k).
+ * Longest Increasing Subsequence – O(n²) DP
  *
- * @param arr - the input array of comparable values
- * @param k   - which element to find (1 <= k <= arr.length)
- * @returns   the k‑th smallest element
+ * @param arr numeric array
+ * @returns object with length and the LIS itself
  */
-function kthSmallest<T>(arr: T[], k: number): T {
-  if (!Array.isArray(arr) || arr.length === 0)
-    throw new Error('Array must not be empty');
-  if (k < 1 || k > arr.length)
-    throw new RangeError('k is out of bounds');
+export function lisO2(arr: number[]): LISResult {
+  if (arr.length === 0) return { l: 0, seq: [] };
 
-  // Work on a copy so the caller’s array stays untouched
-  const a = arr.slice();
+  // Each element keeps the LIS length that ends at that index
+  const dp = Array(arr.length).fill(1);
+  // For reconstruction: previous index in the LIS ending at i
+  const prev = Array(arr.length).fill(-1);
 
-  // 0‑based index for quickselect
-  const target = k - 1;
-
-  // Classic partition (Hoare’s scheme)
-  const partition = (lo: number, hi: number): number => {
-    const pivot = a[(lo + hi) >> 1];
-    let i = lo - 1;
-    let j = hi + 1;
-    while (true) {
-      do i++; while (a[i] < pivot);
-      do j--; while (a[j] > pivot);
-      if (i >= j) return j;
-      [a[i], a[j]] = [a[j], a[i]];
+  for (let i = 1; i < arr.length; i++) {
+    for (let j = 0; j < i; j++) {
+      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
+        dp[i] = dp[j] + 1;
+        prev[i] = j;
+      }
     }
-  };
+  }
 
-  // Recursive quickselect
-  const quickselect = (lo: number, hi: number): T => {
-    if (lo === hi) return a[lo];
+  // Find index of max length
+  let maxIdx = 0;
+  for (let i = 1; i < dp.length; i++) {
+    if (dp[i] > dp[maxIdx]) maxIdx = i;
+  }
 
-    const pivotIndex = partition(lo, hi);
-    if (target <= pivotIndex) {
-      return quickselect(lo, pivotIndex);
-    } else if (target > pivotIndex + 1) {
-      return quickselect(pivotIndex + 1, hi);
+  // Reconstruct the sequence
+  const seq: number[] = [];
+  for (let k = maxIdx; k !== -1; k = prev[k]) {
+    seq.push(arr[k]);
+  }
+  seq.reverse();
+
+  return { l: dp[maxIdx], seq };
+}
+type LISResult = { l: number; seq: number[] };
+
+/**
+ * Longest Increasing Subsequence – O(n log n) patience sorting
+ *
+ * @param arr numeric array
+ * @returns object with length and the LIS itself
+ */
+export function lisOLogN(arr: number[]): LISResult {
+  if (arr.length === 0) return { l: 0, seq: [] };
+
+  /*  `tails[i]` holds the last value of a subsequence of length i+1
+      that we’ve seen so far.  It is always the smallest possible tail,
+      which gives us the chance to extend it later. */
+  const tails: number[] = [];
+  const indices: number[] = [];         // indices of chosen tails in `arr`
+  const prevIdx: number[] = Array.from({ length: arr.length }, () => -1);
+
+  for (let i = 0; i < arr.length; i++) {
+    const val = arr[i];
+    // Binary search: find first tail that is >= val
+    let l = 0, r = tails.length;
+    while (l < r) {
+      const mid = (l + r) >> 1;
+      if (tails[mid] < val) l = mid + 1;
+      else r = mid;
+    }
+
+    // l is the length (0‑based) of the subsequence we’re updating
+    if (l === tails.length) {
+      tails.push(val);
+      indices.push(i);
     } else {
-      // target lands between the two partitions
-      return a[pivotIndex + 1];
+      tails[l] = val;
+      indices[l] = i;
     }
-  };
 
-  return quickselect(0, a.length - 1);
+    // Link to predecessor if this is not the first element
+    if (l > 0) prevIdx[i] = indices[l - 1];
+  }
+
+  // Reconstruct the sequence from the last index (indices[tails.length-1])
+  let seq: number[] = [];
+  for (let k = indices[tails.length - 1]; k !== -1; k = prevIdx[k]) {
+    seq.push(arr[k]);
+  }
+  seq.reverse();
+
+  return { l: tails.length, seq };
 }
-const data = [7, 2, 9, 4, 3, 1, 5, 8, 6];
-
-console.log(kthSmallest(data, 1)); // 1
-console.log(kthSmallest(data, 3)); // 3
-console.log(kthSmallest(data, 9)); // 9
-
-// Sorting the whole array for comparison
-console.log([...data].sort((a, b) => a - b)[2]); // 3
-class MinHeap<T> {
-  private data: T[] = [];
-  private readonly compare: (a: T, b: T) => number;
-
-  constructor(compareFn: (a: T, b: T) => number) {
-    this.compare = compareFn;
-  }
-
-  push(item: T) {
-    this.data.push(item);
-    this.bubbleUp(this.data.length - 1);
-  }
-
-  pop(): T | undefined {
-    const top = this.data[0];
-    const last = this.data.pop();
-    if (this.data.length && last !== undefined) {
-      this.data[0] = last;
-      this.bubbleDown(0);
-    }
-    return top;
-  }
-
-  size() { return this.data.length; }
-
-  private bubbleUp(idx: number) {
-    const item = this.data[idx];
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.compare(item, this.data[parent]) >= 0) break;
-      this.data[idx] = this.data[parent];
-      idx = parent;
-    }
-    this.data[idx] = item;
-  }
-
-  private bubbleDown(idx: number) {
-    const length = this.data.length;
-    const item = this.data[idx];
-    while (true) {
-      let left = idx * 2 + 1;
-      if (left >= length) break;
-      let right = left + 1;
-      let smallest = left;
-      if (right < length && this.compare(this.data[right], this.data[left]) < 0)
-        smallest = right;
-      if (this.compare(this.data[smallest], item) >= 0) break;
-      this.data[idx] = this.data[smallest];
-      idx = smallest;
-    }
-    this.data[idx] = item;
-  }
-}
-
-// Usage: keep only k smallest
-function kthSmallestHeap<T>(arr: T[], k: number, cmp: (a: T, b: T) => number): T {
-  const heap = new MinHeap<T>(cmp);
-  for (const v of arr) heap.push(v);
-  let kth = heap.pop()!;
-  for (let i = 1; i < k; i++) kth = heap.pop()!;
-  return kth;
-}
+const arr = [3, 10, 2, 1, 20];
+console.log(lisO2(arr));      // { l: 3, seq: [ 3, 10, 20 ] }
+console.log(lisOLogN(arr));   // same output
