@@ -1,47 +1,44 @@
 /**
- * Merge two sorted halves into a single sorted array.
+ * Randomly shuffles an array in-place.
+ * Uses the Fisher–Yates algorithm.
  */
-function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
-  const result: T[] = [];
-  let i = 0, j = 0;
-
-  while (i < left.length && j < right.length) {
-    // compare function should return negative if a < b,
-    // zero if equal, positive if a > b
-    if (compare(left[i], right[j]) <= 0) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
+function shuffle<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
   }
-
-  // Append any leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
 /**
- * Recursively sort the array using merge sort.
- * `compare` is optional – if omitted, the native < operator is used.
+ * Checks whether the array is sorted in ascending order.
+ * Works for numbers and strings (lexicographically).
  */
-export function mergeSort<T>(
-  arr: T[],
-  compare?: (a: T, b: T) => number
-): T[] {
-  if (arr.length <= 1) return arr.slice();
-
-  const mid = Math.floor(arr.length / 2);
-  const left = mergeSort(arr.slice(0, mid), compare);
-  const right = mergeSort(arr.slice(mid), compare);
-
-  return merge(left, right, compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+function isSorted<T extends number | string>(array: T[]): boolean {
+  for (let i = 0; i < array.length - 1; i++) {
+    if (array[i] > array[i + 1]) return false;
+  }
+  return true;
 }
-const nums = [34, 7, 23, 32, 5, 62];
-const sortedNums = mergeSort(nums);
-console.log(sortedNums); // [5, 7, 23, 32, 34, 62]
-const people = [
-  { name: 'Alice', age: 30 },
-  { name: 'Bob', age: 25 },
-  { name: 'Carol', age: 35 },
-];
 
-const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
+/**
+ * Bogosort: keep shuffling until the array is sorted.
+ * In practice, this is a joke algorithm because of its astronomical
+ * expected runtime, but it’s fun to see it in TypeScript.
+ */
+export function randomSort<T extends number | string>(array: T[]): T[] {
+  // We’ll operate on a copy to avoid mutating the caller’s data.
+  const arr = array.slice();
+
+  // Guard against trivial cases.
+  if (arr.length < 2) return arr;
+
+  // Keep shuffling until the array is sorted.
+  while (!isSorted(arr)) {
+    shuffle(arr);
+  }
+
+  return arr;
+}
+const unsorted = [3, 1, 4, 1, 5, 9, 2];
+const sorted = randomSort(unsorted);
+console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
