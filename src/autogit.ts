@@ -1,56 +1,88 @@
-// IStack defines the public contract for the stack.
-export interface IStack<T> {
-  push(item: T): void;      // add an item on top
-  pop(): T | undefined;     // remove and return the top item
-  peek(): T | undefined;    // look at the top without removing it
-  isEmpty(): boolean;       // true if the stack has no items
-  size(): number;           // current number of items
+// ---------- Graph data ----------------------------------------------------
+type Graph = { [node: string]: number[] };   // e.g. { '0': [1, 2], '1': [2], ... }
+
+// ---------- Tarjan's SCC implementation ----------------------------------
+class TarjanSCC {
+  private graph: Graph;            // the adjacency list
+  private index = 0;               // incremental index counter
+  private indices: Map<string, number> = new Map(); // node → index
+  private lowlink: Map<string, number> = new Map(); // node → lowlink
+
+  private stack: string[] = [];    // nodes currently on the recursion stack
+  private onStack: Set<string> = new Set();
+
+  private result: string[][] = []; // list of SCCs found
+
+  constructor(g: Graph) {
+    this.graph = g;
+  }
+
+  public run(): string[][] {
+    // start DFS from every undiscovered node
+    for (const node of Object.keys(this.graph)) {
+      if (!this.indices.has(node)) {
+        this.strongConnect(node);
+      }
+    }
+    return this.result;
+  }
+
+  private strongConnect(v: string) {
+    // set the depth index for v
+    this.indices.set(v, this.index);
+    this.lowlink.set(v, this.index);
+    this.index += 1;
+
+    this.stack.push(v);
+    this.onStack.add(v);
+
+    // consider successors of v
+    for (const w of this.graph[v] ?? []) {
+      if (!this.indices.has(w)) {
+        // success: DFS tree edge
+        this.strongConnect(w);
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.lowlink.get(w)!
+        ));
+      } else if (this.onStack.has(w)) {
+        // back edge – strengthen lowlink
+        this.lowlink.set(v, Math.min(
+          this.lowlink.get(v)!,
+          this.indices.get(w)!
+        ));
+      }
+    }
+
+    // If v is the root of an SCC, pop the stack
+    if (this.lowlink.get(v) === this.indices.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = this.stack.pop()!;
+        this.onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      this.result.push(component);
+    }
+  }
 }
+const graph: Graph = {
+  '0': ['1'],
+  '1': ['2', '3'],
+  '2': ['0', '4'],
+  '3': ['4'],
+  '4': ['5'],
+  '5': ['3', '6'],
+  '6': ['7'],
+  '7': ['5'],
+};
 
-// Stack is a simple array‑backed implementation.
-export class Stack<T> implements IStack<T> {
-  // the underlying storage – an array grows automatically
-  private items: T[] = [];
+const tarjan = new TarjanSCC(graph);
+const sccs = tarjan.run();
 
-  constructor(initial?: T[]) {
-    // optional initial content; does a shallow copy for safety
-    if (initial) this.items = initial.slice();
-  }
-
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  pop(): T | undefined {
-    return this.items.pop();          // pop() already returns undefined if empty
-  }
-
-  peek(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    return this.items[this.items.length - 1];
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  size(): number {
-    return this.items.length;
-  }
-}
-const stack = new Stack<number>();
-
-stack.push(10);
-stack.push(20);
-stack.push(30);
-
-console.log(stack.peek());   // 30
-console.log(stack.pop());    // 30
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-while (!stack.isEmpty()) {
-  console.log(stack.pop());
-}
-// → 20
-// → 10
+console.log('Strongly connected components:');
+sccs.forEach((comp, i) => console.log(`${i}: [${comp.join(', ')}]`));
+Strongly connected components:
+0: [6, 7, 5]
+1: [0, 1, 2, 4, 3]
