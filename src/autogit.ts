@@ -1,24 +1,50 @@
+currentSum = A[0]
+bestSum    = A[0]
+for each element x in A from index 1 to end
+    currentSum = max(x, currentSum + x)
+    bestSum    = max(bestSum, currentSum)
+return bestSum
 /**
- * Returns the first character that occurs only once in `s`,
- * or `null` if every character repeats.
- * @param s The string to scan (case‑sensitive).
+ * Returns the maximum sum of a contiguous sub‑array.
+ *
+ * @param nums - Array of numbers (can contain negatives).
+ * @returns The maximum sub‑array sum.  For an empty array it returns 0.
  */
-function firstNonRepeating(s: string): string | null {
-  // 1️⃣ Count every character.
-  const freq = new Map<string, number>();
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+export function maxSubarraySum(nums: number[]): number {
+  if (nums.length === 0) return 0;
+
+  let currentSum = nums[0];
+  let bestSum = nums[0];
+
+  for (let i = 1; i < nums.length; i++) {
+    const x = nums[i];
+    currentSum = x > currentSum + x ? x : currentSum + x;
+    // equivalently: currentSum = Math.max(x, currentSum + x);
+
+    if (currentSum > bestSum) bestSum = currentSum;
   }
 
-  // 2️⃣ Find the first spot where the count is 1.
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null; // All characters repeat.
+  return bestSum;
 }
-console.log(firstNonRepeating("swiss")); // → "w"
-console.log(firstNonRepeating("aabb"));  // → null
-console.log(firstNonRepeating("hello world")); // → "h"
+console.log(maxSubarraySum([ -2, 1, -3, 4, -1, 2, 1, -5, 4 ])); // 6
+let tempStart = 0;
+let bestStart = 0;
+let bestEnd = 0;
+
+for (let i = 1; i < nums.length; i++) {
+  const x = nums[i];
+  if (x > currentSum + x) {
+    currentSum = x;
+    tempStart = i;
+  } else {
+    currentSum += x;
+  }
+
+  if (currentSum > bestSum) {
+    bestSum = currentSum;
+    bestStart = tempStart;
+    bestEnd = i;
+  }
+}
+
+// bestStart..bestEnd (inclusive) gives the sub‑array with max sum
