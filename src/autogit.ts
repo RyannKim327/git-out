@@ -1,24 +1,56 @@
-/**
- * Returns the first character that occurs only once in `s`,
- * or `null` if every character repeats.
- * @param s The string to scan (case‑sensitive).
- */
-function firstNonRepeating(s: string): string | null {
-  // 1️⃣ Count every character.
-  const freq = new Map<string, number>();
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Find the first spot where the count is 1.
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null; // All characters repeat.
+// IStack defines the public contract for the stack.
+export interface IStack<T> {
+  push(item: T): void;      // add an item on top
+  pop(): T | undefined;     // remove and return the top item
+  peek(): T | undefined;    // look at the top without removing it
+  isEmpty(): boolean;       // true if the stack has no items
+  size(): number;           // current number of items
 }
-console.log(firstNonRepeating("swiss")); // → "w"
-console.log(firstNonRepeating("aabb"));  // → null
-console.log(firstNonRepeating("hello world")); // → "h"
+
+// Stack is a simple array‑backed implementation.
+export class Stack<T> implements IStack<T> {
+  // the underlying storage – an array grows automatically
+  private items: T[] = [];
+
+  constructor(initial?: T[]) {
+    // optional initial content; does a shallow copy for safety
+    if (initial) this.items = initial.slice();
+  }
+
+  push(item: T): void {
+    this.items.push(item);
+  }
+
+  pop(): T | undefined {
+    return this.items.pop();          // pop() already returns undefined if empty
+  }
+
+  peek(): T | undefined {
+    if (this.isEmpty()) return undefined;
+    return this.items[this.items.length - 1];
+  }
+
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  size(): number {
+    return this.items.length;
+  }
+}
+const stack = new Stack<number>();
+
+stack.push(10);
+stack.push(20);
+stack.push(30);
+
+console.log(stack.peek());   // 30
+console.log(stack.pop());    // 30
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+while (!stack.isEmpty()) {
+  console.log(stack.pop());
+}
+// → 20
+// → 10
