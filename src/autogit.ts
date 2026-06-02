@@ -1,72 +1,63 @@
-hash(s) = (s[0] * B^(m‑1) + s[1] * B^(m‑2) + … + s[m‑1]) mod M
-hT = ((hT - leftChar * B^(m-1)) * B + newChar) mod M
-/**
- * Rabin‑Karp string search
- *
- * @param text    The string to search within
- * @param pattern The substring to look for
- * @returns      An array of starting indices where pattern occurs in text
- */
-export function rabinKarp(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-
-  if (m === 0 || n < m) return [];
-
-  /* --------------------------------
-   * 1️⃣ Choose base and modulus
-   *
-   * Base (B) should be > alphabet size.  257 works for extended ASCII.
-   * Modulus (M) should be a large prime; 1e9+7 is common and fits 32‑bit int.
-   * -------------------------------- */
-  const B = 257;                       // base
-  const M = 1_000_000_007;             // large prime modulus
-
-  /* --------------------------------
-   * 2️⃣ Pre‑compute (B^(m‑1)) mod M
-   *      this is the weight of the leftmost character in a window
-   * -------------------------------- */
-  let highestPower = 1;
-  for (let i = 0; i < m - 1; i++) {
-    highestPower = (highestPower * B) % M;
-  }
-
-  /* --------------------------------
-   * 3️⃣ Helper: compute hash of a string slice
-   * -------------------------------- */
-  const stringHash = (s: string): number => {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) {
-      h = (h * B + s.charCodeAt(i)) % M;
-    }
-    return h;
-  };
-
-  /* --------------------------------
-   * 4️⃣ Initial hashes
-   * -------------------------------- */
-  const patternHash = stringHash(pattern);
-  let windowHash = stringHash(text.slice(0, m));
-
-  /* --------------------------------
-   * 5️⃣ Sliding window
-   * -------------------------------- */
-  const result: number[] = [];
-  for (let i = 0; i <= n - m; i++) {
-    // a hash match → double‑check with a literal comparison
-    if (windowHash === patternHash) {
-      if (text.substr(i, m) === pattern) {
-        result.push(i);
+// A very basic, in‑place bubble sort for numbers
+export function bubbleSort(values: number[]): void {
+  const n = values.length;
+  for (let i = 0; i < n - 1; i++) {
+    // Last i elements are already in place
+    for (let j = 0; j < n - i - 1; j++) {
+      if (values[j] > values[j + 1]) {
+        // swap
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
       }
     }
+  }
+}
+export function bubbleSortOptimized(values: number[]): void {
+  const n = values.length;
+  let swapped: boolean;
 
-    // prepare hash for next window
-    if (i < n - m) {
-      const leftCharCode = text.charCodeAt(i);
-      const rightCharCode = text.charCodeAt(i + m);
+  for (let i = 0; i < n - 1; i++) {
+    swapped = false;
+    for (let j = 0; j < n - i - 1; j++) {
+      if (values[j] > values[j + 1]) {
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+        swapped = true;
+      }
+    }
+    if (!swapped) break;
+  }
+}
+export function bubbleSort<T>(
+  values: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
+): void {
+  const n = values.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      if (compareFn(values[j], values[j + 1]) > 0) {
+        [values[j], values[j + 1]] = [values[j + 1], values[j]];
+      }
+    }
+  }
+}
+interface Person { name: string; age: number; }
 
-      // delete leftmost contribution
-      windowHash = (windowHash - leftCharCode * highestPower) % M;
-      if (windowHash < 0) windowHash += M; // keep positive
+const data: Person[] = [
+  { name: 'Zoe', age: 28 },
+  { name: 'Alex', age: 33 },
+  { name: 'Bob', age: 22 },
+];
 
-      // shift left (multiply by
+bubbleSort(data, (a, b) => a.name.localeCompare(b.name));
+
+console.log(data); // Alex, Bob, Zoe
+export function bubbleSortCopy<T>(
+  values: T[],
+  compareFn: (a: T, b: T) => number = (a, b) => a > b ? 1 : a < b ? -1 : 0
+): T[] {
+  const copy = [...values];
+  bubbleSort(copy, compareFn);
+  return copy;
+}
+const arr = [5, 1, 4, 2, 8];
+bubbleSort(arr);
+console.log(arr); // [1, 2, 4, 5, 8]
