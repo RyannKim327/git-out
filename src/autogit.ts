@@ -1,84 +1,40 @@
-function kthSmallest(arr: number[], k: number): number | undefined {
-  if (k < 1 || k > arr.length) return undefined; // out‑of‑range
+const fruits = ['apple', 'banana', 'cherry', 'banana'];
 
-  const sorted = [...arr].sort((a, b) => a - b); // stable numeric sort
-  return sorted[k - 1];                         // k is 1‑based here
+const withoutBanana = fruits.filter(f => f !== 'banana');
+
+console.log(withoutBanana); // ['apple', 'cherry']
+// Remove the first object with id === 42
+const items = [{ id: 1 }, { id: 42 }, { id: 3 }];
+const itemsWithout42 = items.filter(item => item.id !== 42);
+const numbers = [10, 20, 30, 40];
+const indexToRemove = 2; // 30
+
+// splice(start, deleteCount)
+numbers.splice(indexToRemove, 1);
+
+console.log(numbers); // [10, 20, 40]
+const arr = [1, 2, 3, 4, 5];
+const cond = (x: number) => x % 2 === 0; // remove evens
+
+// Find first match and splice it out
+const idx = arr.findIndex(cond);
+if (idx !== -1) arr.splice(idx, 1);
+
+console.log(arr); // [1, 3, 5]
+// Remove the first occurrence of a value
+export function removeFirst<T>(arr: T[], target: T): T[] {
+  const idx = arr.findIndex(v => v === target);
+  if (idx === -1) return [...arr]; // not found, return copy
+  const copy = [...arr];
+  copy.splice(idx, 1);
+  return copy; // or return copy and let caller decide
 }
-/**
- * Return the k-th smallest element (1‑based) or `undefined` if out of range.
- */
-function kthSmallestQuickSelect(arr: number[], k: number): number | undefined {
-  if (k < 1 || k > arr.length) return undefined;
 
-  // work on a copy so the caller’s array isn’t mutated
-  const a = [...arr];
-
-  // Helper that returns the zero‑based index of the desired element
-  const select = (left: number, right: number, targetIndex: number): number => {
-    while (true) {
-      if (left === right) return a[left]; // only one element
-
-      // Pick a pivot – here we use the middle element
-      const pivotIndex = Math.floor((left + right) / 2);
-      const pivotValue = a[pivotIndex];
-
-      // Partition: elements < pivot go left, > pivot go right
-      // In‑place partitioning that keeps the pivot’s value
-      let i = left;
-      let j = right;
-      while (i <= j) {
-        while (a[i] < pivotValue) i++;
-        while (a[j] > pivotValue) j--;
-        if (i <= j) {
-          [a[i], a[j]] = [a[j], a[i]];
-          i++;
-          j--;
-        }
-      }
-
-      // After partitioning: indices [left .. j] <= pivot, [i .. right] >= pivot
-      if (targetIndex <= j) {
-        right = j;            // target in the left partition
-      } else if (targetIndex >= i) {
-        left = i;             // target in the right partition
-      } else {
-        return a[targetIndex]; // the pivot itself is the answer
-      }
-    }
-  };
-
-  // Convert k (1‑based) to zero‑based index
-  return select(0, a.length - 1, k - 1);
-}
-function kthSmallestGeneric<T>(
-  arr: T[],
-  k: number,
-  compare: (a: T, b: T) => number
-): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  const a = [...arr];
-  const targetIndex = k - 1;
-  let left = 0, right = a.length - 1;
-
-  while (true) {
-    if (left === right) return a[left];
-
-    const pivotIndex = Math.floor((left + right) / 2);
-    const pivotValue = a[pivotIndex];
-
-    let i = left, j = right;
-    while (i <= j) {
-      while (compare(a[i], pivotValue) < 0) i++;
-      while (compare(a[j], pivotValue) > 0) j--;
-      if (i <= j) {
-        [a[i], a[j]] = [a[j], a[i]];
-        i++; j--;
-      }
-    }
-
-    if (targetIndex <= j) right = j;
-    else if (targetIndex >= i) left = i;
-    else return a[targetIndex];
+// Remove by index (mutable)
+export function removeAt<T>(arr: T[], index: number): void {
+  if (index >= 0 && index < arr.length) {
+    arr.splice(index, 1);
   }
 }
+// Keep everything except index 3
+const newArr = [...arr.slice(0, 3), ...arr.slice(4)];
