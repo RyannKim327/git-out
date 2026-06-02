@@ -1,116 +1,47 @@
 /**
- * A binary‑heap priority queue.
- *
- * @template T  The type of the elements in the queue.
- *
- * @example
- * // min‑heap
- * const pq = new PriorityQueue<number>((a, b) => a - b);
- * pq.add(5); pq.add(2); pq.add(8);
- * console.log(pq.extract()); // 2
- *
- * // max‑heap (reverse the comparator)
- * const pqMax = new PriorityQueue<number>((a, b) => b - a);
+ * Merge two sorted halves into a single sorted array.
  */
-export class PriorityQueue<T> {
-  /** The underlying array that stores the heap. */
-  private items: T[] = [];
+function merge<T>(left: T[], right: T[], compare: (a: T, b: T) => number): T[] {
+  const result: T[] = [];
+  let i = 0, j = 0;
 
-  /**
-   * @param compare Comparator: `a < b` returns a negative value,
-   *                `a === b` returns zero,
-   *                `a > b` returns a positive value.
-   *                Pass `a - b` for numbers, `b - a` for a max‑heap of numbers,
-   *                or a custom comparator for objects.
-   */
-  constructor(private compare: (a: T, b: T) => number) {}
-
-  /** Number of elements in the queue. */
-  size(): number { return this.items.length; }
-
-  /** Whether the queue is empty. */
-  isEmpty(): boolean { return this.items.length === 0; }
-
-  /** Return the highest‑priority element without removing it. */
-  peek(): T | undefined { return this.items[0]; }
-
-  /** Insert a new element. */
-  add(element: T): void {
-    this.items.push(element);
-    this.siftUp(this.items.length - 1);
-  }
-
-  /** Remove and return the element with the highest priority. */
-  extract(): T | undefined {
-    if (this.isEmpty()) return undefined;
-    const root = this.items[0];
-    const last = this.items.pop()!;
-    if (!this.isEmpty()) {
-      this.items[0] = last;
-      this.siftDown(0);
-    }
-    return root;
-  }
-
-  /* ---- Internals ---- */
-
-  /** Move a node up until the heap property holds. */
-  private siftUp(idx: number): void {
-    let childIdx = idx;
-    while (childIdx > 0) {
-      const parentIdx = Math.floor((childIdx - 1) / 2);
-      if (this.compare(this.items[childIdx], this.items[parentIdx]) < 0) {
-        this.swap(childIdx, parentIdx);
-        childIdx = parentIdx;
-      } else break;
+  while (i < left.length && j < right.length) {
+    // compare function should return negative if a < b,
+    // zero if equal, positive if a > b
+    if (compare(left[i], right[j]) <= 0) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
   }
 
-  /** Move a node down until the heap property holds. */
-  private siftDown(idx: number): void {
-    const lastIdx = this.items.length - 1;
-    let parentIdx = idx;
-
-    while (true) {
-      const leftIdx = parentIdx * 2 + 1;
-      const rightIdx = parentIdx * 2 + 2;
-      let smallestIdx = parentIdx;
-
-      if (leftIdx <= lastIdx &&
-          this.compare(this.items[leftIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = leftIdx;
-      }
-      if (rightIdx <= lastIdx &&
-          this.compare(this.items[rightIdx], this.items[smallestIdx]) < 0) {
-        smallestIdx = rightIdx;
-      }
-
-      if (smallestIdx !== parentIdx) {
-        this.swap(parentIdx, smallestIdx);
-        parentIdx = smallestIdx;
-      } else break;
-    }
-  }
-
-  /** Swap two indices in the array. */
-  private swap(i: number, j: number): void {
-    const tmp = this.items[i];
-    this.items[i] = this.items[j];
-    this.items[j] = tmp;
-  }
+  // Append any leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
-// Min‑heap of numbers
-const minQ = new PriorityQueue<number>((a, b) => a - b);
-minQ.add(10);
-minQ.add(3);
-minQ.add(7);
-console.log(minQ.extract()); // 3
-console.log(minQ.extract()); // 7
-console.log(minQ.extract()); // 10
 
-// Max‑heap of strings by length
-const maxStr = new PriorityQueue<string>((a, b) => b.length - a.length);
-maxStr.add("short");
-maxStr.add("tiny");
-maxStr.add("extraordinarilylong");
-console.log(maxStr.extract()); // "extraordinarilylong"
+/**
+ * Recursively sort the array using merge sort.
+ * `compare` is optional – if omitted, the native < operator is used.
+ */
+export function mergeSort<T>(
+  arr: T[],
+  compare?: (a: T, b: T) => number
+): T[] {
+  if (arr.length <= 1) return arr.slice();
+
+  const mid = Math.floor(arr.length / 2);
+  const left = mergeSort(arr.slice(0, mid), compare);
+  const right = mergeSort(arr.slice(mid), compare);
+
+  return merge(left, right, compare ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+const nums = [34, 7, 23, 32, 5, 62];
+const sortedNums = mergeSort(nums);
+console.log(sortedNums); // [5, 7, 23, 32, 34, 62]
+const people = [
+  { name: 'Alice', age: 30 },
+  { name: 'Bob', age: 25 },
+  { name: 'Carol', age: 35 },
+];
+
+const sortedByAge = mergeSort(people, (a, b) => a.age - b.age);
