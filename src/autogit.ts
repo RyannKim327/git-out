@@ -1,48 +1,40 @@
-function manualLength(str: string): number {
-  let count = 0;
-  for (const _ of str) {
-    count++;
-  }
-  return count;
-}
-console.log(manualLength('hello'));   // 5
-console.log(manualLength('👋🌍'));     // 2   (two emoji)
-function utf16Length(str: string): number {
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charAt(i);
-    if (ch.length === 0) break;   // defensive: strings can be sliced
-    len++;
-  }
-  return len;
-}
-function codePointCount(str: string): number {
-  let i = 0;
-  let count = 0;
-  while (i < str.length) {
-    const code = str.codePointAt(i)!;
-    count++;
-    i += code > 0xffff ? 2 : 1;  // skip surrogate pair if present
-  }
-  return count;
-}
-console.log(codePointCount('hello'));     // 5
-console.log(codePointCount('👋🌍'));       // 2
-console.log(codePointCount('𝟙𝟚𝟛'));       // 3 (mathematical bold numbers)
-import GraphemeSplitter from 'grapheme-splitter';
+/**
+ * Returns true if `s` is a palindrome, otherwise false.
+ * Handles case‑sensitivity and ignores anything that is not a
+ * letter or digit (you can drop that part if you need a stricter check).
+ *
+ * No string‑to‑array conversion, no stack, no helper string – just two indices.
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-const splitter = new GraphemeSplitter();
+  while (left < right) {
+    // Skip characters that aren’t alphanumeric
+    while (left < right && !isAlnum(s.charAt(left))) left++;
+    while (left < right && !isAlnum(s.charAt(right))) right--;
 
-function graphemeLength(str: string): number {
-  return splitter.splitGraphemes(str).length;
-}
-const tests = [
-  'hello',
-  '👋',
-  '👋👨‍👩‍👦', // family emoji composed of multiple code points and a zero‑width joiner
-  'a\u0301e',   // a + acute accent
-];
+    // Compare after normalising case
+    if (left < right && s.charAt(left).toLowerCase() !== s.charAt(right).toLowerCase())
+      return false;
 
-for (const s of tests) {
-  console.log(`"${s}": manual=${manualLength(s)}, codePoint=${codePointCount(s)}`);
+    left++;
+    right--;
+  }
+  return true;
 }
+
+function isAlnum(ch: string): boolean {
+  const code = ch.charCodeAt(0);
+  // 0-9
+  if (code >= 48 && code <= 57) return true;
+  // A-Z
+  if (code >= 65 && code <= 90) return true;
+  // a-z
+  if (code >= 97 && code <= 122) return true;
+  return false;
+}
+
+// Example:
+console.log(isPalindrome("A man, a plan, a canal: Panama")); // true
+console.log(isPalindrome("race a car"));                      // false
