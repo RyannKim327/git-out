@@ -1,158 +1,167 @@
-/* ── BinaryTree.ts ────────────────────────────────────────────────────── */
+/** 
+ * A single node in the skip list.  
+ * `references` holds forward pointers for each level (index 0 = lowest level).  
+ */
+class SkipNode<K extends number | string, V> {
+    key: K
+    value: V
+    references: (SkipNode<K, V> | null)[]
+    level: number
 
-/* 1️⃣  Node definition ---------------------------------------------- */
-class TreeNode<T> {
-  /** The value stored in this node. */
-  value: T;
-  /** Left child (values < this.value). */
-  left: TreeNode<T> | null = null;
-  /** Right child (values > this.value). */
-  right: TreeNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+    constructor(key: K, value: V, level: number) {
+        this.key = key
+        this.value = value
+        this.level = level
+        // one element per level, all initially null
+        this.references = Array.from({ length: level + 1 }, () => null)
+    }
 }
 
-/* 2️⃣  The tree itself ---------------------------------------------- */
-class BinarySearchTree<T> {
-  root: TreeNode<T> | null = null;
+/** 
+ * Skip list parameters – tailor these to your workload.
+ */
+const MAX_LEVEL = 16           // biggest stack of levels
+const P_FACTOR = 0.5           // probability used when randomising level
 
-  /* ── Helper for comparing values ───────────────────────────────────── */
-  private compare(a: T, b: T): number {
-    // Because we’ve made `T` generic we need a way to compare.
-    // Here we assume that `T` is either a number or a string.
-    // If you need something fancier, provide your own comparator.
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
-  }
-
-  /* ── Insert a value ─────────────────────────────────────────────── */
-  insert(value: T): void {
-    const newNode = new TreeNode(value);
-
-    if (!this.root) {
-      this.root = newNode;
-      return;
-    }
-
-    let curr = this.root;
-    while (true) {
-      const cmp = this.compare(value, curr.value);
-      if (cmp < 0) {            // go left
-        if (!curr.left) {
-          curr.left = newNode;
-          break;
-        }
-        curr = curr.left;
-      } else {                  // go right (duplicates go right)
-        if (!curr.right) {
-          curr.right = newNode;
-          break;
-        }
-        curr = curr.right;
-      }
-    }
-  }
-
-  /* ── Search for a value ──────────────────────────────────────────── */
-  find(value: T): TreeNode<T> | null {
-    let curr = this.root;
-
-    while (curr) {
-      const cmp = this.compare(value, curr.value);
-      if (cmp === 0) return curr;
-      curr = cmp < 0 ? curr.left : curr.right;
-    }
-
-    return null; // not found
-  }
-
-  /* ── In‑order traversal (returns sorted array) --------------------- */
-  inOrder(): T[] {
-    const out: T[] = [];
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      out.push(node.value);
-      walk(node.right);
-    }
-    walk(this.root);
-    return out;
-  }
-
-  /* ── Pre‑order traversal (root, left, right) ---------------------- */
-  preOrder(): T[] {
-    const out: T[] = [];
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      out.push(node.value);
-      walk(node.left);
-      walk(node.right);
-    }
-    walk(this.root);
-    return out;
-  }
-
-  /* ── Post‑order traversal (left, right, root) --------------------- */
-  postOrder(): T[] {
-    const out: T[] = [];
-    function walk(node: TreeNode<T> | null) {
-      if (!node) return;
-      walk(node.left);
-      walk(node.right);
-      out.push(node.value);
-    }
-    walk(this.root);
-    return out;
-  }
-
-  /* ── Pretty‑print for debugging ------------------------------------ */
-  private static indent(str: string, level: number): string {
-    return '  '.repeat(level) + str;
-  }
-
-  /* eslint-disable no-console */
-  print(): void {
-    function walk(node: TreeNode<any> | null, level: number) {
-      if (!node) return;
-      console.log(BinarySearchTree.indent(`┗─ ${node.value}`, level));
-      walk(node.left, level + 1);
-      walk(node.right, level + 1);
-    }
-    if (!this.root) console.log('<empty tree>');
-    else walk(this.root, 0);
-  }
+/**
+ * Compare two keys; for numbers the comparator is trivial  
+ * – change it if you want a custom ordering.
+ */
+function compareKeys<K extends number | string>(a: K, b: K): number {
+    return a < b ? -1 : a > b ? 1 : 0
 }
 
-/* ── Usage example ---------------------------------------------------- */
-const bst = new BinarySearchTree<number>();
+/**
+ * A simple pseudo‑random level picker.
+ * 0‑based levels, i.e. 0 = base level.
+ */
+function randomLevel(): number {
+    let lvl = 0
+    while (Math.random() < P_FACTOR && lvl < MAX_LEVEL - 1) {
+        lvl++
+    }
+    return lvl
+}
 
-[7, 3, 9, 1, 5, 8, 10].forEach(num => bst.insert(num));
+/**
+ * The skip list itself.
+ */
+class SkipList<K extends number | string, V> {
+    private head: SkipNode<K, V>
+    private size: number = 0
 
-console.log('In‑order:', bst.inOrder());      // [1,3,5,7,8,9,10]
-console.log('Pre‑order:', bst.preOrder());    // [7,3,1,5,9,8,10]
-console.log('Post‑order:', bst.postOrder());  // [1,5,3,8,10,9,7]
+    constructor() {
+        // head carries MIN_VALUE to simplify edge handling
+        this.head = new SkipNode(K as any, null as any, MAX_LEVEL - 1)
+    }
 
-const node = bst.find(5);
-console.log('Found node:', node?.value);      // 5
+    /** number of elements */
+    get length() { return this.size }
 
-console.log('\nTree structure:');
-bst.print();
+    /** search for a key → value or undefined */
+    find(key: K): V | undefined {
+        let current: SkipNode<K, V> | null = this.head
+        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
+            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
+                current = current.references[level]!
+            }
+        }
+        current = current.references[0]!
+        if (current && compareKeys(current.key, key) === 0) {
+            return current.value
+        }
+        return undefined
+    }
 
-/* ── Output ───────────────────────────────────────────────────────────
-In-order: [ 1, 3, 5, 7, 8, 9, 10 ]
-Pre-order: [ 7, 3, 1, 5, 9, 8, 10 ]
-Post-order: [ 1, 5, 3, 8, 10, 9, 7 ]
-Found node: 5
+    /** insert or update a key/value pair */
+    insert(key: K, value: V): void {
+        // array of nodes that need to be updated on each level
+        const update: (SkipNode<K, V> | null)[] = Array.from({ length: MAX_LEVEL }, () => null)
+        let current: SkipNode<K, V> | null = this.head
 
-Tree structure:
-┗─ 7
-  ┗─ 3
-    ┗─ 1
-    ┗─ 5
-  ┗─ 9
-    ┗─ 8
-    ┗─ 10
- *─────────────────────── */
+        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
+            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
+                current = current.references[level]!
+            }
+            update[level] = current
+        }
+
+        current = current.references[0]!
+
+        // key already present → replace value
+        if (current && compareKeys(current.key, key) === 0) {
+            current.value = value
+            return
+        }
+
+        const nodeLevel = randomLevel()
+        const newNode = new SkipNode(key, value, nodeLevel)
+
+        for (let i = 0; i <= nodeLevel; i++) {
+            newNode.references[i] = update[i]!.references[i]!
+            update[i]!.references[i] = newNode
+        }
+
+        this.size++
+    }
+
+    /** remove a key → true if removed, false if not found */
+    delete(key: K): boolean {
+        const update: (SkipNode<K, V> | null)[] = Array.from({ length: MAX_LEVEL }, () => null)
+        let current: SkipNode<K, V> | null = this.head
+
+        for (let level = MAX_LEVEL - 1; level >= 0; level--) {
+            while (current.references[level] && compareKeys(current.references[level]!.key, key) < 0) {
+                current = current.references[level]!
+            }
+            update[level] = current
+        }
+
+        current = current.references[0]!
+
+        if (!current || compareKeys(current.key, key) !== 0) {
+            return false
+        }
+
+        for (let i = 0; i <= current.level; i++) {
+            update[i]!.references[i] = current.references[i]
+        }
+
+        this.size--
+        return true
+    }
+
+    /** iterate over the list in ascending key order */
+    [Symbol.iterator](): Iterator<[K, V]> {
+        let node: SkipNode<K, V> | null = this.head.references[0]
+        return {
+            next: () => {
+                if (!node) return { done: true, value: undefined as any }
+                const value = [node.key, node.value]
+                node = node.references[0]
+                return { done: false, value }
+            },
+        }
+    }
+}
+
+/** Sample usage ---------------------------------------------------- */
+const list = new SkipList<number, string>()
+list.insert(20, "twenty")
+list.insert(5,  "five")
+list.insert(15, "fifteen")
+list.insert(30, "thirty")
+
+console.log("find 15:", list.find(15))        // => "fifteen"
+console.log("length:", list.length)           // => 4
+
+list.delete(5)
+console.log("after delete 5, length:", list.length) // => 3
+
+for (const [k, v] of list) {
+    console.log(k, v)
+}
+// prints:
+// 15 fifteen
+// 20 twenty
+// 30 thirty
