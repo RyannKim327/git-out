@@ -1,32 +1,93 @@
-/**
- * Returns the longest common prefix of the supplied strings.
- * @param strs Array of strings.  An empty array yields an empty string.
+/*  Boyer‑Moore string search
+ *  ----------------------------------
+ *  – pattern:  the string you’re looking for
+ *  – text:     the larger string you scan
+ *  Returns:    an array of the starting indices where pattern occurs
  */
-export function longestCommonPrefix(strs: string[]): string {
-  if (strs.length === 0) return '';
 
-  // The prefix can never be longer than the shortest string
-  let prefix = strs[0];
+type BMResult = number[];
 
-  for (let i = 1; i < strs.length; i++) {
-    // Trim the prefix until it matches the start of strs[i]
-    while (!strs[i].startsWith(prefix)) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';          // No common prefix
+function boyerMoore(text: string, pattern: string): BMResult {
+  if (pattern.length === 0) return [];
+  const badChar = buildBadCharShift(pattern);
+  const goodSuffix = buildGoodSuffixShift(pattern);
+  const m = pattern.length;
+  const n = text.length;
+  const result: number[] = [];
+
+  let s = 0;                  // alignment of pattern with text
+  while (s <= n - m) {        // slide pattern over text
+    let j = m - 1;            // right‑most pattern position
+
+    // compare from right to left
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {                  // whole pattern matched
+      result.push(s);
+      s += goodSuffix[0];          // shift using good‑suffix
+    } else {
+      // bad‑character rule
+      const badShift = j - badChar[text[s + j]] ?? j + 1;
+      // good‑suffix rule
+      const goodShift = goodSuffix[j + 1];
+      s += Math.max(badShift, goodShift);
     }
   }
+  return result;
+}
 
-  return prefix;
+/* -------------  Bad‑character table  ----------------- */
+function buildBadCharShift(pattern: string): Record<string, number> {
+  const lastPos: Record<string, number> = {};
+  for (let i = 0; i < pattern.length; i++) {
+    lastPos[pattern[i]] = i;          // last occurrence index
+  }
+  return lastPos;
 }
-function longestCommonPrefixSorted(strs: string[]): string {
-  if (!strs.length) return '';
-  // Sorting guarantees that the first and last strings differ the most
-  const sorted = [...strs].sort();
-  const first = sorted[0];
-  const last = sorted[sorted.length - 1];
-  let i = 0;
-  while (i < first.length && i < last.length && first[i] === last[i]) i++;
-  return first.slice(0, i);
+
+/* -------------  Good‑suffix table  ------------------- */
+function buildGoodSuffixShift(pattern: string): number[] {
+  const m = pattern.length;
+  const shift: number[] = new Array(m + 1).fill(m);
+  const border = new Array(m + 1).fill(0);
+  let i = m;
+  let j = m + 1;
+  border[i] = j;
+
+  // 1. Calculate borders (prefixes that are also suffixes)
+  while (i > 0) {
+    while (j <= m && pattern[i - 1] !== pattern[j - 1]) {
+      j = border[j];
+    }
+    i--; j--; border[i] = j;
+  }
+
+  // 2. Compute shift table from borders
+  for (let k = 0; k < m; k++) {
+    shift[k] = m; // default shift is pattern length
+  }
+
+  let iIdx = 0;
+  while (iIdx < m) {
+    const g = m - border[iIdx];
+    shift[g] = Math.min(shift[g], border[iIdx] + 1);
+    iIdx++;
+  }
+
+  // 3. Fill the remaining entries (when no suffix matches)
+  let last = shift[1];
+  for (let q = 2; q <= m; q++) {
+    if (shift[q] === m) shift[q] = last;
+    else last = shift[q];
+  }
+
+  return shift;
 }
-console.log(longestCommonPrefix(['flower', 'flow', 'flight'])); // → 'fl'
-console.log(longestCommonPrefix(['dog', 'racecar', 'car']));   // → ''
+
+/* -------------  Example use ----- */
+const haystack = "ABABACABABABCAB";
+const needle = "ABABC";
+
+console.log(boyerMoore(haystack, needle));  // => [5]
