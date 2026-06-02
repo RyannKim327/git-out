@@ -1,44 +1,36 @@
-// A plain, singly‑linked node.
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+// src/index.ts
+import { CronJob } from 'cron';
 
-  constructor(value: T, next: ListNode<T> | null = null) {
-    this.value = value;
-    this.next = next;
-  }
-}
 /**
- * Walks the list and counts how many nodes it contains.
- * @param head The first node of the list (or null for an empty list).
- * @returns How many nodes are in the list.
+ * This job fires every minute (the pattern '* * * * *' means:
+ *  ────── minute   0-59
+ *  ───── hour     0-23
+ *  ──── day of month 1-31
+ *  ── month    1-12
+ *  ───── day of week 0-7 (0/7 = Sunday)
  */
-function listLength<T>(head: ListNode<T> | null): number {
-  let count = 0;
-  let current = head;
+const randomJob = new CronJob(
+  '* * * * *',              // cron syntax
+  () => {
+    const now = new Date();
+    const rand = Math.floor(Math.random() * 100); // 0‑99
+    console.log(`[${now.toLocaleTimeString()}] Random number: ${rand}`);
+  },
+  null,
+  true,                     // start the job right after creation
+  'America/New_York'        // optional timezone
+);
 
-  while (current !== null) {
-    count++;
-    current = current.next;
-  }
+// keep the Node process alive—if you’re in an express server or other
+// long‑running app you won’t need this manual loop.
+setInterval(() => {}, 1000);
+# Install dependencies
+npm install typescript cron @types/node
+# Optional: add a tsconfig.json if you don’t have one yet
+npx tsc --init
 
-  return count;
-}
-function listLengthRecursive<T>(node: ListNode<T> | null): number {
-  if (!node) return 0;                // base case: nothing left
-  return 1 + listLengthRecursive(node.next); // recurse
-}
-// Build a list: 1 → 2 → 3 → null
-const third = new ListNode(3);
-const second = new ListNode(2, third);
-const first = new ListNode(1, second);
-
-console.log(listLength(first));                // 3
-console.log(listLengthRecursive(first));       // 3
-console.log(listLength(null));                // 0
-// For a doubly linked node that has .next and .prev:
-let current = head;
-while (current !== null) {
-  count++;
-  current = current.next;  // or current.prev, depending on direction
-}
+# Compile (or just run with ts-node)
+npx ts-node src/index.ts
+[10:05:00 AM] Random number: 42
+[10:06:00 AM] Random number: 7
+...
