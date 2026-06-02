@@ -1,44 +1,110 @@
-/**
- * Randomly shuffles an array in-place.
- * Uses the Fisher–Yates algorithm.
- */
-function shuffle<T>(array: T[]): void {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+// ----- Min‑Heap implementation ---------------------------------------
+class MinHeap<T> {
+  private items: Array<{key: number; value: T}> = [];
+
+  private siftUp(idx: number) {
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.items[parent].key <= this.items[idx].key) break;
+      [this.items[parent], this.items[idx]] = [this.items[idx], this.items[parent]];
+      idx = parent;
+    }
+  }
+
+  private siftDown(idx: number, size: number) {
+    while (true) {
+      const left = (idx << 1) + 1;
+      const right = left + 1;
+      let smallest = idx;
+
+      if (left < size && this.items[left].key < this.items[smallest].key) smallest = left;
+      if (right < size && this.items[right].key < this.items[smallest].key) smallest = right;
+
+      if (smallest === idx) break;
+      [this.items[smallest], this.items[idx]] = [this.items[idx], this.items[smallest]];
+      idx = smallest;
+    }
+  }
+
+  push(key: number, value: T) {
+    this.items.push({key, value});
+    this.siftUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    const size = this.items.length;
+    if (!size) return undefined;
+    const min = this.items[0].value;
+    this.items[0] = this.items[size - 1];
+    this.items.pop();
+    this.siftDown(0, this.items.length);
+    return min;
+  }
+
+  get size() {
+    return this.items.length;
   }
 }
 
-/**
- * Checks whether the array is sorted in ascending order.
- * Works for numbers and strings (lexicographically).
- */
-function isSorted<T extends number | string>(array: T[]): boolean {
-  for (let i = 0; i < array.length - 1; i++) {
-    if (array[i] > array[i + 1]) return false;
-  }
-  return true;
-}
 
-/**
- * Bogosort: keep shuffling until the array is sorted.
- * In practice, this is a joke algorithm because of its astronomical
- * expected runtime, but it’s fun to see it in TypeScript.
- */
-export function randomSort<T extends number | string>(array: T[]): T[] {
-  // We’ll operate on a copy to avoid mutating the caller’s data.
-  const arr = array.slice();
+// ----- Graph representation ------------------------------------------
+type Edge = { to: number; weight: number };
 
-  // Guard against trivial cases.
-  if (arr.length < 2) return arr;
+class Graph {
+  private adjacency: Edge[][] = [];
 
-  // Keep shuffling until the array is sorted.
-  while (!isSorted(arr)) {
-    shuffle(arr);
+  constructor(private nodeCount: number) {
+    this.adjacency = Array.from({length: nodeCount}, () => []);
   }
 
-  return arr;
+  addEdge(u: number, v: number, w: number, directed = false) {
+    this.adjacency[u].push({to: v, weight: w});
+    if (!directed) this.adjacency[v].push({to: u, weight: w});
+  }
+
+  getEdges(u: number): Edge[] {
+    return this.adjacency[u];
+  }
 }
-const unsorted = [3, 1, 4, 1, 5, 9, 2];
-const sorted = randomSort(unsorted);
-console.log(sorted); // [1, 1, 2, 3, 4, 5, 9]
+
+
+// ----- Dijkstra ---------------------------------------
+function dijkstra(graph: Graph, start: number): number[] {
+  const dist = Array(graph.adjacency.length).fill(Infinity);
+  const visited = new Array(graph.adjacency.length).fill(false);
+  const pq = new MinHeap<number>();
+
+  dist[start] = 0;
+  pq.push(0, start);
+
+  while (pq.size) {
+    const u = pq.pop() as number;      // current vertex
+    if (visited[u]) continue;          // skip stale entry
+    visited[u] = true;
+
+    for (const {to: v, weight: w} of graph.getEdges(u)) {
+      if (dist[u] + w < dist[v]) {
+        dist[v] = dist[u] + w;
+        pq.push(dist[v], v);
+      }
+    }
+  }
+
+  return dist; // distances from start to every vertex
+}
+
+
+// ----- Example usage ---------------------------------------
+const g = new Graph(6);
+g.addEdge(0, 1, 7);
+g.addEdge(0, 2, 9);
+g.addEdge(0, 5, 14);
+g.addEdge(1, 2, 10);
+g.addEdge(1, 3, 15);
+g.addEdge(2, 3, 11);
+g.addEdge(2, 5, 2);
+g.addEdge(3, 4, 6);
+g.addEdge(4, 5, 9);
+
+const distances = dijkstra(g, 0);
+console.log(distances); // shortest distance from vertex 0 to every other vertex
