@@ -1,50 +1,44 @@
-currentSum = A[0]
-bestSum    = A[0]
-for each element x in A from index 1 to end
-    currentSum = max(x, currentSum + x)
-    bestSum    = max(bestSum, currentSum)
-return bestSum
+// A plain, singly‑linked node.
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
+
+  constructor(value: T, next: ListNode<T> | null = null) {
+    this.value = value;
+    this.next = next;
+  }
+}
 /**
- * Returns the maximum sum of a contiguous sub‑array.
- *
- * @param nums - Array of numbers (can contain negatives).
- * @returns The maximum sub‑array sum.  For an empty array it returns 0.
+ * Walks the list and counts how many nodes it contains.
+ * @param head The first node of the list (or null for an empty list).
+ * @returns How many nodes are in the list.
  */
-export function maxSubarraySum(nums: number[]): number {
-  if (nums.length === 0) return 0;
+function listLength<T>(head: ListNode<T> | null): number {
+  let count = 0;
+  let current = head;
 
-  let currentSum = nums[0];
-  let bestSum = nums[0];
-
-  for (let i = 1; i < nums.length; i++) {
-    const x = nums[i];
-    currentSum = x > currentSum + x ? x : currentSum + x;
-    // equivalently: currentSum = Math.max(x, currentSum + x);
-
-    if (currentSum > bestSum) bestSum = currentSum;
+  while (current !== null) {
+    count++;
+    current = current.next;
   }
 
-  return bestSum;
+  return count;
 }
-console.log(maxSubarraySum([ -2, 1, -3, 4, -1, 2, 1, -5, 4 ])); // 6
-let tempStart = 0;
-let bestStart = 0;
-let bestEnd = 0;
-
-for (let i = 1; i < nums.length; i++) {
-  const x = nums[i];
-  if (x > currentSum + x) {
-    currentSum = x;
-    tempStart = i;
-  } else {
-    currentSum += x;
-  }
-
-  if (currentSum > bestSum) {
-    bestSum = currentSum;
-    bestStart = tempStart;
-    bestEnd = i;
-  }
+function listLengthRecursive<T>(node: ListNode<T> | null): number {
+  if (!node) return 0;                // base case: nothing left
+  return 1 + listLengthRecursive(node.next); // recurse
 }
+// Build a list: 1 → 2 → 3 → null
+const third = new ListNode(3);
+const second = new ListNode(2, third);
+const first = new ListNode(1, second);
 
-// bestStart..bestEnd (inclusive) gives the sub‑array with max sum
+console.log(listLength(first));                // 3
+console.log(listLengthRecursive(first));       // 3
+console.log(listLength(null));                // 0
+// For a doubly linked node that has .next and .prev:
+let current = head;
+while (current !== null) {
+  count++;
+  current = current.next;  // or current.prev, depending on direction
+}
