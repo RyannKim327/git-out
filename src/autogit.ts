@@ -1,93 +1,45 @@
-type LISResult = { l: number; seq: number[] };
-
 /**
- * Longest Increasing Subsequence – O(n²) DP
- *
- * @param arr numeric array
- * @returns object with length and the LIS itself
+ * Returns the longest common subsequence of a and b.
+ * Complexity: O(a.length * b.length) time | O(a.length * b.length) space
  */
-export function lisO2(arr: number[]): LISResult {
-  if (arr.length === 0) return { l: 0, seq: [] };
+export function longestCommonSubsequence(a: string, b: string): string {
+  const m = a.length;
+  const n = b.length;
 
-  // Each element keeps the LIS length that ends at that index
-  const dp = Array(arr.length).fill(1);
-  // For reconstruction: previous index in the LIS ending at i
-  const prev = Array(arr.length).fill(-1);
+  // dp[i][j] = LCS length of a[0..i-1] and b[0..j-1]
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-  for (let i = 1; i < arr.length; i++) {
-    for (let j = 0; j < i; j++) {
-      if (arr[j] < arr[i] && dp[j] + 1 > dp[i]) {
-        dp[i] = dp[j] + 1;
-        prev[i] = j;
+  // Build the table
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
       }
     }
   }
 
-  // Find index of max length
-  let maxIdx = 0;
-  for (let i = 1; i < dp.length; i++) {
-    if (dp[i] > dp[maxIdx]) maxIdx = i;
-  }
+  // Back‑track to reconstruct one LCS
+  let i = m;
+  let j = n;
+  const lcsChars: string[] = [];
 
-  // Reconstruct the sequence
-  const seq: number[] = [];
-  for (let k = maxIdx; k !== -1; k = prev[k]) {
-    seq.push(arr[k]);
-  }
-  seq.reverse();
-
-  return { l: dp[maxIdx], seq };
-}
-type LISResult = { l: number; seq: number[] };
-
-/**
- * Longest Increasing Subsequence – O(n log n) patience sorting
- *
- * @param arr numeric array
- * @returns object with length and the LIS itself
- */
-export function lisOLogN(arr: number[]): LISResult {
-  if (arr.length === 0) return { l: 0, seq: [] };
-
-  /*  `tails[i]` holds the last value of a subsequence of length i+1
-      that we’ve seen so far.  It is always the smallest possible tail,
-      which gives us the chance to extend it later. */
-  const tails: number[] = [];
-  const indices: number[] = [];         // indices of chosen tails in `arr`
-  const prevIdx: number[] = Array.from({ length: arr.length }, () => -1);
-
-  for (let i = 0; i < arr.length; i++) {
-    const val = arr[i];
-    // Binary search: find first tail that is >= val
-    let l = 0, r = tails.length;
-    while (l < r) {
-      const mid = (l + r) >> 1;
-      if (tails[mid] < val) l = mid + 1;
-      else r = mid;
-    }
-
-    // l is the length (0‑based) of the subsequence we’re updating
-    if (l === tails.length) {
-      tails.push(val);
-      indices.push(i);
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      // Matches – this character is part of the LCS
+      lcsChars.push(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;          // move up
     } else {
-      tails[l] = val;
-      indices[l] = i;
+      j--;          // move left
     }
-
-    // Link to predecessor if this is not the first element
-    if (l > 0) prevIdx[i] = indices[l - 1];
   }
 
-  // Reconstruct the sequence from the last index (indices[tails.length-1])
-  let seq: number[] = [];
-  for (let k = indices[tails.length - 1]; k !== -1; k = prevIdx[k]) {
-    seq.push(arr[k]);
-  }
-  seq.reverse();
-
-  return { l: tails.length, seq };
+  // The chars were collected backwards, reverse them
+  return lcsChars.reverse().join('');
 }
-const arr = [3, 10, 2, 1, 20];
-console.log(lisO2(arr));      // { l: 3, seq: [ 3, 10, 20 ] }
-console.log(lisOLogN(arr));   // same output
+console.log(longestCommonSubsequence('abcdef', 'acbcf')); // outputs "abcf"
+console.log(longestCommonSubsequence('AGGTAB', 'GXTXAYB')); // outputs "GTAB"
