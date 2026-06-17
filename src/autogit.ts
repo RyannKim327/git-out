@@ -1,53 +1,93 @@
 /**
- * Binary search for a sorted array of numbers.
- *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
  */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
 
-  const mid = Math.floor((low + high) / 2);
-
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
+  constructor(value: T) {
+    this.value = value;
   }
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+/**
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
+ */
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
 
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
+    }
+    this.rear = node;           // new tail
+
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
+    }
+
+    this._size++;
+  }
+
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
+
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
+
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
+    }
+    return result;
+  }
 }
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+const q = new Queue<number>();
 
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
