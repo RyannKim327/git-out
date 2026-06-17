@@ -1,48 +1,21 @@
-/**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
- */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
+function countChar(str: string, target: string): number {
+  // guard against empty target (avoids throwing on .split(''))
+  if (target.length !== 1) throw new Error('target must be a single character');
+
+  return str.split(target).length - 1;
+}
+console.log(countChar('hello world', 'l')); // 3
+function countCharRegEx(str: string, target: string): number {
+  const re = new RegExp(target, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
+}
+console.log(countCharRegEx('banana', 'a')); // 3
+function countCharLoop(str: string, target: string): number {
   let count = 0;
-
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
-    }
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
   }
-
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+  return count;
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
-
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
-  }
-  return undefined;
-}
+console.log(countCharLoop('Mississippi', 'i')); // 4
