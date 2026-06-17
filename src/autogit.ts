@@ -1,93 +1,65 @@
-/**
- * A single node of the linked list.
- * The list is kept in the "next →" direction.
- */
-class ListNode<T> {
-  public value: T;
-  public next: ListNode<T> | null = null;
+type Node<T> = { val: T; next: Node<T> | null };
 
-  constructor(value: T) {
-    this.value = value;
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
+
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
+
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
+
+  return true;
 }
 
-/**
- * A queue backed by a linked list.
- * `front` points to the oldest element,
- * `rear` points to the newest one.
- */
-export class Queue<T> {
-  private front: ListNode<T> | null = null; // head
-  private rear: ListNode<T> | null = null;  // tail
-  private _size = 0;
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
   }
-
-  /** Check if the queue is empty */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Enqueue: add an element to the tail */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (this.rear) {
-      this.rear.next = node;   // hook it after the current tail
-    }
-    this.rear = node;           // new tail
-
-    if (!this.front) {
-      // Queue was empty before, so front must point to the new node too
-      this.front = node;
-    }
-
-    this._size++;
-  }
-
-  /** Dequeue: remove and return the front element, or null if empty */
-  dequeue(): T | null {
-    if (!this.front) return null;
-
-    const value = this.front.value;
-    this.front = this.front.next;  // move head forward
-
-    if (!this.front) {
-      // Queue just became empty – clear the tail as well
-      this.rear = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | null {
-    return this.front ? this.front.value : null;
-  }
-
-  /** Return an array of all values in order (for debugging / inspection) */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.front;
-    while (node) {
-      result.push(node.value);
-      node = node.next;
-    }
-    return result;
-  }
+  return prev!;
 }
-const q = new Queue<number>();
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size);      // 1
-console.log(q.toArray()); // [30]
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
+  }
+  return true;
+}
