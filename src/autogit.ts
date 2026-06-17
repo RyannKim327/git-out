@@ -1,36 +1,37 @@
-// A minimal, generic node type
-export interface ListNode<T> {
-  readonly value: T;
-  next: ListNode<T> | null;
+// Node definition – adjust `value` type as needed
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-/**
- * Returns the middle node of a singly‑linked list.
- * If the list has an even number of nodes, it returns
- * the *second* middle node (i.e. the one that a
- * “slow‑pointer” would land on after the last move).
- *
- * @param head Head of the list – null if the list is empty.
- * @returns The middle node, or null for an empty list.
- */
-export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head;
-  let fast = head;
+// Recursive sum – the classic “do it in one pass”
+export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;                 // base case
+  return (root.value as any) +                      // value of this node
+         sumRecursive(root.left) +                     // left subtree
+         sumRecursive(root.right);                     // right subtree
+}
+export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;
 
-  // advance fast two steps, slow one step
-  while (fast !== null && fast.next !== null) {
-    slow = slow.next;
-    fast = fast.next.next;
+  let sum = 0 as T;
+  const stack: TreeNode<T>[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.value as any;
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
   }
 
-  return slow;
+  return sum;
 }
-// Build a list: 1 → 2 → 3 → 4 → 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
 
-const mid = middleNode(node1);
-console.log(mid?.value); // → 3
+console.log(sumRecursive(tree));   // 15
+console.log(sumIterative(tree));   // 15
