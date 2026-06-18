@@ -1,36 +1,60 @@
 /**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
+ * Returns true if `s` is a palindrome.
+ *
+ * Works in O(n) time and O(1) additional space.
+ * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
  */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
-
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
+  while (left < right) {
+    if (s[left] !== s[right]) {
+      return false;
     }
+    left++;
+    right--;
   }
 
-  return prefix;
+  return true;
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
+// Demo
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isAlphanumeric(c: string): boolean {
+  const code = c.charCodeAt(0);
+  return (
+    // 0‑9
+    (code >= 48 && code <= 57) ||
+    // A‑Z
+    (code >= 65 && code <= 90) ||
+    // a‑z
+    (code >= 97 && code <= 122)
+  );
+}
+
+function isPalindromeLoose(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    // Skip non‑alphanumerics
+    while (left < right && !isAlphanumeric(s[left])) left++;
+    while (left < right && !isAlphanumeric(s[right])) right--;
+
+    // After skipping, compare lowercase versions
+    if (
+      left < right &&
+      s[left].toLowerCase() !== s[right].toLowerCase()
+    ) {
+      return false;
     }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+
+    left++;
+    right--;
+  }
+  return true;
+}
+
+console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
