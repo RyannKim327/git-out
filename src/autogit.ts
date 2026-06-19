@@ -1,77 +1,55 @@
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+// Graph type: map from vertex id → array of neighbouring vertex ids
+type Graph = Record<string | number, Array<string | number>>;
+function dfsRecursive(
+  graph: Graph,
+  start: string | number,
+  visited = new Set<string | number>()
+): string[] {
+  // If the node has already been visited, stop here.
+  if (visited.has(start)) return [];
+
+  visited.add(start);           // Mark the node
+  const result = [start];        // The order in which we visit
+
+  // Recurse on all neighbours that haven't been visited yet
+  for (const neighbour of graph[start] || []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
+    }
+  }
+
+  return result;
 }
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
+function dfsIterative(graph: Graph, start: string | number): string[] {
+  const visited = new Set<string | number>();
+  const stack: (string | number)[] = [start];
+  const order: string[] = [];
 
-  // Insert value in the first spot found (just for demonstration).
-  // A real BST would place it relative to its neighbors.
-  insert(value: T): void {
-    const node = new TreeNode(value);
-    if (!this.root) {
-      this.root = node;
-      return;
-    }
-    this._insertRec(this.root, node);
-  }
+  while (stack.length) {
+    const v = stack.pop()!;           // Grab the vertex on top of the stack
+    if (visited.has(v)) continue;     // Skip if we already processed it
+    visited.add(v);                    // Mark as visited
+    order.push(v);                     // Record visitation order
 
-  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
-    // Walk left first, then right, until you hit a null spot.
-    if (!current.left) {
-      current.left = node;
-    } else if (!current.right) {
-      current.right = node;
-    } else {
-      // Go deeper – we’re just doing breadth‑like insertion.
-      this._insertRec(current.left, node);
+    // Push neighbours onto the stack (in reverse order if you want a specific order)
+    const neighbours = graph[v] || [];
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      if (!visited.has(neighbours[i])) {
+        stack.push(neighbours[i]);
+      }
     }
   }
 
-  // Breadth‑first traversal (queue style) – returns array of values.
-  bfs(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
-
-    const queue: TreeNode<T>[] = [this.root];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      result.push(cur.value);
-      if (cur.left) queue.push(cur.left);
-      if (cur.right) queue.push(cur.right);
-    }
-    return result;
-  }
-
-  // Depth‑first in‑order traversal (left, node, right)
-  inorder(): T[] {
-    const res: T[] = [];
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      res.push(node.value);
-      visit(node.right);
-    };
-    visit(this.root);
-    return res;
-  }
-
-  // Simple depth counter
-  depth(): number {
-    const dfs = (node: TreeNode<T> | null): number =>
-      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
-    return dfs(this.root);
-  }
+  return order;
 }
-const tree = new BinaryTree<number>();
-[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: [],
+  f: []
+};
 
-console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
-console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
-console.log('Depth:', tree.depth());         // 3
-interface Person { name: string; age: number; }
-const people = new BinaryTree<Person>();
-people.insert({name: 'Alice', age: 30});
+console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
+console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
