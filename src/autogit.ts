@@ -1,33 +1,80 @@
-function decimalToBinary(n: number): string {
-  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
-  // It automatically floors the number (works for ints, truncates decimals).
-  return Math.floor(n).toString(2);
-}
-console.log(decimalToBinary(10));   // → '1010'
-console.log(decimalToBinary(255));  // → '11111111'
-function binaryPadded(n: number, bits = 8): string {
-  return decimalToBinary(n).padStart(bits, '0');
-}
+/**
+ * The graph is represented as an adjacency list:
+ *   key     → array of neighbors that the key points to
+ */
+export type Graph<T = string> = Record<T, T[]>;
 
-console.log(binaryPadded(10, 8));   // → '00001010'
-function decimalToBinaryManual(n: number): string {
-  if (n === 0) return '0';
-  let result = '';
-  let value = Math.floor(n);
+/**
+ * Helper types for the two algorithms
+ */
+type Queue<T> = T[];
+export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
+  const result: T[] = [];
 
-  while (value > 0) {
-    result = (value % 2) + result; // prepend remainder
-    value = Math.floor(value / 2);
+  // Compute in‑degree for each node
+  const indegree = new Map<T, number>();
+  for (const node in graph) {
+    indegree.set(node, 0);               // ensure all nodes appear
+    for (const nb of graph[node]) {
+      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
+    }
+  }
+
+  // Queue all nodes that have no incoming edges
+  const queue: Queue<T> = [];
+  for (const [node, deg] of indegree.entries()) {
+    if (deg === 0) queue.push(node);
+  }
+
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    // Reduce indegree for all neighbors, pushing any that reach 0
+    for (const nb of graph[node] ?? []) {
+      const deg = (indegree.get(nb) ?? 0) - 1;
+      indegree.set(nb, deg);
+      if (deg === 0) queue.push(nb);
+    }
+  }
+
+  // If we processed fewer nodes than exist, a cycle exists
+  if (result.length !== Object.keys(graph).length) {
+    throw new Error('Graph contains a cycle; topological sort impossible');
   }
   return result;
 }
-function bigIntToBinary(n: bigint): string {
-  return n.toString(2);
-}
+export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
+  const visited = new Set<T>();
+  const temp = new Set<T>();   // nodes on the recursion stack
+  const result: T[] = [];
 
-console.log(bigIntToBinary(123456789012345678901234567890n));
-// → '1110001101100110100100001100100000111010011010110111111001101'
-function decimalToBitsArray(n: number): number[] {
-  const binary = decimalToBinary(n);
-  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+  const visit = (node: T) => {
+    if (temp.has(node)) {
+      throw new Error('Graph contains a cycle; topological sort impossible');
+    }
+    if (!visited.has(node)) {
+      temp.add(node);
+      for (const nb of graph[node] ?? []) visit(nb);
+      temp.delete(node);
+      visited.add(node);
+      result.push(node);     // post‑order push gives topological order
+    }
+  };
+
+  for (const node in graph) visit(node as T);
+  // reverse because we push after exploring children
+  return result.reverse();
 }
+const myGraph: Graph<string> = {
+  A: ['B', 'C'],
+  B: ['D'],
+  C: ['D'],
+  D: [],
+};
+
+console.log(topologicalSortKahn(myGraph));
+// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+
+console.log(topologicalSortDFS(myGraph));
+// → same order (or any other valid one)
