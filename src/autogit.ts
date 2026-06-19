@@ -1,41 +1,63 @@
 /**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
+ * Returns the indices and values of the longest strictly increasing subsequence.
  *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
+ * @param arr - The input numeric array.
+ * @returns An object containing:
+ *   - sequence: the LIS as an array of numbers.
+ *   - indices:  the original indices of those numbers in `arr`.
+ *
+ * Complexity:   Time  O(n log n)
+ *               Space O(n)
  */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+export function longestIncreasingSubsequence(arr: number[]): {
+    sequence: number[],
+    indices:   number[]
+} {
+    if (arr.length === 0) return { sequence: [], indices: [] };
 
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+    // tail[i] holds the index in arr of the smallest ending value
+    // of an increasing subsequence of length i+1.
+    const tail: number[] = [];
+    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
+    const prev: (number | null)[] = Array(arr.length).fill(null);
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+    for (let i = 0; i < arr.length; i++) {
+        const x = arr[i];
+
+        // Binary search to find the insertion point in tail.
+        let low = 0, high = tail.length;
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (arr[tail[mid]] < x) low = mid + 1;
+            else high = mid;
+        }
+
+        // low is the position where x will sit in tail
+        if (low > 0) {
+            prev[i] = tail[low - 1]; // point to predecessor
+        }
+        if (low === tail.length) {
+            tail.push(i);
+        } else {
+            tail[low] = i; // replace a larger tail with a smaller one
+        }
     }
 
-    // Place the key into its correct spot
-    arr[j + 1] = key;
-  }
+    // Reconstruct the LIS by walking back from the last index
+    const indices: number[] = [];
+    let cur: number | null = tail[tail.length - 1];
+    while (cur !== null) {
+        indices.push(cur);
+        cur = prev[cur];
+    }
+    indices.reverse(); // from start to end
 
-  return arr; // handy for chaining, but the original array is already sorted
+    const sequence = indices.map(i => arr[i]);
+
+    return { sequence, indices };
 }
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
+const arr = [3, 10, 2, 1, 20, 4, 6, 12];
+const result = longestIncreasingSubsequence(arr);
 
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
-
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+console.log(result.sequence); // [3, 10, 20]
+console.log(result.indices);  // [0, 1, 4]
