@@ -1,37 +1,21 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+function countChar(str: string, target: string): number {
+  // guard against empty target (avoids throwing on .split(''))
+  if (target.length !== 1) throw new Error('target must be a single character');
+
+  return str.split(target).length - 1;
 }
-
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
+console.log(countChar('hello world', 'l')); // 3
+function countCharRegEx(str: string, target: string): number {
+  const re = new RegExp(target, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
 }
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
-
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+console.log(countCharRegEx('banana', 'a')); // 3
+function countCharLoop(str: string, target: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
   }
-
-  return sum;
+  return count;
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+console.log(countCharLoop('Mississippi', 'i')); // 4
