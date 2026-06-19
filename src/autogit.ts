@@ -1,58 +1,41 @@
-// stack.ts
-export class Stack<T> {
-  /* The array that holds our data. The last item is the top of the stack. */
-  private items: T[] = [];
+/**
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
+ *
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
+ */
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  /** Adds a value to the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  /** Removes and returns the top value. Throws if the stack is empty. */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to pop from an empty stack");
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
-    return this.items.pop() as T; // safe because we just checked for emptiness
+
+    // Place the key into its correct spot
+    arr[j + 1] = key;
   }
 
-  /** Returns the top value without removing it. Throws if the stack is empty. */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to peek on an empty stack");
-    }
-    // items.length is at least 1, so the index exists
-    return this.items[this.items.length - 1];
-  }
-
-  /** Was the stack empty? */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** How many items are there? */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything out. */
-  clear(): void {
-    this.items = [];
-  }
+  return arr; // handy for chaining, but the original array is already sorted
 }
-// demo.ts
-import { Stack } from "./stack";
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
 
-const stack = new Stack<number>();
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
+];
 
-stack.push(1);
-stack.push(2);
-stack.push(3);
-
-console.log(stack.peek());   // 3
-console.log(stack.pop());    // 3
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
