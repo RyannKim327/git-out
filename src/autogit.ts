@@ -1,37 +1,41 @@
-const nums = [1, 2, 3, 2, 4, 1, 5];
+/**
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
+ *
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
+ */
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-const uniq = Array.from(new Set(nums));
-// or: const uniq = [...new Set(nums)];
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-console.log(uniq); // [1, 2, 3, 4, 5]
-const words = ["foo", "bar", "baz", "foo", "bar"];
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
-
-console.log(unique); // ["foo", "bar", "baz"]
-const objs = [{a: 1}, {a: 1}, {a: 2}];
-console.log([...new Set(objs)]); // keeps both {a:1} objects
-function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
-  const seen = new Set<string>();
-  return arr.filter(item => {
-    const key = keyFn(item);
-    return seen.has(key) ? false : seen.add(key);
-  });
-}
-
-const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
-console.log(uniqueObjs); // [{a:1}, {a:2}]
-const arr = [1, 2, 3, 2, 1];
-const seen = new Set<number>();
-let writeIdx = 0;
-
-for (let readIdx = 0; readIdx < arr.length; readIdx++) {
-  const value = arr[readIdx];
-  if (!seen.has(value)) {
-    seen.add(value);
-    arr[writeIdx++] = value;
+    // Place the key into its correct spot
+    arr[j + 1] = key;
   }
-}
 
-arr.length = writeIdx; // shrink the array
-console.log(arr); // [1, 2, 3]
+  return arr; // handy for chaining, but the original array is already sorted
+}
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
+
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
+];
+
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
