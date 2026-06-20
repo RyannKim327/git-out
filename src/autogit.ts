@@ -1,60 +1,39 @@
-/* 1️⃣  Define the shapes of the data we expect  */
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
 
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
-
-/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
-async function safeGet<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
+// Example
+console.log(reverseString('hello')); // 'olleh'
+reverseString('👋🏽'); // '🏽👋'  → wrong
+function reverseStringUnicode(s: string): string {
+  const codePoints: number[] = [];
+  for (const char of s) {
+    codePoints.push(char.codePointAt(0)!);
   }
-  return resp.json() as Promise<T>;
+  return String.fromCodePoint(...codePoints.reverse());
 }
 
-/* 3️⃣  Fetch a single post and its comments  */
-async function fetchPostWithComments(postId: number) {
-  const [post, comments] = await Promise.all([
-    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
-    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
-  ]);
-
-  console.log(`\n=== Post #${post.id} ===`);
-  console.log(`Title : ${post.title}`);
-  console.log(`Body  : ${post.body}\n`);
-
-  console.log(`--- ${comments.length} comment(s) ---`);
-  comments.forEach(c => {
-    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
-  });
+// Example
+console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
+const cp = Array.from(s).reverse().join('');
+function reverseRecursively(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseRecursively(s.slice(1)) + s[0];
 }
-
-/* 4️⃣  Run it for a few post IDs  */
-async function main() {
-  try {
-    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
-  } catch (err) {
-    console.error('Something went wrong:', (err as Error).message);
+function reverseLoop(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
   }
+  return result;
 }
-
-main();
-# compile to JavaScript
-npx tsc api-demo.ts
-
-# run the output
-node api-demo.js
-
-# or skip the compile step (requires ts-node)
-npx ts-node api-demo.ts
+function reverseBuffer(s: string): string {
+  const buf: string[] = new Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    buf[i] = s[s.length - 1 - i];
+  }
+  return buf.join('');
+}
+function reverseStringSafe(s: string): string {
+  return Array.from(s).reverse().join('');
+}
