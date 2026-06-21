@@ -1,139 +1,145 @@
-// 1️⃣ Node shape ----------------------------------------------------
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+/**
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
+ */
+type Graph = Map<string, string[]>;
+
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
+
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
+
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
+
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
+
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
+
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
+
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
+
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
+
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
+      }
+    }
+    return null;
+  }
+
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
+    }
+
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
+    }
+  }
+
+  // No overlap – disconnected graph
+  return null;
 }
-type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
 
-const defaultComparator = <T extends number | string>(a: T, b: T) => {
-  if (a < b) return -1;
-  if (a > b) return +1;
-  return 0;
-};
-// 2️⃣ BST class ----------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-  public size = 0;
+/**
+ * Reconstructs the full path from start → meeting → goal.
+ */
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
 
-  constructor(private comp: Comparator<T> = defaultComparator) {}
-
-  // -----------------------------------------------------------------
-  // Insert
-  // -----------------------------------------------------------------
-  insert(value: T): void {
-    this.root = this._insertRec(this.root, value);
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
   }
 
-  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) {
-      this.size++;
-      return new TreeNode(value);
-    }
-
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._insertRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._insertRec(node.right, value);
-    } else {
-      // duplicates: decide how to handle. Here we skip insertion.
-      return node;
-    }
-    return node;
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
   }
 
-  // -----------------------------------------------------------------
-  // Search
-  // -----------------------------------------------------------------
-  find(value: T): boolean {
-    let node = this.root;
-    while (node) {
-      const cmp = this.comp(value, node.value);
-      if (cmp === 0) return true;
-      node = cmp < 0 ? node.left : node.right;
-    }
-    return false;
-  }
-
-  // -----------------------------------------------------------------
-  // Remove
-  // -----------------------------------------------------------------
-  remove(value: T): void {
-    this.root = this._removeRec(this.root, value);
-  }
-
-  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null;
-
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._removeRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._removeRec(node.right, value);
-    } else {
-      // node to delete found
-      this.size--;
-
-      // case 1: no children
-      if (!node.left && !node.right) return null;
-
-      // case 2: one child
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // case 3: two children – replace by inorder predecessor
-      const pred = this._maxNode(node.left)!; // non‑null
-      node.value = pred.value;
-      node.left = this._removeRec(node.left, pred.value);
-    }
-    return node;
-  }
-
-  private _maxNode(node: TreeNode<T>): TreeNode<T> {
-    while (node.right) node = node.right;
-    return node;
-  }
-
-  // -----------------------------------------------------------------
-  // Traversal helpers – in‑order (sorted order)
-  // -----------------------------------------------------------------
-  inorder(cb: (value: T) => void): void {
-    this._inorderRec(this.root, cb);
-  }
-
-  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
-    if (!node) return;
-    this._inorderRec(node.left, cb);
-    cb(node.value);
-    this._inorderRec(node.right, cb);
-  }
-
-  // -----------------------------------------------------------------
-  // Utility: pretty print as nested brackets
-  // -----------------------------------------------------------------
-  toString(): string {
-    const parts: string[] = [];
-    this._toStringRec(this.root, parts);
-    return parts.join(' ');
-  }
-
-  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
-    if (!node) { parts.push('null'); return; }
-    parts.push(String(node.value));
-    this._toStringRec(node.left, parts);
-    this._toStringRec(node.right, parts);
-  }
+  return path;
 }
-const bst = new BinarySearchTree<number>();
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
 
-[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
-console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
-
-console.log('Contains 40? →', bst.find(40));   // true
-console.log('Contains 99? →', bst.find(99));   // false
-
-console.log('In‑order traversal:');
-bst.inorder(v => console.log(v));  
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
