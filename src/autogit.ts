@@ -1,41 +1,65 @@
-/**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
- *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
- */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+type Node<T> = { val: T; next: Node<T> | null };
 
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Place the key into its correct spot
-    arr[j + 1] = key;
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return arr; // handy for chaining, but the original array is already sorted
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
+
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
+
+  return true;
 }
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
 
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev!;
+}
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
 
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
+  }
+  return true;
+}
