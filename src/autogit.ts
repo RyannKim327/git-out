@@ -1,44 +1,49 @@
-// cronDemo.ts
-// ──────────────────────────────────────────────
-// Simple TS + node‑cron demo.  Every minute,
-// the job prints a timestamp and a random number.
-//
-// Requirements:
-//   npm i node-cron @types/node-cron
-//
-// Run with:
-//   npx ts-node cronDemo.ts
-// ‒ or compile (npx tsc) and exec (node cronDemo.js)
-// ──────────────────────────────────────────────
-
-import cron from 'node-cron';
-
 /**
- * Helper that gives us a nicely formatted timestamp.
- */
-const now = () => new Date().toLocaleString();
-
-/**
- * The task that will run according to the cron schedule.
- * We generate a random integer between 1 and 1000.
- */
-const task = () => {
-  const rand = Math.floor(Math.random() * 1000) + 1;
-  console.log(`[${now()}] Random number: ${rand}`);
-};
-
-/**
- * Schedule the job.
- * Cron expression: '* * * * *'
- * └─ minute (0‑59)
+ * Stable counting sort for integers.
  *
- * The job triggers at the start of every minute.
+ * @param  values The array of numbers to sort (integers only).
+ * @return        A new sorted array.
  */
-cron.schedule('* * * * *', task, {
-  scheduled: true,
-  timezone: 'UTC',     // change to your local timezone if needed
-});
+function countingSort(values: number[]): number[] {
+  if (values.length === 0) return [];
 
-console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
-[2026-06-17 12:34:00] Random number: 827
-[2026-06-17 12:35:00] Random number: 314
+  // ---------- 1. find min & max ----------
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+
+  // ---------- 2. count frequencies ----------
+  const range = max - min + 1;          // number of distinct values
+  const counts = new Array<number>(range).fill(0);
+
+  for (const v of values) {
+    counts[v - min]++;                  // shift so that the smallest value maps to index 0
+  }
+
+  // ---------- 3. prefix sums (running totals) ----------
+  const positions = new Array<number>(range).fill(0);
+  let sum = 0;
+  for (let i = 0; i < range; i++) {
+    sum += counts[i];
+    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
+  }
+
+  // ---------- 4. build the sorted output ----------
+  const result = new Array<number>(values.length);
+  // Walk the original array **backwards** to keep stability
+  for (let i = values.length - 1; i >= 0; i--) {
+    const v = values[i];
+    const posIndex = v - min;
+    positions[posIndex]--;               // get the correct position for this element
+    result[positions[posIndex]] = v;
+  }
+
+  return result;
+}
+const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
+const sorted = countingSort(unsorted);
+console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
