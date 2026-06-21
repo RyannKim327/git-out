@@ -1,43 +1,16 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+// 1. Using the Number constructor
+const val1 = Number("42");          // 42
 
-  const count = new Map<string, number>();
+// 2. Using unary plus
+const val2 = +"42";                 // 42
 
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
-  }
+// 3. Using parseInt (base 10 recommended)
+const val3 = parseInt("42", 10);    // 42
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
-  }
-
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
-
-  const freq = new Int16Array(256);
-
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
-  }
-
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+// 4. Using parseFloat for decimals
+const val4 = parseFloat("3.14");    // 3.14
+function safeParse(str: string): number | null {
+  const n = Number(str);
+  return Number.isNaN(n) ? null : n;
+}
+const i = Math.floor(parseFloat("3.9")); // 3
