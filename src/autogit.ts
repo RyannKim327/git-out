@@ -1,66 +1,47 @@
-// A simple singly‑linked‑list node suitable for the intersection test
-export interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
+/**
+ * Random API – picks a random fact from https://uselessfacts.jsph.pl
+ * Returns an object: { id, text, source, permalink }
+ */
+async function fetchRandomFact(): Promise<{
+  id: string;
+  text: string;
+  source: string;
+  permalink: string;
+}> {
+  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
+
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // If you’re inside an Android NativeScript environment you could
+    // show a Toast or log the result with Android SDK.
+    console.log("Random fact fetched:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch random fact:", err);
+    throw err;
+  }
 }
 
 /**
- * Returns the first node at which two singly‑linked lists intersect,
- * or undefined if they never intersect.
+ * Example usage – you’d call this from anywhere, e.g. on a button tap.
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | undefined,
-  headB: ListNode<T> | undefined
-): ListNode<T> | undefined {
-  // Helper that walks a list and returns its length
-  const getLength = (node?: ListNode<T>) => {
-    let len = 0;
-    while (node) {
-      len++;
-      node = node.next;
-    }
-    return len;
-  };
-
-  let lenA = getLength(headA);
-  let lenB = getLength(headB);
-
-  // Advance the longer list so both pointers are at the same distance
-  // from the end of the list.
-  let currA = headA;
-  let currB = headB;
-  while (lenA > lenB && currA) {
-    currA = currA.next;
-    lenA--;
+async function runDemo() {
+  try {
+    const fact = await fetchRandomFact();
+    // In Android, for a quick visual you could use:
+    // import { Toast } from "tns-core-modules/ui/toast";
+    // Toast.makeText(fact.text, 2000).show();
+    console.log("Fact text:", fact.text);
+  } catch {
+    // error handling already done in fetchRandomFact
   }
-  while (lenB > lenA && currB) {
-    currB = currB.next;
-    lenB--;
-  }
-
-  // Move forward together until either we find the intersection
-  // or both pointers hit the end (undefined).
-  while (currA !== currB) {
-    currA = currA?.next;
-    currB = currB?.next;
-  }
-
-  return currA; // May be undefined if no intersection
 }
-// Build example lists that intersect:
 
-//      A -> B -> C
-//      ^          |
-//      |          v
-//      D <- E
-
-const c: ListNode<number> = { val: 3 };
-const b: ListNode<number> = { val: 2, next: c };
-const a: ListNode<number> = { val: 1, next: b };
-
-const e: ListNode<number> = { val: 5, next: a };
-const d: ListNode<number> = { val: 4, next: e };
-
-console.log(getIntersectionNode(a, d) === a);   // true
-console.log(getIntersectionNode(b, d) === a);   // true
-console.log(getIntersectionNode(c, d) === a);   // true
+runDemo();
