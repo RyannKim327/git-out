@@ -1,27 +1,26 @@
+// utils.ts
 /**
- * Bubble‑sort in place.
- * Works on arrays of any type that can be compared with the `<` operator.
+ * Randomly reorder the elements of an array in place.
+ * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
+ *
+ * @param arr The array to shuffle (mutated in place)
+ * @returns The same array, now shuffled
  */
-export function bubbleSort<T>(arr: T[]): void {
-  let swapped: boolean;
+export function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a remaining element…
+    const j = Math.floor(Math.random() * (i + 1));
 
-  // keep looping until a pass produces no swaps
-  do {
-    swapped = false;
-    for (let i = 0; i < arr.length - 1; i++) {
-      // compare adjacent elements
-      if (arr[i] > arr[i + 1]) {
-        // swap them
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;      // a swap happened, so we might need another pass
-      }
-    }
-  } while (swapped);
+    // …and swap it with the current element.
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
-const numbers = [5, 3, 8, 4, 1];
-bubbleSort(numbers);
-console.log(numbers); // → [1, 3, 4, 5, 8]
+import { shuffle } from "./utils";
 
-const strings = ["pear", "apple", "banana"];
-bubbleSort(strings);
-console.log(strings); // → ["apple", "banana", "pear"]
+const numbers = [1, 2, 3, 4, 5];
+shuffle(numbers);          // numbers is now in a random order
+console.log(numbers);
+
+const words = ["a", "b", "c", "d"];
+console.log(shuffle(words));  // prints a shuffled copy
