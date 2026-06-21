@@ -1,60 +1,55 @@
 /**
- * Returns true if `s` is a palindrome.
- *
- * Works in O(n) time and O(1) additional space.
- * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
+ * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    if (s[left] !== s[right]) {
-      return false;
-    }
-    left++;
-    right--;
-  }
-
-  return true;
+function isAnagram(s1: string, s2: string): boolean {
+  const normalize = (s: string) =>
+    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
+  return normalize(s1) === normalize(s2);
 }
+function isAnagramLetterCount(a: string, b: string): boolean {
+  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
 
-// Demo
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isAlphanumeric(c: string): boolean {
-  const code = c.charCodeAt(0);
-  return (
-    // 0‑9
-    (code >= 48 && code <= 57) ||
-    // A‑Z
-    (code >= 65 && code <= 90) ||
-    // a‑z
-    (code >= 97 && code <= 122)
-  );
-}
-
-function isPalindromeLoose(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip non‑alphanumerics
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
-
-    // After skipping, compare lowercase versions
-    if (
-      left < right &&
-      s[left].toLowerCase() !== s[right].toLowerCase()
-    ) {
-      return false;
+  const freq = (s: string) => {
+    const map = new Map<string, number>();
+    for (const c of s) {
+      map.set(c, (map.get(c) ?? 0) + 1);
     }
+    return map;
+  };
 
-    left++;
-    right--;
+  if (clean(a).length !== clean(b).length) return false;
+
+  const m1 = freq(clean(a));
+  const m2 = freq(clean(b));
+
+  for (const [ch, count] of m1) {
+    if (m2.get(ch) !== count) return false;
   }
   return true;
 }
+function isAnagramFlexible(
+  s1: string,
+  s2: string,
+  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
+): boolean {
+  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
+  let pattern = '';
+  if (ignoreSpaces) pattern += '\\s';
+  if (ignorePunct) pattern += /[^\w\s]/g.source;
+
+  const regex = new RegExp(pattern, 'g');
+  const normalize = (s: string) =>
+    s.replace(regex, '').toLowerCase().split('').sort().join('');
+
+  return normalize(s1) === normalize(s2);
+}
+console.log(isAnagram('listen', 'silent'));          // true
+console.log(isAnagram('A gentleman', 'Elegant man'));// true
+console.log(isAnagram('Hello', 'World'));            // false
+
+// Using the frequency‑count version
+console.log(isAnagramLetterCount('abc', 'cab'));     // true
+
+// Flexible options
+console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
