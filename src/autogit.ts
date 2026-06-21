@@ -1,87 +1,44 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
-}
+// cronDemo.ts
+// ──────────────────────────────────────────────
+// Simple TS + node‑cron demo.  Every minute,
+// the job prints a timestamp and a random number.
+//
+// Requirements:
+//   npm i node-cron @types/node-cron
+//
+// Run with:
+//   npx ts-node cronDemo.ts
+// ‒ or compile (npx tsc) and exec (node cronDemo.js)
+// ──────────────────────────────────────────────
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
+import cron from 'node-cron';
 
-  constructor() {
-    this.root = new TrieNode();
-  }
+/**
+ * Helper that gives us a nicely formatted timestamp.
+ */
+const now = () => new Date().toLocaleString();
 
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
-  }
+/**
+ * The task that will run according to the cron schedule.
+ * We generate a random integer between 1 and 1000.
+ */
+const task = () => {
+  const rand = Math.floor(Math.random() * 1000) + 1;
+  console.log(`[${now()}] Random number: ${rand}`);
+};
 
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
+/**
+ * Schedule the job.
+ * Cron expression: '* * * * *'
+ * └─ minute (0‑59)
+ *
+ * The job triggers at the start of every minute.
+ */
+cron.schedule('* * * * *', task, {
+  scheduled: true,
+  timezone: 'UTC',     // change to your local timezone if needed
+});
 
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
-
-    dfs(node, []);
-    return results;
-  }
-}
-
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
-
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
+[2026-06-17 12:34:00] Random number: 827
+[2026-06-17 12:35:00] Random number: 314
