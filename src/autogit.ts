@@ -1,48 +1,48 @@
 /**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
+ * Returns the longest common subsequence of two strings.
+ * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
  */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+function lcs(s1: string, s2: string): string {
+  const n = s1.length,
+        m = s2.length;
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
+  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+
+  // Build the DP table.
+  for (let i = 1; i <= n; i++) {
+    const a = s1[i - 1];
+    for (let j = 1; j <= m; j++) {
+      if (a === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
   }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
+  // Reconstruct the subsequence.
+  let i = n,
+      j = m,
+      result: string[] = [];
 
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
-}
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
-
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
+  while (i > 0 && j > 0) {
+    if (s1[i - 1] === s2[j - 1]) {
+      // Character is part of LCS – prepend to answer.
+      result.push(s1[i - 1]);
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;   // move up
+    } else {
+      j--;   // move left
+    }
   }
-  return undefined;
+
+  return result.reverse().join('');
 }
+const a = 'AGGTAB';
+const b = 'GXTXAYB';
+
+const sub = lcs(a, b);
+console.log(`LCS length: ${sub.length}`); // 4
+console.log(`LCS itself: ${sub}`);       // GTAB
