@@ -1,26 +1,50 @@
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
-  const total = nums.reduce((sum, n) => sum + n, 0);
-  return total / nums.length;
+interface TreeNode {
+  val:  number | string   // you can put any type that fits your data
+  left?: TreeNode | null
+  right?: TreeNode | null
 }
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;
-  let sum = 0;
-  for (const n of nums) {
-    sum += n;
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0;                 // empty tree -> depth 0
+
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let depth = 0;
+  const queue: Array<TreeNode> = [root];
+
+  while (queue.length) {
+    const levelSize = queue.length;   // nodes at the current level
+    depth++;                          // we’re about to process a whole new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;    // safe; queue is non‑empty here
+
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-  return sum / nums.length;
+
+  return depth;
 }
-function mean<T extends number>(nums: T[]): number {
-  if (nums.length === 0) return NaN;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-function meanSafe(nums: Array<number | null | undefined>): number {
-  const cleaned = nums.filter((n): n is number => typeof n === "number");
-  if (cleaned.length === 0) return NaN;
-  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
-}
-const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
-console.log(mean([2, 4, 6]));   // 4
-console.log(mean([]));          // NaN
-console.log(meanSafe([1, 2, null, 4])); // 2.333...
+// Build a tiny tree:
+//        1
+//       / \
+//      2   3
+//         /
+//        4
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2 },
+  right: {
+    val: 3,
+    left: { val: 4 }
+  }
+};
+
+console.log('Recursive depth:', maxDepth(tree));          // 3
+console.log('Iterative depth:', maxDepthIterative(tree)); // 3
