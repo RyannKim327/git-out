@@ -1,31 +1,66 @@
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
-
-// Numeric ascending sort
-numbers.sort((a, b) => a - b);
-console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
-
-// Numeric descending sort
-numbers.sort((a, b) => b - a);
-console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
-[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
-const sorted = [...numbers].sort((a, b) => a - b);
-numbers.sort((a, b) => {
-  const absDiff = Math.abs(a) - Math.abs(b);
-  return absDiff !== 0 ? absDiff : a - b;
-});
-function quickSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;
-  const pivot = arr[arr.length - 1];
-  const left: number[] = [];
-  const right: number[] = [];
-
-  for (const x of arr.slice(0, -1)) {
-    (x < pivot ? left : right).push(x);
-  }
-
-  return [...quickSort(left), pivot, ...quickSort(right)];
+// A simple singly‑linked‑list node suitable for the intersection test
+export interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
 }
 
-const numbers2 = [3, 1, 4, 1, 5, 9, 2];
-const sorted2 = quickSort(numbers2);
-console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
+/**
+ * Returns the first node at which two singly‑linked lists intersect,
+ * or undefined if they never intersect.
+ */
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | undefined,
+  headB: ListNode<T> | undefined
+): ListNode<T> | undefined {
+  // Helper that walks a list and returns its length
+  const getLength = (node?: ListNode<T>) => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
+    }
+    return len;
+  };
+
+  let lenA = getLength(headA);
+  let lenB = getLength(headB);
+
+  // Advance the longer list so both pointers are at the same distance
+  // from the end of the list.
+  let currA = headA;
+  let currB = headB;
+  while (lenA > lenB && currA) {
+    currA = currA.next;
+    lenA--;
+  }
+  while (lenB > lenA && currB) {
+    currB = currB.next;
+    lenB--;
+  }
+
+  // Move forward together until either we find the intersection
+  // or both pointers hit the end (undefined).
+  while (currA !== currB) {
+    currA = currA?.next;
+    currB = currB?.next;
+  }
+
+  return currA; // May be undefined if no intersection
+}
+// Build example lists that intersect:
+
+//      A -> B -> C
+//      ^          |
+//      |          v
+//      D <- E
+
+const c: ListNode<number> = { val: 3 };
+const b: ListNode<number> = { val: 2, next: c };
+const a: ListNode<number> = { val: 1, next: b };
+
+const e: ListNode<number> = { val: 5, next: a };
+const d: ListNode<number> = { val: 4, next: e };
+
+console.log(getIntersectionNode(a, d) === a);   // true
+console.log(getIntersectionNode(b, d) === a);   // true
+console.log(getIntersectionNode(c, d) === a);   // true
