@@ -1,48 +1,33 @@
 /**
- * Returns the longest common subsequence of two strings.
- * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
+ * Returns a random integer between `min` and `max` – both inclusive.
+ * Uses the standard Math.random() (not crypto‑safe).
  */
-function lcs(s1: string, s2: string): string {
-  const n = s1.length,
-        m = s2.length;
+export function randomIntInRange(min: number, max: number): number {
+  // Make sure min ≤ max and that the inputs are integers
+  if (!Number.isInteger(min) || !Number.isInteger(max))
+    throw new Error('min and max must be integers');
+  if (min > max) [min, max] = [max, min];
 
-  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
-
-  // Build the DP table.
-  for (let i = 1; i <= n; i++) {
-    const a = s1[i - 1];
-    for (let j = 1; j <= m; j++) {
-      if (a === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Reconstruct the subsequence.
-  let i = n,
-      j = m,
-      result: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (s1[i - 1] === s2[j - 1]) {
-      // Character is part of LCS – prepend to answer.
-      result.push(s1[i - 1]);
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;   // move up
-    } else {
-      j--;   // move left
-    }
-  }
-
-  return result.reverse().join('');
+  const range = max - min + 1;          // how many possible numbers
+  return Math.floor(Math.random() * range) + min;
 }
-const a = 'AGGTAB';
-const b = 'GXTXAYB';
 
-const sub = lcs(a, b);
-console.log(`LCS length: ${sub.length}`); // 4
-console.log(`LCS itself: ${sub}`);       // GTAB
+/**
+ * Returns a random floating‑point number in `[min, max)`.
+ * If you want `max` inclusive, add a tiny epsilon before flooring.
+ */
+export function randomFloatInRange(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  return Math.random() * (max - min) + min;
+}
+export function secureRandomInt(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  const range = max - min + 1;
+  // We'll grab 4 random bytes and reduce them into our range
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (buf[0] % range) + min;
+}
+console.log(randomIntInRange(1, 6)); // 1‑6 like a die
+console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
+console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
