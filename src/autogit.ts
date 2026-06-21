@@ -1,58 +1,26 @@
-/**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
-
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
-
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
+  const total = nums.reduce((sum, n) => sum + n, 0);
+  return total / nums.length;
+}
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;
+  let sum = 0;
   for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
+    sum += n;
   }
-
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
-
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
+  return sum / nums.length;
 }
-
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
-
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
-
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
-
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
-    }
-
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
-
-    pow10 *= 10;           // move to next digit
-  }
-
-  return output;
+function mean<T extends number>(nums: T[]): number {
+  if (nums.length === 0) return NaN;
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
 }
-import { radixSort } from "./radixSort";
-
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+function meanSafe(nums: Array<number | null | undefined>): number {
+  const cleaned = nums.filter((n): n is number => typeof n === "number");
+  if (cleaned.length === 0) return NaN;
+  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
+}
+const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
+console.log(mean([2, 4, 6]));   // 4
+console.log(mean([]));          // NaN
+console.log(meanSafe([1, 2, null, 4])); // 2.333...
