@@ -1,93 +1,65 @@
-/**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
- */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
+type Node<T> = { val: T; next: Node<T> | null };
 
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
-}
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
 
-/**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
- */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
-
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
-}
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
 
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
-}
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
 
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
   }
-  return i - 1;
-}
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
-];
 
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
+
+  return true;
+}
+
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev!;
+}
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
+
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
+  }
+  return true;
+}
