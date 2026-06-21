@@ -1,73 +1,37 @@
-type Edge = {
-  from: number;   // vertex index
-  to: number;     // vertex index
-  weight: number; // can be negative
-};
-
-type BellmanFordResult = {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-};
-function bellmanFord(
-  numVertices: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
-
-  // 1. Initialisation
-  const dist = new Array(numVertices).fill(INF);
-  dist[source] = 0;
-
-  const pred = new Array<number | null>(numVertices).fill(null);
-
-  // 2. Relax edges (V‑1) times
-  for (let i = 0; i < numVertices - 1; i++) {
-    let updated = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        updated = true;
-      }
-    }
-    // early exit if no change – optional but nice optimisation
-    if (!updated) break;
-  }
-
-  // 3. Check for negative‑weight cycles
-  let hasNegCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-      hasNegCycle = true;
-      break;
-    }
-  }
-
-  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
-}
-// Build a tiny graph with a negative edge that doesn't form a cycle
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 3, weight: -3 },
-  { from: 2, to: 3, weight: 2 },
-];
-
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
-
-console.log('Distances:', distances);          // [0, 4, 5, 1]
-console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
-console.log('Negative cycle?', hasNegativeCycle); // false
-
-// If you want to pull out the path 0 -> 1 -> 3:
-function buildPath(pred: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  for (let v = target; v !== null; v = pred[v] as number | null) {
-    path.push(v);
-  }
-  return path.reverse();
+// Node definition – adjust `value` type as needed
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
+// Recursive sum – the classic “do it in one pass”
+export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;                 // base case
+  return (root.value as any) +                      // value of this node
+         sumRecursive(root.left) +                     // left subtree
+         sumRecursive(root.right);                     // right subtree
+}
+export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;
+
+  let sum = 0 as T;
+  const stack: TreeNode<T>[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.value as any;
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
+
+  return sum;
+}
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
+
+console.log(sumRecursive(tree));   // 15
+console.log(sumIterative(tree));   // 15
