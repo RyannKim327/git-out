@@ -1,93 +1,139 @@
-/**
- * A single node of the linked list.
- * The list is kept in the "next →" direction.
- */
-class ListNode<T> {
-  public value: T;
-  public next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+// 1️⃣ Node shape ----------------------------------------------------
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
+type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
 
-/**
- * A queue backed by a linked list.
- * `front` points to the oldest element,
- * `rear` points to the newest one.
- */
-export class Queue<T> {
-  private front: ListNode<T> | null = null; // head
-  private rear: ListNode<T> | null = null;  // tail
-  private _size = 0;
+const defaultComparator = <T extends number | string>(a: T, b: T) => {
+  if (a < b) return -1;
+  if (a > b) return +1;
+  return 0;
+};
+// 2️⃣ BST class ----------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  public size = 0;
 
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
+  constructor(private comp: Comparator<T> = defaultComparator) {}
+
+  // -----------------------------------------------------------------
+  // Insert
+  // -----------------------------------------------------------------
+  insert(value: T): void {
+    this.root = this._insertRec(this.root, value);
   }
 
-  /** Check if the queue is empty */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Enqueue: add an element to the tail */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (this.rear) {
-      this.rear.next = node;   // hook it after the current tail
-    }
-    this.rear = node;           // new tail
-
-    if (!this.front) {
-      // Queue was empty before, so front must point to the new node too
-      this.front = node;
+  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) {
+      this.size++;
+      return new TreeNode(value);
     }
 
-    this._size++;
-  }
-
-  /** Dequeue: remove and return the front element, or null if empty */
-  dequeue(): T | null {
-    if (!this.front) return null;
-
-    const value = this.front.value;
-    this.front = this.front.next;  // move head forward
-
-    if (!this.front) {
-      // Queue just became empty – clear the tail as well
-      this.rear = null;
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._insertRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._insertRec(node.right, value);
+    } else {
+      // duplicates: decide how to handle. Here we skip insertion.
+      return node;
     }
-
-    this._size--;
-    return value;
+    return node;
   }
 
-  /** Peek at the front without removing it */
-  peek(): T | null {
-    return this.front ? this.front.value : null;
-  }
-
-  /** Return an array of all values in order (for debugging / inspection) */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.front;
+  // -----------------------------------------------------------------
+  // Search
+  // -----------------------------------------------------------------
+  find(value: T): boolean {
+    let node = this.root;
     while (node) {
-      result.push(node.value);
-      node = node.next;
+      const cmp = this.comp(value, node.value);
+      if (cmp === 0) return true;
+      node = cmp < 0 ? node.left : node.right;
     }
-    return result;
+    return false;
+  }
+
+  // -----------------------------------------------------------------
+  // Remove
+  // -----------------------------------------------------------------
+  remove(value: T): void {
+    this.root = this._removeRec(this.root, value);
+  }
+
+  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null;
+
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._removeRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._removeRec(node.right, value);
+    } else {
+      // node to delete found
+      this.size--;
+
+      // case 1: no children
+      if (!node.left && !node.right) return null;
+
+      // case 2: one child
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+
+      // case 3: two children – replace by inorder predecessor
+      const pred = this._maxNode(node.left)!; // non‑null
+      node.value = pred.value;
+      node.left = this._removeRec(node.left, pred.value);
+    }
+    return node;
+  }
+
+  private _maxNode(node: TreeNode<T>): TreeNode<T> {
+    while (node.right) node = node.right;
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Traversal helpers – in‑order (sorted order)
+  // -----------------------------------------------------------------
+  inorder(cb: (value: T) => void): void {
+    this._inorderRec(this.root, cb);
+  }
+
+  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
+    if (!node) return;
+    this._inorderRec(node.left, cb);
+    cb(node.value);
+    this._inorderRec(node.right, cb);
+  }
+
+  // -----------------------------------------------------------------
+  // Utility: pretty print as nested brackets
+  // -----------------------------------------------------------------
+  toString(): string {
+    const parts: string[] = [];
+    this._toStringRec(this.root, parts);
+    return parts.join(' ');
+  }
+
+  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
+    if (!node) { parts.push('null'); return; }
+    parts.push(String(node.value));
+    this._toStringRec(node.left, parts);
+    this._toStringRec(node.right, parts);
   }
 }
-const q = new Queue<number>();
+const bst = new BinarySearchTree<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
+console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size);      // 1
-console.log(q.toArray()); // [30]
+console.log('Contains 40? →', bst.find(40));   // true
+console.log('Contains 99? →', bst.find(99));   // false
+
+console.log('In‑order traversal:');
+bst.inorder(v => console.log(v));  
