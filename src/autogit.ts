@@ -1,33 +1,93 @@
 /**
- * Returns a random integer between `min` and `max` – both inclusive.
- * Uses the standard Math.random() (not crypto‑safe).
+ * In‑place quicksort for an array of elements that implement Comparable.
+ * @param arr The array to sort.
+ * @param left Index of the first element to consider.
+ * @param right Index of the last element to consider.
+ * @returns The sorted array (the same reference is returned).
  */
-export function randomIntInRange(min: number, max: number): number {
-  // Make sure min ≤ max and that the inputs are integers
-  if (!Number.isInteger(min) || !Number.isInteger(max))
-    throw new Error('min and max must be integers');
-  if (min > max) [min, max] = [max, min];
+export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  // Using 0‐based indices
+  if (left >= right) return arr;           // Base case – 0 or 1 element
 
-  const range = max - min + 1;          // how many possible numbers
-  return Math.floor(Math.random() * range) + min;
+  const pivotIndex = partition(arr, left, right);
+  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
+  quicksort(arr, pivotIndex + 1, right);  // right side
+  return arr;
 }
 
 /**
- * Returns a random floating‑point number in `[min, max)`.
- * If you want `max` inclusive, add a tiny epsilon before flooring.
+ * Hoare partition scheme.
+ * Moves elements < pivot to the left, > pivot to the right.
+ * Returns the final pivot position (the index of the pivot element after partition).
  */
-export function randomFloatInRange(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  return Math.random() * (max - min) + min;
+function partition<T>(arr: T[], left: number, right: number): number {
+  // Pick the middle element as pivot (arbitrary choice)
+  const pivot = arr[Math.floor((left + right) / 2)];
+
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    // Move i until we find element >= pivot
+    while (arr[i] < pivot) i++;
+    // Move j until we find element <= pivot
+    while (arr[j] > pivot) j--;
+
+    if (i <= j) {
+      // Swap arr[i] and arr[j]
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
+  }
+  // Return the index where the next recursive calls will split.
+  return i - 1;
 }
-export function secureRandomInt(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  const range = max - min + 1;
-  // We'll grab 4 random bytes and reduce them into our range
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  return (buf[0] % range) + min;
+const data = [34, 7, 23, 32, 5, 62];
+console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
+export function quicksortBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): T[] {
+  if (left >= right) return arr;
+
+  const pivotIndex = partitionBy(arr, cmp, left, right);
+  quicksortBy(arr, cmp, left, pivotIndex - 1);
+  quicksortBy(arr, cmp, pivotIndex + 1, right);
+  return arr;
 }
-console.log(randomIntInRange(1, 6)); // 1‑6 like a die
-console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
-console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
+
+function partitionBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left: number,
+  right: number
+): number {
+  const pivot = arr[Math.floor((left + right) / 2)];
+
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    while (cmp(arr[i], pivot) < 0) i++;
+    while (cmp(arr[j], pivot) > 0) j--;
+
+    if (i <= j) {
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
+  }
+  return i - 1;
+}
+const users = [
+  { name: 'Anna', age: 23 },
+  { name: 'Bob', age: 17 },
+  { name: 'Clara', age: 31 },
+];
+
+quicksortBy(users, (a, b) => a.age - b.age);
+stdin: 5 1 4 2 6 0
+stdout: 0 1 2 4 5 6
