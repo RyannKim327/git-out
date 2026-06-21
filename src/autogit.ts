@@ -1,81 +1,83 @@
-// ---------- Tarjan S.T.C. ---------------------------------------
+function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;          // out of range
 
-/**
- * Return an array of strongly‑connected components.
- * Each component is an array of vertex IDs (here strings).
- * Vertices can be any `string`; if you prefer numbers just change the type.
- */
-export function tarjanSCC(graph: Map<string, string[]>): string[][] {
-  // state that needs to survive the recursive walk
-  const index = new Map<string, number>();    // discovery time of vertex
-  const lowLink = new Map<string, number>();  // lowest discovery reachable
-  const stack: string[] = [];                 // vertices that are “on stack”
-  const onStack = new Set<string>();
+  // cloning so we don’t mutate the caller’s array
+  const copy = [...arr];
 
-  let curIdx = 0;                            // global counter
-  const sccs: string[][] = [];               // result
+  // If you need custom ordering, pass a compare function.
+  // Default: numeric ascending.
+  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
 
-  // helper: depth‑first walk from a single vertex
-  function strongConnect(v: string) {
-    // part A – set the depth index and low link
-    index.set(v, curIdx);
-    lowLink.set(v, curIdx);
-    curIdx += 1;
+  // Arrays are zero‑indexed
+  return copy[k - 1];
+}
 
-    // put v on stack
-    stack.push(v);
-    onStack.add(v);
+// Example
+const nums = [7, 3, 5, 2, 9];
+console.log(kthSmallestBySort(nums, 2));   // 3
+function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-    // part B – consider successors of v
-    const neighbours = graph.get(v) ?? [];
-    for (const w of neighbours) {
-      if (!index.has(w)) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → must be in the current SCC
-        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
+  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const clone = [...arr]; // keep the original untouched
+
+  function partition(left: number, right: number, pivotIndex: number): number {
+    const pivotValue = clone[pivotIndex];
+    // move pivot to end
+    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
+
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (comp(clone[i], pivotValue) < 0) {
+        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
+        storeIndex++;
       }
     }
-
-    // part C – if v is a root node, pop the stack to build an SCC
-    if (lowLink.get(v) === index.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
+    // move pivot to its final place
+    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
+    return storeIndex;
   }
 
-  // run the dfs from every unvisited vertex
-  for (const v of graph.keys()) {
-    if (!index.has(v)) {
-      strongConnect(v);
-    }
-  }
+  let left = 0;
+  let right = clone.length - 1;
+  let pivotIndex;
 
-  return sccs;
+  while (true) {
+    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
+    if (pivotIndex === k - 1) return clone[pivotIndex];
+    if (pivotIndex > k - 1) right = pivotIndex - 1;
+    else left = pivotIndex + 1;
+  }
 }
-const graph = new Map<string, string[]>(
-  [
-    ['A', ['B']],
-    ['B', ['C', 'E', 'F']],
-    ['C', ['D', 'G']],
-    ['D', ['C', 'H']],
-    ['E', ['A', 'F']],
-    ['F', ['G']],
-    ['G', ['F', 'H']],
-    ['H', ['G']],
-  ],
+const data = [12, 3, 5, 7, 4, 19, 26];
+console.log(kthSmallestQuickSelect(data, 4)); // 7
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private compare: (a: T, b: T) => number) {}
+  // heap methods omitted for brevity...
+}
+
+function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const heap = new MinHeap<T>(cmp);
+  for (const v of arr) heap.insert(v);
+  let result: T | undefined;
+  for (let i = 0; i < k; i++) result = heap.extractMin();
+  return result;
+}
+const people = [
+  { name: 'Alice', age: 24 },
+  { name: 'Bob', age: 19 },
+  { name: 'Carol', age: 32 },
+  { name: 'Dave', age: 28 }
+];
+
+// 3rd youngest
+const thirdYoungest = kthSmallestQuickSelect(
+  people,
+  3,
+  (a, b) => a.age - b.age
 );
 
-const components = tarjanSCC(graph);
-console.log(components);
-// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
-// (depending on traversal order you may see the same vertices grouped in one component,
-// because the toy graph is fully strongly‑connected)
+console.log(thirdYoungest); // shows Bob (age 19)
