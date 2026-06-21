@@ -1,93 +1,58 @@
-// A node can carry any payload (`T`) and point to its neighbours.
-export interface GraphNode<T> {
-  value: T;
-  neighbours: GraphNode<T>[];
-}
 /**
- * Recursively performs depth‑limited search.
- *
- * @param node        The node you are currently visiting.
- * @param goalTest    Returns true if the current node satisfies the goal.
- * @param limit       Number of edges left before the search terminates.
- * @param visited     A set of IDs or reference values that keeps track of visited nodes.
- *                    This protects against cycles that would otherwise cause infinite recursion.
- * @returns The first node that satisfies `goalTest`, or `null`.
+ * Radix sort for 32‑bit signed integers (Int32Array safety).
+ * Works for positives, negatives and zero.
  */
-export function depthLimitedSearchRec<T>(
-  node: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number,
-  visited: Set<GraphNode<T>> = new Set()
-): GraphNode<T> | null {
-  if (goalTest(node)) return node;
-  if (limit === 0) return null;          // reached the depth boundary
+export function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-  visited.add(node);
+  // Separate positives and negatives.
+  const positives: number[] = [];
+  const negatives: number[] = []; // store as positive magnitudes
 
-  for (const neighbour of node.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
-      if (result !== null) return result;
-    }
+  for (const n of nums) {
+    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
+    else positives.push(n);
   }
 
-  return null;   // nothing found within this branch
-}
-interface StackItem<T> {
-  node: GraphNode<T>;
-  depthLeft: number;
+  // Sort each side independently.
+  const sortedPos = radixSortNonNegative(positives);
+  const sortedNeg = radixSortNonNegative(negatives).reverse();
+
+  // Concatenate negatives (reversed) + positives
+  return [...sortedNeg.map(n => -n), ...sortedPos];
 }
 
 /**
- * Iterative depth‑limited search.
+ * Helper that assumes every element is a non‑negative integer.
  */
-export function depthLimitedSearchIter<T>(
-  start: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number
-): GraphNode<T> | null {
-  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
-  const visited: Set<GraphNode<T>> = new Set();
+function radixSortNonNegative(arr: number[]): number[] {
+  if (arr.length <= 1) return arr.slice();
 
-  while (stack.length) {
-    const { node, depthLeft } = stack.pop()!;
+  const maxVal = Math.max(...arr);
+  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
 
-    if (visited.has(node)) continue;
-    visited.add(node);
+  let output = arr.slice(); // working copy
+  let pow10 = 1;            // 10^digitIndex
 
-    if (goalTest(node)) return node;
-    if (depthLeft === 0) continue;           // depth boundary reached
+  for (let d = 0; d < lenDigits; d++) {
+    // 10 buckets for the decimal digits 0‑9
+    const buckets: number[][] = Array.from({ length: 10 }, () => []);
 
-    // push neighbours onto the stack – LIFO order means the first neighbour
-    // will be processed last, mirroring the recursive DFS behaviour.
-    for (const neighbour of node.neighbours) {
-      if (!visited.has(neighbour)) {
-        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
-      }
+    for (const val of output) {
+      const digit = Math.floor((val / pow10) % 10);
+      buckets[digit].push(val);
     }
+
+    // Rebuild output from buckets
+    output = [].concat(...buckets);
+
+    pow10 *= 10;           // move to next digit
   }
 
-  return null;  // no goal reached within depth limit
+  return output;
 }
-// --- build a simple graph
-const a: GraphNode<string> = { value: "A", neighbours: [] };
-const b: GraphNode<string> = { value: "B", neighbours: [] };
-const c: GraphNode<string> = { value: "C", neighbours: [] };
-const d: GraphNode<string> = { value: "D", neighbours: [] };
+import { radixSort } from "./radixSort";
 
-a.neighbours.push(b, c);   // A -> B, C
-b.neighbours.push(d);      // B -> D
-c.neighbours.push(d);      // C -> D
-
-// --- goal: find node with value “D”
-const isGoal = (node: GraphNode<string>) => node.value === "D";
-
-// Recursive
-const resultRec = depthLimitedSearchRec(a, isGoal, 3);
-console.log("Recursive result:", resultRec?.value ?? "none");
-
-// Iterative
-const resultIter = depthLimitedSearchIter(a, isGoal, 3);
-console.log("Iterative result:", resultIter?.value ?? "none");
-Recursive result: D
-Iterative result: D
+const data = [170, -45, 75, 90, -802, 24, 2, 66];
+console.log(radixSort(data)); 
+// → [-802, -45, 2, 24, 66, 75, 90, 170]
