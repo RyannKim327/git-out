@@ -1,37 +1,46 @@
-const nums = [1, 2, 3, 2, 4, 1, 5];
+/**
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
+ */
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-const uniq = Array.from(new Set(nums));
-// or: const uniq = [...new Set(nums)];
-
-console.log(uniq); // [1, 2, 3, 4, 5]
-const words = ["foo", "bar", "baz", "foo", "bar"];
-
-const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
-
-console.log(unique); // ["foo", "bar", "baz"]
-const objs = [{a: 1}, {a: 1}, {a: 2}];
-console.log([...new Set(objs)]); // keeps both {a:1} objects
-function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
-  const seen = new Set<string>();
-  return arr.filter(item => {
-    const key = keyFn(item);
-    return seen.has(key) ? false : seen.add(key);
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
   });
-}
 
-const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
-console.log(uniqueObjs); // [{a:1}, {a:2}]
-const arr = [1, 2, 3, 2, 1];
-const seen = new Set<number>();
-let writeIdx = 0;
-
-for (let readIdx = 0; readIdx < arr.length; readIdx++) {
-  const value = arr[readIdx];
-  if (!seen.has(value)) {
-    seen.add(value);
-    arr[writeIdx++] = value;
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
+    }
   }
+  return true;
 }
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-arr.length = writeIdx; // shrink the array
-console.log(arr); // [1, 2, 3]
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
+
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
+
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
