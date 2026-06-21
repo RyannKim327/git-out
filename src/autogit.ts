@@ -1,44 +1,27 @@
-// cronDemo.ts
-// ──────────────────────────────────────────────
-// Simple TS + node‑cron demo.  Every minute,
-// the job prints a timestamp and a random number.
-//
-// Requirements:
-//   npm i node-cron @types/node-cron
-//
-// Run with:
-//   npx ts-node cronDemo.ts
-// ‒ or compile (npx tsc) and exec (node cronDemo.js)
-// ──────────────────────────────────────────────
+// ---------- types ----------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-import cron from 'node-cron';
+// ---------- helper ----------------------------------------------
+async function getJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Network error: ${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<T>;
+}
 
-/**
- * Helper that gives us a nicely formatted timestamp.
- */
-const now = () => new Date().toLocaleString();
-
-/**
- * The task that will run according to the cron schedule.
- * We generate a random integer between 1 and 1000.
- */
-const task = () => {
-  const rand = Math.floor(Math.random() * 1000) + 1;
-  console.log(`[${now()}] Random number: ${rand}`);
-};
-
-/**
- * Schedule the job.
- * Cron expression: '* * * * *'
- * └─ minute (0‑59)
- *
- * The job triggers at the start of every minute.
- */
-cron.schedule('* * * * *', task, {
-  scheduled: true,
-  timezone: 'UTC',     // change to your local timezone if needed
-});
-
-console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
-[2026-06-17 12:34:00] Random number: 827
-[2026-06-17 12:35:00] Random number: 314
+// ---------- usage ----------------------------------------------
+(async () => {
+  try {
+    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
+    console.log('Fetched post:', post);
+    // do something with post… (e.g., update UI)
+  } catch (err) {
+    console.error('Failed to fetch post:', err);
+  }
+})();
