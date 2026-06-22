@@ -1,25 +1,51 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+/**
+ * Merge two sorted arrays into one sorted array.
+ * The comparator decides the ordering – by default it uses the `<` operator.
+ */
+function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
+  const result: T[] = [];
+  let i = 0; // index into left
+  let j = 0; // index into right
 
-const numbers = [4, 12, 7, 19, 3];
+  // Grab the compare function, or fall back to simple < comparison
+  const comp = compare ?? ((a: T, b: T) => a < b);
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+  while (i < left.length && j < right.length) {
+    // If left[i] comes before right[j] (or equal), push it
+    if (comp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
+  }
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
+  // One of the halves may still have leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
+}
 
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
+/**
+ * Recursive merge sort.  
+ * @param array The array to sort.
+ * @param compare Optional comparator that returns true if a < b.
+ */
+export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
+  // Stop recursion when array has 0 or 1 item
+  if (array.length <= 1) return array.slice(); // return a shallow copy
+
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
+
+  return merge(left, right, compare);
+}
+const numbers = [5, 3, 8, 1, 2, 9];
+const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
+
+const people = [
+  { name: "Alice", age: 32 },
+  { name: "Bob", age: 25 },
+  { name: "Eve", age: 29 }
 ];
 
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+// Sort by age
+const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
