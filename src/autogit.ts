@@ -1,145 +1,33 @@
-/**
- * Graph type: key → list of neighbour keys.
- * Assumes an undirected or directed graph – just feed it the adjacency list you have.
- */
-type Graph = Map<string, string[]>;
-
-/**
- * Bidirectional BFS to find the shortest path between two nodes.
- *
- * @param graph       The graph adjacency list.
- * @param startKey    Origin node key.
- * @param goalKey     Destination node key.
- * @returns           Array of keys representing the shortest path,
- *                    or `null` if no path exists.
- */
-export function bidirectionalSearch(
-  graph: Graph,
-  startKey: string,
-  goalKey: string
-): string[] | null {
-  if (startKey === goalKey) return [startKey];
-
-  // --- Front and back queues
-  const frontQueue: string[] = [startKey];
-  const backQueue: string[] = [goalKey];
-
-  // --- Visited maps
-  const frontVisited = new Set<string>([startKey]);
-  const backVisited  = new Set<string>([goalKey]);
-
-  // --- Parent maps to reconstruct path
-  const frontParent = new Map<string, string>([[startKey, null]]);
-  const backParent  = new Map<string, string>([[goalKey, null]]);
-
-  // Helper to get neighbours, guard against missing keys
-  const neighbours = (node: string) => graph.get(node) ?? [];
-
-  // Helper to expand one layer from a queue
-  function expand(
-    queue: string[],
-    visited: Set<string>,
-    otherVisited: Set<string>,
-    parentMap: Map<string, string>
-  ): string | null {
-    const size = queue.length;   // classic BFS “level” size
-    for (let i = 0; i < size; i++) {
-      const current = queue.shift() as string; // guaranteed non‑empty
-
-      for (const neighbour of neighbours(current)) {
-        if (visited.has(neighbour)) continue; // already expanded from this side
-
-        // New node from this side – record parent & mark visited
-        visited.add(neighbour);
-        parentMap.set(neighbour, current);
-        queue.push(neighbour);
-
-        // If the other side has already seen this neighbour,
-        // we’ve met in the middle!
-        if (otherVisited.has(neighbour)) return neighbour;
-      }
-    }
-    return null;
-  }
-
-  // Main loop
-  while (frontQueue.length && backQueue.length) {
-    // 1. Expand front side
-    const meetingPoint = expand(
-      frontQueue,
-      frontVisited,
-      backVisited,
-      frontParent
-    );
-    if (meetingPoint) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint,
-        startKey,
-        goalKey
-      );
-    }
-
-    // 2. Expand back side
-    const meetingPoint2 = expand(
-      backQueue,
-      backVisited,
-      frontVisited,
-      backParent
-    );
-    if (meetingPoint2) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint2,
-        startKey,
-        goalKey
-      );
-    }
-  }
-
-  // No overlap – disconnected graph
-  return null;
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
+}
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
 }
 
-/**
- * Reconstructs the full path from start → meeting → goal.
- */
-function buildPath(
-  frontParents: Map<string, string>,
-  backParents: Map<string, string>,
-  meeting: string,
-  start: string,
-  goal: string
-): string[] {
-  const path: string[] = [meeting];
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
 
-  // Walk backwards from meeting to start
-  let cur: string | null = frontParents.get(meeting) ?? null;
-  while (cur) {
-    path.unshift(cur);
-    cur = frontParents.get(cur) ?? null;
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
   }
-
-  // Walk forwards from meeting to goal
-  cur = backParents.get(meeting) ?? null;
-  while (cur) {
-    path.push(cur);
-    cur = backParents.get(cur) ?? null;
-  }
-
-  return path;
+  return result;
 }
-// Build a tiny sample graph
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E']]
-]);
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
+}
 
-console.log(bidirectionalSearch(g, 'A', 'F'));
-// → ['A
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+}
