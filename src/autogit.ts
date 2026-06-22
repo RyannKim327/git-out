@@ -1,48 +1,49 @@
 /**
- * Returns the longest common subsequence of two strings.
- * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
+ * Stable counting sort for integers.
+ *
+ * @param  values The array of numbers to sort (integers only).
+ * @return        A new sorted array.
  */
-function lcs(s1: string, s2: string): string {
-  const n = s1.length,
-        m = s2.length;
+function countingSort(values: number[]): number[] {
+  if (values.length === 0) return [];
 
-  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
-
-  // Build the DP table.
-  for (let i = 1; i <= n; i++) {
-    const a = s1[i - 1];
-    for (let j = 1; j <= m; j++) {
-      if (a === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  // ---------- 1. find min & max ----------
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
   }
 
-  // Reconstruct the subsequence.
-  let i = n,
-      j = m,
-      result: string[] = [];
+  // ---------- 2. count frequencies ----------
+  const range = max - min + 1;          // number of distinct values
+  const counts = new Array<number>(range).fill(0);
 
-  while (i > 0 && j > 0) {
-    if (s1[i - 1] === s2[j - 1]) {
-      // Character is part of LCS – prepend to answer.
-      result.push(s1[i - 1]);
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;   // move up
-    } else {
-      j--;   // move left
-    }
+  for (const v of values) {
+    counts[v - min]++;                  // shift so that the smallest value maps to index 0
   }
 
-  return result.reverse().join('');
+  // ---------- 3. prefix sums (running totals) ----------
+  const positions = new Array<number>(range).fill(0);
+  let sum = 0;
+  for (let i = 0; i < range; i++) {
+    sum += counts[i];
+    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
+  }
+
+  // ---------- 4. build the sorted output ----------
+  const result = new Array<number>(values.length);
+  // Walk the original array **backwards** to keep stability
+  for (let i = values.length - 1; i >= 0; i--) {
+    const v = values[i];
+    const posIndex = v - min;
+    positions[posIndex]--;               // get the correct position for this element
+    result[positions[posIndex]] = v;
+  }
+
+  return result;
 }
-const a = 'AGGTAB';
-const b = 'GXTXAYB';
-
-const sub = lcs(a, b);
-console.log(`LCS length: ${sub.length}`); // 4
-console.log(`LCS itself: ${sub}`);       // GTAB
+const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
+const sorted = countingSort(unsorted);
+console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
