@@ -1,117 +1,76 @@
-type Key = string | number | object;   // anything you can reasonably stringify
-interface Pair<K, V> {
-  key: K;
-  value: V;
+/**
+ * Build the LPS (Longest Prefix Suffix) table for KMP.
+ *
+ * @param pattern - The pattern string for which the table is built.
+ * @returns An array where lps[i] is the length of the longest proper
+ *          prefix of pattern[0..i] that is also a suffix of that substring.
+ */
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps: number[] = Array(m).fill(0);
+  let length = 0;                 // length of previous longest prefix suffix
+  let i = 1;                      // lps[0] is always 0
+
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length += 1;
+      lps[i] = length;
+      i += 1;
+    } else {
+      if (length !== 0) {
+        // fall back in the pattern (do not increment i here)
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i += 1;
+      }
+    }
+  }
+  return lps;
 }
-type Bucket<K, V> = Pair<K, V>[];
-const DEFAULT_BUCKETS = 16;
-const DEFAULT_LOAD_FACTOR = 0.75;
 
-export class HashTable<K extends Key, V> {
-  private buckets: Bucket<K, V>[];
-  private count = 0;                    // number of key/value pairs
-  private loadFactor: number;
+/**
+ * KMP search – returns all starting indices of `pattern` in `text`.
+ *
+ * @param text    – The string to search within.
+ * @param pattern – The string to find.
+ * @returns Array of start indices where pattern occurs in text.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];          // nothing to find
+  const lps = buildLPS(pattern);
+  const result: number[] = [];
 
-  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
-    this.buckets = Array.from({ length: initialBuckets }, () => []);
-    this.loadFactor = loadFactor;
-  }
+  let i = 0;   // index for text
+  let j = 0;   // index for pattern
 
-  /* ---------- public API ---------- */
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i += 1;
+      j += 1;
+    }
 
-  set(key: K, value: V): void {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    // Replace if key is already present
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
-        pair.value = value;
-        return;
+    // full match found
+    if (j === pattern.length) {
+      result.push(i - j);   // starting index
+      j = lps[j - 1];       // allow overlapping matches
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i += 1;
       }
     }
-
-    bucket.push({ key, value });
-    this.count++;
-
-    if (this.count / this.buckets.length > this.loadFactor) {
-      this.resize();
-    }
   }
 
-  get(key: K): V | undefined {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
+  return result;
+}
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {
-        return pair.value;
-      }
-    }
-    return undefined;
-  }
+const matches = kmpSearch(text, pattern);
+console.log(matches);          // [10]
 
-  delete(key: K): boolean {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.equals(bucket[i].key, key)) {
-        bucket.splice(i, 1);
-        this.count--;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  clear(): void {
-    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
-    this.count = 0;
-  }
-
-  get size(): number {
-    return this.count;
-  }
-
-  /* ---------- private helpers ---------- */
-
-  private bucketIndex(key: K): number {
-    // Ensure the hash is non‑negative
-    const h = this.hash(key);
-    const idx = h % this.buckets.length;
-    return idx < 0 ? idx + this.buckets.length : idx;
-  }
-
-  /* Simple but stable string hash (djb2 algorithm) */
-  private hash(key: K): number {
-    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) {
-      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
-    }
-    return h >>> 0; // make unsigned
-  }
-
-  private equals(a: K, b: K): boolean {
-    // For primitives, === is fine.
-    // For objects, we compare the stringified form.
-    if (typeof a === 'object' && typeof b === 'object') {
-      return JSON.stringify(a) === JSON.stringify(b);
-    }
-    return a === b;
-  }
-
-  /* Grow the bucket array and re‑hash all entries */
-  private resize(): void {
-    const oldBuckets = this.buckets;
-    const newSize = oldBuckets.length * 2;
-    this.buckets = Array.from({ length: newSize }, () => []);
-    this.count = 0;
-
-    for (const bucket of oldBuckets) {
-      for (const pair of bucket)
+const hasMatch = matches.length > 0;
+console.log(hasMatch);         // true
