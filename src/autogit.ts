@@ -1,135 +1,86 @@
+// -------------------------------------------
+//  heapSort.ts
+// -------------------------------------------
+
 /**
- * Boyer‑Moore pattern search
- * ---------------------------------
- * Returns the start indices of every exact match of `pattern`
- * inside `text`.  If no match, returns an empty array.
+ * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
  *
- * Complexity:
- *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
+ * @param   array      The array to sort, mutated in‑place.
+ * @param   cmp?       Optional comparator: (a, b) => number
+ *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
  *
- * @param text    The haystack string
- * @param pattern The needle string
+ * @example
+ * const nums = [3, 1, 4, 1, 5, 9, 2];
+ * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
+ * heapSort(nums, (a, b) => b - a);  // descending order
  */
-export function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];          // empty pattern → nothing to find
+export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
+  const compare = cmp ?? defaultCompare;
 
-  // Preprocessing -------------------------------------------------------------
-  const badChar = buildBadCharacterTable(pattern);
-  const goodSuf  = buildGoodSuffixTable(pattern);
+  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
+  const heapSize = array.length;
 
-  // Searching ---------------------------------------------------------------
-  const results: number[] = [];
-  let s = 0;                        // shift of the pattern with respect to text
-
-  while (s <= n - m) {
-    let j = m - 1;                  // right‑to‑left comparison
-
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // Match found at position s
-      results.push(s);
-
-      // Shift the pattern so that the next character in text aligns with
-      // the last occurrence of that character in the pattern (if any)
-      // or skip to the end of the pattern if none.
-      // This is the "good suffix" rule for a complete match.
-      s += goodSuf[0];
-    } else {
-      // Mismatch: use the bad‑character rule.
-      const badShift = j - badChar[text[s + j]];
-      // Use the good‑suffix shift as well (max of the two)
-      const goodShift = goodSuf[j + 1];
-
-      s += Math.max(badShift, goodShift);
-    }
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    siftDown(i, heapSize);
   }
 
-  return results;
-}
-
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
-
-/**
- * Builds a map from character to its right‑most index in the pattern.
- * Character not present → -1.
- */
-function buildBadCharacterTable(pattern: string): { [k: string]: number } {
-  const table: { [k: string]: number } = {};
-
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern[i]] = i;           // right‑most position
+  /* ---------- 2. Repeatedly extract max (or min) ---------- */
+  for (let i = heapSize - 1; i > 0; i--) {
+    // Grab the root (largest element) and put it at the end
+    swap(array, 0, i);
+    // Restore heap property on the reduced heap
+    siftDown(0, i);
   }
 
-  return table;
-}
+  /* ---------- Helper scopes ---------- */
+  function siftDown(start: number, end: number): void {
+    let root = start;
 
-/**
- * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
- *   goodSuf[i] = number of positions pattern needs to shift so that
- *                the right i characters of pattern align with a previous
- *                occurrence of this suffix.  If no such occurrence,
- *                the shift corresponds to aligning the next character after
- *                the suffix that matches in the pattern.
- *
- * The table length is m+1; goodSuf[0] is the shift after a full match.
- */
-function buildGoodSuffixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const goodSuf = new Array(m + 1).fill(0);
-  const suffix = new Array(m + 1).fill(0);
-  const prefix = new Array(m + 1).fill(false);
+    while (true) {
+      const left = 2 * root + 1;
+      if (left >= end) break; // no children
 
-  // Step 1: compute suffixes
-  for (let i = 0; i < m; i++) {
-    let len = 0;
-    while (
-      i - len - 1 >= 0 &&
-      pattern[i - len - 1] === pattern[m - len - 1]
-    ) {
-      len++;
-      suffix[i - len + 1] = len;
-      if (i - len + 1 === 0) {
-        prefix[i - len + 1] = true;            // entire suffix is prefix
+      const right = left + 1;
+      let candidate = left;
+
+      // Select the bigger child (or smaller if comparator flipped)
+      if (right < end && compare(array[right], array[left]) > 0) {
+        candidate = right;
       }
+
+      // If root already holds the biggest, we're done
+      if (compare(array[root], array[candidate]) >= 0) break;
+
+      // Swap root with the chosen child and continue
+      swap(array, root, candidate);
+      root = candidate;
     }
   }
 
-  // Step 2: fill goodSuf table
-  for (let i = 0; i <= m; i++) {
-    goodSuf[i] = m;                              // default shift
+  function swap(arr: T[], i: number, j: number): void {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
   }
-
-  for (let i = 0; i < m; i++) {
-    const len = suffix[i];
-    if (len > 0) {
-      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
-    }
-  }
-
-  // Step 3: handle prefixes
-  for (let i = m; i >= 1; i--) {
-    if (prefix[i]) {
-      for (let j = 0; j < m - i; j++) {
-        if (goodSuf[j] === m) {
-          goodSuf[j] = m - i;
-        }
-      }
-    }
-  }
-
-  return goodSuf;
 }
-const text = "ABABCABABCDABABCDCDABABCABABCD";
-const pattern = "ABABCABAB";
 
-const matches = boyerMooreSearch(text, pattern);
+/* ------------------------------------------- */
+/* Default comparator for `number`/`string` (ascending) */
+function defaultCompare<T>(a: T, b: T): number {
+  // If it's a number or behaves like a number
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  // Fallback to lexical comparison for strings and others that stringify nicely
+  const sa = String(a);
+  const sb = String(b);
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
+}
+import { heapSort } from "./heapSort";
 
-console.log(`Pattern found at indices: ${matches}`);
-// → Pattern found at indices: 0,9,15
+const data = [8, 3, 5, 4, 7, 1, 2, 6];
+heapSort(data);                // ascending
+console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+
+heapSort(data, (a, b) => b - a); // descending
+console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
