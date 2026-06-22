@@ -1,26 +1,25 @@
-// utils.ts
-/**
- * Randomly reorder the elements of an array in place.
- * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
- *
- * @param arr The array to shuffle (mutated in place)
- * @returns The same array, now shuffled
+/** 
+ * Returns true if `text` is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores everything that’s not a letter or digit
  */
-export function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a remaining element…
-    const j = Math.floor(Math.random() * (i + 1));
+function isPalindrome(text: string): boolean {
+  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
+  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
-    // …and swap it with the current element.
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+  // 2. Compare the string with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
-import { shuffle } from "./utils";
 
-const numbers = [1, 2, 3, 4, 5];
-shuffle(numbers);          // numbers is now in a random order
-console.log(numbers);
-
-const words = ["a", "b", "c", "d"];
-console.log(shuffle(words));  // prints a shuffled copy
+// Usage examples
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan...'));  // true
+console.log(isPalindrome('Hello world'));      // false
+function isPalindromeSimple(s: string): boolean {
+  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
+    if (s[i] !== s[j]) return false;
+  }
+  return true;
+}
