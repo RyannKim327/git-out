@@ -1,21 +1,36 @@
-function countChar(str: string, target: string): number {
-  // guard against empty target (avoids throwing on .split(''))
-  if (target.length !== 1) throw new Error('target must be a single character');
+// A minimal, generic node type
+export interface ListNode<T> {
+  readonly value: T;
+  next: ListNode<T> | null;
+}
 
-  return str.split(target).length - 1;
-}
-console.log(countChar('hello world', 'l')); // 3
-function countCharRegEx(str: string, target: string): number {
-  const re = new RegExp(target, 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-console.log(countCharRegEx('banana', 'a')); // 3
-function countCharLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+/**
+ * Returns the middle node of a singly‑linked list.
+ * If the list has an even number of nodes, it returns
+ * the *second* middle node (i.e. the one that a
+ * “slow‑pointer” would land on after the last move).
+ *
+ * @param head Head of the list – null if the list is empty.
+ * @returns The middle node, or null for an empty list.
+ */
+export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head;
+  let fast = head;
+
+  // advance fast two steps, slow one step
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next;
+    fast = fast.next.next;
   }
-  return count;
+
+  return slow;
 }
-console.log(countCharLoop('Mississippi', 'i')); // 4
+// Build a list: 1 → 2 → 3 → 4 → 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+const mid = middleNode(node1);
+console.log(mid?.value); // → 3
