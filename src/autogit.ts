@@ -1,33 +1,52 @@
-function decimalToBinary(n: number): string {
-  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
-  // It automatically floors the number (works for ints, truncates decimals).
-  return Math.floor(n).toString(2);
-}
-console.log(decimalToBinary(10));   // → '1010'
-console.log(decimalToBinary(255));  // → '11111111'
-function binaryPadded(n: number, bits = 8): string {
-  return decimalToBinary(n).padStart(bits, '0');
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 }
 
-console.log(binaryPadded(10, 8));   // → '00001010'
-function decimalToBinaryManual(n: number): string {
-  if (n === 0) return '0';
-  let result = '';
-  let value = Math.floor(n);
+/**
+ * Returns the diameter (in edges) of a binary tree.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
 
-  while (value > 0) {
-    result = (value % 2) + result; // prepend remainder
-    value = Math.floor(value / 2);
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
+    }
+
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
   }
-  return result;
-}
-function bigIntToBinary(n: bigint): string {
-  return n.toString(2);
+
+  dfs(root);
+  return maxDiameter;         // already in edges
 }
 
-console.log(bigIntToBinary(123456789012345678901234567890n));
-// → '1110001101100110100100001100100000111010011010110111111001101'
-function decimalToBitsArray(n: number): number[] {
-  const binary = decimalToBinary(n);
-  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+/* ---- example usage ------------------------------------------------------- */
+
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
 }
+
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
+
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
