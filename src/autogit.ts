@@ -1,26 +1,37 @@
-function countWord(text: string, word: string): number {
-  // Escape word so special regex symbols don’t bite us
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // \b = word boundary, i = ignore case, g = global (all matches)
-  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-const txt = "Boo, boo! Boo-boo? Booing… boo.";
-console.log(countWord(txt, 'boo')); // 3
-function countWordSplit(text: string, word: string) {
-  const words = text.trim().split(/\s+/);
-  const target = word.toLowerCase();
-  return words.filter(w => w.toLowerCase() === target).length;
-}
-function countWordLoop(text: string, word: string) {
-  const target = word.toLowerCase();
-  let count = 0;
-  const regex = /\b\w+\b/g;               // grab words
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    if (match[0].toLowerCase() === target) count++;
+/**
+ * Returns the n‑th node from the end of a singly linked list,
+ * or null if it doesn't exist.
+ * n is 1‑based: n = 1 means the last node.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;            // invalid n – feel free to adjust
+
+  let fast: ListNode<T> | null = head;
+  // Step 1: move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;           // n is larger than the list length
+    fast = fast.next;
   }
-  return count;
+
+  // Step 2: move both pointers until fast reaches the end
+  let slow: ListNode<T> | null = head;
+  while (fast) {
+    fast = fast.next;
+    slow = slow!.next!;
+  }
+
+  return slow; // could be null if the list was empty
 }
-const count = countWord("Hello because we say hello", "hello"); // 2
+// build a tiny list: 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4: ListNode<number> = { val: 4, next: node5 };
+let node3: ListNode<number> = { val: 3, next: node4 };
+let node2: ListNode<number> = { val: 2, next: node3 };
+let node1: ListNode<number> = { val: 1, next: node2 };
+
+const thirdFromEnd = nthFromEnd(node1, 3);
+console.log(thirdFromEnd?.val); // 3
