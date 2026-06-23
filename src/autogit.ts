@@ -1,39 +1,58 @@
-function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
+// stack.ts
+export class Stack<T> {
+  /* The array that holds our data. The last item is the top of the stack. */
+  private items: T[] = [];
 
-// Example
-console.log(reverseString('hello')); // 'olleh'
-reverseString('👋🏽'); // '🏽👋'  → wrong
-function reverseStringUnicode(s: string): string {
-  const codePoints: number[] = [];
-  for (const char of s) {
-    codePoints.push(char.codePointAt(0)!);
+  /** Adds a value to the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
-  return String.fromCodePoint(...codePoints.reverse());
-}
 
-// Example
-console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
-const cp = Array.from(s).reverse().join('');
-function reverseRecursively(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseRecursively(s.slice(1)) + s[0];
-}
-function reverseLoop(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+  /** Removes and returns the top value. Throws if the stack is empty. */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to pop from an empty stack");
+    }
+    return this.items.pop() as T; // safe because we just checked for emptiness
   }
-  return result;
-}
-function reverseBuffer(s: string): string {
-  const buf: string[] = new Array(s.length);
-  for (let i = 0; i < s.length; i++) {
-    buf[i] = s[s.length - 1 - i];
+
+  /** Returns the top value without removing it. Throws if the stack is empty. */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to peek on an empty stack");
+    }
+    // items.length is at least 1, so the index exists
+    return this.items[this.items.length - 1];
   }
-  return buf.join('');
+
+  /** Was the stack empty? */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** How many items are there? */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clear everything out. */
+  clear(): void {
+    this.items = [];
+  }
 }
-function reverseStringSafe(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+// demo.ts
+import { Stack } from "./stack";
+
+const stack = new Stack<number>();
+
+stack.push(1);
+stack.push(2);
+stack.push(3);
+
+console.log(stack.peek());   // 3
+console.log(stack.pop());    // 3
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
