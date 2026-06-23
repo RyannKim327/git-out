@@ -1,135 +1,87 @@
-/**
- * A binary‑heap based priority queue.
- *
- * @template T - The type of the heap elements.
- */
-export class PriorityQueue<T> {
-  /** Array representation of the heap.  Root is at index 0. */
-  private heap: T[] = [];
+// -----------------------------------------------------------------------------
+// 1️⃣  Trie node – keeps a map of children and a flag for word ends
+// -----------------------------------------------------------------------------
+class TrieNode {
+  /** Map from a character to the child node that starts with that character */
+  children = new Map<string, TrieNode>();
+  /** true if the path to this node corresponds to a complete word */
+  isEnd = false;
+}
 
-  /**
-   * Comparator that decides heap order.
-   *
-   *   - If it returns a negative number → a precedes b.
-   *   - If 0 → equal.
-   *   - If positive → a follows b.
-   *
-   * You can pass your own comparator; otherwise a simple
-   * numerical ascending order is used.
-   */
-  constructor(
-    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
-  ) {}
+// -----------------------------------------------------------------------------
+// 2️⃣  Trie implementation
+// -----------------------------------------------------------------------------
+export class Trie {
+  private root: TrieNode;
 
-  /* ----- Query helpers ----- */
-
-  /** Number of elements in the queue. */
-  size(): number {
-    return this.heap.length;
+  constructor() {
+    this.root = new TrieNode();
   }
 
-  /** Return the element with highest priority without removing it. */
-  peek(): T | null {
-    return this.heap.length ? this.heap[0] : null;
-  }
-
-  /* ----- Manipulation helpers ----- */
-
-  /** Insert a new element */
-  push(item: T): void {
-    this.heap.push(item);
-    this.siftUp(this.heap.length - 1);
-  }
-
-  /**
-   * Remove and return the element with highest priority.
-   * Returns `null` if the queue is empty.
-   */
-  pop(): T | null {
-    const n = this.heap.length;
-    if (n === 0) return null;
-    if (n === 1) return this.heap.pop() ?? null;
-
-    const top = this.heap[0];
-    // Move last element to the root and shrink array.
-    this.heap[0] = this.heap.pop() as T;
-    this.siftDown(0);
-    return top;
-  }
-
-  /* ----- Internal re‑heapify ----- */
-
-  /** Push the element at index `i` up until heap property holds. */
-  private siftUp(i: number): void {
-    const { heap, compareFn } = this;
-    let childIndex = i;
-
-    while (childIndex > 0) {
-      const parentIndex = (childIndex - 1) >> 1;
-      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
-
-      // Swap child & parent
-      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
-      childIndex = parentIndex;
-    }
-  }
-
-  /** Move the element at index `i` down until heap property holds. */
-  private siftDown(i: number): void {
-    const { heap, compareFn } = this;
-    const n = heap.length;
-    let parentIndex = i;
-
-    while (true) {
-      const leftIdx = (parentIndex << 1) + 1;
-      const rightIdx = leftIdx + 1;
-
-      let smallest = parentIndex;
-
-      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
-        smallest = leftIdx;
+  /** Add a word to the trie */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      // Get the child for `ch`, or create it if missing
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode());
       }
-      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
-        smallest = rightIdx;
-      }
-
-      if (smallest === parentIndex) break;
-
-      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
-      parentIndex = smallest;
+      node = node.children.get(ch)!;
     }
+    node.isEnd = true;
   }
 
-  /* ----- Utility ----- */
+  /** Check if a word exists in the trie */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return !!node && node.isEnd;
+  }
 
-  /**
-   * Re‑build the heap from the current array contents.  
-   * Useful after bulk insertion or when the comparator changes.
-   */
-  heapify(): void {
-    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
-      this.siftDown(i);
+  /** Check if any word in the trie starts with the given prefix */
+  startsWith(prefix: string): boolean {
+    return !!this._findNode(prefix);
+  }
+
+  /** Internal helper: walk the trie following `key`.  Returns
+   *  the terminal node if the path exists, otherwise `undefined`. */
+  private _findNode(key: string): TrieNode | undefined {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch);
+      if (!node) return undefined;
     }
+    return node;
+  }
+
+  /** Optional: collect all words in the trie that share a common prefix.
+   *  Useful for autocomplete. */
+  autocomplete(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
+
+    const results: string[] = [];
+    const dfs = (n: TrieNode, path: string[]) => {
+      if (n.isEnd) results.push(prefix + path.join(''));
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, [...path, ch]);
+      }
+    };
+
+    dfs(node, []);
+    return results;
   }
 }
-// Simple min‑heap of numbers (default comparator does that)
-const minQ = new PriorityQueue<number>();
 
-minQ.push(5);   // 5
-minQ.push(3);   // 3,5
-minQ.push(8);   // 3,5,8
-minQ.push(1);   // 1,3,8,5
+// -----------------------------------------------------------------------------
+// 3️⃣  Demo
+// -----------------------------------------------------------------------------
+const trie = new Trie();
+trie.insert('hello');
+trie.insert('helium');
+trie.insert('hero');
+trie.insert('her');
 
-console.log(minQ.pop()); // 1
-console.log(minQ.pop()); // 3
-console.log(minQ.peek()); // 5
-console.log(minQ.size()); // 2
-interface Task { id: string; priority: number; }
-
-const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
-
-maxQ.push({ id: "A", priority: 10 });
-maxQ.push({ id: "B", priority: 20 });
-maxQ.push({ id: "C", priority: 5 });
-
-console.log(maxQ.pop()); // B (20)
+console.log(trie.search('hello'));   // true
+console.log(trie.search('heroic'));  // false
+console.log(trie.startsWith('he'));  // true
+console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
