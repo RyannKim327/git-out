@@ -1,173 +1,135 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
+/**
+ * A binary‑heap based priority queue.
+ *
+ * @template T - The type of the heap elements.
+ */
+export class PriorityQueue<T> {
+  /** Array representation of the heap.  Root is at index 0. */
+  private heap: T[] = [];
 
-interface Edge {
-  target: Node;
-  weight: Weight;
-}
+  /**
+   * Comparator that decides heap order.
+   *
+   *   - If it returns a negative number → a precedes b.
+   *   - If 0 → equal.
+   *   - If positive → a follows b.
+   *
+   * You can pass your own comparator; otherwise a simple
+   * numerical ascending order is used.
+   */
+  constructor(
+    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+  ) {}
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
-}
+  /* ----- Query helpers ----- */
 
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
-
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
-
-  get size() {
+  /** Number of elements in the queue. */
+  size(): number {
     return this.heap.length;
   }
 
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
+  /** Return the element with highest priority without removing it. */
+  peek(): T | null {
+    return this.heap.length ? this.heap[0] : null;
   }
 
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
+  /* ----- Manipulation helpers ----- */
+
+  /** Insert a new element */
+  push(item: T): void {
+    this.heap.push(item);
+    this.siftUp(this.heap.length - 1);
+  }
+
+  /**
+   * Remove and return the element with highest priority.
+   * Returns `null` if the queue is empty.
+   */
+  pop(): T | null {
+    const n = this.heap.length;
+    if (n === 0) return null;
+    if (n === 1) return this.heap.pop() ?? null;
+
+    const top = this.heap[0];
+    // Move last element to the root and shrink array.
+    this.heap[0] = this.heap.pop() as T;
+    this.siftDown(0);
+    return top;
+  }
+
+  /* ----- Internal re‑heapify ----- */
+
+  /** Push the element at index `i` up until heap property holds. */
+  private siftUp(i: number): void {
+    const { heap, compareFn } = this;
+    let childIndex = i;
+
+    while (childIndex > 0) {
+      const parentIndex = (childIndex - 1) >> 1;
+      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
+
+      // Swap child & parent
+      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
+      childIndex = parentIndex;
+    }
+  }
+
+  /** Move the element at index `i` down until heap property holds. */
+  private siftDown(i: number): void {
+    const { heap, compareFn } = this;
+    const n = heap.length;
+    let parentIndex = i;
 
     while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
+      const leftIdx = (parentIndex << 1) + 1;
+      const rightIdx = leftIdx + 1;
 
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
-        }
+      let smallest = parentIndex;
+
+      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
+        smallest = leftIdx;
+      }
+      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
+        smallest = rightIdx;
       }
 
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
+      if (smallest === parentIndex) break;
 
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
-}
-
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
+      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
+      parentIndex = smallest;
     }
   }
 
-  return { distances, prev };
-}
+  /* ----- Utility ----- */
 
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
-
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
+  /**
+   * Re‑build the heap from the current array contents.  
+   * Useful after bulk insertion or when the comparator changes.
+   */
+  heapify(): void {
+    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
+      this.siftDown(i);
+    }
   }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
 }
+// Simple min‑heap of numbers (default comparator does that)
+const minQ = new PriorityQueue<number>();
 
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
+minQ.push(5);   // 5
+minQ.push(3);   // 3,5
+minQ.push(8);   // 3,5,8
+minQ.push(1);   // 1,3,8,5
 
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
+console.log(minQ.pop()); // 1
+console.log(minQ.pop()); // 3
+console.log(minQ.peek()); // 5
+console.log(minQ.size()); // 2
+interface Task { id: string; priority: number; }
+
+const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
+
+maxQ.push({ id: "A", priority: 10 });
+maxQ.push({ id: "B", priority: 20 });
+maxQ.push({ id: "C", priority: 5 });
+
+console.log(maxQ.pop()); // B (20)
