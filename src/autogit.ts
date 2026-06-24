@@ -1,12 +1,16 @@
-const original = "  Hello,  world!\nThis is\ta test.   ";
+// 1. Using the Number constructor
+const val1 = Number("42");          // 42
 
-const noWhitespace = original.replace(/\s+/g, "");
+// 2. Using unary plus
+const val2 = +"42";                 // 42
 
-console.log(noWhitespace);
-// → "Hello,world!Thisisatest."
-const noWhitespace = original.replaceAll(/\s/g, "");
-const trimmed = original.trim();
-console.log(trimmed);
-// → "Hello,  world!\nThis is\ta test."
-const removedSpaces = original.replace(/ /g, "");
-// or using a character class if you want tabs too: /[ \t]/g
+// 3. Using parseInt (base 10 recommended)
+const val3 = parseInt("42", 10);    // 42
+
+// 4. Using parseFloat for decimals
+const val4 = parseFloat("3.14");    // 3.14
+function safeParse(str: string): number | null {
+  const n = Number(str);
+  return Number.isNaN(n) ? null : n;
+}
+const i = Math.floor(parseFloat("3.9")); // 3
