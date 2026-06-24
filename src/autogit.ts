@@ -1,44 +1,87 @@
-const arr1 = [1, 2, 3, 4];
-const arr2 = [3, 4, 5, 6];
+// simple node definition – feel free to extend it later (value, etc.)
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
 
-const common = arr1.filter(v => arr2.includes(v));
-console.log(common); // [3, 4]
-function intersection<T>(a: T[], b: T[]): T[] {
-  return a.filter(v => b.includes(v));
+  constructor(public readonly val?: any) {}
 }
-function intersectionSet<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(v => setB.has(v));
+interface TreeNode {
+  val?: any;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-function intersectionMultiset<T>(a: T[], b: T[]): T[] {
-  const freq = new Map<T, number>();
-  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;          // empty subtree → no leaf
 
-  const result: T[] = [];
-  for (const val of a) {
-    const count = freq.get(val);
-    if (count && count > 0) {
-      result.push(val);
-      freq.set(val, count - 1);
+  // If this node has no children → it's a leaf.
+  if (node.left === null && node.right === null) {
+    return 1;
+  }
+
+  // Otherwise sum the children’s counts
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+function countLeavesIterative(root: TreeNode | null): number {
+  if (root === null) return 0;
+
+  let leafCount = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode; // `as` because array never empty
+
+    // Check for leaf
+    if (node.left === null && node.right === null) {
+      leafCount++;
+    } else {
+      // push children if they exist
+      if (node.right !== null) stack.push(node.right);
+      if (node.left !== null) stack.push(node.left);
     }
   }
-  return result;
+
+  return leafCount;
 }
-interface User { id: number; name: string; }
+// ---------------------------------------------------------------------
+// 1. Node definition
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
 
-const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
-const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
+  constructor(public readonly val: any) {}
+}
 
-const intersectionById = usersA.filter(uA =>
-  usersB.some(uB => uB.id === uA.id)
-);
-console.log(intersectionById); // [{id:2,name:'Bob'}]
-const intersection = <T>(a: T[], b: T[]): T[] =>
-  a.filter(v => new Set(b).has(v));
-const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  const result = new Set<T>();
-  for (const v of setA) if (setB.has(v)) result.add(v);
-  return result;
-};
+// ---------------------------------------------------------------------
+// 2. Recursive counter
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;
+  if (!node.left && !node.right) return 1;
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+
+// 3. Iterative counter
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let leaves = 0;
+  const stack: TreeNode[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) leaves++;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return leaves;
+}
+
+// ---------------------------------------------------------------------
+// 4. Demo
+
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4); // leaf
+root.left.right = new TreeNode(5); // leaf
+root.right.left = new TreeNode(6); // leaf
+
+console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
+console.log('Iterative leaves:', countLeavesIterative(root)); // 3
