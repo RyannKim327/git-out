@@ -1,52 +1,44 @@
-// Basic definition of a binary‑tree node
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-}
+// cronDemo.ts
+// ──────────────────────────────────────────────
+// Simple TS + node‑cron demo.  Every minute,
+// the job prints a timestamp and a random number.
+//
+// Requirements:
+//   npm i node-cron @types/node-cron
+//
+// Run with:
+//   npx ts-node cronDemo.ts
+// ‒ or compile (npx tsc) and exec (node cronDemo.js)
+// ──────────────────────────────────────────────
+
+import cron from 'node-cron';
 
 /**
- * Returns the diameter (in edges) of a binary tree.
+ * Helper that gives us a nicely formatted timestamp.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;          // keeps the best we have seen
+const now = () => new Date().toLocaleString();
 
-  /** Depth‑first search that returns the height of sub‑tree. */
-  function dfs(node: TreeNode | null): number {
-    if (node === null) return 0;          // leaf contributes 0 height
+/**
+ * The task that will run according to the cron schedule.
+ * We generate a random integer between 1 and 1000.
+ */
+const task = () => {
+  const rand = Math.floor(Math.random() * 1000) + 1;
+  console.log(`[${now()}] Random number: ${rand}`);
+};
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+/**
+ * Schedule the job.
+ * Cron expression: '* * * * *'
+ * └─ minute (0‑59)
+ *
+ * The job triggers at the start of every minute.
+ */
+cron.schedule('* * * * *', task, {
+  scheduled: true,
+  timezone: 'UTC',     // change to your local timezone if needed
+});
 
-    // Path that goes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) {
-      maxDiameter = localDiameter;
-    }
-
-    // Height to propagate upward
-    return Math.max(leftHeight, rightHeight) + 1;
-  }
-
-  dfs(root);
-  return maxDiameter;         // already in edges
-}
-
-/* ---- example usage ------------------------------------------------------- */
-
-// simple helper to build a tree
-function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
-  return { val, left: l ?? null, right: r ?? null };
-}
-
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5     
-const root = node(1,
-  node(2, node(4), node(5)),
-  node(3)
-);
-
-console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
+console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
+[2026-06-17 12:34:00] Random number: 827
+[2026-06-17 12:35:00] Random number: 314
