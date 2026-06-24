@@ -1,51 +1,49 @@
 /**
- * Merge two sorted arrays into one sorted array.
- * The comparator decides the ordering – by default it uses the `<` operator.
+ * Stable counting sort for integers.
+ *
+ * @param  values The array of numbers to sort (integers only).
+ * @return        A new sorted array.
  */
-function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
-  const result: T[] = [];
-  let i = 0; // index into left
-  let j = 0; // index into right
+function countingSort(values: number[]): number[] {
+  if (values.length === 0) return [];
 
-  // Grab the compare function, or fall back to simple < comparison
-  const comp = compare ?? ((a: T, b: T) => a < b);
-
-  while (i < left.length && j < right.length) {
-    // If left[i] comes before right[j] (or equal), push it
-    if (comp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
+  // ---------- 1. find min & max ----------
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
   }
 
-  // One of the halves may still have leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  // ---------- 2. count frequencies ----------
+  const range = max - min + 1;          // number of distinct values
+  const counts = new Array<number>(range).fill(0);
+
+  for (const v of values) {
+    counts[v - min]++;                  // shift so that the smallest value maps to index 0
+  }
+
+  // ---------- 3. prefix sums (running totals) ----------
+  const positions = new Array<number>(range).fill(0);
+  let sum = 0;
+  for (let i = 0; i < range; i++) {
+    sum += counts[i];
+    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
+  }
+
+  // ---------- 4. build the sorted output ----------
+  const result = new Array<number>(values.length);
+  // Walk the original array **backwards** to keep stability
+  for (let i = values.length - 1; i >= 0; i--) {
+    const v = values[i];
+    const posIndex = v - min;
+    positions[posIndex]--;               // get the correct position for this element
+    result[positions[posIndex]] = v;
+  }
+
+  return result;
 }
-
-/**
- * Recursive merge sort.  
- * @param array The array to sort.
- * @param compare Optional comparator that returns true if a < b.
- */
-export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
-  // Stop recursion when array has 0 or 1 item
-  if (array.length <= 1) return array.slice(); // return a shallow copy
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
-}
-const numbers = [5, 3, 8, 1, 2, 9];
-const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
-
-const people = [
-  { name: "Alice", age: 32 },
-  { name: "Bob", age: 25 },
-  { name: "Eve", age: 29 }
-];
-
-// Sort by age
-const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
+const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
+const sorted = countingSort(unsorted);
+console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
