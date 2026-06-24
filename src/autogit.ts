@@ -1,37 +1,87 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+// simple node definition – feel free to extend it later (value, etc.)
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
+
+  constructor(public readonly val?: any) {}
 }
-
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
+interface TreeNode {
+  val?: any;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;          // empty subtree → no leaf
 
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  // If this node has no children → it's a leaf.
+  if (node.left === null && node.right === null) {
+    return 1;
   }
 
-  return sum;
+  // Otherwise sum the children’s counts
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
+function countLeavesIterative(root: TreeNode | null): number {
+  if (root === null) return 0;
 
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+  let leafCount = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode; // `as` because array never empty
+
+    // Check for leaf
+    if (node.left === null && node.right === null) {
+      leafCount++;
+    } else {
+      // push children if they exist
+      if (node.right !== null) stack.push(node.right);
+      if (node.left !== null) stack.push(node.left);
+    }
+  }
+
+  return leafCount;
+}
+// ---------------------------------------------------------------------
+// 1. Node definition
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
+
+  constructor(public readonly val: any) {}
+}
+
+// ---------------------------------------------------------------------
+// 2. Recursive counter
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;
+  if (!node.left && !node.right) return 1;
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+
+// 3. Iterative counter
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let leaves = 0;
+  const stack: TreeNode[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) leaves++;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return leaves;
+}
+
+// ---------------------------------------------------------------------
+// 4. Demo
+
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4); // leaf
+root.left.right = new TreeNode(5); // leaf
+root.right.left = new TreeNode(6); // leaf
+
+console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
+console.log('Iterative leaves:', countLeavesIterative(root)); // 3
