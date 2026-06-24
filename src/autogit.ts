@@ -1,147 +1,145 @@
-/* ──────────────────────────────────────────────────────
- *  SkipListNode<T>
- * ────────────────────────────────────────────────────── */
-class SkipListNode<T> {
-  /** The stored value (defined only in the “bottom” node) */
-  value?: T;
+/**
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
+ */
+type Graph = Map<string, string[]>;
 
-  /** Links to the node that follows this one at each level */
-  forward: Array<SkipListNode<T> | null> = [];
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
 
-  constructor(value?: T, level: number = 0) {
-    this.value = value;
-    this.forward = new Array(level + 1).fill(null);
-  }
-}
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
 
-/* ──────────────────────────────────────────────────────
- *  SkipList<T>
- * ────────────────────────────────────────────────────── */
-export class SkipList<T> {
-  /* Adjustable parameters */
-  private readonly MAX_LEVEL: number;      // upper bound for levels
-  private readonly P: number;              // probability of promoting a node
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
 
-  private level: number = 0;               // current maximum level
-  private header: SkipListNode<T>;         // sentinel start node
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
 
-  constructor(maxLevel: number = 16, probability: number = 0.5) {
-    this.MAX_LEVEL = maxLevel;
-    this.P        = probability;
-    this.header   = new SkipListNode<T>();
-  }
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
 
-  /* ──────────────────────────────────────────────────────
-   *  Random level generator
-   * ────────────────────────────────────────────────────── */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
-      lvl++;
-    }
-    return lvl;
-  }
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
 
-  /* ──────────────────────────────────────────────────────
-   *  Search for a value
-   * ────────────────────────────────────────────────────── */
-  search(value: T): SkipListNode<T> | null {
-    let current = this.header;
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
 
-    // move down each level, then across level 0
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
+
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
       }
     }
-
-    current = current.forward[0]!;
-
-    if (current && current.value === value) return current;
     return null;
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Insert a new value
-   * ────────────────────────────────────────────────────── */
-  insert(value: T): void {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    // find where the new node will be inserted at each level
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
     }
 
-    // pick a random level for the new node
-    const lvl = this.randomLevel();
-
-    // raise the list’s level if necessary
-    if (lvl > this.level) {
-      for (let i = this.level + 1; i <= lvl; i++) {
-        update[i] = this.header;
-      }
-      this.level = lvl;
-    }
-
-    const newNode = new SkipListNode<T>(value, lvl);
-
-    // splice the new node into every level above 0
-    for (let i = 0; i <= lvl; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
     }
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Remove a value
-   * ────────────────────────────────────────────────────── */
-  remove(value: T): boolean {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    current = current.forward[0]!;
-
-    if (!current || current.value !== value) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node at every level it appears
-    for (let i = 0; i <= this.level; i++) {
-      if (update[i].forward[i] !== current) break;
-      update[i].forward[i] = current.forward[i];
-    }
-
-    // shrink the list’s level if the top levels became empty
-    while (this.level > 0 && this.header.forward[this.level] == null) {
-      this.level--;
-    }
-
-    return true;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Helper: convert list into an array (useful for debugging)
-   * ────────────────────────────────────────────────────── */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.header.forward[0];
-
-    while (node) {
-      result.push(node.value!);
-      node = node.forward[0];
-    }
-
-    return result;
-  }
+  // No overlap – disconnected graph
+  return null;
 }
+
+/**
+ * Reconstructs the full path from start → meeting → goal.
+ */
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
+
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
+  }
+
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
+  }
+
+  return path;
+}
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
+
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
