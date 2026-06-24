@@ -1,83 +1,79 @@
-function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;          // out of range
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-  // cloning so we don’t mutate the caller’s array
-  const copy = [...arr];
+    visited.add(start);
+    queue.push(start);
 
-  // If you need custom ordering, pass a compare function.
-  // Default: numeric ascending.
-  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
 
-  // Arrays are zero‑indexed
-  return copy[k - 1];
-}
-
-// Example
-const nums = [7, 3, 5, 2, 9];
-console.log(kthSmallestBySort(nums, 2));   // 3
-function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const clone = [...arr]; // keep the original untouched
-
-  function partition(left: number, right: number, pivotIndex: number): number {
-    const pivotValue = clone[pivotIndex];
-    // move pivot to end
-    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
-
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (comp(clone[i], pivotValue) < 0) {
-        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
-        storeIndex++;
-      }
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
     }
-    // move pivot to its final place
-    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
-    return storeIndex;
-  }
 
-  let left = 0;
-  let right = clone.length - 1;
-  let pivotIndex;
-
-  while (true) {
-    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
-    if (pivotIndex === k - 1) return clone[pivotIndex];
-    if (pivotIndex > k - 1) right = pivotIndex - 1;
-    else left = pivotIndex + 1;
-  }
+    return result;
 }
-const data = [12, 3, 5, 7, 4, 19, 26];
-console.log(kthSmallestQuickSelect(data, 4)); // 7
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private compare: (a: T, b: T) => number) {}
-  // heap methods omitted for brevity...
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
+
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
 }
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
 
-function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const heap = new MinHeap<T>(cmp);
-  for (const v of arr) heap.insert(v);
-  let result: T | undefined;
-  for (let i = 0; i < k; i++) result = heap.extractMin();
-  return result;
-}
-const people = [
-  { name: 'Alice', age: 24 },
-  { name: 'Bob', age: 19 },
-  { name: 'Carol', age: 32 },
-  { name: 'Dave', age: 28 }
-];
-
-// 3rd youngest
-const thirdYoungest = kthSmallestQuickSelect(
-  people,
-  3,
-  (a, b) => a.age - b.age
-);
-
-console.log(thirdYoungest); // shows Bob (age 19)
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
