@@ -1,117 +1,83 @@
-type Key = string | number | object;   // anything you can reasonably stringify
-interface Pair<K, V> {
-  key: K;
-  value: V;
+function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;          // out of range
+
+  // cloning so we don’t mutate the caller’s array
+  const copy = [...arr];
+
+  // If you need custom ordering, pass a compare function.
+  // Default: numeric ascending.
+  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
+
+  // Arrays are zero‑indexed
+  return copy[k - 1];
 }
-type Bucket<K, V> = Pair<K, V>[];
-const DEFAULT_BUCKETS = 16;
-const DEFAULT_LOAD_FACTOR = 0.75;
 
-export class HashTable<K extends Key, V> {
-  private buckets: Bucket<K, V>[];
-  private count = 0;                    // number of key/value pairs
-  private loadFactor: number;
+// Example
+const nums = [7, 3, 5, 2, 9];
+console.log(kthSmallestBySort(nums, 2));   // 3
+function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
-    this.buckets = Array.from({ length: initialBuckets }, () => []);
-    this.loadFactor = loadFactor;
-  }
+  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const clone = [...arr]; // keep the original untouched
 
-  /* ---------- public API ---------- */
+  function partition(left: number, right: number, pivotIndex: number): number {
+    const pivotValue = clone[pivotIndex];
+    // move pivot to end
+    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
 
-  set(key: K, value: V): void {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    // Replace if key is already present
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
-        pair.value = value;
-        return;
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (comp(clone[i], pivotValue) < 0) {
+        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
+        storeIndex++;
       }
     }
-
-    bucket.push({ key, value });
-    this.count++;
-
-    if (this.count / this.buckets.length > this.loadFactor) {
-      this.resize();
-    }
+    // move pivot to its final place
+    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
+    return storeIndex;
   }
 
-  get(key: K): V | undefined {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
+  let left = 0;
+  let right = clone.length - 1;
+  let pivotIndex;
 
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {
-        return pair.value;
-      }
-    }
-    return undefined;
+  while (true) {
+    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
+    if (pivotIndex === k - 1) return clone[pivotIndex];
+    if (pivotIndex > k - 1) right = pivotIndex - 1;
+    else left = pivotIndex + 1;
   }
+}
+const data = [12, 3, 5, 7, 4, 19, 26];
+console.log(kthSmallestQuickSelect(data, 4)); // 7
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private compare: (a: T, b: T) => number) {}
+  // heap methods omitted for brevity...
+}
 
-  delete(key: K): boolean {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
+function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const heap = new MinHeap<T>(cmp);
+  for (const v of arr) heap.insert(v);
+  let result: T | undefined;
+  for (let i = 0; i < k; i++) result = heap.extractMin();
+  return result;
+}
+const people = [
+  { name: 'Alice', age: 24 },
+  { name: 'Bob', age: 19 },
+  { name: 'Carol', age: 32 },
+  { name: 'Dave', age: 28 }
+];
 
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.equals(bucket[i].key, key)) {
-        bucket.splice(i, 1);
-        this.count--;
-        return true;
-      }
-    }
-    return false;
-  }
+// 3rd youngest
+const thirdYoungest = kthSmallestQuickSelect(
+  people,
+  3,
+  (a, b) => a.age - b.age
+);
 
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  clear(): void {
-    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
-    this.count = 0;
-  }
-
-  get size(): number {
-    return this.count;
-  }
-
-  /* ---------- private helpers ---------- */
-
-  private bucketIndex(key: K): number {
-    // Ensure the hash is non‑negative
-    const h = this.hash(key);
-    const idx = h % this.buckets.length;
-    return idx < 0 ? idx + this.buckets.length : idx;
-  }
-
-  /* Simple but stable string hash (djb2 algorithm) */
-  private hash(key: K): number {
-    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) {
-      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
-    }
-    return h >>> 0; // make unsigned
-  }
-
-  private equals(a: K, b: K): boolean {
-    // For primitives, === is fine.
-    // For objects, we compare the stringified form.
-    if (typeof a === 'object' && typeof b === 'object') {
-      return JSON.stringify(a) === JSON.stringify(b);
-    }
-    return a === b;
-  }
-
-  /* Grow the bucket array and re‑hash all entries */
-  private resize(): void {
-    const oldBuckets = this.buckets;
-    const newSize = oldBuckets.length * 2;
-    this.buckets = Array.from({ length: newSize }, () => []);
-    this.count = 0;
-
-    for (const bucket of oldBuckets) {
-      for (const pair of bucket)
+console.log(thirdYoungest); // shows Bob (age 19)
