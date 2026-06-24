@@ -1,58 +1,66 @@
-/**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
-
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
-
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
-  }
-
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
-
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
+// A simple singly‑linked‑list node suitable for the intersection test
+export interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
 }
 
 /**
- * Helper that assumes every element is a non‑negative integer.
+ * Returns the first node at which two singly‑linked lists intersect,
+ * or undefined if they never intersect.
  */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
-
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
-
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
-
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | undefined,
+  headB: ListNode<T> | undefined
+): ListNode<T> | undefined {
+  // Helper that walks a list and returns its length
+  const getLength = (node?: ListNode<T>) => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
     }
+    return len;
+  };
 
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
+  let lenA = getLength(headA);
+  let lenB = getLength(headB);
 
-    pow10 *= 10;           // move to next digit
+  // Advance the longer list so both pointers are at the same distance
+  // from the end of the list.
+  let currA = headA;
+  let currB = headB;
+  while (lenA > lenB && currA) {
+    currA = currA.next;
+    lenA--;
+  }
+  while (lenB > lenA && currB) {
+    currB = currB.next;
+    lenB--;
   }
 
-  return output;
-}
-import { radixSort } from "./radixSort";
+  // Move forward together until either we find the intersection
+  // or both pointers hit the end (undefined).
+  while (currA !== currB) {
+    currA = currA?.next;
+    currB = currB?.next;
+  }
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+  return currA; // May be undefined if no intersection
+}
+// Build example lists that intersect:
+
+//      A -> B -> C
+//      ^          |
+//      |          v
+//      D <- E
+
+const c: ListNode<number> = { val: 3 };
+const b: ListNode<number> = { val: 2, next: c };
+const a: ListNode<number> = { val: 1, next: b };
+
+const e: ListNode<number> = { val: 5, next: a };
+const d: ListNode<number> = { val: 4, next: e };
+
+console.log(getIntersectionNode(a, d) === a);   // true
+console.log(getIntersectionNode(b, d) === a);   // true
+console.log(getIntersectionNode(c, d) === a);   // true
