@@ -1,60 +1,38 @@
 /**
- * Returns true if `s` is a palindrome.
+ * Return the largest prime factor of a positive integer.
  *
- * Works in O(n) time and O(1) additional space.
- * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
+ * @param n – the number you want to factor (must be > 1)
+ * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function largestPrimeFactor(n: number): number | undefined {
+  if (n <= 1) return undefined;
 
-  while (left < right) {
-    if (s[left] !== s[right]) {
-      return false;
-    }
-    left++;
-    right--;
+  let num = n;
+  let largest = -1;
+
+  // Remove all factors of 2
+  while (num % 2 === 0) {
+    largest = 2;
+    num /= 2;
   }
 
-  return true;
-}
-
-// Demo
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isAlphanumeric(c: string): boolean {
-  const code = c.charCodeAt(0);
-  return (
-    // 0‑9
-    (code >= 48 && code <= 57) ||
-    // A‑Z
-    (code >= 65 && code <= 90) ||
-    // a‑z
-    (code >= 97 && code <= 122)
-  );
-}
-
-function isPalindromeLoose(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip non‑alphanumerics
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
-
-    // After skipping, compare lowercase versions
-    if (
-      left < right &&
-      s[left].toLowerCase() !== s[right].toLowerCase()
-    ) {
-      return false;
+  // Now `num` is odd; try odd divisors only
+  let divisor = 3;
+  const limit = Math.sqrt(num);
+  while (divisor <= limit) {
+    while (num % divisor === 0) {
+      largest = divisor;
+      num /= divisor;
     }
-
-    left++;
-    right--;
+    divisor += 2;           // skip the even numbers
   }
-  return true;
+
+  // If we're left with a prime greater than 2
+  if (num > 2) largest = num;
+
+  return largest;
 }
 
-console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
+// Quick demo
+console.log(largestPrimeFactor(13195)); // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
