@@ -1,63 +1,58 @@
 /**
- * Returns the indices and values of the longest strictly increasing subsequence.
- *
- * @param arr - The input numeric array.
- * @returns An object containing:
- *   - sequence: the LIS as an array of numbers.
- *   - indices:  the original indices of those numbers in `arr`.
- *
- * Complexity:   Time  O(n log n)
- *               Space O(n)
+ * Radix sort for 32‑bit signed integers (Int32Array safety).
+ * Works for positives, negatives and zero.
  */
-export function longestIncreasingSubsequence(arr: number[]): {
-    sequence: number[],
-    indices:   number[]
-} {
-    if (arr.length === 0) return { sequence: [], indices: [] };
+export function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-    // tail[i] holds the index in arr of the smallest ending value
-    // of an increasing subsequence of length i+1.
-    const tail: number[] = [];
-    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
-    const prev: (number | null)[] = Array(arr.length).fill(null);
+  // Separate positives and negatives.
+  const positives: number[] = [];
+  const negatives: number[] = []; // store as positive magnitudes
 
-    for (let i = 0; i < arr.length; i++) {
-        const x = arr[i];
+  for (const n of nums) {
+    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
+    else positives.push(n);
+  }
 
-        // Binary search to find the insertion point in tail.
-        let low = 0, high = tail.length;
-        while (low < high) {
-            const mid = Math.floor((low + high) / 2);
-            if (arr[tail[mid]] < x) low = mid + 1;
-            else high = mid;
-        }
+  // Sort each side independently.
+  const sortedPos = radixSortNonNegative(positives);
+  const sortedNeg = radixSortNonNegative(negatives).reverse();
 
-        // low is the position where x will sit in tail
-        if (low > 0) {
-            prev[i] = tail[low - 1]; // point to predecessor
-        }
-        if (low === tail.length) {
-            tail.push(i);
-        } else {
-            tail[low] = i; // replace a larger tail with a smaller one
-        }
-    }
-
-    // Reconstruct the LIS by walking back from the last index
-    const indices: number[] = [];
-    let cur: number | null = tail[tail.length - 1];
-    while (cur !== null) {
-        indices.push(cur);
-        cur = prev[cur];
-    }
-    indices.reverse(); // from start to end
-
-    const sequence = indices.map(i => arr[i]);
-
-    return { sequence, indices };
+  // Concatenate negatives (reversed) + positives
+  return [...sortedNeg.map(n => -n), ...sortedPos];
 }
-const arr = [3, 10, 2, 1, 20, 4, 6, 12];
-const result = longestIncreasingSubsequence(arr);
 
-console.log(result.sequence); // [3, 10, 20]
-console.log(result.indices);  // [0, 1, 4]
+/**
+ * Helper that assumes every element is a non‑negative integer.
+ */
+function radixSortNonNegative(arr: number[]): number[] {
+  if (arr.length <= 1) return arr.slice();
+
+  const maxVal = Math.max(...arr);
+  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
+
+  let output = arr.slice(); // working copy
+  let pow10 = 1;            // 10^digitIndex
+
+  for (let d = 0; d < lenDigits; d++) {
+    // 10 buckets for the decimal digits 0‑9
+    const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+    for (const val of output) {
+      const digit = Math.floor((val / pow10) % 10);
+      buckets[digit].push(val);
+    }
+
+    // Rebuild output from buckets
+    output = [].concat(...buckets);
+
+    pow10 *= 10;           // move to next digit
+  }
+
+  return output;
+}
+import { radixSort } from "./radixSort";
+
+const data = [170, -45, 75, 90, -802, 24, 2, 66];
+console.log(radixSort(data)); 
+// → [-802, -45, 2, 24, 66, 75, 90, 170]
