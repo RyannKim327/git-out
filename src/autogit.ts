@@ -1,47 +1,60 @@
 /**
- * Random API – picks a random fact from https://uselessfacts.jsph.pl
- * Returns an object: { id, text, source, permalink }
+ * Returns true if `s` is a palindrome.
+ *
+ * Works in O(n) time and O(1) additional space.
+ * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
  */
-async function fetchRandomFact(): Promise<{
-  id: string;
-  text: string;
-  source: string;
-  permalink: string;
-}> {
-  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  try {
-    const response = await fetch(apiUrl);
+  while (left < right) {
+    if (s[left] !== s[right]) {
+      return false;
+    }
+    left++;
+    right--;
+  }
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+  return true;
+}
+
+// Demo
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isAlphanumeric(c: string): boolean {
+  const code = c.charCodeAt(0);
+  return (
+    // 0‑9
+    (code >= 48 && code <= 57) ||
+    // A‑Z
+    (code >= 65 && code <= 90) ||
+    // a‑z
+    (code >= 97 && code <= 122)
+  );
+}
+
+function isPalindromeLoose(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    // Skip non‑alphanumerics
+    while (left < right && !isAlphanumeric(s[left])) left++;
+    while (left < right && !isAlphanumeric(s[right])) right--;
+
+    // After skipping, compare lowercase versions
+    if (
+      left < right &&
+      s[left].toLowerCase() !== s[right].toLowerCase()
+    ) {
+      return false;
     }
 
-    const data = await response.json();
-
-    // If you’re inside an Android NativeScript environment you could
-    // show a Toast or log the result with Android SDK.
-    console.log("Random fact fetched:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch random fact:", err);
-    throw err;
+    left++;
+    right--;
   }
+  return true;
 }
 
-/**
- * Example usage – you’d call this from anywhere, e.g. on a button tap.
- */
-async function runDemo() {
-  try {
-    const fact = await fetchRandomFact();
-    // In Android, for a quick visual you could use:
-    // import { Toast } from "tns-core-modules/ui/toast";
-    // Toast.makeText(fact.text, 2000).show();
-    console.log("Fact text:", fact.text);
-  } catch {
-    // error handling already done in fetchRandomFact
-  }
-}
-
-runDemo();
+console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
