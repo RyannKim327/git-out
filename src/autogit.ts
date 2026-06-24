@@ -1,38 +1,49 @@
-const numbers = [1, 2, 3, 4, 5];
-
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
-];
-
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
-
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
-
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
-  }
-}
-console.log(data); // [10, 30, 40]
 /**
- * Removes the first occurrence of `value` from `arr`.
+ * Stable counting sort for integers.
+ *
+ * @param  values The array of numbers to sort (integers only).
+ * @return        A new sorted array.
  */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
+function countingSort(values: number[]): number[] {
+  if (values.length === 0) return [];
+
+  // ---------- 1. find min & max ----------
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+
+  // ---------- 2. count frequencies ----------
+  const range = max - min + 1;          // number of distinct values
+  const counts = new Array<number>(range).fill(0);
+
+  for (const v of values) {
+    counts[v - min]++;                  // shift so that the smallest value maps to index 0
+  }
+
+  // ---------- 3. prefix sums (running totals) ----------
+  const positions = new Array<number>(range).fill(0);
+  let sum = 0;
+  for (let i = 0; i < range; i++) {
+    sum += counts[i];
+    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
+  }
+
+  // ---------- 4. build the sorted output ----------
+  const result = new Array<number>(values.length);
+  // Walk the original array **backwards** to keep stability
+  for (let i = values.length - 1; i >= 0; i--) {
+    const v = values[i];
+    const posIndex = v - min;
+    positions[posIndex]--;               // get the correct position for this element
+    result[positions[posIndex]] = v;
+  }
+
+  return result;
 }
+const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
+const sorted = countingSort(unsorted);
+console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
