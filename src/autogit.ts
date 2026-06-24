@@ -1,33 +1,60 @@
 /**
- * Returns a random integer between `min` and `max` – both inclusive.
- * Uses the standard Math.random() (not crypto‑safe).
+ * Returns true if `s` is a palindrome.
+ *
+ * Works in O(n) time and O(1) additional space.
+ * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
  */
-export function randomIntInRange(min: number, max: number): number {
-  // Make sure min ≤ max and that the inputs are integers
-  if (!Number.isInteger(min) || !Number.isInteger(max))
-    throw new Error('min and max must be integers');
-  if (min > max) [min, max] = [max, min];
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  const range = max - min + 1;          // how many possible numbers
-  return Math.floor(Math.random() * range) + min;
+  while (left < right) {
+    if (s[left] !== s[right]) {
+      return false;
+    }
+    left++;
+    right--;
+  }
+
+  return true;
 }
 
-/**
- * Returns a random floating‑point number in `[min, max)`.
- * If you want `max` inclusive, add a tiny epsilon before flooring.
- */
-export function randomFloatInRange(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  return Math.random() * (max - min) + min;
+// Demo
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isAlphanumeric(c: string): boolean {
+  const code = c.charCodeAt(0);
+  return (
+    // 0‑9
+    (code >= 48 && code <= 57) ||
+    // A‑Z
+    (code >= 65 && code <= 90) ||
+    // a‑z
+    (code >= 97 && code <= 122)
+  );
 }
-export function secureRandomInt(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  const range = max - min + 1;
-  // We'll grab 4 random bytes and reduce them into our range
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  return (buf[0] % range) + min;
+
+function isPalindromeLoose(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    // Skip non‑alphanumerics
+    while (left < right && !isAlphanumeric(s[left])) left++;
+    while (left < right && !isAlphanumeric(s[right])) right--;
+
+    // After skipping, compare lowercase versions
+    if (
+      left < right &&
+      s[left].toLowerCase() !== s[right].toLowerCase()
+    ) {
+      return false;
+    }
+
+    left++;
+    right--;
+  }
+  return true;
 }
-console.log(randomIntInRange(1, 6)); // 1‑6 like a die
-console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
-console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
+
+console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
