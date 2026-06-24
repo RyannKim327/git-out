@@ -1,83 +1,38 @@
-function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;          // out of range
+const numbers = [1, 2, 3, 4, 5];
 
-  // cloning so we don’t mutate the caller’s array
-  const copy = [...arr];
-
-  // If you need custom ordering, pass a compare function.
-  // Default: numeric ascending.
-  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
-
-  // Arrays are zero‑indexed
-  return copy[k - 1];
-}
-
-// Example
-const nums = [7, 3, 5, 2, 9];
-console.log(kthSmallestBySort(nums, 2));   // 3
-function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const clone = [...arr]; // keep the original untouched
-
-  function partition(left: number, right: number, pivotIndex: number): number {
-    const pivotValue = clone[pivotIndex];
-    // move pivot to end
-    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
-
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (comp(clone[i], pivotValue) < 0) {
-        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
-        storeIndex++;
-      }
-    }
-    // move pivot to its final place
-    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
-    return storeIndex;
-  }
-
-  let left = 0;
-  let right = clone.length - 1;
-  let pivotIndex;
-
-  while (true) {
-    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
-    if (pivotIndex === k - 1) return clone[pivotIndex];
-    if (pivotIndex > k - 1) right = pivotIndex - 1;
-    else left = pivotIndex + 1;
-  }
-}
-const data = [12, 3, 5, 7, 4, 19, 26];
-console.log(kthSmallestQuickSelect(data, 4)); // 7
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private compare: (a: T, b: T) => number) {}
-  // heap methods omitted for brevity...
-}
-
-function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const heap = new MinHeap<T>(cmp);
-  for (const v of arr) heap.insert(v);
-  let result: T | undefined;
-  for (let i = 0; i < k; i++) result = heap.extractMin();
-  return result;
-}
-const people = [
-  { name: 'Alice', age: 24 },
-  { name: 'Bob', age: 19 },
-  { name: 'Carol', age: 32 },
-  { name: 'Dave', age: 28 }
+// remove the value 3
+const withoutThree = numbers.filter(n => n !== 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+type Person = { id: number; name: string };
+const list: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
 ];
 
-// 3rd youngest
-const thirdYoungest = kthSmallestQuickSelect(
-  people,
-  3,
-  (a, b) => a.age - b.age
-);
+const target = list[1]; // the Bob object reference
+const withoutBob = list.filter(person => person !== target);
+const letters = ['a', 'b', 'c', 'd', 'e'];
+const idx = 2; // we want to drop 'c'
 
-console.log(thirdYoungest); // shows Bob (age 19)
+letters.splice(idx, 1); // remove 1 element at position idx
+console.log(letters); // ['a', 'b', 'd', 'e']
+const data = [10, 20, 30, 20, 40];
+const removeVal = 20;
+
+for (let i = data.length - 1; i >= 0; i--) {
+  if (data[i] === removeVal) {
+    data.splice(i, 1);
+  }
+}
+console.log(data); // [10, 30, 40]
+/**
+ * Removes the first occurrence of `value` from `arr`.
+ */
+function removeFirst<T>(arr: T[], value: T): T[] {
+  const idx = arr.indexOf(value);
+  if (idx === -1) return arr;          // nothing found
+  const copy = [...arr];               // keep original intact
+  copy.splice(idx, 1);
+  return copy;
+}
