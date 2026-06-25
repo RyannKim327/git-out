@@ -1,48 +1,61 @@
-/**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
- */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+// A minimal node that can hold any value
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
-    }
+// A helper to build a list from an array (great for demos)
+function arrayToList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = new ListNode(arr[i], head)
+  }
+  return head
+}
+
+// A helper to turn a list back into an array (great for quick checks)
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const out: T[] = []
+  let cur = head
+  while (cur) {
+    out.push(cur.val)
+    cur = cur.next
+  }
+  return out
+}
+function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
+
+  while (curr) {
+    const next = curr.next   // store the rest of the list
+    curr.next = prev         // reverse the link
+    prev = curr              // move prev forward
+    curr = next              // continue
   }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+  // At the end, prev is the new head
+  return prev
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
-
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
+function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: 0 or 1 node
+  if (!head || !head.next) {
+    return head
   }
-  return undefined;
+
+  // Recurse to the end of the list
+  const newHead = reverseListRecursive(head.next)
+
+  // After recursion returns, head is still at the original start
+  // head.next still points forward; we need to put head at the end
+  head.next.next = head   // point the next node back to head
+  head.next = null        // cut off the original link
+
+  return newHead
 }
+const example = arrayToList([1, 2, 3, 4, 5])
+const reversedIterative = reverseList(example)
+console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
+
+const example2 = arrayToList([10, 20, 30])
+const reversedRecursive = reverseListRecursive(example2)
+console.log(listToArray(reversedRecursive)) // [30, 20, 10]
