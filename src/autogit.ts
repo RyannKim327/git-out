@@ -1,50 +1,33 @@
-// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
-function merge(
-  arr: number[],
-  tmp: number[],
-  l: number,
-  mid: number,
-  r: number
-): void {
-  let i = l;        // pointer for the left half
-  let j = mid + 1;  // pointer for the right half
-  let k = l;        // pointer for the tmp array
-
-  // Merge until one half runs out
-  while (i <= mid && j <= r) {
-    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
-    else tmp[k++] = arr[j++];
-  }
-
-  // Copy any remaining elements of the left half
-  while (i <= mid) tmp[k++] = arr[i++];
-
-  // Copy any remaining elements of the right half
-  while (j <= r) tmp[k++] = arr[j++];
-
-  // Return merged result back to the original array
-  for (let p = l; p <= r; p++) arr[p] = tmp[p];
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
+}
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
 }
 
-/**
- * Bottom‑up merge sort (iterative).
- *
- * @param arr - The array to sort (in‑place)
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  const tmp = new Array<number>(n);
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
 
-  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // l = start index of sub‑array pair
-    for (let l = 0; l < n - sz; l += sz << 1) {
-      const mid = l + sz - 1;
-      const r = Math.min(l + (sz << 1) - 1, n - 1);
-      merge(arr, tmp, l, mid, r);
-    }
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
   }
+  return result;
 }
-const data = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(data);
-console.log(data); // [3, 9, 10, 27, 38, 43, 82]
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
+}
+
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+}
