@@ -1,58 +1,25 @@
-// stack.ts
-export class Stack<T> {
-  /* The array that holds our data. The last item is the top of the stack. */
-  private items: T[] = [];
+/** 
+ * Returns true if `text` is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores everything that’s not a letter or digit
+ */
+function isPalindrome(text: string): boolean {
+  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
+  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
-  /** Adds a value to the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
-
-  /** Removes and returns the top value. Throws if the stack is empty. */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to pop from an empty stack");
-    }
-    return this.items.pop() as T; // safe because we just checked for emptiness
-  }
-
-  /** Returns the top value without removing it. Throws if the stack is empty. */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to peek on an empty stack");
-    }
-    // items.length is at least 1, so the index exists
-    return this.items[this.items.length - 1];
-  }
-
-  /** Was the stack empty? */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** How many items are there? */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything out. */
-  clear(): void {
-    this.items = [];
-  }
+  // 2. Compare the string with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
-// demo.ts
-import { Stack } from "./stack";
 
-const stack = new Stack<number>();
-
-stack.push(1);
-stack.push(2);
-stack.push(3);
-
-console.log(stack.peek());   // 3
-console.log(stack.pop());    // 3
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+// Usage examples
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan...'));  // true
+console.log(isPalindrome('Hello world'));      // false
+function isPalindromeSimple(s: string): boolean {
+  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
+    if (s[i] !== s[j]) return false;
+  }
+  return true;
+}
