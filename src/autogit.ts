@@ -1,61 +1,93 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
+/**
+ * In‑place quicksort for an array of elements that implement Comparable.
+ * @param arr The array to sort.
+ * @param left Index of the first element to consider.
+ * @param right Index of the last element to consider.
+ * @returns The sorted array (the same reference is returned).
+ */
+export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  // Using 0‐based indices
+  if (left >= right) return arr;           // Base case – 0 or 1 element
 
-  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  const pivotIndex = partition(arr, left, right);
+  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
+  quicksort(arr, pivotIndex + 1, right);  // right side
+  return arr;
+}
 
-  let maxLen = 0;
-  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+/**
+ * Hoare partition scheme.
+ * Moves elements < pivot to the left, > pivot to the right.
+ * Returns the final pivot position (the index of the pivot element after partition).
+ */
+function partition<T>(arr: T[], left: number, right: number): number {
+  // Pick the middle element as pivot (arbitrary choice)
+  const pivot = arr[Math.floor((left + right) / 2)];
 
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > maxLen) {
-          maxLen = dp[i][j];
-          endIdx = i; // end is exclusive
-        }
-      }
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    // Move i until we find element >= pivot
+    while (arr[i] < pivot) i++;
+    // Move j until we find element <= pivot
+    while (arr[j] > pivot) j--;
+
+    if (i <= j) {
+      // Swap arr[i] and arr[j]
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
   }
-
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+  // Return the index where the next recursive calls will split.
+  return i - 1;
 }
-console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
-function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
-  // Ensure s2 is the shorter string to keep the inner array small
-  if (s1.length < s2.length) {
-    return longestCommonSubstringSpaceOptimized(s2, s1);
-  }
+const data = [34, 7, 23, 32, 5, 62];
+console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
+export function quicksortBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): T[] {
+  if (left >= right) return arr;
 
-  const n = s1.length;
-  const m = s2.length;
+  const pivotIndex = partitionBy(arr, cmp, left, right);
+  quicksortBy(arr, cmp, left, pivotIndex - 1);
+  quicksortBy(arr, cmp, pivotIndex + 1, right);
+  return arr;
+}
 
-  const prev = Array(m + 1).fill(0);
-  const curr = Array(m + 1).fill(0);
+function partitionBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left: number,
+  right: number
+): number {
+  const pivot = arr[Math.floor((left + right) / 2)];
 
-  let maxLen = 0;
-  let endIdx = 0;
+  let i = left;
+  let j = right;
 
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          endIdx = i;
-        }
-      } else {
-        curr[j] = 0;
-      }
+  while (i <= j) {
+    while (cmp(arr[i], pivot) < 0) i++;
+    while (cmp(arr[j], pivot) > 0) j--;
+
+    if (i <= j) {
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
-    // swap references for next iteration
-    [prev, curr] = [curr, prev];
   }
-
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+  return i - 1;
 }
-console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
-console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
-console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
+const users = [
+  { name: 'Anna', age: 23 },
+  { name: 'Bob', age: 17 },
+  { name: 'Clara', age: 31 },
+];
+
+quicksortBy(users, (a, b) => a.age - b.age);
+stdin: 5 1 4 2 6 0
+stdout: 0 1 2 4 5 6
