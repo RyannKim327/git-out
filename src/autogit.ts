@@ -1,49 +1,86 @@
-/**
- * Returns n! for a non‑negative integer `n`.
- * Throws an error if `n` is negative.
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;   // base case
-  return n * factorialRecursive(n - 1);
-}
-/**
- * Computes factorial using a loop. 
- * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
- */
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-/**
- * Factorial returning a BigInt to avoid precision loss.
- * Accepts `bigint | number`, but converts to BigInt internally.
- */
-function factorialBigInt(n: number | bigint): bigint {
-  const bigN = typeof n === 'bigint' ? n : BigInt(n);
-  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
-  if (bigN <= 1n) return 1n;
-  let result = 1n;
-  for (let i = 2n; i <= bigN; i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(25));          // 15511210043330985984000000n
-console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
-const factorialCache = new Map<number, number>();
+// -------------------------------------------
+//  heapSort.ts
+// -------------------------------------------
 
-function factorialMemoized(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;
-  if (factorialCache.has(n)) return factorialCache.get(n)!;
+/**
+ * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
+ *
+ * @param   array      The array to sort, mutated in‑place.
+ * @param   cmp?       Optional comparator: (a, b) => number
+ *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
+ *
+ * @example
+ * const nums = [3, 1, 4, 1, 5, 9, 2];
+ * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
+ * heapSort(nums, (a, b) => b - a);  // descending order
+ */
+export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
+  const compare = cmp ?? defaultCompare;
 
-  const value = n * factorialMemoized(n - 1);
-  factorialCache.set(n, value);
-  return value;
+  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
+  const heapSize = array.length;
+
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    siftDown(i, heapSize);
+  }
+
+  /* ---------- 2. Repeatedly extract max (or min) ---------- */
+  for (let i = heapSize - 1; i > 0; i--) {
+    // Grab the root (largest element) and put it at the end
+    swap(array, 0, i);
+    // Restore heap property on the reduced heap
+    siftDown(0, i);
+  }
+
+  /* ---------- Helper scopes ---------- */
+  function siftDown(start: number, end: number): void {
+    let root = start;
+
+    while (true) {
+      const left = 2 * root + 1;
+      if (left >= end) break; // no children
+
+      const right = left + 1;
+      let candidate = left;
+
+      // Select the bigger child (or smaller if comparator flipped)
+      if (right < end && compare(array[right], array[left]) > 0) {
+        candidate = right;
+      }
+
+      // If root already holds the biggest, we're done
+      if (compare(array[root], array[candidate]) >= 0) break;
+
+      // Swap root with the chosen child and continue
+      swap(array, root, candidate);
+      root = candidate;
+    }
+  }
+
+  function swap(arr: T[], i: number, j: number): void {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
 }
-const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
+
+/* ------------------------------------------- */
+/* Default comparator for `number`/`string` (ascending) */
+function defaultCompare<T>(a: T, b: T): number {
+  // If it's a number or behaves like a number
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  // Fallback to lexical comparison for strings and others that stringify nicely
+  const sa = String(a);
+  const sb = String(b);
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
+}
+import { heapSort } from "./heapSort";
+
+const data = [8, 3, 5, 4, 7, 1, 2, 6];
+heapSort(data);                // ascending
+console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+
+heapSort(data, (a, b) => b - a); // descending
+console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
