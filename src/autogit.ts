@@ -1,43 +1,55 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+/**
+ * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
+ */
+function isAnagram(s1: string, s2: string): boolean {
+  const normalize = (s: string) =>
+    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
+  return normalize(s1) === normalize(s2);
+}
+function isAnagramLetterCount(a: string, b: string): boolean {
+  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
 
-  const count = new Map<string, number>();
+  const freq = (s: string) => {
+    const map = new Map<string, number>();
+    for (const c of s) {
+      map.set(c, (map.get(c) ?? 0) + 1);
+    }
+    return map;
+  };
 
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
+  if (clean(a).length !== clean(b).length) return false;
+
+  const m1 = freq(clean(a));
+  const m2 = freq(clean(b));
+
+  for (const [ch, count] of m1) {
+    if (m2.get(ch) !== count) return false;
   }
+  return true;
+}
+function isAnagramFlexible(
+  s1: string,
+  s2: string,
+  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
+): boolean {
+  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
-  }
+  let pattern = '';
+  if (ignoreSpaces) pattern += '\\s';
+  if (ignorePunct) pattern += /[^\w\s]/g.source;
 
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
+  const regex = new RegExp(pattern, 'g');
+  const normalize = (s: string) =>
+    s.replace(regex, '').toLowerCase().split('').sort().join('');
 
-  const freq = new Int16Array(256);
+  return normalize(s1) === normalize(s2);
+}
+console.log(isAnagram('listen', 'silent'));          // true
+console.log(isAnagram('A gentleman', 'Elegant man'));// true
+console.log(isAnagram('Hello', 'World'));            // false
 
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
-  }
+// Using the frequency‑count version
+console.log(isAnagramLetterCount('abc', 'cab'));     // true
 
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+// Flexible options
+console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
