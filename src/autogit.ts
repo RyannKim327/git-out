@@ -1,16 +1,20 @@
-// 1. Using the Number constructor
-const val1 = Number("42");          // 42
+// Original array
+const original: number[] = [1, 2, 3, 4, 5];
 
-// 2. Using unary plus
-const val2 = +"42";                 // 42
+// 1️⃣ In‑place reverse (mutates `original`)
+original.reverse();
+console.log(original); // [5, 4, 3, 2, 1]
 
-// 3. Using parseInt (base 10 recommended)
-const val3 = parseInt("42", 10);    // 42
+// 2️⃣ Copy then reverse (keeps `original` intact)
+const reversedCopy = original.slice().reverse();  // or [...original].reverse()
+console.log(reversedCopy);  // [5, 4, 3, 2, 1]
+type Person = { name: string; age: number };
 
-// 4. Using parseFloat for decimals
-const val4 = parseFloat("3.14");    // 3.14
-function safeParse(str: string): number | null {
-  const n = Number(str);
-  return Number.isNaN(n) ? null : n;
-}
-const i = Math.floor(parseFloat("3.9")); // 3
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
+];
+
+const reversedPeople = [...people].reverse(); // still Person[]
+const reduceReversed = <T>(array: T[]): T[] =>
+  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
