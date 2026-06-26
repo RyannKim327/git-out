@@ -1,20 +1,26 @@
-// Original array
-const original: number[] = [1, 2, 3, 4, 5];
+// utils.ts
+/**
+ * Randomly reorder the elements of an array in place.
+ * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
+ *
+ * @param arr The array to shuffle (mutated in place)
+ * @returns The same array, now shuffled
+ */
+export function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a remaining element…
+    const j = Math.floor(Math.random() * (i + 1));
 
-// 1️⃣ In‑place reverse (mutates `original`)
-original.reverse();
-console.log(original); // [5, 4, 3, 2, 1]
+    // …and swap it with the current element.
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+import { shuffle } from "./utils";
 
-// 2️⃣ Copy then reverse (keeps `original` intact)
-const reversedCopy = original.slice().reverse();  // or [...original].reverse()
-console.log(reversedCopy);  // [5, 4, 3, 2, 1]
-type Person = { name: string; age: number };
+const numbers = [1, 2, 3, 4, 5];
+shuffle(numbers);          // numbers is now in a random order
+console.log(numbers);
 
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob',   age: 34 },
-];
-
-const reversedPeople = [...people].reverse(); // still Person[]
-const reduceReversed = <T>(array: T[]): T[] =>
-  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
+const words = ["a", "b", "c", "d"];
+console.log(shuffle(words));  // prints a shuffled copy
