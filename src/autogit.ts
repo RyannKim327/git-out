@@ -1,70 +1,73 @@
-/**
- * Builds the bad‑character shift table for a given pattern.
- *
- * The table maps a character code (0–65535 for UTF‑16) to the shift value.
- * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
- * right‑most occurrence of that character inside the pattern.  
- *
- * @param pattern The substring we’re looking for.
- * @returns An array indexed by code unit, containing shift values.
- */
-function buildShiftTable(pattern: string): Uint16Array {
-  const m = pattern.length;
-  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
+type Edge = {
+  from: number;   // vertex index
+  to: number;     // vertex index
+  weight: number; // can be negative
+};
 
-  // Default shift: length of the pattern
-  table.fill(m);
+type BellmanFordResult = {
+  distances: number[];
+  predecessors: (number | null)[];
+  hasNegativeCycle: boolean;
+};
+function bellmanFord(
+  numVertices: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
 
-  // For every character except the last one, compute an optimal shift
-  for (let i = 0; i < m - 1; i++) {
-    const code = pattern.charCodeAt(i);
-    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
-  }
-  return table;
-}
+  // 1. Initialisation
+  const dist = new Array(numVertices).fill(INF);
+  dist[source] = 0;
 
-/**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The string to search inside.
- * @param pattern The substring we want to find.
- * @returns        All zero‑based indices where `pattern` starts in `text`.
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [0];              // empty pattern matches at every position
-  if (m > n) return [];                // pattern longer than text – no match
+  const pred = new Array<number | null>(numVertices).fill(null);
 
-  const shift = buildShiftTable(pattern);
-  const result: number[] = [];
-
-  let i = 0;   // current alignment: pattern[0] aligned with text[i]
-  while (i <= n - m) {
-    let j = m - 1;   // start comparing from the end of the pattern
-
-    // Compare backwards
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
+  // 2. Relax edges (V‑1) times
+  for (let i = 0; i < numVertices - 1; i++) {
+    let updated = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        updated = true;
+      }
     }
-
-    if (j < 0) {          // full match
-      result.push(i);
-    }
-
-    // Compute the shift.  We jump over at least one character, but the
-    // shift table may prescribe a longer shift if the mismatching character
-    // exists in the pattern.
-    const mismatchingCharCode = text.charCodeAt(i + m - 1);
-    i += shift[mismatchingCharCode];
+    // early exit if no change – optional but nice optimisation
+    if (!updated) break;
   }
 
-  return result;
+  // 3. Check for negative‑weight cycles
+  let hasNegCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+      hasNegCycle = true;
+      break;
+    }
+  }
+
+  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
 }
-const haystack = 'ABCDABABCABCDABABD';
-const needle   = 'ABCDABD';
+// Build a tiny graph with a negative edge that doesn't form a cycle
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 3, weight: -3 },
+  { from: 2, to: 3, weight: 2 },
+];
 
-console.log(bmhSearch(haystack, needle)); // → [11]
+const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
 
-// Multiple matches
-console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
+console.log('Distances:', distances);          // [0, 4, 5, 1]
+console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
+console.log('Negative cycle?', hasNegativeCycle); // false
+
+// If you want to pull out the path 0 -> 1 -> 3:
+function buildPath(pred: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== null; v = pred[v] as number | null) {
+    path.push(v);
+  }
+  return path.reverse();
+}
+
+console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
