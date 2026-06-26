@@ -1,7 +1,9 @@
-const removeSpaces = (s: string) => s.replace(/\s+/g, '');
+const sentence = "The quick brown fox jumps over the lazy dog";
+const needle = "brown";
 
-const original  = 'Hello   world!  How are   you?';
-const cleaned    = removeSpaces(original);
-
-console.log(cleaned); // "Helloworld!Howareyou?"
-const onlySpace = (s: string) => s.replace(/ +/g, '');
+const hasBrown = sentence.includes(needle); // true
+const hasBrownCaseInsensitive = sentence
+  .toLowerCase()
+  .includes(needle.toLowerCase()); // true
+const hasBrownIdx = sentence.indexOf(needle) !== -1; // true
+const hasVowelPattern = /[aeiou]/.test(sentence); // true
