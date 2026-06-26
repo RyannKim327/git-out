@@ -1,73 +1,172 @@
-type Edge = {
-  from: number;   // vertex index
-  to: number;     // vertex index
-  weight: number; // can be negative
-};
+/* ---- 1. Necessary types ------------------------------------------------- */
+type Point = { x: number; y: number };   // a grid coordinate
 
-type BellmanFordResult = {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-};
-function bellmanFord(
-  numVertices: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+// A *node* is a point that also carries the data used by A*.
+class Node {
+  public f: number;   // g + h
+  public g: number;   // cost from start
+  public h: number;   // heuristic estimate to goal
 
-  // 1. Initialisation
-  const dist = new Array(numVertices).fill(INF);
-  dist[source] = 0;
+  constructor(
+    public point: Point,
+    public parent: Node | null = null,
+    g = 0,
+    h = 0
+  ) {
+    this.g = g;
+    this.h = h;
+    this.f = this.g + this.h;
+  }
+}
 
-  const pred = new Array<number | null>(numVertices).fill(null);
+/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
+class MinHeap<T> {
+  private items: T[] = [];
 
-  // 2. Relax edges (V‑1) times
-  for (let i = 0; i < numVertices - 1; i++) {
-    let updated = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        updated = true;
+  constructor(private compare: (a: T, b: T) => number) {}
+
+  get size() { return this.items.length; }
+
+  push(item: T) {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const top = this.items[0];
+    const end = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = end;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(idx: number) {
+    const item = this.items[idx];
+    while (idx > 0) {
+      const parentIdx = ((idx + 1) >> 1) - 1;
+      const parent = this.items[parentIdx];
+      if (this.compare(item, parent) >= 0) break;
+      this.items[idx] = parent;
+      idx = parentIdx;
+    }
+    this.items[idx] = item;
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.items.length;
+    const item = this.items[idx];
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallest = idx;
+
+      if (
+        leftIdx < length &&
+        this.compare(this.items[leftIdx], this.items[smallest]) < 0
+      )
+        smallest = leftIdx;
+
+      if (
+        rightIdx < length &&
+        this.compare(this.items[rightIdx], this.items[smallest]) < 0
+      )
+        smallest = rightIdx;
+
+      if (smallest === idx) break;
+
+      this.items[idx] = this.items[smallest];
+      idx = smallest;
+    }
+    this.items[idx] = item;
+  }
+}
+
+/* ---- 3. Heuristic -------------------------------------------------------- */
+function manhattan(a: Point, b: Point): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+/* ---- 4. Grid utilities --------------------------------------------------- */
+// returns true if the point is inside bounds AND not blocked
+function isWalkable(
+  grid: boolean[][],
+  { x, y }: Point
+): boolean {
+  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
+}
+
+// neighbours (4‑connected, 8‑connected if you add diagonals)
+function getNeighbours(grid: boolean[][], p: Point): Point[] {
+  const { x, y } = p;
+  const candidates: Point[] = [
+    { x: x + 1, y },
+    { x: x - 1, y },
+    { x, y: y + 1 },
+    { x, y: y - 1 },
+  ];
+
+  // Uncomment if you want diagonal moves:
+  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
+
+  return candidates.filter(p => isWalkable(grid, p));
+}
+
+/* ---- 5. The main A* function --------------------------------------------- */
+function aStar(
+  grid: boolean[][],
+  start: Point,
+  goal: Point
+): Point[] | null {
+  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
+
+  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
+  const closed = new Set<string>();          // "x,y" keys
+
+  const nodeForPoint = (p: Point) =>
+    `${p.x},${p.y}`;
+
+  open.push(new Node(start, null, 0, manhattan(start, goal)));
+
+  while (open.size) {
+    const current = open.pop()!;
+    const currentKey = nodeForPoint(current.point);
+
+    if (closed.has(currentKey)) continue;     // skip stale node
+    closed.add(currentKey);
+
+    if (current.point.x === goal.x && current.point.y === goal.y) {
+      // reconstruct path
+      const path: Point[] = [];
+      let cur: Node | null = current;
+      while (cur) {
+        path.push(cur.point);
+        cur = cur.parent;
       }
+      return path.reverse();
     }
-    // early exit if no change – optional but nice optimisation
-    if (!updated) break;
-  }
 
-  // 3. Check for negative‑weight cycles
-  let hasNegCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-      hasNegCycle = true;
-      break;
+    for (const neighbour of getNeighbours(grid, current.point)) {
+      const neighbourKey = nodeForPoint(neighbour);
+      if (closed.has(neighbourKey)) continue;
+
+      const tentativeG = current.g + 1; // cost of moving a step
+      const h = manhattan(neighbour, goal);
+      const neighbourNode = new Node(
+        neighbour,
+        current,
+        tentativeG,
+        h
+      );
+
+      open.push(neighbourNode);
     }
   }
 
-  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
-}
-// Build a tiny graph with a negative edge that doesn't form a cycle
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 3, weight: -3 },
-  { from: 2, to: 3, weight: 2 },
-];
-
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
-
-console.log('Distances:', distances);          // [0, 4, 5, 1]
-console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
-console.log('Negative cycle?', hasNegativeCycle); // false
-
-// If you want to pull out the path 0 -> 1 -> 3:
-function buildPath(pred: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  for (let v = target; v !== null; v = pred[v] as number | null) {
-    path.push(v);
-  }
-  return path.reverse();
+  return null; // no path
 }
 
-console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
+/* ---- 6. Example usage --------------------------------------------------- */
+const
