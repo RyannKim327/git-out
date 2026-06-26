@@ -1,79 +1,43 @@
-type Vertex = string | number | symbol;
-type Graph = Map<Vertex, Vertex[]>;
 /**
- * Breadth‑first traversal of a graph.
+ * Returns true if `text` reads the same forward and backward.
+ * By default it is case‑sensitive and includes every character.
  *
- * @param graph      adjacency list
- * @param start      vertex to start from
- * @returns Array of vertices in the order they were visited
+ * @param text The string to check.
+ * @param opts  Optional settings:
+ *   - `ignoreCase`:   true to compare lowercase strings (default: false)
+ *   - `ignoreSpaces`: true to skip whitespace (default: false)
+ *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
  */
-function bfs(graph: Graph, start: Vertex): Vertex[] {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const result: Vertex[] = [];
+export function isPalindrome(
+  text: string,
+  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
+): boolean {
+  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
 
-    visited.add(start);
-    queue.push(start);
+  // Prepare the string based on options
+  let processed = ignoreCase ? text.toLowerCase() : text;
 
-    while (queue.length) {
-        const current = queue.shift()!;   // safe, queue is non‑empty
-        result.push(current);
+  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
+  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
 
-        const neighbours = graph.get(current) ?? [];
-        for (const next of neighbours) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-            }
-        }
-    }
-
-    return result;
+  // Compare forward and reversed
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
-function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const parent = new Map<Vertex, Vertex | null>();
+console.log(isPalindrome('radar'));          // true
+console.log(isPalindrome('Radar'));          // false
+console.log(isPalindrome('Radar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
+const isPal = (s: string) =>
+  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
+const examples = [
+  'racecar',
+  'RaceCar',
+  'A man, a plan, a canal: Panama',
+  'No lemon, no melon',
+  'Hello, world!',
+];
 
-    visited.add(start);
-    queue.push(start);
-    parent.set(start, null);
-
-    while (queue.length) {
-        const current = queue.shift()!;
-
-        if (current === target) {
-            // reconstruct path
-            const path: Vertex[] = [];
-            let v: Vertex | null | undefined = target;
-            while (v !== null) {
-                path.unshift(v);
-                v = parent.get(v) ?? null;
-            }
-            return path;
-        }
-
-        for (const next of graph.get(current) ?? []) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-                parent.set(next, current);
-            }
-        }
-    }
-
-    // target unreachable
-    return null;
+for (const ex of examples) {
+  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
 }
-const g: Graph = new Map([
-    ['A', ['B', 'C']],
-    ['B', ['A', 'D', 'E']],
-    ['C', ['A', 'F']],
-    ['D', ['B']],
-    ['E', ['B', 'F']],
-    ['F', ['C', 'E']]
-]);
-
-console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
-console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
-console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
