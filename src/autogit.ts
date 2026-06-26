@@ -1,129 +1,93 @@
 /**
- * A node in the B‑tree.
- * Keys are stored in ascending order.
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
  */
-class BTreeNode<K, V> {
-  // Keys and values are kept together to simplify return of key/value pairs.
-  keys: K[] = [];
-  values: V[] = [];
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
 
-  // Children – null for leaf nodes.
-  children: (BTreeNode<K, V> | null)[] = [];
-
-  // Whether this node is a leaf.
-  leaf: boolean;
-
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
-
-  /* Helper: find first index where key should be inserted */
-  findKey(key: K, cmp: (a: K, b: K) => number): number {
-    let idx = 0;
-    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
-      ++idx;
-    }
-    return idx;
+  constructor(value: T) {
+    this.value = value;
   }
 }
+
 /**
- * B‑Tree implementation
- *
- * @param t Minimum degree (≥ 2). Every node except the root contains
- *          at least t‑1 keys and at most 2*t‑1 keys.
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
  */
-class BTree<K, V> {
-  private root: BTreeNode<K, V>;
-  private readonly t: number;
-  private readonly cmp: (a: K, b: K) => number;
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-  constructor(
-    t: number = 2,
-    cmp?: (a: K, b: K) => number
-  ) {
-    if (t < 2) throw new Error('B‑tree order must be >= 2');
-    this.t = t;
-    this.root = new BTreeNode<K, V>(true);
-    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
   }
 
-  /* Public API --------------------------------------------------- */
-  search(key: K): V | undefined {
-    return this._search(this.root, key);
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
   }
 
-  insert(key: K, value: V): void {
-    // If root is full, create a new leaf and split
-    if (this.root.keys.length === 2 * this.t - 1) {
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this._splitChild(newRoot, 0);
-      this.root = newRoot;
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
     }
-    this._insertNonFull(this.root, key, value);
-  }
+    this.rear = node;           // new tail
 
-  /* Delete is optional – implement if you need it. */
-  /* delete(key: K): void { … } */
-
-  /* Iterator over all key/value pairs in order */
-  *inOrder(): IterableIterator<[K, V]> {
-    yield* this._inOrder(this.root);
-  }
-
-  /* ------------------------------------------------------------------ */
-
-  /* Core recursive operations --------------------------------------- */
-  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
-    const idx = node.findKey(key, this.cmp);
-
-    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
-      return node.values[idx];
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
     }
 
-    if (node.leaf) {
-      return undefined;
-    }
-
-    return this._search(node.children[idx]!, key);
+    this._size++;
   }
 
-  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
-    let i = node.keys.length - 1;
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
 
-    if (node.leaf) {
-      // Insert into leaf – shift keys/vals right of insertion point
-      const idx = node.findKey(key, this.cmp);
-      node.keys.splice(idx, 0, key);
-      node.values.splice(idx, 0, value);
-    } else {
-      // Find child to descend into
-      const idx = node.findKey(key, this.cmp);
-      const child = node.children[idx]!;
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
 
-      if (child.keys.length === 2 * this.t - 1) {
-        // Child is full → split then decide which side to go
-        this._splitChild(node, idx);
-
-        // After split, middle key moves up – need to decide child again
-        if (this.cmp(key, node.keys[idx]) > 0) {
-          i = idx + 1;
-        } else {
-          i = idx;
-        }
-      }
-      this._insertNonFull(node.children[i]!, key, value);
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
     }
+
+    this._size--;
+    return value;
   }
 
-  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
-    const t = this.t;
-    const child = parent.children[idx]!;
-    const newNode = new BTreeNode<K, V>(child.leaf);
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
 
-    // Move the second half of child’s keys/values to newNode
-    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
-    newNode.values = child.values.splice(t);
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
+    }
+    return result;
+  }
+}
+const q = new Queue<number>();
 
-    if (!child.leaf) {
-      newNode.children = child.children.splice(t
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
