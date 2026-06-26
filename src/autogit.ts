@@ -1,38 +1,43 @@
 /**
- * Return the largest prime factor of a positive integer.
- *
- * @param n – the number you want to factor (must be > 1)
- * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
+ * Returns the first character that occurs only once in `s`.
+ * If every character repeats, returns null.
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n <= 1) return undefined;
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣ Count how many times each char appears
+  const freq = new Map<string, number>();
 
-  let num = n;
-  let largest = -1;
-
-  // Remove all factors of 2
-  while (num % 2 === 0) {
-    largest = 2;
-    num /= 2;
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // Now `num` is odd; try odd divisors only
-  let divisor = 3;
-  const limit = Math.sqrt(num);
-  while (divisor <= limit) {
-    while (num % divisor === 0) {
-      largest = divisor;
-      num /= divisor;
+  // 2️⃣ Scan the string again and pick the first char with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
     }
-    divisor += 2;           // skip the even numbers
   }
 
-  // If we're left with a prime greater than 2
-  if (num > 2) largest = num;
-
-  return largest;
+  return null; // nothing unique
 }
+console.log(firstNonRepeatingChar("abacbc")); // -> "b"
+console.log(firstNonRepeatingChar("aabbcc")); // -> null
+console.log(firstNonRepeatingChar("abcde"));  // -> "a"
+function firstNonRepeatingCharOptimized(s: string): string | null {
+  const freq = new Map<string, number>();
+  const order: string[] = [];
 
-// Quick demo
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+  for (const ch of s) {
+    const newCount = (freq.get(ch) ?? 0) + 1;
+    freq.set(ch, newCount);
+
+    if (newCount === 1) {
+      order.push(ch);          // first appearance
+    } else {
+      // remove all occurrences of `ch` from the queue
+      const idx = order.indexOf(ch);
+      if (idx !== -1) order.splice(idx, 1);
+    }
+  }
+
+  return order.length ? order[0] : null;
+}
