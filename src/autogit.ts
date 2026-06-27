@@ -1,26 +1,50 @@
-function countWord(text: string, word: string): number {
-  // Escape word so special regex symbols don’t bite us
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // \b = word boundary, i = ignore case, g = global (all matches)
-  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
+interface TreeNode {
+  val:  number | string   // you can put any type that fits your data
+  left?: TreeNode | null
+  right?: TreeNode | null
 }
-const txt = "Boo, boo! Boo-boo? Booing… boo.";
-console.log(countWord(txt, 'boo')); // 3
-function countWordSplit(text: string, word: string) {
-  const words = text.trim().split(/\s+/);
-  const target = word.toLowerCase();
-  return words.filter(w => w.toLowerCase() === target).length;
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0;                 // empty tree -> depth 0
+
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-function countWordLoop(text: string, word: string) {
-  const target = word.toLowerCase();
-  let count = 0;
-  const regex = /\b\w+\b/g;               // grab words
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    if (match[0].toLowerCase() === target) count++;
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let depth = 0;
+  const queue: Array<TreeNode> = [root];
+
+  while (queue.length) {
+    const levelSize = queue.length;   // nodes at the current level
+    depth++;                          // we’re about to process a whole new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;    // safe; queue is non‑empty here
+
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
-  return count;
+
+  return depth;
 }
-const count = countWord("Hello because we say hello", "hello"); // 2
+// Build a tiny tree:
+//        1
+//       / \
+//      2   3
+//         /
+//        4
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2 },
+  right: {
+    val: 3,
+    left: { val: 4 }
+  }
+};
+
+console.log('Recursive depth:', maxDepth(tree));          // 3
+console.log('Iterative depth:', maxDepthIterative(tree)); // 3
