@@ -1,29 +1,39 @@
-// hello.ts
-import * as readline from 'readline'
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-})
-
-function ask(question: string): Promise<string> {
-  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
+function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
 
-async function main() {
-  const name = await ask('What’s your name? ')
-  const favNum = await ask('What’s your favorite number? ')
-  
-  const num = parseInt(favNum, 10)
-  const isEven = !isNaN(num) ? num % 2 === 0 : false
-
-  console.log(`\nHello, ${name}!`);
-  console.log(`Your favorite number is ${favNum}`);
-  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
-
-  rl.close()
+// Example
+console.log(reverseString('hello')); // 'olleh'
+reverseString('👋🏽'); // '🏽👋'  → wrong
+function reverseStringUnicode(s: string): string {
+  const codePoints: number[] = [];
+  for (const char of s) {
+    codePoints.push(char.codePointAt(0)!);
+  }
+  return String.fromCodePoint(...codePoints.reverse());
 }
 
-main()
-tsc hello.ts   # compile to JavaScript
-node hello.js
+// Example
+console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
+const cp = Array.from(s).reverse().join('');
+function reverseRecursively(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseRecursively(s.slice(1)) + s[0];
+}
+function reverseLoop(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
+  }
+  return result;
+}
+function reverseBuffer(s: string): string {
+  const buf: string[] = new Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    buf[i] = s[s.length - 1 - i];
+  }
+  return buf.join('');
+}
+function reverseStringSafe(s: string): string {
+  return Array.from(s).reverse().join('');
+}
