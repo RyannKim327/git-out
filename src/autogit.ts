@@ -1,36 +1,26 @@
-// A minimal, generic node type
-export interface ListNode<T> {
-  readonly value: T;
-  next: ListNode<T> | null;
+function countWord(text: string, word: string): number {
+  // Escape word so special regex symbols don’t bite us
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // \b = word boundary, i = ignore case, g = global (all matches)
+  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
 }
-
-/**
- * Returns the middle node of a singly‑linked list.
- * If the list has an even number of nodes, it returns
- * the *second* middle node (i.e. the one that a
- * “slow‑pointer” would land on after the last move).
- *
- * @param head Head of the list – null if the list is empty.
- * @returns The middle node, or null for an empty list.
- */
-export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head;
-  let fast = head;
-
-  // advance fast two steps, slow one step
-  while (fast !== null && fast.next !== null) {
-    slow = slow.next;
-    fast = fast.next.next;
+const txt = "Boo, boo! Boo-boo? Booing… boo.";
+console.log(countWord(txt, 'boo')); // 3
+function countWordSplit(text: string, word: string) {
+  const words = text.trim().split(/\s+/);
+  const target = word.toLowerCase();
+  return words.filter(w => w.toLowerCase() === target).length;
+}
+function countWordLoop(text: string, word: string) {
+  const target = word.toLowerCase();
+  let count = 0;
+  const regex = /\b\w+\b/g;               // grab words
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match[0].toLowerCase() === target) count++;
   }
-
-  return slow;
+  return count;
 }
-// Build a list: 1 → 2 → 3 → 4 → 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-
-const mid = middleNode(node1);
-console.log(mid?.value); // → 3
+const count = countWord("Hello because we say hello", "hello"); // 2
