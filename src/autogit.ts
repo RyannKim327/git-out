@@ -1,147 +1,46 @@
-/* ──────────────────────────────────────────────────────
- *  SkipListNode<T>
- * ────────────────────────────────────────────────────── */
-class SkipListNode<T> {
-  /** The stored value (defined only in the “bottom” node) */
-  value?: T;
+/**
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
+ */
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-  /** Links to the node that follows this one at each level */
-  forward: Array<SkipListNode<T> | null> = [];
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+  });
 
-  constructor(value?: T, level: number = 0) {
-    this.value = value;
-    this.forward = new Array(level + 1).fill(null);
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
+    }
   }
+  return true;
 }
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-/* ──────────────────────────────────────────────────────
- *  SkipList<T>
- * ────────────────────────────────────────────────────── */
-export class SkipList<T> {
-  /* Adjustable parameters */
-  private readonly MAX_LEVEL: number;      // upper bound for levels
-  private readonly P: number;              // probability of promoting a node
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
 
-  private level: number = 0;               // current maximum level
-  private header: SkipListNode<T>;         // sentinel start node
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
 
-  constructor(maxLevel: number = 16, probability: number = 0.5) {
-    this.MAX_LEVEL = maxLevel;
-    this.P        = probability;
-    this.header   = new SkipListNode<T>();
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Random level generator
-   * ────────────────────────────────────────────────────── */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
-      lvl++;
-    }
-    return lvl;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Search for a value
-   * ────────────────────────────────────────────────────── */
-  search(value: T): SkipListNode<T> | null {
-    let current = this.header;
-
-    // move down each level, then across level 0
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-    }
-
-    current = current.forward[0]!;
-
-    if (current && current.value === value) return current;
-    return null;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Insert a new value
-   * ────────────────────────────────────────────────────── */
-  insert(value: T): void {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    // find where the new node will be inserted at each level
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    // pick a random level for the new node
-    const lvl = this.randomLevel();
-
-    // raise the list’s level if necessary
-    if (lvl > this.level) {
-      for (let i = this.level + 1; i <= lvl; i++) {
-        update[i] = this.header;
-      }
-      this.level = lvl;
-    }
-
-    const newNode = new SkipListNode<T>(value, lvl);
-
-    // splice the new node into every level above 0
-    for (let i = 0; i <= lvl; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
-    }
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Remove a value
-   * ────────────────────────────────────────────────────── */
-  remove(value: T): boolean {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    current = current.forward[0]!;
-
-    if (!current || current.value !== value) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node at every level it appears
-    for (let i = 0; i <= this.level; i++) {
-      if (update[i].forward[i] !== current) break;
-      update[i].forward[i] = current.forward[i];
-    }
-
-    // shrink the list’s level if the top levels became empty
-    while (this.level > 0 && this.header.forward[this.level] == null) {
-      this.level--;
-    }
-
-    return true;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Helper: convert list into an array (useful for debugging)
-   * ────────────────────────────────────────────────────── */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.header.forward[0];
-
-    while (node) {
-      result.push(node.value!);
-      node = node.forward[0];
-    }
-
-    return result;
-  }
-}
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
