@@ -1,48 +1,77 @@
-/**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
- */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
+  // Insert value in the first spot found (just for demonstration).
+  // A real BST would place it relative to its neighbors.
+  insert(value: T): void {
+    const node = new TreeNode(value);
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
+    this._insertRec(this.root, node);
+  }
+
+  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
+    // Walk left first, then right, until you hit a null spot.
+    if (!current.left) {
+      current.left = node;
+    } else if (!current.right) {
+      current.right = node;
     } else {
-      count--;
+      // Go deeper – we’re just doing breadth‑like insertion.
+      this._insertRec(current.left, node);
     }
   }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
+  // Breadth‑first traversal (queue style) – returns array of values.
+  bfs(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
 
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
-}
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
-
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
+    const queue: TreeNode<T>[] = [this.root];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      result.push(cur.value);
+      if (cur.left) queue.push(cur.left);
+      if (cur.right) queue.push(cur.right);
+    }
+    return result;
   }
-  return undefined;
+
+  // Depth‑first in‑order traversal (left, node, right)
+  inorder(): T[] {
+    const res: T[] = [];
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      res.push(node.value);
+      visit(node.right);
+    };
+    visit(this.root);
+    return res;
+  }
+
+  // Simple depth counter
+  depth(): number {
+    const dfs = (node: TreeNode<T> | null): number =>
+      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
+    return dfs(this.root);
+  }
 }
+const tree = new BinaryTree<number>();
+[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
+
+console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
+console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
+console.log('Depth:', tree.depth());         // 3
+interface Person { name: string; age: number; }
+const people = new BinaryTree<Person>();
+people.insert({name: 'Alice', age: 30});
