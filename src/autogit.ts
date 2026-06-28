@@ -1,173 +1,77 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
+/**
+ * Median of two sorted arrays.
+ *
+ * The algorithm keeps a binary search on the smaller array.  
+ * At each step we decide how many elements from `a` belong on the left side of the
+ * partition.  The counterpart from `b` is computed so that the left side contains
+ * exactly half (or half‑plus‑one for odd total length) of the elements.
+ *
+ * Edge cases:
+ *   * one of the arrays may be empty
+ *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
+ */
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Ensure `a` is the shorter array to keep the binary search limits small.
+  let a = nums1;
+  let b = nums2;
+  if (a.length > b.length) [a, b] = [b, a];
 
-interface Edge {
-  target: Node;
-  weight: Weight;
-}
+  const m = a.length;
+  const n = b.length;
+  // `halfLen` is the number of elements that must be on the left side
+  // of the partition (including the middle element when total length is odd).
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
-}
+  let low = 0;
+  let high = m;
 
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
+  while (low <= high) {
+    // Number of elements from a put on the left side
+    const i = Math.floor((low + high) / 2);
+    // Number of elements from b put on the left side
+    const j = halfLen - i;
 
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
+    const aLeft  = i === 0 ? -Infinity : a[i - 1];
+    const aRight = i === m ?  Infinity : a[i];
 
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
+    const bLeft  = j === 0 ? -Infinity : b[j - 1];
+    const bRight = j === n ?  Infinity : b[j];
 
-  get size() {
-    return this.heap.length;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
-        }
+    // Partition is correct: all left elements ≤ all right elements
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // If total length is odd, the median is the max of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
       }
-
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
-}
-
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
+      // If even, it’s the mean of the two middle values
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements from a on the left: move left
+      high = i - 1;
+    } else {
+      // Too few elements from a on the left: move right
+      low = i + 1;
     }
   }
 
-  return { distances, prev };
+  // Should never reach here for valid input
+  throw new Error("Invalid input");
 }
-
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
-
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
+console.log(findMedianSortedArrays(arr1, arr2)); // 8
+export function medianNaive(a: number[], b: number[]): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
   }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
+  const mid = Math.floor(merged.length / 2);
+  return merged.length % 2
+    ? merged[mid]
+    : (merged[mid - 1] + merged[mid]) / 2;
 }
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
