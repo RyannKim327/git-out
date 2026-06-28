@@ -1,60 +1,25 @@
-/* 1️⃣  Define the shapes of the data we expect  */
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+/***** 1️⃣  The classic Math.max with the spread operator *****/
 
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
+const numbers = [4, 12, 7, 19, 3];
 
-/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
-async function safeGet<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
-  }
-  return resp.json() as Promise<T>;
-}
+// Spreads the array into individual arguments for Math.max
+const max1 = Math.max(...numbers); // 19
+/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
 
-/* 3️⃣  Fetch a single post and its comments  */
-async function fetchPostWithComments(postId: number) {
-  const [post, comments] = await Promise.all([
-    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
-    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
-  ]);
+const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
+// Also 19
+/***** 3️⃣  If you’re dealing with objects and need a property *****/
 
-  console.log(`\n=== Post #${post.id} ===`);
-  console.log(`Title : ${post.title}`);
-  console.log(`Body  : ${post.body}\n`);
+type Item = { id: number; value: number };
+const items: Item[] = [
+  { id: 1, value: 4 },
+  { id: 2, value: 12 },
+  { id: 3, value: 7 },
+];
 
-  console.log(`--- ${comments.length} comment(s) ---`);
-  comments.forEach(c => {
-    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
-  });
-}
-
-/* 4️⃣  Run it for a few post IDs  */
-async function main() {
-  try {
-    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
-  } catch (err) {
-    console.error('Something went wrong:', (err as Error).message);
-  }
-}
-
-main();
-# compile to JavaScript
-npx tsc api-demo.ts
-
-# run the output
-node api-demo.js
-
-# or skip the compile step (requires ts-node)
-npx ts-node api-demo.ts
+// Max based on `value`
+const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
+// maxVal is 12
+// If you want the whole object:
+const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
+// maxObj is { id: 2, value: 12 }
