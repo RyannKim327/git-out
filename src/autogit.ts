@@ -1,66 +1,55 @@
-// A simple singly‑linked‑list node suitable for the intersection test
-export interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
-
 /**
- * Returns the first node at which two singly‑linked lists intersect,
- * or undefined if they never intersect.
+ * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | undefined,
-  headB: ListNode<T> | undefined
-): ListNode<T> | undefined {
-  // Helper that walks a list and returns its length
-  const getLength = (node?: ListNode<T>) => {
-    let len = 0;
-    while (node) {
-      len++;
-      node = node.next;
+function isAnagram(s1: string, s2: string): boolean {
+  const normalize = (s: string) =>
+    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
+  return normalize(s1) === normalize(s2);
+}
+function isAnagramLetterCount(a: string, b: string): boolean {
+  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
+
+  const freq = (s: string) => {
+    const map = new Map<string, number>();
+    for (const c of s) {
+      map.set(c, (map.get(c) ?? 0) + 1);
     }
-    return len;
+    return map;
   };
 
-  let lenA = getLength(headA);
-  let lenB = getLength(headB);
+  if (clean(a).length !== clean(b).length) return false;
 
-  // Advance the longer list so both pointers are at the same distance
-  // from the end of the list.
-  let currA = headA;
-  let currB = headB;
-  while (lenA > lenB && currA) {
-    currA = currA.next;
-    lenA--;
-  }
-  while (lenB > lenA && currB) {
-    currB = currB.next;
-    lenB--;
-  }
+  const m1 = freq(clean(a));
+  const m2 = freq(clean(b));
 
-  // Move forward together until either we find the intersection
-  // or both pointers hit the end (undefined).
-  while (currA !== currB) {
-    currA = currA?.next;
-    currB = currB?.next;
+  for (const [ch, count] of m1) {
+    if (m2.get(ch) !== count) return false;
   }
-
-  return currA; // May be undefined if no intersection
+  return true;
 }
-// Build example lists that intersect:
+function isAnagramFlexible(
+  s1: string,
+  s2: string,
+  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
+): boolean {
+  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-//      A -> B -> C
-//      ^          |
-//      |          v
-//      D <- E
+  let pattern = '';
+  if (ignoreSpaces) pattern += '\\s';
+  if (ignorePunct) pattern += /[^\w\s]/g.source;
 
-const c: ListNode<number> = { val: 3 };
-const b: ListNode<number> = { val: 2, next: c };
-const a: ListNode<number> = { val: 1, next: b };
+  const regex = new RegExp(pattern, 'g');
+  const normalize = (s: string) =>
+    s.replace(regex, '').toLowerCase().split('').sort().join('');
 
-const e: ListNode<number> = { val: 5, next: a };
-const d: ListNode<number> = { val: 4, next: e };
+  return normalize(s1) === normalize(s2);
+}
+console.log(isAnagram('listen', 'silent'));          // true
+console.log(isAnagram('A gentleman', 'Elegant man'));// true
+console.log(isAnagram('Hello', 'World'));            // false
 
-console.log(getIntersectionNode(a, d) === a);   // true
-console.log(getIntersectionNode(b, d) === a);   // true
-console.log(getIntersectionNode(c, d) === a);   // true
+// Using the frequency‑count version
+console.log(isAnagramLetterCount('abc', 'cab'));     // true
+
+// Flexible options
+console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
