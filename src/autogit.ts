@@ -1,157 +1,173 @@
-// suffix-tree.ts
-/**
- * Lightweight suffix tree for ASCII strings.
- * The implementation uses Ukkonen’s algorithm
- * and is fully typed for clarity.
- */
+// -----------------------------------------------------------------------------
+//  Types
+// -----------------------------------------------------------------------------
+type Node = string | number;          // any hashable key – string or number
+type Weight = number;
 
-/** Each node can have many outgoing edges keyed by the
- * first character of the edge label (i.e., “transition”).
- * The tree is rooted (root is an empty string). */
-class Node {
-  /** Map from a character to a child node. */
-  children = new Map<string, Node>();
-
-  /** For nodes that represent the end of a suffix,
-   *  we record the starting index of that suffix in the
-   *  original text.  The set version lets us keep
-   *  multiple suffixes that collapse at the same node.
-   */
-  suffixIndices = new Set<number>();
-
-  /* In Ukkonen, each edge is implicitly defined by the
-   * start and length on the original text.  We store
-   * those pairs on the node that is the *target* of the edge.
-   */
-  edgeStart?: number;
-  edgeEnd?: number; // inclusive
-
-  /** The parent of this node (root’s parent is null). */
-  parent: Node | null = null;
+interface Edge {
+  target: Node;
+  weight: Weight;
 }
 
-/** A convenience wrapper around a Node that stores the
- *  current active point used during construction.
- */
-interface ActivePoint {
-  node: Node;     // the deepest node where the active span ends
-  edge: string;   // first character of the edge we are on
-  length: number; // how far we have walked down that edge
+interface Graph {
+  // adjacency list: nodeId -> array of outgoing edges
+  [node: string]: Edge[];
 }
 
-/**
- * The SuffixTree itself.
- */
-export class SuffixTree {
-  /** The root of the tree.  Its edgeStart/edgeEnd are undefined
-   *  because it has no incoming edge. */
-  private _root = new Node();
+// -----------------------------------------------------------------------------
+//  Priority Queue (min‑heap)
+// -----------------------------------------------------------------------------
+class MinHeap<T> {
+  private heap: Array<{ key: number; value: T }> = [];
 
-  /** The input string.  We keep it as an array of characters
-   *  for O(1) random access. */
-  private _text: string[];
-
-  /** The active point used by Ukkonen’s algorithm. */
-  private _active: ActivePoint;
-
-  /** The number of “steps” we have taken from the root
-   *  during construction.  This is the suffix link counter,
-   *  useful primarily for debugging but also for truncated
-   *  construction. */
-  private _remainder = 0;
-
-  constructor(text: string) {
-    this._text = [...text];
-    this._active = { node: this._root, edge: "", length: 0 };
-    this.build();
+  // Insert a new element with its priority key
+  push(key: number, value: T) {
+    this.heap.push({ key, value });
+    this.bubbleUp(this.heap.length - 1);
   }
 
-  /* ------------------------------------------------------------------- */
-  /*  BUILDING
-   * ------------------------------------------------------------------- */
+  // Extract element with smallest key
+  pop(): T | undefined {
+    if (!this.heap.length) return undefined;
+    const min = this.heap[0].value;
+    const end = this.heap.pop()!;
+    if (this.heap.length) {
+      this.heap[0] = end;
+      this.sinkDown(0);
+    }
+    return min;
+  }
 
-  private build(): void {
-    for (let pos = 0; pos < this._text.length; pos++) {
-      this._addCharacter(pos);
+  get size() {
+    return this.heap.length;
+  }
+
+  private bubbleUp(idx: number) {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      const parent = this.heap[parentIdx];
+      if (element.key >= parent.key) break;
+      this.heap[idx] = parent;
+      idx = parentIdx;
+    }
+    this.heap[idx] = element;
+  }
+
+  private sinkDown(idx: number) {
+    const length = this.heap.length;
+    const element = this.heap[idx];
+
+    while (true) {
+      const leftIdx = 2 * idx + 1;
+      const rightIdx = 2 * idx + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        if (this.heap[leftIdx].key < element.key) {
+          swapIdx = leftIdx;
+        }
+      }
+
+      if (rightIdx < length) {
+        const rightKey = this.heap[rightIdx].key;
+        if (
+          (swapIdx === null && rightKey < element.key) ||
+          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === null) break;
+
+      this.heap[idx] = this.heap[swapIdx];
+      idx = swapIdx;
+    }
+    this.heap[idx] = element;
+  }
+}
+
+// -----------------------------------------------------------------------------
+//  Dijkstra
+// -----------------------------------------------------------------------------
+function dijkstra(
+  graph: Graph,
+  start: Node,
+  target?: Node
+): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
+  const distances = new Map<Node, number>();
+  const prev = new Map<Node, Node | null>();
+
+  // init
+  for (const node in graph) {
+    distances.set(node, Number.MAX_SAFE_INTEGER);
+    prev.set(node, null);
+  }
+  distances.set(start, 0);
+
+  const heap = new MinHeap<Node>();
+  heap.push(0, start);
+
+  while (heap.size) {
+    const u = heap.pop()!;
+    const distU = distances.get(u)!;
+
+    // If a target was supplied and we reached it, we can stop early
+    if (target !== undefined && u === target) break;
+
+    const edges = graph[u as string] ?? [];
+    for (const edge of edges) {
+      const alt = distU + edge.weight;
+      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
+        distances.set(edge.target, alt);
+        prev.set(edge.target, u);
+        heap.push(alt, edge.target);
+      }
     }
   }
 
-  /**
-   * Extend the tree with the character at position `pos` in the input.
-   * This is Ukkonen’s “phase” step.
-   */
-  private _addCharacter(pos: number): void {
-    this._remainder++;
+  return { distances, prev };
+}
 
-    let lastNewNode: Node | null = null;
+// -----------------------------------------------------------------------------
+//  Helper: recover path from prev map
+// -----------------------------------------------------------------------------
+function recoverPath(
+  prev: Map<Node, Node | null>,
+  start: Node,
+  end: Node
+): Node[] {
+  const path: Node[] = [];
+  let cur: Node | undefined = end;
 
-    while (this._remainder > 0) {
-      const currentActiveEdge = this._active.edge || this._text[pos];
+  while (cur !== undefined && cur !== null) {
+    path.unshift(cur);
+    cur = prev.get(cur) ?? null;
+  }
 
-      // 1. If there is no outgoing edge from the active node
-      //    that starts with the active edge character, create one.
-      if (!this._active.node.children.has(currentActiveEdge)) {
-        const leaf = this._createNode(pos, this._text.length - 1); // leaf points to suffix start
-        this._active.node.children.set(currentActiveEdge, leaf);
-        leaf.parent = this._active.node;
+  if (path[0] !== start) return []; // no path found
+  return path;
+}
 
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this._active.node;
-          lastNewNode = null;
-        }
-      } else {
-        // 2. There is an edge; we need to walk down it.
-        const nextNode = this._active.node.children.get(currentActiveEdge)!;
+// -----------------------------------------------------------------------------
+//  Example
+// -----------------------------------------------------------------------------
+const graph: Graph = {
+  A: [
+    { target: "B", weight: 2 },
+    { target: "C", weight: 5 },
+  ],
+  B: [
+    { target: "C", weight: 1 },
+    { target: "D", weight: 4 },
+  ],
+  C: [
+    { target: "D", weight: 1 },
+  ],
+  D: [],
+};
 
-        // What character does the edge label have at the next position?
-        const edgeChar = this._text[nextNode.edgeStart! + this._active.length];
-
-        if (edgeChar === this._text[pos]) {
-          // 2a. The current character is already in the tree.
-          //     Just extend the active point and break.
-          if (lastNewNode) {
-            lastNewNode.suffixLink = this._active.node;
-            lastNewNode = null;
-          }
-          this._active.length++;
-          break;
-        }
-
-        // 2b. Need to split the edge because we hit a mismatch.
-        const splitEnd = nextNode.edgeStart! + this._active.length - 1;
-        const split = this._createNode(nextNode.edgeStart!, splitEnd);
-        this._active.node.children.set(currentActiveEdge, split);
-        split.parent = this._active.node;
-
-        // 2b.i. The old child becomes a grand‑child of the new split node.
-        nextNode.edgeStart! = splitEnd + 1;
-        split.children.set(this._text[nextNode.edgeStart!], nextNode);
-        nextNode.parent = split;
-
-        // 2b.ii. Add a new leaf for the new character.
-        const leaf = this._createNode(pos, this._text.length - 1);
-        split.children.set(this._text[pos], leaf);
-        leaf.parent = split;
-
-        // 2b.iii. Link suffixes
-        if (lastNewNode) {
-          lastNewNode.suffixLink = split;
-        }
-        lastNewNode = split;
-        split.suffixLink = this._root;
-      }
-
-      // 3. Move to the next phase: decrement remainder
-      this._remainder--;
-
-      // 4. If the active node has a suffix link, follow it,
-      //    otherwise reset to root and adjust length.
-      if (this._active.node === this._root && this._active.length > 0) {
-        this._active.length--;
-        this._active.edge = this._text[pos - this._remainder + 1];
-      } else if (this._active.node !== this._root) {
-        this._active.node = this._active.node.suffixLink!;
-      } else {
-        this._active.edge = this._text[pos - this._remainder + 1];
-        this._active.length = 1;
-        this._active.node = this
+const { distances, prev } = dijkstra(graph, "A");
+console.log(distances);               // Map(…)
+console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
