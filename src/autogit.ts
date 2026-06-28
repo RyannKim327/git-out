@@ -1,76 +1,83 @@
-/**
- * Build the LPS (Longest Prefix Suffix) table for KMP.
- *
- * @param pattern - The pattern string for which the table is built.
- * @returns An array where lps[i] is the length of the longest proper
- *          prefix of pattern[0..i] that is also a suffix of that substring.
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps: number[] = Array(m).fill(0);
-  let length = 0;                 // length of previous longest prefix suffix
-  let i = 1;                      // lps[0] is always 0
+function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;          // out of range
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length += 1;
-      lps[i] = length;
-      i += 1;
-    } else {
-      if (length !== 0) {
-        // fall back in the pattern (do not increment i here)
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i += 1;
-      }
-    }
-  }
-  return lps;
+  // cloning so we don’t mutate the caller’s array
+  const copy = [...arr];
+
+  // If you need custom ordering, pass a compare function.
+  // Default: numeric ascending.
+  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
+
+  // Arrays are zero‑indexed
+  return copy[k - 1];
 }
 
-/**
- * KMP search – returns all starting indices of `pattern` in `text`.
- *
- * @param text    – The string to search within.
- * @param pattern – The string to find.
- * @returns Array of start indices where pattern occurs in text.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];          // nothing to find
-  const lps = buildLPS(pattern);
-  const result: number[] = [];
+// Example
+const nums = [7, 3, 5, 2, 9];
+console.log(kthSmallestBySort(nums, 2));   // 3
+function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  let i = 0;   // index for text
-  let j = 0;   // index for pattern
+  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const clone = [...arr]; // keep the original untouched
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i += 1;
-      j += 1;
-    }
+  function partition(left: number, right: number, pivotIndex: number): number {
+    const pivotValue = clone[pivotIndex];
+    // move pivot to end
+    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
 
-    // full match found
-    if (j === pattern.length) {
-      result.push(i - j);   // starting index
-      j = lps[j - 1];       // allow overlapping matches
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i += 1;
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (comp(clone[i], pivotValue) < 0) {
+        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
+        storeIndex++;
       }
     }
+    // move pivot to its final place
+    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
+    return storeIndex;
   }
 
+  let left = 0;
+  let right = clone.length - 1;
+  let pivotIndex;
+
+  while (true) {
+    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
+    if (pivotIndex === k - 1) return clone[pivotIndex];
+    if (pivotIndex > k - 1) right = pivotIndex - 1;
+    else left = pivotIndex + 1;
+  }
+}
+const data = [12, 3, 5, 7, 4, 19, 26];
+console.log(kthSmallestQuickSelect(data, 4)); // 7
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private compare: (a: T, b: T) => number) {}
+  // heap methods omitted for brevity...
+}
+
+function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const heap = new MinHeap<T>(cmp);
+  for (const v of arr) heap.insert(v);
+  let result: T | undefined;
+  for (let i = 0; i < k; i++) result = heap.extractMin();
   return result;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+const people = [
+  { name: 'Alice', age: 24 },
+  { name: 'Bob', age: 19 },
+  { name: 'Carol', age: 32 },
+  { name: 'Dave', age: 28 }
+];
 
-const matches = kmpSearch(text, pattern);
-console.log(matches);          // [10]
+// 3rd youngest
+const thirdYoungest = kthSmallestQuickSelect(
+  people,
+  3,
+  (a, b) => a.age - b.age
+);
 
-const hasMatch = matches.length > 0;
-console.log(hasMatch);         // true
+console.log(thirdYoungest); // shows Bob (age 19)
