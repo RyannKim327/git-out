@@ -1,93 +1,77 @@
 /**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
+ * Median of two sorted arrays.
+ *
+ * The algorithm keeps a binary search on the smaller array.  
+ * At each step we decide how many elements from `a` belong on the left side of the
+ * partition.  The counterpart from `b` is computed so that the left side contains
+ * exactly half (or half‑plus‑one for odd total length) of the elements.
+ *
+ * Edge cases:
+ *   * one of the arrays may be empty
+ *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
  */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Ensure `a` is the shorter array to keep the binary search limits small.
+  let a = nums1;
+  let b = nums2;
+  if (a.length > b.length) [a, b] = [b, a];
 
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
-}
+  const m = a.length;
+  const n = b.length;
+  // `halfLen` is the number of elements that must be on the left side
+  // of the partition (including the middle element when total length is odd).
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-/**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
- */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
+  let low = 0;
+  let high = m;
 
-  let i = left;
-  let j = right;
+  while (low <= high) {
+    // Number of elements from a put on the left side
+    const i = Math.floor((low + high) / 2);
+    // Number of elements from b put on the left side
+    const j = halfLen - i;
 
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
+    const aLeft  = i === 0 ? -Infinity : a[i - 1];
+    const aRight = i === m ?  Infinity : a[i];
 
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+    const bLeft  = j === 0 ? -Infinity : b[j - 1];
+    const bRight = j === n ?  Infinity : b[j];
+
+    // Partition is correct: all left elements ≤ all right elements
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // If total length is odd, the median is the max of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
+      }
+      // If even, it’s the mean of the two middle values
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements from a on the left: move left
+      high = i - 1;
+    } else {
+      // Too few elements from a on the left: move right
+      low = i + 1;
     }
   }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
+
+  // Should never reach here for valid input
+  throw new Error("Invalid input");
 }
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
-
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
-}
-
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
+console.log(findMedianSortedArrays(arr1, arr2)); // 8
+export function medianNaive(a: number[], b: number[]): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
     }
   }
-  return i - 1;
+  const mid = Math.floor(merged.length / 2);
+  return merged.length % 2
+    ? merged[mid]
+    : (merged[mid - 1] + merged[mid]) / 2;
 }
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
-];
-
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
