@@ -1,113 +1,53 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+/**
+ * Binary search for a sorted array of numbers.
+ *
+ * @param arr  The fully sorted array to search.
+ * @param target  The value you’re looking for.
+ * @param low  Index of the current lower bound (initially 0).
+ * @param high Index of the current upper bound (initially arr.length – 1).
+ * @returns The index of `target` if it exists; otherwise –1.
+ */
+function binarySearchRecursive(
+  arr: number[],
+  target: number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  // Base condition – no more elements to inspect
+  if (low > high) return -1;
 
-  constructor(value: T) {
-    this.value = value;
+  const mid = Math.floor((low + high) / 2);
+
+  if (arr[mid] === target) {
+    return mid;
+  } else if (arr[mid] > target) {
+    // Search left half
+    return binarySearchRecursive(arr, target, low, mid - 1);
+  } else {
+    // Search right half
+    return binarySearchRecursive(arr, target, mid + 1, high);
   }
 }
+const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+const idx = binarySearchRecursive(sorted, 7); // 3
+const notFound = binarySearchRecursive(sorted, 2); // -1
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
 
-  // ---- basic properties ----
-  get size() { return this._size; }
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
 
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
-
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
-
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
-  }
-
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
-    }
-  }
+  if (cmp === 0) return mid;
+  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
+  return binarySearch(arr, target, compare, mid + 1, high);
 }
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
-  }
-  return false;
-}
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+
+const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
