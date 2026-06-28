@@ -1,55 +1,66 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
+// A simple singly‑linked‑list node suitable for the intersection test
+export interface ListNode<T> {
   val: T;
-  next: ListNode<T> | null;
+  next?: ListNode<T>;
 }
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
-
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
-
-    if (slow === fast) {        // they met → cycle detected
-      return true;
+/**
+ * Returns the first node at which two singly‑linked lists intersect,
+ * or undefined if they never intersect.
+ */
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | undefined,
+  headB: ListNode<T> | undefined
+): ListNode<T> | undefined {
+  // Helper that walks a list and returns its length
+  const getLength = (node?: ListNode<T>) => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
     }
+    return len;
+  };
+
+  let lenA = getLength(headA);
+  let lenB = getLength(headB);
+
+  // Advance the longer list so both pointers are at the same distance
+  // from the end of the list.
+  let currA = headA;
+  let currB = headB;
+  while (lenA > lenB && currA) {
+    currA = currA.next;
+    lenA--;
+  }
+  while (lenB > lenA && currB) {
+    currB = currB.next;
+    lenB--;
   }
 
-  // fast ran out of nodes → no cycle
-  return false;
+  // Move forward together until either we find the intersection
+  // or both pointers hit the end (undefined).
+  while (currA !== currB) {
+    currA = currA?.next;
+    currB = currB?.next;
+  }
+
+  return currA; // May be undefined if no intersection
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
+// Build example lists that intersect:
 
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
-  }
-  return false;
-}
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
+//      A -> B -> C
+//      ^          |
+//      |          v
+//      D <- E
 
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
-  }
+const c: ListNode<number> = { val: 3 };
+const b: ListNode<number> = { val: 2, next: c };
+const a: ListNode<number> = { val: 1, next: b };
 
-  // No cycle
-  if (!fast || !fast.next) return null;
+const e: ListNode<number> = { val: 5, next: a };
+const d: ListNode<number> = { val: 4, next: e };
 
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
-}
+console.log(getIntersectionNode(a, d) === a);   // true
+console.log(getIntersectionNode(b, d) === a);   // true
+console.log(getIntersectionNode(c, d) === a);   // true
