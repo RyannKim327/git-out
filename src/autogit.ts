@@ -1,55 +1,86 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
-}
+// -------------------------------------------
+//  heapSort.ts
+// -------------------------------------------
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
+/**
+ * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
+ *
+ * @param   array      The array to sort, mutated in‑place.
+ * @param   cmp?       Optional comparator: (a, b) => number
+ *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
+ *
+ * @example
+ * const nums = [3, 1, 4, 1, 5, 9, 2];
+ * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
+ * heapSort(nums, (a, b) => b - a);  // descending order
+ */
+export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
+  const compare = cmp ?? defaultCompare;
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
+  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
+  const heapSize = array.length;
 
-    if (slow === fast) {        // they met → cycle detected
-      return true;
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    siftDown(i, heapSize);
+  }
+
+  /* ---------- 2. Repeatedly extract max (or min) ---------- */
+  for (let i = heapSize - 1; i > 0; i--) {
+    // Grab the root (largest element) and put it at the end
+    swap(array, 0, i);
+    // Restore heap property on the reduced heap
+    siftDown(0, i);
+  }
+
+  /* ---------- Helper scopes ---------- */
+  function siftDown(start: number, end: number): void {
+    let root = start;
+
+    while (true) {
+      const left = 2 * root + 1;
+      if (left >= end) break; // no children
+
+      const right = left + 1;
+      let candidate = left;
+
+      // Select the bigger child (or smaller if comparator flipped)
+      if (right < end && compare(array[right], array[left]) > 0) {
+        candidate = right;
+      }
+
+      // If root already holds the biggest, we're done
+      if (compare(array[root], array[candidate]) >= 0) break;
+
+      // Swap root with the chosen child and continue
+      swap(array, root, candidate);
+      root = candidate;
     }
   }
 
-  // fast ran out of nodes → no cycle
-  return false;
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
-
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
+  function swap(arr: T[], i: number, j: number): void {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
   }
-  return false;
 }
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
 
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
+/* ------------------------------------------- */
+/* Default comparator for `number`/`string` (ascending) */
+function defaultCompare<T>(a: T, b: T): number {
+  // If it's a number or behaves like a number
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
   }
-
-  // No cycle
-  if (!fast || !fast.next) return null;
-
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
+  // Fallback to lexical comparison for strings and others that stringify nicely
+  const sa = String(a);
+  const sb = String(b);
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
 }
+import { heapSort } from "./heapSort";
+
+const data = [8, 3, 5, 4, 7, 1, 2, 6];
+heapSort(data);                // ascending
+console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+
+heapSort(data, (a, b) => b - a); // descending
+console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
