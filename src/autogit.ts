@@ -1,44 +1,55 @@
-const arr1 = [1, 2, 3, 4];
-const arr2 = [3, 4, 5, 6];
+// Graph type: map from vertex id → array of neighbouring vertex ids
+type Graph = Record<string | number, Array<string | number>>;
+function dfsRecursive(
+  graph: Graph,
+  start: string | number,
+  visited = new Set<string | number>()
+): string[] {
+  // If the node has already been visited, stop here.
+  if (visited.has(start)) return [];
 
-const common = arr1.filter(v => arr2.includes(v));
-console.log(common); // [3, 4]
-function intersection<T>(a: T[], b: T[]): T[] {
-  return a.filter(v => b.includes(v));
-}
-function intersectionSet<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(v => setB.has(v));
-}
-function intersectionMultiset<T>(a: T[], b: T[]): T[] {
-  const freq = new Map<T, number>();
-  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
+  visited.add(start);           // Mark the node
+  const result = [start];        // The order in which we visit
 
-  const result: T[] = [];
-  for (const val of a) {
-    const count = freq.get(val);
-    if (count && count > 0) {
-      result.push(val);
-      freq.set(val, count - 1);
+  // Recurse on all neighbours that haven't been visited yet
+  for (const neighbour of graph[start] || []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
+
   return result;
 }
-interface User { id: number; name: string; }
+function dfsIterative(graph: Graph, start: string | number): string[] {
+  const visited = new Set<string | number>();
+  const stack: (string | number)[] = [start];
+  const order: string[] = [];
 
-const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
-const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
+  while (stack.length) {
+    const v = stack.pop()!;           // Grab the vertex on top of the stack
+    if (visited.has(v)) continue;     // Skip if we already processed it
+    visited.add(v);                    // Mark as visited
+    order.push(v);                     // Record visitation order
 
-const intersectionById = usersA.filter(uA =>
-  usersB.some(uB => uB.id === uA.id)
-);
-console.log(intersectionById); // [{id:2,name:'Bob'}]
-const intersection = <T>(a: T[], b: T[]): T[] =>
-  a.filter(v => new Set(b).has(v));
-const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  const result = new Set<T>();
-  for (const v of setA) if (setB.has(v)) result.add(v);
-  return result;
+    // Push neighbours onto the stack (in reverse order if you want a specific order)
+    const neighbours = graph[v] || [];
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      if (!visited.has(neighbours[i])) {
+        stack.push(neighbours[i]);
+      }
+    }
+  }
+
+  return order;
+}
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: [],
+  f: []
 };
+
+console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
+console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
