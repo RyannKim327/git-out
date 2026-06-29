@@ -1,37 +1,41 @@
-function secondLargestSort(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  const sorted = [...arr].sort((a, b) => b - a); // Descending
-  return sorted[1];
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
+  }
+  return (base * height) / 2;
 }
-function secondLargestSinglePass(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
 
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const num of arr) {
-    if (num > max) {
-      second = max;
-      max = num;
-    } else if (num > second && num !== max) {
-      second = num;
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
     }
   }
 
-  return second === -Infinity ? undefined : second;
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
+  }
 }
-function secondLargestSet(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)];
-  if (unique.length < 2) return undefined;
 
-  const sorted = unique.sort((a, b) => b - a);
-  return sorted[1];
-}
-function secondLargestMathMax(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  const max = Math.max(...arr);
-  const maxFiltered = arr.filter(num => num !== max);
-  return Math.max(...maxFiltered);
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
+  }
+  return base * height / 2;
 }
