@@ -1,52 +1,38 @@
-// Basic definition of a binary‑tree node
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-}
+const numbers = [1, 2, 3, 4, 5];
 
-/**
- * Returns the diameter (in edges) of a binary tree.
- */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;          // keeps the best we have seen
+// remove the value 3
+const withoutThree = numbers.filter(n => n !== 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+type Person = { id: number; name: string };
+const list: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
+];
 
-  /** Depth‑first search that returns the height of sub‑tree. */
-  function dfs(node: TreeNode | null): number {
-    if (node === null) return 0;          // leaf contributes 0 height
+const target = list[1]; // the Bob object reference
+const withoutBob = list.filter(person => person !== target);
+const letters = ['a', 'b', 'c', 'd', 'e'];
+const idx = 2; // we want to drop 'c'
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+letters.splice(idx, 1); // remove 1 element at position idx
+console.log(letters); // ['a', 'b', 'd', 'e']
+const data = [10, 20, 30, 20, 40];
+const removeVal = 20;
 
-    // Path that goes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) {
-      maxDiameter = localDiameter;
-    }
-
-    // Height to propagate upward
-    return Math.max(leftHeight, rightHeight) + 1;
+for (let i = data.length - 1; i >= 0; i--) {
+  if (data[i] === removeVal) {
+    data.splice(i, 1);
   }
-
-  dfs(root);
-  return maxDiameter;         // already in edges
 }
-
-/* ---- example usage ------------------------------------------------------- */
-
-// simple helper to build a tree
-function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
-  return { val, left: l ?? null, right: r ?? null };
+console.log(data); // [10, 30, 40]
+/**
+ * Removes the first occurrence of `value` from `arr`.
+ */
+function removeFirst<T>(arr: T[], value: T): T[] {
+  const idx = arr.indexOf(value);
+  if (idx === -1) return arr;          // nothing found
+  const copy = [...arr];               // keep original intact
+  copy.splice(idx, 1);
+  return copy;
 }
-
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5     
-const root = node(1,
-  node(2, node(4), node(5)),
-  node(3)
-);
-
-console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
