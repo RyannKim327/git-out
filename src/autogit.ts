@@ -1,135 +1,103 @@
-/**
- * A binary‑heap based priority queue.
- *
- * @template T - The type of the heap elements.
- */
-export class PriorityQueue<T> {
-  /** Array representation of the heap.  Root is at index 0. */
-  private heap: T[] = [];
+// A generic state; `data` can be any shape you need.
+export interface BeamState<T> {
+  readonly data: T;      // the actual thing (token list, node id, etc.)
+  readonly score: number; // higher is better
+}
 
-  /**
-   * Comparator that decides heap order.
-   *
-   *   - If it returns a negative number → a precedes b.
-   *   - If 0 → equal.
-   *   - If positive → a follows b.
-   *
-   * You can pass your own comparator; otherwise a simple
-   * numerical ascending order is used.
-   */
-  constructor(
-    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
-  ) {}
+// A function that, from one state, produces zero or more candidate states.
+export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
 
-  /* ----- Query helpers ----- */
+// A function that assigns a numeric score to a state.
+export type Scorer<T> = (state: BeamState<T>) => number;
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private readonly key: (x: T) => number) {}
 
-  /** Number of elements in the queue. */
-  size(): number {
-    return this.heap.length;
+  private swap(i: number, j: number) {
+    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
   }
 
-  /** Return the element with highest priority without removing it. */
-  peek(): T | null {
-    return this.heap.length ? this.heap[0] : null;
+  push(item: T) {
+    this.data.push(item);
+    this.siftUp(this.data.length - 1);
   }
 
-  /* ----- Manipulation helpers ----- */
-
-  /** Insert a new element */
-  push(item: T): void {
-    this.heap.push(item);
-    this.siftUp(this.heap.length - 1);
-  }
-
-  /**
-   * Remove and return the element with highest priority.
-   * Returns `null` if the queue is empty.
-   */
-  pop(): T | null {
-    const n = this.heap.length;
-    if (n === 0) return null;
-    if (n === 1) return this.heap.pop() ?? null;
-
-    const top = this.heap[0];
-    // Move last element to the root and shrink array.
-    this.heap[0] = this.heap.pop() as T;
+  pop(): T | undefined {
+    const top = this.data[0];
+    const last = this.data.pop();
+    if (!this.data.length || !last) return top;
+    this.data[0] = last;
     this.siftDown(0);
     return top;
   }
 
-  /* ----- Internal re‑heapify ----- */
+  size() { return this.data.length; }
 
-  /** Push the element at index `i` up until heap property holds. */
-  private siftUp(i: number): void {
-    const { heap, compareFn } = this;
-    let childIndex = i;
-
-    while (childIndex > 0) {
-      const parentIndex = (childIndex - 1) >> 1;
-      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
-
-      // Swap child & parent
-      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
-      childIndex = parentIndex;
+  private siftUp(i: number) {
+    let idx = i;
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
+      this.swap(idx, parent);
+      idx = parent;
     }
   }
-
-  /** Move the element at index `i` down until heap property holds. */
-  private siftDown(i: number): void {
-    const { heap, compareFn } = this;
-    const n = heap.length;
-    let parentIndex = i;
-
+  private siftDown(i: number) {
+    let idx = i;
+    const n = this.data.length;
     while (true) {
-      const leftIdx = (parentIndex << 1) + 1;
-      const rightIdx = leftIdx + 1;
-
-      let smallest = parentIndex;
-
-      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
-        smallest = leftIdx;
-      }
-      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
-        smallest = rightIdx;
-      }
-
-      if (smallest === parentIndex) break;
-
-      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
-      parentIndex = smallest;
+      const l = idx * 2 + 1;
+      const r = l + 1;
+      let smallest = idx;
+      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
+      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
     }
   }
 
-  /* ----- Utility ----- */
+  // For debugging / inspection
+  toArray() { return [...this.data]; }
+}
+export class BeamSearch<T> {
+  constructor(
+    private readonly expander: Expander<T>,
+    private readonly scorer: Scorer<T>,
+    private readonly beamWidth: number
+  ) {}
 
   /**
-   * Re‑build the heap from the current array contents.  
-   * Useful after bulk insertion or when the comparator changes.
+   * Runs beam search for a fixed number of iterations.
+   * @param startState the initial state (usually empty output)
+   * @param maxDepth how many expansion steps to take
+   * @returns an array containing the best states after the last depth
    */
-  heapify(): void {
-    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
-      this.siftDown(i);
+  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
+    let current: BeamState<T>[] = [startState];
+
+    for (let depth = 0; depth < maxDepth; depth++) {
+      const candidates: BeamState<T>[] = [];
+      for (const state of current) {
+        const nextStates = this.expander(state);
+        // We expect each expander to already return scored states,
+        // but if they don't we can score them here:
+        for (const ns of nextStates) {
+          const s = this.scorer(ns);
+          candidates.push({ ...ns, score: s });
+        }
+      }
+      if (candidates.length === 0) break; // nothing to expand
+      // Keep top `beamWidth` candidates
+      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
+      for (const cand of candidates) heap.push(cand);
+      current = [];
+      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
+        current.push(heap.pop()!); // `!` is safe because we checked size
+      }
     }
+
+    // Sort by score descending before returning just in case
+    return current.sort((a, b) => b.score - a.score);
   }
 }
-// Simple min‑heap of numbers (default comparator does that)
-const minQ = new PriorityQueue<number>();
-
-minQ.push(5);   // 5
-minQ.push(3);   // 3,5
-minQ.push(8);   // 3,5,8
-minQ.push(1);   // 1,3,8,5
-
-console.log(minQ.pop()); // 1
-console.log(minQ.pop()); // 3
-console.log(minQ.peek()); // 5
-console.log(minQ.size()); // 2
-interface Task { id: string; priority: number; }
-
-const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
-
-maxQ.push({ id: "A", priority: 10 });
-maxQ.push({ id: "B", priority: 20 });
-maxQ.push({ id: "C", priority: 5 });
-
-console.log(maxQ.pop()); // B (20)
