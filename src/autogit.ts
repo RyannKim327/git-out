@@ -1,55 +1,70 @@
-// Graph type: map from vertex id → array of neighbouring vertex ids
-type Graph = Record<string | number, Array<string | number>>;
-function dfsRecursive(
-  graph: Graph,
-  start: string | number,
-  visited = new Set<string | number>()
-): string[] {
-  // If the node has already been visited, stop here.
-  if (visited.has(start)) return [];
+/**
+ * Builds the bad‑character shift table for a given pattern.
+ *
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
+ */
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
 
-  visited.add(start);           // Mark the node
-  const result = [start];        // The order in which we visit
+  // Default shift: length of the pattern
+  table.fill(m);
 
-  // Recurse on all neighbours that haven't been visited yet
-  for (const neighbour of graph[start] || []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
+  }
+  return table;
+}
+
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
+
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
+
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
     }
+
+    if (j < 0) {          // full match
+      result.push(i);
+    }
+
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
   }
 
   return result;
 }
-function dfsIterative(graph: Graph, start: string | number): string[] {
-  const visited = new Set<string | number>();
-  const stack: (string | number)[] = [start];
-  const order: string[] = [];
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
 
-  while (stack.length) {
-    const v = stack.pop()!;           // Grab the vertex on top of the stack
-    if (visited.has(v)) continue;     // Skip if we already processed it
-    visited.add(v);                    // Mark as visited
-    order.push(v);                     // Record visitation order
+console.log(bmhSearch(haystack, needle)); // → [11]
 
-    // Push neighbours onto the stack (in reverse order if you want a specific order)
-    const neighbours = graph[v] || [];
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      if (!visited.has(neighbours[i])) {
-        stack.push(neighbours[i]);
-      }
-    }
-  }
-
-  return order;
-}
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: [],
-  f: []
-};
-
-console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
-console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
