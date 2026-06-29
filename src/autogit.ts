@@ -1,65 +1,65 @@
-type Node<T> = { val: T; next: Node<T> | null };
+/**
+ * Computes the LPS array for a given pattern.
+ * For each index i, lps[i] is the length of the longest
+ * proper prefix that is also a suffix for pattern[0..i].
+ */
+function buildLps(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;          // length of previous longest prefix suffix
+    let i = 1;
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
-
-  return true;
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // try the previous longest prefix suffix
+                length = lps[length - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
 }
+/**
+ * Returns the starting indices of all occurrences of `pattern`
+ * inside `text`. If the pattern is empty, an empty array is returned.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
 
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev!;
-}
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
+    const lps = buildLps(pattern);
+    const result: number[] = [];
 
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++; j++;
+            if (j === pattern.length) {
+                // match found; record start index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else {
+            if (j !== 0) {
+                // fall back in pattern
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+    }
+    return result;
 }
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
+
+console.log(kmpSearch(haystack, needle));
+// → [10]
