@@ -1,43 +1,62 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+/**
+ * A generic binary search.
+ *
+ * @param arr      Sorted array to search.
+ * @param target   Value to locate.
+ * @param compare  Optional comparator: (a, b) → negative, 0, positive.
+ *                 If omitted, the default `<`/`>` operators are used.
+ * @returns Index of `target` in `arr`, or `-1` if not found.
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  if (!arr.length) return -1;
+  const cmp = compare ?? defaultCompare<T>;
+  let low = 0;
+  let high = arr.length - 1;
 
-  const count = new Map<string, number>();
-
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
+  while (low <= high) {
+    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
+    const comp = cmp(arr[mid], target);
+    if (comp === 0) return mid;
+    if (comp < 0) low = mid + 1;           // target is greater
+    else high = mid - 1;                  // target is smaller
   }
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
-  }
+  return -1;
+}
 
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
+/** Recursive version – identical semantics. */
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (!arr.length || low > high) return -1;
+  const cmp = compare ?? defaultCompare<T>;
 
-  const freq = new Int16Array(256);
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], target);
 
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
-  }
+  if (comp === 0) return mid;
+  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
+  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+}
 
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+/** Fallback when you didn’t provide a comparator. */
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+const nums = [3, 7, 12, 18, 22, 33, 42];
+console.log(binarySearch(nums, 18));           // 3
+console.log(binarySearch(nums, 5));            // -1
+
+// To search objects, supply a comparator:
+const words = ['apple', 'banana', 'cherry'];
+console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
