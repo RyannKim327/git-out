@@ -1,38 +1,58 @@
-const numbers = [1, 2, 3, 4, 5];
-
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
-];
-
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
-
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
-
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
-  }
-}
-console.log(data); // [10, 30, 40]
 /**
- * Removes the first occurrence of `value` from `arr`.
+ * Radix sort for 32‑bit signed integers (Int32Array safety).
+ * Works for positives, negatives and zero.
  */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
+export function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
+
+  // Separate positives and negatives.
+  const positives: number[] = [];
+  const negatives: number[] = []; // store as positive magnitudes
+
+  for (const n of nums) {
+    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
+    else positives.push(n);
+  }
+
+  // Sort each side independently.
+  const sortedPos = radixSortNonNegative(positives);
+  const sortedNeg = radixSortNonNegative(negatives).reverse();
+
+  // Concatenate negatives (reversed) + positives
+  return [...sortedNeg.map(n => -n), ...sortedPos];
 }
+
+/**
+ * Helper that assumes every element is a non‑negative integer.
+ */
+function radixSortNonNegative(arr: number[]): number[] {
+  if (arr.length <= 1) return arr.slice();
+
+  const maxVal = Math.max(...arr);
+  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
+
+  let output = arr.slice(); // working copy
+  let pow10 = 1;            // 10^digitIndex
+
+  for (let d = 0; d < lenDigits; d++) {
+    // 10 buckets for the decimal digits 0‑9
+    const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+    for (const val of output) {
+      const digit = Math.floor((val / pow10) % 10);
+      buckets[digit].push(val);
+    }
+
+    // Rebuild output from buckets
+    output = [].concat(...buckets);
+
+    pow10 *= 10;           // move to next digit
+  }
+
+  return output;
+}
+import { radixSort } from "./radixSort";
+
+const data = [170, -45, 75, 90, -802, 24, 2, 66];
+console.log(radixSort(data)); 
+// → [-802, -45, 2, 24, 66, 75, 90, 170]
