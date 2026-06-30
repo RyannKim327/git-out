@@ -1,62 +1,94 @@
+if currentDepth > depthLimit → stop exploring that branch
 /**
- * A generic binary search.
+ * Generic depth‑limited search (iterative DFS).
  *
- * @param arr      Sorted array to search.
- * @param target   Value to locate.
- * @param compare  Optional comparator: (a, b) → negative, 0, positive.
- *                 If omitted, the default `<`/`>` operators are used.
- * @returns Index of `target` in `arr`, or `-1` if not found.
+ * @param root        The starting node.
+ * @param depthLimit  How far we are allowed to go from the root.
+ * @param getNeighbors
+ *        A callback that returns the list of adjacent nodes for a given node.
+ * @param visitedSet  Optional set used to avoid revisiting nodes.
+ *
+ * @returns  Array of nodes visited in order (pre‑order DFS order).
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  if (!arr.length) return -1;
-  const cmp = compare ?? defaultCompare<T>;
-  let low = 0;
-  let high = arr.length - 1;
+export function depthLimitedSearch<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  visitedSet?: Set<T>
+): T[] {
+  const visited: Set<T> = visitedSet ?? new Set<T>();
+  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
+  const result: T[] = [];
 
-  while (low <= high) {
-    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
-    const comp = cmp(arr[mid], target);
-    if (comp === 0) return mid;
-    if (comp < 0) low = mid + 1;           // target is greater
-    else high = mid - 1;                  // target is smaller
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!; // non‑empty because of the loop
+
+    // Skip if we've already seen the node
+    if (visited.has(node)) continue;
+
+    visited.add(node);
+    result.push(node);          // we “visit” it, or you can process here
+
+    // Stop expanding when we hit the depth limit
+    if (depth >= depthLimit) continue;
+
+    // Push neighbors onto stack.  We push in reverse order if you want to
+    // preserve the same order as a recursive DFS.
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
   }
 
-  return -1;
+  return result;
+}
+// A tiny undirected graph:
+const graph = new Map<string, string[]>([
+  ['A', ['B', 'C', 'D']],
+  ['B', ['A', 'E', 'F']],
+  ['C', ['A', 'G']],
+  ['D', ['A', 'H']],
+  ['E', ['B']],
+  ['F', ['B']],
+  ['G', ['C']],
+  ['H', ['D']],
+]);
+
+function neighbors(node: string): string[] {
+  return graph.get(node) ?? [];
 }
 
-/** Recursive version – identical semantics. */
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
+// Find all nodes reachable from 'A' within depth 2
+const visited = depthLimitedSearch('A', 2, neighbors);
+console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
+function depthLimitedSearchWithTarget<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
   target: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (!arr.length || low > high) return -1;
-  const cmp = compare ?? defaultCompare<T>;
+  visitedSet?: Set<T>
+): T | undefined {
+  const visited = visitedSet ?? new Set<T>();
+  const stack = [{ node: root, depth: 0 }];
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], target);
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (visited.has(node)) continue;
+    visited.add(node);
 
-  if (comp === 0) return mid;
-  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
-  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+    if (node === target) return node;
+
+    if (depth >= depthLimit) continue;
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return undefined; // not found
 }
-
-/** Fallback when you didn’t provide a comparator. */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [3, 7, 12, 18, 22, 33, 42];
-console.log(binarySearch(nums, 18));           // 3
-console.log(binarySearch(nums, 5));            // -1
-
-// To search objects, supply a comparator:
-const words = ['apple', 'banana', 'cherry'];
-console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
