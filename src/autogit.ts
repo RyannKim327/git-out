@@ -1,77 +1,145 @@
 /**
- * Median of two sorted arrays.
- *
- * The algorithm keeps a binary search on the smaller array.  
- * At each step we decide how many elements from `a` belong on the left side of the
- * partition.  The counterpart from `b` is computed so that the left side contains
- * exactly half (or half‑plus‑one for odd total length) of the elements.
- *
- * Edge cases:
- *   * one of the arrays may be empty
- *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Ensure `a` is the shorter array to keep the binary search limits small.
-  let a = nums1;
-  let b = nums2;
-  if (a.length > b.length) [a, b] = [b, a];
+type Graph = Map<string, string[]>;
 
-  const m = a.length;
-  const n = b.length;
-  // `halfLen` is the number of elements that must be on the left side
-  // of the partition (including the middle element when total length is odd).
-  const halfLen = Math.floor((m + n + 1) / 2);
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
 
-  let low = 0;
-  let high = m;
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
 
-  while (low <= high) {
-    // Number of elements from a put on the left side
-    const i = Math.floor((low + high) / 2);
-    // Number of elements from b put on the left side
-    const j = halfLen - i;
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
 
-    const aLeft  = i === 0 ? -Infinity : a[i - 1];
-    const aRight = i === m ?  Infinity : a[i];
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
 
-    const bLeft  = j === 0 ? -Infinity : b[j - 1];
-    const bRight = j === n ?  Infinity : b[j];
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
 
-    // Partition is correct: all left elements ≤ all right elements
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // If total length is odd, the median is the max of the left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
+
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
+
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
+
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
       }
-      // If even, it’s the mean of the two middle values
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      // Too many elements from a on the left: move left
-      high = i - 1;
-    } else {
-      // Too few elements from a on the left: move right
-      low = i + 1;
+    }
+    return null;
+  }
+
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
+    }
+
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
     }
   }
 
-  // Should never reach here for valid input
-  throw new Error("Invalid input");
+  // No overlap – disconnected graph
+  return null;
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
-console.log(findMedianSortedArrays(arr1, arr2)); // 8
-export function medianNaive(a: number[], b: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-  while (i < a.length || j < b.length) {
-    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
+
+/**
+ * Reconstructs the full path from start → meeting → goal.
+ */
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
+
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
   }
-  const mid = Math.floor(merged.length / 2);
-  return merged.length % 2
-    ? merged[mid]
-    : (merged[mid - 1] + merged[mid]) / 2;
+
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
+  }
+
+  return path;
 }
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
+
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
