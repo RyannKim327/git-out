@@ -1,31 +1,45 @@
 /**
- * Selection sort – O(n²) time, O(1) additional space.
+ * Returns an object with the maximum sum and the start/end indices
+ * of the sub‑array that produces that sum.
  *
- * Works on any array of items that can be compared with < and >.
+ * @param nums - array of numbers
+ * @returns { maxSum, start, end }
  */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+export function maxSumSubarray(nums: number[]) {
+  // In case the input is empty we can return 0 / -1/-1
+  if (nums.length === 0) {
+    return { maxSum: 0, start: -1, end: -1 };
+  }
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
+  // These will record the best sub‑array boundaries
+  let bestStart = 0;
+  let bestEnd = 0;
+  // Temporary positions
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at i
+    if (currentSum + nums[i] < nums[i]) {
+      currentSum = nums[i];
+      tempStart = i;
+    } else {
+      currentSum += nums[i];
     }
-    return arr;
+
+    // Update best if we have a better sum
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
-}
+const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
+const { maxSum, start, end } = maxSumSubarray(arr);
+console.log(maxSum); // 43
+console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
