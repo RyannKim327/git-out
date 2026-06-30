@@ -1,33 +1,41 @@
-function decimalToBinary(n: number): string {
-  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
-  // It automatically floors the number (works for ints, truncates decimals).
-  return Math.floor(n).toString(2);
-}
-console.log(decimalToBinary(10));   // → '1010'
-console.log(decimalToBinary(255));  // → '11111111'
-function binaryPadded(n: number, bits = 8): string {
-  return decimalToBinary(n).padStart(bits, '0');
-}
-
-console.log(binaryPadded(10, 8));   // → '00001010'
-function decimalToBinaryManual(n: number): string {
-  if (n === 0) return '0';
-  let result = '';
-  let value = Math.floor(n);
-
-  while (value > 0) {
-    result = (value % 2) + result; // prepend remainder
-    value = Math.floor(value / 2);
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
   }
-  return result;
-}
-function bigIntToBinary(n: bigint): string {
-  return n.toString(2);
+  return (base * height) / 2;
 }
 
-console.log(bigIntToBinary(123456789012345678901234567890n));
-// → '1110001101100110100100001100100000111010011010110111111001101'
-function decimalToBitsArray(n: number): number[] {
-  const binary = decimalToBinary(n);
-  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
+    }
+  }
+
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
+  }
+}
+
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
+  }
+  return base * height / 2;
 }
