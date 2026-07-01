@@ -1,40 +1,51 @@
 /**
- * Interpolation search returns the index of `target` in `arr`,
- * or –1 if the target is not present.
- *
- * @param arr   – sorted array of numbers (must be monotonic increasing)
- * @param target – key we’re trying to locate
- * @returns the array index of target or -1
+ * Merge two sorted arrays into one sorted array.
+ * The comparator decides the ordering – by default it uses the `<` operator.
  */
-export function interpolationSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
+function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
+  const result: T[] = [];
+  let i = 0; // index into left
+  let j = 0; // index into right
 
-    let low = 0;
-    let high = arr.length - 1;
+  // Grab the compare function, or fall back to simple < comparison
+  const comp = compare ?? ((a: T, b: T) => a < b);
 
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Avoid division by zero when the sub‑array contains equal numbers
-        if (arr[high] === arr[low]) {
-            return arr[low] === target ? low : -1;
-        }
-
-        // Estimate the likely position of `target` within [low, high]
-        const pos = low + Math.floor(
-            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
-        );
-
-        const val = arr[pos];
-
-        if (val === target) return pos;
-        if (val < target) low = pos + 1;
-        else high = pos - 1;
+  while (i < left.length && j < right.length) {
+    // If left[i] comes before right[j] (or equal), push it
+    if (comp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
+  }
 
-    return -1; // not found
+  // One of the halves may still have leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
-import { interpolationSearch } from "./interpolationSearch";
 
-const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+/**
+ * Recursive merge sort.  
+ * @param array The array to sort.
+ * @param compare Optional comparator that returns true if a < b.
+ */
+export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
+  // Stop recursion when array has 0 or 1 item
+  if (array.length <= 1) return array.slice(); // return a shallow copy
 
-console.log(interpolationSearch(data, 42));   // → 4
-console.log(interpolationSearch(data, 100));  // → -1
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
+
+  return merge(left, right, compare);
+}
+const numbers = [5, 3, 8, 1, 2, 9];
+const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
+
+const people = [
+  { name: "Alice", age: 32 },
+  { name: "Bob", age: 25 },
+  { name: "Eve", age: 29 }
+];
+
+// Sort by age
+const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
