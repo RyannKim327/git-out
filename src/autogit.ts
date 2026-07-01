@@ -1,48 +1,113 @@
-/**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
- */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+// 1️⃣  Node definition – the “building block” of the list
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
+  constructor(value: T) {
+    this.value = value;
+  }
+}
+
+// 2️⃣  The linked list itself
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
+
+  // ---- basic properties ----
+  get size() { return this._size; }
+
+  // ---- insertions ----
+  push(value: T): void {                  // add to the end
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
     } else {
-      count--;
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._size++;
+  }
+
+  unshift(value: T): void {                // add to the front
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._size++;
+  }
+
+  // ---- removals ----
+  pop(): T | null {                       // remove from the end
+    if (!this.head) return null;
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
+    }
+
+    if (prev) prev.next = null;           // cut off the tail
+    else this.head = this.tail = null;    // list became empty
+
+    this._size--;
+    return current.value;
+  }
+
+  shift(): T | null {                     // remove from the front
+    if (!this.head) return null;
+    const removed = this.head;
+    this.head = removed.next;
+    if (!this.head) this.tail = null;     // list became empty
+    this._size--;
+    return removed.value;
+  }
+
+  // ---- traversal helpers ----
+  toArray(): T[] {
+    const arr: T[] = [];
+    let current = this.head;
+    while (current) {
+      arr.push(current.value);
+      current = current.next;
+    }
+    return arr;
+  }
+
+  forEach(fn: (value: T, index: number) => void): void {
+    let current = this.head;
+    let i = 0;
+    while (current) {
+      fn(current.value, i);
+      current = current.next;
+      i++;
     }
   }
-
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
-
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
+const list = new LinkedList<number>();
+list.push(1);                // [1]
+list.push(2);                // [1, 2]
+list.unshift(0);             // [0, 1, 2]
+console.log(list.toArray()); // [0, 1, 2]
+console.log(list.pop());     // 2
+console.log(list.shift());   // 0
+console.log(list.toArray()); // [1]
+insertAfter(target: T, newVal: T): boolean {
+  let current = this.head;
+  while (current) {
+    if (current.value === target) {
+      const node = new ListNode(newVal);
+      node.next = current.next;
+      current.next = node;
+      if (current === this.tail) this.tail = node;
+      this._size++;
+      return true;
+    }
+    current = current.next;
   }
-  return undefined;
+  return false;
 }
