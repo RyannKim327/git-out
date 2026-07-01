@@ -1,135 +1,87 @@
-/**
- * A binary‑heap based priority queue.
- *
- * @template T - The type of the heap elements.
- */
-export class PriorityQueue<T> {
-  /** Array representation of the heap.  Root is at index 0. */
-  private heap: T[] = [];
+// simple node definition – feel free to extend it later (value, etc.)
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
 
-  /**
-   * Comparator that decides heap order.
-   *
-   *   - If it returns a negative number → a precedes b.
-   *   - If 0 → equal.
-   *   - If positive → a follows b.
-   *
-   * You can pass your own comparator; otherwise a simple
-   * numerical ascending order is used.
-   */
-  constructor(
-    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
-  ) {}
-
-  /* ----- Query helpers ----- */
-
-  /** Number of elements in the queue. */
-  size(): number {
-    return this.heap.length;
-  }
-
-  /** Return the element with highest priority without removing it. */
-  peek(): T | null {
-    return this.heap.length ? this.heap[0] : null;
-  }
-
-  /* ----- Manipulation helpers ----- */
-
-  /** Insert a new element */
-  push(item: T): void {
-    this.heap.push(item);
-    this.siftUp(this.heap.length - 1);
-  }
-
-  /**
-   * Remove and return the element with highest priority.
-   * Returns `null` if the queue is empty.
-   */
-  pop(): T | null {
-    const n = this.heap.length;
-    if (n === 0) return null;
-    if (n === 1) return this.heap.pop() ?? null;
-
-    const top = this.heap[0];
-    // Move last element to the root and shrink array.
-    this.heap[0] = this.heap.pop() as T;
-    this.siftDown(0);
-    return top;
-  }
-
-  /* ----- Internal re‑heapify ----- */
-
-  /** Push the element at index `i` up until heap property holds. */
-  private siftUp(i: number): void {
-    const { heap, compareFn } = this;
-    let childIndex = i;
-
-    while (childIndex > 0) {
-      const parentIndex = (childIndex - 1) >> 1;
-      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
-
-      // Swap child & parent
-      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
-      childIndex = parentIndex;
-    }
-  }
-
-  /** Move the element at index `i` down until heap property holds. */
-  private siftDown(i: number): void {
-    const { heap, compareFn } = this;
-    const n = heap.length;
-    let parentIndex = i;
-
-    while (true) {
-      const leftIdx = (parentIndex << 1) + 1;
-      const rightIdx = leftIdx + 1;
-
-      let smallest = parentIndex;
-
-      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
-        smallest = leftIdx;
-      }
-      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
-        smallest = rightIdx;
-      }
-
-      if (smallest === parentIndex) break;
-
-      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
-      parentIndex = smallest;
-    }
-  }
-
-  /* ----- Utility ----- */
-
-  /**
-   * Re‑build the heap from the current array contents.  
-   * Useful after bulk insertion or when the comparator changes.
-   */
-  heapify(): void {
-    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
-      this.siftDown(i);
-    }
-  }
+  constructor(public readonly val?: any) {}
 }
-// Simple min‑heap of numbers (default comparator does that)
-const minQ = new PriorityQueue<number>();
+interface TreeNode {
+  val?: any;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;          // empty subtree → no leaf
 
-minQ.push(5);   // 5
-minQ.push(3);   // 3,5
-minQ.push(8);   // 3,5,8
-minQ.push(1);   // 1,3,8,5
+  // If this node has no children → it's a leaf.
+  if (node.left === null && node.right === null) {
+    return 1;
+  }
 
-console.log(minQ.pop()); // 1
-console.log(minQ.pop()); // 3
-console.log(minQ.peek()); // 5
-console.log(minQ.size()); // 2
-interface Task { id: string; priority: number; }
+  // Otherwise sum the children’s counts
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+function countLeavesIterative(root: TreeNode | null): number {
+  if (root === null) return 0;
 
-const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
+  let leafCount = 0;
+  const stack: Array<TreeNode> = [root];
 
-maxQ.push({ id: "A", priority: 10 });
-maxQ.push({ id: "B", priority: 20 });
-maxQ.push({ id: "C", priority: 5 });
+  while (stack.length) {
+    const node = stack.pop() as TreeNode; // `as` because array never empty
 
-console.log(maxQ.pop()); // B (20)
+    // Check for leaf
+    if (node.left === null && node.right === null) {
+      leafCount++;
+    } else {
+      // push children if they exist
+      if (node.right !== null) stack.push(node.right);
+      if (node.left !== null) stack.push(node.left);
+    }
+  }
+
+  return leafCount;
+}
+// ---------------------------------------------------------------------
+// 1. Node definition
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
+
+  constructor(public readonly val: any) {}
+}
+
+// ---------------------------------------------------------------------
+// 2. Recursive counter
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;
+  if (!node.left && !node.right) return 1;
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+
+// 3. Iterative counter
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let leaves = 0;
+  const stack: TreeNode[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) leaves++;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return leaves;
+}
+
+// ---------------------------------------------------------------------
+// 4. Demo
+
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4); // leaf
+root.left.right = new TreeNode(5); // leaf
+root.right.left = new TreeNode(6); // leaf
+
+console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
+console.log('Iterative leaves:', countLeavesIterative(root)); // 3
