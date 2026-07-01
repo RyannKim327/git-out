@@ -1,87 +1,53 @@
-// simple node definition – feel free to extend it later (value, etc.)
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+/**
+ * Binary search for a sorted array of numbers.
+ *
+ * @param arr  The fully sorted array to search.
+ * @param target  The value you’re looking for.
+ * @param low  Index of the current lower bound (initially 0).
+ * @param high Index of the current upper bound (initially arr.length – 1).
+ * @returns The index of `target` if it exists; otherwise –1.
+ */
+function binarySearchRecursive(
+  arr: number[],
+  target: number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  // Base condition – no more elements to inspect
+  if (low > high) return -1;
 
-  constructor(public readonly val?: any) {}
-}
-interface TreeNode {
-  val?: any;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;          // empty subtree → no leaf
+  const mid = Math.floor((low + high) / 2);
 
-  // If this node has no children → it's a leaf.
-  if (node.left === null && node.right === null) {
-    return 1;
+  if (arr[mid] === target) {
+    return mid;
+  } else if (arr[mid] > target) {
+    // Search left half
+    return binarySearchRecursive(arr, target, low, mid - 1);
+  } else {
+    // Search right half
+    return binarySearchRecursive(arr, target, mid + 1, high);
   }
-
-  // Otherwise sum the children’s counts
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
 }
-function countLeavesIterative(root: TreeNode | null): number {
-  if (root === null) return 0;
+const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-  let leafCount = 0;
-  const stack: Array<TreeNode> = [root];
+const idx = binarySearchRecursive(sorted, 7); // 3
+const notFound = binarySearchRecursive(sorted, 2); // -1
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
 
-  while (stack.length) {
-    const node = stack.pop() as TreeNode; // `as` because array never empty
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
 
-    // Check for leaf
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      // push children if they exist
-      if (node.right !== null) stack.push(node.right);
-      if (node.left !== null) stack.push(node.left);
-    }
-  }
-
-  return leafCount;
+  if (cmp === 0) return mid;
+  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
+  return binarySearch(arr, target, compare, mid + 1, high);
 }
-// ---------------------------------------------------------------------
-// 1. Node definition
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
 
-  constructor(public readonly val: any) {}
-}
-
-// ---------------------------------------------------------------------
-// 2. Recursive counter
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;
-  if (!node.left && !node.right) return 1;
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-
-// 3. Iterative counter
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let leaves = 0;
-  const stack: TreeNode[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) leaves++;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
-  return leaves;
-}
-
-// ---------------------------------------------------------------------
-// 4. Demo
-
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4); // leaf
-root.left.right = new TreeNode(5); // leaf
-root.right.left = new TreeNode(6); // leaf
-
-console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
-console.log('Iterative leaves:', countLeavesIterative(root)); // 3
+const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
