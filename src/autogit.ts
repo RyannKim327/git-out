@@ -1,93 +1,30 @@
-// A node can carry any payload (`T`) and point to its neighbours.
-export interface GraphNode<T> {
-  value: T;
-  neighbours: GraphNode<T>[];
-}
 /**
- * Recursively performs depth‑limited search.
+ * Return the factorial of a non‑negative integer.
  *
- * @param node        The node you are currently visiting.
- * @param goalTest    Returns true if the current node satisfies the goal.
- * @param limit       Number of edges left before the search terminates.
- * @param visited     A set of IDs or reference values that keeps track of visited nodes.
- *                    This protects against cycles that would otherwise cause infinite recursion.
- * @returns The first node that satisfies `goalTest`, or `null`.
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
  */
-export function depthLimitedSearchRec<T>(
-  node: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number,
-  visited: Set<GraphNode<T>> = new Set()
-): GraphNode<T> | null {
-  if (goalTest(node)) return node;
-  if (limit === 0) return null;          // reached the depth boundary
-
-  visited.add(node);
-
-  for (const neighbour of node.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
-      if (result !== null) return result;
-    }
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
   }
 
-  return null;   // nothing found within this branch
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
+
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
-interface StackItem<T> {
-  node: GraphNode<T>;
-  depthLeft: number;
+
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
+
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
 }
 
-/**
- * Iterative depth‑limited search.
- */
-export function depthLimitedSearchIter<T>(
-  start: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number
-): GraphNode<T> | null {
-  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
-  const visited: Set<GraphNode<T>> = new Set();
-
-  while (stack.length) {
-    const { node, depthLeft } = stack.pop()!;
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (goalTest(node)) return node;
-    if (depthLeft === 0) continue;           // depth boundary reached
-
-    // push neighbours onto the stack – LIFO order means the first neighbour
-    // will be processed last, mirroring the recursive DFS behaviour.
-    for (const neighbour of node.neighbours) {
-      if (!visited.has(neighbour)) {
-        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
-      }
-    }
-  }
-
-  return null;  // no goal reached within depth limit
-}
-// --- build a simple graph
-const a: GraphNode<string> = { value: "A", neighbours: [] };
-const b: GraphNode<string> = { value: "B", neighbours: [] };
-const c: GraphNode<string> = { value: "C", neighbours: [] };
-const d: GraphNode<string> = { value: "D", neighbours: [] };
-
-a.neighbours.push(b, c);   // A -> B, C
-b.neighbours.push(d);      // B -> D
-c.neighbours.push(d);      // C -> D
-
-// --- goal: find node with value “D”
-const isGoal = (node: GraphNode<string>) => node.value === "D";
-
-// Recursive
-const resultRec = depthLimitedSearchRec(a, isGoal, 3);
-console.log("Recursive result:", resultRec?.value ?? "none");
-
-// Iterative
-const resultIter = depthLimitedSearchIter(a, isGoal, 3);
-console.log("Iterative result:", resultIter?.value ?? "none");
-Recursive result: D
-Iterative result: D
+console.log(factorialBig(20n).toString()); // 2432902008176640000
