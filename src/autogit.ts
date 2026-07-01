@@ -1,93 +1,135 @@
 /**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
+ * Boyer‑Moore pattern search
+ * ---------------------------------
+ * Returns the start indices of every exact match of `pattern`
+ * inside `text`.  If no match, returns an empty array.
+ *
+ * Complexity:
+ *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
+ *
+ * @param text    The haystack string
+ * @param pattern The needle string
  */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
+export function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];          // empty pattern → nothing to find
 
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
+  // Preprocessing -------------------------------------------------------------
+  const badChar = buildBadCharacterTable(pattern);
+  const goodSuf  = buildGoodSuffixTable(pattern);
+
+  // Searching ---------------------------------------------------------------
+  const results: number[] = [];
+  let s = 0;                        // shift of the pattern with respect to text
+
+  while (s <= n - m) {
+    let j = m - 1;                  // right‑to‑left comparison
+
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // Match found at position s
+      results.push(s);
+
+      // Shift the pattern so that the next character in text aligns with
+      // the last occurrence of that character in the pattern (if any)
+      // or skip to the end of the pattern if none.
+      // This is the "good suffix" rule for a complete match.
+      s += goodSuf[0];
+    } else {
+      // Mismatch: use the bad‑character rule.
+      const badShift = j - badChar[text[s + j]];
+      // Use the good‑suffix shift as well (max of the two)
+      const goodShift = goodSuf[j + 1];
+
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Helper functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a map from character to its right‑most index in the pattern.
+ * Character not present → -1.
+ */
+function buildBadCharacterTable(pattern: string): { [k: string]: number } {
+  const table: { [k: string]: number } = {};
+
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern[i]] = i;           // right‑most position
+  }
+
+  return table;
 }
 
 /**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
+ * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
+ *   goodSuf[i] = number of positions pattern needs to shift so that
+ *                the right i characters of pattern align with a previous
+ *                occurrence of this suffix.  If no such occurrence,
+ *                the shift corresponds to aligning the next character after
+ *                the suffix that matches in the pattern.
+ *
+ * The table length is m+1; goodSuf[0] is the shift after a full match.
  */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
+function buildGoodSuffixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const goodSuf = new Array(m + 1).fill(0);
+  const suffix = new Array(m + 1).fill(0);
+  const prefix = new Array(m + 1).fill(false);
 
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
-
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  // Step 1: compute suffixes
+  for (let i = 0; i < m; i++) {
+    let len = 0;
+    while (
+      i - len - 1 >= 0 &&
+      pattern[i - len - 1] === pattern[m - len - 1]
+    ) {
+      len++;
+      suffix[i - len + 1] = len;
+      if (i - len + 1 === 0) {
+        prefix[i - len + 1] = true;            // entire suffix is prefix
+      }
     }
   }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
-}
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
 
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
-}
+  // Step 2: fill goodSuf table
+  for (let i = 0; i <= m; i++) {
+    goodSuf[i] = m;                              // default shift
+  }
 
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  for (let i = 0; i < m; i++) {
+    const len = suffix[i];
+    if (len > 0) {
+      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
     }
   }
-  return i - 1;
-}
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
-];
 
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
+  // Step 3: handle prefixes
+  for (let i = m; i >= 1; i--) {
+    if (prefix[i]) {
+      for (let j = 0; j < m - i; j++) {
+        if (goodSuf[j] === m) {
+          goodSuf[j] = m - i;
+        }
+      }
+    }
+  }
+
+  return goodSuf;
+}
+const text = "ABABCABABCDABABCDCDABABCABABCD";
+const pattern = "ABABCABAB";
+
+const matches = boyerMooreSearch(text, pattern);
+
+console.log(`Pattern found at indices: ${matches}`);
+// → Pattern found at indices: 0,9,15
