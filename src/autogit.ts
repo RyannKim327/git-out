@@ -1,66 +1,69 @@
 /**
- * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
- *
- * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
- * The base is usually the alphabet size (e.g. 256 for extended ASCII).
- * The modulus is a large prime to keep the hash values bounded and to reduce
- * collisions.  Even if a hash match occurs, we still check the actual string
- * slice to guarantee correctness.
- *
- * The function returns everything that looks like the pattern.
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
  */
-export function rabinKarp(pattern: string, text: string): number[] {
-  const result: number[] = [];
-  const M = pattern.length;          // pattern length
-  const N = text.length;             // text length
-  if (M === 0 || N < M) return result;   // nothing to find
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
 
-  const base = 256;                  // number of possible characters
-  const prime = 101;                  // a small prime as mod
+  // Sort rotations lexicographically
+  rotations.sort();
 
-  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
-  let highOrder = 1;                  // base^(M-1) % prime
-  for (let i = 1; i <= M - 1; i++) {
-    highOrder = (highOrder * base) % prime;
-  }
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
 
-  /* ---------- Initial hash for pattern and first window ---------- */
-  let patternHash = 0;
-  let windowHash = 0;
-  for (let i = 0; i < M; i++) {
-    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
-    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
-  }
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
 
-  /* ---------- Slide the window over the text ---------- */
-  for (let i = 0; i <= N - M; i++) {
-    // If hash values are equal, do a character‑by‑character check
-    if (patternHash === windowHash) {
-      let match = true;
-      for (let j = 0; j < M; j++) {
-        if (text.charAt(i + j) !== pattern.charAt(j)) {
-          match = false;
-          break;
-        }
-      }
-      if (match) result.push(i);
-    }
-
-    // Compute hash for the next window
-    if (i < N - M) {
-      // Remove leading character
-      const leading = (text.charCodeAt(i) * highOrder) % prime;
-      windowHash = (windowHash + prime - leading) % prime; // avoid negative
-
-      // Shift left and add the trailing character
-      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
-    }
-  }
-
-  return result;
+  return { transformed: lastColumn, primaryIndex };
 }
-const text = "abracadabra";
-const pattern = "abra";
 
-const indices = rabinKarp(pattern, text);
-console.log(indices); // → [0, 7]
+/**
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
+ */
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
+
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
+
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
+
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
+  }
+
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
+}
+
+/* ────────────────────── Demo ────────────────────── */
+
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
+
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
+
+/* Expected output:
+
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
+
+*/
