@@ -1,77 +1,93 @@
+// A node can carry any payload (`T`) and point to its neighbours.
+export interface GraphNode<T> {
+  value: T;
+  neighbours: GraphNode<T>[];
+}
 /**
- * Median of two sorted arrays.
+ * Recursively performs depth‑limited search.
  *
- * The algorithm keeps a binary search on the smaller array.  
- * At each step we decide how many elements from `a` belong on the left side of the
- * partition.  The counterpart from `b` is computed so that the left side contains
- * exactly half (or half‑plus‑one for odd total length) of the elements.
- *
- * Edge cases:
- *   * one of the arrays may be empty
- *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
+ * @param node        The node you are currently visiting.
+ * @param goalTest    Returns true if the current node satisfies the goal.
+ * @param limit       Number of edges left before the search terminates.
+ * @param visited     A set of IDs or reference values that keeps track of visited nodes.
+ *                    This protects against cycles that would otherwise cause infinite recursion.
+ * @returns The first node that satisfies `goalTest`, or `null`.
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Ensure `a` is the shorter array to keep the binary search limits small.
-  let a = nums1;
-  let b = nums2;
-  if (a.length > b.length) [a, b] = [b, a];
+export function depthLimitedSearchRec<T>(
+  node: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number,
+  visited: Set<GraphNode<T>> = new Set()
+): GraphNode<T> | null {
+  if (goalTest(node)) return node;
+  if (limit === 0) return null;          // reached the depth boundary
 
-  const m = a.length;
-  const n = b.length;
-  // `halfLen` is the number of elements that must be on the left side
-  // of the partition (including the middle element when total length is odd).
-  const halfLen = Math.floor((m + n + 1) / 2);
+  visited.add(node);
 
-  let low = 0;
-  let high = m;
+  for (const neighbour of node.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
+      if (result !== null) return result;
+    }
+  }
 
-  while (low <= high) {
-    // Number of elements from a put on the left side
-    const i = Math.floor((low + high) / 2);
-    // Number of elements from b put on the left side
-    const j = halfLen - i;
+  return null;   // nothing found within this branch
+}
+interface StackItem<T> {
+  node: GraphNode<T>;
+  depthLeft: number;
+}
 
-    const aLeft  = i === 0 ? -Infinity : a[i - 1];
-    const aRight = i === m ?  Infinity : a[i];
+/**
+ * Iterative depth‑limited search.
+ */
+export function depthLimitedSearchIter<T>(
+  start: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number
+): GraphNode<T> | null {
+  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
+  const visited: Set<GraphNode<T>> = new Set();
 
-    const bLeft  = j === 0 ? -Infinity : b[j - 1];
-    const bRight = j === n ?  Infinity : b[j];
+  while (stack.length) {
+    const { node, depthLeft } = stack.pop()!;
 
-    // Partition is correct: all left elements ≤ all right elements
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // If total length is odd, the median is the max of the left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (goalTest(node)) return node;
+    if (depthLeft === 0) continue;           // depth boundary reached
+
+    // push neighbours onto the stack – LIFO order means the first neighbour
+    // will be processed last, mirroring the recursive DFS behaviour.
+    for (const neighbour of node.neighbours) {
+      if (!visited.has(neighbour)) {
+        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
       }
-      // If even, it’s the mean of the two middle values
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      // Too many elements from a on the left: move left
-      high = i - 1;
-    } else {
-      // Too few elements from a on the left: move right
-      low = i + 1;
     }
   }
 
-  // Should never reach here for valid input
-  throw new Error("Invalid input");
+  return null;  // no goal reached within depth limit
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
-console.log(findMedianSortedArrays(arr1, arr2)); // 8
-export function medianNaive(a: number[], b: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-  while (i < a.length || j < b.length) {
-    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
-  }
-  const mid = Math.floor(merged.length / 2);
-  return merged.length % 2
-    ? merged[mid]
-    : (merged[mid - 1] + merged[mid]) / 2;
-}
+// --- build a simple graph
+const a: GraphNode<string> = { value: "A", neighbours: [] };
+const b: GraphNode<string> = { value: "B", neighbours: [] };
+const c: GraphNode<string> = { value: "C", neighbours: [] };
+const d: GraphNode<string> = { value: "D", neighbours: [] };
+
+a.neighbours.push(b, c);   // A -> B, C
+b.neighbours.push(d);      // B -> D
+c.neighbours.push(d);      // C -> D
+
+// --- goal: find node with value “D”
+const isGoal = (node: GraphNode<string>) => node.value === "D";
+
+// Recursive
+const resultRec = depthLimitedSearchRec(a, isGoal, 3);
+console.log("Recursive result:", resultRec?.value ?? "none");
+
+// Iterative
+const resultIter = depthLimitedSearchIter(a, isGoal, 3);
+console.log("Iterative result:", resultIter?.value ?? "none");
+Recursive result: D
+Iterative result: D
