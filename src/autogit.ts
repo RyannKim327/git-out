@@ -1,69 +1,50 @@
-/**
- * BWT keeps the input string as an array of characters,
- * builds all rotations, sorts them, then extracts the last
- * column (the transformed string) and remembers the index
- * of the original string in the sorted list – that index
- * is needed for the inverse transform.
- */
-export function bwt(str: string): { transformed: string; primaryIndex: number } {
-  const n = str.length;
-  // Produce all rotations: str[i:] + str[:i]
-  const rotations: string[] = Array.from({ length: n }, (_, i) =>
-    str.slice(i) + str.slice(0, i)
-  );
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
 
-  // Sort rotations lexicographically
-  rotations.sort();
-
-  // The transformed string is the concatenation of the last char
-  // of every rotation, appended in sorted order.
-  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
-
-  // Find the row that matches the original string; its index
-  // is what BWT callers need to recover the original.
-  const primaryIndex = rotations.findIndex(rot => rot === str);
-
-  return { transformed: lastColumn, primaryIndex };
-}
-
-/**
- * Inverse BWT reconstructs the original string from the
- * transformed string and the index found in the forward step.
- */
-export function inverseBwt(
-  transformed: string,
-  primaryIndex: number
-): string {
-  const n = transformed.length;
-
-  // Initialize an array of empty strings: will hold the building rows
-  let table: string[] = Array.from({ length: n }, () => '');
-
-  // Repeatedly prepend the transformed column to each row,
-  // then sort. After n iterations the table is fully sorted.
-  for (let step = 0; step < n; step++) {
-    // Prepend each character of 'transformed' to the corresponding row
-    table = table.map((row, i) => transformed[i] + row);
-
-    // Quick sort (JavaScript's String array sort is fine for our sizes)
-    table.sort();
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
   }
 
-  // The original string is the row at primaryIndex
-  return table[primaryIndex];
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
+
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
+
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
 }
 
-/* ────────────────────── Demo ────────────────────── */
+/**
+ * Bottom‑up merge sort (iterative).
+ *
+ * @param arr - The array to sort (in‑place)
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
 
-const example = 'banana$';    // '$' is a unique EOF marker
-const { transformed, primaryIndex } = bwt(example);
-
-console.log('BWT:', transformed, 'Primary index:', primaryIndex);
-console.log('Inverse:', inverseBwt(transformed, primaryIndex));
-
-/* Expected output:
-
-BWT: annb$aa  Primary index: 3
-Inverse: banana$
-
-*/
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
+    }
+  }
+}
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
