@@ -1,58 +1,48 @@
 /**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
+ * Returns the majority element of the array if one exists,
+ * otherwise returns undefined.
+ *
+ * @param arr an array of comparable values (number, string, …)
  */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+export function findMajority<T extends number | string | boolean>(
+  arr: T[]
+): T | undefined {
+  // 1️⃣ find a candidate
+  let candidate: T | undefined;
+  let count = 0;
 
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
-
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
-  }
-
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
-
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
-}
-
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
-
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
-
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
-
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
+  for (const val of arr) {
+    if (count === 0) {
+      candidate = val;
+      count = 1;
+    } else if (val === candidate) {
+      count++;
+    } else {
+      count--;
     }
-
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
-
-    pow10 *= 10;           // move to next digit
   }
 
-  return output;
-}
-import { radixSort } from "./radixSort";
+  // 2️⃣ verify that the candidate is actually a majority
+  if (candidate === undefined) return undefined;
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+  let freq = 0;
+  for (const v of arr) if (v === candidate) freq++;
+
+  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+}
+console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
+console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
+console.log(findMajority(['a', 'a', 'b']));       // → 'a'
+export function findMajorityWithMap<T>(
+  arr: T[]
+): T | undefined {
+  const map = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2);
+
+  for (const v of arr) {
+    const newCount = (map.get(v) ?? 0) + 1;
+    map.set(v, newCount);
+    if (newCount > threshold) return v;
+  }
+  return undefined;
+}
