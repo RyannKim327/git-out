@@ -1,41 +1,49 @@
 /**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
- *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
+ * Returns n! for a non‑negative integer `n`.
+ * Throws an error if `n` is negative.
  */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
-
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Place the key into its correct spot
-    arr[j + 1] = key;
-  }
-
-  return arr; // handy for chaining, but the original array is already sorted
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;   // base case
+  return n * factorialRecursive(n - 1);
 }
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
+/**
+ * Computes factorial using a loop. 
+ * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
+ */
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+/**
+ * Factorial returning a BigInt to avoid precision loss.
+ * Accepts `bigint | number`, but converts to BigInt internally.
+ */
+function factorialBigInt(n: number | bigint): bigint {
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
+  if (bigN <= 1n) return 1n;
+  let result = 1n;
+  for (let i = 2n; i <= bigN; i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(25));          // 15511210043330985984000000n
+console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
+const factorialCache = new Map<number, number>();
 
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
+function factorialMemoized(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;
+  if (factorialCache.has(n)) return factorialCache.get(n)!;
 
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+  const value = n * factorialMemoized(n - 1);
+  factorialCache.set(n, value);
+  return value;
+}
+const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
