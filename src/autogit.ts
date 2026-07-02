@@ -1,69 +1,83 @@
-/**
- * BWT keeps the input string as an array of characters,
- * builds all rotations, sorts them, then extracts the last
- * column (the transformed string) and remembers the index
- * of the original string in the sorted list – that index
- * is needed for the inverse transform.
- */
-export function bwt(str: string): { transformed: string; primaryIndex: number } {
-  const n = str.length;
-  // Produce all rotations: str[i:] + str[:i]
-  const rotations: string[] = Array.from({ length: n }, (_, i) =>
-    str.slice(i) + str.slice(0, i)
-  );
+function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;          // out of range
 
-  // Sort rotations lexicographically
-  rotations.sort();
+  // cloning so we don’t mutate the caller’s array
+  const copy = [...arr];
 
-  // The transformed string is the concatenation of the last char
-  // of every rotation, appended in sorted order.
-  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+  // If you need custom ordering, pass a compare function.
+  // Default: numeric ascending.
+  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
 
-  // Find the row that matches the original string; its index
-  // is what BWT callers need to recover the original.
-  const primaryIndex = rotations.findIndex(rot => rot === str);
-
-  return { transformed: lastColumn, primaryIndex };
+  // Arrays are zero‑indexed
+  return copy[k - 1];
 }
 
-/**
- * Inverse BWT reconstructs the original string from the
- * transformed string and the index found in the forward step.
- */
-export function inverseBwt(
-  transformed: string,
-  primaryIndex: number
-): string {
-  const n = transformed.length;
+// Example
+const nums = [7, 3, 5, 2, 9];
+console.log(kthSmallestBySort(nums, 2));   // 3
+function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
 
-  // Initialize an array of empty strings: will hold the building rows
-  let table: string[] = Array.from({ length: n }, () => '');
+  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const clone = [...arr]; // keep the original untouched
 
-  // Repeatedly prepend the transformed column to each row,
-  // then sort. After n iterations the table is fully sorted.
-  for (let step = 0; step < n; step++) {
-    // Prepend each character of 'transformed' to the corresponding row
-    table = table.map((row, i) => transformed[i] + row);
+  function partition(left: number, right: number, pivotIndex: number): number {
+    const pivotValue = clone[pivotIndex];
+    // move pivot to end
+    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
 
-    // Quick sort (JavaScript's String array sort is fine for our sizes)
-    table.sort();
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (comp(clone[i], pivotValue) < 0) {
+        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
+        storeIndex++;
+      }
+    }
+    // move pivot to its final place
+    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
+    return storeIndex;
   }
 
-  // The original string is the row at primaryIndex
-  return table[primaryIndex];
+  let left = 0;
+  let right = clone.length - 1;
+  let pivotIndex;
+
+  while (true) {
+    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
+    if (pivotIndex === k - 1) return clone[pivotIndex];
+    if (pivotIndex > k - 1) right = pivotIndex - 1;
+    else left = pivotIndex + 1;
+  }
+}
+const data = [12, 3, 5, 7, 4, 19, 26];
+console.log(kthSmallestQuickSelect(data, 4)); // 7
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private compare: (a: T, b: T) => number) {}
+  // heap methods omitted for brevity...
 }
 
-/* ────────────────────── Demo ────────────────────── */
+function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const heap = new MinHeap<T>(cmp);
+  for (const v of arr) heap.insert(v);
+  let result: T | undefined;
+  for (let i = 0; i < k; i++) result = heap.extractMin();
+  return result;
+}
+const people = [
+  { name: 'Alice', age: 24 },
+  { name: 'Bob', age: 19 },
+  { name: 'Carol', age: 32 },
+  { name: 'Dave', age: 28 }
+];
 
-const example = 'banana$';    // '$' is a unique EOF marker
-const { transformed, primaryIndex } = bwt(example);
+// 3rd youngest
+const thirdYoungest = kthSmallestQuickSelect(
+  people,
+  3,
+  (a, b) => a.age - b.age
+);
 
-console.log('BWT:', transformed, 'Primary index:', primaryIndex);
-console.log('Inverse:', inverseBwt(transformed, primaryIndex));
-
-/* Expected output:
-
-BWT: annb$aa  Primary index: 3
-Inverse: banana$
-
-*/
+console.log(thirdYoungest); // shows Bob (age 19)
