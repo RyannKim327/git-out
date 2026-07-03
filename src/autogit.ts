@@ -1,135 +1,134 @@
-/**
- * A binary‑heap based priority queue.
- *
- * @template T - The type of the heap elements.
- */
-export class PriorityQueue<T> {
-  /** Array representation of the heap.  Root is at index 0. */
-  private heap: T[] = [];
+enum Color { RED, BLACK }
 
-  /**
-   * Comparator that decides heap order.
-   *
-   *   - If it returns a negative number → a precedes b.
-   *   - If 0 → equal.
-   *   - If positive → a follows b.
-   *
-   * You can pass your own comparator; otherwise a simple
-   * numerical ascending order is used.
-   */
+class Node<T> {
   constructor(
-    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+    public value: T,
+    public color: Color = Color.RED,
+    public left: Node<T> | null = null,
+    public right: Node<T> | null = null,
+    public parent: Node<T> | null = null
   ) {}
-
-  /* ----- Query helpers ----- */
-
-  /** Number of elements in the queue. */
-  size(): number {
-    return this.heap.length;
-  }
-
-  /** Return the element with highest priority without removing it. */
-  peek(): T | null {
-    return this.heap.length ? this.heap[0] : null;
-  }
-
-  /* ----- Manipulation helpers ----- */
-
-  /** Insert a new element */
-  push(item: T): void {
-    this.heap.push(item);
-    this.siftUp(this.heap.length - 1);
-  }
-
-  /**
-   * Remove and return the element with highest priority.
-   * Returns `null` if the queue is empty.
-   */
-  pop(): T | null {
-    const n = this.heap.length;
-    if (n === 0) return null;
-    if (n === 1) return this.heap.pop() ?? null;
-
-    const top = this.heap[0];
-    // Move last element to the root and shrink array.
-    this.heap[0] = this.heap.pop() as T;
-    this.siftDown(0);
-    return top;
-  }
-
-  /* ----- Internal re‑heapify ----- */
-
-  /** Push the element at index `i` up until heap property holds. */
-  private siftUp(i: number): void {
-    const { heap, compareFn } = this;
-    let childIndex = i;
-
-    while (childIndex > 0) {
-      const parentIndex = (childIndex - 1) >> 1;
-      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
-
-      // Swap child & parent
-      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
-      childIndex = parentIndex;
-    }
-  }
-
-  /** Move the element at index `i` down until heap property holds. */
-  private siftDown(i: number): void {
-    const { heap, compareFn } = this;
-    const n = heap.length;
-    let parentIndex = i;
-
-    while (true) {
-      const leftIdx = (parentIndex << 1) + 1;
-      const rightIdx = leftIdx + 1;
-
-      let smallest = parentIndex;
-
-      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
-        smallest = leftIdx;
-      }
-      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
-        smallest = rightIdx;
-      }
-
-      if (smallest === parentIndex) break;
-
-      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
-      parentIndex = smallest;
-    }
-  }
-
-  /* ----- Utility ----- */
-
-  /**
-   * Re‑build the heap from the current array contents.  
-   * Useful after bulk insertion or when the comparator changes.
-   */
-  heapify(): void {
-    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
-      this.siftDown(i);
-    }
-  }
 }
-// Simple min‑heap of numbers (default comparator does that)
-const minQ = new PriorityQueue<number>();
+export class RedBlackTree<T> {
+  private root: Node<T> | null = null;
 
-minQ.push(5);   // 5
-minQ.push(3);   // 3,5
-minQ.push(8);   // 3,5,8
-minQ.push(1);   // 1,3,8,5
+  /* Public API */
+  public insert(value: T): void { /* ... */ }
+  public delete(value: T): void { /* ... */ }
+  public find(value: T): Node<T> | null { /* ... */ }
 
-console.log(minQ.pop()); // 1
-console.log(minQ.pop()); // 3
-console.log(minQ.peek()); // 5
-console.log(minQ.size()); // 2
-interface Task { id: string; priority: number; }
+  /* private helpers… */
+  private rotateLeft(x: Node<T>): void { /* ... */ }
+  private rotateRight(x: Node<T>): void { /* ... */ }
+  private fixAfterInsertion(z: Node<T>): void { /* ... */ }
+  private fixAfterDeletion(x: Node<T>): void { /* ... */ }
+  private transplant(u: Node<T>, v: Node<T> | null): void { /* ... */ }
+  private minimum(n: Node<T> | null): Node<T> | null { /* ... */ }
+}
+public find(value: T): Node<T> | null {
+  let node = this.root;
+  while (node && node.value !== value) {
+    node = value < node.value ? node.left : node.right;
+  }
+  return node;
+}
+private rotateLeft(x: Node<T>): void {
+  const y = x.right!;
+  x.right = y.left;
+  if (y.left) y.left.parent = x;
 
-const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.left) x.parent.left = y;
+  else x.parent.right = y;
 
-maxQ.push({ id: "A", priority: 10 });
-maxQ.push({ id: "B", priority: 20 });
-maxQ.push({ id: "C", priority: 5 });
+  y.left = x;
+  x.parent = y;
+}
 
-console.log(maxQ.pop()); // B (20)
+private rotateRight(x: Node<T>): void {
+  const y = x.left!;
+  x.left = y.right;
+  if (y.right) y.right.parent = x;
+
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.right) x.parent.right = y;
+  else x.parent.left = y;
+
+  y.right = x;
+  x.parent = y;
+}
+public insert(value: T): void {
+  const z = new Node(value);
+  let y: Node<T> | null = null;
+  let x = this.root;
+
+  // Binary‑search‑tree insert
+  while (x) {
+    y = x;
+    x = value < x.value ? x.left : x.right;
+  }
+  z.parent = y;
+
+  if (!y) this.root = z;
+  else if (value < y.value) y.left = z;
+  else y.right = z;
+
+  // Re‑balance
+  this.fixAfterInsertion(z);
+}
+private fixAfterInsertion(z: Node<T>): void {
+  z.color = Color.RED;
+
+  while (z.parent && z.parent.color === Color.RED) {
+    if (z.parent === z.parent.parent!.left) { // z.parent is left child
+      const y = z.parent.parent.right; // uncle
+
+      if (y && y.color === Color.RED) {
+        // Case 1: Uncle red
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        // Case 2 or 3: Uncle black
+        if (z === z.parent.right) {
+          // Case 2: triangle
+          z = z.parent;
+          this.rotateLeft(z);
+        }
+        // Case 3: line
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateRight(z.parent.parent!);
+      }
+    } else {               // Symmetric case (z.parent is right child)
+      const y = z.parent.parent!.left; // uncle
+
+      if (y && y.color === Color.RED) {
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        if (z === z.parent.left) {
+          z = z.parent;
+          this.rotateRight(z);
+        }
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateLeft(z.parent.parent!);
+      }
+    }
+  }
+
+  this.root!.color = Color.BLACK; // Root is always black
+}
+public delete(value: T): void {
+  let z = this.find(value);
+  if (!z) return; // Not found, nothing to delete
+
+  let y = z;
+  let yOriginalColor = y.color;
+  let x: Node<T> | null
