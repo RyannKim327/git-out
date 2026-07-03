@@ -1,49 +1,76 @@
 /**
- * Stable counting sort for integers.
+ * Build the LPS (Longest Prefix Suffix) table for KMP.
  *
- * @param  values The array of numbers to sort (integers only).
- * @return        A new sorted array.
+ * @param pattern - The pattern string for which the table is built.
+ * @returns An array where lps[i] is the length of the longest proper
+ *          prefix of pattern[0..i] that is also a suffix of that substring.
  */
-function countingSort(values: number[]): number[] {
-  if (values.length === 0) return [];
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps: number[] = Array(m).fill(0);
+  let length = 0;                 // length of previous longest prefix suffix
+  let i = 1;                      // lps[0] is always 0
 
-  // ---------- 1. find min & max ----------
-  let min = values[0];
-  let max = values[0];
-  for (let i = 1; i < values.length; i++) {
-    const v = values[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length += 1;
+      lps[i] = length;
+      i += 1;
+    } else {
+      if (length !== 0) {
+        // fall back in the pattern (do not increment i here)
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i += 1;
+      }
+    }
   }
+  return lps;
+}
 
-  // ---------- 2. count frequencies ----------
-  const range = max - min + 1;          // number of distinct values
-  const counts = new Array<number>(range).fill(0);
+/**
+ * KMP search – returns all starting indices of `pattern` in `text`.
+ *
+ * @param text    – The string to search within.
+ * @param pattern – The string to find.
+ * @returns Array of start indices where pattern occurs in text.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];          // nothing to find
+  const lps = buildLPS(pattern);
+  const result: number[] = [];
 
-  for (const v of values) {
-    counts[v - min]++;                  // shift so that the smallest value maps to index 0
-  }
+  let i = 0;   // index for text
+  let j = 0;   // index for pattern
 
-  // ---------- 3. prefix sums (running totals) ----------
-  const positions = new Array<number>(range).fill(0);
-  let sum = 0;
-  for (let i = 0; i < range; i++) {
-    sum += counts[i];
-    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
-  }
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i += 1;
+      j += 1;
+    }
 
-  // ---------- 4. build the sorted output ----------
-  const result = new Array<number>(values.length);
-  // Walk the original array **backwards** to keep stability
-  for (let i = values.length - 1; i >= 0; i--) {
-    const v = values[i];
-    const posIndex = v - min;
-    positions[posIndex]--;               // get the correct position for this element
-    result[positions[posIndex]] = v;
+    // full match found
+    if (j === pattern.length) {
+      result.push(i - j);   // starting index
+      j = lps[j - 1];       // allow overlapping matches
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i += 1;
+      }
+    }
   }
 
   return result;
 }
-const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
-const sorted = countingSort(unsorted);
-console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
+
+const matches = kmpSearch(text, pattern);
+console.log(matches);          // [10]
+
+const hasMatch = matches.length > 0;
+console.log(hasMatch);         // true
