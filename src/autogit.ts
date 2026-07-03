@@ -1,49 +1,25 @@
-/**
- * Stable counting sort for integers.
- *
- * @param  values The array of numbers to sort (integers only).
- * @return        A new sorted array.
- */
-function countingSort(values: number[]): number[] {
-  if (values.length === 0) return [];
+/***** 1️⃣  The classic Math.max with the spread operator *****/
 
-  // ---------- 1. find min & max ----------
-  let min = values[0];
-  let max = values[0];
-  for (let i = 1; i < values.length; i++) {
-    const v = values[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
-  }
+const numbers = [4, 12, 7, 19, 3];
 
-  // ---------- 2. count frequencies ----------
-  const range = max - min + 1;          // number of distinct values
-  const counts = new Array<number>(range).fill(0);
+// Spreads the array into individual arguments for Math.max
+const max1 = Math.max(...numbers); // 19
+/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
 
-  for (const v of values) {
-    counts[v - min]++;                  // shift so that the smallest value maps to index 0
-  }
+const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
+// Also 19
+/***** 3️⃣  If you’re dealing with objects and need a property *****/
 
-  // ---------- 3. prefix sums (running totals) ----------
-  const positions = new Array<number>(range).fill(0);
-  let sum = 0;
-  for (let i = 0; i < range; i++) {
-    sum += counts[i];
-    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
-  }
+type Item = { id: number; value: number };
+const items: Item[] = [
+  { id: 1, value: 4 },
+  { id: 2, value: 12 },
+  { id: 3, value: 7 },
+];
 
-  // ---------- 4. build the sorted output ----------
-  const result = new Array<number>(values.length);
-  // Walk the original array **backwards** to keep stability
-  for (let i = values.length - 1; i >= 0; i--) {
-    const v = values[i];
-    const posIndex = v - min;
-    positions[posIndex]--;               // get the correct position for this element
-    result[positions[posIndex]] = v;
-  }
-
-  return result;
-}
-const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
-const sorted = countingSort(unsorted);
-console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
+// Max based on `value`
+const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
+// maxVal is 12
+// If you want the whole object:
+const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
+// maxObj is { id: 2, value: 12 }
