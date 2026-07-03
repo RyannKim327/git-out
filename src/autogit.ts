@@ -1,58 +1,31 @@
-// stack.ts
-export class Stack<T> {
-  /* The array that holds our data. The last item is the top of the stack. */
-  private items: T[] = [];
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
 
-  /** Adds a value to the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
+// Numeric ascending sort
+numbers.sort((a, b) => a - b);
+console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
+
+// Numeric descending sort
+numbers.sort((a, b) => b - a);
+console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
+[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
+const sorted = [...numbers].sort((a, b) => a - b);
+numbers.sort((a, b) => {
+  const absDiff = Math.abs(a) - Math.abs(b);
+  return absDiff !== 0 ? absDiff : a - b;
+});
+function quickSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;
+  const pivot = arr[arr.length - 1];
+  const left: number[] = [];
+  const right: number[] = [];
+
+  for (const x of arr.slice(0, -1)) {
+    (x < pivot ? left : right).push(x);
   }
 
-  /** Removes and returns the top value. Throws if the stack is empty. */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to pop from an empty stack");
-    }
-    return this.items.pop() as T; // safe because we just checked for emptiness
-  }
-
-  /** Returns the top value without removing it. Throws if the stack is empty. */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to peek on an empty stack");
-    }
-    // items.length is at least 1, so the index exists
-    return this.items[this.items.length - 1];
-  }
-
-  /** Was the stack empty? */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** How many items are there? */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything out. */
-  clear(): void {
-    this.items = [];
-  }
+  return [...quickSort(left), pivot, ...quickSort(right)];
 }
-// demo.ts
-import { Stack } from "./stack";
 
-const stack = new Stack<number>();
-
-stack.push(1);
-stack.push(2);
-stack.push(3);
-
-console.log(stack.peek());   // 3
-console.log(stack.pop());    // 3
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+const numbers2 = [3, 1, 4, 1, 5, 9, 2];
+const sorted2 = quickSort(numbers2);
+console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
