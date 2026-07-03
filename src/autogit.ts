@@ -1,37 +1,33 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
+}
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
 }
 
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
-}
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
 
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
   }
-
-  return sum;
+  return result;
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
+}
 
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+}
