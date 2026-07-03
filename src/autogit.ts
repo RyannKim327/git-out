@@ -1,26 +1,44 @@
-// utils.ts
-/**
- * Randomly reorder the elements of an array in place.
- * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
- *
- * @param arr The array to shuffle (mutated in place)
- * @returns The same array, now shuffled
- */
-export function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a remaining element…
-    const j = Math.floor(Math.random() * (i + 1));
+const arr1 = [1, 2, 3, 4];
+const arr2 = [3, 4, 5, 6];
 
-    // …and swap it with the current element.
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+const common = arr1.filter(v => arr2.includes(v));
+console.log(common); // [3, 4]
+function intersection<T>(a: T[], b: T[]): T[] {
+  return a.filter(v => b.includes(v));
 }
-import { shuffle } from "./utils";
+function intersectionSet<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(v => setB.has(v));
+}
+function intersectionMultiset<T>(a: T[], b: T[]): T[] {
+  const freq = new Map<T, number>();
+  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
 
-const numbers = [1, 2, 3, 4, 5];
-shuffle(numbers);          // numbers is now in a random order
-console.log(numbers);
+  const result: T[] = [];
+  for (const val of a) {
+    const count = freq.get(val);
+    if (count && count > 0) {
+      result.push(val);
+      freq.set(val, count - 1);
+    }
+  }
+  return result;
+}
+interface User { id: number; name: string; }
 
-const words = ["a", "b", "c", "d"];
-console.log(shuffle(words));  // prints a shuffled copy
+const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
+const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
+
+const intersectionById = usersA.filter(uA =>
+  usersB.some(uB => uB.id === uA.id)
+);
+console.log(intersectionById); // [{id:2,name:'Bob'}]
+const intersection = <T>(a: T[], b: T[]): T[] =>
+  a.filter(v => new Set(b).has(v));
+const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  const result = new Set<T>();
+  for (const v of setA) if (setB.has(v)) result.add(v);
+  return result;
+};
