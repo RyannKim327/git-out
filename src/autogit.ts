@@ -1,121 +1,173 @@
-/* ───────────────────────────────────────────────────────────────────── */
-/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
- *  need other key types, but then you have to supply a comparator. -------- */
+// -----------------------------------------------------------------------------
+//  Types
+// -----------------------------------------------------------------------------
+type Node = string | number;          // any hashable key – string or number
+type Weight = number;
 
-/*  Node ------------------------------------------------------------------- */
-class Node {
-  key: number;
-  height: number;
-  left: Node | null = null;
-  right: Node | null = null;
+interface Edge {
+  target: Node;
+  weight: Weight;
+}
 
-  constructor(key: number) {           // simple ctor
-    this.key = key;
-    this.height = 1;                    // leaf height = 1
+interface Graph {
+  // adjacency list: nodeId -> array of outgoing edges
+  [node: string]: Edge[];
+}
+
+// -----------------------------------------------------------------------------
+//  Priority Queue (min‑heap)
+// -----------------------------------------------------------------------------
+class MinHeap<T> {
+  private heap: Array<{ key: number; value: T }> = [];
+
+  // Insert a new element with its priority key
+  push(key: number, value: T) {
+    this.heap.push({ key, value });
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  // Extract element with smallest key
+  pop(): T | undefined {
+    if (!this.heap.length) return undefined;
+    const min = this.heap[0].value;
+    const end = this.heap.pop()!;
+    if (this.heap.length) {
+      this.heap[0] = end;
+      this.sinkDown(0);
+    }
+    return min;
+  }
+
+  get size() {
+    return this.heap.length;
+  }
+
+  private bubbleUp(idx: number) {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      const parent = this.heap[parentIdx];
+      if (element.key >= parent.key) break;
+      this.heap[idx] = parent;
+      idx = parentIdx;
+    }
+    this.heap[idx] = element;
+  }
+
+  private sinkDown(idx: number) {
+    const length = this.heap.length;
+    const element = this.heap[idx];
+
+    while (true) {
+      const leftIdx = 2 * idx + 1;
+      const rightIdx = 2 * idx + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        if (this.heap[leftIdx].key < element.key) {
+          swapIdx = leftIdx;
+        }
+      }
+
+      if (rightIdx < length) {
+        const rightKey = this.heap[rightIdx].key;
+        if (
+          (swapIdx === null && rightKey < element.key) ||
+          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === null) break;
+
+      this.heap[idx] = this.heap[swapIdx];
+      idx = swapIdx;
+    }
+    this.heap[idx] = element;
   }
 }
 
-/*  Helper utilities -------------------------------------------------------- */
-const height = (node: Node | null): number => (node ? node.height : 0);
+// -----------------------------------------------------------------------------
+//  Dijkstra
+// -----------------------------------------------------------------------------
+function dijkstra(
+  graph: Graph,
+  start: Node,
+  target?: Node
+): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
+  const distances = new Map<Node, number>();
+  const prev = new Map<Node, Node | null>();
 
-const updateHeight = (node: Node) =>
-  node.height = 1 + Math.max(height(node.left), height(node.right));
+  // init
+  for (const node in graph) {
+    distances.set(node, Number.MAX_SAFE_INTEGER);
+    prev.set(node, null);
+  }
+  distances.set(start, 0);
 
-const balanceFactor = (node: Node): number =>
-  height(node.left) - height(node.right);
+  const heap = new MinHeap<Node>();
+  heap.push(0, start);
 
-/*  Rotations -------------------------------------------------------------- */
-function rotateRight(y: Node): Node {
-  const x = y.left!;
-  const T2 = x.right;
+  while (heap.size) {
+    const u = heap.pop()!;
+    const distU = distances.get(u)!;
 
-  // rotation
-  x.right = y;
-  y.left = T2;
+    // If a target was supplied and we reached it, we can stop early
+    if (target !== undefined && u === target) break;
 
-  // update heights
-  updateHeight(y);
-  updateHeight(x);
-
-  return x;     // new root of this part
-}
-
-function rotateLeft(x: Node): Node {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // rotation
-  y.left = x;
-  x.right = T2;
-
-  // update heights
-  updateHeight(x);
-  updateHeight(y);
-
-  return y;     // new root
-}
-
-/*  Insert ------------------------------------------------------------------ */
-function insert(node: Node | null, key: number): Node {
-  if (!node) return new Node(key);
-
-  if (key < node.key) node.left = insert(node.left, key);
-  else if (key > node.key) node.right = insert(node.right, key);
-  else return node;           // duplicate keys rejected
-
-  /* update our own height after child changed */
-  updateHeight(node);
-
-  /* balance now */
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (key < node.left!.key)                   // Left‑Left case
-      return rotateRight(node);
-
-    // Left‑Right case
-    node.left = rotateLeft(node.left!);
-    return rotateRight(node);
+    const edges = graph[u as string] ?? [];
+    for (const edge of edges) {
+      const alt = distU + edge.weight;
+      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
+        distances.set(edge.target, alt);
+        prev.set(edge.target, u);
+        heap.push(alt, edge.target);
+      }
+    }
   }
 
-  // Right heavy
-  if (bf < -1) {
-    if (key > node.right!.key)                  // Right‑Right case
-      return rotateLeft(node);
+  return { distances, prev };
+}
 
-    // Right‑Left case
-    node.right = rotateRight(node.right!);
-    return rotateLeft(node);
+// -----------------------------------------------------------------------------
+//  Helper: recover path from prev map
+// -----------------------------------------------------------------------------
+function recoverPath(
+  prev: Map<Node, Node | null>,
+  start: Node,
+  end: Node
+): Node[] {
+  const path: Node[] = [];
+  let cur: Node | undefined = end;
+
+  while (cur !== undefined && cur !== null) {
+    path.unshift(cur);
+    cur = prev.get(cur) ?? null;
   }
 
-  return node;            // unchanged
+  if (path[0] !== start) return []; // no path found
+  return path;
 }
 
-/*  Search --------------------------------------------------------------- */
-function contains(node: Node | null, key: number): boolean {
-  while (node) {
-    if (key === node.key) return true;
-    node = key < node.key ? node.left : node.right;
-  }
-  return false;
-}
+// -----------------------------------------------------------------------------
+//  Example
+// -----------------------------------------------------------------------------
+const graph: Graph = {
+  A: [
+    { target: "B", weight: 2 },
+    { target: "C", weight: 5 },
+  ],
+  B: [
+    { target: "C", weight: 1 },
+    { target: "D", weight: 4 },
+  ],
+  C: [
+    { target: "D", weight: 1 },
+  ],
+  D: [],
+};
 
-/*  In‑order traversal for debugging -------------------------------------- */
-function inorder(node: Node | null, res: number[] = []): number[] {
-  if (!node) return res;
-  inorder(node.left, res);
-  res.push(node.key);
-  inorder(node.right, res);
-  return res;
-}
-
-/*  Example usage ---------------------------------------------------------- */
-let root: Node | null = null;
-[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
-
-console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
-console.log('Contains 25?', contains(root, 25));      // true
-console.log('Contains 15?', contains(root, 15));      // false
-class Node<T> { key: T; height: number; ... }
-function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
+const { distances, prev } = dijkstra(graph, "A");
+console.log(distances);               // Map(…)
+console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
