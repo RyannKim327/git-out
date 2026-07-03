@@ -1,34 +1,50 @@
-function stringLength(s: string): number {
-  let count = 0;
-  for (const _ of s) {   // iterates over Unicode code points
-    ++count;
-  }
-  return count;
+interface TreeNode {
+  val:  number | string   // you can put any type that fits your data
+  left?: TreeNode | null
+  right?: TreeNode | null
 }
-function stringLengthCodeUnits(s: string): number {
-  let count = 0;
-  // `s[i]` returns `undefined` past the end of the string
-  for (let i = 0; s[i] !== undefined; i++) {
-    ++count;
-  }
-  return count;
-}
-function stringLengthCharAt(s: string): number {
-  let count = 0;
-  for (let i = 0; s.charAt(i) !== ''; i++) {
-    ++count;
-  }
-  return count;
-}
-function* chars(s: string): Generator<unknown> {
-  for (const c of s) { yield c; }
-}
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0;                 // empty tree -> depth 0
 
-function stringLengthFunctional(s: string): number {
-  let count = 0;
-  for (const _ of chars(s)) { ++count; }
-  return count;
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-console.log(stringLength("hello"));       // 5
-console.log(stringLength("👋🌍"));        // 2  (two code points)
-console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let depth = 0;
+  const queue: Array<TreeNode> = [root];
+
+  while (queue.length) {
+    const levelSize = queue.length;   // nodes at the current level
+    depth++;                          // we’re about to process a whole new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;    // safe; queue is non‑empty here
+
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+// Build a tiny tree:
+//        1
+//       / \
+//      2   3
+//         /
+//        4
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2 },
+  right: {
+    val: 3,
+    left: { val: 4 }
+  }
+};
+
+console.log('Recursive depth:', maxDepth(tree));          // 3
+console.log('Iterative depth:', maxDepthIterative(tree)); // 3
