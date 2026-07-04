@@ -1,93 +1,87 @@
-/**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
- */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
+// simple node definition – feel free to extend it later (value, etc.)
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
 
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
+  constructor(public readonly val?: any) {}
 }
+interface TreeNode {
+  val?: any;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;          // empty subtree → no leaf
 
-/**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
- */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
+  // If this node has no children → it's a leaf.
+  if (node.left === null && node.right === null) {
+    return 1;
+  }
 
-  let i = left;
-  let j = right;
+  // Otherwise sum the children’s counts
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+function countLeavesIterative(root: TreeNode | null): number {
+  if (root === null) return 0;
 
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
+  let leafCount = 0;
+  const stack: Array<TreeNode> = [root];
 
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  while (stack.length) {
+    const node = stack.pop() as TreeNode; // `as` because array never empty
+
+    // Check for leaf
+    if (node.left === null && node.right === null) {
+      leafCount++;
+    } else {
+      // push children if they exist
+      if (node.right !== null) stack.push(node.right);
+      if (node.left !== null) stack.push(node.left);
     }
   }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
-}
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
 
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
+  return leafCount;
+}
+// ---------------------------------------------------------------------
+// 1. Node definition
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
+
+  constructor(public readonly val: any) {}
 }
 
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
+// ---------------------------------------------------------------------
+// 2. Recursive counter
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;
+  if (!node.left && !node.right) return 1;
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
 
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
+// 3. Iterative counter
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let leaves = 0;
+  const stack: TreeNode[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) leaves++;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
   }
-  return i - 1;
+  return leaves;
 }
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
-];
 
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
+// ---------------------------------------------------------------------
+// 4. Demo
+
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4); // leaf
+root.left.right = new TreeNode(5); // leaf
+root.right.left = new TreeNode(6); // leaf
+
+console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
+console.log('Iterative leaves:', countLeavesIterative(root)); // 3
