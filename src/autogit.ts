@@ -1,33 +1,33 @@
-/**
- * Returns a random integer between `min` and `max` – both inclusive.
- * Uses the standard Math.random() (not crypto‑safe).
- */
-export function randomIntInRange(min: number, max: number): number {
-  // Make sure min ≤ max and that the inputs are integers
-  if (!Number.isInteger(min) || !Number.isInteger(max))
-    throw new Error('min and max must be integers');
-  if (min > max) [min, max] = [max, min];
-
-  const range = max - min + 1;          // how many possible numbers
-  return Math.floor(Math.random() * range) + min;
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
+}
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
 }
 
-/**
- * Returns a random floating‑point number in `[min, max)`.
- * If you want `max` inclusive, add a tiny epsilon before flooring.
- */
-export function randomFloatInRange(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  return Math.random() * (max - min) + min;
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
+
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
+  }
+  return result;
 }
-export function secureRandomInt(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  const range = max - min + 1;
-  // We'll grab 4 random bytes and reduce them into our range
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  return (buf[0] % range) + min;
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
 }
-console.log(randomIntInRange(1, 6)); // 1‑6 like a die
-console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
-console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
+
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+}
