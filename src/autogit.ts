@@ -1,26 +1,93 @@
-// utils.ts
 /**
- * Randomly reorder the elements of an array in place.
- * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
- *
- * @param arr The array to shuffle (mutated in place)
- * @returns The same array, now shuffled
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
  */
-export function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a remaining element…
-    const j = Math.floor(Math.random() * (i + 1));
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
 
-    // …and swap it with the current element.
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+  constructor(value: T) {
+    this.value = value;
   }
-  return arr;
 }
-import { shuffle } from "./utils";
 
-const numbers = [1, 2, 3, 4, 5];
-shuffle(numbers);          // numbers is now in a random order
-console.log(numbers);
+/**
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
+ */
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-const words = ["a", "b", "c", "d"];
-console.log(shuffle(words));  // prints a shuffled copy
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
+
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
+    }
+    this.rear = node;           // new tail
+
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
+    }
+
+    this._size++;
+  }
+
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
+
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
+
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
+    }
+    return result;
+  }
+}
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
