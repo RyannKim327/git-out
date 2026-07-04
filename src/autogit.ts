@@ -1,37 +1,61 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
+// A minimal node that can hold any value
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-/**
- * Returns the n‑th node from the end of a singly linked list,
- * or null if it doesn't exist.
- * n is 1‑based: n = 1 means the last node.
- */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-  let fast: ListNode<T> | null = head;
-  // Step 1: move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;           // n is larger than the list length
-    fast = fast.next;
+// A helper to build a list from an array (great for demos)
+function arrayToList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = new ListNode(arr[i], head)
+  }
+  return head
+}
+
+// A helper to turn a list back into an array (great for quick checks)
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const out: T[] = []
+  let cur = head
+  while (cur) {
+    out.push(cur.val)
+    cur = cur.next
+  }
+  return out
+}
+function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
+
+  while (curr) {
+    const next = curr.next   // store the rest of the list
+    curr.next = prev         // reverse the link
+    prev = curr              // move prev forward
+    curr = next              // continue
   }
 
-  // Step 2: move both pointers until fast reaches the end
-  let slow: ListNode<T> | null = head;
-  while (fast) {
-    fast = fast.next;
-    slow = slow!.next!;
+  // At the end, prev is the new head
+  return prev
+}
+function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: 0 or 1 node
+  if (!head || !head.next) {
+    return head
   }
 
-  return slow; // could be null if the list was empty
-}
-// build a tiny list: 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4: ListNode<number> = { val: 4, next: node5 };
-let node3: ListNode<number> = { val: 3, next: node4 };
-let node2: ListNode<number> = { val: 2, next: node3 };
-let node1: ListNode<number> = { val: 1, next: node2 };
+  // Recurse to the end of the list
+  const newHead = reverseListRecursive(head.next)
 
-const thirdFromEnd = nthFromEnd(node1, 3);
-console.log(thirdFromEnd?.val); // 3
+  // After recursion returns, head is still at the original start
+  // head.next still points forward; we need to put head at the end
+  head.next.next = head   // point the next node back to head
+  head.next = null        // cut off the original link
+
+  return newHead
+}
+const example = arrayToList([1, 2, 3, 4, 5])
+const reversedIterative = reverseList(example)
+console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
+
+const example2 = arrayToList([10, 20, 30])
+const reversedRecursive = reverseListRecursive(example2)
+console.log(listToArray(reversedRecursive)) // [30, 20, 10]
