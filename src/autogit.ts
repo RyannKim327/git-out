@@ -1,44 +1,55 @@
-const arr1 = [1, 2, 3, 4];
-const arr2 = [3, 4, 5, 6];
-
-const common = arr1.filter(v => arr2.includes(v));
-console.log(common); // [3, 4]
-function intersection<T>(a: T[], b: T[]): T[] {
-  return a.filter(v => b.includes(v));
+/**
+ * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
+ */
+function isAnagram(s1: string, s2: string): boolean {
+  const normalize = (s: string) =>
+    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
+  return normalize(s1) === normalize(s2);
 }
-function intersectionSet<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(v => setB.has(v));
-}
-function intersectionMultiset<T>(a: T[], b: T[]): T[] {
-  const freq = new Map<T, number>();
-  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
+function isAnagramLetterCount(a: string, b: string): boolean {
+  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
 
-  const result: T[] = [];
-  for (const val of a) {
-    const count = freq.get(val);
-    if (count && count > 0) {
-      result.push(val);
-      freq.set(val, count - 1);
+  const freq = (s: string) => {
+    const map = new Map<string, number>();
+    for (const c of s) {
+      map.set(c, (map.get(c) ?? 0) + 1);
     }
+    return map;
+  };
+
+  if (clean(a).length !== clean(b).length) return false;
+
+  const m1 = freq(clean(a));
+  const m2 = freq(clean(b));
+
+  for (const [ch, count] of m1) {
+    if (m2.get(ch) !== count) return false;
   }
-  return result;
+  return true;
 }
-interface User { id: number; name: string; }
+function isAnagramFlexible(
+  s1: string,
+  s2: string,
+  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
+): boolean {
+  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
-const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
+  let pattern = '';
+  if (ignoreSpaces) pattern += '\\s';
+  if (ignorePunct) pattern += /[^\w\s]/g.source;
 
-const intersectionById = usersA.filter(uA =>
-  usersB.some(uB => uB.id === uA.id)
-);
-console.log(intersectionById); // [{id:2,name:'Bob'}]
-const intersection = <T>(a: T[], b: T[]): T[] =>
-  a.filter(v => new Set(b).has(v));
-const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  const result = new Set<T>();
-  for (const v of setA) if (setB.has(v)) result.add(v);
-  return result;
-};
+  const regex = new RegExp(pattern, 'g');
+  const normalize = (s: string) =>
+    s.replace(regex, '').toLowerCase().split('').sort().join('');
+
+  return normalize(s1) === normalize(s2);
+}
+console.log(isAnagram('listen', 'silent'));          // true
+console.log(isAnagram('A gentleman', 'Elegant man'));// true
+console.log(isAnagram('Hello', 'World'));            // false
+
+// Using the frequency‑count version
+console.log(isAnagramLetterCount('abc', 'cab'));     // true
+
+// Flexible options
+console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
