@@ -1,117 +1,93 @@
-type Key = string | number | object;   // anything you can reasonably stringify
-interface Pair<K, V> {
-  key: K;
-  value: V;
+/**
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
+ */
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
-type Bucket<K, V> = Pair<K, V>[];
-const DEFAULT_BUCKETS = 16;
-const DEFAULT_LOAD_FACTOR = 0.75;
 
-export class HashTable<K extends Key, V> {
-  private buckets: Bucket<K, V>[];
-  private count = 0;                    // number of key/value pairs
-  private loadFactor: number;
+/**
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
+ */
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
-    this.buckets = Array.from({ length: initialBuckets }, () => []);
-    this.loadFactor = loadFactor;
-  }
-
-  /* ---------- public API ---------- */
-
-  set(key: K, value: V): void {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    // Replace if key is already present
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
-        pair.value = value;
-        return;
-      }
-    }
-
-    bucket.push({ key, value });
-    this.count++;
-
-    if (this.count / this.buckets.length > this.loadFactor) {
-      this.resize();
-    }
-  }
-
-  get(key: K): V | undefined {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {
-        return pair.value;
-      }
-    }
-    return undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.equals(bucket[i].key, key)) {
-        bucket.splice(i, 1);
-        this.count--;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  clear(): void {
-    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
-    this.count = 0;
-  }
-
+  /** Number of items in the queue */
   get size(): number {
-    return this.count;
+    return this._size;
   }
 
-  /* ---------- private helpers ---------- */
-
-  private bucketIndex(key: K): number {
-    // Ensure the hash is non‑negative
-    const h = this.hash(key);
-    const idx = h % this.buckets.length;
-    return idx < 0 ? idx + this.buckets.length : idx;
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
   }
 
-  /* Simple but stable string hash (djb2 algorithm) */
-  private hash(key: K): number {
-    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) {
-      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
     }
-    return h >>> 0; // make unsigned
-  }
+    this.rear = node;           // new tail
 
-  private equals(a: K, b: K): boolean {
-    // For primitives, === is fine.
-    // For objects, we compare the stringified form.
-    if (typeof a === 'object' && typeof b === 'object') {
-      return JSON.stringify(a) === JSON.stringify(b);
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
     }
-    return a === b;
+
+    this._size++;
   }
 
-  /* Grow the bucket array and re‑hash all entries */
-  private resize(): void {
-    const oldBuckets = this.buckets;
-    const newSize = oldBuckets.length * 2;
-    this.buckets = Array.from({ length: newSize }, () => []);
-    this.count = 0;
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
 
-    for (const bucket of oldBuckets) {
-      for (const pair of bucket)
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
+
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
+    }
+    return result;
+  }
+}
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
