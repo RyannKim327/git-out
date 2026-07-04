@@ -1,73 +1,37 @@
-type Edge = {
-  from: number;   // vertex index
-  to: number;     // vertex index
-  weight: number; // can be negative
-};
-
-type BellmanFordResult = {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-};
-function bellmanFord(
-  numVertices: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
-
-  // 1. Initialisation
-  const dist = new Array(numVertices).fill(INF);
-  dist[source] = 0;
-
-  const pred = new Array<number | null>(numVertices).fill(null);
-
-  // 2. Relax edges (V‑1) times
-  for (let i = 0; i < numVertices - 1; i++) {
-    let updated = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        updated = true;
-      }
-    }
-    // early exit if no change – optional but nice optimisation
-    if (!updated) break;
-  }
-
-  // 3. Check for negative‑weight cycles
-  let hasNegCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-      hasNegCycle = true;
-      break;
-    }
-  }
-
-  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-// Build a tiny graph with a negative edge that doesn't form a cycle
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 3, weight: -3 },
-  { from: 2, to: 3, weight: 2 },
-];
+/**
+ * Returns the n‑th node from the end of a singly linked list,
+ * or null if it doesn't exist.
+ * n is 1‑based: n = 1 means the last node.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
-
-console.log('Distances:', distances);          // [0, 4, 5, 1]
-console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
-console.log('Negative cycle?', hasNegativeCycle); // false
-
-// If you want to pull out the path 0 -> 1 -> 3:
-function buildPath(pred: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  for (let v = target; v !== null; v = pred[v] as number | null) {
-    path.push(v);
+  let fast: ListNode<T> | null = head;
+  // Step 1: move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;           // n is larger than the list length
+    fast = fast.next;
   }
-  return path.reverse();
-}
 
-console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
+  // Step 2: move both pointers until fast reaches the end
+  let slow: ListNode<T> | null = head;
+  while (fast) {
+    fast = fast.next;
+    slow = slow!.next!;
+  }
+
+  return slow; // could be null if the list was empty
+}
+// build a tiny list: 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4: ListNode<number> = { val: 4, next: node5 };
+let node3: ListNode<number> = { val: 3, next: node4 };
+let node2: ListNode<number> = { val: 2, next: node3 };
+let node1: ListNode<number> = { val: 1, next: node2 };
+
+const thirdFromEnd = nthFromEnd(node1, 3);
+console.log(thirdFromEnd?.val); // 3
