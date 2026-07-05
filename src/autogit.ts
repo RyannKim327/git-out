@@ -1,55 +1,79 @@
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
 /**
- * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
  */
-function isAnagram(s1: string, s2: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
-  return normalize(s1) === normalize(s2);
-}
-function isAnagramLetterCount(a: string, b: string): boolean {
-  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-  const freq = (s: string) => {
-    const map = new Map<string, number>();
-    for (const c of s) {
-      map.set(c, (map.get(c) ?? 0) + 1);
+    visited.add(start);
+    queue.push(start);
+
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
     }
-    return map;
-  };
 
-  if (clean(a).length !== clean(b).length) return false;
-
-  const m1 = freq(clean(a));
-  const m2 = freq(clean(b));
-
-  for (const [ch, count] of m1) {
-    if (m2.get(ch) !== count) return false;
-  }
-  return true;
+    return result;
 }
-function isAnagramFlexible(
-  s1: string,
-  s2: string,
-  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
-): boolean {
-  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-  let pattern = '';
-  if (ignoreSpaces) pattern += '\\s';
-  if (ignorePunct) pattern += /[^\w\s]/g.source;
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
 
-  const regex = new RegExp(pattern, 'g');
-  const normalize = (s: string) =>
-    s.replace(regex, '').toLowerCase().split('').sort().join('');
+    while (queue.length) {
+        const current = queue.shift()!;
 
-  return normalize(s1) === normalize(s2);
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
 }
-console.log(isAnagram('listen', 'silent'));          // true
-console.log(isAnagram('A gentleman', 'Elegant man'));// true
-console.log(isAnagram('Hello', 'World'));            // false
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
 
-// Using the frequency‑count version
-console.log(isAnagramLetterCount('abc', 'cab'));     // true
-
-// Flexible options
-console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
