@@ -1,29 +1,44 @@
-// hello.ts
-import * as readline from 'readline'
+// cronDemo.ts
+// ──────────────────────────────────────────────
+// Simple TS + node‑cron demo.  Every minute,
+// the job prints a timestamp and a random number.
+//
+// Requirements:
+//   npm i node-cron @types/node-cron
+//
+// Run with:
+//   npx ts-node cronDemo.ts
+// ‒ or compile (npx tsc) and exec (node cronDemo.js)
+// ──────────────────────────────────────────────
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-})
+import cron from 'node-cron';
 
-function ask(question: string): Promise<string> {
-  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
-}
+/**
+ * Helper that gives us a nicely formatted timestamp.
+ */
+const now = () => new Date().toLocaleString();
 
-async function main() {
-  const name = await ask('What’s your name? ')
-  const favNum = await ask('What’s your favorite number? ')
-  
-  const num = parseInt(favNum, 10)
-  const isEven = !isNaN(num) ? num % 2 === 0 : false
+/**
+ * The task that will run according to the cron schedule.
+ * We generate a random integer between 1 and 1000.
+ */
+const task = () => {
+  const rand = Math.floor(Math.random() * 1000) + 1;
+  console.log(`[${now()}] Random number: ${rand}`);
+};
 
-  console.log(`\nHello, ${name}!`);
-  console.log(`Your favorite number is ${favNum}`);
-  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
+/**
+ * Schedule the job.
+ * Cron expression: '* * * * *'
+ * └─ minute (0‑59)
+ *
+ * The job triggers at the start of every minute.
+ */
+cron.schedule('* * * * *', task, {
+  scheduled: true,
+  timezone: 'UTC',     // change to your local timezone if needed
+});
 
-  rl.close()
-}
-
-main()
-tsc hello.ts   # compile to JavaScript
-node hello.js
+console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
+[2026-06-17 12:34:00] Random number: 827
+[2026-06-17 12:35:00] Random number: 314
