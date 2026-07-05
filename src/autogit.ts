@@ -1,145 +1,38 @@
-/**
- * Graph type: key → list of neighbour keys.
- * Assumes an undirected or directed graph – just feed it the adjacency list you have.
- */
-type Graph = Map<string, string[]>;
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;        // 1 and below are not prime
+  if (n <= 3) return true;         // 2 and 3 are prime
 
-/**
- * Bidirectional BFS to find the shortest path between two nodes.
- *
- * @param graph       The graph adjacency list.
- * @param startKey    Origin node key.
- * @param goalKey     Destination node key.
- * @returns           Array of keys representing the shortest path,
- *                    or `null` if no path exists.
- */
-export function bidirectionalSearch(
-  graph: Graph,
-  startKey: string,
-  goalKey: string
-): string[] | null {
-  if (startKey === goalKey) return [startKey];
+  // Even numbers > 2 are composite.
+  if (n % 2 === 0) return false;
 
-  // --- Front and back queues
-  const frontQueue: string[] = [startKey];
-  const backQueue: string[] = [goalKey];
-
-  // --- Visited maps
-  const frontVisited = new Set<string>([startKey]);
-  const backVisited  = new Set<string>([goalKey]);
-
-  // --- Parent maps to reconstruct path
-  const frontParent = new Map<string, string>([[startKey, null]]);
-  const backParent  = new Map<string, string>([[goalKey, null]]);
-
-  // Helper to get neighbours, guard against missing keys
-  const neighbours = (node: string) => graph.get(node) ?? [];
-
-  // Helper to expand one layer from a queue
-  function expand(
-    queue: string[],
-    visited: Set<string>,
-    otherVisited: Set<string>,
-    parentMap: Map<string, string>
-  ): string | null {
-    const size = queue.length;   // classic BFS “level” size
-    for (let i = 0; i < size; i++) {
-      const current = queue.shift() as string; // guaranteed non‑empty
-
-      for (const neighbour of neighbours(current)) {
-        if (visited.has(neighbour)) continue; // already expanded from this side
-
-        // New node from this side – record parent & mark visited
-        visited.add(neighbour);
-        parentMap.set(neighbour, current);
-        queue.push(neighbour);
-
-        // If the other side has already seen this neighbour,
-        // we’ve met in the middle!
-        if (otherVisited.has(neighbour)) return neighbour;
-      }
-    }
-    return null;
+  // Check odd divisors up to sqrt(n)
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
   }
-
-  // Main loop
-  while (frontQueue.length && backQueue.length) {
-    // 1. Expand front side
-    const meetingPoint = expand(
-      frontQueue,
-      frontVisited,
-      backVisited,
-      frontParent
-    );
-    if (meetingPoint) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint,
-        startKey,
-        goalKey
-      );
-    }
-
-    // 2. Expand back side
-    const meetingPoint2 = expand(
-      backQueue,
-      backVisited,
-      frontVisited,
-      backParent
-    );
-    if (meetingPoint2) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint2,
-        startKey,
-        goalKey
-      );
-    }
-  }
-
-  // No overlap – disconnected graph
-  return null;
+  return true;
 }
+function isPrime6(n: number): boolean {
+  if (n <= 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-/**
- * Reconstructs the full path from start → meeting → goal.
- */
-function buildPath(
-  frontParents: Map<string, string>,
-  backParents: Map<string, string>,
-  meeting: string,
-  start: string,
-  goal: string
-): string[] {
-  const path: string[] = [meeting];
-
-  // Walk backwards from meeting to start
-  let cur: string | null = frontParents.get(meeting) ?? null;
-  while (cur) {
-    path.unshift(cur);
-    cur = frontParents.get(cur) ?? null;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-
-  // Walk forwards from meeting to goal
-  cur = backParents.get(meeting) ?? null;
-  while (cur) {
-    path.push(cur);
-    cur = backParents.get(cur) ?? null;
-  }
-
-  return path;
+  return true;
 }
-// Build a tiny sample graph
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E']]
-]);
+function isPrimeBig(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-console.log(bidirectionalSearch(g, 'A', 'F'));
-// → ['A
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+  }
+  return true;
+}
+console.log(isPrime(97));   // true
+console.log(isPrime(100));  // false
+console.log(isPrime6(97));  // true
+console.log(isPrime6(100)); // false
+console.log(isPrimeBig(19n)); // true
