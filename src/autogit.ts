@@ -1,55 +1,20 @@
-// Graph type: map from vertex id → array of neighbouring vertex ids
-type Graph = Record<string | number, Array<string | number>>;
-function dfsRecursive(
-  graph: Graph,
-  start: string | number,
-  visited = new Set<string | number>()
-): string[] {
-  // If the node has already been visited, stop here.
-  if (visited.has(start)) return [];
+// Original array
+const original: number[] = [1, 2, 3, 4, 5];
 
-  visited.add(start);           // Mark the node
-  const result = [start];        // The order in which we visit
+// 1️⃣ In‑place reverse (mutates `original`)
+original.reverse();
+console.log(original); // [5, 4, 3, 2, 1]
 
-  // Recurse on all neighbours that haven't been visited yet
-  for (const neighbour of graph[start] || []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
-    }
-  }
+// 2️⃣ Copy then reverse (keeps `original` intact)
+const reversedCopy = original.slice().reverse();  // or [...original].reverse()
+console.log(reversedCopy);  // [5, 4, 3, 2, 1]
+type Person = { name: string; age: number };
 
-  return result;
-}
-function dfsIterative(graph: Graph, start: string | number): string[] {
-  const visited = new Set<string | number>();
-  const stack: (string | number)[] = [start];
-  const order: string[] = [];
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
+];
 
-  while (stack.length) {
-    const v = stack.pop()!;           // Grab the vertex on top of the stack
-    if (visited.has(v)) continue;     // Skip if we already processed it
-    visited.add(v);                    // Mark as visited
-    order.push(v);                     // Record visitation order
-
-    // Push neighbours onto the stack (in reverse order if you want a specific order)
-    const neighbours = graph[v] || [];
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      if (!visited.has(neighbours[i])) {
-        stack.push(neighbours[i]);
-      }
-    }
-  }
-
-  return order;
-}
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: [],
-  f: []
-};
-
-console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
-console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
+const reversedPeople = [...people].reverse(); // still Person[]
+const reduceReversed = <T>(array: T[]): T[] =>
+  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
