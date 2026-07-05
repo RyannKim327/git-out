@@ -1,44 +1,66 @@
-// cronDemo.ts
-// ──────────────────────────────────────────────
-// Simple TS + node‑cron demo.  Every minute,
-// the job prints a timestamp and a random number.
-//
-// Requirements:
-//   npm i node-cron @types/node-cron
-//
-// Run with:
-//   npx ts-node cronDemo.ts
-// ‒ or compile (npx tsc) and exec (node cronDemo.js)
-// ──────────────────────────────────────────────
-
-import cron from 'node-cron';
+// A simple singly‑linked‑list node suitable for the intersection test
+export interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
+}
 
 /**
- * Helper that gives us a nicely formatted timestamp.
+ * Returns the first node at which two singly‑linked lists intersect,
+ * or undefined if they never intersect.
  */
-const now = () => new Date().toLocaleString();
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | undefined,
+  headB: ListNode<T> | undefined
+): ListNode<T> | undefined {
+  // Helper that walks a list and returns its length
+  const getLength = (node?: ListNode<T>) => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
+    }
+    return len;
+  };
 
-/**
- * The task that will run according to the cron schedule.
- * We generate a random integer between 1 and 1000.
- */
-const task = () => {
-  const rand = Math.floor(Math.random() * 1000) + 1;
-  console.log(`[${now()}] Random number: ${rand}`);
-};
+  let lenA = getLength(headA);
+  let lenB = getLength(headB);
 
-/**
- * Schedule the job.
- * Cron expression: '* * * * *'
- * └─ minute (0‑59)
- *
- * The job triggers at the start of every minute.
- */
-cron.schedule('* * * * *', task, {
-  scheduled: true,
-  timezone: 'UTC',     // change to your local timezone if needed
-});
+  // Advance the longer list so both pointers are at the same distance
+  // from the end of the list.
+  let currA = headA;
+  let currB = headB;
+  while (lenA > lenB && currA) {
+    currA = currA.next;
+    lenA--;
+  }
+  while (lenB > lenA && currB) {
+    currB = currB.next;
+    lenB--;
+  }
 
-console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
-[2026-06-17 12:34:00] Random number: 827
-[2026-06-17 12:35:00] Random number: 314
+  // Move forward together until either we find the intersection
+  // or both pointers hit the end (undefined).
+  while (currA !== currB) {
+    currA = currA?.next;
+    currB = currB?.next;
+  }
+
+  return currA; // May be undefined if no intersection
+}
+// Build example lists that intersect:
+
+//      A -> B -> C
+//      ^          |
+//      |          v
+//      D <- E
+
+const c: ListNode<number> = { val: 3 };
+const b: ListNode<number> = { val: 2, next: c };
+const a: ListNode<number> = { val: 1, next: b };
+
+const e: ListNode<number> = { val: 5, next: a };
+const d: ListNode<number> = { val: 4, next: e };
+
+console.log(getIntersectionNode(a, d) === a);   // true
+console.log(getIntersectionNode(b, d) === a);   // true
+console.log(getIntersectionNode(c, d) === a);   // true
