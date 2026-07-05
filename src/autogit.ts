@@ -1,87 +1,37 @@
-// simple node definition – feel free to extend it later (value, etc.)
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+function secondLargestSort(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-  constructor(public readonly val?: any) {}
+  const sorted = [...arr].sort((a, b) => b - a); // Descending
+  return sorted[1];
 }
-interface TreeNode {
-  val?: any;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;          // empty subtree → no leaf
+function secondLargestSinglePass(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-  // If this node has no children → it's a leaf.
-  if (node.left === null && node.right === null) {
-    return 1;
-  }
+  let max = -Infinity;
+  let second = -Infinity;
 
-  // Otherwise sum the children’s counts
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-function countLeavesIterative(root: TreeNode | null): number {
-  if (root === null) return 0;
-
-  let leafCount = 0;
-  const stack: Array<TreeNode> = [root];
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode; // `as` because array never empty
-
-    // Check for leaf
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      // push children if they exist
-      if (node.right !== null) stack.push(node.right);
-      if (node.left !== null) stack.push(node.left);
+  for (const num of arr) {
+    if (num > max) {
+      second = max;
+      max = num;
+    } else if (num > second && num !== max) {
+      second = num;
     }
   }
 
-  return leafCount;
+  return second === -Infinity ? undefined : second;
 }
-// ---------------------------------------------------------------------
-// 1. Node definition
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+function secondLargestSet(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)];
+  if (unique.length < 2) return undefined;
 
-  constructor(public readonly val: any) {}
+  const sorted = unique.sort((a, b) => b - a);
+  return sorted[1];
 }
+function secondLargestMathMax(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-// ---------------------------------------------------------------------
-// 2. Recursive counter
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;
-  if (!node.left && !node.right) return 1;
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+  const max = Math.max(...arr);
+  const maxFiltered = arr.filter(num => num !== max);
+  return Math.max(...maxFiltered);
 }
-
-// 3. Iterative counter
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let leaves = 0;
-  const stack: TreeNode[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) leaves++;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
-  return leaves;
-}
-
-// ---------------------------------------------------------------------
-// 4. Demo
-
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4); // leaf
-root.left.right = new TreeNode(5); // leaf
-root.right.left = new TreeNode(6); // leaf
-
-console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
-console.log('Iterative leaves:', countLeavesIterative(root)); // 3
