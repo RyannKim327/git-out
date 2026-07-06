@@ -1,173 +1,65 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
+type Node<T> = { val: T; next: Node<T> | null };
 
-interface Edge {
-  target: Node;
-  weight: Weight;
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
+  }
+
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
+
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
+
+  return true;
 }
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev!;
 }
-
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
-
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
   }
-
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
-
-  get size() {
-    return this.heap.length;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
-        }
-      }
-
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
+  return true;
 }
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
 
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
   }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
-    }
-  }
-
-  return { distances, prev };
+  return true;
 }
-
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
-
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
-  }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
-}
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
