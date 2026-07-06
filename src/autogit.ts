@@ -1,38 +1,48 @@
-const numbers = [1, 2, 3, 4, 5];
-
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
-];
-
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
-
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
-
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
-  }
-}
-console.log(data); // [10, 30, 40]
 /**
- * Removes the first occurrence of `value` from `arr`.
+ * Returns the majority element of the array if one exists,
+ * otherwise returns undefined.
+ *
+ * @param arr an array of comparable values (number, string, …)
  */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
+export function findMajority<T extends number | string | boolean>(
+  arr: T[]
+): T | undefined {
+  // 1️⃣ find a candidate
+  let candidate: T | undefined;
+  let count = 0;
+
+  for (const val of arr) {
+    if (count === 0) {
+      candidate = val;
+      count = 1;
+    } else if (val === candidate) {
+      count++;
+    } else {
+      count--;
+    }
+  }
+
+  // 2️⃣ verify that the candidate is actually a majority
+  if (candidate === undefined) return undefined;
+
+  let freq = 0;
+  for (const v of arr) if (v === candidate) freq++;
+
+  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+}
+console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
+console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
+console.log(findMajority(['a', 'a', 'b']));       // → 'a'
+export function findMajorityWithMap<T>(
+  arr: T[]
+): T | undefined {
+  const map = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2);
+
+  for (const v of arr) {
+    const newCount = (map.get(v) ?? 0) + 1;
+    map.set(v, newCount);
+    if (newCount > threshold) return v;
+  }
+  return undefined;
 }
