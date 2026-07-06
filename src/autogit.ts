@@ -1,45 +1,33 @@
 /**
- * Returns an object with the maximum sum and the start/end indices
- * of the sub‑array that produces that sum.
- *
- * @param nums - array of numbers
- * @returns { maxSum, start, end }
+ * Returns a random integer between `min` and `max` – both inclusive.
+ * Uses the standard Math.random() (not crypto‑safe).
  */
-export function maxSumSubarray(nums: number[]) {
-  // In case the input is empty we can return 0 / -1/-1
-  if (nums.length === 0) {
-    return { maxSum: 0, start: -1, end: -1 };
-  }
+export function randomIntInRange(min: number, max: number): number {
+  // Make sure min ≤ max and that the inputs are integers
+  if (!Number.isInteger(min) || !Number.isInteger(max))
+    throw new Error('min and max must be integers');
+  if (min > max) [min, max] = [max, min];
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These will record the best sub‑array boundaries
-  let bestStart = 0;
-  let bestEnd = 0;
-  // Temporary positions
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at i
-    if (currentSum + nums[i] < nums[i]) {
-      currentSum = nums[i];
-      tempStart = i;
-    } else {
-      currentSum += nums[i];
-    }
-
-    // Update best if we have a better sum
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  const range = max - min + 1;          // how many possible numbers
+  return Math.floor(Math.random() * range) + min;
 }
-const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
-const { maxSum, start, end } = maxSumSubarray(arr);
-console.log(maxSum); // 43
-console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
+
+/**
+ * Returns a random floating‑point number in `[min, max)`.
+ * If you want `max` inclusive, add a tiny epsilon before flooring.
+ */
+export function randomFloatInRange(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  return Math.random() * (max - min) + min;
+}
+export function secureRandomInt(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  const range = max - min + 1;
+  // We'll grab 4 random bytes and reduce them into our range
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (buf[0] % range) + min;
+}
+console.log(randomIntInRange(1, 6)); // 1‑6 like a die
+console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
+console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
