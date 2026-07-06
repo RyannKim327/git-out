@@ -1,40 +1,113 @@
-/**
- * Interpolation search returns the index of `target` in `arr`,
- * or –1 if the target is not present.
- *
- * @param arr   – sorted array of numbers (must be monotonic increasing)
- * @param target – key we’re trying to locate
- * @returns the array index of target or -1
- */
-export function interpolationSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
+// 1️⃣  Node definition – the “building block” of the list
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-    let low = 0;
-    let high = arr.length - 1;
+  constructor(value: T) {
+    this.value = value;
+  }
+}
 
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Avoid division by zero when the sub‑array contains equal numbers
-        if (arr[high] === arr[low]) {
-            return arr[low] === target ? low : -1;
-        }
+// 2️⃣  The linked list itself
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-        // Estimate the likely position of `target` within [low, high]
-        const pos = low + Math.floor(
-            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
-        );
+  // ---- basic properties ----
+  get size() { return this._size; }
 
-        const val = arr[pos];
+  // ---- insertions ----
+  push(value: T): void {                  // add to the end
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._size++;
+  }
 
-        if (val === target) return pos;
-        if (val < target) low = pos + 1;
-        else high = pos - 1;
+  unshift(value: T): void {                // add to the front
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._size++;
+  }
+
+  // ---- removals ----
+  pop(): T | null {                       // remove from the end
+    if (!this.head) return null;
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
     }
 
-    return -1; // not found
+    if (prev) prev.next = null;           // cut off the tail
+    else this.head = this.tail = null;    // list became empty
+
+    this._size--;
+    return current.value;
+  }
+
+  shift(): T | null {                     // remove from the front
+    if (!this.head) return null;
+    const removed = this.head;
+    this.head = removed.next;
+    if (!this.head) this.tail = null;     // list became empty
+    this._size--;
+    return removed.value;
+  }
+
+  // ---- traversal helpers ----
+  toArray(): T[] {
+    const arr: T[] = [];
+    let current = this.head;
+    while (current) {
+      arr.push(current.value);
+      current = current.next;
+    }
+    return arr;
+  }
+
+  forEach(fn: (value: T, index: number) => void): void {
+    let current = this.head;
+    let i = 0;
+    while (current) {
+      fn(current.value, i);
+      current = current.next;
+      i++;
+    }
+  }
 }
-import { interpolationSearch } from "./interpolationSearch";
-
-const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
-
-console.log(interpolationSearch(data, 42));   // → 4
-console.log(interpolationSearch(data, 100));  // → -1
+const list = new LinkedList<number>();
+list.push(1);                // [1]
+list.push(2);                // [1, 2]
+list.unshift(0);             // [0, 1, 2]
+console.log(list.toArray()); // [0, 1, 2]
+console.log(list.pop());     // 2
+console.log(list.shift());   // 0
+console.log(list.toArray()); // [1]
+insertAfter(target: T, newVal: T): boolean {
+  let current = this.head;
+  while (current) {
+    if (current.value === target) {
+      const node = new ListNode(newVal);
+      node.next = current.next;
+      current.next = node;
+      if (current === this.tail) this.tail = node;
+      this._size++;
+      return true;
+    }
+    current = current.next;
+  }
+  return false;
+}
