@@ -1,62 +1,55 @@
 /**
- * A generic binary search.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to locate.
- * @param compare  Optional comparator: (a, b) → negative, 0, positive.
- *                 If omitted, the default `<`/`>` operators are used.
- * @returns Index of `target` in `arr`, or `-1` if not found.
+ * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  if (!arr.length) return -1;
-  const cmp = compare ?? defaultCompare<T>;
-  let low = 0;
-  let high = arr.length - 1;
+function isAnagram(s1: string, s2: string): boolean {
+  const normalize = (s: string) =>
+    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
+  return normalize(s1) === normalize(s2);
+}
+function isAnagramLetterCount(a: string, b: string): boolean {
+  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
 
-  while (low <= high) {
-    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
-    const comp = cmp(arr[mid], target);
-    if (comp === 0) return mid;
-    if (comp < 0) low = mid + 1;           // target is greater
-    else high = mid - 1;                  // target is smaller
+  const freq = (s: string) => {
+    const map = new Map<string, number>();
+    for (const c of s) {
+      map.set(c, (map.get(c) ?? 0) + 1);
+    }
+    return map;
+  };
+
+  if (clean(a).length !== clean(b).length) return false;
+
+  const m1 = freq(clean(a));
+  const m2 = freq(clean(b));
+
+  for (const [ch, count] of m1) {
+    if (m2.get(ch) !== count) return false;
   }
-
-  return -1;
+  return true;
 }
+function isAnagramFlexible(
+  s1: string,
+  s2: string,
+  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
+): boolean {
+  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-/** Recursive version – identical semantics. */
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (!arr.length || low > high) return -1;
-  const cmp = compare ?? defaultCompare<T>;
+  let pattern = '';
+  if (ignoreSpaces) pattern += '\\s';
+  if (ignorePunct) pattern += /[^\w\s]/g.source;
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], target);
+  const regex = new RegExp(pattern, 'g');
+  const normalize = (s: string) =>
+    s.replace(regex, '').toLowerCase().split('').sort().join('');
 
-  if (comp === 0) return mid;
-  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
-  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+  return normalize(s1) === normalize(s2);
 }
+console.log(isAnagram('listen', 'silent'));          // true
+console.log(isAnagram('A gentleman', 'Elegant man'));// true
+console.log(isAnagram('Hello', 'World'));            // false
 
-/** Fallback when you didn’t provide a comparator. */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [3, 7, 12, 18, 22, 33, 42];
-console.log(binarySearch(nums, 18));           // 3
-console.log(binarySearch(nums, 5));            // -1
+// Using the frequency‑count version
+console.log(isAnagramLetterCount('abc', 'cab'));     // true
 
-// To search objects, supply a comparator:
-const words = ['apple', 'banana', 'cherry'];
-console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
+// Flexible options
+console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
