@@ -1,44 +1,35 @@
-// cronDemo.ts
-// ──────────────────────────────────────────────
-// Simple TS + node‑cron demo.  Every minute,
-// the job prints a timestamp and a random number.
-//
-// Requirements:
-//   npm i node-cron @types/node-cron
-//
-// Run with:
-//   npx ts-node cronDemo.ts
-// ‒ or compile (npx tsc) and exec (node cronDemo.js)
-// ──────────────────────────────────────────────
+// A node that holds a value and a reference to the next node.
+// Feel free to add more fields (e.g., prev, data…) as needed.
+export interface Node<T> {
+  value: T;
+  next?: Node<T>;
+}
+export function length<T>(head: Node<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-import cron from 'node-cron';
+  while (current) {
+    count++;
+    current = current.next;
+  }
 
-/**
- * Helper that gives us a nicely formatted timestamp.
- */
-const now = () => new Date().toLocaleString();
+  return count;
+}
+export function lengthRecursive<T>(node: Node<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
+}
+class LinkedList<T> {
+  private head?: Node<T>;
 
-/**
- * The task that will run according to the cron schedule.
- * We generate a random integer between 1 and 1000.
- */
-const task = () => {
-  const rand = Math.floor(Math.random() * 1000) + 1;
-  console.log(`[${now()}] Random number: ${rand}`);
-};
+  // ... push, pop, etc.
 
-/**
- * Schedule the job.
- * Cron expression: '* * * * *'
- * └─ minute (0‑59)
- *
- * The job triggers at the start of every minute.
- */
-cron.schedule('* * * * *', task, {
-  scheduled: true,
-  timezone: 'UTC',     // change to your local timezone if needed
-});
+  size(): number {
+    return length(this.head);   // or lengthRecursive(this.head)
+  }
+}
+const node3: Node<string> = { value: "c" };
+const node2: Node<string> = { value: "b", next: node3 };
+const node1: Node<string> = { value: "a", next: node2 };
 
-console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
-[2026-06-17 12:34:00] Random number: 827
-[2026-06-17 12:35:00] Random number: 314
+console.log(length(node1));          // → 3
+console.log(lengthRecursive(node1)); // → 3
