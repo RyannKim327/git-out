@@ -1,37 +1,41 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
+  }
+  return (base * height) / 2;
 }
 
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
 }
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
-
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
+    }
   }
 
-  return sum;
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
+  }
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
 
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
+  }
+  return base * height / 2;
+}
