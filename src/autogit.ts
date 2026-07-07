@@ -1,69 +1,65 @@
-/**
- * BWT keeps the input string as an array of characters,
- * builds all rotations, sorts them, then extracts the last
- * column (the transformed string) and remembers the index
- * of the original string in the sorted list – that index
- * is needed for the inverse transform.
- */
-export function bwt(str: string): { transformed: string; primaryIndex: number } {
-  const n = str.length;
-  // Produce all rotations: str[i:] + str[:i]
-  const rotations: string[] = Array.from({ length: n }, (_, i) =>
-    str.slice(i) + str.slice(0, i)
-  );
+type Node<T> = { val: T; next: Node<T> | null };
 
-  // Sort rotations lexicographically
-  rotations.sort();
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
 
-  // The transformed string is the concatenation of the last char
-  // of every rotation, appended in sorted order.
-  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
-
-  // Find the row that matches the original string; its index
-  // is what BWT callers need to recover the original.
-  const primaryIndex = rotations.findIndex(rot => rot === str);
-
-  return { transformed: lastColumn, primaryIndex };
-}
-
-/**
- * Inverse BWT reconstructs the original string from the
- * transformed string and the index found in the forward step.
- */
-export function inverseBwt(
-  transformed: string,
-  primaryIndex: number
-): string {
-  const n = transformed.length;
-
-  // Initialize an array of empty strings: will hold the building rows
-  let table: string[] = Array.from({ length: n }, () => '');
-
-  // Repeatedly prepend the transformed column to each row,
-  // then sort. After n iterations the table is fully sorted.
-  for (let step = 0; step < n; step++) {
-    // Prepend each character of 'transformed' to the corresponding row
-    table = table.map((row, i) => transformed[i] + row);
-
-    // Quick sort (JavaScript's String array sort is fine for our sizes)
-    table.sort();
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  // The original string is the row at primaryIndex
-  return table[primaryIndex];
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
+
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
+
+  return true;
 }
 
-/* ────────────────────── Demo ────────────────────── */
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev!;
+}
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
 
-const example = 'banana$';    // '$' is a unique EOF marker
-const { transformed, primaryIndex } = bwt(example);
-
-console.log('BWT:', transformed, 'Primary index:', primaryIndex);
-console.log('Inverse:', inverseBwt(transformed, primaryIndex));
-
-/* Expected output:
-
-BWT: annb$aa  Primary index: 3
-Inverse: banana$
-
-*/
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
+  }
+  return true;
+}
