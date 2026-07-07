@@ -1,9 +1,10 @@
-const sentence = "The quick brown fox jumps over the lazy dog";
-const needle = "brown";
+// A lean, common‑sense pattern that covers most real‑world emails
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const hasBrown = sentence.includes(needle); // true
-const hasBrownCaseInsensitive = sentence
-  .toLowerCase()
-  .includes(needle.toLowerCase()); // true
-const hasBrownIdx = sentence.indexOf(needle) !== -1; // true
-const hasVowelPattern = /[aeiou]/.test(sentence); // true
+// Test whether a string looks like an e‑mail address
+export function isEmail(str: string): boolean {
+  return EMAIL_RE.test(str);
+}
+console.log(isEmail('foo@bar.com'));   // true
+console.log(isEmail('invalid@'));      // false
+console.log(isEmail('no-at-symbol'));  // false
