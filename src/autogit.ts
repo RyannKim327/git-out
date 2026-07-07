@@ -1,26 +1,37 @@
-// utils.ts
-/**
- * Randomly reorder the elements of an array in place.
- * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
- *
- * @param arr The array to shuffle (mutated in place)
- * @returns The same array, now shuffled
- */
-export function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a remaining element…
-    const j = Math.floor(Math.random() * (i + 1));
-
-    // …and swap it with the current element.
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+// Node definition – adjust `value` type as needed
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-import { shuffle } from "./utils";
 
-const numbers = [1, 2, 3, 4, 5];
-shuffle(numbers);          // numbers is now in a random order
-console.log(numbers);
+// Recursive sum – the classic “do it in one pass”
+export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;                 // base case
+  return (root.value as any) +                      // value of this node
+         sumRecursive(root.left) +                     // left subtree
+         sumRecursive(root.right);                     // right subtree
+}
+export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;
 
-const words = ["a", "b", "c", "d"];
-console.log(shuffle(words));  // prints a shuffled copy
+  let sum = 0 as T;
+  const stack: TreeNode<T>[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.value as any;
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
+
+  return sum;
+}
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
+
+console.log(sumRecursive(tree));   // 15
+console.log(sumIterative(tree));   // 15
