@@ -1,66 +1,38 @@
-// A simple singly‑linked‑list node suitable for the intersection test
-export interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;        // 1 and below are not prime
+  if (n <= 3) return true;         // 2 and 3 are prime
+
+  // Even numbers > 2 are composite.
+  if (n % 2 === 0) return false;
+
+  // Check odd divisors up to sqrt(n)
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
+  }
+  return true;
 }
+function isPrime6(n: number): boolean {
+  if (n <= 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-/**
- * Returns the first node at which two singly‑linked lists intersect,
- * or undefined if they never intersect.
- */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | undefined,
-  headB: ListNode<T> | undefined
-): ListNode<T> | undefined {
-  // Helper that walks a list and returns its length
-  const getLength = (node?: ListNode<T>) => {
-    let len = 0;
-    while (node) {
-      len++;
-      node = node.next;
-    }
-    return len;
-  };
-
-  let lenA = getLength(headA);
-  let lenB = getLength(headB);
-
-  // Advance the longer list so both pointers are at the same distance
-  // from the end of the list.
-  let currA = headA;
-  let currB = headB;
-  while (lenA > lenB && currA) {
-    currA = currA.next;
-    lenA--;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-  while (lenB > lenA && currB) {
-    currB = currB.next;
-    lenB--;
-  }
-
-  // Move forward together until either we find the intersection
-  // or both pointers hit the end (undefined).
-  while (currA !== currB) {
-    currA = currA?.next;
-    currB = currB?.next;
-  }
-
-  return currA; // May be undefined if no intersection
+  return true;
 }
-// Build example lists that intersect:
+function isPrimeBig(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-//      A -> B -> C
-//      ^          |
-//      |          v
-//      D <- E
-
-const c: ListNode<number> = { val: 3 };
-const b: ListNode<number> = { val: 2, next: c };
-const a: ListNode<number> = { val: 1, next: b };
-
-const e: ListNode<number> = { val: 5, next: a };
-const d: ListNode<number> = { val: 4, next: e };
-
-console.log(getIntersectionNode(a, d) === a);   // true
-console.log(getIntersectionNode(b, d) === a);   // true
-console.log(getIntersectionNode(c, d) === a);   // true
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+  }
+  return true;
+}
+console.log(isPrime(97));   // true
+console.log(isPrime(100));  // false
+console.log(isPrime6(97));  // true
+console.log(isPrime6(100)); // false
+console.log(isPrimeBig(19n)); // true
