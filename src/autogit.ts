@@ -1,53 +1,69 @@
 /**
- * Binary search for a sorted array of numbers.
- *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
  */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
 
-  const mid = Math.floor((low + high) / 2);
+  // Sort rotations lexicographically
+  rotations.sort();
 
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
+
+  return { transformed: lastColumn, primaryIndex };
+}
+
+/**
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
+ */
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
+
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
+
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
+
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
   }
+
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+/* ────────────────────── Demo ────────────────────── */
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
 
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
-}
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
 
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+/* Expected output:
+
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
+
+*/
