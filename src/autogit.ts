@@ -1,41 +1,45 @@
 /**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
+ * Returns an object with the maximum sum and the start/end indices
+ * of the sub‑array that produces that sum.
  *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
+ * @param nums - array of numbers
+ * @returns { maxSum, start, end }
  */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
-
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Place the key into its correct spot
-    arr[j + 1] = key;
+export function maxSumSubarray(nums: number[]) {
+  // In case the input is empty we can return 0 / -1/-1
+  if (nums.length === 0) {
+    return { maxSum: 0, start: -1, end: -1 };
   }
 
-  return arr; // handy for chaining, but the original array is already sorted
+  let bestSum = nums[0];
+  let currentSum = nums[0];
+
+  // These will record the best sub‑array boundaries
+  let bestStart = 0;
+  let bestEnd = 0;
+  // Temporary positions
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at i
+    if (currentSum + nums[i] < nums[i]) {
+      currentSum = nums[i];
+      tempStart = i;
+    } else {
+      currentSum += nums[i];
+    }
+
+    // Update best if we have a better sum
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
-
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
-
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
+const { maxSum, start, end } = maxSumSubarray(arr);
+console.log(maxSum); // 43
+console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
