@@ -1,87 +1,37 @@
-// simple node definition – feel free to extend it later (value, etc.)
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
-
-  constructor(public readonly val?: any) {}
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-interface TreeNode {
-  val?: any;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;          // empty subtree → no leaf
+/**
+ * Returns the n‑th node from the end of a singly linked list,
+ * or null if it doesn't exist.
+ * n is 1‑based: n = 1 means the last node.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-  // If this node has no children → it's a leaf.
-  if (node.left === null && node.right === null) {
-    return 1;
+  let fast: ListNode<T> | null = head;
+  // Step 1: move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;           // n is larger than the list length
+    fast = fast.next;
   }
 
-  // Otherwise sum the children’s counts
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-function countLeavesIterative(root: TreeNode | null): number {
-  if (root === null) return 0;
-
-  let leafCount = 0;
-  const stack: Array<TreeNode> = [root];
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode; // `as` because array never empty
-
-    // Check for leaf
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      // push children if they exist
-      if (node.right !== null) stack.push(node.right);
-      if (node.left !== null) stack.push(node.left);
-    }
+  // Step 2: move both pointers until fast reaches the end
+  let slow: ListNode<T> | null = head;
+  while (fast) {
+    fast = fast.next;
+    slow = slow!.next!;
   }
 
-  return leafCount;
+  return slow; // could be null if the list was empty
 }
-// ---------------------------------------------------------------------
-// 1. Node definition
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+// build a tiny list: 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4: ListNode<number> = { val: 4, next: node5 };
+let node3: ListNode<number> = { val: 3, next: node4 };
+let node2: ListNode<number> = { val: 2, next: node3 };
+let node1: ListNode<number> = { val: 1, next: node2 };
 
-  constructor(public readonly val: any) {}
-}
-
-// ---------------------------------------------------------------------
-// 2. Recursive counter
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;
-  if (!node.left && !node.right) return 1;
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-
-// 3. Iterative counter
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let leaves = 0;
-  const stack: TreeNode[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) leaves++;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
-  return leaves;
-}
-
-// ---------------------------------------------------------------------
-// 4. Demo
-
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4); // leaf
-root.left.right = new TreeNode(5); // leaf
-root.right.left = new TreeNode(6); // leaf
-
-console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
-console.log('Iterative leaves:', countLeavesIterative(root)); // 3
+const thirdFromEnd = nthFromEnd(node1, 3);
+console.log(thirdFromEnd?.val); // 3
