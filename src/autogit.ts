@@ -1,50 +1,26 @@
-interface TreeNode {
-  val:  number | string   // you can put any type that fits your data
-  left?: TreeNode | null
-  right?: TreeNode | null
-}
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0;                 // empty tree -> depth 0
+// utils.ts
+/**
+ * Randomly reorder the elements of an array in place.
+ * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
+ *
+ * @param arr The array to shuffle (mutated in place)
+ * @returns The same array, now shuffled
+ */
+export function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a remaining element…
+    const j = Math.floor(Math.random() * (i + 1));
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let depth = 0;
-  const queue: Array<TreeNode> = [root];
-
-  while (queue.length) {
-    const levelSize = queue.length;   // nodes at the current level
-    depth++;                          // we’re about to process a whole new level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;    // safe; queue is non‑empty here
-
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
-    }
+    // …and swap it with the current element.
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-
-  return depth;
+  return arr;
 }
-// Build a tiny tree:
-//        1
-//       / \
-//      2   3
-//         /
-//        4
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2 },
-  right: {
-    val: 3,
-    left: { val: 4 }
-  }
-};
+import { shuffle } from "./utils";
 
-console.log('Recursive depth:', maxDepth(tree));          // 3
-console.log('Iterative depth:', maxDepthIterative(tree)); // 3
+const numbers = [1, 2, 3, 4, 5];
+shuffle(numbers);          // numbers is now in a random order
+console.log(numbers);
+
+const words = ["a", "b", "c", "d"];
+console.log(shuffle(words));  // prints a shuffled copy
