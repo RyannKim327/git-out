@@ -1,28 +1,30 @@
-// Simple random user fetcher with axios (TypeScript)
+/**
+ * Return the factorial of a non‑negative integer.
+ *
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
+ */
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
+  }
 
-import axios from 'axios';
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  username: string;
-  phone: string;
-  website: string;
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
 
-async function fetchRandomUser(): Promise<User | undefined> {
-  try {
-    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
-    const randomIndex = Math.floor(Math.random() * data.length);
-    return data[randomIndex];
-  } catch (error) {
-    console.error('Error fetching users:', error);
-  }
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
+
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
 }
 
-fetchRandomUser().then(user => {
-  if (user) {
-    console.log(`🎲 Random user: ${user.name} (${user.email})`);
-  }
-});
+console.log(factorialBig(20n).toString()); // 2432902008176640000
