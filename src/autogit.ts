@@ -1,139 +1,147 @@
-// 1️⃣ Node shape ----------------------------------------------------
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+/* ──────────────────────────────────────────────────────
+ *  SkipListNode<T>
+ * ────────────────────────────────────────────────────── */
+class SkipListNode<T> {
+  /** The stored value (defined only in the “bottom” node) */
+  value?: T;
+
+  /** Links to the node that follows this one at each level */
+  forward: Array<SkipListNode<T> | null> = [];
+
+  constructor(value?: T, level: number = 0) {
+    this.value = value;
+    this.forward = new Array(level + 1).fill(null);
+  }
 }
-type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
 
-const defaultComparator = <T extends number | string>(a: T, b: T) => {
-  if (a < b) return -1;
-  if (a > b) return +1;
-  return 0;
-};
-// 2️⃣ BST class ----------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-  public size = 0;
+/* ──────────────────────────────────────────────────────
+ *  SkipList<T>
+ * ────────────────────────────────────────────────────── */
+export class SkipList<T> {
+  /* Adjustable parameters */
+  private readonly MAX_LEVEL: number;      // upper bound for levels
+  private readonly P: number;              // probability of promoting a node
 
-  constructor(private comp: Comparator<T> = defaultComparator) {}
+  private level: number = 0;               // current maximum level
+  private header: SkipListNode<T>;         // sentinel start node
 
-  // -----------------------------------------------------------------
-  // Insert
-  // -----------------------------------------------------------------
+  constructor(maxLevel: number = 16, probability: number = 0.5) {
+    this.MAX_LEVEL = maxLevel;
+    this.P        = probability;
+    this.header   = new SkipListNode<T>();
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Random level generator
+   * ────────────────────────────────────────────────────── */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+      lvl++;
+    }
+    return lvl;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Search for a value
+   * ────────────────────────────────────────────────────── */
+  search(value: T): SkipListNode<T> | null {
+    let current = this.header;
+
+    // move down each level, then across level 0
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+    }
+
+    current = current.forward[0]!;
+
+    if (current && current.value === value) return current;
+    return null;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Insert a new value
+   * ────────────────────────────────────────────────────── */
   insert(value: T): void {
-    this.root = this._insertRec(this.root, value);
-  }
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
 
-  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) {
-      this.size++;
-      return new TreeNode(value);
+    // find where the new node will be inserted at each level
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
     }
 
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._insertRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._insertRec(node.right, value);
-    } else {
-      // duplicates: decide how to handle. Here we skip insertion.
-      return node;
+    // pick a random level for the new node
+    const lvl = this.randomLevel();
+
+    // raise the list’s level if necessary
+    if (lvl > this.level) {
+      for (let i = this.level + 1; i <= lvl; i++) {
+        update[i] = this.header;
+      }
+      this.level = lvl;
     }
-    return node;
+
+    const newNode = new SkipListNode<T>(value, lvl);
+
+    // splice the new node into every level above 0
+    for (let i = 0; i <= lvl; i++) {
+      newNode.forward[i] = update[i].forward[i];
+      update[i].forward[i] = newNode;
+    }
   }
 
-  // -----------------------------------------------------------------
-  // Search
-  // -----------------------------------------------------------------
-  find(value: T): boolean {
-    let node = this.root;
+  /* ──────────────────────────────────────────────────────
+   *  Remove a value
+   * ────────────────────────────────────────────────────── */
+  remove(value: T): boolean {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
+
+    current = current.forward[0]!;
+
+    if (!current || current.value !== value) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node at every level it appears
+    for (let i = 0; i <= this.level; i++) {
+      if (update[i].forward[i] !== current) break;
+      update[i].forward[i] = current.forward[i];
+    }
+
+    // shrink the list’s level if the top levels became empty
+    while (this.level > 0 && this.header.forward[this.level] == null) {
+      this.level--;
+    }
+
+    return true;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Helper: convert list into an array (useful for debugging)
+   * ────────────────────────────────────────────────────── */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.header.forward[0];
+
     while (node) {
-      const cmp = this.comp(value, node.value);
-      if (cmp === 0) return true;
-      node = cmp < 0 ? node.left : node.right;
+      result.push(node.value!);
+      node = node.forward[0];
     }
-    return false;
-  }
 
-  // -----------------------------------------------------------------
-  // Remove
-  // -----------------------------------------------------------------
-  remove(value: T): void {
-    this.root = this._removeRec(this.root, value);
-  }
-
-  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null;
-
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._removeRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._removeRec(node.right, value);
-    } else {
-      // node to delete found
-      this.size--;
-
-      // case 1: no children
-      if (!node.left && !node.right) return null;
-
-      // case 2: one child
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // case 3: two children – replace by inorder predecessor
-      const pred = this._maxNode(node.left)!; // non‑null
-      node.value = pred.value;
-      node.left = this._removeRec(node.left, pred.value);
-    }
-    return node;
-  }
-
-  private _maxNode(node: TreeNode<T>): TreeNode<T> {
-    while (node.right) node = node.right;
-    return node;
-  }
-
-  // -----------------------------------------------------------------
-  // Traversal helpers – in‑order (sorted order)
-  // -----------------------------------------------------------------
-  inorder(cb: (value: T) => void): void {
-    this._inorderRec(this.root, cb);
-  }
-
-  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
-    if (!node) return;
-    this._inorderRec(node.left, cb);
-    cb(node.value);
-    this._inorderRec(node.right, cb);
-  }
-
-  // -----------------------------------------------------------------
-  // Utility: pretty print as nested brackets
-  // -----------------------------------------------------------------
-  toString(): string {
-    const parts: string[] = [];
-    this._toStringRec(this.root, parts);
-    return parts.join(' ');
-  }
-
-  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
-    if (!node) { parts.push('null'); return; }
-    parts.push(String(node.value));
-    this._toStringRec(node.left, parts);
-    this._toStringRec(node.right, parts);
+    return result;
   }
 }
-const bst = new BinarySearchTree<number>();
-
-[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
-console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
-
-console.log('Contains 40? →', bst.find(40));   // true
-console.log('Contains 99? →', bst.find(99));   // false
-
-console.log('In‑order traversal:');
-bst.inorder(v => console.log(v));  
