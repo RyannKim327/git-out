@@ -1,41 +1,93 @@
-function firstRepeated(s: string): string | null {
-  const seen = new Set<string>();
+/**
+ * In‑place quicksort for an array of elements that implement Comparable.
+ * @param arr The array to sort.
+ * @param left Index of the first element to consider.
+ * @param right Index of the last element to consider.
+ * @returns The sorted array (the same reference is returned).
+ */
+export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  // Using 0‐based indices
+  if (left >= right) return arr;           // Base case – 0 or 1 element
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;          // first repeat!
+  const pivotIndex = partition(arr, left, right);
+  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
+  quicksort(arr, pivotIndex + 1, right);  // right side
+  return arr;
+}
+
+/**
+ * Hoare partition scheme.
+ * Moves elements < pivot to the left, > pivot to the right.
+ * Returns the final pivot position (the index of the pivot element after partition).
+ */
+function partition<T>(arr: T[], left: number, right: number): number {
+  // Pick the middle element as pivot (arbitrary choice)
+  const pivot = arr[Math.floor((left + right) / 2)];
+
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    // Move i until we find element >= pivot
+    while (arr[i] < pivot) i++;
+    // Move j until we find element <= pivot
+    while (arr[j] > pivot) j--;
+
+    if (i <= j) {
+      // Swap arr[i] and arr[j]
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
-    seen.add(ch);
   }
+  // Return the index where the next recursive calls will split.
+  return i - 1;
+}
+const data = [34, 7, 23, 32, 5, 62];
+console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
+export function quicksortBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): T[] {
+  if (left >= right) return arr;
 
-  return null;   // no repeats
+  const pivotIndex = partitionBy(arr, cmp, left, right);
+  quicksortBy(arr, cmp, left, pivotIndex - 1);
+  quicksortBy(arr, cmp, pivotIndex + 1, right);
+  return arr;
 }
-console.log(firstRepeated("abca")); // → "a"
-console.log(firstRepeated("abcdef")); // → null
-console.log(firstRepeated("hello world")); // → "l"
-function firstRepeatedCaseInsensitive(s: string): string | null {
-  const seen = new Set<string>();
-  for (const ch of s.toLowerCase()) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
+
+function partitionBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left: number,
+  right: number
+): number {
+  const pivot = arr[Math.floor((left + right) / 2)];
+
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    while (cmp(arr[i], pivot) < 0) i++;
+    while (cmp(arr[j], pivot) > 0) j--;
+
+    if (i <= j) {
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
   }
-  return null;
+  return i - 1;
 }
-function firstRepeatIndex(s: string): number {
-  const seen = new Set<string>();
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (seen.has(ch)) return i;   // second appearance
-    seen.add(ch);
-  }
-  return -1; // no repeat
-}
-function firstRepeatLater(s: string): string | null {
-  const seen = new Set<string>();
-  for (let i = s.length - 1; i >= 0; i--) {
-    const ch = s[i];
-    if (seen.has(ch)) return ch; // this appears again later
-    seen.add(ch);
-  }
-  return null;
-}
+const users = [
+  { name: 'Anna', age: 23 },
+  { name: 'Bob', age: 17 },
+  { name: 'Clara', age: 31 },
+];
+
+quicksortBy(users, (a, b) => a.age - b.age);
+stdin: 5 1 4 2 6 0
+stdout: 0 1 2 4 5 6
