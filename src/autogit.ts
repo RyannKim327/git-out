@@ -1,48 +1,93 @@
 /**
- * Shell sort – a classic gap‑based insertion sort
- *
- * @template T - type held in the array
- * @param arr   Array to be sorted in place
- * @param cmp   Optional comparator, defaults to numeric comparison
- * @returns     The sorted array (same reference as `arr`)
+ * In‑place quicksort for an array of elements that implement Comparable.
+ * @param arr The array to sort.
+ * @param left Index of the first element to consider.
+ * @param right Index of the last element to consider.
+ * @returns The sorted array (the same reference is returned).
  */
-export function shellSort<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
-): T[] {
-  const n = arr.length;
+export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  // Using 0‐based indices
+  if (left >= right) return arr;           // Base case – 0 or 1 element
 
-  // A common sequence: n/2, n/4, …, 1
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Do a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap-sorted elements until the correct spot for temp is found
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
-  }
-
+  const pivotIndex = partition(arr, left, right);
+  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
+  quicksort(arr, pivotIndex + 1, right);  // right side
   return arr;
 }
-// 1️⃣ Sort numbers
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-// 2️⃣ Sort strings alphabetically
-shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
+/**
+ * Hoare partition scheme.
+ * Moves elements < pivot to the left, > pivot to the right.
+ * Returns the final pivot position (the index of the pivot element after partition).
+ */
+function partition<T>(arr: T[], left: number, right: number): number {
+  // Pick the middle element as pivot (arbitrary choice)
+  const pivot = arr[Math.floor((left + right) / 2)];
 
-// 3️⃣ Sort objects by a property
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: "Zoe", age: 29 },
-  { name: "Alex", age: 22 },
-  { name: "Mia", age: 35 }
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    // Move i until we find element >= pivot
+    while (arr[i] < pivot) i++;
+    // Move j until we find element <= pivot
+    while (arr[j] > pivot) j--;
+
+    if (i <= j) {
+      // Swap arr[i] and arr[j]
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
+  }
+  // Return the index where the next recursive calls will split.
+  return i - 1;
+}
+const data = [34, 7, 23, 32, 5, 62];
+console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
+export function quicksortBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): T[] {
+  if (left >= right) return arr;
+
+  const pivotIndex = partitionBy(arr, cmp, left, right);
+  quicksortBy(arr, cmp, left, pivotIndex - 1);
+  quicksortBy(arr, cmp, pivotIndex + 1, right);
+  return arr;
+}
+
+function partitionBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left: number,
+  right: number
+): number {
+  const pivot = arr[Math.floor((left + right) / 2)];
+
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    while (cmp(arr[i], pivot) < 0) i++;
+    while (cmp(arr[j], pivot) > 0) j--;
+
+    if (i <= j) {
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
+  }
+  return i - 1;
+}
+const users = [
+  { name: 'Anna', age: 23 },
+  { name: 'Bob', age: 17 },
+  { name: 'Clara', age: 31 },
 ];
-shellSort(people, (a, b) => a.age - b.age);
-console.log(people.map(p => p.age));  // → [22, 29, 35]
+
+quicksortBy(users, (a, b) => a.age - b.age);
+stdin: 5 1 4 2 6 0
+stdout: 0 1 2 4 5 6
