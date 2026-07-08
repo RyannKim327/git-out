@@ -1,65 +1,80 @@
-type Node<T> = { val: T; next: Node<T> | null };
+/**
+ * The graph is represented as an adjacency list:
+ *   key     → array of neighbors that the key points to
+ */
+export type Graph<T = string> = Record<T, T[]>;
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
+/**
+ * Helper types for the two algorithms
+ */
+type Queue<T> = T[];
+export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
+  const result: T[] = [];
 
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  // Compute in‑degree for each node
+  const indegree = new Map<T, number>();
+  for (const node in graph) {
+    indegree.set(node, 0);               // ensure all nodes appear
+    for (const nb of graph[node]) {
+      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
+    }
   }
 
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
+  // Queue all nodes that have no incoming edges
+  const queue: Queue<T> = [];
+  for (const [node, deg] of indegree.entries()) {
+    if (deg === 0) queue.push(node);
   }
 
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
 
-  return true;
+    // Reduce indegree for all neighbors, pushing any that reach 0
+    for (const nb of graph[node] ?? []) {
+      const deg = (indegree.get(nb) ?? 0) - 1;
+      indegree.set(nb, deg);
+      if (deg === 0) queue.push(nb);
+    }
+  }
+
+  // If we processed fewer nodes than exist, a cycle exists
+  if (result.length !== Object.keys(graph).length) {
+    throw new Error('Graph contains a cycle; topological sort impossible');
+  }
+  return result;
 }
+export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
+  const visited = new Set<T>();
+  const temp = new Set<T>();   // nodes on the recursion stack
+  const result: T[] = [];
 
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev!;
-}
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
+  const visit = (node: T) => {
+    if (temp.has(node)) {
+      throw new Error('Graph contains a cycle; topological sort impossible');
+    }
+    if (!visited.has(node)) {
+      temp.add(node);
+      for (const nb of graph[node] ?? []) visit(nb);
+      temp.delete(node);
+      visited.add(node);
+      result.push(node);     // post‑order push gives topological order
+    }
+  };
 
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
+  for (const node in graph) visit(node as T);
+  // reverse because we push after exploring children
+  return result.reverse();
 }
+const myGraph: Graph<string> = {
+  A: ['B', 'C'],
+  B: ['D'],
+  C: ['D'],
+  D: [],
+};
+
+console.log(topologicalSortKahn(myGraph));
+// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+
+console.log(topologicalSortDFS(myGraph));
+// → same order (or any other valid one)
