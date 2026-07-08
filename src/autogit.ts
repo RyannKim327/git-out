@@ -1,39 +1,41 @@
-function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
+function firstRepeated(s: string): string | null {
+  const seen = new Set<string>();
 
-// Example
-console.log(reverseString('hello')); // 'olleh'
-reverseString('👋🏽'); // '🏽👋'  → wrong
-function reverseStringUnicode(s: string): string {
-  const codePoints: number[] = [];
-  for (const char of s) {
-    codePoints.push(char.codePointAt(0)!);
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;          // first repeat!
+    }
+    seen.add(ch);
   }
-  return String.fromCodePoint(...codePoints.reverse());
-}
 
-// Example
-console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
-const cp = Array.from(s).reverse().join('');
-function reverseRecursively(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseRecursively(s.slice(1)) + s[0];
+  return null;   // no repeats
 }
-function reverseLoop(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+console.log(firstRepeated("abca")); // → "a"
+console.log(firstRepeated("abcdef")); // → null
+console.log(firstRepeated("hello world")); // → "l"
+function firstRepeatedCaseInsensitive(s: string): string | null {
+  const seen = new Set<string>();
+  for (const ch of s.toLowerCase()) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
   }
-  return result;
+  return null;
 }
-function reverseBuffer(s: string): string {
-  const buf: string[] = new Array(s.length);
+function firstRepeatIndex(s: string): number {
+  const seen = new Set<string>();
   for (let i = 0; i < s.length; i++) {
-    buf[i] = s[s.length - 1 - i];
+    const ch = s[i];
+    if (seen.has(ch)) return i;   // second appearance
+    seen.add(ch);
   }
-  return buf.join('');
+  return -1; // no repeat
 }
-function reverseStringSafe(s: string): string {
-  return Array.from(s).reverse().join('');
+function firstRepeatLater(s: string): string | null {
+  const seen = new Set<string>();
+  for (let i = s.length - 1; i >= 0; i--) {
+    const ch = s[i];
+    if (seen.has(ch)) return ch; // this appears again later
+    seen.add(ch);
+  }
+  return null;
 }
