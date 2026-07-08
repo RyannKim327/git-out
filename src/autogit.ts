@@ -1,65 +1,38 @@
-type Node<T> = { val: T; next: Node<T> | null };
+const numbers = [1, 2, 3, 4, 5];
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
+// remove the value 3
+const withoutThree = numbers.filter(n => n !== 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+type Person = { id: number; name: string };
+const list: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
+];
 
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+const target = list[1]; // the Bob object reference
+const withoutBob = list.filter(person => person !== target);
+const letters = ['a', 'b', 'c', 'd', 'e'];
+const idx = 2; // we want to drop 'c'
+
+letters.splice(idx, 1); // remove 1 element at position idx
+console.log(letters); // ['a', 'b', 'd', 'e']
+const data = [10, 20, 30, 20, 40];
+const removeVal = 20;
+
+for (let i = data.length - 1; i >= 0; i--) {
+  if (data[i] === removeVal) {
+    data.splice(i, 1);
   }
-
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
-
-  return true;
 }
-
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev!;
-}
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
-
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
+console.log(data); // [10, 30, 40]
+/**
+ * Removes the first occurrence of `value` from `arr`.
+ */
+function removeFirst<T>(arr: T[], value: T): T[] {
+  const idx = arr.indexOf(value);
+  if (idx === -1) return arr;          // nothing found
+  const copy = [...arr];               // keep original intact
+  copy.splice(idx, 1);
+  return copy;
 }
