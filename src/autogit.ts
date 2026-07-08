@@ -1,58 +1,121 @@
-/**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+/* ───────────────────────────────────────────────────────────────────── */
+/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
+ *  need other key types, but then you have to supply a comparator. -------- */
 
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
+/*  Node ------------------------------------------------------------------- */
+class Node {
+  key: number;
+  height: number;
+  left: Node | null = null;
+  right: Node | null = null;
 
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
+  constructor(key: number) {           // simple ctor
+    this.key = key;
+    this.height = 1;                    // leaf height = 1
   }
-
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
-
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
 }
 
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
+/*  Helper utilities -------------------------------------------------------- */
+const height = (node: Node | null): number => (node ? node.height : 0);
 
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
+const updateHeight = (node: Node) =>
+  node.height = 1 + Math.max(height(node.left), height(node.right));
 
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
+const balanceFactor = (node: Node): number =>
+  height(node.left) - height(node.right);
 
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
+/*  Rotations -------------------------------------------------------------- */
+function rotateRight(y: Node): Node {
+  const x = y.left!;
+  const T2 = x.right;
 
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
-    }
+  // rotation
+  x.right = y;
+  y.left = T2;
 
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
+  // update heights
+  updateHeight(y);
+  updateHeight(x);
 
-    pow10 *= 10;           // move to next digit
+  return x;     // new root of this part
+}
+
+function rotateLeft(x: Node): Node {
+  const y = x.right!;
+  const T2 = y.left;
+
+  // rotation
+  y.left = x;
+  x.right = T2;
+
+  // update heights
+  updateHeight(x);
+  updateHeight(y);
+
+  return y;     // new root
+}
+
+/*  Insert ------------------------------------------------------------------ */
+function insert(node: Node | null, key: number): Node {
+  if (!node) return new Node(key);
+
+  if (key < node.key) node.left = insert(node.left, key);
+  else if (key > node.key) node.right = insert(node.right, key);
+  else return node;           // duplicate keys rejected
+
+  /* update our own height after child changed */
+  updateHeight(node);
+
+  /* balance now */
+  const bf = balanceFactor(node);
+
+  // Left heavy
+  if (bf > 1) {
+    if (key < node.left!.key)                   // Left‑Left case
+      return rotateRight(node);
+
+    // Left‑Right case
+    node.left = rotateLeft(node.left!);
+    return rotateRight(node);
   }
 
-  return output;
-}
-import { radixSort } from "./radixSort";
+  // Right heavy
+  if (bf < -1) {
+    if (key > node.right!.key)                  // Right‑Right case
+      return rotateLeft(node);
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+    // Right‑Left case
+    node.right = rotateRight(node.right!);
+    return rotateLeft(node);
+  }
+
+  return node;            // unchanged
+}
+
+/*  Search --------------------------------------------------------------- */
+function contains(node: Node | null, key: number): boolean {
+  while (node) {
+    if (key === node.key) return true;
+    node = key < node.key ? node.left : node.right;
+  }
+  return false;
+}
+
+/*  In‑order traversal for debugging -------------------------------------- */
+function inorder(node: Node | null, res: number[] = []): number[] {
+  if (!node) return res;
+  inorder(node.left, res);
+  res.push(node.key);
+  inorder(node.right, res);
+  return res;
+}
+
+/*  Example usage ---------------------------------------------------------- */
+let root: Node | null = null;
+[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
+
+console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
+console.log('Contains 25?', contains(root, 25));      // true
+console.log('Contains 15?', contains(root, 15));      // false
+class Node<T> { key: T; height: number; ... }
+function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
