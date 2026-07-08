@@ -1,34 +1,35 @@
-function stringLength(s: string): number {
+// A node that holds a value and a reference to the next node.
+// Feel free to add more fields (e.g., prev, data…) as needed.
+export interface Node<T> {
+  value: T;
+  next?: Node<T>;
+}
+export function length<T>(head: Node<T> | undefined): number {
   let count = 0;
-  for (const _ of s) {   // iterates over Unicode code points
-    ++count;
-  }
-  return count;
-}
-function stringLengthCodeUnits(s: string): number {
-  let count = 0;
-  // `s[i]` returns `undefined` past the end of the string
-  for (let i = 0; s[i] !== undefined; i++) {
-    ++count;
-  }
-  return count;
-}
-function stringLengthCharAt(s: string): number {
-  let count = 0;
-  for (let i = 0; s.charAt(i) !== ''; i++) {
-    ++count;
-  }
-  return count;
-}
-function* chars(s: string): Generator<unknown> {
-  for (const c of s) { yield c; }
-}
+  let current = head;
 
-function stringLengthFunctional(s: string): number {
-  let count = 0;
-  for (const _ of chars(s)) { ++count; }
+  while (current) {
+    count++;
+    current = current.next;
+  }
+
   return count;
 }
-console.log(stringLength("hello"));       // 5
-console.log(stringLength("👋🌍"));        // 2  (two code points)
-console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
+export function lengthRecursive<T>(node: Node<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
+}
+class LinkedList<T> {
+  private head?: Node<T>;
+
+  // ... push, pop, etc.
+
+  size(): number {
+    return length(this.head);   // or lengthRecursive(this.head)
+  }
+}
+const node3: Node<string> = { value: "c" };
+const node2: Node<string> = { value: "b", next: node3 };
+const node1: Node<string> = { value: "a", next: node2 };
+
+console.log(length(node1));          // → 3
+console.log(lengthRecursive(node1)); // → 3
