@@ -1,37 +1,50 @@
-function secondLargestSort(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  const sorted = [...arr].sort((a, b) => b - a); // Descending
-  return sorted[1];
+interface TreeNode {
+  val:  number | string   // you can put any type that fits your data
+  left?: TreeNode | null
+  right?: TreeNode | null
 }
-function secondLargestSinglePass(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0;                 // empty tree -> depth 0
 
-  let max = -Infinity;
-  let second = -Infinity;
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-  for (const num of arr) {
-    if (num > max) {
-      second = max;
-      max = num;
-    } else if (num > second && num !== max) {
-      second = num;
+  return Math.max(leftDepth, rightDepth) + 1;
+}
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+
+  let depth = 0;
+  const queue: Array<TreeNode> = [root];
+
+  while (queue.length) {
+    const levelSize = queue.length;   // nodes at the current level
+    depth++;                          // we’re about to process a whole new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;    // safe; queue is non‑empty here
+
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
     }
   }
 
-  return second === -Infinity ? undefined : second;
+  return depth;
 }
-function secondLargestSet(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)];
-  if (unique.length < 2) return undefined;
+// Build a tiny tree:
+//        1
+//       / \
+//      2   3
+//         /
+//        4
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2 },
+  right: {
+    val: 3,
+    left: { val: 4 }
+  }
+};
 
-  const sorted = unique.sort((a, b) => b - a);
-  return sorted[1];
-}
-function secondLargestMathMax(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  const max = Math.max(...arr);
-  const maxFiltered = arr.filter(num => num !== max);
-  return Math.max(...maxFiltered);
-}
+console.log('Recursive depth:', maxDepth(tree));          // 3
+console.log('Iterative depth:', maxDepthIterative(tree)); // 3
