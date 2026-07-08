@@ -1,38 +1,50 @@
-const numbers = [1, 2, 3, 4, 5];
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
 
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
-];
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
+  }
 
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
 
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
 
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
+}
+
+/**
+ * Bottom‑up merge sort (iterative).
+ *
+ * @param arr - The array to sort (in‑place)
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
+
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
+    }
   }
 }
-console.log(data); // [10, 30, 40]
-/**
- * Removes the first occurrence of `value` from `arr`.
- */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
-}
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
