@@ -1,49 +1,26 @@
-/**
- * Returns n! for a non‑negative integer `n`.
- * Throws an error if `n` is negative.
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;   // base case
-  return n * factorialRecursive(n - 1);
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
+  const total = nums.reduce((sum, n) => sum + n, 0);
+  return total / nums.length;
 }
-/**
- * Computes factorial using a loop. 
- * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
- */
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;
+  let sum = 0;
+  for (const n of nums) {
+    sum += n;
   }
-  return result;
+  return sum / nums.length;
 }
-/**
- * Factorial returning a BigInt to avoid precision loss.
- * Accepts `bigint | number`, but converts to BigInt internally.
- */
-function factorialBigInt(n: number | bigint): bigint {
-  const bigN = typeof n === 'bigint' ? n : BigInt(n);
-  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
-  if (bigN <= 1n) return 1n;
-  let result = 1n;
-  for (let i = 2n; i <= bigN; i++) {
-    result *= i;
-  }
-  return result;
+function mean<T extends number>(nums: T[]): number {
+  if (nums.length === 0) return NaN;
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
 }
-console.log(factorialBigInt(25));          // 15511210043330985984000000n
-console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
-const factorialCache = new Map<number, number>();
-
-function factorialMemoized(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;
-  if (factorialCache.has(n)) return factorialCache.get(n)!;
-
-  const value = n * factorialMemoized(n - 1);
-  factorialCache.set(n, value);
-  return value;
+function meanSafe(nums: Array<number | null | undefined>): number {
+  const cleaned = nums.filter((n): n is number => typeof n === "number");
+  if (cleaned.length === 0) return NaN;
+  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
 }
-const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
+const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
+console.log(mean([2, 4, 6]));   // 4
+console.log(mean([]));          // NaN
+console.log(meanSafe([1, 2, null, 4])); // 2.333...
