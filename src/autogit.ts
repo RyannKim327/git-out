@@ -1,27 +1,45 @@
 /**
- * Bubble‑sort in place.
- * Works on arrays of any type that can be compared with the `<` operator.
+ * Returns an object with the maximum sum and the start/end indices
+ * of the sub‑array that produces that sum.
+ *
+ * @param nums - array of numbers
+ * @returns { maxSum, start, end }
  */
-export function bubbleSort<T>(arr: T[]): void {
-  let swapped: boolean;
+export function maxSumSubarray(nums: number[]) {
+  // In case the input is empty we can return 0 / -1/-1
+  if (nums.length === 0) {
+    return { maxSum: 0, start: -1, end: -1 };
+  }
 
-  // keep looping until a pass produces no swaps
-  do {
-    swapped = false;
-    for (let i = 0; i < arr.length - 1; i++) {
-      // compare adjacent elements
-      if (arr[i] > arr[i + 1]) {
-        // swap them
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;      // a swap happened, so we might need another pass
-      }
+  let bestSum = nums[0];
+  let currentSum = nums[0];
+
+  // These will record the best sub‑array boundaries
+  let bestStart = 0;
+  let bestEnd = 0;
+  // Temporary positions
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at i
+    if (currentSum + nums[i] < nums[i]) {
+      currentSum = nums[i];
+      tempStart = i;
+    } else {
+      currentSum += nums[i];
     }
-  } while (swapped);
-}
-const numbers = [5, 3, 8, 4, 1];
-bubbleSort(numbers);
-console.log(numbers); // → [1, 3, 4, 5, 8]
 
-const strings = ["pear", "apple", "banana"];
-bubbleSort(strings);
-console.log(strings); // → ["apple", "banana", "pear"]
+    // Update best if we have a better sum
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+}
+const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
+const { maxSum, start, end } = maxSumSubarray(arr);
+console.log(maxSum); // 43
+console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
