@@ -1,50 +1,36 @@
-// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
-function merge(
-  arr: number[],
-  tmp: number[],
-  l: number,
-  mid: number,
-  r: number
-): void {
-  let i = l;        // pointer for the left half
-  let j = mid + 1;  // pointer for the right half
-  let k = l;        // pointer for the tmp array
-
-  // Merge until one half runs out
-  while (i <= mid && j <= r) {
-    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
-    else tmp[k++] = arr[j++];
-  }
-
-  // Copy any remaining elements of the left half
-  while (i <= mid) tmp[k++] = arr[i++];
-
-  // Copy any remaining elements of the right half
-  while (j <= r) tmp[k++] = arr[j++];
-
-  // Return merged result back to the original array
-  for (let p = l; p <= r; p++) arr[p] = tmp[p];
-}
-
 /**
- * Bottom‑up merge sort (iterative).
- *
- * @param arr - The array to sort (in‑place)
+ * Returns the longest common prefix of the supplied strings.
+ * If the array is empty, or if no common prefix exists, an empty string is returned.
  */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  const tmp = new Array<number>(n);
+export function longestCommonPrefix(arr: readonly string[]): string {
+  if (arr.length === 0) return '';
 
-  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // l = start index of sub‑array pair
-    for (let l = 0; l < n - sz; l += sz << 1) {
-      const mid = l + sz - 1;
-      const r = Math.min(l + (sz << 1) - 1, n - 1);
-      merge(arr, tmp, l, mid, r);
+  // We’ll be comparing the first element with every other one.
+  // Once a mismatch is found we stop expanding the prefix.
+  let prefix = arr[0];
+
+  for (let i = 1; i < arr.length; ++i) {
+    // Shorten the prefix until it matches the start of arr[i]
+    while (arr[i].indexOf(prefix) !== 0) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';
     }
   }
+
+  return prefix;
 }
-const data = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(data);
-console.log(data); // [3, 9, 10, 27, 38, 43, 82]
+const words = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(words)); // prints "fl"
+
+const mix = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(mix));   // prints ""
+export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
+  (prev, curr) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
+    }
+    return prev.slice(0, i);
+  },
+  arr[0] ?? ''
+);
