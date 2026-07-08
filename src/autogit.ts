@@ -1,93 +1,139 @@
-/**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
- */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
-
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
+// 1️⃣ Node shape ----------------------------------------------------
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
+type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
 
-/**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
- */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
+const defaultComparator = <T extends number | string>(a: T, b: T) => {
+  if (a < b) return -1;
+  if (a > b) return +1;
+  return 0;
+};
+// 2️⃣ BST class ----------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  public size = 0;
 
-  let i = left;
-  let j = right;
+  constructor(private comp: Comparator<T> = defaultComparator) {}
 
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
-
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
+  // -----------------------------------------------------------------
+  // Insert
+  // -----------------------------------------------------------------
+  insert(value: T): void {
+    this.root = this._insertRec(this.root, value);
   }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
-}
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
 
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
-}
-
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) {
+      this.size++;
+      return new TreeNode(value);
     }
-  }
-  return i - 1;
-}
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
-];
 
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._insertRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._insertRec(node.right, value);
+    } else {
+      // duplicates: decide how to handle. Here we skip insertion.
+      return node;
+    }
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Search
+  // -----------------------------------------------------------------
+  find(value: T): boolean {
+    let node = this.root;
+    while (node) {
+      const cmp = this.comp(value, node.value);
+      if (cmp === 0) return true;
+      node = cmp < 0 ? node.left : node.right;
+    }
+    return false;
+  }
+
+  // -----------------------------------------------------------------
+  // Remove
+  // -----------------------------------------------------------------
+  remove(value: T): void {
+    this.root = this._removeRec(this.root, value);
+  }
+
+  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null;
+
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._removeRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._removeRec(node.right, value);
+    } else {
+      // node to delete found
+      this.size--;
+
+      // case 1: no children
+      if (!node.left && !node.right) return null;
+
+      // case 2: one child
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+
+      // case 3: two children – replace by inorder predecessor
+      const pred = this._maxNode(node.left)!; // non‑null
+      node.value = pred.value;
+      node.left = this._removeRec(node.left, pred.value);
+    }
+    return node;
+  }
+
+  private _maxNode(node: TreeNode<T>): TreeNode<T> {
+    while (node.right) node = node.right;
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Traversal helpers – in‑order (sorted order)
+  // -----------------------------------------------------------------
+  inorder(cb: (value: T) => void): void {
+    this._inorderRec(this.root, cb);
+  }
+
+  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
+    if (!node) return;
+    this._inorderRec(node.left, cb);
+    cb(node.value);
+    this._inorderRec(node.right, cb);
+  }
+
+  // -----------------------------------------------------------------
+  // Utility: pretty print as nested brackets
+  // -----------------------------------------------------------------
+  toString(): string {
+    const parts: string[] = [];
+    this._toStringRec(this.root, parts);
+    return parts.join(' ');
+  }
+
+  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
+    if (!node) { parts.push('null'); return; }
+    parts.push(String(node.value));
+    this._toStringRec(node.left, parts);
+    this._toStringRec(node.right, parts);
+  }
+}
+const bst = new BinarySearchTree<number>();
+
+[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
+console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
+
+console.log('Contains 40? →', bst.find(40));   // true
+console.log('Contains 99? →', bst.find(99));   // false
+
+console.log('In‑order traversal:');
+bst.inorder(v => console.log(v));  
