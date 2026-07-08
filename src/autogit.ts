@@ -1,26 +1,35 @@
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
-  const total = nums.reduce((sum, n) => sum + n, 0);
-  return total / nums.length;
+// A node that holds a value and a reference to the next node.
+// Feel free to add more fields (e.g., prev, data…) as needed.
+export interface Node<T> {
+  value: T;
+  next?: Node<T>;
 }
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;
-  let sum = 0;
-  for (const n of nums) {
-    sum += n;
+export function length<T>(head: Node<T> | undefined): number {
+  let count = 0;
+  let current = head;
+
+  while (current) {
+    count++;
+    current = current.next;
   }
-  return sum / nums.length;
+
+  return count;
 }
-function mean<T extends number>(nums: T[]): number {
-  if (nums.length === 0) return NaN;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
+export function lengthRecursive<T>(node: Node<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
 }
-function meanSafe(nums: Array<number | null | undefined>): number {
-  const cleaned = nums.filter((n): n is number => typeof n === "number");
-  if (cleaned.length === 0) return NaN;
-  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
+class LinkedList<T> {
+  private head?: Node<T>;
+
+  // ... push, pop, etc.
+
+  size(): number {
+    return length(this.head);   // or lengthRecursive(this.head)
+  }
 }
-const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
-console.log(mean([2, 4, 6]));   // 4
-console.log(mean([]));          // NaN
-console.log(meanSafe([1, 2, null, 4])); // 2.333...
+const node3: Node<string> = { value: "c" };
+const node2: Node<string> = { value: "b", next: node3 };
+const node1: Node<string> = { value: "a", next: node2 };
+
+console.log(length(node1));          // → 3
+console.log(lengthRecursive(node1)); // → 3
