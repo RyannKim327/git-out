@@ -1,61 +1,37 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+const nums = [1, 2, 3, 2, 4, 1, 5];
+
+const uniq = Array.from(new Set(nums));
+// or: const uniq = [...new Set(nums)];
+
+console.log(uniq); // [1, 2, 3, 4, 5]
+const words = ["foo", "bar", "baz", "foo", "bar"];
+
+const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
+
+console.log(unique); // ["foo", "bar", "baz"]
+const objs = [{a: 1}, {a: 1}, {a: 2}];
+console.log([...new Set(objs)]); // keeps both {a:1} objects
+function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = keyFn(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
 }
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
+const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
+console.log(uniqueObjs); // [{a:1}, {a:2}]
+const arr = [1, 2, 3, 2, 1];
+const seen = new Set<number>();
+let writeIdx = 0;
+
+for (let readIdx = 0; readIdx < arr.length; readIdx++) {
+  const value = arr[readIdx];
+  if (!seen.has(value)) {
+    seen.add(value);
+    arr[writeIdx++] = value;
   }
-  return head
 }
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
-
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
-  }
-
-  // At the end, prev is the new head
-  return prev
-}
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
-  }
-
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
-
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
-
-  return newHead
-}
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
-
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+arr.length = writeIdx; // shrink the array
+console.log(arr); // [1, 2, 3]
