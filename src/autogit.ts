@@ -1,38 +1,25 @@
-/**
- * Return the largest prime factor of a positive integer.
- *
- * @param n – the number you want to factor (must be > 1)
- * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
+/** 
+ * Returns true if `text` is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores everything that’s not a letter or digit
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n <= 1) return undefined;
+function isPalindrome(text: string): boolean {
+  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
+  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
-  let num = n;
-  let largest = -1;
-
-  // Remove all factors of 2
-  while (num % 2 === 0) {
-    largest = 2;
-    num /= 2;
-  }
-
-  // Now `num` is odd; try odd divisors only
-  let divisor = 3;
-  const limit = Math.sqrt(num);
-  while (divisor <= limit) {
-    while (num % divisor === 0) {
-      largest = divisor;
-      num /= divisor;
-    }
-    divisor += 2;           // skip the even numbers
-  }
-
-  // If we're left with a prime greater than 2
-  if (num > 2) largest = num;
-
-  return largest;
+  // 2. Compare the string with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
 
-// Quick demo
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+// Usage examples
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan...'));  // true
+console.log(isPalindrome('Hello world'));      // false
+function isPalindromeSimple(s: string): boolean {
+  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
+    if (s[i] !== s[j]) return false;
+  }
+  return true;
+}
