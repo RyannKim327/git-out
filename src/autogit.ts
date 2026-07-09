@@ -1,41 +1,43 @@
-/**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
- *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
- */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+// O(n log n) – fine for typical lengths
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false; // quick length check
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+  return sortedA === sortedB;
+};
+// O(n) – best for long strings
+const areAnagrams = (first: string, second: string): boolean => {
+  if (first.length !== second.length) return false;
 
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  const count = new Map<string, number>();
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
-
-    // Place the key into its correct spot
-    arr[j + 1] = key;
+  // Count chars from the first string
+  for (const ch of first) {
+    count.set(ch, (count.get(ch) ?? 0) + 1);
   }
 
-  return arr; // handy for chaining, but the original array is already sorted
-}
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
+  // Decrement with the second string
+  for (const ch of second) {
+    const cur = count.get(ch);
+    if (!cur) return false;          // char not in first
+    if (cur === 1) count.delete(ch);
+    else count.set(ch, cur - 1);
+  }
 
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
+  return count.size === 0;
+};
+// Works only for ISO‑8859‑1 / 8‑bit chars
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
 
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+  const freq = new Int16Array(256);
+
+  for (let i = 0; i < a.length; i++) {
+    freq[a.charCodeAt(i)]++;
+    freq[b.charCodeAt(i)]--;
+  }
+
+  return freq.every(v => v === 0);
+};
+console.log(areAnagrams('listen', 'silent')); // true
+console.log(areAnagrams('hello', 'world'));   // false
