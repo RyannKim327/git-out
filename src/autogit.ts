@@ -1,93 +1,50 @@
-/**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
- */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
 
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
+  }
+
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
+
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
+
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
 }
 
 /**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
+ * Bottom‑up merge sort (iterative).
+ *
+ * @param arr - The array to sort (in‑place)
  */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
 
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
-
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
     }
   }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
 }
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
-
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
-}
-
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
-  }
-  return i - 1;
-}
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
-];
-
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
