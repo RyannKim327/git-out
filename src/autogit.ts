@@ -1,55 +1,145 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
-}
+/**
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
+ */
+type Graph = Map<string, string[]>;
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
 
-    if (slow === fast) {        // they met → cycle detected
-      return true;
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
+
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
+
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
+
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
+
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
+
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
+
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
+      }
+    }
+    return null;
+  }
+
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
+    }
+
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
     }
   }
 
-  // fast ran out of nodes → no cycle
-  return false;
+  // No overlap – disconnected graph
+  return null;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
 
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
+/**
+ * Reconstructs the full path from start → meeting → goal.
+ */
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
+
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
   }
-  return false;
+
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
+  }
+
+  return path;
 }
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
 
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
-  }
-
-  // No cycle
-  if (!fast || !fast.next) return null;
-
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
-}
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
