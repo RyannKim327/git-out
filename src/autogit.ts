@@ -1,7 +1,7 @@
-const removeSpaces = (s: string) => s.replace(/\s+/g, '');
+const part1 = "Hello";
+const part2 = "World";
 
-const original  = 'Hello   world!  How are   you?';
-const cleaned    = removeSpaces(original);
-
-console.log(cleaned); // "Helloworld!Howareyou?"
-const onlySpace = (s: string) => s.replace(/ +/g, '');
+const plus = part1 + part2;          // "HelloWorld"
+const concat = part1.concat(part2);  // "HelloWorld"
+const template = `${part1}${part2}`; // "HelloWorld"
+const join = [part1, part2].join(''); // "HelloWorld"
