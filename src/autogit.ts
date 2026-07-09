@@ -1,43 +1,47 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+/**
+ * Random API – picks a random fact from https://uselessfacts.jsph.pl
+ * Returns an object: { id, text, source, permalink }
+ */
+async function fetchRandomFact(): Promise<{
+  id: string;
+  text: string;
+  source: string;
+  permalink: string;
+}> {
+  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
 
-  const count = new Map<string, number>();
+  try {
+    const response = await fetch(apiUrl);
 
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // If you’re inside an Android NativeScript environment you could
+    // show a Toast or log the result with Android SDK.
+    console.log("Random fact fetched:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch random fact:", err);
+    throw err;
   }
+}
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
+/**
+ * Example usage – you’d call this from anywhere, e.g. on a button tap.
+ */
+async function runDemo() {
+  try {
+    const fact = await fetchRandomFact();
+    // In Android, for a quick visual you could use:
+    // import { Toast } from "tns-core-modules/ui/toast";
+    // Toast.makeText(fact.text, 2000).show();
+    console.log("Fact text:", fact.text);
+  } catch {
+    // error handling already done in fetchRandomFact
   }
+}
 
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
-
-  const freq = new Int16Array(256);
-
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
-  }
-
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+runDemo();
