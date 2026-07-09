@@ -1,43 +1,37 @@
-/**
- * Returns true if `text` reads the same forward and backward.
- * By default it is case‑sensitive and includes every character.
- *
- * @param text The string to check.
- * @param opts  Optional settings:
- *   - `ignoreCase`:   true to compare lowercase strings (default: false)
- *   - `ignoreSpaces`: true to skip whitespace (default: false)
- *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
- */
-export function isPalindrome(
-  text: string,
-  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
-): boolean {
-  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
+const nums = [1, 2, 3, 2, 4, 1, 5];
 
-  // Prepare the string based on options
-  let processed = ignoreCase ? text.toLowerCase() : text;
+const uniq = Array.from(new Set(nums));
+// or: const uniq = [...new Set(nums)];
 
-  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
-  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
+console.log(uniq); // [1, 2, 3, 4, 5]
+const words = ["foo", "bar", "baz", "foo", "bar"];
 
-  // Compare forward and reversed
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
+
+console.log(unique); // ["foo", "bar", "baz"]
+const objs = [{a: 1}, {a: 1}, {a: 2}];
+console.log([...new Set(objs)]); // keeps both {a:1} objects
+function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = keyFn(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
 }
-console.log(isPalindrome('radar'));          // true
-console.log(isPalindrome('Radar'));          // false
-console.log(isPalindrome('Radar', { ignoreCase: true })); // true
-console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
-const isPal = (s: string) =>
-  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
-const examples = [
-  'racecar',
-  'RaceCar',
-  'A man, a plan, a canal: Panama',
-  'No lemon, no melon',
-  'Hello, world!',
-];
 
-for (const ex of examples) {
-  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
+const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
+console.log(uniqueObjs); // [{a:1}, {a:2}]
+const arr = [1, 2, 3, 2, 1];
+const seen = new Set<number>();
+let writeIdx = 0;
+
+for (let readIdx = 0; readIdx < arr.length; readIdx++) {
+  const value = arr[readIdx];
+  if (!seen.has(value)) {
+    seen.add(value);
+    arr[writeIdx++] = value;
+  }
 }
+
+arr.length = writeIdx; // shrink the array
+console.log(arr); // [1, 2, 3]
