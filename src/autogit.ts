@@ -1,76 +1,66 @@
 /**
- * Build the LPS (Longest Prefix Suffix) table for KMP.
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
  *
- * @param pattern - The pattern string for which the table is built.
- * @returns An array where lps[i] is the length of the longest proper
- *          prefix of pattern[0..i] that is also a suffix of that substring.
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps: number[] = Array(m).fill(0);
-  let length = 0;                 // length of previous longest prefix suffix
-  let i = 1;                      // lps[0] is always 0
-
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length += 1;
-      lps[i] = length;
-      i += 1;
-    } else {
-      if (length !== 0) {
-        // fall back in the pattern (do not increment i here)
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i += 1;
-      }
-    }
-  }
-  return lps;
-}
-
-/**
- * KMP search – returns all starting indices of `pattern` in `text`.
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
  *
- * @param text    – The string to search within.
- * @param pattern – The string to find.
- * @returns Array of start indices where pattern occurs in text.
+ * The function returns everything that looks like the pattern.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];          // nothing to find
-  const lps = buildLPS(pattern);
+export function rabinKarp(pattern: string, text: string): number[] {
   const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
 
-  let i = 0;   // index for text
-  let j = 0;   // index for pattern
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i += 1;
-      j += 1;
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
+  }
+
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
+  }
+
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
+      }
+      if (match) result.push(i);
     }
 
-    // full match found
-    if (j === pattern.length) {
-      result.push(i - j);   // starting index
-      j = lps[j - 1];       // allow overlapping matches
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i += 1;
-      }
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
     }
   }
 
   return result;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+const text = "abracadabra";
+const pattern = "abra";
 
-const matches = kmpSearch(text, pattern);
-console.log(matches);          // [10]
-
-const hasMatch = matches.length > 0;
-console.log(hasMatch);         // true
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
