@@ -1,77 +1,77 @@
-/**
- * Median of two sorted arrays.
- *
- * The algorithm keeps a binary search on the smaller array.  
- * At each step we decide how many elements from `a` belong on the left side of the
- * partition.  The counterpart from `b` is computed so that the left side contains
- * exactly half (or half‑plus‑one for odd total length) of the elements.
- *
- * Edge cases:
- *   * one of the arrays may be empty
- *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Ensure `a` is the shorter array to keep the binary search limits small.
-  let a = nums1;
-  let b = nums2;
-  if (a.length > b.length) [a, b] = [b, a];
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-  const m = a.length;
-  const n = b.length;
-  // `halfLen` is the number of elements that must be on the left side
-  // of the partition (including the middle element when total length is odd).
-  const halfLen = Math.floor((m + n + 1) / 2);
+  // Insert value in the first spot found (just for demonstration).
+  // A real BST would place it relative to its neighbors.
+  insert(value: T): void {
+    const node = new TreeNode(value);
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
+    this._insertRec(this.root, node);
+  }
 
-  let low = 0;
-  let high = m;
-
-  while (low <= high) {
-    // Number of elements from a put on the left side
-    const i = Math.floor((low + high) / 2);
-    // Number of elements from b put on the left side
-    const j = halfLen - i;
-
-    const aLeft  = i === 0 ? -Infinity : a[i - 1];
-    const aRight = i === m ?  Infinity : a[i];
-
-    const bLeft  = j === 0 ? -Infinity : b[j - 1];
-    const bRight = j === n ?  Infinity : b[j];
-
-    // Partition is correct: all left elements ≤ all right elements
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // If total length is odd, the median is the max of the left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      // If even, it’s the mean of the two middle values
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      // Too many elements from a on the left: move left
-      high = i - 1;
+  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
+    // Walk left first, then right, until you hit a null spot.
+    if (!current.left) {
+      current.left = node;
+    } else if (!current.right) {
+      current.right = node;
     } else {
-      // Too few elements from a on the left: move right
-      low = i + 1;
+      // Go deeper – we’re just doing breadth‑like insertion.
+      this._insertRec(current.left, node);
     }
   }
 
-  // Should never reach here for valid input
-  throw new Error("Invalid input");
-}
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
-console.log(findMedianSortedArrays(arr1, arr2)); // 8
-export function medianNaive(a: number[], b: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-  while (i < a.length || j < b.length) {
-    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
+  // Breadth‑first traversal (queue style) – returns array of values.
+  bfs(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
+
+    const queue: TreeNode<T>[] = [this.root];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      result.push(cur.value);
+      if (cur.left) queue.push(cur.left);
+      if (cur.right) queue.push(cur.right);
     }
+    return result;
   }
-  const mid = Math.floor(merged.length / 2);
-  return merged.length % 2
-    ? merged[mid]
-    : (merged[mid - 1] + merged[mid]) / 2;
+
+  // Depth‑first in‑order traversal (left, node, right)
+  inorder(): T[] {
+    const res: T[] = [];
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      res.push(node.value);
+      visit(node.right);
+    };
+    visit(this.root);
+    return res;
+  }
+
+  // Simple depth counter
+  depth(): number {
+    const dfs = (node: TreeNode<T> | null): number =>
+      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
+    return dfs(this.root);
+  }
 }
+const tree = new BinaryTree<number>();
+[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
+
+console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
+console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
+console.log('Depth:', tree.depth());         // 3
+interface Person { name: string; age: number; }
+const people = new BinaryTree<Person>();
+people.insert({name: 'Alice', age: 30});
