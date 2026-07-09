@@ -1,25 +1,27 @@
-/** 
- * Returns true if `text` is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores everything that’s not a letter or digit
+/**
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
  */
-function isPalindrome(text: string): boolean {
-  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
-  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-  // 2. Compare the string with its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
+    }
+  } while (swapped);
 }
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
 
-// Usage examples
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan...'));  // true
-console.log(isPalindrome('Hello world'));      // false
-function isPalindromeSimple(s: string): boolean {
-  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
-    if (s[i] !== s[j]) return false;
-  }
-  return true;
-}
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
