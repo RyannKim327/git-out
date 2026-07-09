@@ -1,26 +1,25 @@
-function countWord(text: string, word: string): number {
-  // Escape word so special regex symbols don’t bite us
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // \b = word boundary, i = ignore case, g = global (all matches)
-  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
+/** 
+ * Returns true if `text` is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores everything that’s not a letter or digit
+ */
+function isPalindrome(text: string): boolean {
+  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
+  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+
+  // 2. Compare the string with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
-const txt = "Boo, boo! Boo-boo? Booing… boo.";
-console.log(countWord(txt, 'boo')); // 3
-function countWordSplit(text: string, word: string) {
-  const words = text.trim().split(/\s+/);
-  const target = word.toLowerCase();
-  return words.filter(w => w.toLowerCase() === target).length;
-}
-function countWordLoop(text: string, word: string) {
-  const target = word.toLowerCase();
-  let count = 0;
-  const regex = /\b\w+\b/g;               // grab words
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    if (match[0].toLowerCase() === target) count++;
+
+// Usage examples
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan...'));  // true
+console.log(isPalindrome('Hello world'));      // false
+function isPalindromeSimple(s: string): boolean {
+  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
+    if (s[i] !== s[j]) return false;
   }
-  return count;
+  return true;
 }
-const count = countWord("Hello because we say hello", "hello"); // 2
