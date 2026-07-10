@@ -1,65 +1,113 @@
-/**
- * Computes the LPS array for a given pattern.
- * For each index i, lps[i] is the length of the longest
- * proper prefix that is also a suffix for pattern[0..i].
- */
-function buildLps(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;          // length of previous longest prefix suffix
-    let i = 1;
+// 1️⃣  Node definition – the “building block” of the list
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // try the previous longest prefix suffix
-                length = lps[length - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-    return lps;
+  constructor(value: T) {
+    this.value = value;
+  }
 }
-/**
- * Returns the starting indices of all occurrences of `pattern`
- * inside `text`. If the pattern is empty, an empty array is returned.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
 
-    const lps = buildLps(pattern);
-    const result: number[] = [];
+// 2️⃣  The linked list itself
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-    let i = 0; // index for text
-    let j = 0; // index for pattern
+  // ---- basic properties ----
+  get size() { return this._size; }
 
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++; j++;
-            if (j === pattern.length) {
-                // match found; record start index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // fall back in pattern
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
+  // ---- insertions ----
+  push(value: T): void {                  // add to the end
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
     }
-    return result;
-}
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
+    this._size++;
+  }
 
-console.log(kmpSearch(haystack, needle));
-// → [10]
+  unshift(value: T): void {                // add to the front
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._size++;
+  }
+
+  // ---- removals ----
+  pop(): T | null {                       // remove from the end
+    if (!this.head) return null;
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
+    }
+
+    if (prev) prev.next = null;           // cut off the tail
+    else this.head = this.tail = null;    // list became empty
+
+    this._size--;
+    return current.value;
+  }
+
+  shift(): T | null {                     // remove from the front
+    if (!this.head) return null;
+    const removed = this.head;
+    this.head = removed.next;
+    if (!this.head) this.tail = null;     // list became empty
+    this._size--;
+    return removed.value;
+  }
+
+  // ---- traversal helpers ----
+  toArray(): T[] {
+    const arr: T[] = [];
+    let current = this.head;
+    while (current) {
+      arr.push(current.value);
+      current = current.next;
+    }
+    return arr;
+  }
+
+  forEach(fn: (value: T, index: number) => void): void {
+    let current = this.head;
+    let i = 0;
+    while (current) {
+      fn(current.value, i);
+      current = current.next;
+      i++;
+    }
+  }
+}
+const list = new LinkedList<number>();
+list.push(1);                // [1]
+list.push(2);                // [1, 2]
+list.unshift(0);             // [0, 1, 2]
+console.log(list.toArray()); // [0, 1, 2]
+console.log(list.pop());     // 2
+console.log(list.shift());   // 0
+console.log(list.toArray()); // [1]
+insertAfter(target: T, newVal: T): boolean {
+  let current = this.head;
+  while (current) {
+    if (current.value === target) {
+      const node = new ListNode(newVal);
+      node.next = current.next;
+      current.next = node;
+      if (current === this.tail) this.tail = node;
+      this._size++;
+      return true;
+    }
+    current = current.next;
+  }
+  return false;
+}
