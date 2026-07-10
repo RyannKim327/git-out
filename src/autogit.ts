@@ -1,25 +1,48 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+/**
+ * Returns the longest common subsequence of two strings.
+ * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
+ */
+function lcs(s1: string, s2: string): string {
+  const n = s1.length,
+        m = s2.length;
 
-const numbers = [4, 12, 7, 19, 3];
+  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+  // Build the DP table.
+  for (let i = 1; i <= n; i++) {
+    const a = s1[i - 1];
+    for (let j = 1; j <= m; j++) {
+      if (a === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
+  // Reconstruct the subsequence.
+  let i = n,
+      j = m,
+      result: string[] = [];
 
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
-];
+  while (i > 0 && j > 0) {
+    if (s1[i - 1] === s2[j - 1]) {
+      // Character is part of LCS – prepend to answer.
+      result.push(s1[i - 1]);
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;   // move up
+    } else {
+      j--;   // move left
+    }
+  }
 
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+  return result.reverse().join('');
+}
+const a = 'AGGTAB';
+const b = 'GXTXAYB';
+
+const sub = lcs(a, b);
+console.log(`LCS length: ${sub.length}`); // 4
+console.log(`LCS itself: ${sub}`);       // GTAB
