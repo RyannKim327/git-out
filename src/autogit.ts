@@ -1,145 +1,43 @@
 /**
- * Graph type: key → list of neighbour keys.
- * Assumes an undirected or directed graph – just feed it the adjacency list you have.
+ * Returns the first character that occurs only once in `s`.
+ * If every character repeats, returns null.
  */
-type Graph = Map<string, string[]>;
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣ Count how many times each char appears
+  const freq = new Map<string, number>();
 
-/**
- * Bidirectional BFS to find the shortest path between two nodes.
- *
- * @param graph       The graph adjacency list.
- * @param startKey    Origin node key.
- * @param goalKey     Destination node key.
- * @returns           Array of keys representing the shortest path,
- *                    or `null` if no path exists.
- */
-export function bidirectionalSearch(
-  graph: Graph,
-  startKey: string,
-  goalKey: string
-): string[] | null {
-  if (startKey === goalKey) return [startKey];
-
-  // --- Front and back queues
-  const frontQueue: string[] = [startKey];
-  const backQueue: string[] = [goalKey];
-
-  // --- Visited maps
-  const frontVisited = new Set<string>([startKey]);
-  const backVisited  = new Set<string>([goalKey]);
-
-  // --- Parent maps to reconstruct path
-  const frontParent = new Map<string, string>([[startKey, null]]);
-  const backParent  = new Map<string, string>([[goalKey, null]]);
-
-  // Helper to get neighbours, guard against missing keys
-  const neighbours = (node: string) => graph.get(node) ?? [];
-
-  // Helper to expand one layer from a queue
-  function expand(
-    queue: string[],
-    visited: Set<string>,
-    otherVisited: Set<string>,
-    parentMap: Map<string, string>
-  ): string | null {
-    const size = queue.length;   // classic BFS “level” size
-    for (let i = 0; i < size; i++) {
-      const current = queue.shift() as string; // guaranteed non‑empty
-
-      for (const neighbour of neighbours(current)) {
-        if (visited.has(neighbour)) continue; // already expanded from this side
-
-        // New node from this side – record parent & mark visited
-        visited.add(neighbour);
-        parentMap.set(neighbour, current);
-        queue.push(neighbour);
-
-        // If the other side has already seen this neighbour,
-        // we’ve met in the middle!
-        if (otherVisited.has(neighbour)) return neighbour;
-      }
-    }
-    return null;
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  // Main loop
-  while (frontQueue.length && backQueue.length) {
-    // 1. Expand front side
-    const meetingPoint = expand(
-      frontQueue,
-      frontVisited,
-      backVisited,
-      frontParent
-    );
-    if (meetingPoint) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint,
-        startKey,
-        goalKey
-      );
-    }
-
-    // 2. Expand back side
-    const meetingPoint2 = expand(
-      backQueue,
-      backVisited,
-      frontVisited,
-      backParent
-    );
-    if (meetingPoint2) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint2,
-        startKey,
-        goalKey
-      );
+  // 2️⃣ Scan the string again and pick the first char with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
     }
   }
 
-  // No overlap – disconnected graph
-  return null;
+  return null; // nothing unique
 }
+console.log(firstNonRepeatingChar("abacbc")); // -> "b"
+console.log(firstNonRepeatingChar("aabbcc")); // -> null
+console.log(firstNonRepeatingChar("abcde"));  // -> "a"
+function firstNonRepeatingCharOptimized(s: string): string | null {
+  const freq = new Map<string, number>();
+  const order: string[] = [];
 
-/**
- * Reconstructs the full path from start → meeting → goal.
- */
-function buildPath(
-  frontParents: Map<string, string>,
-  backParents: Map<string, string>,
-  meeting: string,
-  start: string,
-  goal: string
-): string[] {
-  const path: string[] = [meeting];
+  for (const ch of s) {
+    const newCount = (freq.get(ch) ?? 0) + 1;
+    freq.set(ch, newCount);
 
-  // Walk backwards from meeting to start
-  let cur: string | null = frontParents.get(meeting) ?? null;
-  while (cur) {
-    path.unshift(cur);
-    cur = frontParents.get(cur) ?? null;
+    if (newCount === 1) {
+      order.push(ch);          // first appearance
+    } else {
+      // remove all occurrences of `ch` from the queue
+      const idx = order.indexOf(ch);
+      if (idx !== -1) order.splice(idx, 1);
+    }
   }
 
-  // Walk forwards from meeting to goal
-  cur = backParents.get(meeting) ?? null;
-  while (cur) {
-    path.push(cur);
-    cur = backParents.get(cur) ?? null;
-  }
-
-  return path;
+  return order.length ? order[0] : null;
 }
-// Build a tiny sample graph
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E']]
-]);
-
-console.log(bidirectionalSearch(g, 'A', 'F'));
-// → ['A
