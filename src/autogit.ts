@@ -1,87 +1,55 @@
-// simple node definition – feel free to extend it later (value, etc.)
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+// Graph type: map from vertex id → array of neighbouring vertex ids
+type Graph = Record<string | number, Array<string | number>>;
+function dfsRecursive(
+  graph: Graph,
+  start: string | number,
+  visited = new Set<string | number>()
+): string[] {
+  // If the node has already been visited, stop here.
+  if (visited.has(start)) return [];
 
-  constructor(public readonly val?: any) {}
-}
-interface TreeNode {
-  val?: any;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;          // empty subtree → no leaf
+  visited.add(start);           // Mark the node
+  const result = [start];        // The order in which we visit
 
-  // If this node has no children → it's a leaf.
-  if (node.left === null && node.right === null) {
-    return 1;
-  }
-
-  // Otherwise sum the children’s counts
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-function countLeavesIterative(root: TreeNode | null): number {
-  if (root === null) return 0;
-
-  let leafCount = 0;
-  const stack: Array<TreeNode> = [root];
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode; // `as` because array never empty
-
-    // Check for leaf
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      // push children if they exist
-      if (node.right !== null) stack.push(node.right);
-      if (node.left !== null) stack.push(node.left);
+  // Recurse on all neighbours that haven't been visited yet
+  for (const neighbour of graph[start] || []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
 
-  return leafCount;
+  return result;
 }
-// ---------------------------------------------------------------------
-// 1. Node definition
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+function dfsIterative(graph: Graph, start: string | number): string[] {
+  const visited = new Set<string | number>();
+  const stack: (string | number)[] = [start];
+  const order: string[] = [];
 
-  constructor(public readonly val: any) {}
-}
-
-// ---------------------------------------------------------------------
-// 2. Recursive counter
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;
-  if (!node.left && !node.right) return 1;
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-
-// 3. Iterative counter
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let leaves = 0;
-  const stack: TreeNode[] = [root];
   while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) leaves++;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
+    const v = stack.pop()!;           // Grab the vertex on top of the stack
+    if (visited.has(v)) continue;     // Skip if we already processed it
+    visited.add(v);                    // Mark as visited
+    order.push(v);                     // Record visitation order
+
+    // Push neighbours onto the stack (in reverse order if you want a specific order)
+    const neighbours = graph[v] || [];
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      if (!visited.has(neighbours[i])) {
+        stack.push(neighbours[i]);
+      }
+    }
   }
-  return leaves;
+
+  return order;
 }
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: [],
+  f: []
+};
 
-// ---------------------------------------------------------------------
-// 4. Demo
-
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4); // leaf
-root.left.right = new TreeNode(5); // leaf
-root.right.left = new TreeNode(6); // leaf
-
-console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
-console.log('Iterative leaves:', countLeavesIterative(root)); // 3
+console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
+console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
