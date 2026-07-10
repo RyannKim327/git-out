@@ -1,37 +1,29 @@
-function secondLargestSort(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
+// hello.ts
+import * as readline from 'readline'
 
-  const sorted = [...arr].sort((a, b) => b - a); // Descending
-  return sorted[1];
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+
+function ask(question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
 }
-function secondLargestSinglePass(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
 
-  let max = -Infinity;
-  let second = -Infinity;
+async function main() {
+  const name = await ask('What’s your name? ')
+  const favNum = await ask('What’s your favorite number? ')
+  
+  const num = parseInt(favNum, 10)
+  const isEven = !isNaN(num) ? num % 2 === 0 : false
 
-  for (const num of arr) {
-    if (num > max) {
-      second = max;
-      max = num;
-    } else if (num > second && num !== max) {
-      second = num;
-    }
-  }
+  console.log(`\nHello, ${name}!`);
+  console.log(`Your favorite number is ${favNum}`);
+  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
 
-  return second === -Infinity ? undefined : second;
+  rl.close()
 }
-function secondLargestSet(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)];
-  if (unique.length < 2) return undefined;
 
-  const sorted = unique.sort((a, b) => b - a);
-  return sorted[1];
-}
-function secondLargestMathMax(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  const max = Math.max(...arr);
-  const maxFiltered = arr.filter(num => num !== max);
-  return Math.max(...maxFiltered);
-}
+main()
+tsc hello.ts   # compile to JavaScript
+node hello.js
