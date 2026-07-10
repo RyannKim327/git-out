@@ -1,43 +1,93 @@
 /**
- * Returns the first character that occurs only once in `s`.
- * If every character repeats, returns null.
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
  */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣ Count how many times each char appears
-  const freq = new Map<string, number>();
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  constructor(value: T) {
+    this.value = value;
   }
-
-  // 2️⃣ Scan the string again and pick the first char with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null; // nothing unique
 }
-console.log(firstNonRepeatingChar("abacbc")); // -> "b"
-console.log(firstNonRepeatingChar("aabbcc")); // -> null
-console.log(firstNonRepeatingChar("abcde"));  // -> "a"
-function firstNonRepeatingCharOptimized(s: string): string | null {
-  const freq = new Map<string, number>();
-  const order: string[] = [];
 
-  for (const ch of s) {
-    const newCount = (freq.get(ch) ?? 0) + 1;
-    freq.set(ch, newCount);
+/**
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
+ */
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-    if (newCount === 1) {
-      order.push(ch);          // first appearance
-    } else {
-      // remove all occurrences of `ch` from the queue
-      const idx = order.indexOf(ch);
-      if (idx !== -1) order.splice(idx, 1);
-    }
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
   }
 
-  return order.length ? order[0] : null;
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
+
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
+    }
+    this.rear = node;           // new tail
+
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
+    }
+
+    this._size++;
+  }
+
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
+
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
+
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
+    }
+    return result;
+  }
 }
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
