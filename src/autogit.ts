@@ -1,129 +1,139 @@
-/**
- * A node in the B‑tree.
- * Keys are stored in ascending order.
- */
-class BTreeNode<K, V> {
-  // Keys and values are kept together to simplify return of key/value pairs.
-  keys: K[] = [];
-  values: V[] = [];
+// 1️⃣ Node shape ----------------------------------------------------
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
+}
+type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
 
-  // Children – null for leaf nodes.
-  children: (BTreeNode<K, V> | null)[] = [];
+const defaultComparator = <T extends number | string>(a: T, b: T) => {
+  if (a < b) return -1;
+  if (a > b) return +1;
+  return 0;
+};
+// 2️⃣ BST class ----------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  public size = 0;
 
-  // Whether this node is a leaf.
-  leaf: boolean;
+  constructor(private comp: Comparator<T> = defaultComparator) {}
 
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
+  // -----------------------------------------------------------------
+  // Insert
+  // -----------------------------------------------------------------
+  insert(value: T): void {
+    this.root = this._insertRec(this.root, value);
   }
 
-  /* Helper: find first index where key should be inserted */
-  findKey(key: K, cmp: (a: K, b: K) => number): number {
-    let idx = 0;
-    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
-      ++idx;
+  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) {
+      this.size++;
+      return new TreeNode(value);
     }
-    return idx;
+
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._insertRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._insertRec(node.right, value);
+    } else {
+      // duplicates: decide how to handle. Here we skip insertion.
+      return node;
+    }
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Search
+  // -----------------------------------------------------------------
+  find(value: T): boolean {
+    let node = this.root;
+    while (node) {
+      const cmp = this.comp(value, node.value);
+      if (cmp === 0) return true;
+      node = cmp < 0 ? node.left : node.right;
+    }
+    return false;
+  }
+
+  // -----------------------------------------------------------------
+  // Remove
+  // -----------------------------------------------------------------
+  remove(value: T): void {
+    this.root = this._removeRec(this.root, value);
+  }
+
+  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null;
+
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._removeRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._removeRec(node.right, value);
+    } else {
+      // node to delete found
+      this.size--;
+
+      // case 1: no children
+      if (!node.left && !node.right) return null;
+
+      // case 2: one child
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+
+      // case 3: two children – replace by inorder predecessor
+      const pred = this._maxNode(node.left)!; // non‑null
+      node.value = pred.value;
+      node.left = this._removeRec(node.left, pred.value);
+    }
+    return node;
+  }
+
+  private _maxNode(node: TreeNode<T>): TreeNode<T> {
+    while (node.right) node = node.right;
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Traversal helpers – in‑order (sorted order)
+  // -----------------------------------------------------------------
+  inorder(cb: (value: T) => void): void {
+    this._inorderRec(this.root, cb);
+  }
+
+  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
+    if (!node) return;
+    this._inorderRec(node.left, cb);
+    cb(node.value);
+    this._inorderRec(node.right, cb);
+  }
+
+  // -----------------------------------------------------------------
+  // Utility: pretty print as nested brackets
+  // -----------------------------------------------------------------
+  toString(): string {
+    const parts: string[] = [];
+    this._toStringRec(this.root, parts);
+    return parts.join(' ');
+  }
+
+  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
+    if (!node) { parts.push('null'); return; }
+    parts.push(String(node.value));
+    this._toStringRec(node.left, parts);
+    this._toStringRec(node.right, parts);
   }
 }
-/**
- * B‑Tree implementation
- *
- * @param t Minimum degree (≥ 2). Every node except the root contains
- *          at least t‑1 keys and at most 2*t‑1 keys.
- */
-class BTree<K, V> {
-  private root: BTreeNode<K, V>;
-  private readonly t: number;
-  private readonly cmp: (a: K, b: K) => number;
+const bst = new BinarySearchTree<number>();
 
-  constructor(
-    t: number = 2,
-    cmp?: (a: K, b: K) => number
-  ) {
-    if (t < 2) throw new Error('B‑tree order must be >= 2');
-    this.t = t;
-    this.root = new BTreeNode<K, V>(true);
-    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
+[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
+console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
 
-  /* Public API --------------------------------------------------- */
-  search(key: K): V | undefined {
-    return this._search(this.root, key);
-  }
+console.log('Contains 40? →', bst.find(40));   // true
+console.log('Contains 99? →', bst.find(99));   // false
 
-  insert(key: K, value: V): void {
-    // If root is full, create a new leaf and split
-    if (this.root.keys.length === 2 * this.t - 1) {
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this._splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this._insertNonFull(this.root, key, value);
-  }
-
-  /* Delete is optional – implement if you need it. */
-  /* delete(key: K): void { … } */
-
-  /* Iterator over all key/value pairs in order */
-  *inOrder(): IterableIterator<[K, V]> {
-    yield* this._inOrder(this.root);
-  }
-
-  /* ------------------------------------------------------------------ */
-
-  /* Core recursive operations --------------------------------------- */
-  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
-    const idx = node.findKey(key, this.cmp);
-
-    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
-      return node.values[idx];
-    }
-
-    if (node.leaf) {
-      return undefined;
-    }
-
-    return this._search(node.children[idx]!, key);
-  }
-
-  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
-    let i = node.keys.length - 1;
-
-    if (node.leaf) {
-      // Insert into leaf – shift keys/vals right of insertion point
-      const idx = node.findKey(key, this.cmp);
-      node.keys.splice(idx, 0, key);
-      node.values.splice(idx, 0, value);
-    } else {
-      // Find child to descend into
-      const idx = node.findKey(key, this.cmp);
-      const child = node.children[idx]!;
-
-      if (child.keys.length === 2 * this.t - 1) {
-        // Child is full → split then decide which side to go
-        this._splitChild(node, idx);
-
-        // After split, middle key moves up – need to decide child again
-        if (this.cmp(key, node.keys[idx]) > 0) {
-          i = idx + 1;
-        } else {
-          i = idx;
-        }
-      }
-      this._insertNonFull(node.children[i]!, key, value);
-    }
-  }
-
-  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
-    const t = this.t;
-    const child = parent.children[idx]!;
-    const newNode = new BTreeNode<K, V>(child.leaf);
-
-    // Move the second half of child’s keys/values to newNode
-    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
-    newNode.values = child.values.splice(t);
-
-    if (!child.leaf) {
-      newNode.children = child.children.splice(t
+console.log('In‑order traversal:');
+bst.inorder(v => console.log(v));  
