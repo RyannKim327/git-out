@@ -1,41 +1,29 @@
-function firstRepeated(s: string): string | null {
-  const seen = new Set<string>();
+// hello.ts
+import * as readline from 'readline'
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;          // first repeat!
-    }
-    seen.add(ch);
-  }
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
 
-  return null;   // no repeats
+function ask(question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
 }
-console.log(firstRepeated("abca")); // → "a"
-console.log(firstRepeated("abcdef")); // → null
-console.log(firstRepeated("hello world")); // → "l"
-function firstRepeatedCaseInsensitive(s: string): string | null {
-  const seen = new Set<string>();
-  for (const ch of s.toLowerCase()) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
-  }
-  return null;
+
+async function main() {
+  const name = await ask('What’s your name? ')
+  const favNum = await ask('What’s your favorite number? ')
+  
+  const num = parseInt(favNum, 10)
+  const isEven = !isNaN(num) ? num % 2 === 0 : false
+
+  console.log(`\nHello, ${name}!`);
+  console.log(`Your favorite number is ${favNum}`);
+  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
+
+  rl.close()
 }
-function firstRepeatIndex(s: string): number {
-  const seen = new Set<string>();
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (seen.has(ch)) return i;   // second appearance
-    seen.add(ch);
-  }
-  return -1; // no repeat
-}
-function firstRepeatLater(s: string): string | null {
-  const seen = new Set<string>();
-  for (let i = s.length - 1; i >= 0; i--) {
-    const ch = s[i];
-    if (seen.has(ch)) return ch; // this appears again later
-    seen.add(ch);
-  }
-  return null;
-}
+
+main()
+tsc hello.ts   # compile to JavaScript
+node hello.js
