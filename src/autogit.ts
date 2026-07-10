@@ -1,20 +1,12 @@
-// Original array
-const original: number[] = [1, 2, 3, 4, 5];
+const original = "  Hello,  world!\nThis is\ta test.   ";
 
-// 1️⃣ In‑place reverse (mutates `original`)
-original.reverse();
-console.log(original); // [5, 4, 3, 2, 1]
+const noWhitespace = original.replace(/\s+/g, "");
 
-// 2️⃣ Copy then reverse (keeps `original` intact)
-const reversedCopy = original.slice().reverse();  // or [...original].reverse()
-console.log(reversedCopy);  // [5, 4, 3, 2, 1]
-type Person = { name: string; age: number };
-
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob',   age: 34 },
-];
-
-const reversedPeople = [...people].reverse(); // still Person[]
-const reduceReversed = <T>(array: T[]): T[] =>
-  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
+console.log(noWhitespace);
+// → "Hello,world!Thisisatest."
+const noWhitespace = original.replaceAll(/\s/g, "");
+const trimmed = original.trim();
+console.log(trimmed);
+// → "Hello,  world!\nThis is\ta test."
+const removedSpaces = original.replace(/ /g, "");
+// or using a character class if you want tabs too: /[ \t]/g
