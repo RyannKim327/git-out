@@ -1,77 +1,60 @@
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+/* 1️⃣  Define the shapes of the data we expect  */
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
 
-  // Insert value in the first spot found (just for demonstration).
-  // A real BST would place it relative to its neighbors.
-  insert(value: T): void {
-    const node = new TreeNode(value);
-    if (!this.root) {
-      this.root = node;
-      return;
-    }
-    this._insertRec(this.root, node);
+interface Comment {
+  postId: number;
+  id: number;
+  name: string;
+  email: string;
+  body: string;
+}
+
+/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
+async function safeGet<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
   }
+  return resp.json() as Promise<T>;
+}
 
-  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
-    // Walk left first, then right, until you hit a null spot.
-    if (!current.left) {
-      current.left = node;
-    } else if (!current.right) {
-      current.right = node;
-    } else {
-      // Go deeper – we’re just doing breadth‑like insertion.
-      this._insertRec(current.left, node);
-    }
-  }
+/* 3️⃣  Fetch a single post and its comments  */
+async function fetchPostWithComments(postId: number) {
+  const [post, comments] = await Promise.all([
+    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
+    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
+  ]);
 
-  // Breadth‑first traversal (queue style) – returns array of values.
-  bfs(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
+  console.log(`\n=== Post #${post.id} ===`);
+  console.log(`Title : ${post.title}`);
+  console.log(`Body  : ${post.body}\n`);
 
-    const queue: TreeNode<T>[] = [this.root];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      result.push(cur.value);
-      if (cur.left) queue.push(cur.left);
-      if (cur.right) queue.push(cur.right);
-    }
-    return result;
-  }
+  console.log(`--- ${comments.length} comment(s) ---`);
+  comments.forEach(c => {
+    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
+  });
+}
 
-  // Depth‑first in‑order traversal (left, node, right)
-  inorder(): T[] {
-    const res: T[] = [];
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      res.push(node.value);
-      visit(node.right);
-    };
-    visit(this.root);
-    return res;
-  }
-
-  // Simple depth counter
-  depth(): number {
-    const dfs = (node: TreeNode<T> | null): number =>
-      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
-    return dfs(this.root);
+/* 4️⃣  Run it for a few post IDs  */
+async function main() {
+  try {
+    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
+  } catch (err) {
+    console.error('Something went wrong:', (err as Error).message);
   }
 }
-const tree = new BinaryTree<number>();
-[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
 
-console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
-console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
-console.log('Depth:', tree.depth());         // 3
-interface Person { name: string; age: number; }
-const people = new BinaryTree<Person>();
-people.insert({name: 'Alice', age: 30});
+main();
+# compile to JavaScript
+npx tsc api-demo.ts
+
+# run the output
+node api-demo.js
+
+# or skip the compile step (requires ts-node)
+npx ts-node api-demo.ts
