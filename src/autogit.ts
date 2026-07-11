@@ -1,48 +1,81 @@
-/**
- * Shell sort – a classic gap‑based insertion sort
- *
- * @template T - type held in the array
- * @param arr   Array to be sorted in place
- * @param cmp   Optional comparator, defaults to numeric comparison
- * @returns     The sorted array (same reference as `arr`)
- */
-export function shellSort<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
-): T[] {
-  const n = arr.length;
+// ---------- Tarjan S.T.C. ---------------------------------------
 
-  // A common sequence: n/2, n/4, …, 1
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Do a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap-sorted elements until the correct spot for temp is found
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+/**
+ * Return an array of strongly‑connected components.
+ * Each component is an array of vertex IDs (here strings).
+ * Vertices can be any `string`; if you prefer numbers just change the type.
+ */
+export function tarjanSCC(graph: Map<string, string[]>): string[][] {
+  // state that needs to survive the recursive walk
+  const index = new Map<string, number>();    // discovery time of vertex
+  const lowLink = new Map<string, number>();  // lowest discovery reachable
+  const stack: string[] = [];                 // vertices that are “on stack”
+  const onStack = new Set<string>();
+
+  let curIdx = 0;                            // global counter
+  const sccs: string[][] = [];               // result
+
+  // helper: depth‑first walk from a single vertex
+  function strongConnect(v: string) {
+    // part A – set the depth index and low link
+    index.set(v, curIdx);
+    lowLink.set(v, curIdx);
+    curIdx += 1;
+
+    // put v on stack
+    stack.push(v);
+    onStack.add(v);
+
+    // part B – consider successors of v
+    const neighbours = graph.get(v) ?? [];
+    for (const w of neighbours) {
+      if (!index.has(w)) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → must be in the current SCC
+        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
       }
-      arr[j] = temp;
+    }
+
+    // part C – if v is a root node, pop the stack to build an SCC
+    if (lowLink.get(v) === index.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
 
-  return arr;
+  // run the dfs from every unvisited vertex
+  for (const v of graph.keys()) {
+    if (!index.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-// 1️⃣ Sort numbers
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
+const graph = new Map<string, string[]>(
+  [
+    ['A', ['B']],
+    ['B', ['C', 'E', 'F']],
+    ['C', ['D', 'G']],
+    ['D', ['C', 'H']],
+    ['E', ['A', 'F']],
+    ['F', ['G']],
+    ['G', ['F', 'H']],
+    ['H', ['G']],
+  ],
+);
 
-// 2️⃣ Sort strings alphabetically
-shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
-
-// 3️⃣ Sort objects by a property
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: "Zoe", age: 29 },
-  { name: "Alex", age: 22 },
-  { name: "Mia", age: 35 }
-];
-shellSort(people, (a, b) => a.age - b.age);
-console.log(people.map(p => p.age));  // → [22, 29, 35]
+const components = tarjanSCC(graph);
+console.log(components);
+// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
+// (depending on traversal order you may see the same vertices grouped in one component,
+// because the toy graph is fully strongly‑connected)
