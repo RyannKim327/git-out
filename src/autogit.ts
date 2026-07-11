@@ -1,76 +1,147 @@
-/**
- * Build the LPS (Longest Prefix Suffix) table for KMP.
- *
- * @param pattern - The pattern string for which the table is built.
- * @returns An array where lps[i] is the length of the longest proper
- *          prefix of pattern[0..i] that is also a suffix of that substring.
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps: number[] = Array(m).fill(0);
-  let length = 0;                 // length of previous longest prefix suffix
-  let i = 1;                      // lps[0] is always 0
+/* ──────────────────────────────────────────────────────
+ *  SkipListNode<T>
+ * ────────────────────────────────────────────────────── */
+class SkipListNode<T> {
+  /** The stored value (defined only in the “bottom” node) */
+  value?: T;
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length += 1;
-      lps[i] = length;
-      i += 1;
-    } else {
-      if (length !== 0) {
-        // fall back in the pattern (do not increment i here)
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i += 1;
-      }
-    }
+  /** Links to the node that follows this one at each level */
+  forward: Array<SkipListNode<T> | null> = [];
+
+  constructor(value?: T, level: number = 0) {
+    this.value = value;
+    this.forward = new Array(level + 1).fill(null);
   }
-  return lps;
 }
 
-/**
- * KMP search – returns all starting indices of `pattern` in `text`.
- *
- * @param text    – The string to search within.
- * @param pattern – The string to find.
- * @returns Array of start indices where pattern occurs in text.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];          // nothing to find
-  const lps = buildLPS(pattern);
-  const result: number[] = [];
+/* ──────────────────────────────────────────────────────
+ *  SkipList<T>
+ * ────────────────────────────────────────────────────── */
+export class SkipList<T> {
+  /* Adjustable parameters */
+  private readonly MAX_LEVEL: number;      // upper bound for levels
+  private readonly P: number;              // probability of promoting a node
 
-  let i = 0;   // index for text
-  let j = 0;   // index for pattern
+  private level: number = 0;               // current maximum level
+  private header: SkipListNode<T>;         // sentinel start node
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i += 1;
-      j += 1;
+  constructor(maxLevel: number = 16, probability: number = 0.5) {
+    this.MAX_LEVEL = maxLevel;
+    this.P        = probability;
+    this.header   = new SkipListNode<T>();
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Random level generator
+   * ────────────────────────────────────────────────────── */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+      lvl++;
+    }
+    return lvl;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Search for a value
+   * ────────────────────────────────────────────────────── */
+  search(value: T): SkipListNode<T> | null {
+    let current = this.header;
+
+    // move down each level, then across level 0
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
     }
 
-    // full match found
-    if (j === pattern.length) {
-      result.push(i - j);   // starting index
-      j = lps[j - 1];       // allow overlapping matches
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i += 1;
+    current = current.forward[0]!;
+
+    if (current && current.value === value) return current;
+    return null;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Insert a new value
+   * ────────────────────────────────────────────────────── */
+  insert(value: T): void {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    // find where the new node will be inserted at each level
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
       }
+      update[i] = current;
+    }
+
+    // pick a random level for the new node
+    const lvl = this.randomLevel();
+
+    // raise the list’s level if necessary
+    if (lvl > this.level) {
+      for (let i = this.level + 1; i <= lvl; i++) {
+        update[i] = this.header;
+      }
+      this.level = lvl;
+    }
+
+    const newNode = new SkipListNode<T>(value, lvl);
+
+    // splice the new node into every level above 0
+    for (let i = 0; i <= lvl; i++) {
+      newNode.forward[i] = update[i].forward[i];
+      update[i].forward[i] = newNode;
     }
   }
 
-  return result;
+  /* ──────────────────────────────────────────────────────
+   *  Remove a value
+   * ────────────────────────────────────────────────────── */
+  remove(value: T): boolean {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
+
+    current = current.forward[0]!;
+
+    if (!current || current.value !== value) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node at every level it appears
+    for (let i = 0; i <= this.level; i++) {
+      if (update[i].forward[i] !== current) break;
+      update[i].forward[i] = current.forward[i];
+    }
+
+    // shrink the list’s level if the top levels became empty
+    while (this.level > 0 && this.header.forward[this.level] == null) {
+      this.level--;
+    }
+
+    return true;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Helper: convert list into an array (useful for debugging)
+   * ────────────────────────────────────────────────────── */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.header.forward[0];
+
+    while (node) {
+      result.push(node.value!);
+      node = node.forward[0];
+    }
+
+    return result;
+  }
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
-
-const matches = kmpSearch(text, pattern);
-console.log(matches);          // [10]
-
-const hasMatch = matches.length > 0;
-console.log(hasMatch);         // true
