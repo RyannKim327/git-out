@@ -1,173 +1,103 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
-
-interface Edge {
-  target: Node;
-  weight: Weight;
+// A generic state; `data` can be any shape you need.
+export interface BeamState<T> {
+  readonly data: T;      // the actual thing (token list, node id, etc.)
+  readonly score: number; // higher is better
 }
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
-}
+// A function that, from one state, produces zero or more candidate states.
+export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
 
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
+// A function that assigns a numeric score to a state.
+export type Scorer<T> = (state: BeamState<T>) => number;
 class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
+  private data: T[] = [];
+  constructor(private readonly key: (x: T) => number) {}
 
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
+  private swap(i: number, j: number) {
+    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
   }
 
-  // Extract element with smallest key
+  push(item: T) {
+    this.data.push(item);
+    this.siftUp(this.data.length - 1);
+  }
+
   pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
+    const top = this.data[0];
+    const last = this.data.pop();
+    if (!this.data.length || !last) return top;
+    this.data[0] = last;
+    this.siftDown(0);
+    return top;
   }
 
-  get size() {
-    return this.heap.length;
-  }
+  size() { return this.data.length; }
 
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
+  private siftUp(i: number) {
+    let idx = i;
     while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
+      const parent = (idx - 1) >> 1;
+      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
+      this.swap(idx, parent);
+      idx = parent;
     }
-    this.heap[idx] = element;
   }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
+  private siftDown(i: number) {
+    let idx = i;
+    const n = this.data.length;
     while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
-        }
-      }
-
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
-}
-
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
+      const l = idx * 2 + 1;
+      const r = l + 1;
+      let smallest = idx;
+      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
+      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
     }
   }
 
-  return { distances, prev };
+  // For debugging / inspection
+  toArray() { return [...this.data]; }
 }
+export class BeamSearch<T> {
+  constructor(
+    private readonly expander: Expander<T>,
+    private readonly scorer: Scorer<T>,
+    private readonly beamWidth: number
+  ) {}
 
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
+  /**
+   * Runs beam search for a fixed number of iterations.
+   * @param startState the initial state (usually empty output)
+   * @param maxDepth how many expansion steps to take
+   * @returns an array containing the best states after the last depth
+   */
+  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
+    let current: BeamState<T>[] = [startState];
 
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
+    for (let depth = 0; depth < maxDepth; depth++) {
+      const candidates: BeamState<T>[] = [];
+      for (const state of current) {
+        const nextStates = this.expander(state);
+        // We expect each expander to already return scored states,
+        // but if they don't we can score them here:
+        for (const ns of nextStates) {
+          const s = this.scorer(ns);
+          candidates.push({ ...ns, score: s });
+        }
+      }
+      if (candidates.length === 0) break; // nothing to expand
+      // Keep top `beamWidth` candidates
+      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
+      for (const cand of candidates) heap.push(cand);
+      current = [];
+      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
+        current.push(heap.pop()!); // `!` is safe because we checked size
+      }
+    }
+
+    // Sort by score descending before returning just in case
+    return current.sort((a, b) => b.score - a.score);
   }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
 }
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
