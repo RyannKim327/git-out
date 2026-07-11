@@ -1,73 +1,83 @@
-type Edge = {
-  from: number;   // vertex index
-  to: number;     // vertex index
-  weight: number; // can be negative
-};
+function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;          // out of range
 
-type BellmanFordResult = {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-};
-function bellmanFord(
-  numVertices: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+  // cloning so we don’t mutate the caller’s array
+  const copy = [...arr];
 
-  // 1. Initialisation
-  const dist = new Array(numVertices).fill(INF);
-  dist[source] = 0;
+  // If you need custom ordering, pass a compare function.
+  // Default: numeric ascending.
+  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
 
-  const pred = new Array<number | null>(numVertices).fill(null);
+  // Arrays are zero‑indexed
+  return copy[k - 1];
+}
 
-  // 2. Relax edges (V‑1) times
-  for (let i = 0; i < numVertices - 1; i++) {
-    let updated = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        updated = true;
+// Example
+const nums = [7, 3, 5, 2, 9];
+console.log(kthSmallestBySort(nums, 2));   // 3
+function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+
+  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const clone = [...arr]; // keep the original untouched
+
+  function partition(left: number, right: number, pivotIndex: number): number {
+    const pivotValue = clone[pivotIndex];
+    // move pivot to end
+    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
+
+    let storeIndex = left;
+    for (let i = left; i < right; i++) {
+      if (comp(clone[i], pivotValue) < 0) {
+        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
+        storeIndex++;
       }
     }
-    // early exit if no change – optional but nice optimisation
-    if (!updated) break;
+    // move pivot to its final place
+    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
+    return storeIndex;
   }
 
-  // 3. Check for negative‑weight cycles
-  let hasNegCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-      hasNegCycle = true;
-      break;
-    }
-  }
+  let left = 0;
+  let right = clone.length - 1;
+  let pivotIndex;
 
-  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
+  while (true) {
+    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
+    if (pivotIndex === k - 1) return clone[pivotIndex];
+    if (pivotIndex > k - 1) right = pivotIndex - 1;
+    else left = pivotIndex + 1;
+  }
 }
-// Build a tiny graph with a negative edge that doesn't form a cycle
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 3, weight: -3 },
-  { from: 2, to: 3, weight: 2 },
+const data = [12, 3, 5, 7, 4, 19, 26];
+console.log(kthSmallestQuickSelect(data, 4)); // 7
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private compare: (a: T, b: T) => number) {}
+  // heap methods omitted for brevity...
+}
+
+function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
+  if (k < 1 || k > arr.length) return undefined;
+  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
+  const heap = new MinHeap<T>(cmp);
+  for (const v of arr) heap.insert(v);
+  let result: T | undefined;
+  for (let i = 0; i < k; i++) result = heap.extractMin();
+  return result;
+}
+const people = [
+  { name: 'Alice', age: 24 },
+  { name: 'Bob', age: 19 },
+  { name: 'Carol', age: 32 },
+  { name: 'Dave', age: 28 }
 ];
 
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
+// 3rd youngest
+const thirdYoungest = kthSmallestQuickSelect(
+  people,
+  3,
+  (a, b) => a.age - b.age
+);
 
-console.log('Distances:', distances);          // [0, 4, 5, 1]
-console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
-console.log('Negative cycle?', hasNegativeCycle); // false
-
-// If you want to pull out the path 0 -> 1 -> 3:
-function buildPath(pred: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  for (let v = target; v !== null; v = pred[v] as number | null) {
-    path.push(v);
-  }
-  return path.reverse();
-}
-
-console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
+console.log(thirdYoungest); // shows Bob (age 19)
