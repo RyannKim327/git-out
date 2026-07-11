@@ -1,80 +1,55 @@
-/**
- * The graph is represented as an adjacency list:
- *   key     → array of neighbors that the key points to
- */
-export type Graph<T = string> = Record<T, T[]>;
-
-/**
- * Helper types for the two algorithms
- */
-type Queue<T> = T[];
-export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
-  const result: T[] = [];
-
-  // Compute in‑degree for each node
-  const indegree = new Map<T, number>();
-  for (const node in graph) {
-    indegree.set(node, 0);               // ensure all nodes appear
-    for (const nb of graph[node]) {
-      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
-    }
-  }
-
-  // Queue all nodes that have no incoming edges
-  const queue: Queue<T> = [];
-  for (const [node, deg] of indegree.entries()) {
-    if (deg === 0) queue.push(node);
-  }
-
-  while (queue.length) {
-    const node = queue.shift()!;
-    result.push(node);
-
-    // Reduce indegree for all neighbors, pushing any that reach 0
-    for (const nb of graph[node] ?? []) {
-      const deg = (indegree.get(nb) ?? 0) - 1;
-      indegree.set(nb, deg);
-      if (deg === 0) queue.push(nb);
-    }
-  }
-
-  // If we processed fewer nodes than exist, a cycle exists
-  if (result.length !== Object.keys(graph).length) {
-    throw new Error('Graph contains a cycle; topological sort impossible');
-  }
-  return result;
+// Node definition – feel free to replace this with your own class/struct
+interface ListNode<T = unknown> {
+  val: T;
+  next: ListNode<T> | null;
 }
-export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
-  const visited = new Set<T>();
-  const temp = new Set<T>();   // nodes on the recursion stack
-  const result: T[] = [];
 
-  const visit = (node: T) => {
-    if (temp.has(node)) {
-      throw new Error('Graph contains a cycle; topological sort impossible');
-    }
-    if (!visited.has(node)) {
-      temp.add(node);
-      for (const nb of graph[node] ?? []) visit(nb);
-      temp.delete(node);
-      visited.add(node);
-      result.push(node);     // post‑order push gives topological order
-    }
-  };
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  // Two pointers that start at the head
+  let slow: ListNode<T> | null = head;   // moves 1 step
+  let fast: ListNode<T> | null = head;   // moves 2 steps
 
-  for (const node in graph) visit(node as T);
-  // reverse because we push after exploring children
-  return result.reverse();
+  while (fast && fast.next) {
+    slow = slow!.next;          // advance one step
+    fast = fast.next.next;      // advance two steps
+
+    if (slow === fast) {        // they met → cycle detected
+      return true;
+    }
+  }
+
+  // fast ran out of nodes → no cycle
+  return false;
 }
-const myGraph: Graph<string> = {
-  A: ['B', 'C'],
-  B: ['D'],
-  C: ['D'],
-  D: [],
-};
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const seen = new Set<ListNode<T>>();
+  let current = head;
 
-console.log(topologicalSortKahn(myGraph));
-// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+  while (current) {
+    if (seen.has(current)) return true; // loop!
+    seen.add(current);
+    current = current.next;
+  }
+  return false;
+}
+function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head, fast = head;
 
-console.log(topologicalSortDFS(myGraph));
-// → same order (or any other valid one)
+  // First, detect a cycle
+  while (fast && fast.next) {
+    slow = slow!.next;
+    fast = fast.next.next;
+    if (slow === fast) break;
+  }
+
+  // No cycle
+  if (!fast || !fast.next) return null;
+
+  // Move one pointer to the head; keep other where they met
+  slow = head;
+  while (slow !== fast) {
+    slow = slow!.next;
+    fast = fast!.next;
+  }
+  return slow; // the entry point of the cycle
+}
