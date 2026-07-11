@@ -1,62 +1,61 @@
-/**
- * A generic binary search.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to locate.
- * @param compare  Optional comparator: (a, b) → negative, 0, positive.
- *                 If omitted, the default `<`/`>` operators are used.
- * @returns Index of `target` in `arr`, or `-1` if not found.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  if (!arr.length) return -1;
-  const cmp = compare ?? defaultCompare<T>;
-  let low = 0;
-  let high = arr.length - 1;
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
 
-  while (low <= high) {
-    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
-    const comp = cmp(arr[mid], target);
-    if (comp === 0) return mid;
-    if (comp < 0) low = mid + 1;           // target is greater
-    else high = mid - 1;                  // target is smaller
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
+        }
+      }
+    }
   }
 
-  return -1;
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
+  }
 
-/** Recursive version – identical semantics. */
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (!arr.length || low > high) return -1;
-  const cmp = compare ?? defaultCompare<T>;
+  const n = s1.length;
+  const m = s2.length;
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], target);
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
 
-  if (comp === 0) return mid;
-  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
-  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
+  }
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-
-/** Fallback when you didn’t provide a comparator. */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [3, 7, 12, 18, 22, 33, 42];
-console.log(binarySearch(nums, 18));           // 3
-console.log(binarySearch(nums, 5));            // -1
-
-// To search objects, supply a comparator:
-const words = ['apple', 'banana', 'cherry'];
-console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
