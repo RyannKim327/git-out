@@ -1,93 +1,80 @@
-// A node can carry any payload (`T`) and point to its neighbours.
-export interface GraphNode<T> {
-  value: T;
-  neighbours: GraphNode<T>[];
-}
 /**
- * Recursively performs depth‑limited search.
- *
- * @param node        The node you are currently visiting.
- * @param goalTest    Returns true if the current node satisfies the goal.
- * @param limit       Number of edges left before the search terminates.
- * @param visited     A set of IDs or reference values that keeps track of visited nodes.
- *                    This protects against cycles that would otherwise cause infinite recursion.
- * @returns The first node that satisfies `goalTest`, or `null`.
+ * The graph is represented as an adjacency list:
+ *   key     → array of neighbors that the key points to
  */
-export function depthLimitedSearchRec<T>(
-  node: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number,
-  visited: Set<GraphNode<T>> = new Set()
-): GraphNode<T> | null {
-  if (goalTest(node)) return node;
-  if (limit === 0) return null;          // reached the depth boundary
+export type Graph<T = string> = Record<T, T[]>;
 
-  visited.add(node);
+/**
+ * Helper types for the two algorithms
+ */
+type Queue<T> = T[];
+export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
+  const result: T[] = [];
 
-  for (const neighbour of node.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+  // Compute in‑degree for each node
+  const indegree = new Map<T, number>();
+  for (const node in graph) {
+    indegree.set(node, 0);               // ensure all nodes appear
+    for (const nb of graph[node]) {
+      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
     }
   }
 
-  return null;   // nothing found within this branch
-}
-interface StackItem<T> {
-  node: GraphNode<T>;
-  depthLeft: number;
-}
+  // Queue all nodes that have no incoming edges
+  const queue: Queue<T> = [];
+  for (const [node, deg] of indegree.entries()) {
+    if (deg === 0) queue.push(node);
+  }
 
-/**
- * Iterative depth‑limited search.
- */
-export function depthLimitedSearchIter<T>(
-  start: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number
-): GraphNode<T> | null {
-  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
-  const visited: Set<GraphNode<T>> = new Set();
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
 
-  while (stack.length) {
-    const { node, depthLeft } = stack.pop()!;
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (goalTest(node)) return node;
-    if (depthLeft === 0) continue;           // depth boundary reached
-
-    // push neighbours onto the stack – LIFO order means the first neighbour
-    // will be processed last, mirroring the recursive DFS behaviour.
-    for (const neighbour of node.neighbours) {
-      if (!visited.has(neighbour)) {
-        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
-      }
+    // Reduce indegree for all neighbors, pushing any that reach 0
+    for (const nb of graph[node] ?? []) {
+      const deg = (indegree.get(nb) ?? 0) - 1;
+      indegree.set(nb, deg);
+      if (deg === 0) queue.push(nb);
     }
   }
 
-  return null;  // no goal reached within depth limit
+  // If we processed fewer nodes than exist, a cycle exists
+  if (result.length !== Object.keys(graph).length) {
+    throw new Error('Graph contains a cycle; topological sort impossible');
+  }
+  return result;
 }
-// --- build a simple graph
-const a: GraphNode<string> = { value: "A", neighbours: [] };
-const b: GraphNode<string> = { value: "B", neighbours: [] };
-const c: GraphNode<string> = { value: "C", neighbours: [] };
-const d: GraphNode<string> = { value: "D", neighbours: [] };
+export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
+  const visited = new Set<T>();
+  const temp = new Set<T>();   // nodes on the recursion stack
+  const result: T[] = [];
 
-a.neighbours.push(b, c);   // A -> B, C
-b.neighbours.push(d);      // B -> D
-c.neighbours.push(d);      // C -> D
+  const visit = (node: T) => {
+    if (temp.has(node)) {
+      throw new Error('Graph contains a cycle; topological sort impossible');
+    }
+    if (!visited.has(node)) {
+      temp.add(node);
+      for (const nb of graph[node] ?? []) visit(nb);
+      temp.delete(node);
+      visited.add(node);
+      result.push(node);     // post‑order push gives topological order
+    }
+  };
 
-// --- goal: find node with value “D”
-const isGoal = (node: GraphNode<string>) => node.value === "D";
+  for (const node in graph) visit(node as T);
+  // reverse because we push after exploring children
+  return result.reverse();
+}
+const myGraph: Graph<string> = {
+  A: ['B', 'C'],
+  B: ['D'],
+  C: ['D'],
+  D: [],
+};
 
-// Recursive
-const resultRec = depthLimitedSearchRec(a, isGoal, 3);
-console.log("Recursive result:", resultRec?.value ?? "none");
+console.log(topologicalSortKahn(myGraph));
+// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
 
-// Iterative
-const resultIter = depthLimitedSearchIter(a, isGoal, 3);
-console.log("Iterative result:", resultIter?.value ?? "none");
-Recursive result: D
-Iterative result: D
+console.log(topologicalSortDFS(myGraph));
+// → same order (or any other valid one)
