@@ -1,66 +1,70 @@
-// A simple singly‑linked‑list node suitable for the intersection test
-export interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
+/**
+ * Builds the bad‑character shift table for a given pattern.
+ *
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
+ */
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
+
+  // Default shift: length of the pattern
+  table.fill(m);
+
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
+  }
+  return table;
 }
 
 /**
- * Returns the first node at which two singly‑linked lists intersect,
- * or undefined if they never intersect.
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | undefined,
-  headB: ListNode<T> | undefined
-): ListNode<T> | undefined {
-  // Helper that walks a list and returns its length
-  const getLength = (node?: ListNode<T>) => {
-    let len = 0;
-    while (node) {
-      len++;
-      node = node.next;
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
+
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
+
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
     }
-    return len;
-  };
 
-  let lenA = getLength(headA);
-  let lenB = getLength(headB);
+    if (j < 0) {          // full match
+      result.push(i);
+    }
 
-  // Advance the longer list so both pointers are at the same distance
-  // from the end of the list.
-  let currA = headA;
-  let currB = headB;
-  while (lenA > lenB && currA) {
-    currA = currA.next;
-    lenA--;
-  }
-  while (lenB > lenA && currB) {
-    currB = currB.next;
-    lenB--;
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
   }
 
-  // Move forward together until either we find the intersection
-  // or both pointers hit the end (undefined).
-  while (currA !== currB) {
-    currA = currA?.next;
-    currB = currB?.next;
-  }
-
-  return currA; // May be undefined if no intersection
+  return result;
 }
-// Build example lists that intersect:
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
 
-//      A -> B -> C
-//      ^          |
-//      |          v
-//      D <- E
+console.log(bmhSearch(haystack, needle)); // → [11]
 
-const c: ListNode<number> = { val: 3 };
-const b: ListNode<number> = { val: 2, next: c };
-const a: ListNode<number> = { val: 1, next: b };
-
-const e: ListNode<number> = { val: 5, next: a };
-const d: ListNode<number> = { val: 4, next: e };
-
-console.log(getIntersectionNode(a, d) === a);   // true
-console.log(getIntersectionNode(b, d) === a);   // true
-console.log(getIntersectionNode(c, d) === a);   // true
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
