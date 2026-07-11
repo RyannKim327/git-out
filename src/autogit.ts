@@ -1,61 +1,77 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
+}
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  // Insert value in the first spot found (just for demonstration).
+  // A real BST would place it relative to its neighbors.
+  insert(value: T): void {
+    const node = new TreeNode(value);
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
+    this._insertRec(this.root, node);
+  }
 
-  let maxLen = 0;
-  let endIdx = 0; // end index (exclusive) in s1 of the best substring
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > maxLen) {
-          maxLen = dp[i][j];
-          endIdx = i; // end is exclusive
-        }
-      }
+  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
+    // Walk left first, then right, until you hit a null spot.
+    if (!current.left) {
+      current.left = node;
+    } else if (!current.right) {
+      current.right = node;
+    } else {
+      // Go deeper – we’re just doing breadth‑like insertion.
+      this._insertRec(current.left, node);
     }
   }
 
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
-}
-console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
-function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
-  // Ensure s2 is the shorter string to keep the inner array small
-  if (s1.length < s2.length) {
-    return longestCommonSubstringSpaceOptimized(s2, s1);
-  }
+  // Breadth‑first traversal (queue style) – returns array of values.
+  bfs(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
 
-  const n = s1.length;
-  const m = s2.length;
-
-  const prev = Array(m + 1).fill(0);
-  const curr = Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let endIdx = 0;
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          endIdx = i;
-        }
-      } else {
-        curr[j] = 0;
-      }
+    const queue: TreeNode<T>[] = [this.root];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      result.push(cur.value);
+      if (cur.left) queue.push(cur.left);
+      if (cur.right) queue.push(cur.right);
     }
-    // swap references for next iteration
-    [prev, curr] = [curr, prev];
+    return result;
   }
 
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+  // Depth‑first in‑order traversal (left, node, right)
+  inorder(): T[] {
+    const res: T[] = [];
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      res.push(node.value);
+      visit(node.right);
+    };
+    visit(this.root);
+    return res;
+  }
+
+  // Simple depth counter
+  depth(): number {
+    const dfs = (node: TreeNode<T> | null): number =>
+      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
+    return dfs(this.root);
+  }
 }
-console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
-console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
-console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
+const tree = new BinaryTree<number>();
+[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
+
+console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
+console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
+console.log('Depth:', tree.depth());         // 3
+interface Person { name: string; age: number; }
+const people = new BinaryTree<Person>();
+people.insert({name: 'Alice', age: 30});
