@@ -1,43 +1,27 @@
 /**
- * Returns true if `text` reads the same forward and backward.
- * By default it is case‑sensitive and includes every character.
- *
- * @param text The string to check.
- * @param opts  Optional settings:
- *   - `ignoreCase`:   true to compare lowercase strings (default: false)
- *   - `ignoreSpaces`: true to skip whitespace (default: false)
- *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
  */
-export function isPalindrome(
-  text: string,
-  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
-): boolean {
-  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-  // Prepare the string based on options
-  let processed = ignoreCase ? text.toLowerCase() : text;
-
-  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
-  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
-
-  // Compare forward and reversed
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
+    }
+  } while (swapped);
 }
-console.log(isPalindrome('radar'));          // true
-console.log(isPalindrome('Radar'));          // false
-console.log(isPalindrome('Radar', { ignoreCase: true })); // true
-console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
-const isPal = (s: string) =>
-  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
-const examples = [
-  'racecar',
-  'RaceCar',
-  'A man, a plan, a canal: Panama',
-  'No lemon, no melon',
-  'Hello, world!',
-];
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
 
-for (const ex of examples) {
-  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
-}
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
