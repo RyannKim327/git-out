@@ -1,26 +1,79 @@
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
-  const total = nums.reduce((sum, n) => sum + n, 0);
-  return total / nums.length;
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
+
+    visited.add(start);
+    queue.push(start);
+
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
+    }
+
+    return result;
 }
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;
-  let sum = 0;
-  for (const n of nums) {
-    sum += n;
-  }
-  return sum / nums.length;
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
+
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
 }
-function mean<T extends number>(nums: T[]): number {
-  if (nums.length === 0) return NaN;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-function meanSafe(nums: Array<number | null | undefined>): number {
-  const cleaned = nums.filter((n): n is number => typeof n === "number");
-  if (cleaned.length === 0) return NaN;
-  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
-}
-const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
-console.log(mean([2, 4, 6]));   // 4
-console.log(mean([]));          // NaN
-console.log(meanSafe([1, 2, null, 4])); // 2.333...
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
