@@ -1,81 +1,147 @@
-// ---------- Tarjan S.T.C. ---------------------------------------
+/* ──────────────────────────────────────────────────────
+ *  SkipListNode<T>
+ * ────────────────────────────────────────────────────── */
+class SkipListNode<T> {
+  /** The stored value (defined only in the “bottom” node) */
+  value?: T;
 
-/**
- * Return an array of strongly‑connected components.
- * Each component is an array of vertex IDs (here strings).
- * Vertices can be any `string`; if you prefer numbers just change the type.
- */
-export function tarjanSCC(graph: Map<string, string[]>): string[][] {
-  // state that needs to survive the recursive walk
-  const index = new Map<string, number>();    // discovery time of vertex
-  const lowLink = new Map<string, number>();  // lowest discovery reachable
-  const stack: string[] = [];                 // vertices that are “on stack”
-  const onStack = new Set<string>();
+  /** Links to the node that follows this one at each level */
+  forward: Array<SkipListNode<T> | null> = [];
 
-  let curIdx = 0;                            // global counter
-  const sccs: string[][] = [];               // result
+  constructor(value?: T, level: number = 0) {
+    this.value = value;
+    this.forward = new Array(level + 1).fill(null);
+  }
+}
 
-  // helper: depth‑first walk from a single vertex
-  function strongConnect(v: string) {
-    // part A – set the depth index and low link
-    index.set(v, curIdx);
-    lowLink.set(v, curIdx);
-    curIdx += 1;
+/* ──────────────────────────────────────────────────────
+ *  SkipList<T>
+ * ────────────────────────────────────────────────────── */
+export class SkipList<T> {
+  /* Adjustable parameters */
+  private readonly MAX_LEVEL: number;      // upper bound for levels
+  private readonly P: number;              // probability of promoting a node
 
-    // put v on stack
-    stack.push(v);
-    onStack.add(v);
+  private level: number = 0;               // current maximum level
+  private header: SkipListNode<T>;         // sentinel start node
 
-    // part B – consider successors of v
-    const neighbours = graph.get(v) ?? [];
-    for (const w of neighbours) {
-      if (!index.has(w)) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → must be in the current SCC
-        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
+  constructor(maxLevel: number = 16, probability: number = 0.5) {
+    this.MAX_LEVEL = maxLevel;
+    this.P        = probability;
+    this.header   = new SkipListNode<T>();
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Random level generator
+   * ────────────────────────────────────────────────────── */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+      lvl++;
+    }
+    return lvl;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Search for a value
+   * ────────────────────────────────────────────────────── */
+  search(value: T): SkipListNode<T> | null {
+    let current = this.header;
+
+    // move down each level, then across level 0
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
       }
     }
 
-    // part C – if v is a root node, pop the stack to build an SCC
-    if (lowLink.get(v) === index.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
+    current = current.forward[0]!;
+
+    if (current && current.value === value) return current;
+    return null;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Insert a new value
+   * ────────────────────────────────────────────────────── */
+  insert(value: T): void {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    // find where the new node will be inserted at each level
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
+
+    // pick a random level for the new node
+    const lvl = this.randomLevel();
+
+    // raise the list’s level if necessary
+    if (lvl > this.level) {
+      for (let i = this.level + 1; i <= lvl; i++) {
+        update[i] = this.header;
+      }
+      this.level = lvl;
+    }
+
+    const newNode = new SkipListNode<T>(value, lvl);
+
+    // splice the new node into every level above 0
+    for (let i = 0; i <= lvl; i++) {
+      newNode.forward[i] = update[i].forward[i];
+      update[i].forward[i] = newNode;
     }
   }
 
-  // run the dfs from every unvisited vertex
-  for (const v of graph.keys()) {
-    if (!index.has(v)) {
-      strongConnect(v);
+  /* ──────────────────────────────────────────────────────
+   *  Remove a value
+   * ────────────────────────────────────────────────────── */
+  remove(value: T): boolean {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
     }
+
+    current = current.forward[0]!;
+
+    if (!current || current.value !== value) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node at every level it appears
+    for (let i = 0; i <= this.level; i++) {
+      if (update[i].forward[i] !== current) break;
+      update[i].forward[i] = current.forward[i];
+    }
+
+    // shrink the list’s level if the top levels became empty
+    while (this.level > 0 && this.header.forward[this.level] == null) {
+      this.level--;
+    }
+
+    return true;
   }
 
-  return sccs;
+  /* ──────────────────────────────────────────────────────
+   *  Helper: convert list into an array (useful for debugging)
+   * ────────────────────────────────────────────────────── */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.header.forward[0];
+
+    while (node) {
+      result.push(node.value!);
+      node = node.forward[0];
+    }
+
+    return result;
+  }
 }
-const graph = new Map<string, string[]>(
-  [
-    ['A', ['B']],
-    ['B', ['C', 'E', 'F']],
-    ['C', ['D', 'G']],
-    ['D', ['C', 'H']],
-    ['E', ['A', 'F']],
-    ['F', ['G']],
-    ['G', ['F', 'H']],
-    ['H', ['G']],
-  ],
-);
-
-const components = tarjanSCC(graph);
-console.log(components);
-// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
-// (depending on traversal order you may see the same vertices grouped in one component,
-// because the toy graph is fully strongly‑connected)
