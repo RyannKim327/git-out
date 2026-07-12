@@ -1,147 +1,93 @@
-/* ──────────────────────────────────────────────────────
- *  SkipListNode<T>
- * ────────────────────────────────────────────────────── */
-class SkipListNode<T> {
-  /** The stored value (defined only in the “bottom” node) */
-  value?: T;
+/**
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
+ */
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
 
-  /** Links to the node that follows this one at each level */
-  forward: Array<SkipListNode<T> | null> = [];
-
-  constructor(value?: T, level: number = 0) {
+  constructor(value: T) {
     this.value = value;
-    this.forward = new Array(level + 1).fill(null);
   }
 }
 
-/* ──────────────────────────────────────────────────────
- *  SkipList<T>
- * ────────────────────────────────────────────────────── */
-export class SkipList<T> {
-  /* Adjustable parameters */
-  private readonly MAX_LEVEL: number;      // upper bound for levels
-  private readonly P: number;              // probability of promoting a node
+/**
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
+ */
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-  private level: number = 0;               // current maximum level
-  private header: SkipListNode<T>;         // sentinel start node
-
-  constructor(maxLevel: number = 16, probability: number = 0.5) {
-    this.MAX_LEVEL = maxLevel;
-    this.P        = probability;
-    this.header   = new SkipListNode<T>();
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Random level generator
-   * ────────────────────────────────────────────────────── */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
-      lvl++;
-    }
-    return lvl;
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Search for a value
-   * ────────────────────────────────────────────────────── */
-  search(value: T): SkipListNode<T> | null {
-    let current = this.header;
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
 
-    // move down each level, then across level 0
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
+    }
+    this.rear = node;           // new tail
+
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
     }
 
-    current = current.forward[0]!;
-
-    if (current && current.value === value) return current;
-    return null;
+    this._size++;
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Insert a new value
-   * ────────────────────────────────────────────────────── */
-  insert(value: T): void {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
 
-    // find where the new node will be inserted at each level
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
     }
 
-    // pick a random level for the new node
-    const lvl = this.randomLevel();
-
-    // raise the list’s level if necessary
-    if (lvl > this.level) {
-      for (let i = this.level + 1; i <= lvl; i++) {
-        update[i] = this.header;
-      }
-      this.level = lvl;
-    }
-
-    const newNode = new SkipListNode<T>(value, lvl);
-
-    // splice the new node into every level above 0
-    for (let i = 0; i <= lvl; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
-    }
+    this._size--;
+    return value;
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Remove a value
-   * ────────────────────────────────────────────────────── */
-  remove(value: T): boolean {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    current = current.forward[0]!;
-
-    if (!current || current.value !== value) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node at every level it appears
-    for (let i = 0; i <= this.level; i++) {
-      if (update[i].forward[i] !== current) break;
-      update[i].forward[i] = current.forward[i];
-    }
-
-    // shrink the list’s level if the top levels became empty
-    while (this.level > 0 && this.header.forward[this.level] == null) {
-      this.level--;
-    }
-
-    return true;
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Helper: convert list into an array (useful for debugging)
-   * ────────────────────────────────────────────────────── */
+  /** Return an array of all values in order (for debugging / inspection) */
   toArray(): T[] {
     const result: T[] = [];
-    let node = this.header.forward[0];
-
+    let node = this.front;
     while (node) {
-      result.push(node.value!);
-      node = node.forward[0];
+      result.push(node.value);
+      node = node.next;
     }
-
     return result;
   }
 }
+const q = new Queue<number>();
+
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
