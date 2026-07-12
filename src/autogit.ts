@@ -1,82 +1,79 @@
-function bfsLimited(start, isGoal, neighbors, maxDepth):
-    queue ← [(start, 0)]          // node and its depth
-    visited ← new Set()
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-    while queue not empty:
-        (node, depth) ← queue.dequeue()
+    visited.add(start);
+    queue.push(start);
 
-        if isGoal(node): return node
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
 
-        if depth == maxDepth:
-            continue   // depth limit reached – skip adding successors
-
-        for each n in neighbors(node):
-            if n not in visited:
-                visited.add(n)
-                queue.enqueue((n, depth + 1))
-
-    return null   // no goal within depth limit
-type Node<T> = T;
-
-// Parameters:
-//   start: the node to begin from
-//   isGoal: a predicate to determine if a node is the goal
-//   neighbors: a function that returns an array of adjacent nodes
-//   maxDepth: the depth cutoff (inclusive)
-//   allowRevisit: if true, visited set is ignored – useful for pure trees
-export function breadthLimitedSearch<T>(
-  start: Node<T>,
-  isGoal: (node: T) => boolean,
-  neighbors: (node: T) => Iterable<T>,
-  maxDepth: number,
-  allowRevisit: boolean = false
-): T | null {
-  // Queue holds tuples: [node, depth]
-  const queue: Array<[T, number]> = [[start, 0]];
-
-  // Only keep visited set if we care about cycles
-  const visited = new Set<T>();
-  if (!allowRevisit) visited.add(start);
-
-  while (queue.length) {
-    const [node, depth] = queue.shift() as [T, number];
-
-    if (isGoal(node)) return node;
-
-    if (depth === maxDepth) continue; // Depth limit reached – skip children
-
-    for (const child of neighbors(node)) {
-      if (!allowRevisit && visited.has(child)) continue;
-      visited.add(child);
-      queue.push([child, depth + 1]);
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
     }
-  }
 
-  return null; // No goal found within the depth bound
+    return result;
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [5, 6]],
-  [4, [7]],
-  [5, [7]],
-  [6, []],
-  [7, []],
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
+
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
 ]);
 
-function neighbors(n: number) {
-  return graph.get(n) ?? [];
-}
-
-const start = 1;
-const goal = 7;
-const maxDepth = 3; // we only want to explore up to 3 edges away
-
-const result = breadthLimitedSearch(
-  start,
-  (node) => node === goal,
-  neighbors,
-  maxDepth
-);
-
-console.log(result); // => 7 (found within 3 steps)
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
