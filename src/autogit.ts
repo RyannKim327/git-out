@@ -1,79 +1,70 @@
-type Vertex = string | number | symbol;
-type Graph = Map<Vertex, Vertex[]>;
 /**
- * Breadth‑first traversal of a graph.
+ * Builds the bad‑character shift table for a given pattern.
  *
- * @param graph      adjacency list
- * @param start      vertex to start from
- * @returns Array of vertices in the order they were visited
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
  */
-function bfs(graph: Graph, start: Vertex): Vertex[] {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const result: Vertex[] = [];
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
 
-    visited.add(start);
-    queue.push(start);
+  // Default shift: length of the pattern
+  table.fill(m);
 
-    while (queue.length) {
-        const current = queue.shift()!;   // safe, queue is non‑empty
-        result.push(current);
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
+  }
+  return table;
+}
 
-        const neighbours = graph.get(current) ?? [];
-        for (const next of neighbours) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-            }
-        }
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
+
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
+
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
     }
 
-    return result;
-}
-function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const parent = new Map<Vertex, Vertex | null>();
-
-    visited.add(start);
-    queue.push(start);
-    parent.set(start, null);
-
-    while (queue.length) {
-        const current = queue.shift()!;
-
-        if (current === target) {
-            // reconstruct path
-            const path: Vertex[] = [];
-            let v: Vertex | null | undefined = target;
-            while (v !== null) {
-                path.unshift(v);
-                v = parent.get(v) ?? null;
-            }
-            return path;
-        }
-
-        for (const next of graph.get(current) ?? []) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-                parent.set(next, current);
-            }
-        }
+    if (j < 0) {          // full match
+      result.push(i);
     }
 
-    // target unreachable
-    return null;
-}
-const g: Graph = new Map([
-    ['A', ['B', 'C']],
-    ['B', ['A', 'D', 'E']],
-    ['C', ['A', 'F']],
-    ['D', ['B']],
-    ['E', ['B', 'F']],
-    ['F', ['C', 'E']]
-]);
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
+  }
 
-console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
-console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
-console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
+  return result;
+}
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
+
+console.log(bmhSearch(haystack, needle)); // → [11]
+
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
