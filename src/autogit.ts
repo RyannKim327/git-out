@@ -1,34 +1,37 @@
-function stringLength(s: string): number {
-  let count = 0;
-  for (const _ of s) {   // iterates over Unicode code points
-    ++count;
-  }
-  return count;
-}
-function stringLengthCodeUnits(s: string): number {
-  let count = 0;
-  // `s[i]` returns `undefined` past the end of the string
-  for (let i = 0; s[i] !== undefined; i++) {
-    ++count;
-  }
-  return count;
-}
-function stringLengthCharAt(s: string): number {
-  let count = 0;
-  for (let i = 0; s.charAt(i) !== ''; i++) {
-    ++count;
-  }
-  return count;
-}
-function* chars(s: string): Generator<unknown> {
-  for (const c of s) { yield c; }
-}
+function secondLargestSort(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-function stringLengthFunctional(s: string): number {
-  let count = 0;
-  for (const _ of chars(s)) { ++count; }
-  return count;
+  const sorted = [...arr].sort((a, b) => b - a); // Descending
+  return sorted[1];
 }
-console.log(stringLength("hello"));       // 5
-console.log(stringLength("👋🌍"));        // 2  (two code points)
-console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
+function secondLargestSinglePass(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const num of arr) {
+    if (num > max) {
+      second = max;
+      max = num;
+    } else if (num > second && num !== max) {
+      second = num;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
+}
+function secondLargestSet(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)];
+  if (unique.length < 2) return undefined;
+
+  const sorted = unique.sort((a, b) => b - a);
+  return sorted[1];
+}
+function secondLargestMathMax(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  const max = Math.max(...arr);
+  const maxFiltered = arr.filter(num => num !== max);
+  return Math.max(...maxFiltered);
+}
