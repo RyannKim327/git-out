@@ -1,93 +1,29 @@
-/**
- * A single node of the linked list.
- * The list is kept in the "next →" direction.
- */
-class ListNode<T> {
-  public value: T;
-  public next: ListNode<T> | null = null;
+// hello.ts
+import * as readline from 'readline'
 
-  constructor(value: T) {
-    this.value = value;
-  }
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+
+function ask(question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
 }
 
-/**
- * A queue backed by a linked list.
- * `front` points to the oldest element,
- * `rear` points to the newest one.
- */
-export class Queue<T> {
-  private front: ListNode<T> | null = null; // head
-  private rear: ListNode<T> | null = null;  // tail
-  private _size = 0;
+async function main() {
+  const name = await ask('What’s your name? ')
+  const favNum = await ask('What’s your favorite number? ')
+  
+  const num = parseInt(favNum, 10)
+  const isEven = !isNaN(num) ? num % 2 === 0 : false
 
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
-  }
+  console.log(`\nHello, ${name}!`);
+  console.log(`Your favorite number is ${favNum}`);
+  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
 
-  /** Check if the queue is empty */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Enqueue: add an element to the tail */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (this.rear) {
-      this.rear.next = node;   // hook it after the current tail
-    }
-    this.rear = node;           // new tail
-
-    if (!this.front) {
-      // Queue was empty before, so front must point to the new node too
-      this.front = node;
-    }
-
-    this._size++;
-  }
-
-  /** Dequeue: remove and return the front element, or null if empty */
-  dequeue(): T | null {
-    if (!this.front) return null;
-
-    const value = this.front.value;
-    this.front = this.front.next;  // move head forward
-
-    if (!this.front) {
-      // Queue just became empty – clear the tail as well
-      this.rear = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | null {
-    return this.front ? this.front.value : null;
-  }
-
-  /** Return an array of all values in order (for debugging / inspection) */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.front;
-    while (node) {
-      result.push(node.value);
-      node = node.next;
-    }
-    return result;
-  }
+  rl.close()
 }
-const q = new Queue<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size);      // 1
-console.log(q.toArray()); // [30]
+main()
+tsc hello.ts   # compile to JavaScript
+node hello.js
