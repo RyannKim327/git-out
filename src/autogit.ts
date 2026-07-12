@@ -1,38 +1,34 @@
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;        // 1 and below are not prime
-  if (n <= 3) return true;         // 2 and 3 are prime
-
-  // Even numbers > 2 are composite.
-  if (n % 2 === 0) return false;
-
-  // Check odd divisors up to sqrt(n)
-  for (let i = 3; i * i <= n; i += 2) {
-    if (n % i === 0) return false;
+function stringLength(s: string): number {
+  let count = 0;
+  for (const _ of s) {   // iterates over Unicode code points
+    ++count;
   }
-  return true;
+  return count;
 }
-function isPrime6(n: number): boolean {
-  if (n <= 1) return false;
-  if (n <= 3) return true;
-  if (n % 2 === 0 || n % 3 === 0) return false;
-
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
+function stringLengthCodeUnits(s: string): number {
+  let count = 0;
+  // `s[i]` returns `undefined` past the end of the string
+  for (let i = 0; s[i] !== undefined; i++) {
+    ++count;
   }
-  return true;
+  return count;
 }
-function isPrimeBig(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
-
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+function stringLengthCharAt(s: string): number {
+  let count = 0;
+  for (let i = 0; s.charAt(i) !== ''; i++) {
+    ++count;
   }
-  return true;
+  return count;
 }
-console.log(isPrime(97));   // true
-console.log(isPrime(100));  // false
-console.log(isPrime6(97));  // true
-console.log(isPrime6(100)); // false
-console.log(isPrimeBig(19n)); // true
+function* chars(s: string): Generator<unknown> {
+  for (const c of s) { yield c; }
+}
+
+function stringLengthFunctional(s: string): number {
+  let count = 0;
+  for (const _ of chars(s)) { ++count; }
+  return count;
+}
+console.log(stringLength("hello"));       // 5
+console.log(stringLength("👋🌍"));        // 2  (two code points)
+console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
