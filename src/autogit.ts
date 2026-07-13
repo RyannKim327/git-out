@@ -1,60 +1,76 @@
-/* 1️⃣  Define the shapes of the data we expect  */
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+/**
+ * Build the LPS (Longest Prefix Suffix) table for KMP.
+ *
+ * @param pattern - The pattern string for which the table is built.
+ * @returns An array where lps[i] is the length of the longest proper
+ *          prefix of pattern[0..i] that is also a suffix of that substring.
+ */
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps: number[] = Array(m).fill(0);
+  let length = 0;                 // length of previous longest prefix suffix
+  let i = 1;                      // lps[0] is always 0
 
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
-
-/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
-async function safeGet<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length += 1;
+      lps[i] = length;
+      i += 1;
+    } else {
+      if (length !== 0) {
+        // fall back in the pattern (do not increment i here)
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i += 1;
+      }
+    }
   }
-  return resp.json() as Promise<T>;
+  return lps;
 }
 
-/* 3️⃣  Fetch a single post and its comments  */
-async function fetchPostWithComments(postId: number) {
-  const [post, comments] = await Promise.all([
-    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
-    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
-  ]);
+/**
+ * KMP search – returns all starting indices of `pattern` in `text`.
+ *
+ * @param text    – The string to search within.
+ * @param pattern – The string to find.
+ * @returns Array of start indices where pattern occurs in text.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];          // nothing to find
+  const lps = buildLPS(pattern);
+  const result: number[] = [];
 
-  console.log(`\n=== Post #${post.id} ===`);
-  console.log(`Title : ${post.title}`);
-  console.log(`Body  : ${post.body}\n`);
+  let i = 0;   // index for text
+  let j = 0;   // index for pattern
 
-  console.log(`--- ${comments.length} comment(s) ---`);
-  comments.forEach(c => {
-    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
-  });
-}
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i += 1;
+      j += 1;
+    }
 
-/* 4️⃣  Run it for a few post IDs  */
-async function main() {
-  try {
-    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
-  } catch (err) {
-    console.error('Something went wrong:', (err as Error).message);
+    // full match found
+    if (j === pattern.length) {
+      result.push(i - j);   // starting index
+      j = lps[j - 1];       // allow overlapping matches
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i += 1;
+      }
+    }
   }
+
+  return result;
 }
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-main();
-# compile to JavaScript
-npx tsc api-demo.ts
+const matches = kmpSearch(text, pattern);
+console.log(matches);          // [10]
 
-# run the output
-node api-demo.js
-
-# or skip the compile step (requires ts-node)
-npx ts-node api-demo.ts
+const hasMatch = matches.length > 0;
+console.log(hasMatch);         // true
