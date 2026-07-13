@@ -1,87 +1,86 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
-}
+// -------------------------------------------
+//  heapSort.ts
+// -------------------------------------------
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
+/**
+ * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
+ *
+ * @param   array      The array to sort, mutated in‑place.
+ * @param   cmp?       Optional comparator: (a, b) => number
+ *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
+ *
+ * @example
+ * const nums = [3, 1, 4, 1, 5, 9, 2];
+ * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
+ * heapSort(nums, (a, b) => b - a);  // descending order
+ */
+export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
+  const compare = cmp ?? defaultCompare;
 
-  constructor() {
-    this.root = new TrieNode();
+  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
+  const heapSize = array.length;
+
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    siftDown(i, heapSize);
   }
 
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
+  /* ---------- 2. Repeatedly extract max (or min) ---------- */
+  for (let i = heapSize - 1; i > 0; i--) {
+    // Grab the root (largest element) and put it at the end
+    swap(array, 0, i);
+    // Restore heap property on the reduced heap
+    siftDown(0, i);
+  }
+
+  /* ---------- Helper scopes ---------- */
+  function siftDown(start: number, end: number): void {
+    let root = start;
+
+    while (true) {
+      const left = 2 * root + 1;
+      if (left >= end) break; // no children
+
+      const right = left + 1;
+      let candidate = left;
+
+      // Select the bigger child (or smaller if comparator flipped)
+      if (right < end && compare(array[right], array[left]) > 0) {
+        candidate = right;
       }
-      node = node.children.get(ch)!;
+
+      // If root already holds the biggest, we're done
+      if (compare(array[root], array[candidate]) >= 0) break;
+
+      // Swap root with the chosen child and continue
+      swap(array, root, candidate);
+      root = candidate;
     }
-    node.isEnd = true;
   }
 
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
-
-    dfs(node, []);
-    return results;
+  function swap(arr: T[], i: number, j: number): void {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
   }
 }
 
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
+/* ------------------------------------------- */
+/* Default comparator for `number`/`string` (ascending) */
+function defaultCompare<T>(a: T, b: T): number {
+  // If it's a number or behaves like a number
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  // Fallback to lexical comparison for strings and others that stringify nicely
+  const sa = String(a);
+  const sb = String(b);
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
+}
+import { heapSort } from "./heapSort";
 
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+const data = [8, 3, 5, 4, 7, 1, 2, 6];
+heapSort(data);                // ascending
+console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+
+heapSort(data, (a, b) => b - a); // descending
+console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
