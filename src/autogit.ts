@@ -1,14 +1,29 @@
-/**
- * Reverses the order of words in a string.
- *
- * Whitespace punctuation is preserved around the words.
- */
-function reverseWords(text: string): string {
-  // Split on any whitespace – this covers spaces, tabs, new‑lines.
-  const words = text.trim().split(/\s+/); // keeps only real words
-  return words.reverse().join(' ');
+function removeVowels(text: string): string {
+  return text.replace(/[aeiou]/gi, '');
 }
+const raw = "TypeScript is amazing!";
+console.log(removeVowels(raw));
+// ↳ "TypScrpt s mzng!"
+function removeVowelsLoop(text: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u',
+                          'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of text) {
+    if (!vowels.has(ch)) result += ch;
+  }
+  return result;
+}
+const tests = [
+  "Hello, world!",
+  "AEIOUaeiou",
+  "Rhythm",
+  "Café",
+  "",
+];
 
-// Demo
-console.log(reverseWords("Hello world, how are you?"));
-// → "you? are how world, Hello"
+tests.forEach(t => console.log(`"${t}" → "${removeVowels(t)}"`));
+"Hello, world!" → "Hll, wrld!"
+"AEIOUaeiou" → ""
+"Rhythm" → "Rhythm"
+"Café" → "Cf"
+""
