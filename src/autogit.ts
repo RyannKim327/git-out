@@ -1,58 +1,26 @@
-// stack.ts
-export class Stack<T> {
-  /* The array that holds our data. The last item is the top of the stack. */
-  private items: T[] = [];
+// utils.ts
+/**
+ * Randomly reorder the elements of an array in place.
+ * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
+ *
+ * @param arr The array to shuffle (mutated in place)
+ * @returns The same array, now shuffled
+ */
+export function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a remaining element…
+    const j = Math.floor(Math.random() * (i + 1));
 
-  /** Adds a value to the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
+    // …and swap it with the current element.
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-
-  /** Removes and returns the top value. Throws if the stack is empty. */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to pop from an empty stack");
-    }
-    return this.items.pop() as T; // safe because we just checked for emptiness
-  }
-
-  /** Returns the top value without removing it. Throws if the stack is empty. */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to peek on an empty stack");
-    }
-    // items.length is at least 1, so the index exists
-    return this.items[this.items.length - 1];
-  }
-
-  /** Was the stack empty? */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** How many items are there? */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything out. */
-  clear(): void {
-    this.items = [];
-  }
+  return arr;
 }
-// demo.ts
-import { Stack } from "./stack";
+import { shuffle } from "./utils";
 
-const stack = new Stack<number>();
+const numbers = [1, 2, 3, 4, 5];
+shuffle(numbers);          // numbers is now in a random order
+console.log(numbers);
 
-stack.push(1);
-stack.push(2);
-stack.push(3);
-
-console.log(stack.peek());   // 3
-console.log(stack.pop());    // 3
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
-
-stack.clear();
-console.log(stack.isEmpty()); // true
+const words = ["a", "b", "c", "d"];
+console.log(shuffle(words));  // prints a shuffled copy
