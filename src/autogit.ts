@@ -1,66 +1,37 @@
-/**
- * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
- *
- * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
- * The base is usually the alphabet size (e.g. 256 for extended ASCII).
- * The modulus is a large prime to keep the hash values bounded and to reduce
- * collisions.  Even if a hash match occurs, we still check the actual string
- * slice to guarantee correctness.
- *
- * The function returns everything that looks like the pattern.
- */
-export function rabinKarp(pattern: string, text: string): number[] {
-  const result: number[] = [];
-  const M = pattern.length;          // pattern length
-  const N = text.length;             // text length
-  if (M === 0 || N < M) return result;   // nothing to find
-
-  const base = 256;                  // number of possible characters
-  const prime = 101;                  // a small prime as mod
-
-  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
-  let highOrder = 1;                  // base^(M-1) % prime
-  for (let i = 1; i <= M - 1; i++) {
-    highOrder = (highOrder * base) % prime;
-  }
-
-  /* ---------- Initial hash for pattern and first window ---------- */
-  let patternHash = 0;
-  let windowHash = 0;
-  for (let i = 0; i < M; i++) {
-    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
-    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
-  }
-
-  /* ---------- Slide the window over the text ---------- */
-  for (let i = 0; i <= N - M; i++) {
-    // If hash values are equal, do a character‑by‑character check
-    if (patternHash === windowHash) {
-      let match = true;
-      for (let j = 0; j < M; j++) {
-        if (text.charAt(i + j) !== pattern.charAt(j)) {
-          match = false;
-          break;
-        }
-      }
-      if (match) result.push(i);
-    }
-
-    // Compute hash for the next window
-    if (i < N - M) {
-      // Remove leading character
-      const leading = (text.charCodeAt(i) * highOrder) % prime;
-      windowHash = (windowHash + prime - leading) % prime; // avoid negative
-
-      // Shift left and add the trailing character
-      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
-    }
-  }
-
-  return result;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-const text = "abracadabra";
-const pattern = "abra";
+/**
+ * Returns the n‑th node from the end of a singly linked list,
+ * or null if it doesn't exist.
+ * n is 1‑based: n = 1 means the last node.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-const indices = rabinKarp(pattern, text);
-console.log(indices); // → [0, 7]
+  let fast: ListNode<T> | null = head;
+  // Step 1: move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;           // n is larger than the list length
+    fast = fast.next;
+  }
+
+  // Step 2: move both pointers until fast reaches the end
+  let slow: ListNode<T> | null = head;
+  while (fast) {
+    fast = fast.next;
+    slow = slow!.next!;
+  }
+
+  return slow; // could be null if the list was empty
+}
+// build a tiny list: 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4: ListNode<number> = { val: 4, next: node5 };
+let node3: ListNode<number> = { val: 3, next: node4 };
+let node2: ListNode<number> = { val: 2, next: node3 };
+let node1: ListNode<number> = { val: 1, next: node2 };
+
+const thirdFromEnd = nthFromEnd(node1, 3);
+console.log(thirdFromEnd?.val); // 3
