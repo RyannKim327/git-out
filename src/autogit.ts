@@ -1,60 +1,79 @@
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
 /**
- * Returns true if `s` is a palindrome.
+ * Breadth‑first traversal of a graph.
  *
- * Works in O(n) time and O(1) additional space.
- * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-  while (left < right) {
-    if (s[left] !== s[right]) {
-      return false;
-    }
-    left++;
-    right--;
-  }
+    visited.add(start);
+    queue.push(start);
 
-  return true;
-}
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
 
-// Demo
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isAlphanumeric(c: string): boolean {
-  const code = c.charCodeAt(0);
-  return (
-    // 0‑9
-    (code >= 48 && code <= 57) ||
-    // A‑Z
-    (code >= 65 && code <= 90) ||
-    // a‑z
-    (code >= 97 && code <= 122)
-  );
-}
-
-function isPalindromeLoose(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip non‑alphanumerics
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
-
-    // After skipping, compare lowercase versions
-    if (
-      left < right &&
-      s[left].toLowerCase() !== s[right].toLowerCase()
-    ) {
-      return false;
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
     }
 
-    left++;
-    right--;
-  }
-  return true;
+    return result;
 }
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
