@@ -1,117 +1,66 @@
-type Key = string | number | object;   // anything you can reasonably stringify
-interface Pair<K, V> {
-  key: K;
-  value: V;
+/**
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
+ *
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
+ *
+ * The function returns everything that looks like the pattern.
+ */
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
+
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
+
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
+  }
+
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
+  }
+
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
+      }
+      if (match) result.push(i);
+    }
+
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
+    }
+  }
+
+  return result;
 }
-type Bucket<K, V> = Pair<K, V>[];
-const DEFAULT_BUCKETS = 16;
-const DEFAULT_LOAD_FACTOR = 0.75;
+const text = "abracadabra";
+const pattern = "abra";
 
-export class HashTable<K extends Key, V> {
-  private buckets: Bucket<K, V>[];
-  private count = 0;                    // number of key/value pairs
-  private loadFactor: number;
-
-  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
-    this.buckets = Array.from({ length: initialBuckets }, () => []);
-    this.loadFactor = loadFactor;
-  }
-
-  /* ---------- public API ---------- */
-
-  set(key: K, value: V): void {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    // Replace if key is already present
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
-        pair.value = value;
-        return;
-      }
-    }
-
-    bucket.push({ key, value });
-    this.count++;
-
-    if (this.count / this.buckets.length > this.loadFactor) {
-      this.resize();
-    }
-  }
-
-  get(key: K): V | undefined {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {
-        return pair.value;
-      }
-    }
-    return undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.equals(bucket[i].key, key)) {
-        bucket.splice(i, 1);
-        this.count--;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  clear(): void {
-    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
-    this.count = 0;
-  }
-
-  get size(): number {
-    return this.count;
-  }
-
-  /* ---------- private helpers ---------- */
-
-  private bucketIndex(key: K): number {
-    // Ensure the hash is non‑negative
-    const h = this.hash(key);
-    const idx = h % this.buckets.length;
-    return idx < 0 ? idx + this.buckets.length : idx;
-  }
-
-  /* Simple but stable string hash (djb2 algorithm) */
-  private hash(key: K): number {
-    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) {
-      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
-    }
-    return h >>> 0; // make unsigned
-  }
-
-  private equals(a: K, b: K): boolean {
-    // For primitives, === is fine.
-    // For objects, we compare the stringified form.
-    if (typeof a === 'object' && typeof b === 'object') {
-      return JSON.stringify(a) === JSON.stringify(b);
-    }
-    return a === b;
-  }
-
-  /* Grow the bucket array and re‑hash all entries */
-  private resize(): void {
-    const oldBuckets = this.buckets;
-    const newSize = oldBuckets.length * 2;
-    this.buckets = Array.from({ length: newSize }, () => []);
-    this.count = 0;
-
-    for (const bucket of oldBuckets) {
-      for (const pair of bucket)
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
