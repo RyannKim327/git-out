@@ -1,48 +1,31 @@
 /**
- * Returns the longest common subsequence of two strings.
- * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
+ * Selection sort – O(n²) time, O(1) additional space.
+ *
+ * Works on any array of items that can be compared with < and >.
  */
-function lcs(s1: string, s2: string): string {
-  const n = s1.length,
-        m = s2.length;
+function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    // Work in place – the original array is mutated
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest is at i
+        let minIdx = i;
 
-  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+        // Search for a smaller element in the rest of the array
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIdx]) {
+                minIdx = j;
+            }
+        }
 
-  // Build the DP table.
-  for (let i = 1; i <= n; i++) {
-    const a = s1[i - 1];
-    for (let j = 1; j <= m; j++) {
-      if (a === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
+        // If a smaller element was found, swap it into place
+        if (minIdx !== i) {
+            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+        }
     }
-  }
-
-  // Reconstruct the subsequence.
-  let i = n,
-      j = m,
-      result: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (s1[i - 1] === s2[j - 1]) {
-      // Character is part of LCS – prepend to answer.
-      result.push(s1[i - 1]);
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;   // move up
-    } else {
-      j--;   // move left
-    }
-  }
-
-  return result.reverse().join('');
+    return arr;
 }
-const a = 'AGGTAB';
-const b = 'GXTXAYB';
-
-const sub = lcs(a, b);
-console.log(`LCS length: ${sub.length}`); // 4
-console.log(`LCS itself: ${sub}`);       // GTAB
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
+function selectionSortCopy<T>(arr: T[]): T[] {
+    return selectionSort([...arr]); // spread creates a shallow copy
+}
