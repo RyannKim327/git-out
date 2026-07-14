@@ -1,49 +1,48 @@
 /**
- * Stable counting sort for integers.
+ * Returns the majority element of the array if one exists,
+ * otherwise returns undefined.
  *
- * @param  values The array of numbers to sort (integers only).
- * @return        A new sorted array.
+ * @param arr an array of comparable values (number, string, …)
  */
-function countingSort(values: number[]): number[] {
-  if (values.length === 0) return [];
+export function findMajority<T extends number | string | boolean>(
+  arr: T[]
+): T | undefined {
+  // 1️⃣ find a candidate
+  let candidate: T | undefined;
+  let count = 0;
 
-  // ---------- 1. find min & max ----------
-  let min = values[0];
-  let max = values[0];
-  for (let i = 1; i < values.length; i++) {
-    const v = values[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
+  for (const val of arr) {
+    if (count === 0) {
+      candidate = val;
+      count = 1;
+    } else if (val === candidate) {
+      count++;
+    } else {
+      count--;
+    }
   }
 
-  // ---------- 2. count frequencies ----------
-  const range = max - min + 1;          // number of distinct values
-  const counts = new Array<number>(range).fill(0);
+  // 2️⃣ verify that the candidate is actually a majority
+  if (candidate === undefined) return undefined;
 
-  for (const v of values) {
-    counts[v - min]++;                  // shift so that the smallest value maps to index 0
-  }
+  let freq = 0;
+  for (const v of arr) if (v === candidate) freq++;
 
-  // ---------- 3. prefix sums (running totals) ----------
-  const positions = new Array<number>(range).fill(0);
-  let sum = 0;
-  for (let i = 0; i < range; i++) {
-    sum += counts[i];
-    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
-  }
-
-  // ---------- 4. build the sorted output ----------
-  const result = new Array<number>(values.length);
-  // Walk the original array **backwards** to keep stability
-  for (let i = values.length - 1; i >= 0; i--) {
-    const v = values[i];
-    const posIndex = v - min;
-    positions[posIndex]--;               // get the correct position for this element
-    result[positions[posIndex]] = v;
-  }
-
-  return result;
+  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
 }
-const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
-const sorted = countingSort(unsorted);
-console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
+console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
+console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
+console.log(findMajority(['a', 'a', 'b']));       // → 'a'
+export function findMajorityWithMap<T>(
+  arr: T[]
+): T | undefined {
+  const map = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2);
+
+  for (const v of arr) {
+    const newCount = (map.get(v) ?? 0) + 1;
+    map.set(v, newCount);
+    if (newCount > threshold) return v;
+  }
+  return undefined;
+}
