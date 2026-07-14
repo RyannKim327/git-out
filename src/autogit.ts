@@ -1,86 +1,117 @@
-// -------------------------------------------
-//  heapSort.ts
-// -------------------------------------------
+type Key = string | number | object;   // anything you can reasonably stringify
+interface Pair<K, V> {
+  key: K;
+  value: V;
+}
+type Bucket<K, V> = Pair<K, V>[];
+const DEFAULT_BUCKETS = 16;
+const DEFAULT_LOAD_FACTOR = 0.75;
 
-/**
- * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
- *
- * @param   array      The array to sort, mutated in‑place.
- * @param   cmp?       Optional comparator: (a, b) => number
- *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
- *
- * @example
- * const nums = [3, 1, 4, 1, 5, 9, 2];
- * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
- * heapSort(nums, (a, b) => b - a);  // descending order
- */
-export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
-  const compare = cmp ?? defaultCompare;
+export class HashTable<K extends Key, V> {
+  private buckets: Bucket<K, V>[];
+  private count = 0;                    // number of key/value pairs
+  private loadFactor: number;
 
-  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
-  const heapSize = array.length;
-
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    siftDown(i, heapSize);
+  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
+    this.buckets = Array.from({ length: initialBuckets }, () => []);
+    this.loadFactor = loadFactor;
   }
 
-  /* ---------- 2. Repeatedly extract max (or min) ---------- */
-  for (let i = heapSize - 1; i > 0; i--) {
-    // Grab the root (largest element) and put it at the end
-    swap(array, 0, i);
-    // Restore heap property on the reduced heap
-    siftDown(0, i);
-  }
+  /* ---------- public API ---------- */
 
-  /* ---------- Helper scopes ---------- */
-  function siftDown(start: number, end: number): void {
-    let root = start;
+  set(key: K, value: V): void {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-    while (true) {
-      const left = 2 * root + 1;
-      if (left >= end) break; // no children
-
-      const right = left + 1;
-      let candidate = left;
-
-      // Select the bigger child (or smaller if comparator flipped)
-      if (right < end && compare(array[right], array[left]) > 0) {
-        candidate = right;
+    // Replace if key is already present
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
+        pair.value = value;
+        return;
       }
+    }
 
-      // If root already holds the biggest, we're done
-      if (compare(array[root], array[candidate]) >= 0) break;
+    bucket.push({ key, value });
+    this.count++;
 
-      // Swap root with the chosen child and continue
-      swap(array, root, candidate);
-      root = candidate;
+    if (this.count / this.buckets.length > this.loadFactor) {
+      this.resize();
     }
   }
 
-  function swap(arr: T[], i: number, j: number): void {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
+  get(key: K): V | undefined {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {
+        return pair.value;
+      }
+    }
+    return undefined;
   }
-}
 
-/* ------------------------------------------- */
-/* Default comparator for `number`/`string` (ascending) */
-function defaultCompare<T>(a: T, b: T): number {
-  // If it's a number or behaves like a number
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
+  delete(key: K): boolean {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    for (let i = 0; i < bucket.length; i++) {
+      if (this.equals(bucket[i].key, key)) {
+        bucket.splice(i, 1);
+        this.count--;
+        return true;
+      }
+    }
+    return false;
   }
-  // Fallback to lexical comparison for strings and others that stringify nicely
-  const sa = String(a);
-  const sb = String(b);
-  return sa < sb ? -1 : sa > sb ? 1 : 0;
-}
-import { heapSort } from "./heapSort";
 
-const data = [8, 3, 5, 4, 7, 1, 2, 6];
-heapSort(data);                // ascending
-console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
 
-heapSort(data, (a, b) => b - a); // descending
-console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
+  clear(): void {
+    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
+    this.count = 0;
+  }
+
+  get size(): number {
+    return this.count;
+  }
+
+  /* ---------- private helpers ---------- */
+
+  private bucketIndex(key: K): number {
+    // Ensure the hash is non‑negative
+    const h = this.hash(key);
+    const idx = h % this.buckets.length;
+    return idx < 0 ? idx + this.buckets.length : idx;
+  }
+
+  /* Simple but stable string hash (djb2 algorithm) */
+  private hash(key: K): number {
+    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
+    }
+    return h >>> 0; // make unsigned
+  }
+
+  private equals(a: K, b: K): boolean {
+    // For primitives, === is fine.
+    // For objects, we compare the stringified form.
+    if (typeof a === 'object' && typeof b === 'object') {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+    return a === b;
+  }
+
+  /* Grow the bucket array and re‑hash all entries */
+  private resize(): void {
+    const oldBuckets = this.buckets;
+    const newSize = oldBuckets.length * 2;
+    this.buckets = Array.from({ length: newSize }, () => []);
+    this.count = 0;
+
+    for (const bucket of oldBuckets) {
+      for (const pair of bucket)
