@@ -1,31 +1,26 @@
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
-
-// Numeric ascending sort
-numbers.sort((a, b) => a - b);
-console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
-
-// Numeric descending sort
-numbers.sort((a, b) => b - a);
-console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
-[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
-const sorted = [...numbers].sort((a, b) => a - b);
-numbers.sort((a, b) => {
-  const absDiff = Math.abs(a) - Math.abs(b);
-  return absDiff !== 0 ? absDiff : a - b;
-});
-function quickSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;
-  const pivot = arr[arr.length - 1];
-  const left: number[] = [];
-  const right: number[] = [];
-
-  for (const x of arr.slice(0, -1)) {
-    (x < pivot ? left : right).push(x);
-  }
-
-  return [...quickSort(left), pivot, ...quickSort(right)];
+function countWord(text: string, word: string): number {
+  // Escape word so special regex symbols don’t bite us
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // \b = word boundary, i = ignore case, g = global (all matches)
+  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
 }
-
-const numbers2 = [3, 1, 4, 1, 5, 9, 2];
-const sorted2 = quickSort(numbers2);
-console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
+const txt = "Boo, boo! Boo-boo? Booing… boo.";
+console.log(countWord(txt, 'boo')); // 3
+function countWordSplit(text: string, word: string) {
+  const words = text.trim().split(/\s+/);
+  const target = word.toLowerCase();
+  return words.filter(w => w.toLowerCase() === target).length;
+}
+function countWordLoop(text: string, word: string) {
+  const target = word.toLowerCase();
+  let count = 0;
+  const regex = /\b\w+\b/g;               // grab words
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match[0].toLowerCase() === target) count++;
+  }
+  return count;
+}
+const count = countWord("Hello because we say hello", "hello"); // 2
