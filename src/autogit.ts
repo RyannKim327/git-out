@@ -1,48 +1,145 @@
 /**
- * Shell sort – a classic gap‑based insertion sort
- *
- * @template T - type held in the array
- * @param arr   Array to be sorted in place
- * @param cmp   Optional comparator, defaults to numeric comparison
- * @returns     The sorted array (same reference as `arr`)
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
  */
-export function shellSort<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
-): T[] {
-  const n = arr.length;
+type Graph = Map<string, string[]>;
 
-  // A common sequence: n/2, n/4, …, 1
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Do a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap-sorted elements until the correct spot for temp is found
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
+
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
+
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
+
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
+
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
+
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
+
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
+
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
+
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
       }
-      arr[j] = temp;
+    }
+    return null;
+  }
+
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
+    }
+
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
     }
   }
 
-  return arr;
+  // No overlap – disconnected graph
+  return null;
 }
-// 1️⃣ Sort numbers
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-// 2️⃣ Sort strings alphabetically
-shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
+/**
+ * Reconstructs the full path from start → meeting → goal.
+ */
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
 
-// 3️⃣ Sort objects by a property
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: "Zoe", age: 29 },
-  { name: "Alex", age: 22 },
-  { name: "Mia", age: 35 }
-];
-shellSort(people, (a, b) => a.age - b.age);
-console.log(people.map(p => p.age));  // → [22, 29, 35]
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
+  }
+
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
+  }
+
+  return path;
+}
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
+
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
