@@ -1,37 +1,58 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
 /**
- * Returns the n‑th node from the end of a singly linked list,
- * or null if it doesn't exist.
- * n is 1‑based: n = 1 means the last node.
+ * Radix sort for 32‑bit signed integers (Int32Array safety).
+ * Works for positives, negatives and zero.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;            // invalid n – feel free to adjust
+export function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-  let fast: ListNode<T> | null = head;
-  // Step 1: move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;           // n is larger than the list length
-    fast = fast.next;
+  // Separate positives and negatives.
+  const positives: number[] = [];
+  const negatives: number[] = []; // store as positive magnitudes
+
+  for (const n of nums) {
+    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
+    else positives.push(n);
   }
 
-  // Step 2: move both pointers until fast reaches the end
-  let slow: ListNode<T> | null = head;
-  while (fast) {
-    fast = fast.next;
-    slow = slow!.next!;
-  }
+  // Sort each side independently.
+  const sortedPos = radixSortNonNegative(positives);
+  const sortedNeg = radixSortNonNegative(negatives).reverse();
 
-  return slow; // could be null if the list was empty
+  // Concatenate negatives (reversed) + positives
+  return [...sortedNeg.map(n => -n), ...sortedPos];
 }
-// build a tiny list: 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4: ListNode<number> = { val: 4, next: node5 };
-let node3: ListNode<number> = { val: 3, next: node4 };
-let node2: ListNode<number> = { val: 2, next: node3 };
-let node1: ListNode<number> = { val: 1, next: node2 };
 
-const thirdFromEnd = nthFromEnd(node1, 3);
-console.log(thirdFromEnd?.val); // 3
+/**
+ * Helper that assumes every element is a non‑negative integer.
+ */
+function radixSortNonNegative(arr: number[]): number[] {
+  if (arr.length <= 1) return arr.slice();
+
+  const maxVal = Math.max(...arr);
+  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
+
+  let output = arr.slice(); // working copy
+  let pow10 = 1;            // 10^digitIndex
+
+  for (let d = 0; d < lenDigits; d++) {
+    // 10 buckets for the decimal digits 0‑9
+    const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+    for (const val of output) {
+      const digit = Math.floor((val / pow10) % 10);
+      buckets[digit].push(val);
+    }
+
+    // Rebuild output from buckets
+    output = [].concat(...buckets);
+
+    pow10 *= 10;           // move to next digit
+  }
+
+  return output;
+}
+import { radixSort } from "./radixSort";
+
+const data = [170, -45, 75, 90, -802, 24, 2, 66];
+console.log(radixSort(data)); 
+// → [-802, -45, 2, 24, 66, 75, 90, 170]
