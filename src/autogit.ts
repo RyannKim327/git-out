@@ -1,55 +1,55 @@
-/**
- * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
- */
-function isAnagram(s1: string, s2: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
-  return normalize(s1) === normalize(s2);
-}
-function isAnagramLetterCount(a: string, b: string): boolean {
-  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
+// Graph type: map from vertex id → array of neighbouring vertex ids
+type Graph = Record<string | number, Array<string | number>>;
+function dfsRecursive(
+  graph: Graph,
+  start: string | number,
+  visited = new Set<string | number>()
+): string[] {
+  // If the node has already been visited, stop here.
+  if (visited.has(start)) return [];
 
-  const freq = (s: string) => {
-    const map = new Map<string, number>();
-    for (const c of s) {
-      map.set(c, (map.get(c) ?? 0) + 1);
+  visited.add(start);           // Mark the node
+  const result = [start];        // The order in which we visit
+
+  // Recurse on all neighbours that haven't been visited yet
+  for (const neighbour of graph[start] || []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
-    return map;
-  };
-
-  if (clean(a).length !== clean(b).length) return false;
-
-  const m1 = freq(clean(a));
-  const m2 = freq(clean(b));
-
-  for (const [ch, count] of m1) {
-    if (m2.get(ch) !== count) return false;
   }
-  return true;
+
+  return result;
 }
-function isAnagramFlexible(
-  s1: string,
-  s2: string,
-  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
-): boolean {
-  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
+function dfsIterative(graph: Graph, start: string | number): string[] {
+  const visited = new Set<string | number>();
+  const stack: (string | number)[] = [start];
+  const order: string[] = [];
 
-  let pattern = '';
-  if (ignoreSpaces) pattern += '\\s';
-  if (ignorePunct) pattern += /[^\w\s]/g.source;
+  while (stack.length) {
+    const v = stack.pop()!;           // Grab the vertex on top of the stack
+    if (visited.has(v)) continue;     // Skip if we already processed it
+    visited.add(v);                    // Mark as visited
+    order.push(v);                     // Record visitation order
 
-  const regex = new RegExp(pattern, 'g');
-  const normalize = (s: string) =>
-    s.replace(regex, '').toLowerCase().split('').sort().join('');
+    // Push neighbours onto the stack (in reverse order if you want a specific order)
+    const neighbours = graph[v] || [];
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      if (!visited.has(neighbours[i])) {
+        stack.push(neighbours[i]);
+      }
+    }
+  }
 
-  return normalize(s1) === normalize(s2);
+  return order;
 }
-console.log(isAnagram('listen', 'silent'));          // true
-console.log(isAnagram('A gentleman', 'Elegant man'));// true
-console.log(isAnagram('Hello', 'World'));            // false
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: [],
+  f: []
+};
 
-// Using the frequency‑count version
-console.log(isAnagramLetterCount('abc', 'cab'));     // true
-
-// Flexible options
-console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
+console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
+console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
