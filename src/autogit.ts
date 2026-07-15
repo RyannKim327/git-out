@@ -1,87 +1,37 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
+/**
+ * Returns the n‑th node from the end of a singly linked list,
+ * or null if it doesn't exist.
+ * n is 1‑based: n = 1 means the last node.
+ */
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
-
-  constructor() {
-    this.root = new TrieNode();
+  let fast: ListNode<T> | null = head;
+  // Step 1: move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;           // n is larger than the list length
+    fast = fast.next;
   }
 
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
+  // Step 2: move both pointers until fast reaches the end
+  let slow: ListNode<T> | null = head;
+  while (fast) {
+    fast = fast.next;
+    slow = slow!.next!;
   }
 
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
-
-    dfs(node, []);
-    return results;
-  }
+  return slow; // could be null if the list was empty
 }
+// build a tiny list: 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4: ListNode<number> = { val: 4, next: node5 };
+let node3: ListNode<number> = { val: 3, next: node4 };
+let node2: ListNode<number> = { val: 2, next: node3 };
+let node1: ListNode<number> = { val: 1, next: node2 };
 
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
-
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+const thirdFromEnd = nthFromEnd(node1, 3);
+console.log(thirdFromEnd?.val); // 3
