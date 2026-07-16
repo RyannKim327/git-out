@@ -1,14 +1,28 @@
-/**
- * Reverses the order of words in a string.
- *
- * Whitespace punctuation is preserved around the words.
- */
-function reverseWords(text: string): string {
-  // Split on any whitespace – this covers spaces, tabs, new‑lines.
-  const words = text.trim().split(/\s+/); // keeps only real words
-  return words.reverse().join(' ');
+// Simple random user fetcher with axios (TypeScript)
+
+import axios from 'axios';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  phone: string;
+  website: string;
 }
 
-// Demo
-console.log(reverseWords("Hello world, how are you?"));
-// → "you? are how world, Hello"
+async function fetchRandomUser(): Promise<User | undefined> {
+  try {
+    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+}
+
+fetchRandomUser().then(user => {
+  if (user) {
+    console.log(`🎲 Random user: ${user.name} (${user.email})`);
+  }
+});
