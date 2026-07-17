@@ -1,35 +1,61 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
-}
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
-  let current = head;
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
 
-  while (current) {
-    count++;
-    current = current.next;
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
+        }
+      }
+    }
   }
 
-  return count;
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-class LinkedList<T> {
-  private head?: Node<T>;
-
-  // ... push, pop, etc.
-
-  size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
   }
-}
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
 
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+  const n = s1.length;
+  const m = s2.length;
+
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
+  }
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+}
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
