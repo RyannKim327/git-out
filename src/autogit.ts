@@ -1,40 +1,52 @@
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+}
+
 /**
- * Interpolation search returns the index of `target` in `arr`,
- * or –1 if the target is not present.
- *
- * @param arr   – sorted array of numbers (must be monotonic increasing)
- * @param target – key we’re trying to locate
- * @returns the array index of target or -1
+ * Returns the diameter (in edges) of a binary tree.
  */
-export function interpolationSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
 
-    let low = 0;
-    let high = arr.length - 1;
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
 
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Avoid division by zero when the sub‑array contains equal numbers
-        if (arr[high] === arr[low]) {
-            return arr[low] === target ? low : -1;
-        }
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
 
-        // Estimate the likely position of `target` within [low, high]
-        const pos = low + Math.floor(
-            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
-        );
-
-        const val = arr[pos];
-
-        if (val === target) return pos;
-        if (val < target) low = pos + 1;
-        else high = pos - 1;
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
     }
 
-    return -1; // not found
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;         // already in edges
 }
-import { interpolationSearch } from "./interpolationSearch";
 
-const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+/* ---- example usage ------------------------------------------------------- */
 
-console.log(interpolationSearch(data, 42));   // → 4
-console.log(interpolationSearch(data, 100));  // → -1
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
+}
+
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
+
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
