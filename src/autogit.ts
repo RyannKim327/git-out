@@ -1,113 +1,43 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+/**
+ * Returns true if `text` reads the same forward and backward.
+ * By default it is case‑sensitive and includes every character.
+ *
+ * @param text The string to check.
+ * @param opts  Optional settings:
+ *   - `ignoreCase`:   true to compare lowercase strings (default: false)
+ *   - `ignoreSpaces`: true to skip whitespace (default: false)
+ *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
+ */
+export function isPalindrome(
+  text: string,
+  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
+): boolean {
+  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
 
-  constructor(value: T) {
-    this.value = value;
-  }
+  // Prepare the string based on options
+  let processed = ignoreCase ? text.toLowerCase() : text;
+
+  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
+  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
+
+  // Compare forward and reversed
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
+console.log(isPalindrome('radar'));          // true
+console.log(isPalindrome('Radar'));          // false
+console.log(isPalindrome('Radar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
+const isPal = (s: string) =>
+  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
+const examples = [
+  'racecar',
+  'RaceCar',
+  'A man, a plan, a canal: Panama',
+  'No lemon, no melon',
+  'Hello, world!',
+];
 
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-
-  // ---- basic properties ----
-  get size() { return this._size; }
-
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
-
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
-
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
-  }
-
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
-    }
-  }
-}
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
-  }
-  return false;
+for (const ex of examples) {
+  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
 }
