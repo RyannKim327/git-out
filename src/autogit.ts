@@ -1,87 +1,76 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
+/**
+ * Build the LPS (Longest Prefix Suffix) table for KMP.
+ *
+ * @param pattern - The pattern string for which the table is built.
+ * @returns An array where lps[i] is the length of the longest proper
+ *          prefix of pattern[0..i] that is also a suffix of that substring.
+ */
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps: number[] = Array(m).fill(0);
+  let length = 0;                 // length of previous longest prefix suffix
+  let i = 1;                      // lps[0] is always 0
+
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length += 1;
+      lps[i] = length;
+      i += 1;
+    } else {
+      if (length !== 0) {
+        // fall back in the pattern (do not increment i here)
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i += 1;
+      }
+    }
+  }
+  return lps;
 }
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
+/**
+ * KMP search – returns all starting indices of `pattern` in `text`.
+ *
+ * @param text    – The string to search within.
+ * @param pattern – The string to find.
+ * @returns Array of start indices where pattern occurs in text.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];          // nothing to find
+  const lps = buildLPS(pattern);
+  const result: number[] = [];
 
-  constructor() {
-    this.root = new TrieNode();
-  }
+  let i = 0;   // index for text
+  let j = 0;   // index for pattern
 
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i += 1;
+      j += 1;
     }
-    node.isEnd = true;
-  }
 
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
+    // full match found
+    if (j === pattern.length) {
+      result.push(i - j);   // starting index
+      j = lps[j - 1];       // allow overlapping matches
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i += 1;
       }
-    };
-
-    dfs(node, []);
-    return results;
+    }
   }
+
+  return result;
 }
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
+const matches = kmpSearch(text, pattern);
+console.log(matches);          // [10]
 
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+const hasMatch = matches.length > 0;
+console.log(hasMatch);         // true
