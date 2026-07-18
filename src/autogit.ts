@@ -1,77 +1,48 @@
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
+/**
+ * Shell sort – a classic gap‑based insertion sort
+ *
+ * @template T - type held in the array
+ * @param arr   Array to be sorted in place
+ * @param cmp   Optional comparator, defaults to numeric comparison
+ * @returns     The sorted array (same reference as `arr`)
+ */
+export function shellSort<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
+): T[] {
+  const n = arr.length;
+
+  // A common sequence: n/2, n/4, …, 1
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Do a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap-sorted elements until the correct spot for temp is found
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
+  }
+
+  return arr;
 }
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
+// 1️⃣ Sort numbers
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-  // Insert value in the first spot found (just for demonstration).
-  // A real BST would place it relative to its neighbors.
-  insert(value: T): void {
-    const node = new TreeNode(value);
-    if (!this.root) {
-      this.root = node;
-      return;
-    }
-    this._insertRec(this.root, node);
-  }
+// 2️⃣ Sort strings alphabetically
+shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
 
-  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
-    // Walk left first, then right, until you hit a null spot.
-    if (!current.left) {
-      current.left = node;
-    } else if (!current.right) {
-      current.right = node;
-    } else {
-      // Go deeper – we’re just doing breadth‑like insertion.
-      this._insertRec(current.left, node);
-    }
-  }
-
-  // Breadth‑first traversal (queue style) – returns array of values.
-  bfs(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
-
-    const queue: TreeNode<T>[] = [this.root];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      result.push(cur.value);
-      if (cur.left) queue.push(cur.left);
-      if (cur.right) queue.push(cur.right);
-    }
-    return result;
-  }
-
-  // Depth‑first in‑order traversal (left, node, right)
-  inorder(): T[] {
-    const res: T[] = [];
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      res.push(node.value);
-      visit(node.right);
-    };
-    visit(this.root);
-    return res;
-  }
-
-  // Simple depth counter
-  depth(): number {
-    const dfs = (node: TreeNode<T> | null): number =>
-      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
-    return dfs(this.root);
-  }
-}
-const tree = new BinaryTree<number>();
-[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
-
-console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
-console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
-console.log('Depth:', tree.depth());         // 3
-interface Person { name: string; age: number; }
-const people = new BinaryTree<Person>();
-people.insert({name: 'Alice', age: 30});
+// 3️⃣ Sort objects by a property
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: "Zoe", age: 29 },
+  { name: "Alex", age: 22 },
+  { name: "Mia", age: 35 }
+];
+shellSort(people, (a, b) => a.age - b.age);
+console.log(people.map(p => p.age));  // → [22, 29, 35]
