@@ -1,46 +1,35 @@
-/**
- * Returns true if the array is sorted in ascending order.
- * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
- * If you need a custom order you can supply a comparator:
- *   (a, b) => a.value - b.value   // numeric
- *   (a, b) => a.name.localeCompare(b.name) // string property
- */
-function isSorted<T>(
-  arr: readonly T[],
-  comparator?: (a: T, b: T) => number
-): boolean {
-  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
-
-  const cmp = comparator ?? ((a: T, b: T) => {
-    // Default comparison: works for numbers, strings, Dates, etc.
-    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
-  });
-
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // a previous element is larger → not sorted
-    }
-  }
-  return true;
+// A node that holds a value and a reference to the next node.
+// Feel free to add more fields (e.g., prev, data…) as needed.
+export interface Node<T> {
+  value: T;
+  next?: Node<T>;
 }
-// Numbers
-console.log(isSorted([1, 2, 3, 4]));           // true
-console.log(isSorted([1, 3, 2, 4]));           // false
+export function length<T>(head: Node<T> | undefined): number {
+  let count = 0;
+  let current = head;
 
-// Strings
-console.log(isSorted(['a', 'b', 'c']));       // true
+  while (current) {
+    count++;
+    current = current.next;
+  }
 
-// Dates
-console.log(
-  isSorted([
-    new Date('2020-01-01'),
-    new Date('2020-06-01'),
-    new Date('2021-01-01')
-  ])
-); // true
+  return count;
+}
+export function lengthRecursive<T>(node: Node<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
+}
+class LinkedList<T> {
+  private head?: Node<T>;
 
-// Objects with a specific key
-const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
-console.log(isSorted(people, (p, q) => p.age - q.age)); // true
-const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
-  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
+  // ... push, pop, etc.
+
+  size(): number {
+    return length(this.head);   // or lengthRecursive(this.head)
+  }
+}
+const node3: Node<string> = { value: "c" };
+const node2: Node<string> = { value: "b", next: node3 };
+const node1: Node<string> = { value: "a", next: node2 };
+
+console.log(length(node1));          // → 3
+console.log(lengthRecursive(node1)); // → 3
