@@ -1,83 +1,60 @@
-function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;          // out of range
-
-  // cloning so we don’t mutate the caller’s array
-  const copy = [...arr];
-
-  // If you need custom ordering, pass a compare function.
-  // Default: numeric ascending.
-  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
-
-  // Arrays are zero‑indexed
-  return copy[k - 1];
+/* 1️⃣  Define the shapes of the data we expect  */
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-// Example
-const nums = [7, 3, 5, 2, 9];
-console.log(kthSmallestBySort(nums, 2));   // 3
-function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
+interface Comment {
+  postId: number;
+  id: number;
+  name: string;
+  email: string;
+  body: string;
+}
 
-  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const clone = [...arr]; // keep the original untouched
-
-  function partition(left: number, right: number, pivotIndex: number): number {
-    const pivotValue = clone[pivotIndex];
-    // move pivot to end
-    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
-
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (comp(clone[i], pivotValue) < 0) {
-        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
-        storeIndex++;
-      }
-    }
-    // move pivot to its final place
-    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
-    return storeIndex;
+/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
+async function safeGet<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
   }
+  return resp.json() as Promise<T>;
+}
 
-  let left = 0;
-  let right = clone.length - 1;
-  let pivotIndex;
+/* 3️⃣  Fetch a single post and its comments  */
+async function fetchPostWithComments(postId: number) {
+  const [post, comments] = await Promise.all([
+    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
+    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
+  ]);
 
-  while (true) {
-    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
-    if (pivotIndex === k - 1) return clone[pivotIndex];
-    if (pivotIndex > k - 1) right = pivotIndex - 1;
-    else left = pivotIndex + 1;
+  console.log(`\n=== Post #${post.id} ===`);
+  console.log(`Title : ${post.title}`);
+  console.log(`Body  : ${post.body}\n`);
+
+  console.log(`--- ${comments.length} comment(s) ---`);
+  comments.forEach(c => {
+    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
+  });
+}
+
+/* 4️⃣  Run it for a few post IDs  */
+async function main() {
+  try {
+    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
+  } catch (err) {
+    console.error('Something went wrong:', (err as Error).message);
   }
 }
-const data = [12, 3, 5, 7, 4, 19, 26];
-console.log(kthSmallestQuickSelect(data, 4)); // 7
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private compare: (a: T, b: T) => number) {}
-  // heap methods omitted for brevity...
-}
 
-function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const heap = new MinHeap<T>(cmp);
-  for (const v of arr) heap.insert(v);
-  let result: T | undefined;
-  for (let i = 0; i < k; i++) result = heap.extractMin();
-  return result;
-}
-const people = [
-  { name: 'Alice', age: 24 },
-  { name: 'Bob', age: 19 },
-  { name: 'Carol', age: 32 },
-  { name: 'Dave', age: 28 }
-];
+main();
+# compile to JavaScript
+npx tsc api-demo.ts
 
-// 3rd youngest
-const thirdYoungest = kthSmallestQuickSelect(
-  people,
-  3,
-  (a, b) => a.age - b.age
-);
+# run the output
+node api-demo.js
 
-console.log(thirdYoungest); // shows Bob (age 19)
+# or skip the compile step (requires ts-node)
+npx ts-node api-demo.ts
