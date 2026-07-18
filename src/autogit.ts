@@ -1,60 +1,58 @@
-/* 1️⃣  Define the shapes of the data we expect  */
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+// stack.ts
+export class Stack<T> {
+  /* The array that holds our data. The last item is the top of the stack. */
+  private items: T[] = [];
 
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
-
-/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
-async function safeGet<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
+  /** Adds a value to the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
-  return resp.json() as Promise<T>;
-}
 
-/* 3️⃣  Fetch a single post and its comments  */
-async function fetchPostWithComments(postId: number) {
-  const [post, comments] = await Promise.all([
-    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
-    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
-  ]);
+  /** Removes and returns the top value. Throws if the stack is empty. */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to pop from an empty stack");
+    }
+    return this.items.pop() as T; // safe because we just checked for emptiness
+  }
 
-  console.log(`\n=== Post #${post.id} ===`);
-  console.log(`Title : ${post.title}`);
-  console.log(`Body  : ${post.body}\n`);
+  /** Returns the top value without removing it. Throws if the stack is empty. */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to peek on an empty stack");
+    }
+    // items.length is at least 1, so the index exists
+    return this.items[this.items.length - 1];
+  }
 
-  console.log(`--- ${comments.length} comment(s) ---`);
-  comments.forEach(c => {
-    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
-  });
-}
+  /** Was the stack empty? */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
 
-/* 4️⃣  Run it for a few post IDs  */
-async function main() {
-  try {
-    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
-  } catch (err) {
-    console.error('Something went wrong:', (err as Error).message);
+  /** How many items are there? */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clear everything out. */
+  clear(): void {
+    this.items = [];
   }
 }
+// demo.ts
+import { Stack } from "./stack";
 
-main();
-# compile to JavaScript
-npx tsc api-demo.ts
+const stack = new Stack<number>();
 
-# run the output
-node api-demo.js
+stack.push(1);
+stack.push(2);
+stack.push(3);
 
-# or skip the compile step (requires ts-node)
-npx ts-node api-demo.ts
+console.log(stack.peek());   // 3
+console.log(stack.pop());    // 3
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
