@@ -1,70 +1,46 @@
 /**
- * Builds the bad‑character shift table for a given pattern.
- *
- * The table maps a character code (0–65535 for UTF‑16) to the shift value.
- * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
- * right‑most occurrence of that character inside the pattern.  
- *
- * @param pattern The substring we’re looking for.
- * @returns An array indexed by code unit, containing shift values.
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
  */
-function buildShiftTable(pattern: string): Uint16Array {
-  const m = pattern.length;
-  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-  // Default shift: length of the pattern
-  table.fill(m);
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+  });
 
-  // For every character except the last one, compute an optimal shift
-  for (let i = 0; i < m - 1; i++) {
-    const code = pattern.charCodeAt(i);
-    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
-  }
-  return table;
-}
-
-/**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The string to search inside.
- * @param pattern The substring we want to find.
- * @returns        All zero‑based indices where `pattern` starts in `text`.
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [0];              // empty pattern matches at every position
-  if (m > n) return [];                // pattern longer than text – no match
-
-  const shift = buildShiftTable(pattern);
-  const result: number[] = [];
-
-  let i = 0;   // current alignment: pattern[0] aligned with text[i]
-  while (i <= n - m) {
-    let j = m - 1;   // start comparing from the end of the pattern
-
-    // Compare backwards
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
     }
-
-    if (j < 0) {          // full match
-      result.push(i);
-    }
-
-    // Compute the shift.  We jump over at least one character, but the
-    // shift table may prescribe a longer shift if the mismatching character
-    // exists in the pattern.
-    const mismatchingCharCode = text.charCodeAt(i + m - 1);
-    i += shift[mismatchingCharCode];
   }
-
-  return result;
+  return true;
 }
-const haystack = 'ABCDABABCABCDABABD';
-const needle   = 'ABCDABD';
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-console.log(bmhSearch(haystack, needle)); // → [11]
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
 
-// Multiple matches
-console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
+
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
