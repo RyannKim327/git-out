@@ -1,80 +1,139 @@
-/**
- * The graph is represented as an adjacency list:
- *   key     → array of neighbors that the key points to
- */
-export type Graph<T = string> = Record<T, T[]>;
-
-/**
- * Helper types for the two algorithms
- */
-type Queue<T> = T[];
-export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
-  const result: T[] = [];
-
-  // Compute in‑degree for each node
-  const indegree = new Map<T, number>();
-  for (const node in graph) {
-    indegree.set(node, 0);               // ensure all nodes appear
-    for (const nb of graph[node]) {
-      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
-    }
-  }
-
-  // Queue all nodes that have no incoming edges
-  const queue: Queue<T> = [];
-  for (const [node, deg] of indegree.entries()) {
-    if (deg === 0) queue.push(node);
-  }
-
-  while (queue.length) {
-    const node = queue.shift()!;
-    result.push(node);
-
-    // Reduce indegree for all neighbors, pushing any that reach 0
-    for (const nb of graph[node] ?? []) {
-      const deg = (indegree.get(nb) ?? 0) - 1;
-      indegree.set(nb, deg);
-      if (deg === 0) queue.push(nb);
-    }
-  }
-
-  // If we processed fewer nodes than exist, a cycle exists
-  if (result.length !== Object.keys(graph).length) {
-    throw new Error('Graph contains a cycle; topological sort impossible');
-  }
-  return result;
+// 1️⃣ Node shape ----------------------------------------------------
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
+  ) {}
 }
-export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
-  const visited = new Set<T>();
-  const temp = new Set<T>();   // nodes on the recursion stack
-  const result: T[] = [];
+type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
 
-  const visit = (node: T) => {
-    if (temp.has(node)) {
-      throw new Error('Graph contains a cycle; topological sort impossible');
-    }
-    if (!visited.has(node)) {
-      temp.add(node);
-      for (const nb of graph[node] ?? []) visit(nb);
-      temp.delete(node);
-      visited.add(node);
-      result.push(node);     // post‑order push gives topological order
-    }
-  };
-
-  for (const node in graph) visit(node as T);
-  // reverse because we push after exploring children
-  return result.reverse();
-}
-const myGraph: Graph<string> = {
-  A: ['B', 'C'],
-  B: ['D'],
-  C: ['D'],
-  D: [],
+const defaultComparator = <T extends number | string>(a: T, b: T) => {
+  if (a < b) return -1;
+  if (a > b) return +1;
+  return 0;
 };
+// 2️⃣ BST class ----------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  public size = 0;
 
-console.log(topologicalSortKahn(myGraph));
-// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+  constructor(private comp: Comparator<T> = defaultComparator) {}
 
-console.log(topologicalSortDFS(myGraph));
-// → same order (or any other valid one)
+  // -----------------------------------------------------------------
+  // Insert
+  // -----------------------------------------------------------------
+  insert(value: T): void {
+    this.root = this._insertRec(this.root, value);
+  }
+
+  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) {
+      this.size++;
+      return new TreeNode(value);
+    }
+
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._insertRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._insertRec(node.right, value);
+    } else {
+      // duplicates: decide how to handle. Here we skip insertion.
+      return node;
+    }
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Search
+  // -----------------------------------------------------------------
+  find(value: T): boolean {
+    let node = this.root;
+    while (node) {
+      const cmp = this.comp(value, node.value);
+      if (cmp === 0) return true;
+      node = cmp < 0 ? node.left : node.right;
+    }
+    return false;
+  }
+
+  // -----------------------------------------------------------------
+  // Remove
+  // -----------------------------------------------------------------
+  remove(value: T): void {
+    this.root = this._removeRec(this.root, value);
+  }
+
+  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null;
+
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._removeRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._removeRec(node.right, value);
+    } else {
+      // node to delete found
+      this.size--;
+
+      // case 1: no children
+      if (!node.left && !node.right) return null;
+
+      // case 2: one child
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+
+      // case 3: two children – replace by inorder predecessor
+      const pred = this._maxNode(node.left)!; // non‑null
+      node.value = pred.value;
+      node.left = this._removeRec(node.left, pred.value);
+    }
+    return node;
+  }
+
+  private _maxNode(node: TreeNode<T>): TreeNode<T> {
+    while (node.right) node = node.right;
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Traversal helpers – in‑order (sorted order)
+  // -----------------------------------------------------------------
+  inorder(cb: (value: T) => void): void {
+    this._inorderRec(this.root, cb);
+  }
+
+  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
+    if (!node) return;
+    this._inorderRec(node.left, cb);
+    cb(node.value);
+    this._inorderRec(node.right, cb);
+  }
+
+  // -----------------------------------------------------------------
+  // Utility: pretty print as nested brackets
+  // -----------------------------------------------------------------
+  toString(): string {
+    const parts: string[] = [];
+    this._toStringRec(this.root, parts);
+    return parts.join(' ');
+  }
+
+  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
+    if (!node) { parts.push('null'); return; }
+    parts.push(String(node.value));
+    this._toStringRec(node.left, parts);
+    this._toStringRec(node.right, parts);
+  }
+}
+const bst = new BinarySearchTree<number>();
+
+[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
+console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
+
+console.log('Contains 40? →', bst.find(40));   // true
+console.log('Contains 99? →', bst.find(99));   // false
+
+console.log('In‑order traversal:');
+bst.inorder(v => console.log(v));  
