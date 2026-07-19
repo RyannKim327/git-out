@@ -1,82 +1,53 @@
-function bfsLimited(start, isGoal, neighbors, maxDepth):
-    queue ← [(start, 0)]          // node and its depth
-    visited ← new Set()
+/**
+ * Binary search for a sorted array of numbers.
+ *
+ * @param arr  The fully sorted array to search.
+ * @param target  The value you’re looking for.
+ * @param low  Index of the current lower bound (initially 0).
+ * @param high Index of the current upper bound (initially arr.length – 1).
+ * @returns The index of `target` if it exists; otherwise –1.
+ */
+function binarySearchRecursive(
+  arr: number[],
+  target: number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  // Base condition – no more elements to inspect
+  if (low > high) return -1;
 
-    while queue not empty:
-        (node, depth) ← queue.dequeue()
+  const mid = Math.floor((low + high) / 2);
 
-        if isGoal(node): return node
-
-        if depth == maxDepth:
-            continue   // depth limit reached – skip adding successors
-
-        for each n in neighbors(node):
-            if n not in visited:
-                visited.add(n)
-                queue.enqueue((n, depth + 1))
-
-    return null   // no goal within depth limit
-type Node<T> = T;
-
-// Parameters:
-//   start: the node to begin from
-//   isGoal: a predicate to determine if a node is the goal
-//   neighbors: a function that returns an array of adjacent nodes
-//   maxDepth: the depth cutoff (inclusive)
-//   allowRevisit: if true, visited set is ignored – useful for pure trees
-export function breadthLimitedSearch<T>(
-  start: Node<T>,
-  isGoal: (node: T) => boolean,
-  neighbors: (node: T) => Iterable<T>,
-  maxDepth: number,
-  allowRevisit: boolean = false
-): T | null {
-  // Queue holds tuples: [node, depth]
-  const queue: Array<[T, number]> = [[start, 0]];
-
-  // Only keep visited set if we care about cycles
-  const visited = new Set<T>();
-  if (!allowRevisit) visited.add(start);
-
-  while (queue.length) {
-    const [node, depth] = queue.shift() as [T, number];
-
-    if (isGoal(node)) return node;
-
-    if (depth === maxDepth) continue; // Depth limit reached – skip children
-
-    for (const child of neighbors(node)) {
-      if (!allowRevisit && visited.has(child)) continue;
-      visited.add(child);
-      queue.push([child, depth + 1]);
-    }
+  if (arr[mid] === target) {
+    return mid;
+  } else if (arr[mid] > target) {
+    // Search left half
+    return binarySearchRecursive(arr, target, low, mid - 1);
+  } else {
+    // Search right half
+    return binarySearchRecursive(arr, target, mid + 1, high);
   }
-
-  return null; // No goal found within the depth bound
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [5, 6]],
-  [4, [7]],
-  [5, [7]],
-  [6, []],
-  [7, []],
-]);
+const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-function neighbors(n: number) {
-  return graph.get(n) ?? [];
+const idx = binarySearchRecursive(sorted, 7); // 3
+const notFound = binarySearchRecursive(sorted, 2); // -1
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
+
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
+
+  if (cmp === 0) return mid;
+  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
+  return binarySearch(arr, target, compare, mid + 1, high);
 }
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
 
-const start = 1;
-const goal = 7;
-const maxDepth = 3; // we only want to explore up to 3 edges away
-
-const result = breadthLimitedSearch(
-  start,
-  (node) => node === goal,
-  neighbors,
-  maxDepth
-);
-
-console.log(result); // => 7 (found within 3 steps)
+const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
