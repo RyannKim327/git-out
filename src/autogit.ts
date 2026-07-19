@@ -1,36 +1,45 @@
-// A minimal, generic node type
-export interface ListNode<T> {
-  readonly value: T;
-  next: ListNode<T> | null;
-}
-
 /**
- * Returns the middle node of a singly‑linked list.
- * If the list has an even number of nodes, it returns
- * the *second* middle node (i.e. the one that a
- * “slow‑pointer” would land on after the last move).
+ * Returns an object with the maximum sum and the start/end indices
+ * of the sub‑array that produces that sum.
  *
- * @param head Head of the list – null if the list is empty.
- * @returns The middle node, or null for an empty list.
+ * @param nums - array of numbers
+ * @returns { maxSum, start, end }
  */
-export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head;
-  let fast = head;
-
-  // advance fast two steps, slow one step
-  while (fast !== null && fast.next !== null) {
-    slow = slow.next;
-    fast = fast.next.next;
+export function maxSumSubarray(nums: number[]) {
+  // In case the input is empty we can return 0 / -1/-1
+  if (nums.length === 0) {
+    return { maxSum: 0, start: -1, end: -1 };
   }
 
-  return slow;
-}
-// Build a list: 1 → 2 → 3 → 4 → 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-const mid = middleNode(node1);
-console.log(mid?.value); // → 3
+  // These will record the best sub‑array boundaries
+  let bestStart = 0;
+  let bestEnd = 0;
+  // Temporary positions
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at i
+    if (currentSum + nums[i] < nums[i]) {
+      currentSum = nums[i];
+      tempStart = i;
+    } else {
+      currentSum += nums[i];
+    }
+
+    // Update best if we have a better sum
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+}
+const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
+const { maxSum, start, end } = maxSumSubarray(arr);
+console.log(maxSum); // 43
+console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
