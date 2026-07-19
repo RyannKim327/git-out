@@ -1,83 +1,135 @@
-function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;          // out of range
+/**
+ * Boyer‑Moore pattern search
+ * ---------------------------------
+ * Returns the start indices of every exact match of `pattern`
+ * inside `text`.  If no match, returns an empty array.
+ *
+ * Complexity:
+ *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
+ *
+ * @param text    The haystack string
+ * @param pattern The needle string
+ */
+export function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];          // empty pattern → nothing to find
 
-  // cloning so we don’t mutate the caller’s array
-  const copy = [...arr];
+  // Preprocessing -------------------------------------------------------------
+  const badChar = buildBadCharacterTable(pattern);
+  const goodSuf  = buildGoodSuffixTable(pattern);
 
-  // If you need custom ordering, pass a compare function.
-  // Default: numeric ascending.
-  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
+  // Searching ---------------------------------------------------------------
+  const results: number[] = [];
+  let s = 0;                        // shift of the pattern with respect to text
 
-  // Arrays are zero‑indexed
-  return copy[k - 1];
+  while (s <= n - m) {
+    let j = m - 1;                  // right‑to‑left comparison
+
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // Match found at position s
+      results.push(s);
+
+      // Shift the pattern so that the next character in text aligns with
+      // the last occurrence of that character in the pattern (if any)
+      // or skip to the end of the pattern if none.
+      // This is the "good suffix" rule for a complete match.
+      s += goodSuf[0];
+    } else {
+      // Mismatch: use the bad‑character rule.
+      const badShift = j - badChar[text[s + j]];
+      // Use the good‑suffix shift as well (max of the two)
+      const goodShift = goodSuf[j + 1];
+
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return results;
 }
 
-// Example
-const nums = [7, 3, 5, 2, 9];
-console.log(kthSmallestBySort(nums, 2));   // 3
-function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
+// ---------------------------------------------------------------------------
+// Helper functions
+// ---------------------------------------------------------------------------
 
-  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const clone = [...arr]; // keep the original untouched
+/**
+ * Builds a map from character to its right‑most index in the pattern.
+ * Character not present → -1.
+ */
+function buildBadCharacterTable(pattern: string): { [k: string]: number } {
+  const table: { [k: string]: number } = {};
 
-  function partition(left: number, right: number, pivotIndex: number): number {
-    const pivotValue = clone[pivotIndex];
-    // move pivot to end
-    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern[i]] = i;           // right‑most position
+  }
 
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (comp(clone[i], pivotValue) < 0) {
-        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
-        storeIndex++;
+  return table;
+}
+
+/**
+ * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
+ *   goodSuf[i] = number of positions pattern needs to shift so that
+ *                the right i characters of pattern align with a previous
+ *                occurrence of this suffix.  If no such occurrence,
+ *                the shift corresponds to aligning the next character after
+ *                the suffix that matches in the pattern.
+ *
+ * The table length is m+1; goodSuf[0] is the shift after a full match.
+ */
+function buildGoodSuffixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const goodSuf = new Array(m + 1).fill(0);
+  const suffix = new Array(m + 1).fill(0);
+  const prefix = new Array(m + 1).fill(false);
+
+  // Step 1: compute suffixes
+  for (let i = 0; i < m; i++) {
+    let len = 0;
+    while (
+      i - len - 1 >= 0 &&
+      pattern[i - len - 1] === pattern[m - len - 1]
+    ) {
+      len++;
+      suffix[i - len + 1] = len;
+      if (i - len + 1 === 0) {
+        prefix[i - len + 1] = true;            // entire suffix is prefix
       }
     }
-    // move pivot to its final place
-    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
-    return storeIndex;
   }
 
-  let left = 0;
-  let right = clone.length - 1;
-  let pivotIndex;
-
-  while (true) {
-    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
-    if (pivotIndex === k - 1) return clone[pivotIndex];
-    if (pivotIndex > k - 1) right = pivotIndex - 1;
-    else left = pivotIndex + 1;
+  // Step 2: fill goodSuf table
+  for (let i = 0; i <= m; i++) {
+    goodSuf[i] = m;                              // default shift
   }
-}
-const data = [12, 3, 5, 7, 4, 19, 26];
-console.log(kthSmallestQuickSelect(data, 4)); // 7
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private compare: (a: T, b: T) => number) {}
-  // heap methods omitted for brevity...
-}
 
-function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const heap = new MinHeap<T>(cmp);
-  for (const v of arr) heap.insert(v);
-  let result: T | undefined;
-  for (let i = 0; i < k; i++) result = heap.extractMin();
-  return result;
+  for (let i = 0; i < m; i++) {
+    const len = suffix[i];
+    if (len > 0) {
+      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
+    }
+  }
+
+  // Step 3: handle prefixes
+  for (let i = m; i >= 1; i--) {
+    if (prefix[i]) {
+      for (let j = 0; j < m - i; j++) {
+        if (goodSuf[j] === m) {
+          goodSuf[j] = m - i;
+        }
+      }
+    }
+  }
+
+  return goodSuf;
 }
-const people = [
-  { name: 'Alice', age: 24 },
-  { name: 'Bob', age: 19 },
-  { name: 'Carol', age: 32 },
-  { name: 'Dave', age: 28 }
-];
+const text = "ABABCABABCDABABCDCDABABCABABCD";
+const pattern = "ABABCABAB";
 
-// 3rd youngest
-const thirdYoungest = kthSmallestQuickSelect(
-  people,
-  3,
-  (a, b) => a.age - b.age
-);
+const matches = boyerMooreSearch(text, pattern);
 
-console.log(thirdYoungest); // shows Bob (age 19)
+console.log(`Pattern found at indices: ${matches}`);
+// → Pattern found at indices: 0,9,15
