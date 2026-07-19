@@ -1,53 +1,41 @@
 /**
- * Binary search for a sorted array of numbers.
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
  *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
  */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  const mid = Math.floor((low + high) / 2);
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place the key into its correct spot
+    arr[j + 1] = key;
   }
+
+  return arr; // handy for chaining, but the original array is already sorted
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
 
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
+];
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
-
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
-}
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
