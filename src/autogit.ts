@@ -1,53 +1,26 @@
-/**
- * Binary search for a sorted array of numbers.
- *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
- */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
-
-  const mid = Math.floor((low + high) / 2);
-
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
+function countWord(text: string, word: string): number {
+  // Escape word so special regex symbols don’t bite us
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // \b = word boundary, i = ignore case, g = global (all matches)
+  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
+}
+const txt = "Boo, boo! Boo-boo? Booing… boo.";
+console.log(countWord(txt, 'boo')); // 3
+function countWordSplit(text: string, word: string) {
+  const words = text.trim().split(/\s+/);
+  const target = word.toLowerCase();
+  return words.filter(w => w.toLowerCase() === target).length;
+}
+function countWordLoop(text: string, word: string) {
+  const target = word.toLowerCase();
+  let count = 0;
+  const regex = /\b\w+\b/g;               // grab words
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match[0].toLowerCase() === target) count++;
   }
+  return count;
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
-
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
-
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
-
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
-}
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+const count = countWord("Hello because we say hello", "hello"); // 2
