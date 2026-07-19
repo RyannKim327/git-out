@@ -1,77 +1,172 @@
-class TreeNode<T> {
+/* ---- 1. Necessary types ------------------------------------------------- */
+type Point = { x: number; y: number };   // a grid coordinate
+
+// A *node* is a point that also carries the data used by A*.
+class Node {
+  public f: number;   // g + h
+  public g: number;   // cost from start
+  public h: number;   // heuristic estimate to goal
+
   constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
-
-  // Insert value in the first spot found (just for demonstration).
-  // A real BST would place it relative to its neighbors.
-  insert(value: T): void {
-    const node = new TreeNode(value);
-    if (!this.root) {
-      this.root = node;
-      return;
-    }
-    this._insertRec(this.root, node);
-  }
-
-  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
-    // Walk left first, then right, until you hit a null spot.
-    if (!current.left) {
-      current.left = node;
-    } else if (!current.right) {
-      current.right = node;
-    } else {
-      // Go deeper – we’re just doing breadth‑like insertion.
-      this._insertRec(current.left, node);
-    }
-  }
-
-  // Breadth‑first traversal (queue style) – returns array of values.
-  bfs(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
-
-    const queue: TreeNode<T>[] = [this.root];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      result.push(cur.value);
-      if (cur.left) queue.push(cur.left);
-      if (cur.right) queue.push(cur.right);
-    }
-    return result;
-  }
-
-  // Depth‑first in‑order traversal (left, node, right)
-  inorder(): T[] {
-    const res: T[] = [];
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      res.push(node.value);
-      visit(node.right);
-    };
-    visit(this.root);
-    return res;
-  }
-
-  // Simple depth counter
-  depth(): number {
-    const dfs = (node: TreeNode<T> | null): number =>
-      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
-    return dfs(this.root);
+    public point: Point,
+    public parent: Node | null = null,
+    g = 0,
+    h = 0
+  ) {
+    this.g = g;
+    this.h = h;
+    this.f = this.g + this.h;
   }
 }
-const tree = new BinaryTree<number>();
-[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
 
-console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
-console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
-console.log('Depth:', tree.depth());         // 3
-interface Person { name: string; age: number; }
-const people = new BinaryTree<Person>();
-people.insert({name: 'Alice', age: 30});
+/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
+class MinHeap<T> {
+  private items: T[] = [];
+
+  constructor(private compare: (a: T, b: T) => number) {}
+
+  get size() { return this.items.length; }
+
+  push(item: T) {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const top = this.items[0];
+    const end = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = end;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(idx: number) {
+    const item = this.items[idx];
+    while (idx > 0) {
+      const parentIdx = ((idx + 1) >> 1) - 1;
+      const parent = this.items[parentIdx];
+      if (this.compare(item, parent) >= 0) break;
+      this.items[idx] = parent;
+      idx = parentIdx;
+    }
+    this.items[idx] = item;
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.items.length;
+    const item = this.items[idx];
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallest = idx;
+
+      if (
+        leftIdx < length &&
+        this.compare(this.items[leftIdx], this.items[smallest]) < 0
+      )
+        smallest = leftIdx;
+
+      if (
+        rightIdx < length &&
+        this.compare(this.items[rightIdx], this.items[smallest]) < 0
+      )
+        smallest = rightIdx;
+
+      if (smallest === idx) break;
+
+      this.items[idx] = this.items[smallest];
+      idx = smallest;
+    }
+    this.items[idx] = item;
+  }
+}
+
+/* ---- 3. Heuristic -------------------------------------------------------- */
+function manhattan(a: Point, b: Point): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+/* ---- 4. Grid utilities --------------------------------------------------- */
+// returns true if the point is inside bounds AND not blocked
+function isWalkable(
+  grid: boolean[][],
+  { x, y }: Point
+): boolean {
+  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
+}
+
+// neighbours (4‑connected, 8‑connected if you add diagonals)
+function getNeighbours(grid: boolean[][], p: Point): Point[] {
+  const { x, y } = p;
+  const candidates: Point[] = [
+    { x: x + 1, y },
+    { x: x - 1, y },
+    { x, y: y + 1 },
+    { x, y: y - 1 },
+  ];
+
+  // Uncomment if you want diagonal moves:
+  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
+
+  return candidates.filter(p => isWalkable(grid, p));
+}
+
+/* ---- 5. The main A* function --------------------------------------------- */
+function aStar(
+  grid: boolean[][],
+  start: Point,
+  goal: Point
+): Point[] | null {
+  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
+
+  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
+  const closed = new Set<string>();          // "x,y" keys
+
+  const nodeForPoint = (p: Point) =>
+    `${p.x},${p.y}`;
+
+  open.push(new Node(start, null, 0, manhattan(start, goal)));
+
+  while (open.size) {
+    const current = open.pop()!;
+    const currentKey = nodeForPoint(current.point);
+
+    if (closed.has(currentKey)) continue;     // skip stale node
+    closed.add(currentKey);
+
+    if (current.point.x === goal.x && current.point.y === goal.y) {
+      // reconstruct path
+      const path: Point[] = [];
+      let cur: Node | null = current;
+      while (cur) {
+        path.push(cur.point);
+        cur = cur.parent;
+      }
+      return path.reverse();
+    }
+
+    for (const neighbour of getNeighbours(grid, current.point)) {
+      const neighbourKey = nodeForPoint(neighbour);
+      if (closed.has(neighbourKey)) continue;
+
+      const tentativeG = current.g + 1; // cost of moving a step
+      const h = manhattan(neighbour, goal);
+      const neighbourNode = new Node(
+        neighbour,
+        current,
+        tentativeG,
+        h
+      );
+
+      open.push(neighbourNode);
+    }
+  }
+
+  return null; // no path
+}
+
+/* ---- 6. Example usage --------------------------------------------------- */
+const
