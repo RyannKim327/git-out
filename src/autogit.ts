@@ -1,48 +1,62 @@
 /**
- * Shell sort – a classic gap‑based insertion sort
+ * A generic binary search.
  *
- * @template T - type held in the array
- * @param arr   Array to be sorted in place
- * @param cmp   Optional comparator, defaults to numeric comparison
- * @returns     The sorted array (same reference as `arr`)
+ * @param arr      Sorted array to search.
+ * @param target   Value to locate.
+ * @param compare  Optional comparator: (a, b) → negative, 0, positive.
+ *                 If omitted, the default `<`/`>` operators are used.
+ * @returns Index of `target` in `arr`, or `-1` if not found.
  */
-export function shellSort<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
-): T[] {
-  const n = arr.length;
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  if (!arr.length) return -1;
+  const cmp = compare ?? defaultCompare<T>;
+  let low = 0;
+  let high = arr.length - 1;
 
-  // A common sequence: n/2, n/4, …, 1
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Do a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap-sorted elements until the correct spot for temp is found
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
-      }
-      arr[j] = temp;
-    }
+  while (low <= high) {
+    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
+    const comp = cmp(arr[mid], target);
+    if (comp === 0) return mid;
+    if (comp < 0) low = mid + 1;           // target is greater
+    else high = mid - 1;                  // target is smaller
   }
 
-  return arr;
+  return -1;
 }
-// 1️⃣ Sort numbers
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-// 2️⃣ Sort strings alphabetically
-shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
+/** Recursive version – identical semantics. */
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (!arr.length || low > high) return -1;
+  const cmp = compare ?? defaultCompare<T>;
 
-// 3️⃣ Sort objects by a property
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: "Zoe", age: 29 },
-  { name: "Alex", age: 22 },
-  { name: "Mia", age: 35 }
-];
-shellSort(people, (a, b) => a.age - b.age);
-console.log(people.map(p => p.age));  // → [22, 29, 35]
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], target);
+
+  if (comp === 0) return mid;
+  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
+  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+}
+
+/** Fallback when you didn’t provide a comparator. */
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+const nums = [3, 7, 12, 18, 22, 33, 42];
+console.log(binarySearch(nums, 18));           // 3
+console.log(binarySearch(nums, 5));            // -1
+
+// To search objects, supply a comparator:
+const words = ['apple', 'banana', 'cherry'];
+console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
