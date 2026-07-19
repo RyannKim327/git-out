@@ -1,135 +1,93 @@
+// A node can carry any payload (`T`) and point to its neighbours.
+export interface GraphNode<T> {
+  value: T;
+  neighbours: GraphNode<T>[];
+}
 /**
- * Boyer‑Moore pattern search
- * ---------------------------------
- * Returns the start indices of every exact match of `pattern`
- * inside `text`.  If no match, returns an empty array.
+ * Recursively performs depth‑limited search.
  *
- * Complexity:
- *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
- *
- * @param text    The haystack string
- * @param pattern The needle string
+ * @param node        The node you are currently visiting.
+ * @param goalTest    Returns true if the current node satisfies the goal.
+ * @param limit       Number of edges left before the search terminates.
+ * @param visited     A set of IDs or reference values that keeps track of visited nodes.
+ *                    This protects against cycles that would otherwise cause infinite recursion.
+ * @returns The first node that satisfies `goalTest`, or `null`.
  */
-export function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];          // empty pattern → nothing to find
+export function depthLimitedSearchRec<T>(
+  node: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number,
+  visited: Set<GraphNode<T>> = new Set()
+): GraphNode<T> | null {
+  if (goalTest(node)) return node;
+  if (limit === 0) return null;          // reached the depth boundary
 
-  // Preprocessing -------------------------------------------------------------
-  const badChar = buildBadCharacterTable(pattern);
-  const goodSuf  = buildGoodSuffixTable(pattern);
+  visited.add(node);
 
-  // Searching ---------------------------------------------------------------
-  const results: number[] = [];
-  let s = 0;                        // shift of the pattern with respect to text
-
-  while (s <= n - m) {
-    let j = m - 1;                  // right‑to‑left comparison
-
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // Match found at position s
-      results.push(s);
-
-      // Shift the pattern so that the next character in text aligns with
-      // the last occurrence of that character in the pattern (if any)
-      // or skip to the end of the pattern if none.
-      // This is the "good suffix" rule for a complete match.
-      s += goodSuf[0];
-    } else {
-      // Mismatch: use the bad‑character rule.
-      const badShift = j - badChar[text[s + j]];
-      // Use the good‑suffix shift as well (max of the two)
-      const goodShift = goodSuf[j + 1];
-
-      s += Math.max(badShift, goodShift);
+  for (const neighbour of node.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
+      if (result !== null) return result;
     }
   }
 
-  return results;
+  return null;   // nothing found within this branch
 }
-
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
-
-/**
- * Builds a map from character to its right‑most index in the pattern.
- * Character not present → -1.
- */
-function buildBadCharacterTable(pattern: string): { [k: string]: number } {
-  const table: { [k: string]: number } = {};
-
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern[i]] = i;           // right‑most position
-  }
-
-  return table;
+interface StackItem<T> {
+  node: GraphNode<T>;
+  depthLeft: number;
 }
 
 /**
- * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
- *   goodSuf[i] = number of positions pattern needs to shift so that
- *                the right i characters of pattern align with a previous
- *                occurrence of this suffix.  If no such occurrence,
- *                the shift corresponds to aligning the next character after
- *                the suffix that matches in the pattern.
- *
- * The table length is m+1; goodSuf[0] is the shift after a full match.
+ * Iterative depth‑limited search.
  */
-function buildGoodSuffixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const goodSuf = new Array(m + 1).fill(0);
-  const suffix = new Array(m + 1).fill(0);
-  const prefix = new Array(m + 1).fill(false);
+export function depthLimitedSearchIter<T>(
+  start: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number
+): GraphNode<T> | null {
+  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
+  const visited: Set<GraphNode<T>> = new Set();
 
-  // Step 1: compute suffixes
-  for (let i = 0; i < m; i++) {
-    let len = 0;
-    while (
-      i - len - 1 >= 0 &&
-      pattern[i - len - 1] === pattern[m - len - 1]
-    ) {
-      len++;
-      suffix[i - len + 1] = len;
-      if (i - len + 1 === 0) {
-        prefix[i - len + 1] = true;            // entire suffix is prefix
+  while (stack.length) {
+    const { node, depthLeft } = stack.pop()!;
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (goalTest(node)) return node;
+    if (depthLeft === 0) continue;           // depth boundary reached
+
+    // push neighbours onto the stack – LIFO order means the first neighbour
+    // will be processed last, mirroring the recursive DFS behaviour.
+    for (const neighbour of node.neighbours) {
+      if (!visited.has(neighbour)) {
+        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
       }
     }
   }
 
-  // Step 2: fill goodSuf table
-  for (let i = 0; i <= m; i++) {
-    goodSuf[i] = m;                              // default shift
-  }
-
-  for (let i = 0; i < m; i++) {
-    const len = suffix[i];
-    if (len > 0) {
-      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
-    }
-  }
-
-  // Step 3: handle prefixes
-  for (let i = m; i >= 1; i--) {
-    if (prefix[i]) {
-      for (let j = 0; j < m - i; j++) {
-        if (goodSuf[j] === m) {
-          goodSuf[j] = m - i;
-        }
-      }
-    }
-  }
-
-  return goodSuf;
+  return null;  // no goal reached within depth limit
 }
-const text = "ABABCABABCDABABCDCDABABCABABCD";
-const pattern = "ABABCABAB";
+// --- build a simple graph
+const a: GraphNode<string> = { value: "A", neighbours: [] };
+const b: GraphNode<string> = { value: "B", neighbours: [] };
+const c: GraphNode<string> = { value: "C", neighbours: [] };
+const d: GraphNode<string> = { value: "D", neighbours: [] };
 
-const matches = boyerMooreSearch(text, pattern);
+a.neighbours.push(b, c);   // A -> B, C
+b.neighbours.push(d);      // B -> D
+c.neighbours.push(d);      // C -> D
 
-console.log(`Pattern found at indices: ${matches}`);
-// → Pattern found at indices: 0,9,15
+// --- goal: find node with value “D”
+const isGoal = (node: GraphNode<string>) => node.value === "D";
+
+// Recursive
+const resultRec = depthLimitedSearchRec(a, isGoal, 3);
+console.log("Recursive result:", resultRec?.value ?? "none");
+
+// Iterative
+const resultIter = depthLimitedSearchIter(a, isGoal, 3);
+console.log("Iterative result:", resultIter?.value ?? "none");
+Recursive result: D
+Iterative result: D
