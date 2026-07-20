@@ -1,36 +1,61 @@
-// A minimal, generic node type
-export interface ListNode<T> {
-  readonly value: T;
-  next: ListNode<T> | null;
-}
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
 
-/**
- * Returns the middle node of a singly‑linked list.
- * If the list has an even number of nodes, it returns
- * the *second* middle node (i.e. the one that a
- * “slow‑pointer” would land on after the last move).
- *
- * @param head Head of the list – null if the list is empty.
- * @returns The middle node, or null for an empty list.
- */
-export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head;
-  let fast = head;
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
 
-  // advance fast two steps, slow one step
-  while (fast !== null && fast.next !== null) {
-    slow = slow.next;
-    fast = fast.next.next;
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
+        }
+      }
+    }
   }
 
-  return slow;
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-// Build a list: 1 → 2 → 3 → 4 → 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
+  }
 
-const mid = middleNode(node1);
-console.log(mid?.value); // → 3
+  const n = s1.length;
+  const m = s2.length;
+
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
+  }
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+}
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
