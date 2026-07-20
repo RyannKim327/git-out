@@ -1,76 +1,121 @@
-/**
- * Build the LPS (Longest Prefix Suffix) table for KMP.
- *
- * @param pattern - The pattern string for which the table is built.
- * @returns An array where lps[i] is the length of the longest proper
- *          prefix of pattern[0..i] that is also a suffix of that substring.
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps: number[] = Array(m).fill(0);
-  let length = 0;                 // length of previous longest prefix suffix
-  let i = 1;                      // lps[0] is always 0
+/* ───────────────────────────────────────────────────────────────────── */
+/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
+ *  need other key types, but then you have to supply a comparator. -------- */
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length += 1;
-      lps[i] = length;
-      i += 1;
-    } else {
-      if (length !== 0) {
-        // fall back in the pattern (do not increment i here)
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i += 1;
-      }
-    }
+/*  Node ------------------------------------------------------------------- */
+class Node {
+  key: number;
+  height: number;
+  left: Node | null = null;
+  right: Node | null = null;
+
+  constructor(key: number) {           // simple ctor
+    this.key = key;
+    this.height = 1;                    // leaf height = 1
   }
-  return lps;
 }
 
-/**
- * KMP search – returns all starting indices of `pattern` in `text`.
- *
- * @param text    – The string to search within.
- * @param pattern – The string to find.
- * @returns Array of start indices where pattern occurs in text.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];          // nothing to find
-  const lps = buildLPS(pattern);
-  const result: number[] = [];
+/*  Helper utilities -------------------------------------------------------- */
+const height = (node: Node | null): number => (node ? node.height : 0);
 
-  let i = 0;   // index for text
-  let j = 0;   // index for pattern
+const updateHeight = (node: Node) =>
+  node.height = 1 + Math.max(height(node.left), height(node.right));
 
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i += 1;
-      j += 1;
-    }
+const balanceFactor = (node: Node): number =>
+  height(node.left) - height(node.right);
 
-    // full match found
-    if (j === pattern.length) {
-      result.push(i - j);   // starting index
-      j = lps[j - 1];       // allow overlapping matches
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i += 1;
-      }
-    }
+/*  Rotations -------------------------------------------------------------- */
+function rotateRight(y: Node): Node {
+  const x = y.left!;
+  const T2 = x.right;
+
+  // rotation
+  x.right = y;
+  y.left = T2;
+
+  // update heights
+  updateHeight(y);
+  updateHeight(x);
+
+  return x;     // new root of this part
+}
+
+function rotateLeft(x: Node): Node {
+  const y = x.right!;
+  const T2 = y.left;
+
+  // rotation
+  y.left = x;
+  x.right = T2;
+
+  // update heights
+  updateHeight(x);
+  updateHeight(y);
+
+  return y;     // new root
+}
+
+/*  Insert ------------------------------------------------------------------ */
+function insert(node: Node | null, key: number): Node {
+  if (!node) return new Node(key);
+
+  if (key < node.key) node.left = insert(node.left, key);
+  else if (key > node.key) node.right = insert(node.right, key);
+  else return node;           // duplicate keys rejected
+
+  /* update our own height after child changed */
+  updateHeight(node);
+
+  /* balance now */
+  const bf = balanceFactor(node);
+
+  // Left heavy
+  if (bf > 1) {
+    if (key < node.left!.key)                   // Left‑Left case
+      return rotateRight(node);
+
+    // Left‑Right case
+    node.left = rotateLeft(node.left!);
+    return rotateRight(node);
   }
 
-  return result;
+  // Right heavy
+  if (bf < -1) {
+    if (key > node.right!.key)                  // Right‑Right case
+      return rotateLeft(node);
+
+    // Right‑Left case
+    node.right = rotateRight(node.right!);
+    return rotateLeft(node);
+  }
+
+  return node;            // unchanged
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
 
-const matches = kmpSearch(text, pattern);
-console.log(matches);          // [10]
+/*  Search --------------------------------------------------------------- */
+function contains(node: Node | null, key: number): boolean {
+  while (node) {
+    if (key === node.key) return true;
+    node = key < node.key ? node.left : node.right;
+  }
+  return false;
+}
 
-const hasMatch = matches.length > 0;
-console.log(hasMatch);         // true
+/*  In‑order traversal for debugging -------------------------------------- */
+function inorder(node: Node | null, res: number[] = []): number[] {
+  if (!node) return res;
+  inorder(node.left, res);
+  res.push(node.key);
+  inorder(node.right, res);
+  return res;
+}
+
+/*  Example usage ---------------------------------------------------------- */
+let root: Node | null = null;
+[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
+
+console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
+console.log('Contains 25?', contains(root, 25));      // true
+console.log('Contains 15?', contains(root, 15));      // false
+class Node<T> { key: T; height: number; ... }
+function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
