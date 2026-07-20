@@ -1,135 +1,135 @@
 /**
- * Boyer‑Moore pattern search
- * ---------------------------------
- * Returns the start indices of every exact match of `pattern`
- * inside `text`.  If no match, returns an empty array.
+ * A binary‑heap based priority queue.
  *
- * Complexity:
- *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
- *
- * @param text    The haystack string
- * @param pattern The needle string
+ * @template T - The type of the heap elements.
  */
-export function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];          // empty pattern → nothing to find
+export class PriorityQueue<T> {
+  /** Array representation of the heap.  Root is at index 0. */
+  private heap: T[] = [];
 
-  // Preprocessing -------------------------------------------------------------
-  const badChar = buildBadCharacterTable(pattern);
-  const goodSuf  = buildGoodSuffixTable(pattern);
+  /**
+   * Comparator that decides heap order.
+   *
+   *   - If it returns a negative number → a precedes b.
+   *   - If 0 → equal.
+   *   - If positive → a follows b.
+   *
+   * You can pass your own comparator; otherwise a simple
+   * numerical ascending order is used.
+   */
+  constructor(
+    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+  ) {}
 
-  // Searching ---------------------------------------------------------------
-  const results: number[] = [];
-  let s = 0;                        // shift of the pattern with respect to text
+  /* ----- Query helpers ----- */
 
-  while (s <= n - m) {
-    let j = m - 1;                  // right‑to‑left comparison
+  /** Number of elements in the queue. */
+  size(): number {
+    return this.heap.length;
+  }
 
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
+  /** Return the element with highest priority without removing it. */
+  peek(): T | null {
+    return this.heap.length ? this.heap[0] : null;
+  }
 
-    if (j < 0) {
-      // Match found at position s
-      results.push(s);
+  /* ----- Manipulation helpers ----- */
 
-      // Shift the pattern so that the next character in text aligns with
-      // the last occurrence of that character in the pattern (if any)
-      // or skip to the end of the pattern if none.
-      // This is the "good suffix" rule for a complete match.
-      s += goodSuf[0];
-    } else {
-      // Mismatch: use the bad‑character rule.
-      const badShift = j - badChar[text[s + j]];
-      // Use the good‑suffix shift as well (max of the two)
-      const goodShift = goodSuf[j + 1];
+  /** Insert a new element */
+  push(item: T): void {
+    this.heap.push(item);
+    this.siftUp(this.heap.length - 1);
+  }
 
-      s += Math.max(badShift, goodShift);
+  /**
+   * Remove and return the element with highest priority.
+   * Returns `null` if the queue is empty.
+   */
+  pop(): T | null {
+    const n = this.heap.length;
+    if (n === 0) return null;
+    if (n === 1) return this.heap.pop() ?? null;
+
+    const top = this.heap[0];
+    // Move last element to the root and shrink array.
+    this.heap[0] = this.heap.pop() as T;
+    this.siftDown(0);
+    return top;
+  }
+
+  /* ----- Internal re‑heapify ----- */
+
+  /** Push the element at index `i` up until heap property holds. */
+  private siftUp(i: number): void {
+    const { heap, compareFn } = this;
+    let childIndex = i;
+
+    while (childIndex > 0) {
+      const parentIndex = (childIndex - 1) >> 1;
+      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
+
+      // Swap child & parent
+      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
+      childIndex = parentIndex;
     }
   }
 
-  return results;
-}
+  /** Move the element at index `i` down until heap property holds. */
+  private siftDown(i: number): void {
+    const { heap, compareFn } = this;
+    const n = heap.length;
+    let parentIndex = i;
 
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
+    while (true) {
+      const leftIdx = (parentIndex << 1) + 1;
+      const rightIdx = leftIdx + 1;
 
-/**
- * Builds a map from character to its right‑most index in the pattern.
- * Character not present → -1.
- */
-function buildBadCharacterTable(pattern: string): { [k: string]: number } {
-  const table: { [k: string]: number } = {};
+      let smallest = parentIndex;
 
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern[i]] = i;           // right‑most position
-  }
-
-  return table;
-}
-
-/**
- * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
- *   goodSuf[i] = number of positions pattern needs to shift so that
- *                the right i characters of pattern align with a previous
- *                occurrence of this suffix.  If no such occurrence,
- *                the shift corresponds to aligning the next character after
- *                the suffix that matches in the pattern.
- *
- * The table length is m+1; goodSuf[0] is the shift after a full match.
- */
-function buildGoodSuffixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const goodSuf = new Array(m + 1).fill(0);
-  const suffix = new Array(m + 1).fill(0);
-  const prefix = new Array(m + 1).fill(false);
-
-  // Step 1: compute suffixes
-  for (let i = 0; i < m; i++) {
-    let len = 0;
-    while (
-      i - len - 1 >= 0 &&
-      pattern[i - len - 1] === pattern[m - len - 1]
-    ) {
-      len++;
-      suffix[i - len + 1] = len;
-      if (i - len + 1 === 0) {
-        prefix[i - len + 1] = true;            // entire suffix is prefix
+      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
+        smallest = leftIdx;
       }
-    }
-  }
-
-  // Step 2: fill goodSuf table
-  for (let i = 0; i <= m; i++) {
-    goodSuf[i] = m;                              // default shift
-  }
-
-  for (let i = 0; i < m; i++) {
-    const len = suffix[i];
-    if (len > 0) {
-      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
-    }
-  }
-
-  // Step 3: handle prefixes
-  for (let i = m; i >= 1; i--) {
-    if (prefix[i]) {
-      for (let j = 0; j < m - i; j++) {
-        if (goodSuf[j] === m) {
-          goodSuf[j] = m - i;
-        }
+      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
+        smallest = rightIdx;
       }
+
+      if (smallest === parentIndex) break;
+
+      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
+      parentIndex = smallest;
     }
   }
 
-  return goodSuf;
+  /* ----- Utility ----- */
+
+  /**
+   * Re‑build the heap from the current array contents.  
+   * Useful after bulk insertion or when the comparator changes.
+   */
+  heapify(): void {
+    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
+      this.siftDown(i);
+    }
+  }
 }
-const text = "ABABCABABCDABABCDCDABABCABABCD";
-const pattern = "ABABCABAB";
+// Simple min‑heap of numbers (default comparator does that)
+const minQ = new PriorityQueue<number>();
 
-const matches = boyerMooreSearch(text, pattern);
+minQ.push(5);   // 5
+minQ.push(3);   // 3,5
+minQ.push(8);   // 3,5,8
+minQ.push(1);   // 1,3,8,5
 
-console.log(`Pattern found at indices: ${matches}`);
-// → Pattern found at indices: 0,9,15
+console.log(minQ.pop()); // 1
+console.log(minQ.pop()); // 3
+console.log(minQ.peek()); // 5
+console.log(minQ.size()); // 2
+interface Task { id: string; priority: number; }
+
+const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
+
+maxQ.push({ id: "A", priority: 10 });
+maxQ.push({ id: "B", priority: 20 });
+maxQ.push({ id: "C", priority: 5 });
+
+console.log(maxQ.pop()); // B (20)
