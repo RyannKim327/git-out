@@ -1,10 +1,9 @@
-const original = "Hello, World!";
-const lower = original.toLowerCase();   // "hello, world!"
-// Example: filter an array case‑insensitively
-const fruits = ["Apple", "BANANA", "Cherry"];
-const search = "baNANA";
+const sentence = "The quick brown fox jumps over the lazy dog";
+const needle = "brown";
 
-const matched = fruits.filter(f =>
-  f.toLowerCase().includes(search.toLowerCase())
-);
-// matched => ["BANANA"]
+const hasBrown = sentence.includes(needle); // true
+const hasBrownCaseInsensitive = sentence
+  .toLowerCase()
+  .includes(needle.toLowerCase()); // true
+const hasBrownIdx = sentence.indexOf(needle) !== -1; // true
+const hasVowelPattern = /[aeiou]/.test(sentence); // true
