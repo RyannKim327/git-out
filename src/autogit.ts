@@ -1,135 +1,103 @@
-/**
- * Boyer‑Moore pattern search
- * ---------------------------------
- * Returns the start indices of every exact match of `pattern`
- * inside `text`.  If no match, returns an empty array.
- *
- * Complexity:
- *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
- *
- * @param text    The haystack string
- * @param pattern The needle string
- */
-export function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];          // empty pattern → nothing to find
-
-  // Preprocessing -------------------------------------------------------------
-  const badChar = buildBadCharacterTable(pattern);
-  const goodSuf  = buildGoodSuffixTable(pattern);
-
-  // Searching ---------------------------------------------------------------
-  const results: number[] = [];
-  let s = 0;                        // shift of the pattern with respect to text
-
-  while (s <= n - m) {
-    let j = m - 1;                  // right‑to‑left comparison
-
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
-    }
-
-    if (j < 0) {
-      // Match found at position s
-      results.push(s);
-
-      // Shift the pattern so that the next character in text aligns with
-      // the last occurrence of that character in the pattern (if any)
-      // or skip to the end of the pattern if none.
-      // This is the "good suffix" rule for a complete match.
-      s += goodSuf[0];
-    } else {
-      // Mismatch: use the bad‑character rule.
-      const badShift = j - badChar[text[s + j]];
-      // Use the good‑suffix shift as well (max of the two)
-      const goodShift = goodSuf[j + 1];
-
-      s += Math.max(badShift, goodShift);
-    }
-  }
-
-  return results;
+// A generic state; `data` can be any shape you need.
+export interface BeamState<T> {
+  readonly data: T;      // the actual thing (token list, node id, etc.)
+  readonly score: number; // higher is better
 }
 
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
+// A function that, from one state, produces zero or more candidate states.
+export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
 
-/**
- * Builds a map from character to its right‑most index in the pattern.
- * Character not present → -1.
- */
-function buildBadCharacterTable(pattern: string): { [k: string]: number } {
-  const table: { [k: string]: number } = {};
+// A function that assigns a numeric score to a state.
+export type Scorer<T> = (state: BeamState<T>) => number;
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private readonly key: (x: T) => number) {}
 
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern[i]] = i;           // right‑most position
+  private swap(i: number, j: number) {
+    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
   }
 
-  return table;
+  push(item: T) {
+    this.data.push(item);
+    this.siftUp(this.data.length - 1);
+  }
+
+  pop(): T | undefined {
+    const top = this.data[0];
+    const last = this.data.pop();
+    if (!this.data.length || !last) return top;
+    this.data[0] = last;
+    this.siftDown(0);
+    return top;
+  }
+
+  size() { return this.data.length; }
+
+  private siftUp(i: number) {
+    let idx = i;
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
+      this.swap(idx, parent);
+      idx = parent;
+    }
+  }
+  private siftDown(i: number) {
+    let idx = i;
+    const n = this.data.length;
+    while (true) {
+      const l = idx * 2 + 1;
+      const r = l + 1;
+      let smallest = idx;
+      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
+      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
+    }
+  }
+
+  // For debugging / inspection
+  toArray() { return [...this.data]; }
 }
+export class BeamSearch<T> {
+  constructor(
+    private readonly expander: Expander<T>,
+    private readonly scorer: Scorer<T>,
+    private readonly beamWidth: number
+  ) {}
 
-/**
- * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
- *   goodSuf[i] = number of positions pattern needs to shift so that
- *                the right i characters of pattern align with a previous
- *                occurrence of this suffix.  If no such occurrence,
- *                the shift corresponds to aligning the next character after
- *                the suffix that matches in the pattern.
- *
- * The table length is m+1; goodSuf[0] is the shift after a full match.
- */
-function buildGoodSuffixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const goodSuf = new Array(m + 1).fill(0);
-  const suffix = new Array(m + 1).fill(0);
-  const prefix = new Array(m + 1).fill(false);
+  /**
+   * Runs beam search for a fixed number of iterations.
+   * @param startState the initial state (usually empty output)
+   * @param maxDepth how many expansion steps to take
+   * @returns an array containing the best states after the last depth
+   */
+  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
+    let current: BeamState<T>[] = [startState];
 
-  // Step 1: compute suffixes
-  for (let i = 0; i < m; i++) {
-    let len = 0;
-    while (
-      i - len - 1 >= 0 &&
-      pattern[i - len - 1] === pattern[m - len - 1]
-    ) {
-      len++;
-      suffix[i - len + 1] = len;
-      if (i - len + 1 === 0) {
-        prefix[i - len + 1] = true;            // entire suffix is prefix
-      }
-    }
-  }
-
-  // Step 2: fill goodSuf table
-  for (let i = 0; i <= m; i++) {
-    goodSuf[i] = m;                              // default shift
-  }
-
-  for (let i = 0; i < m; i++) {
-    const len = suffix[i];
-    if (len > 0) {
-      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
-    }
-  }
-
-  // Step 3: handle prefixes
-  for (let i = m; i >= 1; i--) {
-    if (prefix[i]) {
-      for (let j = 0; j < m - i; j++) {
-        if (goodSuf[j] === m) {
-          goodSuf[j] = m - i;
+    for (let depth = 0; depth < maxDepth; depth++) {
+      const candidates: BeamState<T>[] = [];
+      for (const state of current) {
+        const nextStates = this.expander(state);
+        // We expect each expander to already return scored states,
+        // but if they don't we can score them here:
+        for (const ns of nextStates) {
+          const s = this.scorer(ns);
+          candidates.push({ ...ns, score: s });
         }
       }
+      if (candidates.length === 0) break; // nothing to expand
+      // Keep top `beamWidth` candidates
+      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
+      for (const cand of candidates) heap.push(cand);
+      current = [];
+      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
+        current.push(heap.pop()!); // `!` is safe because we checked size
+      }
     }
+
+    // Sort by score descending before returning just in case
+    return current.sort((a, b) => b.score - a.score);
   }
-
-  return goodSuf;
 }
-const text = "ABABCABABCDABABCDCDABABCABABCD";
-const pattern = "ABABCABAB";
-
-const matches = boyerMooreSearch(text, pattern);
-
-console.log(`Pattern found at indices: ${matches}`);
-// → Pattern found at indices: 0,9,15
