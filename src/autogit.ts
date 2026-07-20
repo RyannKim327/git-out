@@ -1,52 +1,39 @@
-// Basic definition of a binary‑tree node
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
 
-/**
- * Returns the diameter (in edges) of a binary tree.
- */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;          // keeps the best we have seen
-
-  /** Depth‑first search that returns the height of sub‑tree. */
-  function dfs(node: TreeNode | null): number {
-    if (node === null) return 0;          // leaf contributes 0 height
-
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path that goes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) {
-      maxDiameter = localDiameter;
-    }
-
-    // Height to propagate upward
-    return Math.max(leftHeight, rightHeight) + 1;
+// Example
+console.log(reverseString('hello')); // 'olleh'
+reverseString('👋🏽'); // '🏽👋'  → wrong
+function reverseStringUnicode(s: string): string {
+  const codePoints: number[] = [];
+  for (const char of s) {
+    codePoints.push(char.codePointAt(0)!);
   }
-
-  dfs(root);
-  return maxDiameter;         // already in edges
+  return String.fromCodePoint(...codePoints.reverse());
 }
 
-/* ---- example usage ------------------------------------------------------- */
-
-// simple helper to build a tree
-function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
-  return { val, left: l ?? null, right: r ?? null };
+// Example
+console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
+const cp = Array.from(s).reverse().join('');
+function reverseRecursively(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseRecursively(s.slice(1)) + s[0];
 }
-
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5     
-const root = node(1,
-  node(2, node(4), node(5)),
-  node(3)
-);
-
-console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
+function reverseLoop(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
+  }
+  return result;
+}
+function reverseBuffer(s: string): string {
+  const buf: string[] = new Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    buf[i] = s[s.length - 1 - i];
+  }
+  return buf.join('');
+}
+function reverseStringSafe(s: string): string {
+  return Array.from(s).reverse().join('');
+}
