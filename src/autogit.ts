@@ -1,145 +1,65 @@
 /**
- * Graph type: key → list of neighbour keys.
- * Assumes an undirected or directed graph – just feed it the adjacency list you have.
+ * Computes the LPS array for a given pattern.
+ * For each index i, lps[i] is the length of the longest
+ * proper prefix that is also a suffix for pattern[0..i].
  */
-type Graph = Map<string, string[]>;
+function buildLps(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;          // length of previous longest prefix suffix
+    let i = 1;
 
-/**
- * Bidirectional BFS to find the shortest path between two nodes.
- *
- * @param graph       The graph adjacency list.
- * @param startKey    Origin node key.
- * @param goalKey     Destination node key.
- * @returns           Array of keys representing the shortest path,
- *                    or `null` if no path exists.
- */
-export function bidirectionalSearch(
-  graph: Graph,
-  startKey: string,
-  goalKey: string
-): string[] | null {
-  if (startKey === goalKey) return [startKey];
-
-  // --- Front and back queues
-  const frontQueue: string[] = [startKey];
-  const backQueue: string[] = [goalKey];
-
-  // --- Visited maps
-  const frontVisited = new Set<string>([startKey]);
-  const backVisited  = new Set<string>([goalKey]);
-
-  // --- Parent maps to reconstruct path
-  const frontParent = new Map<string, string>([[startKey, null]]);
-  const backParent  = new Map<string, string>([[goalKey, null]]);
-
-  // Helper to get neighbours, guard against missing keys
-  const neighbours = (node: string) => graph.get(node) ?? [];
-
-  // Helper to expand one layer from a queue
-  function expand(
-    queue: string[],
-    visited: Set<string>,
-    otherVisited: Set<string>,
-    parentMap: Map<string, string>
-  ): string | null {
-    const size = queue.length;   // classic BFS “level” size
-    for (let i = 0; i < size; i++) {
-      const current = queue.shift() as string; // guaranteed non‑empty
-
-      for (const neighbour of neighbours(current)) {
-        if (visited.has(neighbour)) continue; // already expanded from this side
-
-        // New node from this side – record parent & mark visited
-        visited.add(neighbour);
-        parentMap.set(neighbour, current);
-        queue.push(neighbour);
-
-        // If the other side has already seen this neighbour,
-        // we’ve met in the middle!
-        if (otherVisited.has(neighbour)) return neighbour;
-      }
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // try the previous longest prefix suffix
+                length = lps[length - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
     }
-    return null;
-  }
-
-  // Main loop
-  while (frontQueue.length && backQueue.length) {
-    // 1. Expand front side
-    const meetingPoint = expand(
-      frontQueue,
-      frontVisited,
-      backVisited,
-      frontParent
-    );
-    if (meetingPoint) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint,
-        startKey,
-        goalKey
-      );
-    }
-
-    // 2. Expand back side
-    const meetingPoint2 = expand(
-      backQueue,
-      backVisited,
-      frontVisited,
-      backParent
-    );
-    if (meetingPoint2) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint2,
-        startKey,
-        goalKey
-      );
-    }
-  }
-
-  // No overlap – disconnected graph
-  return null;
+    return lps;
 }
-
 /**
- * Reconstructs the full path from start → meeting → goal.
+ * Returns the starting indices of all occurrences of `pattern`
+ * inside `text`. If the pattern is empty, an empty array is returned.
  */
-function buildPath(
-  frontParents: Map<string, string>,
-  backParents: Map<string, string>,
-  meeting: string,
-  start: string,
-  goal: string
-): string[] {
-  const path: string[] = [meeting];
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
 
-  // Walk backwards from meeting to start
-  let cur: string | null = frontParents.get(meeting) ?? null;
-  while (cur) {
-    path.unshift(cur);
-    cur = frontParents.get(cur) ?? null;
-  }
+    const lps = buildLps(pattern);
+    const result: number[] = [];
 
-  // Walk forwards from meeting to goal
-  cur = backParents.get(meeting) ?? null;
-  while (cur) {
-    path.push(cur);
-    cur = backParents.get(cur) ?? null;
-  }
+    let i = 0; // index for text
+    let j = 0; // index for pattern
 
-  return path;
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++; j++;
+            if (j === pattern.length) {
+                // match found; record start index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else {
+            if (j !== 0) {
+                // fall back in pattern
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+    }
+    return result;
 }
-// Build a tiny sample graph
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E']]
-]);
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
 
-console.log(bidirectionalSearch(g, 'A', 'F'));
-// → ['A
+console.log(kmpSearch(haystack, needle));
+// → [10]
