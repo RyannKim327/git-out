@@ -1,53 +1,66 @@
 /**
- * Binary search for a sorted array of numbers.
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
  *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
+ *
+ * The function returns everything that looks like the pattern.
  */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
 
-  const mid = Math.floor((low + high) / 2);
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
 
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
   }
+
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
+  }
+
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
+      }
+      if (match) result.push(i);
+    }
+
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
+    }
+  }
+
+  return result;
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
+const text = "abracadabra";
+const pattern = "abra";
 
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
-
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
-
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
-}
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
