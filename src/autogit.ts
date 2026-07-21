@@ -1,38 +1,37 @@
-const numbers = [1, 2, 3, 4, 5];
+const nums = [1, 2, 3, 2, 4, 1, 5];
 
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
-];
+const uniq = Array.from(new Set(nums));
+// or: const uniq = [...new Set(nums)];
 
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
+console.log(uniq); // [1, 2, 3, 4, 5]
+const words = ["foo", "bar", "baz", "foo", "bar"];
 
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
+const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
 
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
+console.log(unique); // ["foo", "bar", "baz"]
+const objs = [{a: 1}, {a: 1}, {a: 2}];
+console.log([...new Set(objs)]); // keeps both {a:1} objects
+function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = keyFn(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
+}
+
+const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
+console.log(uniqueObjs); // [{a:1}, {a:2}]
+const arr = [1, 2, 3, 2, 1];
+const seen = new Set<number>();
+let writeIdx = 0;
+
+for (let readIdx = 0; readIdx < arr.length; readIdx++) {
+  const value = arr[readIdx];
+  if (!seen.has(value)) {
+    seen.add(value);
+    arr[writeIdx++] = value;
   }
 }
-console.log(data); // [10, 30, 40]
-/**
- * Removes the first occurrence of `value` from `arr`.
- */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
-}
+
+arr.length = writeIdx; // shrink the array
+console.log(arr); // [1, 2, 3]
