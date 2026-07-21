@@ -1,38 +1,41 @@
-const numbers = [1, 2, 3, 4, 5];
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
+  }
+  return (base * height) / 2;
+}
 
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
-];
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
+    }
+  }
 
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
-
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
-
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
   }
 }
-console.log(data); // [10, 30, 40]
-/**
- * Removes the first occurrence of `value` from `arr`.
- */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
+
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
+  }
+  return base * height / 2;
 }
