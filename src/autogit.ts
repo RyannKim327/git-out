@@ -1,94 +1,157 @@
-if currentDepth > depthLimit → stop exploring that branch
+// suffix-tree.ts
 /**
- * Generic depth‑limited search (iterative DFS).
- *
- * @param root        The starting node.
- * @param depthLimit  How far we are allowed to go from the root.
- * @param getNeighbors
- *        A callback that returns the list of adjacent nodes for a given node.
- * @param visitedSet  Optional set used to avoid revisiting nodes.
- *
- * @returns  Array of nodes visited in order (pre‑order DFS order).
+ * Lightweight suffix tree for ASCII strings.
+ * The implementation uses Ukkonen’s algorithm
+ * and is fully typed for clarity.
  */
-export function depthLimitedSearch<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  visitedSet?: Set<T>
-): T[] {
-  const visited: Set<T> = visitedSet ?? new Set<T>();
-  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
-  const result: T[] = [];
 
-  while (stack.length > 0) {
-    const { node, depth } = stack.pop()!; // non‑empty because of the loop
+/** Each node can have many outgoing edges keyed by the
+ * first character of the edge label (i.e., “transition”).
+ * The tree is rooted (root is an empty string). */
+class Node {
+  /** Map from a character to a child node. */
+  children = new Map<string, Node>();
 
-    // Skip if we've already seen the node
-    if (visited.has(node)) continue;
+  /** For nodes that represent the end of a suffix,
+   *  we record the starting index of that suffix in the
+   *  original text.  The set version lets us keep
+   *  multiple suffixes that collapse at the same node.
+   */
+  suffixIndices = new Set<number>();
 
-    visited.add(node);
-    result.push(node);          // we “visit” it, or you can process here
+  /* In Ukkonen, each edge is implicitly defined by the
+   * start and length on the original text.  We store
+   * those pairs on the node that is the *target* of the edge.
+   */
+  edgeStart?: number;
+  edgeEnd?: number; // inclusive
 
-    // Stop expanding when we hit the depth limit
-    if (depth >= depthLimit) continue;
+  /** The parent of this node (root’s parent is null). */
+  parent: Node | null = null;
+}
 
-    // Push neighbors onto stack.  We push in reverse order if you want to
-    // preserve the same order as a recursive DFS.
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
+/** A convenience wrapper around a Node that stores the
+ *  current active point used during construction.
+ */
+interface ActivePoint {
+  node: Node;     // the deepest node where the active span ends
+  edge: string;   // first character of the edge we are on
+  length: number; // how far we have walked down that edge
+}
+
+/**
+ * The SuffixTree itself.
+ */
+export class SuffixTree {
+  /** The root of the tree.  Its edgeStart/edgeEnd are undefined
+   *  because it has no incoming edge. */
+  private _root = new Node();
+
+  /** The input string.  We keep it as an array of characters
+   *  for O(1) random access. */
+  private _text: string[];
+
+  /** The active point used by Ukkonen’s algorithm. */
+  private _active: ActivePoint;
+
+  /** The number of “steps” we have taken from the root
+   *  during construction.  This is the suffix link counter,
+   *  useful primarily for debugging but also for truncated
+   *  construction. */
+  private _remainder = 0;
+
+  constructor(text: string) {
+    this._text = [...text];
+    this._active = { node: this._root, edge: "", length: 0 };
+    this.build();
+  }
+
+  /* ------------------------------------------------------------------- */
+  /*  BUILDING
+   * ------------------------------------------------------------------- */
+
+  private build(): void {
+    for (let pos = 0; pos < this._text.length; pos++) {
+      this._addCharacter(pos);
     }
   }
 
-  return result;
-}
-// A tiny undirected graph:
-const graph = new Map<string, string[]>([
-  ['A', ['B', 'C', 'D']],
-  ['B', ['A', 'E', 'F']],
-  ['C', ['A', 'G']],
-  ['D', ['A', 'H']],
-  ['E', ['B']],
-  ['F', ['B']],
-  ['G', ['C']],
-  ['H', ['D']],
-]);
+  /**
+   * Extend the tree with the character at position `pos` in the input.
+   * This is Ukkonen’s “phase” step.
+   */
+  private _addCharacter(pos: number): void {
+    this._remainder++;
 
-function neighbors(node: string): string[] {
-  return graph.get(node) ?? [];
-}
+    let lastNewNode: Node | null = null;
 
-// Find all nodes reachable from 'A' within depth 2
-const visited = depthLimitedSearch('A', 2, neighbors);
-console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
-function depthLimitedSearchWithTarget<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  target: T,
-  visitedSet?: Set<T>
-): T | undefined {
-  const visited = visitedSet ?? new Set<T>();
-  const stack = [{ node: root, depth: 0 }];
+    while (this._remainder > 0) {
+      const currentActiveEdge = this._active.edge || this._text[pos];
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (visited.has(node)) continue;
-    visited.add(node);
+      // 1. If there is no outgoing edge from the active node
+      //    that starts with the active edge character, create one.
+      if (!this._active.node.children.has(currentActiveEdge)) {
+        const leaf = this._createNode(pos, this._text.length - 1); // leaf points to suffix start
+        this._active.node.children.set(currentActiveEdge, leaf);
+        leaf.parent = this._active.node;
 
-    if (node === target) return node;
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this._active.node;
+          lastNewNode = null;
+        }
+      } else {
+        // 2. There is an edge; we need to walk down it.
+        const nextNode = this._active.node.children.get(currentActiveEdge)!;
 
-    if (depth >= depthLimit) continue;
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
+        // What character does the edge label have at the next position?
+        const edgeChar = this._text[nextNode.edgeStart! + this._active.length];
+
+        if (edgeChar === this._text[pos]) {
+          // 2a. The current character is already in the tree.
+          //     Just extend the active point and break.
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this._active.node;
+            lastNewNode = null;
+          }
+          this._active.length++;
+          break;
+        }
+
+        // 2b. Need to split the edge because we hit a mismatch.
+        const splitEnd = nextNode.edgeStart! + this._active.length - 1;
+        const split = this._createNode(nextNode.edgeStart!, splitEnd);
+        this._active.node.children.set(currentActiveEdge, split);
+        split.parent = this._active.node;
+
+        // 2b.i. The old child becomes a grand‑child of the new split node.
+        nextNode.edgeStart! = splitEnd + 1;
+        split.children.set(this._text[nextNode.edgeStart!], nextNode);
+        nextNode.parent = split;
+
+        // 2b.ii. Add a new leaf for the new character.
+        const leaf = this._createNode(pos, this._text.length - 1);
+        split.children.set(this._text[pos], leaf);
+        leaf.parent = split;
+
+        // 2b.iii. Link suffixes
+        if (lastNewNode) {
+          lastNewNode.suffixLink = split;
+        }
+        lastNewNode = split;
+        split.suffixLink = this._root;
       }
-    }
-  }
-  return undefined; // not found
-}
+
+      // 3. Move to the next phase: decrement remainder
+      this._remainder--;
+
+      // 4. If the active node has a suffix link, follow it,
+      //    otherwise reset to root and adjust length.
+      if (this._active.node === this._root && this._active.length > 0) {
+        this._active.length--;
+        this._active.edge = this._text[pos - this._remainder + 1];
+      } else if (this._active.node !== this._root) {
+        this._active.node = this._active.node.suffixLink!;
+      } else {
+        this._active.edge = this._text[pos - this._remainder + 1];
+        this._active.length = 1;
+        this._active.node = this
