@@ -1,41 +1,27 @@
 /**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
- *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
  */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
-
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
     }
-
-    // Place the key into its correct spot
-    arr[j + 1] = key;
-  }
-
-  return arr; // handy for chaining, but the original array is already sorted
+  } while (swapped);
 }
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
 
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
-
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
