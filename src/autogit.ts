@@ -1,47 +1,43 @@
 /**
- * Random API – picks a random fact from https://uselessfacts.jsph.pl
- * Returns an object: { id, text, source, permalink }
+ * Returns the first character that occurs only once in `s`.
+ * If every character repeats, returns null.
  */
-async function fetchRandomFact(): Promise<{
-  id: string;
-  text: string;
-  source: string;
-  permalink: string;
-}> {
-  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣ Count how many times each char appears
+  const freq = new Map<string, number>();
 
-  try {
-    const response = await fetch(apiUrl);
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+  // 2️⃣ Scan the string again and pick the first char with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
     }
-
-    const data = await response.json();
-
-    // If you’re inside an Android NativeScript environment you could
-    // show a Toast or log the result with Android SDK.
-    console.log("Random fact fetched:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch random fact:", err);
-    throw err;
   }
-}
 
-/**
- * Example usage – you’d call this from anywhere, e.g. on a button tap.
- */
-async function runDemo() {
-  try {
-    const fact = await fetchRandomFact();
-    // In Android, for a quick visual you could use:
-    // import { Toast } from "tns-core-modules/ui/toast";
-    // Toast.makeText(fact.text, 2000).show();
-    console.log("Fact text:", fact.text);
-  } catch {
-    // error handling already done in fetchRandomFact
+  return null; // nothing unique
+}
+console.log(firstNonRepeatingChar("abacbc")); // -> "b"
+console.log(firstNonRepeatingChar("aabbcc")); // -> null
+console.log(firstNonRepeatingChar("abcde"));  // -> "a"
+function firstNonRepeatingCharOptimized(s: string): string | null {
+  const freq = new Map<string, number>();
+  const order: string[] = [];
+
+  for (const ch of s) {
+    const newCount = (freq.get(ch) ?? 0) + 1;
+    freq.set(ch, newCount);
+
+    if (newCount === 1) {
+      order.push(ch);          // first appearance
+    } else {
+      // remove all occurrences of `ch` from the queue
+      const idx = order.indexOf(ch);
+      if (idx !== -1) order.splice(idx, 1);
+    }
   }
-}
 
-runDemo();
+  return order.length ? order[0] : null;
+}
