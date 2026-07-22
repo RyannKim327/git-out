@@ -1,60 +1,51 @@
-/* 1️⃣  Define the shapes of the data we expect  */
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+/**
+ * Merge two sorted arrays into one sorted array.
+ * The comparator decides the ordering – by default it uses the `<` operator.
+ */
+function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
+  const result: T[] = [];
+  let i = 0; // index into left
+  let j = 0; // index into right
 
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
+  // Grab the compare function, or fall back to simple < comparison
+  const comp = compare ?? ((a: T, b: T) => a < b);
 
-/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
-async function safeGet<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
+  while (i < left.length && j < right.length) {
+    // If left[i] comes before right[j] (or equal), push it
+    if (comp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
   }
-  return resp.json() as Promise<T>;
+
+  // One of the halves may still have leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
-/* 3️⃣  Fetch a single post and its comments  */
-async function fetchPostWithComments(postId: number) {
-  const [post, comments] = await Promise.all([
-    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
-    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
-  ]);
+/**
+ * Recursive merge sort.  
+ * @param array The array to sort.
+ * @param compare Optional comparator that returns true if a < b.
+ */
+export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
+  // Stop recursion when array has 0 or 1 item
+  if (array.length <= 1) return array.slice(); // return a shallow copy
 
-  console.log(`\n=== Post #${post.id} ===`);
-  console.log(`Title : ${post.title}`);
-  console.log(`Body  : ${post.body}\n`);
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
 
-  console.log(`--- ${comments.length} comment(s) ---`);
-  comments.forEach(c => {
-    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
-  });
+  return merge(left, right, compare);
 }
+const numbers = [5, 3, 8, 1, 2, 9];
+const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
 
-/* 4️⃣  Run it for a few post IDs  */
-async function main() {
-  try {
-    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
-  } catch (err) {
-    console.error('Something went wrong:', (err as Error).message);
-  }
-}
+const people = [
+  { name: "Alice", age: 32 },
+  { name: "Bob", age: 25 },
+  { name: "Eve", age: 29 }
+];
 
-main();
-# compile to JavaScript
-npx tsc api-demo.ts
-
-# run the output
-node api-demo.js
-
-# or skip the compile step (requires ts-node)
-npx ts-node api-demo.ts
+// Sort by age
+const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
