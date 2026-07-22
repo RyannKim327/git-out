@@ -1,58 +1,37 @@
-/**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+const nums = [1, 2, 3, 2, 4, 1, 5];
 
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
+const uniq = Array.from(new Set(nums));
+// or: const uniq = [...new Set(nums)];
 
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
-  }
+console.log(uniq); // [1, 2, 3, 4, 5]
+const words = ["foo", "bar", "baz", "foo", "bar"];
 
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
+const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
 
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
+console.log(unique); // ["foo", "bar", "baz"]
+const objs = [{a: 1}, {a: 1}, {a: 2}];
+console.log([...new Set(objs)]); // keeps both {a:1} objects
+function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = keyFn(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
 }
 
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
+const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
+console.log(uniqueObjs); // [{a:1}, {a:2}]
+const arr = [1, 2, 3, 2, 1];
+const seen = new Set<number>();
+let writeIdx = 0;
 
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
-
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
-
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
-    }
-
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
-
-    pow10 *= 10;           // move to next digit
+for (let readIdx = 0; readIdx < arr.length; readIdx++) {
+  const value = arr[readIdx];
+  if (!seen.has(value)) {
+    seen.add(value);
+    arr[writeIdx++] = value;
   }
-
-  return output;
 }
-import { radixSort } from "./radixSort";
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+arr.length = writeIdx; // shrink the array
+console.log(arr); // [1, 2, 3]
