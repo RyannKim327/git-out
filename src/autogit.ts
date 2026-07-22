@@ -1,93 +1,87 @@
-// A node can carry any payload (`T`) and point to its neighbours.
-export interface GraphNode<T> {
-  value: T;
-  neighbours: GraphNode<T>[];
+// -----------------------------------------------------------------------------
+// 1️⃣  Trie node – keeps a map of children and a flag for word ends
+// -----------------------------------------------------------------------------
+class TrieNode {
+  /** Map from a character to the child node that starts with that character */
+  children = new Map<string, TrieNode>();
+  /** true if the path to this node corresponds to a complete word */
+  isEnd = false;
 }
-/**
- * Recursively performs depth‑limited search.
- *
- * @param node        The node you are currently visiting.
- * @param goalTest    Returns true if the current node satisfies the goal.
- * @param limit       Number of edges left before the search terminates.
- * @param visited     A set of IDs or reference values that keeps track of visited nodes.
- *                    This protects against cycles that would otherwise cause infinite recursion.
- * @returns The first node that satisfies `goalTest`, or `null`.
- */
-export function depthLimitedSearchRec<T>(
-  node: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number,
-  visited: Set<GraphNode<T>> = new Set()
-): GraphNode<T> | null {
-  if (goalTest(node)) return node;
-  if (limit === 0) return null;          // reached the depth boundary
 
-  visited.add(node);
+// -----------------------------------------------------------------------------
+// 2️⃣  Trie implementation
+// -----------------------------------------------------------------------------
+export class Trie {
+  private root: TrieNode;
 
-  for (const neighbour of node.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
-      if (result !== null) return result;
-    }
+  constructor() {
+    this.root = new TrieNode();
   }
 
-  return null;   // nothing found within this branch
-}
-interface StackItem<T> {
-  node: GraphNode<T>;
-  depthLeft: number;
-}
-
-/**
- * Iterative depth‑limited search.
- */
-export function depthLimitedSearchIter<T>(
-  start: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number
-): GraphNode<T> | null {
-  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
-  const visited: Set<GraphNode<T>> = new Set();
-
-  while (stack.length) {
-    const { node, depthLeft } = stack.pop()!;
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (goalTest(node)) return node;
-    if (depthLeft === 0) continue;           // depth boundary reached
-
-    // push neighbours onto the stack – LIFO order means the first neighbour
-    // will be processed last, mirroring the recursive DFS behaviour.
-    for (const neighbour of node.neighbours) {
-      if (!visited.has(neighbour)) {
-        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
+  /** Add a word to the trie */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      // Get the child for `ch`, or create it if missing
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode());
       }
+      node = node.children.get(ch)!;
     }
+    node.isEnd = true;
   }
 
-  return null;  // no goal reached within depth limit
+  /** Check if a word exists in the trie */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return !!node && node.isEnd;
+  }
+
+  /** Check if any word in the trie starts with the given prefix */
+  startsWith(prefix: string): boolean {
+    return !!this._findNode(prefix);
+  }
+
+  /** Internal helper: walk the trie following `key`.  Returns
+   *  the terminal node if the path exists, otherwise `undefined`. */
+  private _findNode(key: string): TrieNode | undefined {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch);
+      if (!node) return undefined;
+    }
+    return node;
+  }
+
+  /** Optional: collect all words in the trie that share a common prefix.
+   *  Useful for autocomplete. */
+  autocomplete(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
+
+    const results: string[] = [];
+    const dfs = (n: TrieNode, path: string[]) => {
+      if (n.isEnd) results.push(prefix + path.join(''));
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, [...path, ch]);
+      }
+    };
+
+    dfs(node, []);
+    return results;
+  }
 }
-// --- build a simple graph
-const a: GraphNode<string> = { value: "A", neighbours: [] };
-const b: GraphNode<string> = { value: "B", neighbours: [] };
-const c: GraphNode<string> = { value: "C", neighbours: [] };
-const d: GraphNode<string> = { value: "D", neighbours: [] };
 
-a.neighbours.push(b, c);   // A -> B, C
-b.neighbours.push(d);      // B -> D
-c.neighbours.push(d);      // C -> D
+// -----------------------------------------------------------------------------
+// 3️⃣  Demo
+// -----------------------------------------------------------------------------
+const trie = new Trie();
+trie.insert('hello');
+trie.insert('helium');
+trie.insert('hero');
+trie.insert('her');
 
-// --- goal: find node with value “D”
-const isGoal = (node: GraphNode<string>) => node.value === "D";
-
-// Recursive
-const resultRec = depthLimitedSearchRec(a, isGoal, 3);
-console.log("Recursive result:", resultRec?.value ?? "none");
-
-// Iterative
-const resultIter = depthLimitedSearchIter(a, isGoal, 3);
-console.log("Iterative result:", resultIter?.value ?? "none");
-Recursive result: D
-Iterative result: D
+console.log(trie.search('hello'));   // true
+console.log(trie.search('heroic'));  // false
+console.log(trie.startsWith('he'));  // true
+console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
