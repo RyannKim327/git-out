@@ -1,48 +1,129 @@
 /**
- * Shell sort – a classic gap‑based insertion sort
- *
- * @template T - type held in the array
- * @param arr   Array to be sorted in place
- * @param cmp   Optional comparator, defaults to numeric comparison
- * @returns     The sorted array (same reference as `arr`)
+ * A node in the B‑tree.
+ * Keys are stored in ascending order.
  */
-export function shellSort<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
-): T[] {
-  const n = arr.length;
+class BTreeNode<K, V> {
+  // Keys and values are kept together to simplify return of key/value pairs.
+  keys: K[] = [];
+  values: V[] = [];
 
-  // A common sequence: n/2, n/4, …, 1
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Do a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap-sorted elements until the correct spot for temp is found
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+  // Children – null for leaf nodes.
+  children: (BTreeNode<K, V> | null)[] = [];
+
+  // Whether this node is a leaf.
+  leaf: boolean;
+
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
+
+  /* Helper: find first index where key should be inserted */
+  findKey(key: K, cmp: (a: K, b: K) => number): number {
+    let idx = 0;
+    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
+      ++idx;
+    }
+    return idx;
+  }
+}
+/**
+ * B‑Tree implementation
+ *
+ * @param t Minimum degree (≥ 2). Every node except the root contains
+ *          at least t‑1 keys and at most 2*t‑1 keys.
+ */
+class BTree<K, V> {
+  private root: BTreeNode<K, V>;
+  private readonly t: number;
+  private readonly cmp: (a: K, b: K) => number;
+
+  constructor(
+    t: number = 2,
+    cmp?: (a: K, b: K) => number
+  ) {
+    if (t < 2) throw new Error('B‑tree order must be >= 2');
+    this.t = t;
+    this.root = new BTreeNode<K, V>(true);
+    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
+  /* Public API --------------------------------------------------- */
+  search(key: K): V | undefined {
+    return this._search(this.root, key);
+  }
+
+  insert(key: K, value: V): void {
+    // If root is full, create a new leaf and split
+    if (this.root.keys.length === 2 * this.t - 1) {
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this._splitChild(newRoot, 0);
+      this.root = newRoot;
+    }
+    this._insertNonFull(this.root, key, value);
+  }
+
+  /* Delete is optional – implement if you need it. */
+  /* delete(key: K): void { … } */
+
+  /* Iterator over all key/value pairs in order */
+  *inOrder(): IterableIterator<[K, V]> {
+    yield* this._inOrder(this.root);
+  }
+
+  /* ------------------------------------------------------------------ */
+
+  /* Core recursive operations --------------------------------------- */
+  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
+    const idx = node.findKey(key, this.cmp);
+
+    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
+      return node.values[idx];
+    }
+
+    if (node.leaf) {
+      return undefined;
+    }
+
+    return this._search(node.children[idx]!, key);
+  }
+
+  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
+    let i = node.keys.length - 1;
+
+    if (node.leaf) {
+      // Insert into leaf – shift keys/vals right of insertion point
+      const idx = node.findKey(key, this.cmp);
+      node.keys.splice(idx, 0, key);
+      node.values.splice(idx, 0, value);
+    } else {
+      // Find child to descend into
+      const idx = node.findKey(key, this.cmp);
+      const child = node.children[idx]!;
+
+      if (child.keys.length === 2 * this.t - 1) {
+        // Child is full → split then decide which side to go
+        this._splitChild(node, idx);
+
+        // After split, middle key moves up – need to decide child again
+        if (this.cmp(key, node.keys[idx]) > 0) {
+          i = idx + 1;
+        } else {
+          i = idx;
+        }
       }
-      arr[j] = temp;
+      this._insertNonFull(node.children[i]!, key, value);
     }
   }
 
-  return arr;
-}
-// 1️⃣ Sort numbers
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
+  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
+    const t = this.t;
+    const child = parent.children[idx]!;
+    const newNode = new BTreeNode<K, V>(child.leaf);
 
-// 2️⃣ Sort strings alphabetically
-shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
+    // Move the second half of child’s keys/values to newNode
+    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
+    newNode.values = child.values.splice(t);
 
-// 3️⃣ Sort objects by a property
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: "Zoe", age: 29 },
-  { name: "Alex", age: 22 },
-  { name: "Mia", age: 35 }
-];
-shellSort(people, (a, b) => a.age - b.age);
-console.log(people.map(p => p.age));  // → [22, 29, 35]
+    if (!child.leaf) {
+      newNode.children = child.children.splice(t
