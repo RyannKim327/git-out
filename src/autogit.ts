@@ -1,48 +1,40 @@
 /**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
+ * Interpolation search returns the index of `target` in `arr`,
+ * or –1 if the target is not present.
  *
- * @param arr an array of comparable values (number, string, …)
+ * @param arr   – sorted array of numbers (must be monotonic increasing)
+ * @param target – key we’re trying to locate
+ * @returns the array index of target or -1
  */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+export function interpolationSearch(arr: number[], target: number): number {
+    if (arr.length === 0) return -1;
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
+    let low = 0;
+    let high = arr.length - 1;
+
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // Avoid division by zero when the sub‑array contains equal numbers
+        if (arr[high] === arr[low]) {
+            return arr[low] === target ? low : -1;
+        }
+
+        // Estimate the likely position of `target` within [low, high]
+        const pos = low + Math.floor(
+            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
+        );
+
+        const val = arr[pos];
+
+        if (val === target) return pos;
+        if (val < target) low = pos + 1;
+        else high = pos - 1;
     }
-  }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+    return -1; // not found
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
+import { interpolationSearch } from "./interpolationSearch";
 
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
-  }
-  return undefined;
-}
+const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+
+console.log(interpolationSearch(data, 42));   // → 4
+console.log(interpolationSearch(data, 100));  // → -1
