@@ -1,80 +1,93 @@
 /**
- * The graph is represented as an adjacency list:
- *   key     → array of neighbors that the key points to
+ * In‑place quicksort for an array of elements that implement Comparable.
+ * @param arr The array to sort.
+ * @param left Index of the first element to consider.
+ * @param right Index of the last element to consider.
+ * @returns The sorted array (the same reference is returned).
  */
-export type Graph<T = string> = Record<T, T[]>;
+export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  // Using 0‐based indices
+  if (left >= right) return arr;           // Base case – 0 or 1 element
+
+  const pivotIndex = partition(arr, left, right);
+  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
+  quicksort(arr, pivotIndex + 1, right);  // right side
+  return arr;
+}
 
 /**
- * Helper types for the two algorithms
+ * Hoare partition scheme.
+ * Moves elements < pivot to the left, > pivot to the right.
+ * Returns the final pivot position (the index of the pivot element after partition).
  */
-type Queue<T> = T[];
-export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
-  const result: T[] = [];
+function partition<T>(arr: T[], left: number, right: number): number {
+  // Pick the middle element as pivot (arbitrary choice)
+  const pivot = arr[Math.floor((left + right) / 2)];
 
-  // Compute in‑degree for each node
-  const indegree = new Map<T, number>();
-  for (const node in graph) {
-    indegree.set(node, 0);               // ensure all nodes appear
-    for (const nb of graph[node]) {
-      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    // Move i until we find element >= pivot
+    while (arr[i] < pivot) i++;
+    // Move j until we find element <= pivot
+    while (arr[j] > pivot) j--;
+
+    if (i <= j) {
+      // Swap arr[i] and arr[j]
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
   }
-
-  // Queue all nodes that have no incoming edges
-  const queue: Queue<T> = [];
-  for (const [node, deg] of indegree.entries()) {
-    if (deg === 0) queue.push(node);
-  }
-
-  while (queue.length) {
-    const node = queue.shift()!;
-    result.push(node);
-
-    // Reduce indegree for all neighbors, pushing any that reach 0
-    for (const nb of graph[node] ?? []) {
-      const deg = (indegree.get(nb) ?? 0) - 1;
-      indegree.set(nb, deg);
-      if (deg === 0) queue.push(nb);
-    }
-  }
-
-  // If we processed fewer nodes than exist, a cycle exists
-  if (result.length !== Object.keys(graph).length) {
-    throw new Error('Graph contains a cycle; topological sort impossible');
-  }
-  return result;
+  // Return the index where the next recursive calls will split.
+  return i - 1;
 }
-export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
-  const visited = new Set<T>();
-  const temp = new Set<T>();   // nodes on the recursion stack
-  const result: T[] = [];
+const data = [34, 7, 23, 32, 5, 62];
+console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
+export function quicksortBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): T[] {
+  if (left >= right) return arr;
 
-  const visit = (node: T) => {
-    if (temp.has(node)) {
-      throw new Error('Graph contains a cycle; topological sort impossible');
-    }
-    if (!visited.has(node)) {
-      temp.add(node);
-      for (const nb of graph[node] ?? []) visit(nb);
-      temp.delete(node);
-      visited.add(node);
-      result.push(node);     // post‑order push gives topological order
-    }
-  };
-
-  for (const node in graph) visit(node as T);
-  // reverse because we push after exploring children
-  return result.reverse();
+  const pivotIndex = partitionBy(arr, cmp, left, right);
+  quicksortBy(arr, cmp, left, pivotIndex - 1);
+  quicksortBy(arr, cmp, pivotIndex + 1, right);
+  return arr;
 }
-const myGraph: Graph<string> = {
-  A: ['B', 'C'],
-  B: ['D'],
-  C: ['D'],
-  D: [],
-};
 
-console.log(topologicalSortKahn(myGraph));
-// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+function partitionBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left: number,
+  right: number
+): number {
+  const pivot = arr[Math.floor((left + right) / 2)];
 
-console.log(topologicalSortDFS(myGraph));
-// → same order (or any other valid one)
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    while (cmp(arr[i], pivot) < 0) i++;
+    while (cmp(arr[j], pivot) > 0) j--;
+
+    if (i <= j) {
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
+  }
+  return i - 1;
+}
+const users = [
+  { name: 'Anna', age: 23 },
+  { name: 'Bob', age: 17 },
+  { name: 'Clara', age: 31 },
+];
+
+quicksortBy(users, (a, b) => a.age - b.age);
+stdin: 5 1 4 2 6 0
+stdout: 0 1 2 4 5 6
