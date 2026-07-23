@@ -1,37 +1,65 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+/**
+ * Computes the LPS array for a given pattern.
+ * For each index i, lps[i] is the length of the longest
+ * proper prefix that is also a suffix for pattern[0..i].
+ */
+function buildLps(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;          // length of previous longest prefix suffix
+    let i = 1;
+
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // try the previous longest prefix suffix
+                length = lps[length - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
 }
+/**
+ * Returns the starting indices of all occurrences of `pattern`
+ * inside `text`. If the pattern is empty, an empty array is returned.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
 
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
+    const lps = buildLps(pattern);
+    const result: number[] = [];
+
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++; j++;
+            if (j === pattern.length) {
+                // match found; record start index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else {
+            if (j !== 0) {
+                // fall back in pattern
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+    }
+    return result;
 }
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
 
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
-  }
-
-  return sum;
-}
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
-
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+console.log(kmpSearch(haystack, needle));
+// → [10]
