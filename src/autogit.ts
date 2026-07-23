@@ -1,16 +1,47 @@
-// 1. Using the Number constructor
-const val1 = Number("42");          // 42
+/**
+ * Random API – picks a random fact from https://uselessfacts.jsph.pl
+ * Returns an object: { id, text, source, permalink }
+ */
+async function fetchRandomFact(): Promise<{
+  id: string;
+  text: string;
+  source: string;
+  permalink: string;
+}> {
+  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
 
-// 2. Using unary plus
-const val2 = +"42";                 // 42
+  try {
+    const response = await fetch(apiUrl);
 
-// 3. Using parseInt (base 10 recommended)
-const val3 = parseInt("42", 10);    // 42
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
 
-// 4. Using parseFloat for decimals
-const val4 = parseFloat("3.14");    // 3.14
-function safeParse(str: string): number | null {
-  const n = Number(str);
-  return Number.isNaN(n) ? null : n;
+    const data = await response.json();
+
+    // If you’re inside an Android NativeScript environment you could
+    // show a Toast or log the result with Android SDK.
+    console.log("Random fact fetched:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch random fact:", err);
+    throw err;
+  }
 }
-const i = Math.floor(parseFloat("3.9")); // 3
+
+/**
+ * Example usage – you’d call this from anywhere, e.g. on a button tap.
+ */
+async function runDemo() {
+  try {
+    const fact = await fetchRandomFact();
+    // In Android, for a quick visual you could use:
+    // import { Toast } from "tns-core-modules/ui/toast";
+    // Toast.makeText(fact.text, 2000).show();
+    console.log("Fact text:", fact.text);
+  } catch {
+    // error handling already done in fetchRandomFact
+  }
+}
+
+runDemo();
