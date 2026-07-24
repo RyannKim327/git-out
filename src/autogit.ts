@@ -1,77 +1,135 @@
 /**
- * Median of two sorted arrays.
+ * A binary‑heap based priority queue.
  *
- * The algorithm keeps a binary search on the smaller array.  
- * At each step we decide how many elements from `a` belong on the left side of the
- * partition.  The counterpart from `b` is computed so that the left side contains
- * exactly half (or half‑plus‑one for odd total length) of the elements.
- *
- * Edge cases:
- *   * one of the arrays may be empty
- *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
+ * @template T - The type of the heap elements.
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Ensure `a` is the shorter array to keep the binary search limits small.
-  let a = nums1;
-  let b = nums2;
-  if (a.length > b.length) [a, b] = [b, a];
+export class PriorityQueue<T> {
+  /** Array representation of the heap.  Root is at index 0. */
+  private heap: T[] = [];
 
-  const m = a.length;
-  const n = b.length;
-  // `halfLen` is the number of elements that must be on the left side
-  // of the partition (including the middle element when total length is odd).
-  const halfLen = Math.floor((m + n + 1) / 2);
+  /**
+   * Comparator that decides heap order.
+   *
+   *   - If it returns a negative number → a precedes b.
+   *   - If 0 → equal.
+   *   - If positive → a follows b.
+   *
+   * You can pass your own comparator; otherwise a simple
+   * numerical ascending order is used.
+   */
+  constructor(
+    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+  ) {}
 
-  let low = 0;
-  let high = m;
+  /* ----- Query helpers ----- */
 
-  while (low <= high) {
-    // Number of elements from a put on the left side
-    const i = Math.floor((low + high) / 2);
-    // Number of elements from b put on the left side
-    const j = halfLen - i;
+  /** Number of elements in the queue. */
+  size(): number {
+    return this.heap.length;
+  }
 
-    const aLeft  = i === 0 ? -Infinity : a[i - 1];
-    const aRight = i === m ?  Infinity : a[i];
+  /** Return the element with highest priority without removing it. */
+  peek(): T | null {
+    return this.heap.length ? this.heap[0] : null;
+  }
 
-    const bLeft  = j === 0 ? -Infinity : b[j - 1];
-    const bRight = j === n ?  Infinity : b[j];
+  /* ----- Manipulation helpers ----- */
 
-    // Partition is correct: all left elements ≤ all right elements
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // If total length is odd, the median is the max of the left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
+  /** Insert a new element */
+  push(item: T): void {
+    this.heap.push(item);
+    this.siftUp(this.heap.length - 1);
+  }
+
+  /**
+   * Remove and return the element with highest priority.
+   * Returns `null` if the queue is empty.
+   */
+  pop(): T | null {
+    const n = this.heap.length;
+    if (n === 0) return null;
+    if (n === 1) return this.heap.pop() ?? null;
+
+    const top = this.heap[0];
+    // Move last element to the root and shrink array.
+    this.heap[0] = this.heap.pop() as T;
+    this.siftDown(0);
+    return top;
+  }
+
+  /* ----- Internal re‑heapify ----- */
+
+  /** Push the element at index `i` up until heap property holds. */
+  private siftUp(i: number): void {
+    const { heap, compareFn } = this;
+    let childIndex = i;
+
+    while (childIndex > 0) {
+      const parentIndex = (childIndex - 1) >> 1;
+      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
+
+      // Swap child & parent
+      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
+      childIndex = parentIndex;
+    }
+  }
+
+  /** Move the element at index `i` down until heap property holds. */
+  private siftDown(i: number): void {
+    const { heap, compareFn } = this;
+    const n = heap.length;
+    let parentIndex = i;
+
+    while (true) {
+      const leftIdx = (parentIndex << 1) + 1;
+      const rightIdx = leftIdx + 1;
+
+      let smallest = parentIndex;
+
+      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
+        smallest = leftIdx;
       }
-      // If even, it’s the mean of the two middle values
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      // Too many elements from a on the left: move left
-      high = i - 1;
-    } else {
-      // Too few elements from a on the left: move right
-      low = i + 1;
+      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
+        smallest = rightIdx;
+      }
+
+      if (smallest === parentIndex) break;
+
+      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
+      parentIndex = smallest;
     }
   }
 
-  // Should never reach here for valid input
-  throw new Error("Invalid input");
-}
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
-console.log(findMedianSortedArrays(arr1, arr2)); // 8
-export function medianNaive(a: number[], b: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-  while (i < a.length || j < b.length) {
-    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
+  /* ----- Utility ----- */
+
+  /**
+   * Re‑build the heap from the current array contents.  
+   * Useful after bulk insertion or when the comparator changes.
+   */
+  heapify(): void {
+    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
+      this.siftDown(i);
     }
   }
-  const mid = Math.floor(merged.length / 2);
-  return merged.length % 2
-    ? merged[mid]
-    : (merged[mid - 1] + merged[mid]) / 2;
 }
+// Simple min‑heap of numbers (default comparator does that)
+const minQ = new PriorityQueue<number>();
+
+minQ.push(5);   // 5
+minQ.push(3);   // 3,5
+minQ.push(8);   // 3,5,8
+minQ.push(1);   // 1,3,8,5
+
+console.log(minQ.pop()); // 1
+console.log(minQ.pop()); // 3
+console.log(minQ.peek()); // 5
+console.log(minQ.size()); // 2
+interface Task { id: string; priority: number; }
+
+const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
+
+maxQ.push({ id: "A", priority: 10 });
+maxQ.push({ id: "B", priority: 20 });
+maxQ.push({ id: "C", priority: 5 });
+
+console.log(maxQ.pop()); // B (20)
