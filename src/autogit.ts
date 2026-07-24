@@ -1,65 +1,66 @@
-type Node<T> = { val: T; next: Node<T> | null };
+/**
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
+ *
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
+ *
+ * The function returns everything that looks like the pattern.
+ */
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
 
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
   }
 
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
   }
 
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
+      }
+      if (match) result.push(i);
+    }
 
-  return true;
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
+    }
+  }
+
+  return result;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev!;
-}
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
-
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
-}
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
