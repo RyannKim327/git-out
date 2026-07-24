@@ -1,41 +1,37 @@
-// Simple base & height
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('base and height must be positive numbers');
-  }
-  return (base * height) / 2;
+const nums = [1, 2, 3, 2, 4, 1, 5];
+
+const uniq = Array.from(new Set(nums));
+// or: const uniq = [...new Set(nums)];
+
+console.log(uniq); // [1, 2, 3, 4, 5]
+const words = ["foo", "bar", "baz", "foo", "bar"];
+
+const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
+
+console.log(unique); // ["foo", "bar", "baz"]
+const objs = [{a: 1}, {a: 1}, {a: 2}];
+console.log([...new Set(objs)]); // keeps both {a:1} objects
+function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = keyFn(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
 }
 
-// Three side lengths (Heron’s formula)
-function areaFromSides(a: number, b: number, c: number): number {
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The side lengths do not form a triangle');
-  }
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
-console.log(areaFromBaseHeight(10, 5)); // 25
-console.log(areaFromSides(3, 4, 5));   // 6
-const area = (b: number, h: number) => (b * h) / 2;
-class Triangle {
-  constructor(private a: number, private b: number, private c: number) {
-    if (a + b <= c || a + c <= b || b + c <= a) {
-      throw new Error('Invalid side lengths');
-    }
-  }
+const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
+console.log(uniqueObjs); // [{a:1}, {a:2}]
+const arr = [1, 2, 3, 2, 1];
+const seen = new Set<number>();
+let writeIdx = 0;
 
-  public area(): number {
-    const s = (this.a + this.b + this.c) / 2;
-    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
+for (let readIdx = 0; readIdx < arr.length; readIdx++) {
+  const value = arr[readIdx];
+  if (!seen.has(value)) {
+    seen.add(value);
+    arr[writeIdx++] = value;
   }
 }
 
-// Usage
-const tri = new Triangle(6, 7, 8);
-console.log(tri.area()); // 20.784609690826528
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new RangeError('Both base and height should be positive numbers');
-  }
-  return base * height / 2;
-}
+arr.length = writeIdx; // shrink the array
+console.log(arr); // [1, 2, 3]
