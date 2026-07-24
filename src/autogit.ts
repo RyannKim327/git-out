@@ -1,31 +1,36 @@
 /**
- * Selection sort – O(n²) time, O(1) additional space.
- *
- * Works on any array of items that can be compared with < and >.
+ * Returns the longest common prefix of the supplied strings.
+ * If the array is empty, or if no common prefix exists, an empty string is returned.
  */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+export function longestCommonPrefix(arr: readonly string[]): string {
+  if (arr.length === 0) return '';
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
+  // We’ll be comparing the first element with every other one.
+  // Once a mismatch is found we stop expanding the prefix.
+  let prefix = arr[0];
 
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
+  for (let i = 1; i < arr.length; ++i) {
+    // Shorten the prefix until it matches the start of arr[i]
+    while (arr[i].indexOf(prefix) !== 0) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';
     }
-    return arr;
+  }
+
+  return prefix;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
-}
+const words = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(words)); // prints "fl"
+
+const mix = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(mix));   // prints ""
+export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
+  (prev, curr) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
+    }
+    return prev.slice(0, i);
+  },
+  arr[0] ?? ''
+);
