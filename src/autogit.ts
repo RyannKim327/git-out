@@ -1,29 +1,20 @@
-function removeVowels(text: string): string {
-  return text.replace(/[aeiou]/gi, '');
-}
-const raw = "TypeScript is amazing!";
-console.log(removeVowels(raw));
-// ↳ "TypScrpt s mzng!"
-function removeVowelsLoop(text: string): string {
-  const vowels = new Set(['a', 'e', 'i', 'o', 'u',
-                          'A', 'E', 'I', 'O', 'U']);
-  let result = '';
-  for (const ch of text) {
-    if (!vowels.has(ch)) result += ch;
-  }
-  return result;
-}
-const tests = [
-  "Hello, world!",
-  "AEIOUaeiou",
-  "Rhythm",
-  "Café",
-  "",
+// Original array
+const original: number[] = [1, 2, 3, 4, 5];
+
+// 1️⃣ In‑place reverse (mutates `original`)
+original.reverse();
+console.log(original); // [5, 4, 3, 2, 1]
+
+// 2️⃣ Copy then reverse (keeps `original` intact)
+const reversedCopy = original.slice().reverse();  // or [...original].reverse()
+console.log(reversedCopy);  // [5, 4, 3, 2, 1]
+type Person = { name: string; age: number };
+
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
 ];
 
-tests.forEach(t => console.log(`"${t}" → "${removeVowels(t)}"`));
-"Hello, world!" → "Hll, wrld!"
-"AEIOUaeiou" → ""
-"Rhythm" → "Rhythm"
-"Café" → "Cf"
-""
+const reversedPeople = [...people].reverse(); // still Person[]
+const reduceReversed = <T>(array: T[]): T[] =>
+  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
