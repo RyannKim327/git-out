@@ -1,44 +1,117 @@
-// cronDemo.ts
-// ──────────────────────────────────────────────
-// Simple TS + node‑cron demo.  Every minute,
-// the job prints a timestamp and a random number.
-//
-// Requirements:
-//   npm i node-cron @types/node-cron
-//
-// Run with:
-//   npx ts-node cronDemo.ts
-// ‒ or compile (npx tsc) and exec (node cronDemo.js)
-// ──────────────────────────────────────────────
+type Key = string | number | object;   // anything you can reasonably stringify
+interface Pair<K, V> {
+  key: K;
+  value: V;
+}
+type Bucket<K, V> = Pair<K, V>[];
+const DEFAULT_BUCKETS = 16;
+const DEFAULT_LOAD_FACTOR = 0.75;
 
-import cron from 'node-cron';
+export class HashTable<K extends Key, V> {
+  private buckets: Bucket<K, V>[];
+  private count = 0;                    // number of key/value pairs
+  private loadFactor: number;
 
-/**
- * Helper that gives us a nicely formatted timestamp.
- */
-const now = () => new Date().toLocaleString();
+  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
+    this.buckets = Array.from({ length: initialBuckets }, () => []);
+    this.loadFactor = loadFactor;
+  }
 
-/**
- * The task that will run according to the cron schedule.
- * We generate a random integer between 1 and 1000.
- */
-const task = () => {
-  const rand = Math.floor(Math.random() * 1000) + 1;
-  console.log(`[${now()}] Random number: ${rand}`);
-};
+  /* ---------- public API ---------- */
 
-/**
- * Schedule the job.
- * Cron expression: '* * * * *'
- * └─ minute (0‑59)
- *
- * The job triggers at the start of every minute.
- */
-cron.schedule('* * * * *', task, {
-  scheduled: true,
-  timezone: 'UTC',     // change to your local timezone if needed
-});
+  set(key: K, value: V): void {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
-[2026-06-17 12:34:00] Random number: 827
-[2026-06-17 12:35:00] Random number: 314
+    // Replace if key is already present
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
+        pair.value = value;
+        return;
+      }
+    }
+
+    bucket.push({ key, value });
+    this.count++;
+
+    if (this.count / this.buckets.length > this.loadFactor) {
+      this.resize();
+    }
+  }
+
+  get(key: K): V | undefined {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {
+        return pair.value;
+      }
+    }
+    return undefined;
+  }
+
+  delete(key: K): boolean {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    for (let i = 0; i < bucket.length; i++) {
+      if (this.equals(bucket[i].key, key)) {
+        bucket.splice(i, 1);
+        this.count--;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  clear(): void {
+    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
+    this.count = 0;
+  }
+
+  get size(): number {
+    return this.count;
+  }
+
+  /* ---------- private helpers ---------- */
+
+  private bucketIndex(key: K): number {
+    // Ensure the hash is non‑negative
+    const h = this.hash(key);
+    const idx = h % this.buckets.length;
+    return idx < 0 ? idx + this.buckets.length : idx;
+  }
+
+  /* Simple but stable string hash (djb2 algorithm) */
+  private hash(key: K): number {
+    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
+    }
+    return h >>> 0; // make unsigned
+  }
+
+  private equals(a: K, b: K): boolean {
+    // For primitives, === is fine.
+    // For objects, we compare the stringified form.
+    if (typeof a === 'object' && typeof b === 'object') {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+    return a === b;
+  }
+
+  /* Grow the bucket array and re‑hash all entries */
+  private resize(): void {
+    const oldBuckets = this.buckets;
+    const newSize = oldBuckets.length * 2;
+    this.buckets = Array.from({ length: newSize }, () => []);
+    this.count = 0;
+
+    for (const bucket of oldBuckets) {
+      for (const pair of bucket)
