@@ -1,39 +1,27 @@
-function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
+/**
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
+ */
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-// Example
-console.log(reverseString('hello')); // 'olleh'
-reverseString('👋🏽'); // '🏽👋'  → wrong
-function reverseStringUnicode(s: string): string {
-  const codePoints: number[] = [];
-  for (const char of s) {
-    codePoints.push(char.codePointAt(0)!);
-  }
-  return String.fromCodePoint(...codePoints.reverse());
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
+    }
+  } while (swapped);
 }
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
 
-// Example
-console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
-const cp = Array.from(s).reverse().join('');
-function reverseRecursively(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseRecursively(s.slice(1)) + s[0];
-}
-function reverseLoop(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
-  }
-  return result;
-}
-function reverseBuffer(s: string): string {
-  const buf: string[] = new Array(s.length);
-  for (let i = 0; i < s.length; i++) {
-    buf[i] = s[s.length - 1 - i];
-  }
-  return buf.join('');
-}
-function reverseStringSafe(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
