@@ -1,117 +1,79 @@
-type Key = string | number | object;   // anything you can reasonably stringify
-interface Pair<K, V> {
-  key: K;
-  value: V;
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
+
+    visited.add(start);
+    queue.push(start);
+
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
+    }
+
+    return result;
 }
-type Bucket<K, V> = Pair<K, V>[];
-const DEFAULT_BUCKETS = 16;
-const DEFAULT_LOAD_FACTOR = 0.75;
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-export class HashTable<K extends Key, V> {
-  private buckets: Bucket<K, V>[];
-  private count = 0;                    // number of key/value pairs
-  private loadFactor: number;
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
 
-  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
-    this.buckets = Array.from({ length: initialBuckets }, () => []);
-    this.loadFactor = loadFactor;
-  }
+    while (queue.length) {
+        const current = queue.shift()!;
 
-  /* ---------- public API ---------- */
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
 
-  set(key: K, value: V): void {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    // Replace if key is already present
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
-        pair.value = value;
-        return;
-      }
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
     }
 
-    bucket.push({ key, value });
-    this.count++;
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
 
-    if (this.count / this.buckets.length > this.loadFactor) {
-      this.resize();
-    }
-  }
-
-  get(key: K): V | undefined {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    for (const pair of bucket) {
-      if (this.equals(pair.key, key)) {
-        return pair.value;
-      }
-    }
-    return undefined;
-  }
-
-  delete(key: K): boolean {
-    const idx = this.bucketIndex(key);
-    const bucket = this.buckets[idx];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.equals(bucket[i].key, key)) {
-        bucket.splice(i, 1);
-        this.count--;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  has(key: K): boolean {
-    return this.get(key) !== undefined;
-  }
-
-  clear(): void {
-    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
-    this.count = 0;
-  }
-
-  get size(): number {
-    return this.count;
-  }
-
-  /* ---------- private helpers ---------- */
-
-  private bucketIndex(key: K): number {
-    // Ensure the hash is non‑negative
-    const h = this.hash(key);
-    const idx = h % this.buckets.length;
-    return idx < 0 ? idx + this.buckets.length : idx;
-  }
-
-  /* Simple but stable string hash (djb2 algorithm) */
-  private hash(key: K): number {
-    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) {
-      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
-    }
-    return h >>> 0; // make unsigned
-  }
-
-  private equals(a: K, b: K): boolean {
-    // For primitives, === is fine.
-    // For objects, we compare the stringified form.
-    if (typeof a === 'object' && typeof b === 'object') {
-      return JSON.stringify(a) === JSON.stringify(b);
-    }
-    return a === b;
-  }
-
-  /* Grow the bucket array and re‑hash all entries */
-  private resize(): void {
-    const oldBuckets = this.buckets;
-    const newSize = oldBuckets.length * 2;
-    this.buckets = Array.from({ length: newSize }, () => []);
-    this.count = 0;
-
-    for (const bucket of oldBuckets) {
-      for (const pair of bucket)
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
