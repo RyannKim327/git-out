@@ -1,30 +1,29 @@
-/**
- * Return the factorial of a non‑negative integer.
- *
- * @param n - the number to calculate the factorial of.
- * @returns factorial(n) as a number (or BigInt if you want larger values).
- * @throws TypeError if the input is not a non‑negative integer.
- */
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new TypeError("Factorial is only defined for non‑negative integers");
-  }
+// hello.ts
+import * as readline from 'readline'
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n <= 1) return 1;
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
 
-  // Recursive step: n! = n * (n – 1)!
-  return n * factorial(n - 1);
+function ask(question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
 }
 
-// Example usage
-console.log(factorial(5)); // 120
-function factorialBig(n: BigInt): BigInt {
-  if (n < 0n) throw new TypeError("Must be non‑negative");
+async function main() {
+  const name = await ask('What’s your name? ')
+  const favNum = await ask('What’s your favorite number? ')
+  
+  const num = parseInt(favNum, 10)
+  const isEven = !isNaN(num) ? num % 2 === 0 : false
 
-  if (n <= 1n) return 1n;
+  console.log(`\nHello, ${name}!`);
+  console.log(`Your favorite number is ${favNum}`);
+  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
 
-  return n * factorialBig(n - 1n);
+  rl.close()
 }
 
-console.log(factorialBig(20n).toString()); // 2432902008176640000
+main()
+tsc hello.ts   # compile to JavaScript
+node hello.js
