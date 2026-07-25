@@ -1,26 +1,41 @@
-// utils.ts
-/**
- * Randomly reorder the elements of an array in place.
- * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
- *
- * @param arr The array to shuffle (mutated in place)
- * @returns The same array, now shuffled
- */
-export function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a remaining element…
-    const j = Math.floor(Math.random() * (i + 1));
+function firstRepeated(s: string): string | null {
+  const seen = new Set<string>();
 
-    // …and swap it with the current element.
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;          // first repeat!
+    }
+    seen.add(ch);
   }
-  return arr;
+
+  return null;   // no repeats
 }
-import { shuffle } from "./utils";
-
-const numbers = [1, 2, 3, 4, 5];
-shuffle(numbers);          // numbers is now in a random order
-console.log(numbers);
-
-const words = ["a", "b", "c", "d"];
-console.log(shuffle(words));  // prints a shuffled copy
+console.log(firstRepeated("abca")); // → "a"
+console.log(firstRepeated("abcdef")); // → null
+console.log(firstRepeated("hello world")); // → "l"
+function firstRepeatedCaseInsensitive(s: string): string | null {
+  const seen = new Set<string>();
+  for (const ch of s.toLowerCase()) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
+  }
+  return null;
+}
+function firstRepeatIndex(s: string): number {
+  const seen = new Set<string>();
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (seen.has(ch)) return i;   // second appearance
+    seen.add(ch);
+  }
+  return -1; // no repeat
+}
+function firstRepeatLater(s: string): string | null {
+  const seen = new Set<string>();
+  for (let i = s.length - 1; i >= 0; i--) {
+    const ch = s[i];
+    if (seen.has(ch)) return ch; // this appears again later
+    seen.add(ch);
+  }
+  return null;
+}
