@@ -1,61 +1,82 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
+function bfsLimited(start, isGoal, neighbors, maxDepth):
+    queue ← [(start, 0)]          // node and its depth
+    visited ← new Set()
 
-  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+    while queue not empty:
+        (node, depth) ← queue.dequeue()
 
-  let maxLen = 0;
-  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+        if isGoal(node): return node
 
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > maxLen) {
-          maxLen = dp[i][j];
-          endIdx = i; // end is exclusive
-        }
-      }
+        if depth == maxDepth:
+            continue   // depth limit reached – skip adding successors
+
+        for each n in neighbors(node):
+            if n not in visited:
+                visited.add(n)
+                queue.enqueue((n, depth + 1))
+
+    return null   // no goal within depth limit
+type Node<T> = T;
+
+// Parameters:
+//   start: the node to begin from
+//   isGoal: a predicate to determine if a node is the goal
+//   neighbors: a function that returns an array of adjacent nodes
+//   maxDepth: the depth cutoff (inclusive)
+//   allowRevisit: if true, visited set is ignored – useful for pure trees
+export function breadthLimitedSearch<T>(
+  start: Node<T>,
+  isGoal: (node: T) => boolean,
+  neighbors: (node: T) => Iterable<T>,
+  maxDepth: number,
+  allowRevisit: boolean = false
+): T | null {
+  // Queue holds tuples: [node, depth]
+  const queue: Array<[T, number]> = [[start, 0]];
+
+  // Only keep visited set if we care about cycles
+  const visited = new Set<T>();
+  if (!allowRevisit) visited.add(start);
+
+  while (queue.length) {
+    const [node, depth] = queue.shift() as [T, number];
+
+    if (isGoal(node)) return node;
+
+    if (depth === maxDepth) continue; // Depth limit reached – skip children
+
+    for (const child of neighbors(node)) {
+      if (!allowRevisit && visited.has(child)) continue;
+      visited.add(child);
+      queue.push([child, depth + 1]);
     }
   }
 
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+  return null; // No goal found within the depth bound
 }
-console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
-function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
-  // Ensure s2 is the shorter string to keep the inner array small
-  if (s1.length < s2.length) {
-    return longestCommonSubstringSpaceOptimized(s2, s1);
-  }
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [5, 6]],
+  [4, [7]],
+  [5, [7]],
+  [6, []],
+  [7, []],
+]);
 
-  const n = s1.length;
-  const m = s2.length;
-
-  const prev = Array(m + 1).fill(0);
-  const curr = Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let endIdx = 0;
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          endIdx = i;
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
-    // swap references for next iteration
-    [prev, curr] = [curr, prev];
-  }
-
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+function neighbors(n: number) {
+  return graph.get(n) ?? [];
 }
-console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
-console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
-console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
+
+const start = 1;
+const goal = 7;
+const maxDepth = 3; // we only want to explore up to 3 edges away
+
+const result = breadthLimitedSearch(
+  start,
+  (node) => node === goal,
+  neighbors,
+  maxDepth
+);
+
+console.log(result); // => 7 (found within 3 steps)
