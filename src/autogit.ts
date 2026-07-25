@@ -1,58 +1,82 @@
-/**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
- */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+function bfsLimited(start, isGoal, neighbors, maxDepth):
+    queue ← [(start, 0)]          // node and its depth
+    visited ← new Set()
 
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
+    while queue not empty:
+        (node, depth) ← queue.dequeue()
 
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
-  }
+        if isGoal(node): return node
 
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
+        if depth == maxDepth:
+            continue   // depth limit reached – skip adding successors
 
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
-}
+        for each n in neighbors(node):
+            if n not in visited:
+                visited.add(n)
+                queue.enqueue((n, depth + 1))
 
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
+    return null   // no goal within depth limit
+type Node<T> = T;
 
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
+// Parameters:
+//   start: the node to begin from
+//   isGoal: a predicate to determine if a node is the goal
+//   neighbors: a function that returns an array of adjacent nodes
+//   maxDepth: the depth cutoff (inclusive)
+//   allowRevisit: if true, visited set is ignored – useful for pure trees
+export function breadthLimitedSearch<T>(
+  start: Node<T>,
+  isGoal: (node: T) => boolean,
+  neighbors: (node: T) => Iterable<T>,
+  maxDepth: number,
+  allowRevisit: boolean = false
+): T | null {
+  // Queue holds tuples: [node, depth]
+  const queue: Array<[T, number]> = [[start, 0]];
 
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
+  // Only keep visited set if we care about cycles
+  const visited = new Set<T>();
+  if (!allowRevisit) visited.add(start);
 
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
+  while (queue.length) {
+    const [node, depth] = queue.shift() as [T, number];
 
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
+    if (isGoal(node)) return node;
+
+    if (depth === maxDepth) continue; // Depth limit reached – skip children
+
+    for (const child of neighbors(node)) {
+      if (!allowRevisit && visited.has(child)) continue;
+      visited.add(child);
+      queue.push([child, depth + 1]);
     }
-
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
-
-    pow10 *= 10;           // move to next digit
   }
 
-  return output;
+  return null; // No goal found within the depth bound
 }
-import { radixSort } from "./radixSort";
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [5, 6]],
+  [4, [7]],
+  [5, [7]],
+  [6, []],
+  [7, []],
+]);
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+function neighbors(n: number) {
+  return graph.get(n) ?? [];
+}
+
+const start = 1;
+const goal = 7;
+const maxDepth = 3; // we only want to explore up to 3 edges away
+
+const result = breadthLimitedSearch(
+  start,
+  (node) => node === goal,
+  neighbors,
+  maxDepth
+);
+
+console.log(result); // => 7 (found within 3 steps)
