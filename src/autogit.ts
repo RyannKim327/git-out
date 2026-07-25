@@ -1,82 +1,172 @@
-function bfsLimited(start, isGoal, neighbors, maxDepth):
-    queue ← [(start, 0)]          // node and its depth
-    visited ← new Set()
+/* ---- 1. Necessary types ------------------------------------------------- */
+type Point = { x: number; y: number };   // a grid coordinate
 
-    while queue not empty:
-        (node, depth) ← queue.dequeue()
+// A *node* is a point that also carries the data used by A*.
+class Node {
+  public f: number;   // g + h
+  public g: number;   // cost from start
+  public h: number;   // heuristic estimate to goal
 
-        if isGoal(node): return node
+  constructor(
+    public point: Point,
+    public parent: Node | null = null,
+    g = 0,
+    h = 0
+  ) {
+    this.g = g;
+    this.h = h;
+    this.f = this.g + this.h;
+  }
+}
 
-        if depth == maxDepth:
-            continue   // depth limit reached – skip adding successors
+/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
+class MinHeap<T> {
+  private items: T[] = [];
 
-        for each n in neighbors(node):
-            if n not in visited:
-                visited.add(n)
-                queue.enqueue((n, depth + 1))
+  constructor(private compare: (a: T, b: T) => number) {}
 
-    return null   // no goal within depth limit
-type Node<T> = T;
+  get size() { return this.items.length; }
 
-// Parameters:
-//   start: the node to begin from
-//   isGoal: a predicate to determine if a node is the goal
-//   neighbors: a function that returns an array of adjacent nodes
-//   maxDepth: the depth cutoff (inclusive)
-//   allowRevisit: if true, visited set is ignored – useful for pure trees
-export function breadthLimitedSearch<T>(
-  start: Node<T>,
-  isGoal: (node: T) => boolean,
-  neighbors: (node: T) => Iterable<T>,
-  maxDepth: number,
-  allowRevisit: boolean = false
-): T | null {
-  // Queue holds tuples: [node, depth]
-  const queue: Array<[T, number]> = [[start, 0]];
+  push(item: T) {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
 
-  // Only keep visited set if we care about cycles
-  const visited = new Set<T>();
-  if (!allowRevisit) visited.add(start);
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const top = this.items[0];
+    const end = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = end;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
 
-  while (queue.length) {
-    const [node, depth] = queue.shift() as [T, number];
+  private bubbleUp(idx: number) {
+    const item = this.items[idx];
+    while (idx > 0) {
+      const parentIdx = ((idx + 1) >> 1) - 1;
+      const parent = this.items[parentIdx];
+      if (this.compare(item, parent) >= 0) break;
+      this.items[idx] = parent;
+      idx = parentIdx;
+    }
+    this.items[idx] = item;
+  }
 
-    if (isGoal(node)) return node;
+  private bubbleDown(idx: number) {
+    const length = this.items.length;
+    const item = this.items[idx];
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallest = idx;
 
-    if (depth === maxDepth) continue; // Depth limit reached – skip children
+      if (
+        leftIdx < length &&
+        this.compare(this.items[leftIdx], this.items[smallest]) < 0
+      )
+        smallest = leftIdx;
 
-    for (const child of neighbors(node)) {
-      if (!allowRevisit && visited.has(child)) continue;
-      visited.add(child);
-      queue.push([child, depth + 1]);
+      if (
+        rightIdx < length &&
+        this.compare(this.items[rightIdx], this.items[smallest]) < 0
+      )
+        smallest = rightIdx;
+
+      if (smallest === idx) break;
+
+      this.items[idx] = this.items[smallest];
+      idx = smallest;
+    }
+    this.items[idx] = item;
+  }
+}
+
+/* ---- 3. Heuristic -------------------------------------------------------- */
+function manhattan(a: Point, b: Point): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+/* ---- 4. Grid utilities --------------------------------------------------- */
+// returns true if the point is inside bounds AND not blocked
+function isWalkable(
+  grid: boolean[][],
+  { x, y }: Point
+): boolean {
+  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
+}
+
+// neighbours (4‑connected, 8‑connected if you add diagonals)
+function getNeighbours(grid: boolean[][], p: Point): Point[] {
+  const { x, y } = p;
+  const candidates: Point[] = [
+    { x: x + 1, y },
+    { x: x - 1, y },
+    { x, y: y + 1 },
+    { x, y: y - 1 },
+  ];
+
+  // Uncomment if you want diagonal moves:
+  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
+
+  return candidates.filter(p => isWalkable(grid, p));
+}
+
+/* ---- 5. The main A* function --------------------------------------------- */
+function aStar(
+  grid: boolean[][],
+  start: Point,
+  goal: Point
+): Point[] | null {
+  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
+
+  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
+  const closed = new Set<string>();          // "x,y" keys
+
+  const nodeForPoint = (p: Point) =>
+    `${p.x},${p.y}`;
+
+  open.push(new Node(start, null, 0, manhattan(start, goal)));
+
+  while (open.size) {
+    const current = open.pop()!;
+    const currentKey = nodeForPoint(current.point);
+
+    if (closed.has(currentKey)) continue;     // skip stale node
+    closed.add(currentKey);
+
+    if (current.point.x === goal.x && current.point.y === goal.y) {
+      // reconstruct path
+      const path: Point[] = [];
+      let cur: Node | null = current;
+      while (cur) {
+        path.push(cur.point);
+        cur = cur.parent;
+      }
+      return path.reverse();
+    }
+
+    for (const neighbour of getNeighbours(grid, current.point)) {
+      const neighbourKey = nodeForPoint(neighbour);
+      if (closed.has(neighbourKey)) continue;
+
+      const tentativeG = current.g + 1; // cost of moving a step
+      const h = manhattan(neighbour, goal);
+      const neighbourNode = new Node(
+        neighbour,
+        current,
+        tentativeG,
+        h
+      );
+
+      open.push(neighbourNode);
     }
   }
 
-  return null; // No goal found within the depth bound
-}
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [5, 6]],
-  [4, [7]],
-  [5, [7]],
-  [6, []],
-  [7, []],
-]);
-
-function neighbors(n: number) {
-  return graph.get(n) ?? [];
+  return null; // no path
 }
 
-const start = 1;
-const goal = 7;
-const maxDepth = 3; // we only want to explore up to 3 edges away
-
-const result = breadthLimitedSearch(
-  start,
-  (node) => node === goal,
-  neighbors,
-  maxDepth
-);
-
-console.log(result); // => 7 (found within 3 steps)
+/* ---- 6. Example usage --------------------------------------------------- */
+const
