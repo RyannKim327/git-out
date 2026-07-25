@@ -1,79 +1,103 @@
-type Vertex = string | number | symbol;
-type Graph = Map<Vertex, Vertex[]>;
-/**
- * Breadth‑first traversal of a graph.
- *
- * @param graph      adjacency list
- * @param start      vertex to start from
- * @returns Array of vertices in the order they were visited
- */
-function bfs(graph: Graph, start: Vertex): Vertex[] {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const result: Vertex[] = [];
+// A generic state; `data` can be any shape you need.
+export interface BeamState<T> {
+  readonly data: T;      // the actual thing (token list, node id, etc.)
+  readonly score: number; // higher is better
+}
 
-    visited.add(start);
-    queue.push(start);
+// A function that, from one state, produces zero or more candidate states.
+export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
 
-    while (queue.length) {
-        const current = queue.shift()!;   // safe, queue is non‑empty
-        result.push(current);
+// A function that assigns a numeric score to a state.
+export type Scorer<T> = (state: BeamState<T>) => number;
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private readonly key: (x: T) => number) {}
 
-        const neighbours = graph.get(current) ?? [];
-        for (const next of neighbours) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-            }
+  private swap(i: number, j: number) {
+    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
+  }
+
+  push(item: T) {
+    this.data.push(item);
+    this.siftUp(this.data.length - 1);
+  }
+
+  pop(): T | undefined {
+    const top = this.data[0];
+    const last = this.data.pop();
+    if (!this.data.length || !last) return top;
+    this.data[0] = last;
+    this.siftDown(0);
+    return top;
+  }
+
+  size() { return this.data.length; }
+
+  private siftUp(i: number) {
+    let idx = i;
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
+      this.swap(idx, parent);
+      idx = parent;
+    }
+  }
+  private siftDown(i: number) {
+    let idx = i;
+    const n = this.data.length;
+    while (true) {
+      const l = idx * 2 + 1;
+      const r = l + 1;
+      let smallest = idx;
+      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
+      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
+    }
+  }
+
+  // For debugging / inspection
+  toArray() { return [...this.data]; }
+}
+export class BeamSearch<T> {
+  constructor(
+    private readonly expander: Expander<T>,
+    private readonly scorer: Scorer<T>,
+    private readonly beamWidth: number
+  ) {}
+
+  /**
+   * Runs beam search for a fixed number of iterations.
+   * @param startState the initial state (usually empty output)
+   * @param maxDepth how many expansion steps to take
+   * @returns an array containing the best states after the last depth
+   */
+  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
+    let current: BeamState<T>[] = [startState];
+
+    for (let depth = 0; depth < maxDepth; depth++) {
+      const candidates: BeamState<T>[] = [];
+      for (const state of current) {
+        const nextStates = this.expander(state);
+        // We expect each expander to already return scored states,
+        // but if they don't we can score them here:
+        for (const ns of nextStates) {
+          const s = this.scorer(ns);
+          candidates.push({ ...ns, score: s });
         }
+      }
+      if (candidates.length === 0) break; // nothing to expand
+      // Keep top `beamWidth` candidates
+      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
+      for (const cand of candidates) heap.push(cand);
+      current = [];
+      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
+        current.push(heap.pop()!); // `!` is safe because we checked size
+      }
     }
 
-    return result;
+    // Sort by score descending before returning just in case
+    return current.sort((a, b) => b.score - a.score);
+  }
 }
-function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const parent = new Map<Vertex, Vertex | null>();
-
-    visited.add(start);
-    queue.push(start);
-    parent.set(start, null);
-
-    while (queue.length) {
-        const current = queue.shift()!;
-
-        if (current === target) {
-            // reconstruct path
-            const path: Vertex[] = [];
-            let v: Vertex | null | undefined = target;
-            while (v !== null) {
-                path.unshift(v);
-                v = parent.get(v) ?? null;
-            }
-            return path;
-        }
-
-        for (const next of graph.get(current) ?? []) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-                parent.set(next, current);
-            }
-        }
-    }
-
-    // target unreachable
-    return null;
-}
-const g: Graph = new Map([
-    ['A', ['B', 'C']],
-    ['B', ['A', 'D', 'E']],
-    ['C', ['A', 'F']],
-    ['D', ['B']],
-    ['E', ['B', 'F']],
-    ['F', ['C', 'E']]
-]);
-
-console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
-console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
-console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
