@@ -1,36 +1,44 @@
-// A minimal, generic node type
-export interface ListNode<T> {
-  readonly value: T;
-  next: ListNode<T> | null;
-}
+// cronDemo.ts
+// ──────────────────────────────────────────────
+// Simple TS + node‑cron demo.  Every minute,
+// the job prints a timestamp and a random number.
+//
+// Requirements:
+//   npm i node-cron @types/node-cron
+//
+// Run with:
+//   npx ts-node cronDemo.ts
+// ‒ or compile (npx tsc) and exec (node cronDemo.js)
+// ──────────────────────────────────────────────
+
+import cron from 'node-cron';
 
 /**
- * Returns the middle node of a singly‑linked list.
- * If the list has an even number of nodes, it returns
- * the *second* middle node (i.e. the one that a
- * “slow‑pointer” would land on after the last move).
- *
- * @param head Head of the list – null if the list is empty.
- * @returns The middle node, or null for an empty list.
+ * Helper that gives us a nicely formatted timestamp.
  */
-export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head;
-  let fast = head;
+const now = () => new Date().toLocaleString();
 
-  // advance fast two steps, slow one step
-  while (fast !== null && fast.next !== null) {
-    slow = slow.next;
-    fast = fast.next.next;
-  }
+/**
+ * The task that will run according to the cron schedule.
+ * We generate a random integer between 1 and 1000.
+ */
+const task = () => {
+  const rand = Math.floor(Math.random() * 1000) + 1;
+  console.log(`[${now()}] Random number: ${rand}`);
+};
 
-  return slow;
-}
-// Build a list: 1 → 2 → 3 → 4 → 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
+/**
+ * Schedule the job.
+ * Cron expression: '* * * * *'
+ * └─ minute (0‑59)
+ *
+ * The job triggers at the start of every minute.
+ */
+cron.schedule('* * * * *', task, {
+  scheduled: true,
+  timezone: 'UTC',     // change to your local timezone if needed
+});
 
-const mid = middleNode(node1);
-console.log(mid?.value); // → 3
+console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
+[2026-06-17 12:34:00] Random number: 827
+[2026-06-17 12:35:00] Random number: 314
