@@ -1,53 +1,70 @@
 /**
- * Binary search for a sorted array of numbers.
+ * Builds the bad‑character shift table for a given pattern.
  *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
  */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
 
-  const mid = Math.floor((low + high) / 2);
+  // Default shift: length of the pattern
+  table.fill(m);
 
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
   }
+  return table;
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
 
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
+
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {          // full match
+      result.push(i);
+    }
+
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
+  }
+
+  return result;
 }
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
 
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+console.log(bmhSearch(haystack, needle)); // → [11]
+
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
