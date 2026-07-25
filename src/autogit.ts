@@ -1,61 +1,40 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+/**
+ * Interpolation search returns the index of `target` in `arr`,
+ * or –1 if the target is not present.
+ *
+ * @param arr   – sorted array of numbers (must be monotonic increasing)
+ * @param target – key we’re trying to locate
+ * @returns the array index of target or -1
+ */
+export function interpolationSearch(arr: number[], target: number): number {
+    if (arr.length === 0) return -1;
+
+    let low = 0;
+    let high = arr.length - 1;
+
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // Avoid division by zero when the sub‑array contains equal numbers
+        if (arr[high] === arr[low]) {
+            return arr[low] === target ? low : -1;
+        }
+
+        // Estimate the likely position of `target` within [low, high]
+        const pos = low + Math.floor(
+            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
+        );
+
+        const val = arr[pos];
+
+        if (val === target) return pos;
+        if (val < target) low = pos + 1;
+        else high = pos - 1;
+    }
+
+    return -1; // not found
 }
+import { interpolationSearch } from "./interpolationSearch";
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
-  }
-  return head
-}
+const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
-
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
-  }
-
-  // At the end, prev is the new head
-  return prev
-}
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
-  }
-
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
-
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
-
-  return newHead
-}
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
-
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+console.log(interpolationSearch(data, 42));   // → 4
+console.log(interpolationSearch(data, 100));  // → -1
