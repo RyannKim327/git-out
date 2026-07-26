@@ -1,93 +1,49 @@
 /**
- * A single node of the linked list.
- * The list is kept in the "next →" direction.
+ * Returns n! for a non‑negative integer `n`.
+ * Throws an error if `n` is negative.
  */
-class ListNode<T> {
-  public value: T;
-  public next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;   // base case
+  return n * factorialRecursive(n - 1);
 }
-
 /**
- * A queue backed by a linked list.
- * `front` points to the oldest element,
- * `rear` points to the newest one.
+ * Computes factorial using a loop. 
+ * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
  */
-export class Queue<T> {
-  private front: ListNode<T> | null = null; // head
-  private rear: ListNode<T> | null = null;  // tail
-  private _size = 0;
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  /** Check if the queue is empty */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Enqueue: add an element to the tail */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (this.rear) {
-      this.rear.next = node;   // hook it after the current tail
-    }
-    this.rear = node;           // new tail
-
-    if (!this.front) {
-      // Queue was empty before, so front must point to the new node too
-      this.front = node;
-    }
-
-    this._size++;
-  }
-
-  /** Dequeue: remove and return the front element, or null if empty */
-  dequeue(): T | null {
-    if (!this.front) return null;
-
-    const value = this.front.value;
-    this.front = this.front.next;  // move head forward
-
-    if (!this.front) {
-      // Queue just became empty – clear the tail as well
-      this.rear = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | null {
-    return this.front ? this.front.value : null;
-  }
-
-  /** Return an array of all values in order (for debugging / inspection) */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.front;
-    while (node) {
-      result.push(node.value);
-      node = node.next;
-    }
-    return result;
-  }
+  return result;
 }
-const q = new Queue<number>();
+/**
+ * Factorial returning a BigInt to avoid precision loss.
+ * Accepts `bigint | number`, but converts to BigInt internally.
+ */
+function factorialBigInt(n: number | bigint): bigint {
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
+  if (bigN <= 1n) return 1n;
+  let result = 1n;
+  for (let i = 2n; i <= bigN; i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(25));          // 15511210043330985984000000n
+console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
+const factorialCache = new Map<number, number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+function factorialMemoized(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;
+  if (factorialCache.has(n)) return factorialCache.get(n)!;
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size);      // 1
-console.log(q.toArray()); // [30]
+  const value = n * factorialMemoized(n - 1);
+  factorialCache.set(n, value);
+  return value;
+}
+const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
