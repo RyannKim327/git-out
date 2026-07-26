@@ -1,80 +1,117 @@
-/**
- * The graph is represented as an adjacency list:
- *   key     → array of neighbors that the key points to
- */
-export type Graph<T = string> = Record<T, T[]>;
-
-/**
- * Helper types for the two algorithms
- */
-type Queue<T> = T[];
-export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
-  const result: T[] = [];
-
-  // Compute in‑degree for each node
-  const indegree = new Map<T, number>();
-  for (const node in graph) {
-    indegree.set(node, 0);               // ensure all nodes appear
-    for (const nb of graph[node]) {
-      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
-    }
-  }
-
-  // Queue all nodes that have no incoming edges
-  const queue: Queue<T> = [];
-  for (const [node, deg] of indegree.entries()) {
-    if (deg === 0) queue.push(node);
-  }
-
-  while (queue.length) {
-    const node = queue.shift()!;
-    result.push(node);
-
-    // Reduce indegree for all neighbors, pushing any that reach 0
-    for (const nb of graph[node] ?? []) {
-      const deg = (indegree.get(nb) ?? 0) - 1;
-      indegree.set(nb, deg);
-      if (deg === 0) queue.push(nb);
-    }
-  }
-
-  // If we processed fewer nodes than exist, a cycle exists
-  if (result.length !== Object.keys(graph).length) {
-    throw new Error('Graph contains a cycle; topological sort impossible');
-  }
-  return result;
+type Key = string | number | object;   // anything you can reasonably stringify
+interface Pair<K, V> {
+  key: K;
+  value: V;
 }
-export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
-  const visited = new Set<T>();
-  const temp = new Set<T>();   // nodes on the recursion stack
-  const result: T[] = [];
+type Bucket<K, V> = Pair<K, V>[];
+const DEFAULT_BUCKETS = 16;
+const DEFAULT_LOAD_FACTOR = 0.75;
 
-  const visit = (node: T) => {
-    if (temp.has(node)) {
-      throw new Error('Graph contains a cycle; topological sort impossible');
+export class HashTable<K extends Key, V> {
+  private buckets: Bucket<K, V>[];
+  private count = 0;                    // number of key/value pairs
+  private loadFactor: number;
+
+  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
+    this.buckets = Array.from({ length: initialBuckets }, () => []);
+    this.loadFactor = loadFactor;
+  }
+
+  /* ---------- public API ---------- */
+
+  set(key: K, value: V): void {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    // Replace if key is already present
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
+        pair.value = value;
+        return;
+      }
     }
-    if (!visited.has(node)) {
-      temp.add(node);
-      for (const nb of graph[node] ?? []) visit(nb);
-      temp.delete(node);
-      visited.add(node);
-      result.push(node);     // post‑order push gives topological order
+
+    bucket.push({ key, value });
+    this.count++;
+
+    if (this.count / this.buckets.length > this.loadFactor) {
+      this.resize();
     }
-  };
+  }
 
-  for (const node in graph) visit(node as T);
-  // reverse because we push after exploring children
-  return result.reverse();
-}
-const myGraph: Graph<string> = {
-  A: ['B', 'C'],
-  B: ['D'],
-  C: ['D'],
-  D: [],
-};
+  get(key: K): V | undefined {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-console.log(topologicalSortKahn(myGraph));
-// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {
+        return pair.value;
+      }
+    }
+    return undefined;
+  }
 
-console.log(topologicalSortDFS(myGraph));
-// → same order (or any other valid one)
+  delete(key: K): boolean {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    for (let i = 0; i < bucket.length; i++) {
+      if (this.equals(bucket[i].key, key)) {
+        bucket.splice(i, 1);
+        this.count--;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  clear(): void {
+    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
+    this.count = 0;
+  }
+
+  get size(): number {
+    return this.count;
+  }
+
+  /* ---------- private helpers ---------- */
+
+  private bucketIndex(key: K): number {
+    // Ensure the hash is non‑negative
+    const h = this.hash(key);
+    const idx = h % this.buckets.length;
+    return idx < 0 ? idx + this.buckets.length : idx;
+  }
+
+  /* Simple but stable string hash (djb2 algorithm) */
+  private hash(key: K): number {
+    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
+    }
+    return h >>> 0; // make unsigned
+  }
+
+  private equals(a: K, b: K): boolean {
+    // For primitives, === is fine.
+    // For objects, we compare the stringified form.
+    if (typeof a === 'object' && typeof b === 'object') {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+    return a === b;
+  }
+
+  /* Grow the bucket array and re‑hash all entries */
+  private resize(): void {
+    const oldBuckets = this.buckets;
+    const newSize = oldBuckets.length * 2;
+    this.buckets = Array.from({ length: newSize }, () => []);
+    this.count = 0;
+
+    for (const bucket of oldBuckets) {
+      for (const pair of bucket)
