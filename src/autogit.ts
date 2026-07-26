@@ -1,139 +1,66 @@
-// 1️⃣ Node shape ----------------------------------------------------
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+/**
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
+ *
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
+ *
+ * The function returns everything that looks like the pattern.
+ */
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
+
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
+
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
+  }
+
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
+  }
+
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
+      }
+      if (match) result.push(i);
+    }
+
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
+    }
+  }
+
+  return result;
 }
-type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
+const text = "abracadabra";
+const pattern = "abra";
 
-const defaultComparator = <T extends number | string>(a: T, b: T) => {
-  if (a < b) return -1;
-  if (a > b) return +1;
-  return 0;
-};
-// 2️⃣ BST class ----------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-  public size = 0;
-
-  constructor(private comp: Comparator<T> = defaultComparator) {}
-
-  // -----------------------------------------------------------------
-  // Insert
-  // -----------------------------------------------------------------
-  insert(value: T): void {
-    this.root = this._insertRec(this.root, value);
-  }
-
-  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) {
-      this.size++;
-      return new TreeNode(value);
-    }
-
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._insertRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._insertRec(node.right, value);
-    } else {
-      // duplicates: decide how to handle. Here we skip insertion.
-      return node;
-    }
-    return node;
-  }
-
-  // -----------------------------------------------------------------
-  // Search
-  // -----------------------------------------------------------------
-  find(value: T): boolean {
-    let node = this.root;
-    while (node) {
-      const cmp = this.comp(value, node.value);
-      if (cmp === 0) return true;
-      node = cmp < 0 ? node.left : node.right;
-    }
-    return false;
-  }
-
-  // -----------------------------------------------------------------
-  // Remove
-  // -----------------------------------------------------------------
-  remove(value: T): void {
-    this.root = this._removeRec(this.root, value);
-  }
-
-  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null;
-
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._removeRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._removeRec(node.right, value);
-    } else {
-      // node to delete found
-      this.size--;
-
-      // case 1: no children
-      if (!node.left && !node.right) return null;
-
-      // case 2: one child
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // case 3: two children – replace by inorder predecessor
-      const pred = this._maxNode(node.left)!; // non‑null
-      node.value = pred.value;
-      node.left = this._removeRec(node.left, pred.value);
-    }
-    return node;
-  }
-
-  private _maxNode(node: TreeNode<T>): TreeNode<T> {
-    while (node.right) node = node.right;
-    return node;
-  }
-
-  // -----------------------------------------------------------------
-  // Traversal helpers – in‑order (sorted order)
-  // -----------------------------------------------------------------
-  inorder(cb: (value: T) => void): void {
-    this._inorderRec(this.root, cb);
-  }
-
-  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
-    if (!node) return;
-    this._inorderRec(node.left, cb);
-    cb(node.value);
-    this._inorderRec(node.right, cb);
-  }
-
-  // -----------------------------------------------------------------
-  // Utility: pretty print as nested brackets
-  // -----------------------------------------------------------------
-  toString(): string {
-    const parts: string[] = [];
-    this._toStringRec(this.root, parts);
-    return parts.join(' ');
-  }
-
-  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
-    if (!node) { parts.push('null'); return; }
-    parts.push(String(node.value));
-    this._toStringRec(node.left, parts);
-    this._toStringRec(node.right, parts);
-  }
-}
-const bst = new BinarySearchTree<number>();
-
-[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
-console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
-
-console.log('Contains 40? →', bst.find(40));   // true
-console.log('Contains 99? →', bst.find(99));   // false
-
-console.log('In‑order traversal:');
-bst.inorder(v => console.log(v));  
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
