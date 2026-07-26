@@ -1,50 +1,40 @@
-interface TreeNode {
-  val:  number | string   // you can put any type that fits your data
-  left?: TreeNode | null
-  right?: TreeNode | null
-}
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0;                 // empty tree -> depth 0
+/**
+ * Interpolation search returns the index of `target` in `arr`,
+ * or –1 if the target is not present.
+ *
+ * @param arr   – sorted array of numbers (must be monotonic increasing)
+ * @param target – key we’re trying to locate
+ * @returns the array index of target or -1
+ */
+export function interpolationSearch(arr: number[], target: number): number {
+    if (arr.length === 0) return -1;
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+    let low = 0;
+    let high = arr.length - 1;
 
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // Avoid division by zero when the sub‑array contains equal numbers
+        if (arr[high] === arr[low]) {
+            return arr[low] === target ? low : -1;
+        }
 
-  let depth = 0;
-  const queue: Array<TreeNode> = [root];
+        // Estimate the likely position of `target` within [low, high]
+        const pos = low + Math.floor(
+            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
+        );
 
-  while (queue.length) {
-    const levelSize = queue.length;   // nodes at the current level
-    depth++;                          // we’re about to process a whole new level
+        const val = arr[pos];
 
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;    // safe; queue is non‑empty here
-
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+        if (val === target) return pos;
+        if (val < target) low = pos + 1;
+        else high = pos - 1;
     }
-  }
 
-  return depth;
+    return -1; // not found
 }
-// Build a tiny tree:
-//        1
-//       / \
-//      2   3
-//         /
-//        4
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2 },
-  right: {
-    val: 3,
-    left: { val: 4 }
-  }
-};
+import { interpolationSearch } from "./interpolationSearch";
 
-console.log('Recursive depth:', maxDepth(tree));          // 3
-console.log('Iterative depth:', maxDepthIterative(tree)); // 3
+const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+
+console.log(interpolationSearch(data, 42));   // → 4
+console.log(interpolationSearch(data, 100));  // → -1
