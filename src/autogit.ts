@@ -1,129 +1,82 @@
-/**
- * A node in the B‑tree.
- * Keys are stored in ascending order.
- */
-class BTreeNode<K, V> {
-  // Keys and values are kept together to simplify return of key/value pairs.
-  keys: K[] = [];
-  values: V[] = [];
+function bfsLimited(start, isGoal, neighbors, maxDepth):
+    queue ← [(start, 0)]          // node and its depth
+    visited ← new Set()
 
-  // Children – null for leaf nodes.
-  children: (BTreeNode<K, V> | null)[] = [];
+    while queue not empty:
+        (node, depth) ← queue.dequeue()
 
-  // Whether this node is a leaf.
-  leaf: boolean;
+        if isGoal(node): return node
 
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
+        if depth == maxDepth:
+            continue   // depth limit reached – skip adding successors
 
-  /* Helper: find first index where key should be inserted */
-  findKey(key: K, cmp: (a: K, b: K) => number): number {
-    let idx = 0;
-    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
-      ++idx;
+        for each n in neighbors(node):
+            if n not in visited:
+                visited.add(n)
+                queue.enqueue((n, depth + 1))
+
+    return null   // no goal within depth limit
+type Node<T> = T;
+
+// Parameters:
+//   start: the node to begin from
+//   isGoal: a predicate to determine if a node is the goal
+//   neighbors: a function that returns an array of adjacent nodes
+//   maxDepth: the depth cutoff (inclusive)
+//   allowRevisit: if true, visited set is ignored – useful for pure trees
+export function breadthLimitedSearch<T>(
+  start: Node<T>,
+  isGoal: (node: T) => boolean,
+  neighbors: (node: T) => Iterable<T>,
+  maxDepth: number,
+  allowRevisit: boolean = false
+): T | null {
+  // Queue holds tuples: [node, depth]
+  const queue: Array<[T, number]> = [[start, 0]];
+
+  // Only keep visited set if we care about cycles
+  const visited = new Set<T>();
+  if (!allowRevisit) visited.add(start);
+
+  while (queue.length) {
+    const [node, depth] = queue.shift() as [T, number];
+
+    if (isGoal(node)) return node;
+
+    if (depth === maxDepth) continue; // Depth limit reached – skip children
+
+    for (const child of neighbors(node)) {
+      if (!allowRevisit && visited.has(child)) continue;
+      visited.add(child);
+      queue.push([child, depth + 1]);
     }
-    return idx;
   }
+
+  return null; // No goal found within the depth bound
 }
-/**
- * B‑Tree implementation
- *
- * @param t Minimum degree (≥ 2). Every node except the root contains
- *          at least t‑1 keys and at most 2*t‑1 keys.
- */
-class BTree<K, V> {
-  private root: BTreeNode<K, V>;
-  private readonly t: number;
-  private readonly cmp: (a: K, b: K) => number;
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [5, 6]],
+  [4, [7]],
+  [5, [7]],
+  [6, []],
+  [7, []],
+]);
 
-  constructor(
-    t: number = 2,
-    cmp?: (a: K, b: K) => number
-  ) {
-    if (t < 2) throw new Error('B‑tree order must be >= 2');
-    this.t = t;
-    this.root = new BTreeNode<K, V>(true);
-    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
+function neighbors(n: number) {
+  return graph.get(n) ?? [];
+}
 
-  /* Public API --------------------------------------------------- */
-  search(key: K): V | undefined {
-    return this._search(this.root, key);
-  }
+const start = 1;
+const goal = 7;
+const maxDepth = 3; // we only want to explore up to 3 edges away
 
-  insert(key: K, value: V): void {
-    // If root is full, create a new leaf and split
-    if (this.root.keys.length === 2 * this.t - 1) {
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this._splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this._insertNonFull(this.root, key, value);
-  }
+const result = breadthLimitedSearch(
+  start,
+  (node) => node === goal,
+  neighbors,
+  maxDepth
+);
 
-  /* Delete is optional – implement if you need it. */
-  /* delete(key: K): void { … } */
-
-  /* Iterator over all key/value pairs in order */
-  *inOrder(): IterableIterator<[K, V]> {
-    yield* this._inOrder(this.root);
-  }
-
-  /* ------------------------------------------------------------------ */
-
-  /* Core recursive operations --------------------------------------- */
-  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
-    const idx = node.findKey(key, this.cmp);
-
-    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
-      return node.values[idx];
-    }
-
-    if (node.leaf) {
-      return undefined;
-    }
-
-    return this._search(node.children[idx]!, key);
-  }
-
-  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
-    let i = node.keys.length - 1;
-
-    if (node.leaf) {
-      // Insert into leaf – shift keys/vals right of insertion point
-      const idx = node.findKey(key, this.cmp);
-      node.keys.splice(idx, 0, key);
-      node.values.splice(idx, 0, value);
-    } else {
-      // Find child to descend into
-      const idx = node.findKey(key, this.cmp);
-      const child = node.children[idx]!;
-
-      if (child.keys.length === 2 * this.t - 1) {
-        // Child is full → split then decide which side to go
-        this._splitChild(node, idx);
-
-        // After split, middle key moves up – need to decide child again
-        if (this.cmp(key, node.keys[idx]) > 0) {
-          i = idx + 1;
-        } else {
-          i = idx;
-        }
-      }
-      this._insertNonFull(node.children[i]!, key, value);
-    }
-  }
-
-  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
-    const t = this.t;
-    const child = parent.children[idx]!;
-    const newNode = new BTreeNode<K, V>(child.leaf);
-
-    // Move the second half of child’s keys/values to newNode
-    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
-    newNode.values = child.values.splice(t);
-
-    if (!child.leaf) {
-      newNode.children = child.children.splice(t
+console.log(result); // => 7 (found within 3 steps)
