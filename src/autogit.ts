@@ -1,66 +1,77 @@
 /**
- * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
+ * Median of two sorted arrays.
  *
- * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
- * The base is usually the alphabet size (e.g. 256 for extended ASCII).
- * The modulus is a large prime to keep the hash values bounded and to reduce
- * collisions.  Even if a hash match occurs, we still check the actual string
- * slice to guarantee correctness.
+ * The algorithm keeps a binary search on the smaller array.  
+ * At each step we decide how many elements from `a` belong on the left side of the
+ * partition.  The counterpart from `b` is computed so that the left side contains
+ * exactly half (or half‑plus‑one for odd total length) of the elements.
  *
- * The function returns everything that looks like the pattern.
+ * Edge cases:
+ *   * one of the arrays may be empty
+ *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
  */
-export function rabinKarp(pattern: string, text: string): number[] {
-  const result: number[] = [];
-  const M = pattern.length;          // pattern length
-  const N = text.length;             // text length
-  if (M === 0 || N < M) return result;   // nothing to find
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Ensure `a` is the shorter array to keep the binary search limits small.
+  let a = nums1;
+  let b = nums2;
+  if (a.length > b.length) [a, b] = [b, a];
 
-  const base = 256;                  // number of possible characters
-  const prime = 101;                  // a small prime as mod
+  const m = a.length;
+  const n = b.length;
+  // `halfLen` is the number of elements that must be on the left side
+  // of the partition (including the middle element when total length is odd).
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
-  let highOrder = 1;                  // base^(M-1) % prime
-  for (let i = 1; i <= M - 1; i++) {
-    highOrder = (highOrder * base) % prime;
-  }
+  let low = 0;
+  let high = m;
 
-  /* ---------- Initial hash for pattern and first window ---------- */
-  let patternHash = 0;
-  let windowHash = 0;
-  for (let i = 0; i < M; i++) {
-    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
-    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
-  }
+  while (low <= high) {
+    // Number of elements from a put on the left side
+    const i = Math.floor((low + high) / 2);
+    // Number of elements from b put on the left side
+    const j = halfLen - i;
 
-  /* ---------- Slide the window over the text ---------- */
-  for (let i = 0; i <= N - M; i++) {
-    // If hash values are equal, do a character‑by‑character check
-    if (patternHash === windowHash) {
-      let match = true;
-      for (let j = 0; j < M; j++) {
-        if (text.charAt(i + j) !== pattern.charAt(j)) {
-          match = false;
-          break;
-        }
+    const aLeft  = i === 0 ? -Infinity : a[i - 1];
+    const aRight = i === m ?  Infinity : a[i];
+
+    const bLeft  = j === 0 ? -Infinity : b[j - 1];
+    const bRight = j === n ?  Infinity : b[j];
+
+    // Partition is correct: all left elements ≤ all right elements
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // If total length is odd, the median is the max of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
       }
-      if (match) result.push(i);
-    }
-
-    // Compute hash for the next window
-    if (i < N - M) {
-      // Remove leading character
-      const leading = (text.charCodeAt(i) * highOrder) % prime;
-      windowHash = (windowHash + prime - leading) % prime; // avoid negative
-
-      // Shift left and add the trailing character
-      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
+      // If even, it’s the mean of the two middle values
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements from a on the left: move left
+      high = i - 1;
+    } else {
+      // Too few elements from a on the left: move right
+      low = i + 1;
     }
   }
 
-  return result;
+  // Should never reach here for valid input
+  throw new Error("Invalid input");
 }
-const text = "abracadabra";
-const pattern = "abra";
-
-const indices = rabinKarp(pattern, text);
-console.log(indices); // → [0, 7]
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
+console.log(findMedianSortedArrays(arr1, arr2)); // 8
+export function medianNaive(a: number[], b: number[]): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
+  }
+  const mid = Math.floor(merged.length / 2);
+  return merged.length % 2
+    ? merged[mid]
+    : (merged[mid - 1] + merged[mid]) / 2;
+}
