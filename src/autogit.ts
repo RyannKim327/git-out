@@ -1,58 +1,62 @@
 /**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
+ * A generic binary search.
+ *
+ * @param arr      Sorted array to search.
+ * @param target   Value to locate.
+ * @param compare  Optional comparator: (a, b) → negative, 0, positive.
+ *                 If omitted, the default `<`/`>` operators are used.
+ * @returns Index of `target` in `arr`, or `-1` if not found.
  */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  if (!arr.length) return -1;
+  const cmp = compare ?? defaultCompare<T>;
+  let low = 0;
+  let high = arr.length - 1;
 
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
-
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
+  while (low <= high) {
+    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
+    const comp = cmp(arr[mid], target);
+    if (comp === 0) return mid;
+    if (comp < 0) low = mid + 1;           // target is greater
+    else high = mid - 1;                  // target is smaller
   }
 
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
-
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
+  return -1;
 }
 
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
+/** Recursive version – identical semantics. */
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (!arr.length || low > high) return -1;
+  const cmp = compare ?? defaultCompare<T>;
 
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], target);
 
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
-
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
-    }
-
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
-
-    pow10 *= 10;           // move to next digit
-  }
-
-  return output;
+  if (comp === 0) return mid;
+  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
+  return binarySearchRecursive(arr, target, compare, low, mid - 1);
 }
-import { radixSort } from "./radixSort";
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+/** Fallback when you didn’t provide a comparator. */
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+const nums = [3, 7, 12, 18, 22, 33, 42];
+console.log(binarySearch(nums, 18));           // 3
+console.log(binarySearch(nums, 5));            // -1
+
+// To search objects, supply a comparator:
+const words = ['apple', 'banana', 'cherry'];
+console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
