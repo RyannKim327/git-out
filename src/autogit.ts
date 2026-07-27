@@ -1,65 +1,79 @@
-type Node<T> = { val: T; next: Node<T> | null };
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
+    visited.add(start);
+    queue.push(start);
 
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
 
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
+    }
 
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
-
-  return true;
+    return result;
 }
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev!;
-}
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
 
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
 }
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
