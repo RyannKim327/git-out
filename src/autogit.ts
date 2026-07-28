@@ -1,129 +1,117 @@
-/**
- * A node in the B‑tree.
- * Keys are stored in ascending order.
- */
-class BTreeNode<K, V> {
-  // Keys and values are kept together to simplify return of key/value pairs.
-  keys: K[] = [];
-  values: V[] = [];
-
-  // Children – null for leaf nodes.
-  children: (BTreeNode<K, V> | null)[] = [];
-
-  // Whether this node is a leaf.
-  leaf: boolean;
-
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
-
-  /* Helper: find first index where key should be inserted */
-  findKey(key: K, cmp: (a: K, b: K) => number): number {
-    let idx = 0;
-    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
-      ++idx;
-    }
-    return idx;
-  }
+type Key = string | number | object;   // anything you can reasonably stringify
+interface Pair<K, V> {
+  key: K;
+  value: V;
 }
-/**
- * B‑Tree implementation
- *
- * @param t Minimum degree (≥ 2). Every node except the root contains
- *          at least t‑1 keys and at most 2*t‑1 keys.
- */
-class BTree<K, V> {
-  private root: BTreeNode<K, V>;
-  private readonly t: number;
-  private readonly cmp: (a: K, b: K) => number;
+type Bucket<K, V> = Pair<K, V>[];
+const DEFAULT_BUCKETS = 16;
+const DEFAULT_LOAD_FACTOR = 0.75;
 
-  constructor(
-    t: number = 2,
-    cmp?: (a: K, b: K) => number
-  ) {
-    if (t < 2) throw new Error('B‑tree order must be >= 2');
-    this.t = t;
-    this.root = new BTreeNode<K, V>(true);
-    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+export class HashTable<K extends Key, V> {
+  private buckets: Bucket<K, V>[];
+  private count = 0;                    // number of key/value pairs
+  private loadFactor: number;
+
+  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
+    this.buckets = Array.from({ length: initialBuckets }, () => []);
+    this.loadFactor = loadFactor;
   }
 
-  /* Public API --------------------------------------------------- */
-  search(key: K): V | undefined {
-    return this._search(this.root, key);
-  }
+  /* ---------- public API ---------- */
 
-  insert(key: K, value: V): void {
-    // If root is full, create a new leaf and split
-    if (this.root.keys.length === 2 * this.t - 1) {
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this._splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this._insertNonFull(this.root, key, value);
-  }
+  set(key: K, value: V): void {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-  /* Delete is optional – implement if you need it. */
-  /* delete(key: K): void { … } */
-
-  /* Iterator over all key/value pairs in order */
-  *inOrder(): IterableIterator<[K, V]> {
-    yield* this._inOrder(this.root);
-  }
-
-  /* ------------------------------------------------------------------ */
-
-  /* Core recursive operations --------------------------------------- */
-  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
-    const idx = node.findKey(key, this.cmp);
-
-    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
-      return node.values[idx];
-    }
-
-    if (node.leaf) {
-      return undefined;
-    }
-
-    return this._search(node.children[idx]!, key);
-  }
-
-  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
-    let i = node.keys.length - 1;
-
-    if (node.leaf) {
-      // Insert into leaf – shift keys/vals right of insertion point
-      const idx = node.findKey(key, this.cmp);
-      node.keys.splice(idx, 0, key);
-      node.values.splice(idx, 0, value);
-    } else {
-      // Find child to descend into
-      const idx = node.findKey(key, this.cmp);
-      const child = node.children[idx]!;
-
-      if (child.keys.length === 2 * this.t - 1) {
-        // Child is full → split then decide which side to go
-        this._splitChild(node, idx);
-
-        // After split, middle key moves up – need to decide child again
-        if (this.cmp(key, node.keys[idx]) > 0) {
-          i = idx + 1;
-        } else {
-          i = idx;
-        }
+    // Replace if key is already present
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
+        pair.value = value;
+        return;
       }
-      this._insertNonFull(node.children[i]!, key, value);
+    }
+
+    bucket.push({ key, value });
+    this.count++;
+
+    if (this.count / this.buckets.length > this.loadFactor) {
+      this.resize();
     }
   }
 
-  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
-    const t = this.t;
-    const child = parent.children[idx]!;
-    const newNode = new BTreeNode<K, V>(child.leaf);
+  get(key: K): V | undefined {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-    // Move the second half of child’s keys/values to newNode
-    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
-    newNode.values = child.values.splice(t);
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {
+        return pair.value;
+      }
+    }
+    return undefined;
+  }
 
-    if (!child.leaf) {
-      newNode.children = child.children.splice(t
+  delete(key: K): boolean {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    for (let i = 0; i < bucket.length; i++) {
+      if (this.equals(bucket[i].key, key)) {
+        bucket.splice(i, 1);
+        this.count--;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  clear(): void {
+    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
+    this.count = 0;
+  }
+
+  get size(): number {
+    return this.count;
+  }
+
+  /* ---------- private helpers ---------- */
+
+  private bucketIndex(key: K): number {
+    // Ensure the hash is non‑negative
+    const h = this.hash(key);
+    const idx = h % this.buckets.length;
+    return idx < 0 ? idx + this.buckets.length : idx;
+  }
+
+  /* Simple but stable string hash (djb2 algorithm) */
+  private hash(key: K): number {
+    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
+    }
+    return h >>> 0; // make unsigned
+  }
+
+  private equals(a: K, b: K): boolean {
+    // For primitives, === is fine.
+    // For objects, we compare the stringified form.
+    if (typeof a === 'object' && typeof b === 'object') {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+    return a === b;
+  }
+
+  /* Grow the bucket array and re‑hash all entries */
+  private resize(): void {
+    const oldBuckets = this.buckets;
+    const newSize = oldBuckets.length * 2;
+    this.buckets = Array.from({ length: newSize }, () => []);
+    this.count = 0;
+
+    for (const bucket of oldBuckets) {
+      for (const pair of bucket)
