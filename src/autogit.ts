@@ -1,134 +1,129 @@
-enum Color { RED, BLACK }
+/**
+ * A node in the B‑tree.
+ * Keys are stored in ascending order.
+ */
+class BTreeNode<K, V> {
+  // Keys and values are kept together to simplify return of key/value pairs.
+  keys: K[] = [];
+  values: V[] = [];
 
-class Node<T> {
+  // Children – null for leaf nodes.
+  children: (BTreeNode<K, V> | null)[] = [];
+
+  // Whether this node is a leaf.
+  leaf: boolean;
+
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
+
+  /* Helper: find first index where key should be inserted */
+  findKey(key: K, cmp: (a: K, b: K) => number): number {
+    let idx = 0;
+    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
+      ++idx;
+    }
+    return idx;
+  }
+}
+/**
+ * B‑Tree implementation
+ *
+ * @param t Minimum degree (≥ 2). Every node except the root contains
+ *          at least t‑1 keys and at most 2*t‑1 keys.
+ */
+class BTree<K, V> {
+  private root: BTreeNode<K, V>;
+  private readonly t: number;
+  private readonly cmp: (a: K, b: K) => number;
+
   constructor(
-    public value: T,
-    public color: Color = Color.RED,
-    public left: Node<T> | null = null,
-    public right: Node<T> | null = null,
-    public parent: Node<T> | null = null
-  ) {}
-}
-export class RedBlackTree<T> {
-  private root: Node<T> | null = null;
-
-  /* Public API */
-  public insert(value: T): void { /* ... */ }
-  public delete(value: T): void { /* ... */ }
-  public find(value: T): Node<T> | null { /* ... */ }
-
-  /* private helpers… */
-  private rotateLeft(x: Node<T>): void { /* ... */ }
-  private rotateRight(x: Node<T>): void { /* ... */ }
-  private fixAfterInsertion(z: Node<T>): void { /* ... */ }
-  private fixAfterDeletion(x: Node<T>): void { /* ... */ }
-  private transplant(u: Node<T>, v: Node<T> | null): void { /* ... */ }
-  private minimum(n: Node<T> | null): Node<T> | null { /* ... */ }
-}
-public find(value: T): Node<T> | null {
-  let node = this.root;
-  while (node && node.value !== value) {
-    node = value < node.value ? node.left : node.right;
+    t: number = 2,
+    cmp?: (a: K, b: K) => number
+  ) {
+    if (t < 2) throw new Error('B‑tree order must be >= 2');
+    this.t = t;
+    this.root = new BTreeNode<K, V>(true);
+    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }
-  return node;
-}
-private rotateLeft(x: Node<T>): void {
-  const y = x.right!;
-  x.right = y.left;
-  if (y.left) y.left.parent = x;
 
-  y.parent = x.parent;
-  if (!x.parent) this.root = y;
-  else if (x === x.parent.left) x.parent.left = y;
-  else x.parent.right = y;
-
-  y.left = x;
-  x.parent = y;
-}
-
-private rotateRight(x: Node<T>): void {
-  const y = x.left!;
-  x.left = y.right;
-  if (y.right) y.right.parent = x;
-
-  y.parent = x.parent;
-  if (!x.parent) this.root = y;
-  else if (x === x.parent.right) x.parent.right = y;
-  else x.parent.left = y;
-
-  y.right = x;
-  x.parent = y;
-}
-public insert(value: T): void {
-  const z = new Node(value);
-  let y: Node<T> | null = null;
-  let x = this.root;
-
-  // Binary‑search‑tree insert
-  while (x) {
-    y = x;
-    x = value < x.value ? x.left : x.right;
+  /* Public API --------------------------------------------------- */
+  search(key: K): V | undefined {
+    return this._search(this.root, key);
   }
-  z.parent = y;
 
-  if (!y) this.root = z;
-  else if (value < y.value) y.left = z;
-  else y.right = z;
+  insert(key: K, value: V): void {
+    // If root is full, create a new leaf and split
+    if (this.root.keys.length === 2 * this.t - 1) {
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this._splitChild(newRoot, 0);
+      this.root = newRoot;
+    }
+    this._insertNonFull(this.root, key, value);
+  }
 
-  // Re‑balance
-  this.fixAfterInsertion(z);
-}
-private fixAfterInsertion(z: Node<T>): void {
-  z.color = Color.RED;
+  /* Delete is optional – implement if you need it. */
+  /* delete(key: K): void { … } */
 
-  while (z.parent && z.parent.color === Color.RED) {
-    if (z.parent === z.parent.parent!.left) { // z.parent is left child
-      const y = z.parent.parent.right; // uncle
+  /* Iterator over all key/value pairs in order */
+  *inOrder(): IterableIterator<[K, V]> {
+    yield* this._inOrder(this.root);
+  }
 
-      if (y && y.color === Color.RED) {
-        // Case 1: Uncle red
-        z.parent.color = Color.BLACK;
-        y.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        z = z.parent.parent!;
-      } else {
-        // Case 2 or 3: Uncle black
-        if (z === z.parent.right) {
-          // Case 2: triangle
-          z = z.parent;
-          this.rotateLeft(z);
+  /* ------------------------------------------------------------------ */
+
+  /* Core recursive operations --------------------------------------- */
+  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
+    const idx = node.findKey(key, this.cmp);
+
+    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
+      return node.values[idx];
+    }
+
+    if (node.leaf) {
+      return undefined;
+    }
+
+    return this._search(node.children[idx]!, key);
+  }
+
+  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
+    let i = node.keys.length - 1;
+
+    if (node.leaf) {
+      // Insert into leaf – shift keys/vals right of insertion point
+      const idx = node.findKey(key, this.cmp);
+      node.keys.splice(idx, 0, key);
+      node.values.splice(idx, 0, value);
+    } else {
+      // Find child to descend into
+      const idx = node.findKey(key, this.cmp);
+      const child = node.children[idx]!;
+
+      if (child.keys.length === 2 * this.t - 1) {
+        // Child is full → split then decide which side to go
+        this._splitChild(node, idx);
+
+        // After split, middle key moves up – need to decide child again
+        if (this.cmp(key, node.keys[idx]) > 0) {
+          i = idx + 1;
+        } else {
+          i = idx;
         }
-        // Case 3: line
-        z.parent.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        this.rotateRight(z.parent.parent!);
       }
-    } else {               // Symmetric case (z.parent is right child)
-      const y = z.parent.parent!.left; // uncle
-
-      if (y && y.color === Color.RED) {
-        z.parent.color = Color.BLACK;
-        y.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        z = z.parent.parent!;
-      } else {
-        if (z === z.parent.left) {
-          z = z.parent;
-          this.rotateRight(z);
-        }
-        z.parent.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        this.rotateLeft(z.parent.parent!);
-      }
+      this._insertNonFull(node.children[i]!, key, value);
     }
   }
 
-  this.root!.color = Color.BLACK; // Root is always black
-}
-public delete(value: T): void {
-  let z = this.find(value);
-  if (!z) return; // Not found, nothing to delete
+  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
+    const t = this.t;
+    const child = parent.children[idx]!;
+    const newNode = new BTreeNode<K, V>(child.leaf);
 
-  let y = z;
-  let yOriginalColor = y.color;
-  let x: Node<T> | null
+    // Move the second half of child’s keys/values to newNode
+    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
+    newNode.values = child.values.splice(t);
+
+    if (!child.leaf) {
+      newNode.children = child.children.splice(t
