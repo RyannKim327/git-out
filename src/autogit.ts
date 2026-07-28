@@ -1,87 +1,31 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
-}
+/**
+ * Selection sort – O(n²) time, O(1) additional space.
+ *
+ * Works on any array of items that can be compared with < and >.
+ */
+function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    // Work in place – the original array is mutated
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest is at i
+        let minIdx = i;
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
+        // Search for a smaller element in the rest of the array
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIdx]) {
+                minIdx = j;
+            }
+        }
 
-  constructor() {
-    this.root = new TrieNode();
-  }
-
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
+        // If a smaller element was found, swap it into place
+        if (minIdx !== i) {
+            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+        }
     }
-    node.isEnd = true;
-  }
-
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
-
-    dfs(node, []);
-    return results;
-  }
+    return arr;
 }
-
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
-
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
+function selectionSortCopy<T>(arr: T[]): T[] {
+    return selectionSort([...arr]); // spread creates a shallow copy
+}
