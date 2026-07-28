@@ -1,47 +1,29 @@
-/**
- * Random API – picks a random fact from https://uselessfacts.jsph.pl
- * Returns an object: { id, text, source, permalink }
- */
-async function fetchRandomFact(): Promise<{
-  id: string;
-  text: string;
-  source: string;
-  permalink: string;
-}> {
-  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
-
-  try {
-    const response = await fetch(apiUrl);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // If you’re inside an Android NativeScript environment you could
-    // show a Toast or log the result with Android SDK.
-    console.log("Random fact fetched:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch random fact:", err);
-    throw err;
-  }
+function removeVowels(text: string): string {
+  return text.replace(/[aeiou]/gi, '');
 }
-
-/**
- * Example usage – you’d call this from anywhere, e.g. on a button tap.
- */
-async function runDemo() {
-  try {
-    const fact = await fetchRandomFact();
-    // In Android, for a quick visual you could use:
-    // import { Toast } from "tns-core-modules/ui/toast";
-    // Toast.makeText(fact.text, 2000).show();
-    console.log("Fact text:", fact.text);
-  } catch {
-    // error handling already done in fetchRandomFact
+const raw = "TypeScript is amazing!";
+console.log(removeVowels(raw));
+// ↳ "TypScrpt s mzng!"
+function removeVowelsLoop(text: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u',
+                          'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of text) {
+    if (!vowels.has(ch)) result += ch;
   }
+  return result;
 }
+const tests = [
+  "Hello, world!",
+  "AEIOUaeiou",
+  "Rhythm",
+  "Café",
+  "",
+];
 
-runDemo();
+tests.forEach(t => console.log(`"${t}" → "${removeVowels(t)}"`));
+"Hello, world!" → "Hll, wrld!"
+"AEIOUaeiou" → ""
+"Rhythm" → "Rhythm"
+"Café" → "Cf"
+""
