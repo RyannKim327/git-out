@@ -1,31 +1,38 @@
-/**
- * Selection sort – O(n²) time, O(1) additional space.
- *
- * Works on any array of items that can be compared with < and >.
- */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;        // 1 and below are not prime
+  if (n <= 3) return true;         // 2 and 3 are prime
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
+  // Even numbers > 2 are composite.
+  if (n % 2 === 0) return false;
 
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
-    }
-    return arr;
+  // Check odd divisors up to sqrt(n)
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
+  }
+  return true;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
+function isPrime6(n: number): boolean {
+  if (n <= 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+  }
+  return true;
 }
+function isPrimeBig(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
+
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+  }
+  return true;
+}
+console.log(isPrime(97));   // true
+console.log(isPrime(100));  // false
+console.log(isPrime6(97));  // true
+console.log(isPrime6(100)); // false
+console.log(isPrimeBig(19n)); // true
