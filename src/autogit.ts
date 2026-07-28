@@ -1,36 +1,39 @@
-/**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
- */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
-
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
-
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
-    }
-  }
-
-  return prefix;
+function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+// Example
+console.log(reverseString('hello')); // 'olleh'
+reverseString('👋🏽'); // '🏽👋'  → wrong
+function reverseStringUnicode(s: string): string {
+  const codePoints: number[] = [];
+  for (const char of s) {
+    codePoints.push(char.codePointAt(0)!);
+  }
+  return String.fromCodePoint(...codePoints.reverse());
+}
+
+// Example
+console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
+const cp = Array.from(s).reverse().join('');
+function reverseRecursively(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseRecursively(s.slice(1)) + s[0];
+}
+function reverseLoop(s: string): string {
+  let result = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
+  }
+  return result;
+}
+function reverseBuffer(s: string): string {
+  const buf: string[] = new Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    buf[i] = s[s.length - 1 - i];
+  }
+  return buf.join('');
+}
+function reverseStringSafe(s: string): string {
+  return Array.from(s).reverse().join('');
+}
