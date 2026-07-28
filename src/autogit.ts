@@ -1,60 +1,60 @@
-/**
- * Returns true if `s` is a palindrome.
- *
- * Works in O(n) time and O(1) additional space.
- * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+/* 1️⃣  Define the shapes of the data we expect  */
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-  while (left < right) {
-    if (s[left] !== s[right]) {
-      return false;
-    }
-    left++;
-    right--;
+interface Comment {
+  postId: number;
+  id: number;
+  name: string;
+  email: string;
+  body: string;
+}
+
+/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
+async function safeGet<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
   }
-
-  return true;
+  return resp.json() as Promise<T>;
 }
 
-// Demo
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isAlphanumeric(c: string): boolean {
-  const code = c.charCodeAt(0);
-  return (
-    // 0‑9
-    (code >= 48 && code <= 57) ||
-    // A‑Z
-    (code >= 65 && code <= 90) ||
-    // a‑z
-    (code >= 97 && code <= 122)
-  );
+/* 3️⃣  Fetch a single post and its comments  */
+async function fetchPostWithComments(postId: number) {
+  const [post, comments] = await Promise.all([
+    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
+    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
+  ]);
+
+  console.log(`\n=== Post #${post.id} ===`);
+  console.log(`Title : ${post.title}`);
+  console.log(`Body  : ${post.body}\n`);
+
+  console.log(`--- ${comments.length} comment(s) ---`);
+  comments.forEach(c => {
+    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
+  });
 }
 
-function isPalindromeLoose(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip non‑alphanumerics
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
-
-    // After skipping, compare lowercase versions
-    if (
-      left < right &&
-      s[left].toLowerCase() !== s[right].toLowerCase()
-    ) {
-      return false;
-    }
-
-    left++;
-    right--;
+/* 4️⃣  Run it for a few post IDs  */
+async function main() {
+  try {
+    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
+  } catch (err) {
+    console.error('Something went wrong:', (err as Error).message);
   }
-  return true;
 }
 
-console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
+main();
+# compile to JavaScript
+npx tsc api-demo.ts
+
+# run the output
+node api-demo.js
+
+# or skip the compile step (requires ts-node)
+npx ts-node api-demo.ts
