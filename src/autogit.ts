@@ -1,46 +1,38 @@
-/**
- * Returns true if the array is sorted in ascending order.
- * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
- * If you need a custom order you can supply a comparator:
- *   (a, b) => a.value - b.value   // numeric
- *   (a, b) => a.name.localeCompare(b.name) // string property
- */
-function isSorted<T>(
-  arr: readonly T[],
-  comparator?: (a: T, b: T) => number
-): boolean {
-  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
+const numbers = [1, 2, 3, 4, 5];
 
-  const cmp = comparator ?? ((a: T, b: T) => {
-    // Default comparison: works for numbers, strings, Dates, etc.
-    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
-  });
+// remove the value 3
+const withoutThree = numbers.filter(n => n !== 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+type Person = { id: number; name: string };
+const list: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
+];
 
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // a previous element is larger → not sorted
-    }
+const target = list[1]; // the Bob object reference
+const withoutBob = list.filter(person => person !== target);
+const letters = ['a', 'b', 'c', 'd', 'e'];
+const idx = 2; // we want to drop 'c'
+
+letters.splice(idx, 1); // remove 1 element at position idx
+console.log(letters); // ['a', 'b', 'd', 'e']
+const data = [10, 20, 30, 20, 40];
+const removeVal = 20;
+
+for (let i = data.length - 1; i >= 0; i--) {
+  if (data[i] === removeVal) {
+    data.splice(i, 1);
   }
-  return true;
 }
-// Numbers
-console.log(isSorted([1, 2, 3, 4]));           // true
-console.log(isSorted([1, 3, 2, 4]));           // false
-
-// Strings
-console.log(isSorted(['a', 'b', 'c']));       // true
-
-// Dates
-console.log(
-  isSorted([
-    new Date('2020-01-01'),
-    new Date('2020-06-01'),
-    new Date('2021-01-01')
-  ])
-); // true
-
-// Objects with a specific key
-const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
-console.log(isSorted(people, (p, q) => p.age - q.age)); // true
-const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
-  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
+console.log(data); // [10, 30, 40]
+/**
+ * Removes the first occurrence of `value` from `arr`.
+ */
+function removeFirst<T>(arr: T[], value: T): T[] {
+  const idx = arr.indexOf(value);
+  if (idx === -1) return arr;          // nothing found
+  const copy = [...arr];               // keep original intact
+  copy.splice(idx, 1);
+  return copy;
+}
