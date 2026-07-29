@@ -1,86 +1,82 @@
-// -------------------------------------------
-//  heapSort.ts
-// -------------------------------------------
+function bfsLimited(start, isGoal, neighbors, maxDepth):
+    queue ← [(start, 0)]          // node and its depth
+    visited ← new Set()
 
-/**
- * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
- *
- * @param   array      The array to sort, mutated in‑place.
- * @param   cmp?       Optional comparator: (a, b) => number
- *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
- *
- * @example
- * const nums = [3, 1, 4, 1, 5, 9, 2];
- * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
- * heapSort(nums, (a, b) => b - a);  // descending order
- */
-export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
-  const compare = cmp ?? defaultCompare;
+    while queue not empty:
+        (node, depth) ← queue.dequeue()
 
-  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
-  const heapSize = array.length;
+        if isGoal(node): return node
 
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    siftDown(i, heapSize);
-  }
+        if depth == maxDepth:
+            continue   // depth limit reached – skip adding successors
 
-  /* ---------- 2. Repeatedly extract max (or min) ---------- */
-  for (let i = heapSize - 1; i > 0; i--) {
-    // Grab the root (largest element) and put it at the end
-    swap(array, 0, i);
-    // Restore heap property on the reduced heap
-    siftDown(0, i);
-  }
+        for each n in neighbors(node):
+            if n not in visited:
+                visited.add(n)
+                queue.enqueue((n, depth + 1))
 
-  /* ---------- Helper scopes ---------- */
-  function siftDown(start: number, end: number): void {
-    let root = start;
+    return null   // no goal within depth limit
+type Node<T> = T;
 
-    while (true) {
-      const left = 2 * root + 1;
-      if (left >= end) break; // no children
+// Parameters:
+//   start: the node to begin from
+//   isGoal: a predicate to determine if a node is the goal
+//   neighbors: a function that returns an array of adjacent nodes
+//   maxDepth: the depth cutoff (inclusive)
+//   allowRevisit: if true, visited set is ignored – useful for pure trees
+export function breadthLimitedSearch<T>(
+  start: Node<T>,
+  isGoal: (node: T) => boolean,
+  neighbors: (node: T) => Iterable<T>,
+  maxDepth: number,
+  allowRevisit: boolean = false
+): T | null {
+  // Queue holds tuples: [node, depth]
+  const queue: Array<[T, number]> = [[start, 0]];
 
-      const right = left + 1;
-      let candidate = left;
+  // Only keep visited set if we care about cycles
+  const visited = new Set<T>();
+  if (!allowRevisit) visited.add(start);
 
-      // Select the bigger child (or smaller if comparator flipped)
-      if (right < end && compare(array[right], array[left]) > 0) {
-        candidate = right;
-      }
+  while (queue.length) {
+    const [node, depth] = queue.shift() as [T, number];
 
-      // If root already holds the biggest, we're done
-      if (compare(array[root], array[candidate]) >= 0) break;
+    if (isGoal(node)) return node;
 
-      // Swap root with the chosen child and continue
-      swap(array, root, candidate);
-      root = candidate;
+    if (depth === maxDepth) continue; // Depth limit reached – skip children
+
+    for (const child of neighbors(node)) {
+      if (!allowRevisit && visited.has(child)) continue;
+      visited.add(child);
+      queue.push([child, depth + 1]);
     }
   }
 
-  function swap(arr: T[], i: number, j: number): void {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
+  return null; // No goal found within the depth bound
+}
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [5, 6]],
+  [4, [7]],
+  [5, [7]],
+  [6, []],
+  [7, []],
+]);
+
+function neighbors(n: number) {
+  return graph.get(n) ?? [];
 }
 
-/* ------------------------------------------- */
-/* Default comparator for `number`/`string` (ascending) */
-function defaultCompare<T>(a: T, b: T): number {
-  // If it's a number or behaves like a number
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-  // Fallback to lexical comparison for strings and others that stringify nicely
-  const sa = String(a);
-  const sb = String(b);
-  return sa < sb ? -1 : sa > sb ? 1 : 0;
-}
-import { heapSort } from "./heapSort";
+const start = 1;
+const goal = 7;
+const maxDepth = 3; // we only want to explore up to 3 edges away
 
-const data = [8, 3, 5, 4, 7, 1, 2, 6];
-heapSort(data);                // ascending
-console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+const result = breadthLimitedSearch(
+  start,
+  (node) => node === goal,
+  neighbors,
+  maxDepth
+);
 
-heapSort(data, (a, b) => b - a); // descending
-console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
+console.log(result); // => 7 (found within 3 steps)
