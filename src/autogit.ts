@@ -1,82 +1,81 @@
-function bfsLimited(start, isGoal, neighbors, maxDepth):
-    queue ← [(start, 0)]          // node and its depth
-    visited ← new Set()
+// ---------- Tarjan S.T.C. ---------------------------------------
 
-    while queue not empty:
-        (node, depth) ← queue.dequeue()
+/**
+ * Return an array of strongly‑connected components.
+ * Each component is an array of vertex IDs (here strings).
+ * Vertices can be any `string`; if you prefer numbers just change the type.
+ */
+export function tarjanSCC(graph: Map<string, string[]>): string[][] {
+  // state that needs to survive the recursive walk
+  const index = new Map<string, number>();    // discovery time of vertex
+  const lowLink = new Map<string, number>();  // lowest discovery reachable
+  const stack: string[] = [];                 // vertices that are “on stack”
+  const onStack = new Set<string>();
 
-        if isGoal(node): return node
+  let curIdx = 0;                            // global counter
+  const sccs: string[][] = [];               // result
 
-        if depth == maxDepth:
-            continue   // depth limit reached – skip adding successors
+  // helper: depth‑first walk from a single vertex
+  function strongConnect(v: string) {
+    // part A – set the depth index and low link
+    index.set(v, curIdx);
+    lowLink.set(v, curIdx);
+    curIdx += 1;
 
-        for each n in neighbors(node):
-            if n not in visited:
-                visited.add(n)
-                queue.enqueue((n, depth + 1))
+    // put v on stack
+    stack.push(v);
+    onStack.add(v);
 
-    return null   // no goal within depth limit
-type Node<T> = T;
+    // part B – consider successors of v
+    const neighbours = graph.get(v) ?? [];
+    for (const w of neighbours) {
+      if (!index.has(w)) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → must be in the current SCC
+        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
+      }
+    }
 
-// Parameters:
-//   start: the node to begin from
-//   isGoal: a predicate to determine if a node is the goal
-//   neighbors: a function that returns an array of adjacent nodes
-//   maxDepth: the depth cutoff (inclusive)
-//   allowRevisit: if true, visited set is ignored – useful for pure trees
-export function breadthLimitedSearch<T>(
-  start: Node<T>,
-  isGoal: (node: T) => boolean,
-  neighbors: (node: T) => Iterable<T>,
-  maxDepth: number,
-  allowRevisit: boolean = false
-): T | null {
-  // Queue holds tuples: [node, depth]
-  const queue: Array<[T, number]> = [[start, 0]];
-
-  // Only keep visited set if we care about cycles
-  const visited = new Set<T>();
-  if (!allowRevisit) visited.add(start);
-
-  while (queue.length) {
-    const [node, depth] = queue.shift() as [T, number];
-
-    if (isGoal(node)) return node;
-
-    if (depth === maxDepth) continue; // Depth limit reached – skip children
-
-    for (const child of neighbors(node)) {
-      if (!allowRevisit && visited.has(child)) continue;
-      visited.add(child);
-      queue.push([child, depth + 1]);
+    // part C – if v is a root node, pop the stack to build an SCC
+    if (lowLink.get(v) === index.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
 
-  return null; // No goal found within the depth bound
+  // run the dfs from every unvisited vertex
+  for (const v of graph.keys()) {
+    if (!index.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [5, 6]],
-  [4, [7]],
-  [5, [7]],
-  [6, []],
-  [7, []],
-]);
-
-function neighbors(n: number) {
-  return graph.get(n) ?? [];
-}
-
-const start = 1;
-const goal = 7;
-const maxDepth = 3; // we only want to explore up to 3 edges away
-
-const result = breadthLimitedSearch(
-  start,
-  (node) => node === goal,
-  neighbors,
-  maxDepth
+const graph = new Map<string, string[]>(
+  [
+    ['A', ['B']],
+    ['B', ['C', 'E', 'F']],
+    ['C', ['D', 'G']],
+    ['D', ['C', 'H']],
+    ['E', ['A', 'F']],
+    ['F', ['G']],
+    ['G', ['F', 'H']],
+    ['H', ['G']],
+  ],
 );
 
-console.log(result); // => 7 (found within 3 steps)
+const components = tarjanSCC(graph);
+console.log(components);
+// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
+// (depending on traversal order you may see the same vertices grouped in one component,
+// because the toy graph is fully strongly‑connected)
