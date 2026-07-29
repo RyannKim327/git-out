@@ -1,21 +1,40 @@
-function countChar(str: string, target: string): number {
-  // guard against empty target (avoids throwing on .split(''))
-  if (target.length !== 1) throw new Error('target must be a single character');
+/**
+ * Interpolation search returns the index of `target` in `arr`,
+ * or –1 if the target is not present.
+ *
+ * @param arr   – sorted array of numbers (must be monotonic increasing)
+ * @param target – key we’re trying to locate
+ * @returns the array index of target or -1
+ */
+export function interpolationSearch(arr: number[], target: number): number {
+    if (arr.length === 0) return -1;
 
-  return str.split(target).length - 1;
+    let low = 0;
+    let high = arr.length - 1;
+
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // Avoid division by zero when the sub‑array contains equal numbers
+        if (arr[high] === arr[low]) {
+            return arr[low] === target ? low : -1;
+        }
+
+        // Estimate the likely position of `target` within [low, high]
+        const pos = low + Math.floor(
+            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
+        );
+
+        const val = arr[pos];
+
+        if (val === target) return pos;
+        if (val < target) low = pos + 1;
+        else high = pos - 1;
+    }
+
+    return -1; // not found
 }
-console.log(countChar('hello world', 'l')); // 3
-function countCharRegEx(str: string, target: string): number {
-  const re = new RegExp(target, 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-console.log(countCharRegEx('banana', 'a')); // 3
-function countCharLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
-  }
-  return count;
-}
-console.log(countCharLoop('Mississippi', 'i')); // 4
+import { interpolationSearch } from "./interpolationSearch";
+
+const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+
+console.log(interpolationSearch(data, 42));   // → 4
+console.log(interpolationSearch(data, 100));  // → -1
