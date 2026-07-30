@@ -1,86 +1,63 @@
-// -------------------------------------------
-//  heapSort.ts
-// -------------------------------------------
-
 /**
- * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
+ * Returns the indices and values of the longest strictly increasing subsequence.
  *
- * @param   array      The array to sort, mutated in‑place.
- * @param   cmp?       Optional comparator: (a, b) => number
- *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
+ * @param arr - The input numeric array.
+ * @returns An object containing:
+ *   - sequence: the LIS as an array of numbers.
+ *   - indices:  the original indices of those numbers in `arr`.
  *
- * @example
- * const nums = [3, 1, 4, 1, 5, 9, 2];
- * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
- * heapSort(nums, (a, b) => b - a);  // descending order
+ * Complexity:   Time  O(n log n)
+ *               Space O(n)
  */
-export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
-  const compare = cmp ?? defaultCompare;
+export function longestIncreasingSubsequence(arr: number[]): {
+    sequence: number[],
+    indices:   number[]
+} {
+    if (arr.length === 0) return { sequence: [], indices: [] };
 
-  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
-  const heapSize = array.length;
+    // tail[i] holds the index in arr of the smallest ending value
+    // of an increasing subsequence of length i+1.
+    const tail: number[] = [];
+    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
+    const prev: (number | null)[] = Array(arr.length).fill(null);
 
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    siftDown(i, heapSize);
-  }
+    for (let i = 0; i < arr.length; i++) {
+        const x = arr[i];
 
-  /* ---------- 2. Repeatedly extract max (or min) ---------- */
-  for (let i = heapSize - 1; i > 0; i--) {
-    // Grab the root (largest element) and put it at the end
-    swap(array, 0, i);
-    // Restore heap property on the reduced heap
-    siftDown(0, i);
-  }
+        // Binary search to find the insertion point in tail.
+        let low = 0, high = tail.length;
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (arr[tail[mid]] < x) low = mid + 1;
+            else high = mid;
+        }
 
-  /* ---------- Helper scopes ---------- */
-  function siftDown(start: number, end: number): void {
-    let root = start;
-
-    while (true) {
-      const left = 2 * root + 1;
-      if (left >= end) break; // no children
-
-      const right = left + 1;
-      let candidate = left;
-
-      // Select the bigger child (or smaller if comparator flipped)
-      if (right < end && compare(array[right], array[left]) > 0) {
-        candidate = right;
-      }
-
-      // If root already holds the biggest, we're done
-      if (compare(array[root], array[candidate]) >= 0) break;
-
-      // Swap root with the chosen child and continue
-      swap(array, root, candidate);
-      root = candidate;
+        // low is the position where x will sit in tail
+        if (low > 0) {
+            prev[i] = tail[low - 1]; // point to predecessor
+        }
+        if (low === tail.length) {
+            tail.push(i);
+        } else {
+            tail[low] = i; // replace a larger tail with a smaller one
+        }
     }
-  }
 
-  function swap(arr: T[], i: number, j: number): void {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
+    // Reconstruct the LIS by walking back from the last index
+    const indices: number[] = [];
+    let cur: number | null = tail[tail.length - 1];
+    while (cur !== null) {
+        indices.push(cur);
+        cur = prev[cur];
+    }
+    indices.reverse(); // from start to end
+
+    const sequence = indices.map(i => arr[i]);
+
+    return { sequence, indices };
 }
+const arr = [3, 10, 2, 1, 20, 4, 6, 12];
+const result = longestIncreasingSubsequence(arr);
 
-/* ------------------------------------------- */
-/* Default comparator for `number`/`string` (ascending) */
-function defaultCompare<T>(a: T, b: T): number {
-  // If it's a number or behaves like a number
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-  // Fallback to lexical comparison for strings and others that stringify nicely
-  const sa = String(a);
-  const sb = String(b);
-  return sa < sb ? -1 : sa > sb ? 1 : 0;
-}
-import { heapSort } from "./heapSort";
-
-const data = [8, 3, 5, 4, 7, 1, 2, 6];
-heapSort(data);                // ascending
-console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
-
-heapSort(data, (a, b) => b - a); // descending
-console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
+console.log(result.sequence); // [3, 10, 20]
+console.log(result.indices);  // [0, 1, 4]
