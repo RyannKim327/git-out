@@ -1,79 +1,51 @@
-type Vertex = string | number | symbol;
-type Graph = Map<Vertex, Vertex[]>;
 /**
- * Breadth‑first traversal of a graph.
- *
- * @param graph      adjacency list
- * @param start      vertex to start from
- * @returns Array of vertices in the order they were visited
+ * Merge two sorted arrays into one sorted array.
+ * The comparator decides the ordering – by default it uses the `<` operator.
  */
-function bfs(graph: Graph, start: Vertex): Vertex[] {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const result: Vertex[] = [];
+function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
+  const result: T[] = [];
+  let i = 0; // index into left
+  let j = 0; // index into right
 
-    visited.add(start);
-    queue.push(start);
+  // Grab the compare function, or fall back to simple < comparison
+  const comp = compare ?? ((a: T, b: T) => a < b);
 
-    while (queue.length) {
-        const current = queue.shift()!;   // safe, queue is non‑empty
-        result.push(current);
-
-        const neighbours = graph.get(current) ?? [];
-        for (const next of neighbours) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-            }
-        }
+  while (i < left.length && j < right.length) {
+    // If left[i] comes before right[j] (or equal), push it
+    if (comp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
+  }
 
-    return result;
+  // One of the halves may still have leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
-function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const parent = new Map<Vertex, Vertex | null>();
 
-    visited.add(start);
-    queue.push(start);
-    parent.set(start, null);
+/**
+ * Recursive merge sort.  
+ * @param array The array to sort.
+ * @param compare Optional comparator that returns true if a < b.
+ */
+export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
+  // Stop recursion when array has 0 or 1 item
+  if (array.length <= 1) return array.slice(); // return a shallow copy
 
-    while (queue.length) {
-        const current = queue.shift()!;
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
 
-        if (current === target) {
-            // reconstruct path
-            const path: Vertex[] = [];
-            let v: Vertex | null | undefined = target;
-            while (v !== null) {
-                path.unshift(v);
-                v = parent.get(v) ?? null;
-            }
-            return path;
-        }
-
-        for (const next of graph.get(current) ?? []) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-                parent.set(next, current);
-            }
-        }
-    }
-
-    // target unreachable
-    return null;
+  return merge(left, right, compare);
 }
-const g: Graph = new Map([
-    ['A', ['B', 'C']],
-    ['B', ['A', 'D', 'E']],
-    ['C', ['A', 'F']],
-    ['D', ['B']],
-    ['E', ['B', 'F']],
-    ['F', ['C', 'E']]
-]);
+const numbers = [5, 3, 8, 1, 2, 9];
+const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
 
-console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
-console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
-console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
+const people = [
+  { name: "Alice", age: 32 },
+  { name: "Bob", age: 25 },
+  { name: "Eve", age: 29 }
+];
+
+// Sort by age
+const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
