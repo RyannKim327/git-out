@@ -1,30 +1,48 @@
 /**
- * Return the factorial of a non‑negative integer.
+ * Returns the majority element of the array if one exists,
+ * otherwise returns undefined.
  *
- * @param n - the number to calculate the factorial of.
- * @returns factorial(n) as a number (or BigInt if you want larger values).
- * @throws TypeError if the input is not a non‑negative integer.
+ * @param arr an array of comparable values (number, string, …)
  */
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new TypeError("Factorial is only defined for non‑negative integers");
+export function findMajority<T extends number | string | boolean>(
+  arr: T[]
+): T | undefined {
+  // 1️⃣ find a candidate
+  let candidate: T | undefined;
+  let count = 0;
+
+  for (const val of arr) {
+    if (count === 0) {
+      candidate = val;
+      count = 1;
+    } else if (val === candidate) {
+      count++;
+    } else {
+      count--;
+    }
   }
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n <= 1) return 1;
+  // 2️⃣ verify that the candidate is actually a majority
+  if (candidate === undefined) return undefined;
 
-  // Recursive step: n! = n * (n – 1)!
-  return n * factorial(n - 1);
+  let freq = 0;
+  for (const v of arr) if (v === candidate) freq++;
+
+  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
 }
+console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
+console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
+console.log(findMajority(['a', 'a', 'b']));       // → 'a'
+export function findMajorityWithMap<T>(
+  arr: T[]
+): T | undefined {
+  const map = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2);
 
-// Example usage
-console.log(factorial(5)); // 120
-function factorialBig(n: BigInt): BigInt {
-  if (n < 0n) throw new TypeError("Must be non‑negative");
-
-  if (n <= 1n) return 1n;
-
-  return n * factorialBig(n - 1n);
+  for (const v of arr) {
+    const newCount = (map.get(v) ?? 0) + 1;
+    map.set(v, newCount);
+    if (newCount > threshold) return v;
+  }
+  return undefined;
 }
-
-console.log(factorialBig(20n).toString()); // 2432902008176640000
