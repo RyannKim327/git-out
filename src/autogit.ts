@@ -1,47 +1,61 @@
-/**
- * Random API – picks a random fact from https://uselessfacts.jsph.pl
- * Returns an object: { id, text, source, permalink }
- */
-async function fetchRandomFact(): Promise<{
-  id: string;
-  text: string;
-  source: string;
-  permalink: string;
-}> {
-  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
 
-  try {
-    const response = await fetch(apiUrl);
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
+        }
+      }
     }
-
-    const data = await response.json();
-
-    // If you’re inside an Android NativeScript environment you could
-    // show a Toast or log the result with Android SDK.
-    console.log("Random fact fetched:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch random fact:", err);
-    throw err;
   }
-}
 
-/**
- * Example usage – you’d call this from anywhere, e.g. on a button tap.
- */
-async function runDemo() {
-  try {
-    const fact = await fetchRandomFact();
-    // In Android, for a quick visual you could use:
-    // import { Toast } from "tns-core-modules/ui/toast";
-    // Toast.makeText(fact.text, 2000).show();
-    console.log("Fact text:", fact.text);
-  } catch {
-    // error handling already done in fetchRandomFact
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+}
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
   }
-}
 
-runDemo();
+  const n = s1.length;
+  const m = s2.length;
+
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
+  }
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+}
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
