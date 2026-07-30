@@ -1,93 +1,47 @@
-// A node can carry any payload (`T`) and point to its neighbours.
-export interface GraphNode<T> {
-  value: T;
-  neighbours: GraphNode<T>[];
-}
 /**
- * Recursively performs depth‑limited search.
- *
- * @param node        The node you are currently visiting.
- * @param goalTest    Returns true if the current node satisfies the goal.
- * @param limit       Number of edges left before the search terminates.
- * @param visited     A set of IDs or reference values that keeps track of visited nodes.
- *                    This protects against cycles that would otherwise cause infinite recursion.
- * @returns The first node that satisfies `goalTest`, or `null`.
+ * Random API – picks a random fact from https://uselessfacts.jsph.pl
+ * Returns an object: { id, text, source, permalink }
  */
-export function depthLimitedSearchRec<T>(
-  node: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number,
-  visited: Set<GraphNode<T>> = new Set()
-): GraphNode<T> | null {
-  if (goalTest(node)) return node;
-  if (limit === 0) return null;          // reached the depth boundary
+async function fetchRandomFact(): Promise<{
+  id: string;
+  text: string;
+  source: string;
+  permalink: string;
+}> {
+  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
 
-  visited.add(node);
+  try {
+    const response = await fetch(apiUrl);
 
-  for (const neighbour of node.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-  }
 
-  return null;   // nothing found within this branch
-}
-interface StackItem<T> {
-  node: GraphNode<T>;
-  depthLeft: number;
+    const data = await response.json();
+
+    // If you’re inside an Android NativeScript environment you could
+    // show a Toast or log the result with Android SDK.
+    console.log("Random fact fetched:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch random fact:", err);
+    throw err;
+  }
 }
 
 /**
- * Iterative depth‑limited search.
+ * Example usage – you’d call this from anywhere, e.g. on a button tap.
  */
-export function depthLimitedSearchIter<T>(
-  start: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number
-): GraphNode<T> | null {
-  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
-  const visited: Set<GraphNode<T>> = new Set();
-
-  while (stack.length) {
-    const { node, depthLeft } = stack.pop()!;
-
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (goalTest(node)) return node;
-    if (depthLeft === 0) continue;           // depth boundary reached
-
-    // push neighbours onto the stack – LIFO order means the first neighbour
-    // will be processed last, mirroring the recursive DFS behaviour.
-    for (const neighbour of node.neighbours) {
-      if (!visited.has(neighbour)) {
-        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
-      }
-    }
+async function runDemo() {
+  try {
+    const fact = await fetchRandomFact();
+    // In Android, for a quick visual you could use:
+    // import { Toast } from "tns-core-modules/ui/toast";
+    // Toast.makeText(fact.text, 2000).show();
+    console.log("Fact text:", fact.text);
+  } catch {
+    // error handling already done in fetchRandomFact
   }
-
-  return null;  // no goal reached within depth limit
 }
-// --- build a simple graph
-const a: GraphNode<string> = { value: "A", neighbours: [] };
-const b: GraphNode<string> = { value: "B", neighbours: [] };
-const c: GraphNode<string> = { value: "C", neighbours: [] };
-const d: GraphNode<string> = { value: "D", neighbours: [] };
 
-a.neighbours.push(b, c);   // A -> B, C
-b.neighbours.push(d);      // B -> D
-c.neighbours.push(d);      // C -> D
-
-// --- goal: find node with value “D”
-const isGoal = (node: GraphNode<string>) => node.value === "D";
-
-// Recursive
-const resultRec = depthLimitedSearchRec(a, isGoal, 3);
-console.log("Recursive result:", resultRec?.value ?? "none");
-
-// Iterative
-const resultIter = depthLimitedSearchIter(a, isGoal, 3);
-console.log("Iterative result:", resultIter?.value ?? "none");
-Recursive result: D
-Iterative result: D
+runDemo();
