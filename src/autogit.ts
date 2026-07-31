@@ -1,73 +1,65 @@
-type Edge = {
-  from: number;   // vertex index
-  to: number;     // vertex index
-  weight: number; // can be negative
-};
+type Node<T> = { val: T; next: Node<T> | null };
 
-type BellmanFordResult = {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-};
-function bellmanFord(
-  numVertices: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
 
-  // 1. Initialisation
-  const dist = new Array(numVertices).fill(INF);
-  dist[source] = 0;
-
-  const pred = new Array<number | null>(numVertices).fill(null);
-
-  // 2. Relax edges (V‑1) times
-  for (let i = 0; i < numVertices - 1; i++) {
-    let updated = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        updated = true;
-      }
-    }
-    // early exit if no change – optional but nice optimisation
-    if (!updated) break;
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  // 3. Check for negative‑weight cycles
-  let hasNegCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-      hasNegCycle = true;
-      break;
-    }
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
+
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
   }
 
-  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
-}
-// Build a tiny graph with a negative edge that doesn't form a cycle
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 3, weight: -3 },
-  { from: 2, to: 3, weight: 2 },
-];
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
 
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
-
-console.log('Distances:', distances);          // [0, 4, 5, 1]
-console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
-console.log('Negative cycle?', hasNegativeCycle); // false
-
-// If you want to pull out the path 0 -> 1 -> 3:
-function buildPath(pred: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  for (let v = target; v !== null; v = pred[v] as number | null) {
-    path.push(v);
-  }
-  return path.reverse();
+  return true;
 }
 
-console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev!;
+}
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
+
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
+  }
+  return true;
+}
