@@ -1,73 +1,147 @@
-type Edge = {
-  from: number;   // vertex index
-  to: number;     // vertex index
-  weight: number; // can be negative
-};
+/* ──────────────────────────────────────────────────────
+ *  SkipListNode<T>
+ * ────────────────────────────────────────────────────── */
+class SkipListNode<T> {
+  /** The stored value (defined only in the “bottom” node) */
+  value?: T;
 
-type BellmanFordResult = {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-};
-function bellmanFord(
-  numVertices: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
+  /** Links to the node that follows this one at each level */
+  forward: Array<SkipListNode<T> | null> = [];
 
-  // 1. Initialisation
-  const dist = new Array(numVertices).fill(INF);
-  dist[source] = 0;
+  constructor(value?: T, level: number = 0) {
+    this.value = value;
+    this.forward = new Array(level + 1).fill(null);
+  }
+}
 
-  const pred = new Array<number | null>(numVertices).fill(null);
+/* ──────────────────────────────────────────────────────
+ *  SkipList<T>
+ * ────────────────────────────────────────────────────── */
+export class SkipList<T> {
+  /* Adjustable parameters */
+  private readonly MAX_LEVEL: number;      // upper bound for levels
+  private readonly P: number;              // probability of promoting a node
 
-  // 2. Relax edges (V‑1) times
-  for (let i = 0; i < numVertices - 1; i++) {
-    let updated = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        updated = true;
+  private level: number = 0;               // current maximum level
+  private header: SkipListNode<T>;         // sentinel start node
+
+  constructor(maxLevel: number = 16, probability: number = 0.5) {
+    this.MAX_LEVEL = maxLevel;
+    this.P        = probability;
+    this.header   = new SkipListNode<T>();
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Random level generator
+   * ────────────────────────────────────────────────────── */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+      lvl++;
+    }
+    return lvl;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Search for a value
+   * ────────────────────────────────────────────────────── */
+  search(value: T): SkipListNode<T> | null {
+    let current = this.header;
+
+    // move down each level, then across level 0
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
       }
     }
-    // early exit if no change – optional but nice optimisation
-    if (!updated) break;
+
+    current = current.forward[0]!;
+
+    if (current && current.value === value) return current;
+    return null;
   }
 
-  // 3. Check for negative‑weight cycles
-  let hasNegCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-      hasNegCycle = true;
-      break;
+  /* ──────────────────────────────────────────────────────
+   *  Insert a new value
+   * ────────────────────────────────────────────────────── */
+  insert(value: T): void {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    // find where the new node will be inserted at each level
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
+
+    // pick a random level for the new node
+    const lvl = this.randomLevel();
+
+    // raise the list’s level if necessary
+    if (lvl > this.level) {
+      for (let i = this.level + 1; i <= lvl; i++) {
+        update[i] = this.header;
+      }
+      this.level = lvl;
+    }
+
+    const newNode = new SkipListNode<T>(value, lvl);
+
+    // splice the new node into every level above 0
+    for (let i = 0; i <= lvl; i++) {
+      newNode.forward[i] = update[i].forward[i];
+      update[i].forward[i] = newNode;
     }
   }
 
-  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
-}
-// Build a tiny graph with a negative edge that doesn't form a cycle
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 3, weight: -3 },
-  { from: 2, to: 3, weight: 2 },
-];
+  /* ──────────────────────────────────────────────────────
+   *  Remove a value
+   * ────────────────────────────────────────────────────── */
+  remove(value: T): boolean {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
 
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
 
-console.log('Distances:', distances);          // [0, 4, 5, 1]
-console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
-console.log('Negative cycle?', hasNegativeCycle); // false
+    current = current.forward[0]!;
 
-// If you want to pull out the path 0 -> 1 -> 3:
-function buildPath(pred: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  for (let v = target; v !== null; v = pred[v] as number | null) {
-    path.push(v);
+    if (!current || current.value !== value) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node at every level it appears
+    for (let i = 0; i <= this.level; i++) {
+      if (update[i].forward[i] !== current) break;
+      update[i].forward[i] = current.forward[i];
+    }
+
+    // shrink the list’s level if the top levels became empty
+    while (this.level > 0 && this.header.forward[this.level] == null) {
+      this.level--;
+    }
+
+    return true;
   }
-  return path.reverse();
-}
 
-console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
+  /* ──────────────────────────────────────────────────────
+   *  Helper: convert list into an array (useful for debugging)
+   * ────────────────────────────────────────────────────── */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.header.forward[0];
+
+    while (node) {
+      result.push(node.value!);
+      node = node.forward[0];
+    }
+
+    return result;
+  }
+}
