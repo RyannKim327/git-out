@@ -1,36 +1,37 @@
-/**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
- */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
+const nums = [1, 2, 3, 2, 4, 1, 5];
 
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
+const uniq = Array.from(new Set(nums));
+// or: const uniq = [...new Set(nums)];
 
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
-    }
-  }
+console.log(uniq); // [1, 2, 3, 4, 5]
+const words = ["foo", "bar", "baz", "foo", "bar"];
 
-  return prefix;
+const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
+
+console.log(unique); // ["foo", "bar", "baz"]
+const objs = [{a: 1}, {a: 1}, {a: 2}];
+console.log([...new Set(objs)]); // keeps both {a:1} objects
+function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = keyFn(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
+console.log(uniqueObjs); // [{a:1}, {a:2}]
+const arr = [1, 2, 3, 2, 1];
+const seen = new Set<number>();
+let writeIdx = 0;
+
+for (let readIdx = 0; readIdx < arr.length; readIdx++) {
+  const value = arr[readIdx];
+  if (!seen.has(value)) {
+    seen.add(value);
+    arr[writeIdx++] = value;
+  }
+}
+
+arr.length = writeIdx; // shrink the array
+console.log(arr); // [1, 2, 3]
