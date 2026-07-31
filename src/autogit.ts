@@ -1,147 +1,134 @@
-/* ──────────────────────────────────────────────────────
- *  SkipListNode<T>
- * ────────────────────────────────────────────────────── */
-class SkipListNode<T> {
-  /** The stored value (defined only in the “bottom” node) */
-  value?: T;
+enum Color { RED, BLACK }
 
-  /** Links to the node that follows this one at each level */
-  forward: Array<SkipListNode<T> | null> = [];
+class Node<T> {
+  constructor(
+    public value: T,
+    public color: Color = Color.RED,
+    public left: Node<T> | null = null,
+    public right: Node<T> | null = null,
+    public parent: Node<T> | null = null
+  ) {}
+}
+export class RedBlackTree<T> {
+  private root: Node<T> | null = null;
 
-  constructor(value?: T, level: number = 0) {
-    this.value = value;
-    this.forward = new Array(level + 1).fill(null);
+  /* Public API */
+  public insert(value: T): void { /* ... */ }
+  public delete(value: T): void { /* ... */ }
+  public find(value: T): Node<T> | null { /* ... */ }
+
+  /* private helpers… */
+  private rotateLeft(x: Node<T>): void { /* ... */ }
+  private rotateRight(x: Node<T>): void { /* ... */ }
+  private fixAfterInsertion(z: Node<T>): void { /* ... */ }
+  private fixAfterDeletion(x: Node<T>): void { /* ... */ }
+  private transplant(u: Node<T>, v: Node<T> | null): void { /* ... */ }
+  private minimum(n: Node<T> | null): Node<T> | null { /* ... */ }
+}
+public find(value: T): Node<T> | null {
+  let node = this.root;
+  while (node && node.value !== value) {
+    node = value < node.value ? node.left : node.right;
   }
+  return node;
+}
+private rotateLeft(x: Node<T>): void {
+  const y = x.right!;
+  x.right = y.left;
+  if (y.left) y.left.parent = x;
+
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.left) x.parent.left = y;
+  else x.parent.right = y;
+
+  y.left = x;
+  x.parent = y;
 }
 
-/* ──────────────────────────────────────────────────────
- *  SkipList<T>
- * ────────────────────────────────────────────────────── */
-export class SkipList<T> {
-  /* Adjustable parameters */
-  private readonly MAX_LEVEL: number;      // upper bound for levels
-  private readonly P: number;              // probability of promoting a node
+private rotateRight(x: Node<T>): void {
+  const y = x.left!;
+  x.left = y.right;
+  if (y.right) y.right.parent = x;
 
-  private level: number = 0;               // current maximum level
-  private header: SkipListNode<T>;         // sentinel start node
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.right) x.parent.right = y;
+  else x.parent.left = y;
 
-  constructor(maxLevel: number = 16, probability: number = 0.5) {
-    this.MAX_LEVEL = maxLevel;
-    this.P        = probability;
-    this.header   = new SkipListNode<T>();
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Random level generator
-   * ────────────────────────────────────────────────────── */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
-      lvl++;
-    }
-    return lvl;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Search for a value
-   * ────────────────────────────────────────────────────── */
-  search(value: T): SkipListNode<T> | null {
-    let current = this.header;
-
-    // move down each level, then across level 0
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-    }
-
-    current = current.forward[0]!;
-
-    if (current && current.value === value) return current;
-    return null;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Insert a new value
-   * ────────────────────────────────────────────────────── */
-  insert(value: T): void {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    // find where the new node will be inserted at each level
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    // pick a random level for the new node
-    const lvl = this.randomLevel();
-
-    // raise the list’s level if necessary
-    if (lvl > this.level) {
-      for (let i = this.level + 1; i <= lvl; i++) {
-        update[i] = this.header;
-      }
-      this.level = lvl;
-    }
-
-    const newNode = new SkipListNode<T>(value, lvl);
-
-    // splice the new node into every level above 0
-    for (let i = 0; i <= lvl; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
-    }
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Remove a value
-   * ────────────────────────────────────────────────────── */
-  remove(value: T): boolean {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    current = current.forward[0]!;
-
-    if (!current || current.value !== value) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node at every level it appears
-    for (let i = 0; i <= this.level; i++) {
-      if (update[i].forward[i] !== current) break;
-      update[i].forward[i] = current.forward[i];
-    }
-
-    // shrink the list’s level if the top levels became empty
-    while (this.level > 0 && this.header.forward[this.level] == null) {
-      this.level--;
-    }
-
-    return true;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Helper: convert list into an array (useful for debugging)
-   * ────────────────────────────────────────────────────── */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.header.forward[0];
-
-    while (node) {
-      result.push(node.value!);
-      node = node.forward[0];
-    }
-
-    return result;
-  }
+  y.right = x;
+  x.parent = y;
 }
+public insert(value: T): void {
+  const z = new Node(value);
+  let y: Node<T> | null = null;
+  let x = this.root;
+
+  // Binary‑search‑tree insert
+  while (x) {
+    y = x;
+    x = value < x.value ? x.left : x.right;
+  }
+  z.parent = y;
+
+  if (!y) this.root = z;
+  else if (value < y.value) y.left = z;
+  else y.right = z;
+
+  // Re‑balance
+  this.fixAfterInsertion(z);
+}
+private fixAfterInsertion(z: Node<T>): void {
+  z.color = Color.RED;
+
+  while (z.parent && z.parent.color === Color.RED) {
+    if (z.parent === z.parent.parent!.left) { // z.parent is left child
+      const y = z.parent.parent.right; // uncle
+
+      if (y && y.color === Color.RED) {
+        // Case 1: Uncle red
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        // Case 2 or 3: Uncle black
+        if (z === z.parent.right) {
+          // Case 2: triangle
+          z = z.parent;
+          this.rotateLeft(z);
+        }
+        // Case 3: line
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateRight(z.parent.parent!);
+      }
+    } else {               // Symmetric case (z.parent is right child)
+      const y = z.parent.parent!.left; // uncle
+
+      if (y && y.color === Color.RED) {
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        if (z === z.parent.left) {
+          z = z.parent;
+          this.rotateRight(z);
+        }
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateLeft(z.parent.parent!);
+      }
+    }
+  }
+
+  this.root!.color = Color.BLACK; // Root is always black
+}
+public delete(value: T): void {
+  let z = this.find(value);
+  if (!z) return; // Not found, nothing to delete
+
+  let y = z;
+  let yOriginalColor = y.color;
+  let x: Node<T> | null
