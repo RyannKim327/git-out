@@ -1,121 +1,157 @@
-/* ───────────────────────────────────────────────────────────────────── */
-/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
- *  need other key types, but then you have to supply a comparator. -------- */
+// suffix-tree.ts
+/**
+ * Lightweight suffix tree for ASCII strings.
+ * The implementation uses Ukkonen’s algorithm
+ * and is fully typed for clarity.
+ */
 
-/*  Node ------------------------------------------------------------------- */
+/** Each node can have many outgoing edges keyed by the
+ * first character of the edge label (i.e., “transition”).
+ * The tree is rooted (root is an empty string). */
 class Node {
-  key: number;
-  height: number;
-  left: Node | null = null;
-  right: Node | null = null;
+  /** Map from a character to a child node. */
+  children = new Map<string, Node>();
 
-  constructor(key: number) {           // simple ctor
-    this.key = key;
-    this.height = 1;                    // leaf height = 1
-  }
+  /** For nodes that represent the end of a suffix,
+   *  we record the starting index of that suffix in the
+   *  original text.  The set version lets us keep
+   *  multiple suffixes that collapse at the same node.
+   */
+  suffixIndices = new Set<number>();
+
+  /* In Ukkonen, each edge is implicitly defined by the
+   * start and length on the original text.  We store
+   * those pairs on the node that is the *target* of the edge.
+   */
+  edgeStart?: number;
+  edgeEnd?: number; // inclusive
+
+  /** The parent of this node (root’s parent is null). */
+  parent: Node | null = null;
 }
 
-/*  Helper utilities -------------------------------------------------------- */
-const height = (node: Node | null): number => (node ? node.height : 0);
-
-const updateHeight = (node: Node) =>
-  node.height = 1 + Math.max(height(node.left), height(node.right));
-
-const balanceFactor = (node: Node): number =>
-  height(node.left) - height(node.right);
-
-/*  Rotations -------------------------------------------------------------- */
-function rotateRight(y: Node): Node {
-  const x = y.left!;
-  const T2 = x.right;
-
-  // rotation
-  x.right = y;
-  y.left = T2;
-
-  // update heights
-  updateHeight(y);
-  updateHeight(x);
-
-  return x;     // new root of this part
+/** A convenience wrapper around a Node that stores the
+ *  current active point used during construction.
+ */
+interface ActivePoint {
+  node: Node;     // the deepest node where the active span ends
+  edge: string;   // first character of the edge we are on
+  length: number; // how far we have walked down that edge
 }
 
-function rotateLeft(x: Node): Node {
-  const y = x.right!;
-  const T2 = y.left;
+/**
+ * The SuffixTree itself.
+ */
+export class SuffixTree {
+  /** The root of the tree.  Its edgeStart/edgeEnd are undefined
+   *  because it has no incoming edge. */
+  private _root = new Node();
 
-  // rotation
-  y.left = x;
-  x.right = T2;
+  /** The input string.  We keep it as an array of characters
+   *  for O(1) random access. */
+  private _text: string[];
 
-  // update heights
-  updateHeight(x);
-  updateHeight(y);
+  /** The active point used by Ukkonen’s algorithm. */
+  private _active: ActivePoint;
 
-  return y;     // new root
-}
+  /** The number of “steps” we have taken from the root
+   *  during construction.  This is the suffix link counter,
+   *  useful primarily for debugging but also for truncated
+   *  construction. */
+  private _remainder = 0;
 
-/*  Insert ------------------------------------------------------------------ */
-function insert(node: Node | null, key: number): Node {
-  if (!node) return new Node(key);
-
-  if (key < node.key) node.left = insert(node.left, key);
-  else if (key > node.key) node.right = insert(node.right, key);
-  else return node;           // duplicate keys rejected
-
-  /* update our own height after child changed */
-  updateHeight(node);
-
-  /* balance now */
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (key < node.left!.key)                   // Left‑Left case
-      return rotateRight(node);
-
-    // Left‑Right case
-    node.left = rotateLeft(node.left!);
-    return rotateRight(node);
+  constructor(text: string) {
+    this._text = [...text];
+    this._active = { node: this._root, edge: "", length: 0 };
+    this.build();
   }
 
-  // Right heavy
-  if (bf < -1) {
-    if (key > node.right!.key)                  // Right‑Right case
-      return rotateLeft(node);
+  /* ------------------------------------------------------------------- */
+  /*  BUILDING
+   * ------------------------------------------------------------------- */
 
-    // Right‑Left case
-    node.right = rotateRight(node.right!);
-    return rotateLeft(node);
+  private build(): void {
+    for (let pos = 0; pos < this._text.length; pos++) {
+      this._addCharacter(pos);
+    }
   }
 
-  return node;            // unchanged
-}
+  /**
+   * Extend the tree with the character at position `pos` in the input.
+   * This is Ukkonen’s “phase” step.
+   */
+  private _addCharacter(pos: number): void {
+    this._remainder++;
 
-/*  Search --------------------------------------------------------------- */
-function contains(node: Node | null, key: number): boolean {
-  while (node) {
-    if (key === node.key) return true;
-    node = key < node.key ? node.left : node.right;
-  }
-  return false;
-}
+    let lastNewNode: Node | null = null;
 
-/*  In‑order traversal for debugging -------------------------------------- */
-function inorder(node: Node | null, res: number[] = []): number[] {
-  if (!node) return res;
-  inorder(node.left, res);
-  res.push(node.key);
-  inorder(node.right, res);
-  return res;
-}
+    while (this._remainder > 0) {
+      const currentActiveEdge = this._active.edge || this._text[pos];
 
-/*  Example usage ---------------------------------------------------------- */
-let root: Node | null = null;
-[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
+      // 1. If there is no outgoing edge from the active node
+      //    that starts with the active edge character, create one.
+      if (!this._active.node.children.has(currentActiveEdge)) {
+        const leaf = this._createNode(pos, this._text.length - 1); // leaf points to suffix start
+        this._active.node.children.set(currentActiveEdge, leaf);
+        leaf.parent = this._active.node;
 
-console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
-console.log('Contains 25?', contains(root, 25));      // true
-console.log('Contains 15?', contains(root, 15));      // false
-class Node<T> { key: T; height: number; ... }
-function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this._active.node;
+          lastNewNode = null;
+        }
+      } else {
+        // 2. There is an edge; we need to walk down it.
+        const nextNode = this._active.node.children.get(currentActiveEdge)!;
+
+        // What character does the edge label have at the next position?
+        const edgeChar = this._text[nextNode.edgeStart! + this._active.length];
+
+        if (edgeChar === this._text[pos]) {
+          // 2a. The current character is already in the tree.
+          //     Just extend the active point and break.
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this._active.node;
+            lastNewNode = null;
+          }
+          this._active.length++;
+          break;
+        }
+
+        // 2b. Need to split the edge because we hit a mismatch.
+        const splitEnd = nextNode.edgeStart! + this._active.length - 1;
+        const split = this._createNode(nextNode.edgeStart!, splitEnd);
+        this._active.node.children.set(currentActiveEdge, split);
+        split.parent = this._active.node;
+
+        // 2b.i. The old child becomes a grand‑child of the new split node.
+        nextNode.edgeStart! = splitEnd + 1;
+        split.children.set(this._text[nextNode.edgeStart!], nextNode);
+        nextNode.parent = split;
+
+        // 2b.ii. Add a new leaf for the new character.
+        const leaf = this._createNode(pos, this._text.length - 1);
+        split.children.set(this._text[pos], leaf);
+        leaf.parent = split;
+
+        // 2b.iii. Link suffixes
+        if (lastNewNode) {
+          lastNewNode.suffixLink = split;
+        }
+        lastNewNode = split;
+        split.suffixLink = this._root;
+      }
+
+      // 3. Move to the next phase: decrement remainder
+      this._remainder--;
+
+      // 4. If the active node has a suffix link, follow it,
+      //    otherwise reset to root and adjust length.
+      if (this._active.node === this._root && this._active.length > 0) {
+        this._active.length--;
+        this._active.edge = this._text[pos - this._remainder + 1];
+      } else if (this._active.node !== this._root) {
+        this._active.node = this._active.node.suffixLink!;
+      } else {
+        this._active.edge = this._text[pos - this._remainder + 1];
+        this._active.length = 1;
+        this._active.node = this
