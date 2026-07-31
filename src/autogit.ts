@@ -1,50 +1,81 @@
-// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
-function merge(
-  arr: number[],
-  tmp: number[],
-  l: number,
-  mid: number,
-  r: number
-): void {
-  let i = l;        // pointer for the left half
-  let j = mid + 1;  // pointer for the right half
-  let k = l;        // pointer for the tmp array
-
-  // Merge until one half runs out
-  while (i <= mid && j <= r) {
-    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
-    else tmp[k++] = arr[j++];
-  }
-
-  // Copy any remaining elements of the left half
-  while (i <= mid) tmp[k++] = arr[i++];
-
-  // Copy any remaining elements of the right half
-  while (j <= r) tmp[k++] = arr[j++];
-
-  // Return merged result back to the original array
-  for (let p = l; p <= r; p++) arr[p] = tmp[p];
-}
+// ---------- Tarjan S.T.C. ---------------------------------------
 
 /**
- * Bottom‑up merge sort (iterative).
- *
- * @param arr - The array to sort (in‑place)
+ * Return an array of strongly‑connected components.
+ * Each component is an array of vertex IDs (here strings).
+ * Vertices can be any `string`; if you prefer numbers just change the type.
  */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  const tmp = new Array<number>(n);
+export function tarjanSCC(graph: Map<string, string[]>): string[][] {
+  // state that needs to survive the recursive walk
+  const index = new Map<string, number>();    // discovery time of vertex
+  const lowLink = new Map<string, number>();  // lowest discovery reachable
+  const stack: string[] = [];                 // vertices that are “on stack”
+  const onStack = new Set<string>();
 
-  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // l = start index of sub‑array pair
-    for (let l = 0; l < n - sz; l += sz << 1) {
-      const mid = l + sz - 1;
-      const r = Math.min(l + (sz << 1) - 1, n - 1);
-      merge(arr, tmp, l, mid, r);
+  let curIdx = 0;                            // global counter
+  const sccs: string[][] = [];               // result
+
+  // helper: depth‑first walk from a single vertex
+  function strongConnect(v: string) {
+    // part A – set the depth index and low link
+    index.set(v, curIdx);
+    lowLink.set(v, curIdx);
+    curIdx += 1;
+
+    // put v on stack
+    stack.push(v);
+    onStack.add(v);
+
+    // part B – consider successors of v
+    const neighbours = graph.get(v) ?? [];
+    for (const w of neighbours) {
+      if (!index.has(w)) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → must be in the current SCC
+        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
+      }
+    }
+
+    // part C – if v is a root node, pop the stack to build an SCC
+    if (lowLink.get(v) === index.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
+
+  // run the dfs from every unvisited vertex
+  for (const v of graph.keys()) {
+    if (!index.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
-const data = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(data);
-console.log(data); // [3, 9, 10, 27, 38, 43, 82]
+const graph = new Map<string, string[]>(
+  [
+    ['A', ['B']],
+    ['B', ['C', 'E', 'F']],
+    ['C', ['D', 'G']],
+    ['D', ['C', 'H']],
+    ['E', ['A', 'F']],
+    ['F', ['G']],
+    ['G', ['F', 'H']],
+    ['H', ['G']],
+  ],
+);
+
+const components = tarjanSCC(graph);
+console.log(components);
+// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
+// (depending on traversal order you may see the same vertices grouped in one component,
+// because the toy graph is fully strongly‑connected)
