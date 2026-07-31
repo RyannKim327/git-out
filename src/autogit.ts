@@ -1,55 +1,50 @@
-// Graph type: map from vertex id → array of neighbouring vertex ids
-type Graph = Record<string | number, Array<string | number>>;
-function dfsRecursive(
-  graph: Graph,
-  start: string | number,
-  visited = new Set<string | number>()
-): string[] {
-  // If the node has already been visited, stop here.
-  if (visited.has(start)) return [];
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
 
-  visited.add(start);           // Mark the node
-  const result = [start];        // The order in which we visit
-
-  // Recurse on all neighbours that haven't been visited yet
-  for (const neighbour of graph[start] || []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
-    }
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
   }
 
-  return result;
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
+
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
+
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
 }
-function dfsIterative(graph: Graph, start: string | number): string[] {
-  const visited = new Set<string | number>();
-  const stack: (string | number)[] = [start];
-  const order: string[] = [];
 
-  while (stack.length) {
-    const v = stack.pop()!;           // Grab the vertex on top of the stack
-    if (visited.has(v)) continue;     // Skip if we already processed it
-    visited.add(v);                    // Mark as visited
-    order.push(v);                     // Record visitation order
+/**
+ * Bottom‑up merge sort (iterative).
+ *
+ * @param arr - The array to sort (in‑place)
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
 
-    // Push neighbours onto the stack (in reverse order if you want a specific order)
-    const neighbours = graph[v] || [];
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      if (!visited.has(neighbours[i])) {
-        stack.push(neighbours[i]);
-      }
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
     }
   }
-
-  return order;
 }
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: [],
-  f: []
-};
-
-console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
-console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
