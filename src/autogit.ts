@@ -1,66 +1,40 @@
 /**
- * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
+ * Interpolation search returns the index of `target` in `arr`,
+ * or –1 if the target is not present.
  *
- * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
- * The base is usually the alphabet size (e.g. 256 for extended ASCII).
- * The modulus is a large prime to keep the hash values bounded and to reduce
- * collisions.  Even if a hash match occurs, we still check the actual string
- * slice to guarantee correctness.
- *
- * The function returns everything that looks like the pattern.
+ * @param arr   – sorted array of numbers (must be monotonic increasing)
+ * @param target – key we’re trying to locate
+ * @returns the array index of target or -1
  */
-export function rabinKarp(pattern: string, text: string): number[] {
-  const result: number[] = [];
-  const M = pattern.length;          // pattern length
-  const N = text.length;             // text length
-  if (M === 0 || N < M) return result;   // nothing to find
+export function interpolationSearch(arr: number[], target: number): number {
+    if (arr.length === 0) return -1;
 
-  const base = 256;                  // number of possible characters
-  const prime = 101;                  // a small prime as mod
+    let low = 0;
+    let high = arr.length - 1;
 
-  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
-  let highOrder = 1;                  // base^(M-1) % prime
-  for (let i = 1; i <= M - 1; i++) {
-    highOrder = (highOrder * base) % prime;
-  }
-
-  /* ---------- Initial hash for pattern and first window ---------- */
-  let patternHash = 0;
-  let windowHash = 0;
-  for (let i = 0; i < M; i++) {
-    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
-    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
-  }
-
-  /* ---------- Slide the window over the text ---------- */
-  for (let i = 0; i <= N - M; i++) {
-    // If hash values are equal, do a character‑by‑character check
-    if (patternHash === windowHash) {
-      let match = true;
-      for (let j = 0; j < M; j++) {
-        if (text.charAt(i + j) !== pattern.charAt(j)) {
-          match = false;
-          break;
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // Avoid division by zero when the sub‑array contains equal numbers
+        if (arr[high] === arr[low]) {
+            return arr[low] === target ? low : -1;
         }
-      }
-      if (match) result.push(i);
+
+        // Estimate the likely position of `target` within [low, high]
+        const pos = low + Math.floor(
+            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
+        );
+
+        const val = arr[pos];
+
+        if (val === target) return pos;
+        if (val < target) low = pos + 1;
+        else high = pos - 1;
     }
 
-    // Compute hash for the next window
-    if (i < N - M) {
-      // Remove leading character
-      const leading = (text.charCodeAt(i) * highOrder) % prime;
-      windowHash = (windowHash + prime - leading) % prime; // avoid negative
-
-      // Shift left and add the trailing character
-      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
-    }
-  }
-
-  return result;
+    return -1; // not found
 }
-const text = "abracadabra";
-const pattern = "abra";
+import { interpolationSearch } from "./interpolationSearch";
 
-const indices = rabinKarp(pattern, text);
-console.log(indices); // → [0, 7]
+const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+
+console.log(interpolationSearch(data, 42));   // → 4
+console.log(interpolationSearch(data, 100));  // → -1
