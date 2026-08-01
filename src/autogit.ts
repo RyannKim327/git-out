@@ -1,55 +1,43 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
-}
+// O(n log n) – fine for typical lengths
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false; // quick length check
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+  return sortedA === sortedB;
+};
+// O(n) – best for long strings
+const areAnagrams = (first: string, second: string): boolean => {
+  if (first.length !== second.length) return false;
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
+  const count = new Map<string, number>();
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
-
-    if (slow === fast) {        // they met → cycle detected
-      return true;
-    }
+  // Count chars from the first string
+  for (const ch of first) {
+    count.set(ch, (count.get(ch) ?? 0) + 1);
   }
 
-  // fast ran out of nodes → no cycle
-  return false;
-}
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
-
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
-  }
-  return false;
-}
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
-
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
+  // Decrement with the second string
+  for (const ch of second) {
+    const cur = count.get(ch);
+    if (!cur) return false;          // char not in first
+    if (cur === 1) count.delete(ch);
+    else count.set(ch, cur - 1);
   }
 
-  // No cycle
-  if (!fast || !fast.next) return null;
+  return count.size === 0;
+};
+// Works only for ISO‑8859‑1 / 8‑bit chars
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
 
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
+  const freq = new Int16Array(256);
+
+  for (let i = 0; i < a.length; i++) {
+    freq[a.charCodeAt(i)]++;
+    freq[b.charCodeAt(i)]--;
   }
-  return slow; // the entry point of the cycle
-}
+
+  return freq.every(v => v === 0);
+};
+console.log(areAnagrams('listen', 'silent')); // true
+console.log(areAnagrams('hello', 'world'));   // false
