@@ -1,37 +1,41 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
+  }
+  return (base * height) / 2;
 }
-/**
- * Returns the n‑th node from the end of a singly linked list,
- * or null if it doesn't exist.
- * n is 1‑based: n = 1 means the last node.
- */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-  let fast: ListNode<T> | null = head;
-  // Step 1: move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;           // n is larger than the list length
-    fast = fast.next;
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
+    }
   }
 
-  // Step 2: move both pointers until fast reaches the end
-  let slow: ListNode<T> | null = head;
-  while (fast) {
-    fast = fast.next;
-    slow = slow!.next!;
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
   }
-
-  return slow; // could be null if the list was empty
 }
-// build a tiny list: 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4: ListNode<number> = { val: 4, next: node5 };
-let node3: ListNode<number> = { val: 3, next: node4 };
-let node2: ListNode<number> = { val: 2, next: node3 };
-let node1: ListNode<number> = { val: 1, next: node2 };
 
-const thirdFromEnd = nthFromEnd(node1, 3);
-console.log(thirdFromEnd?.val); // 3
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
+  }
+  return base * height / 2;
+}
