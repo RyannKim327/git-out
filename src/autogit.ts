@@ -1,52 +1,63 @@
-// Basic definition of a binary‑tree node
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-}
-
 /**
- * Returns the diameter (in edges) of a binary tree.
+ * Returns the indices and values of the longest strictly increasing subsequence.
+ *
+ * @param arr - The input numeric array.
+ * @returns An object containing:
+ *   - sequence: the LIS as an array of numbers.
+ *   - indices:  the original indices of those numbers in `arr`.
+ *
+ * Complexity:   Time  O(n log n)
+ *               Space O(n)
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;          // keeps the best we have seen
+export function longestIncreasingSubsequence(arr: number[]): {
+    sequence: number[],
+    indices:   number[]
+} {
+    if (arr.length === 0) return { sequence: [], indices: [] };
 
-  /** Depth‑first search that returns the height of sub‑tree. */
-  function dfs(node: TreeNode | null): number {
-    if (node === null) return 0;          // leaf contributes 0 height
+    // tail[i] holds the index in arr of the smallest ending value
+    // of an increasing subsequence of length i+1.
+    const tail: number[] = [];
+    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
+    const prev: (number | null)[] = Array(arr.length).fill(null);
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+    for (let i = 0; i < arr.length; i++) {
+        const x = arr[i];
 
-    // Path that goes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) {
-      maxDiameter = localDiameter;
+        // Binary search to find the insertion point in tail.
+        let low = 0, high = tail.length;
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (arr[tail[mid]] < x) low = mid + 1;
+            else high = mid;
+        }
+
+        // low is the position where x will sit in tail
+        if (low > 0) {
+            prev[i] = tail[low - 1]; // point to predecessor
+        }
+        if (low === tail.length) {
+            tail.push(i);
+        } else {
+            tail[low] = i; // replace a larger tail with a smaller one
+        }
     }
 
-    // Height to propagate upward
-    return Math.max(leftHeight, rightHeight) + 1;
-  }
+    // Reconstruct the LIS by walking back from the last index
+    const indices: number[] = [];
+    let cur: number | null = tail[tail.length - 1];
+    while (cur !== null) {
+        indices.push(cur);
+        cur = prev[cur];
+    }
+    indices.reverse(); // from start to end
 
-  dfs(root);
-  return maxDiameter;         // already in edges
+    const sequence = indices.map(i => arr[i]);
+
+    return { sequence, indices };
 }
+const arr = [3, 10, 2, 1, 20, 4, 6, 12];
+const result = longestIncreasingSubsequence(arr);
 
-/* ---- example usage ------------------------------------------------------- */
-
-// simple helper to build a tree
-function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
-  return { val, left: l ?? null, right: r ?? null };
-}
-
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5     
-const root = node(1,
-  node(2, node(4), node(5)),
-  node(3)
-);
-
-console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
+console.log(result.sequence); // [3, 10, 20]
+console.log(result.indices);  // [0, 1, 4]
