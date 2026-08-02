@@ -1,65 +1,26 @@
-type Node<T> = { val: T; next: Node<T> | null };
-
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
-
-  return true;
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
+  const total = nums.reduce((sum, n) => sum + n, 0);
+  return total / nums.length;
 }
-
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;
+  let sum = 0;
+  for (const n of nums) {
+    sum += n;
   }
-  return prev!;
+  return sum / nums.length;
 }
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
+function mean<T extends number>(nums: T[]): number {
+  if (nums.length === 0) return NaN;
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
 }
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
-
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
+function meanSafe(nums: Array<number | null | undefined>): number {
+  const cleaned = nums.filter((n): n is number => typeof n === "number");
+  if (cleaned.length === 0) return NaN;
+  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
 }
+const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
+console.log(mean([2, 4, 6]));   // 4
+console.log(mean([]));          // NaN
+console.log(meanSafe([1, 2, null, 4])); // 2.333...
