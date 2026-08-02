@@ -1,25 +1,41 @@
-/** 
- * Returns true if `text` is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores everything that’s not a letter or digit
- */
-function isPalindrome(text: string): boolean {
-  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
-  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+function firstRepeated(s: string): string | null {
+  const seen = new Set<string>();
 
-  // 2. Compare the string with its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-// Usage examples
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan...'));  // true
-console.log(isPalindrome('Hello world'));      // false
-function isPalindromeSimple(s: string): boolean {
-  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
-    if (s[i] !== s[j]) return false;
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;          // first repeat!
+    }
+    seen.add(ch);
   }
-  return true;
+
+  return null;   // no repeats
+}
+console.log(firstRepeated("abca")); // → "a"
+console.log(firstRepeated("abcdef")); // → null
+console.log(firstRepeated("hello world")); // → "l"
+function firstRepeatedCaseInsensitive(s: string): string | null {
+  const seen = new Set<string>();
+  for (const ch of s.toLowerCase()) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
+  }
+  return null;
+}
+function firstRepeatIndex(s: string): number {
+  const seen = new Set<string>();
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (seen.has(ch)) return i;   // second appearance
+    seen.add(ch);
+  }
+  return -1; // no repeat
+}
+function firstRepeatLater(s: string): string | null {
+  const seen = new Set<string>();
+  for (let i = s.length - 1; i >= 0; i--) {
+    const ch = s[i];
+    if (seen.has(ch)) return ch; // this appears again later
+    seen.add(ch);
+  }
+  return null;
 }
