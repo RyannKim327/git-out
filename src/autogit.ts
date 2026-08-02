@@ -1,37 +1,41 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
-}
-/**
- * Returns the n‑th node from the end of a singly linked list,
- * or null if it doesn't exist.
- * n is 1‑based: n = 1 means the last node.
- */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;            // invalid n – feel free to adjust
+function firstRepeated(s: string): string | null {
+  const seen = new Set<string>();
 
-  let fast: ListNode<T> | null = head;
-  // Step 1: move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;           // n is larger than the list length
-    fast = fast.next;
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;          // first repeat!
+    }
+    seen.add(ch);
   }
 
-  // Step 2: move both pointers until fast reaches the end
-  let slow: ListNode<T> | null = head;
-  while (fast) {
-    fast = fast.next;
-    slow = slow!.next!;
-  }
-
-  return slow; // could be null if the list was empty
+  return null;   // no repeats
 }
-// build a tiny list: 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4: ListNode<number> = { val: 4, next: node5 };
-let node3: ListNode<number> = { val: 3, next: node4 };
-let node2: ListNode<number> = { val: 2, next: node3 };
-let node1: ListNode<number> = { val: 1, next: node2 };
-
-const thirdFromEnd = nthFromEnd(node1, 3);
-console.log(thirdFromEnd?.val); // 3
+console.log(firstRepeated("abca")); // → "a"
+console.log(firstRepeated("abcdef")); // → null
+console.log(firstRepeated("hello world")); // → "l"
+function firstRepeatedCaseInsensitive(s: string): string | null {
+  const seen = new Set<string>();
+  for (const ch of s.toLowerCase()) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
+  }
+  return null;
+}
+function firstRepeatIndex(s: string): number {
+  const seen = new Set<string>();
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (seen.has(ch)) return i;   // second appearance
+    seen.add(ch);
+  }
+  return -1; // no repeat
+}
+function firstRepeatLater(s: string): string | null {
+  const seen = new Set<string>();
+  for (let i = s.length - 1; i >= 0; i--) {
+    const ch = s[i];
+    if (seen.has(ch)) return ch; // this appears again later
+    seen.add(ch);
+  }
+  return null;
+}
