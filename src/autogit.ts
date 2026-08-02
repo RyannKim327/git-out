@@ -1,36 +1,55 @@
-/**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
- */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
+// Node definition – feel free to replace this with your own class/struct
+interface ListNode<T = unknown> {
+  val: T;
+  next: ListNode<T> | null;
+}
 
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  // Two pointers that start at the head
+  let slow: ListNode<T> | null = head;   // moves 1 step
+  let fast: ListNode<T> | null = head;   // moves 2 steps
 
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
+  while (fast && fast.next) {
+    slow = slow!.next;          // advance one step
+    fast = fast.next.next;      // advance two steps
+
+    if (slow === fast) {        // they met → cycle detected
+      return true;
     }
   }
 
-  return prefix;
+  // fast ran out of nodes → no cycle
+  return false;
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const seen = new Set<ListNode<T>>();
+  let current = head;
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+  while (current) {
+    if (seen.has(current)) return true; // loop!
+    seen.add(current);
+    current = current.next;
+  }
+  return false;
+}
+function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head, fast = head;
+
+  // First, detect a cycle
+  while (fast && fast.next) {
+    slow = slow!.next;
+    fast = fast.next.next;
+    if (slow === fast) break;
+  }
+
+  // No cycle
+  if (!fast || !fast.next) return null;
+
+  // Move one pointer to the head; keep other where they met
+  slow = head;
+  while (slow !== fast) {
+    slow = slow!.next;
+    fast = fast!.next;
+  }
+  return slow; // the entry point of the cycle
+}
