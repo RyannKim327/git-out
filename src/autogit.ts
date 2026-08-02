@@ -1,55 +1,65 @@
-// Graph type: map from vertex id → array of neighbouring vertex ids
-type Graph = Record<string | number, Array<string | number>>;
-function dfsRecursive(
-  graph: Graph,
-  start: string | number,
-  visited = new Set<string | number>()
-): string[] {
-  // If the node has already been visited, stop here.
-  if (visited.has(start)) return [];
+/**
+ * Computes the LPS array for a given pattern.
+ * For each index i, lps[i] is the length of the longest
+ * proper prefix that is also a suffix for pattern[0..i].
+ */
+function buildLps(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;          // length of previous longest prefix suffix
+    let i = 1;
 
-  visited.add(start);           // Mark the node
-  const result = [start];        // The order in which we visit
-
-  // Recurse on all neighbours that haven't been visited yet
-  for (const neighbour of graph[start] || []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // try the previous longest prefix suffix
+                length = lps[length - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
     }
-  }
-
-  return result;
+    return lps;
 }
-function dfsIterative(graph: Graph, start: string | number): string[] {
-  const visited = new Set<string | number>();
-  const stack: (string | number)[] = [start];
-  const order: string[] = [];
+/**
+ * Returns the starting indices of all occurrences of `pattern`
+ * inside `text`. If the pattern is empty, an empty array is returned.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
 
-  while (stack.length) {
-    const v = stack.pop()!;           // Grab the vertex on top of the stack
-    if (visited.has(v)) continue;     // Skip if we already processed it
-    visited.add(v);                    // Mark as visited
-    order.push(v);                     // Record visitation order
+    const lps = buildLps(pattern);
+    const result: number[] = [];
 
-    // Push neighbours onto the stack (in reverse order if you want a specific order)
-    const neighbours = graph[v] || [];
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      if (!visited.has(neighbours[i])) {
-        stack.push(neighbours[i]);
-      }
+    let i = 0; // index for text
+    let j = 0; // index for pattern
+
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++; j++;
+            if (j === pattern.length) {
+                // match found; record start index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else {
+            if (j !== 0) {
+                // fall back in pattern
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
     }
-  }
-
-  return order;
+    return result;
 }
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: [],
-  f: []
-};
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
 
-console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
-console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
+console.log(kmpSearch(haystack, needle));
+// → [10]
