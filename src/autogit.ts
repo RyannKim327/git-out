@@ -1,31 +1,16 @@
-/**
- * Selection sort – O(n²) time, O(1) additional space.
- *
- * Works on any array of items that can be compared with < and >.
- */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+// 1. Using the Number constructor
+const val1 = Number("42");          // 42
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
+// 2. Using unary plus
+const val2 = +"42";                 // 42
 
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
-    }
-    return arr;
+// 3. Using parseInt (base 10 recommended)
+const val3 = parseInt("42", 10);    // 42
+
+// 4. Using parseFloat for decimals
+const val4 = parseFloat("3.14");    // 3.14
+function safeParse(str: string): number | null {
+  const n = Number(str);
+  return Number.isNaN(n) ? null : n;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
-}
+const i = Math.floor(parseFloat("3.9")); // 3
