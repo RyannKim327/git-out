@@ -1,65 +1,79 @@
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
 /**
- * Computes the LPS array for a given pattern.
- * For each index i, lps[i] is the length of the longest
- * proper prefix that is also a suffix for pattern[0..i].
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
  */
-function buildLps(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;          // length of previous longest prefix suffix
-    let i = 1;
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // try the previous longest prefix suffix
-                length = lps[length - 1];
-            } else {
-                lps[i] = 0;
-                i++;
+    visited.add(start);
+    queue.push(start);
+
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
             }
         }
     }
-    return lps;
-}
-/**
- * Returns the starting indices of all occurrences of `pattern`
- * inside `text`. If the pattern is empty, an empty array is returned.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
 
-    const lps = buildLps(pattern);
-    const result: number[] = [];
-
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++; j++;
-            if (j === pattern.length) {
-                // match found; record start index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // fall back in pattern
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
-    }
     return result;
 }
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-console.log(kmpSearch(haystack, needle));
-// → [10]
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
