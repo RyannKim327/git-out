@@ -1,35 +1,28 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
+// Simple random user fetcher with axios (TypeScript)
+
+import axios from 'axios';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  phone: string;
+  website: string;
 }
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
-  let current = head;
 
-  while (current) {
-    count++;
-    current = current.next;
-  }
-
-  return count;
-}
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-class LinkedList<T> {
-  private head?: Node<T>;
-
-  // ... push, pop, etc.
-
-  size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
+async function fetchRandomUser(): Promise<User | undefined> {
+  try {
+    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
+  } catch (error) {
+    console.error('Error fetching users:', error);
   }
 }
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
 
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+fetchRandomUser().then(user => {
+  if (user) {
+    console.log(`🎲 Random user: ${user.name} (${user.email})`);
+  }
+});
