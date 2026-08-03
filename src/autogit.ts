@@ -1,28 +1,36 @@
-// Simple random user fetcher with axios (TypeScript)
-
-import axios from 'axios';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  username: string;
-  phone: string;
-  website: string;
+// A minimal, generic node type
+export interface ListNode<T> {
+  readonly value: T;
+  next: ListNode<T> | null;
 }
 
-async function fetchRandomUser(): Promise<User | undefined> {
-  try {
-    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
-    const randomIndex = Math.floor(Math.random() * data.length);
-    return data[randomIndex];
-  } catch (error) {
-    console.error('Error fetching users:', error);
-  }
-}
+/**
+ * Returns the middle node of a singly‑linked list.
+ * If the list has an even number of nodes, it returns
+ * the *second* middle node (i.e. the one that a
+ * “slow‑pointer” would land on after the last move).
+ *
+ * @param head Head of the list – null if the list is empty.
+ * @returns The middle node, or null for an empty list.
+ */
+export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head;
+  let fast = head;
 
-fetchRandomUser().then(user => {
-  if (user) {
-    console.log(`🎲 Random user: ${user.name} (${user.email})`);
+  // advance fast two steps, slow one step
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next;
+    fast = fast.next.next;
   }
-});
+
+  return slow;
+}
+// Build a list: 1 → 2 → 3 → 4 → 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+const mid = middleNode(node1);
+console.log(mid?.value); // → 3
