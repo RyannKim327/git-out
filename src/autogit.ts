@@ -1,27 +1,36 @@
 /**
- * Bubble‑sort in place.
- * Works on arrays of any type that can be compared with the `<` operator.
+ * Returns the longest common prefix of the supplied strings.
+ * If the array is empty, or if no common prefix exists, an empty string is returned.
  */
-export function bubbleSort<T>(arr: T[]): void {
-  let swapped: boolean;
+export function longestCommonPrefix(arr: readonly string[]): string {
+  if (arr.length === 0) return '';
 
-  // keep looping until a pass produces no swaps
-  do {
-    swapped = false;
-    for (let i = 0; i < arr.length - 1; i++) {
-      // compare adjacent elements
-      if (arr[i] > arr[i + 1]) {
-        // swap them
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;      // a swap happened, so we might need another pass
-      }
+  // We’ll be comparing the first element with every other one.
+  // Once a mismatch is found we stop expanding the prefix.
+  let prefix = arr[0];
+
+  for (let i = 1; i < arr.length; ++i) {
+    // Shorten the prefix until it matches the start of arr[i]
+    while (arr[i].indexOf(prefix) !== 0) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';
     }
-  } while (swapped);
-}
-const numbers = [5, 3, 8, 4, 1];
-bubbleSort(numbers);
-console.log(numbers); // → [1, 3, 4, 5, 8]
+  }
 
-const strings = ["pear", "apple", "banana"];
-bubbleSort(strings);
-console.log(strings); // → ["apple", "banana", "pear"]
+  return prefix;
+}
+const words = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(words)); // prints "fl"
+
+const mix = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(mix));   // prints ""
+export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
+  (prev, curr) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
+    }
+    return prev.slice(0, i);
+  },
+  arr[0] ?? ''
+);
