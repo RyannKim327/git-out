@@ -1,30 +1,93 @@
 /**
- * Return the factorial of a non‑negative integer.
- *
- * @param n - the number to calculate the factorial of.
- * @returns factorial(n) as a number (or BigInt if you want larger values).
- * @throws TypeError if the input is not a non‑negative integer.
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
  */
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new TypeError("Factorial is only defined for non‑negative integers");
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+}
+
+/**
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
+ */
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
+
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
   }
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n <= 1) return 1;
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
 
-  // Recursive step: n! = n * (n – 1)!
-  return n * factorial(n - 1);
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
+    }
+    this.rear = node;           // new tail
+
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
+    }
+
+    this._size++;
+  }
+
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
+
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
+
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
+    }
+    return result;
+  }
 }
+const q = new Queue<number>();
 
-// Example usage
-console.log(factorial(5)); // 120
-function factorialBig(n: BigInt): BigInt {
-  if (n < 0n) throw new TypeError("Must be non‑negative");
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
 
-  if (n <= 1n) return 1n;
-
-  return n * factorialBig(n - 1n);
-}
-
-console.log(factorialBig(20n).toString()); // 2432902008176640000
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
