@@ -1,65 +1,43 @@
 /**
- * Computes the LPS array for a given pattern.
- * For each index i, lps[i] is the length of the longest
- * proper prefix that is also a suffix for pattern[0..i].
+ * Returns the first character that occurs only once in `s`.
+ * If every character repeats, returns null.
  */
-function buildLps(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;          // length of previous longest prefix suffix
-    let i = 1;
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣ Count how many times each char appears
+  const freq = new Map<string, number>();
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // try the previous longest prefix suffix
-                length = lps[length - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
+  }
+
+  // 2️⃣ Scan the string again and pick the first char with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
     }
-    return lps;
+  }
+
+  return null; // nothing unique
 }
-/**
- * Returns the starting indices of all occurrences of `pattern`
- * inside `text`. If the pattern is empty, an empty array is returned.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
+console.log(firstNonRepeatingChar("abacbc")); // -> "b"
+console.log(firstNonRepeatingChar("aabbcc")); // -> null
+console.log(firstNonRepeatingChar("abcde"));  // -> "a"
+function firstNonRepeatingCharOptimized(s: string): string | null {
+  const freq = new Map<string, number>();
+  const order: string[] = [];
 
-    const lps = buildLps(pattern);
-    const result: number[] = [];
+  for (const ch of s) {
+    const newCount = (freq.get(ch) ?? 0) + 1;
+    freq.set(ch, newCount);
 
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++; j++;
-            if (j === pattern.length) {
-                // match found; record start index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // fall back in pattern
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
+    if (newCount === 1) {
+      order.push(ch);          // first appearance
+    } else {
+      // remove all occurrences of `ch` from the queue
+      const idx = order.indexOf(ch);
+      if (idx !== -1) order.splice(idx, 1);
     }
-    return result;
-}
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
+  }
 
-console.log(kmpSearch(haystack, needle));
-// → [10]
+  return order.length ? order[0] : null;
+}
