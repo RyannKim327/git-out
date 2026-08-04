@@ -1,48 +1,172 @@
-/**
- * Shell sort – a classic gap‑based insertion sort
- *
- * @template T - type held in the array
- * @param arr   Array to be sorted in place
- * @param cmp   Optional comparator, defaults to numeric comparison
- * @returns     The sorted array (same reference as `arr`)
- */
-export function shellSort<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
-): T[] {
-  const n = arr.length;
+/* ---- 1. Necessary types ------------------------------------------------- */
+type Point = { x: number; y: number };   // a grid coordinate
 
-  // A common sequence: n/2, n/4, …, 1
-  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
-    // Do a gapped insertion sort for this gap size
-    for (let i = gap; i < n; i++) {
-      const temp = arr[i];
-      let j = i;
-      // shift earlier gap-sorted elements until the correct spot for temp is found
-      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
-        arr[j] = arr[j - gap];
-        j -= gap;
+// A *node* is a point that also carries the data used by A*.
+class Node {
+  public f: number;   // g + h
+  public g: number;   // cost from start
+  public h: number;   // heuristic estimate to goal
+
+  constructor(
+    public point: Point,
+    public parent: Node | null = null,
+    g = 0,
+    h = 0
+  ) {
+    this.g = g;
+    this.h = h;
+    this.f = this.g + this.h;
+  }
+}
+
+/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
+class MinHeap<T> {
+  private items: T[] = [];
+
+  constructor(private compare: (a: T, b: T) => number) {}
+
+  get size() { return this.items.length; }
+
+  push(item: T) {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const top = this.items[0];
+    const end = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = end;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(idx: number) {
+    const item = this.items[idx];
+    while (idx > 0) {
+      const parentIdx = ((idx + 1) >> 1) - 1;
+      const parent = this.items[parentIdx];
+      if (this.compare(item, parent) >= 0) break;
+      this.items[idx] = parent;
+      idx = parentIdx;
+    }
+    this.items[idx] = item;
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.items.length;
+    const item = this.items[idx];
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallest = idx;
+
+      if (
+        leftIdx < length &&
+        this.compare(this.items[leftIdx], this.items[smallest]) < 0
+      )
+        smallest = leftIdx;
+
+      if (
+        rightIdx < length &&
+        this.compare(this.items[rightIdx], this.items[smallest]) < 0
+      )
+        smallest = rightIdx;
+
+      if (smallest === idx) break;
+
+      this.items[idx] = this.items[smallest];
+      idx = smallest;
+    }
+    this.items[idx] = item;
+  }
+}
+
+/* ---- 3. Heuristic -------------------------------------------------------- */
+function manhattan(a: Point, b: Point): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+/* ---- 4. Grid utilities --------------------------------------------------- */
+// returns true if the point is inside bounds AND not blocked
+function isWalkable(
+  grid: boolean[][],
+  { x, y }: Point
+): boolean {
+  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
+}
+
+// neighbours (4‑connected, 8‑connected if you add diagonals)
+function getNeighbours(grid: boolean[][], p: Point): Point[] {
+  const { x, y } = p;
+  const candidates: Point[] = [
+    { x: x + 1, y },
+    { x: x - 1, y },
+    { x, y: y + 1 },
+    { x, y: y - 1 },
+  ];
+
+  // Uncomment if you want diagonal moves:
+  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
+
+  return candidates.filter(p => isWalkable(grid, p));
+}
+
+/* ---- 5. The main A* function --------------------------------------------- */
+function aStar(
+  grid: boolean[][],
+  start: Point,
+  goal: Point
+): Point[] | null {
+  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
+
+  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
+  const closed = new Set<string>();          // "x,y" keys
+
+  const nodeForPoint = (p: Point) =>
+    `${p.x},${p.y}`;
+
+  open.push(new Node(start, null, 0, manhattan(start, goal)));
+
+  while (open.size) {
+    const current = open.pop()!;
+    const currentKey = nodeForPoint(current.point);
+
+    if (closed.has(currentKey)) continue;     // skip stale node
+    closed.add(currentKey);
+
+    if (current.point.x === goal.x && current.point.y === goal.y) {
+      // reconstruct path
+      const path: Point[] = [];
+      let cur: Node | null = current;
+      while (cur) {
+        path.push(cur.point);
+        cur = cur.parent;
       }
-      arr[j] = temp;
+      return path.reverse();
+    }
+
+    for (const neighbour of getNeighbours(grid, current.point)) {
+      const neighbourKey = nodeForPoint(neighbour);
+      if (closed.has(neighbourKey)) continue;
+
+      const tentativeG = current.g + 1; // cost of moving a step
+      const h = manhattan(neighbour, goal);
+      const neighbourNode = new Node(
+        neighbour,
+        current,
+        tentativeG,
+        h
+      );
+
+      open.push(neighbourNode);
     }
   }
 
-  return arr;
+  return null; // no path
 }
-// 1️⃣ Sort numbers
-const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
-shellSort(numbers);
-console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-// 2️⃣ Sort strings alphabetically
-shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
-
-// 3️⃣ Sort objects by a property
-interface Person { name: string; age: number }
-const people: Person[] = [
-  { name: "Zoe", age: 29 },
-  { name: "Alex", age: 22 },
-  { name: "Mia", age: 35 }
-];
-shellSort(people, (a, b) => a.age - b.age);
-console.log(people.map(p => p.age));  // → [22, 29, 35]
+/* ---- 6. Example usage --------------------------------------------------- */
+const
