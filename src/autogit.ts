@@ -1,26 +1,25 @@
-function countWord(text: string, word: string): number {
-  // Escape word so special regex symbols don’t bite us
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // \b = word boundary, i = ignore case, g = global (all matches)
-  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
-}
-const txt = "Boo, boo! Boo-boo? Booing… boo.";
-console.log(countWord(txt, 'boo')); // 3
-function countWordSplit(text: string, word: string) {
-  const words = text.trim().split(/\s+/);
-  const target = word.toLowerCase();
-  return words.filter(w => w.toLowerCase() === target).length;
-}
-function countWordLoop(text: string, word: string) {
-  const target = word.toLowerCase();
-  let count = 0;
-  const regex = /\b\w+\b/g;               // grab words
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    if (match[0].toLowerCase() === target) count++;
-  }
-  return count;
-}
-const count = countWord("Hello because we say hello", "hello"); // 2
+/***** 1️⃣  The classic Math.max with the spread operator *****/
+
+const numbers = [4, 12, 7, 19, 3];
+
+// Spreads the array into individual arguments for Math.max
+const max1 = Math.max(...numbers); // 19
+/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+
+const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
+// Also 19
+/***** 3️⃣  If you’re dealing with objects and need a property *****/
+
+type Item = { id: number; value: number };
+const items: Item[] = [
+  { id: 1, value: 4 },
+  { id: 2, value: 12 },
+  { id: 3, value: 7 },
+];
+
+// Max based on `value`
+const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
+// maxVal is 12
+// If you want the whole object:
+const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
+// maxObj is { id: 2, value: 12 }
