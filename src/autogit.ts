@@ -1,10 +1,28 @@
-// A lean, common‑sense pattern that covers most real‑world emails
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Simple random user fetcher with axios (TypeScript)
 
-// Test whether a string looks like an e‑mail address
-export function isEmail(str: string): boolean {
-  return EMAIL_RE.test(str);
+import axios from 'axios';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  phone: string;
+  website: string;
 }
-console.log(isEmail('foo@bar.com'));   // true
-console.log(isEmail('invalid@'));      // false
-console.log(isEmail('no-at-symbol'));  // false
+
+async function fetchRandomUser(): Promise<User | undefined> {
+  try {
+    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+}
+
+fetchRandomUser().then(user => {
+  if (user) {
+    console.log(`🎲 Random user: ${user.name} (${user.email})`);
+  }
+});
