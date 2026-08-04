@@ -1,103 +1,86 @@
-// A generic state; `data` can be any shape you need.
-export interface BeamState<T> {
-  readonly data: T;      // the actual thing (token list, node id, etc.)
-  readonly score: number; // higher is better
-}
+// -------------------------------------------
+//  heapSort.ts
+// -------------------------------------------
 
-// A function that, from one state, produces zero or more candidate states.
-export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
+/**
+ * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
+ *
+ * @param   array      The array to sort, mutated in‑place.
+ * @param   cmp?       Optional comparator: (a, b) => number
+ *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
+ *
+ * @example
+ * const nums = [3, 1, 4, 1, 5, 9, 2];
+ * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
+ * heapSort(nums, (a, b) => b - a);  // descending order
+ */
+export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
+  const compare = cmp ?? defaultCompare;
 
-// A function that assigns a numeric score to a state.
-export type Scorer<T> = (state: BeamState<T>) => number;
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private readonly key: (x: T) => number) {}
+  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
+  const heapSize = array.length;
 
-  private swap(i: number, j: number) {
-    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
+  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
+    siftDown(i, heapSize);
   }
 
-  push(item: T) {
-    this.data.push(item);
-    this.siftUp(this.data.length - 1);
+  /* ---------- 2. Repeatedly extract max (or min) ---------- */
+  for (let i = heapSize - 1; i > 0; i--) {
+    // Grab the root (largest element) and put it at the end
+    swap(array, 0, i);
+    // Restore heap property on the reduced heap
+    siftDown(0, i);
   }
 
-  pop(): T | undefined {
-    const top = this.data[0];
-    const last = this.data.pop();
-    if (!this.data.length || !last) return top;
-    this.data[0] = last;
-    this.siftDown(0);
-    return top;
-  }
+  /* ---------- Helper scopes ---------- */
+  function siftDown(start: number, end: number): void {
+    let root = start;
 
-  size() { return this.data.length; }
-
-  private siftUp(i: number) {
-    let idx = i;
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
-      this.swap(idx, parent);
-      idx = parent;
-    }
-  }
-  private siftDown(i: number) {
-    let idx = i;
-    const n = this.data.length;
     while (true) {
-      const l = idx * 2 + 1;
-      const r = l + 1;
-      let smallest = idx;
-      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
-      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
+      const left = 2 * root + 1;
+      if (left >= end) break; // no children
+
+      const right = left + 1;
+      let candidate = left;
+
+      // Select the bigger child (or smaller if comparator flipped)
+      if (right < end && compare(array[right], array[left]) > 0) {
+        candidate = right;
+      }
+
+      // If root already holds the biggest, we're done
+      if (compare(array[root], array[candidate]) >= 0) break;
+
+      // Swap root with the chosen child and continue
+      swap(array, root, candidate);
+      root = candidate;
     }
   }
 
-  // For debugging / inspection
-  toArray() { return [...this.data]; }
-}
-export class BeamSearch<T> {
-  constructor(
-    private readonly expander: Expander<T>,
-    private readonly scorer: Scorer<T>,
-    private readonly beamWidth: number
-  ) {}
-
-  /**
-   * Runs beam search for a fixed number of iterations.
-   * @param startState the initial state (usually empty output)
-   * @param maxDepth how many expansion steps to take
-   * @returns an array containing the best states after the last depth
-   */
-  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
-    let current: BeamState<T>[] = [startState];
-
-    for (let depth = 0; depth < maxDepth; depth++) {
-      const candidates: BeamState<T>[] = [];
-      for (const state of current) {
-        const nextStates = this.expander(state);
-        // We expect each expander to already return scored states,
-        // but if they don't we can score them here:
-        for (const ns of nextStates) {
-          const s = this.scorer(ns);
-          candidates.push({ ...ns, score: s });
-        }
-      }
-      if (candidates.length === 0) break; // nothing to expand
-      // Keep top `beamWidth` candidates
-      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
-      for (const cand of candidates) heap.push(cand);
-      current = [];
-      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
-        current.push(heap.pop()!); // `!` is safe because we checked size
-      }
-    }
-
-    // Sort by score descending before returning just in case
-    return current.sort((a, b) => b.score - a.score);
+  function swap(arr: T[], i: number, j: number): void {
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
   }
 }
+
+/* ------------------------------------------- */
+/* Default comparator for `number`/`string` (ascending) */
+function defaultCompare<T>(a: T, b: T): number {
+  // If it's a number or behaves like a number
+  if (typeof a === 'number' && typeof b === 'number') {
+    return a - b;
+  }
+  // Fallback to lexical comparison for strings and others that stringify nicely
+  const sa = String(a);
+  const sb = String(b);
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
+}
+import { heapSort } from "./heapSort";
+
+const data = [8, 3, 5, 4, 7, 1, 2, 6];
+heapSort(data);                // ascending
+console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+
+heapSort(data, (a, b) => b - a); // descending
+console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
