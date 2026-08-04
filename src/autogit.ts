@@ -1,46 +1,30 @@
 /**
- * Returns true if the array is sorted in ascending order.
- * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
- * If you need a custom order you can supply a comparator:
- *   (a, b) => a.value - b.value   // numeric
- *   (a, b) => a.name.localeCompare(b.name) // string property
+ * Return the factorial of a non‑negative integer.
+ *
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
  */
-function isSorted<T>(
-  arr: readonly T[],
-  comparator?: (a: T, b: T) => number
-): boolean {
-  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
-
-  const cmp = comparator ?? ((a: T, b: T) => {
-    // Default comparison: works for numbers, strings, Dates, etc.
-    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
-  });
-
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // a previous element is larger → not sorted
-    }
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
   }
-  return true;
+
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
+
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
-// Numbers
-console.log(isSorted([1, 2, 3, 4]));           // true
-console.log(isSorted([1, 3, 2, 4]));           // false
 
-// Strings
-console.log(isSorted(['a', 'b', 'c']));       // true
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
 
-// Dates
-console.log(
-  isSorted([
-    new Date('2020-01-01'),
-    new Date('2020-06-01'),
-    new Date('2021-01-01')
-  ])
-); // true
+  if (n <= 1n) return 1n;
 
-// Objects with a specific key
-const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
-console.log(isSorted(people, (p, q) => p.age - q.age)); // true
-const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
-  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
+  return n * factorialBig(n - 1n);
+}
+
+console.log(factorialBig(20n).toString()); // 2432902008176640000
