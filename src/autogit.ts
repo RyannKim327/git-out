@@ -1,81 +1,61 @@
-// ---------- Tarjan S.T.C. ---------------------------------------
-
-/**
- * Return an array of strongly‑connected components.
- * Each component is an array of vertex IDs (here strings).
- * Vertices can be any `string`; if you prefer numbers just change the type.
- */
-export function tarjanSCC(graph: Map<string, string[]>): string[][] {
-  // state that needs to survive the recursive walk
-  const index = new Map<string, number>();    // discovery time of vertex
-  const lowLink = new Map<string, number>();  // lowest discovery reachable
-  const stack: string[] = [];                 // vertices that are “on stack”
-  const onStack = new Set<string>();
-
-  let curIdx = 0;                            // global counter
-  const sccs: string[][] = [];               // result
-
-  // helper: depth‑first walk from a single vertex
-  function strongConnect(v: string) {
-    // part A – set the depth index and low link
-    index.set(v, curIdx);
-    lowLink.set(v, curIdx);
-    curIdx += 1;
-
-    // put v on stack
-    stack.push(v);
-    onStack.add(v);
-
-    // part B – consider successors of v
-    const neighbours = graph.get(v) ?? [];
-    for (const w of neighbours) {
-      if (!index.has(w)) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → must be in the current SCC
-        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
-      }
-    }
-
-    // part C – if v is a root node, pop the stack to build an SCC
-    if (lowLink.get(v) === index.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
-  }
-
-  // run the dfs from every unvisited vertex
-  for (const v of graph.keys()) {
-    if (!index.has(v)) {
-      strongConnect(v);
-    }
-  }
-
-  return sccs;
+// A minimal node that can hold any value
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
-const graph = new Map<string, string[]>(
-  [
-    ['A', ['B']],
-    ['B', ['C', 'E', 'F']],
-    ['C', ['D', 'G']],
-    ['D', ['C', 'H']],
-    ['E', ['A', 'F']],
-    ['F', ['G']],
-    ['G', ['F', 'H']],
-    ['H', ['G']],
-  ],
-);
 
-const components = tarjanSCC(graph);
-console.log(components);
-// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
-// (depending on traversal order you may see the same vertices grouped in one component,
-// because the toy graph is fully strongly‑connected)
+// A helper to build a list from an array (great for demos)
+function arrayToList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = new ListNode(arr[i], head)
+  }
+  return head
+}
+
+// A helper to turn a list back into an array (great for quick checks)
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const out: T[] = []
+  let cur = head
+  while (cur) {
+    out.push(cur.val)
+    cur = cur.next
+  }
+  return out
+}
+function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
+
+  while (curr) {
+    const next = curr.next   // store the rest of the list
+    curr.next = prev         // reverse the link
+    prev = curr              // move prev forward
+    curr = next              // continue
+  }
+
+  // At the end, prev is the new head
+  return prev
+}
+function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: 0 or 1 node
+  if (!head || !head.next) {
+    return head
+  }
+
+  // Recurse to the end of the list
+  const newHead = reverseListRecursive(head.next)
+
+  // After recursion returns, head is still at the original start
+  // head.next still points forward; we need to put head at the end
+  head.next.next = head   // point the next node back to head
+  head.next = null        // cut off the original link
+
+  return newHead
+}
+const example = arrayToList([1, 2, 3, 4, 5])
+const reversedIterative = reverseList(example)
+console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
+
+const example2 = arrayToList([10, 20, 30])
+const reversedRecursive = reverseListRecursive(example2)
+console.log(listToArray(reversedRecursive)) // [30, 20, 10]
