@@ -1,65 +1,44 @@
-type Node<T> = { val: T; next: Node<T> | null };
+// cronDemo.ts
+// ──────────────────────────────────────────────
+// Simple TS + node‑cron demo.  Every minute,
+// the job prints a timestamp and a random number.
+//
+// Requirements:
+//   npm i node-cron @types/node-cron
+//
+// Run with:
+//   npx ts-node cronDemo.ts
+// ‒ or compile (npx tsc) and exec (node cronDemo.js)
+// ──────────────────────────────────────────────
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
+import cron from 'node-cron';
 
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
+/**
+ * Helper that gives us a nicely formatted timestamp.
+ */
+const now = () => new Date().toLocaleString();
 
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
+/**
+ * The task that will run according to the cron schedule.
+ * We generate a random integer between 1 and 1000.
+ */
+const task = () => {
+  const rand = Math.floor(Math.random() * 1000) + 1;
+  console.log(`[${now()}] Random number: ${rand}`);
+};
 
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
+/**
+ * Schedule the job.
+ * Cron expression: '* * * * *'
+ * └─ minute (0‑59)
+ *
+ * The job triggers at the start of every minute.
+ */
+cron.schedule('* * * * *', task, {
+  scheduled: true,
+  timezone: 'UTC',     // change to your local timezone if needed
+});
 
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
-
-  return true;
-}
-
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev!;
-}
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
-
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
-}
+console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
+[2026-06-17 12:34:00] Random number: 827
+[2026-06-17 12:35:00] Random number: 314
