@@ -1,31 +1,30 @@
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
-
-// Numeric ascending sort
-numbers.sort((a, b) => a - b);
-console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
-
-// Numeric descending sort
-numbers.sort((a, b) => b - a);
-console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
-[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
-const sorted = [...numbers].sort((a, b) => a - b);
-numbers.sort((a, b) => {
-  const absDiff = Math.abs(a) - Math.abs(b);
-  return absDiff !== 0 ? absDiff : a - b;
-});
-function quickSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;
-  const pivot = arr[arr.length - 1];
-  const left: number[] = [];
-  const right: number[] = [];
-
-  for (const x of arr.slice(0, -1)) {
-    (x < pivot ? left : right).push(x);
+/**
+ * Return the factorial of a non‑negative integer.
+ *
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
+ */
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
   }
 
-  return [...quickSort(left), pivot, ...quickSort(right)];
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
+
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
 
-const numbers2 = [3, 1, 4, 1, 5, 9, 2];
-const sorted2 = quickSort(numbers2);
-console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
+
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
+}
+
+console.log(factorialBig(20n).toString()); // 2432902008176640000
