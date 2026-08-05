@@ -1,94 +1,60 @@
-if currentDepth > depthLimit → stop exploring that branch
-/**
- * Generic depth‑limited search (iterative DFS).
- *
- * @param root        The starting node.
- * @param depthLimit  How far we are allowed to go from the root.
- * @param getNeighbors
- *        A callback that returns the list of adjacent nodes for a given node.
- * @param visitedSet  Optional set used to avoid revisiting nodes.
- *
- * @returns  Array of nodes visited in order (pre‑order DFS order).
- */
-export function depthLimitedSearch<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  visitedSet?: Set<T>
-): T[] {
-  const visited: Set<T> = visitedSet ?? new Set<T>();
-  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
-  const result: T[] = [];
+/* 1️⃣  Define the shapes of the data we expect  */
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-  while (stack.length > 0) {
-    const { node, depth } = stack.pop()!; // non‑empty because of the loop
+interface Comment {
+  postId: number;
+  id: number;
+  name: string;
+  email: string;
+  body: string;
+}
 
-    // Skip if we've already seen the node
-    if (visited.has(node)) continue;
-
-    visited.add(node);
-    result.push(node);          // we “visit” it, or you can process here
-
-    // Stop expanding when we hit the depth limit
-    if (depth >= depthLimit) continue;
-
-    // Push neighbors onto stack.  We push in reverse order if you want to
-    // preserve the same order as a recursive DFS.
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
-    }
+/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
+async function safeGet<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
   }
-
-  return result;
-}
-// A tiny undirected graph:
-const graph = new Map<string, string[]>([
-  ['A', ['B', 'C', 'D']],
-  ['B', ['A', 'E', 'F']],
-  ['C', ['A', 'G']],
-  ['D', ['A', 'H']],
-  ['E', ['B']],
-  ['F', ['B']],
-  ['G', ['C']],
-  ['H', ['D']],
-]);
-
-function neighbors(node: string): string[] {
-  return graph.get(node) ?? [];
+  return resp.json() as Promise<T>;
 }
 
-// Find all nodes reachable from 'A' within depth 2
-const visited = depthLimitedSearch('A', 2, neighbors);
-console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
-function depthLimitedSearchWithTarget<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  target: T,
-  visitedSet?: Set<T>
-): T | undefined {
-  const visited = visitedSet ?? new Set<T>();
-  const stack = [{ node: root, depth: 0 }];
+/* 3️⃣  Fetch a single post and its comments  */
+async function fetchPostWithComments(postId: number) {
+  const [post, comments] = await Promise.all([
+    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
+    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
+  ]);
 
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (visited.has(node)) continue;
-    visited.add(node);
+  console.log(`\n=== Post #${post.id} ===`);
+  console.log(`Title : ${post.title}`);
+  console.log(`Body  : ${post.body}\n`);
 
-    if (node === target) return node;
+  console.log(`--- ${comments.length} comment(s) ---`);
+  comments.forEach(c => {
+    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
+  });
+}
 
-    if (depth >= depthLimit) continue;
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
-    }
+/* 4️⃣  Run it for a few post IDs  */
+async function main() {
+  try {
+    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
+  } catch (err) {
+    console.error('Something went wrong:', (err as Error).message);
   }
-  return undefined; // not found
 }
+
+main();
+# compile to JavaScript
+npx tsc api-demo.ts
+
+# run the output
+node api-demo.js
+
+# or skip the compile step (requires ts-node)
+npx ts-node api-demo.ts
