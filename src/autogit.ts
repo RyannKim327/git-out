@@ -1,45 +1,37 @@
-/**
- * Returns an object with the maximum sum and the start/end indices
- * of the sub‑array that produces that sum.
- *
- * @param nums - array of numbers
- * @returns { maxSum, start, end }
- */
-export function maxSumSubarray(nums: number[]) {
-  // In case the input is empty we can return 0 / -1/-1
-  if (nums.length === 0) {
-    return { maxSum: 0, start: -1, end: -1 };
-  }
-
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These will record the best sub‑array boundaries
-  let bestStart = 0;
-  let bestEnd = 0;
-  // Temporary positions
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at i
-    if (currentSum + nums[i] < nums[i]) {
-      currentSum = nums[i];
-      tempStart = i;
-    } else {
-      currentSum += nums[i];
-    }
-
-    // Update best if we have a better sum
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+// Node definition – adjust `value` type as needed
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
-const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
-const { maxSum, start, end } = maxSumSubarray(arr);
-console.log(maxSum); // 43
-console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
+
+// Recursive sum – the classic “do it in one pass”
+export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;                 // base case
+  return (root.value as any) +                      // value of this node
+         sumRecursive(root.left) +                     // left subtree
+         sumRecursive(root.right);                     // right subtree
+}
+export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;
+
+  let sum = 0 as T;
+  const stack: TreeNode<T>[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.value as any;
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
+  }
+
+  return sum;
+}
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
+
+console.log(sumRecursive(tree));   // 15
+console.log(sumIterative(tree));   // 15
