@@ -1,37 +1,61 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
 
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
-}
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
 
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
+        }
+      }
+    }
   }
 
-  return sum;
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
+  }
 
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+  const n = s1.length;
+  const m = s2.length;
+
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
+  }
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+}
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
