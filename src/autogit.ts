@@ -1,70 +1,94 @@
+if currentDepth > depthLimit → stop exploring that branch
 /**
- * Builds the bad‑character shift table for a given pattern.
+ * Generic depth‑limited search (iterative DFS).
  *
- * The table maps a character code (0–65535 for UTF‑16) to the shift value.
- * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
- * right‑most occurrence of that character inside the pattern.  
+ * @param root        The starting node.
+ * @param depthLimit  How far we are allowed to go from the root.
+ * @param getNeighbors
+ *        A callback that returns the list of adjacent nodes for a given node.
+ * @param visitedSet  Optional set used to avoid revisiting nodes.
  *
- * @param pattern The substring we’re looking for.
- * @returns An array indexed by code unit, containing shift values.
+ * @returns  Array of nodes visited in order (pre‑order DFS order).
  */
-function buildShiftTable(pattern: string): Uint16Array {
-  const m = pattern.length;
-  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
+export function depthLimitedSearch<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  visitedSet?: Set<T>
+): T[] {
+  const visited: Set<T> = visitedSet ?? new Set<T>();
+  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
+  const result: T[] = [];
 
-  // Default shift: length of the pattern
-  table.fill(m);
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!; // non‑empty because of the loop
 
-  // For every character except the last one, compute an optimal shift
-  for (let i = 0; i < m - 1; i++) {
-    const code = pattern.charCodeAt(i);
-    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
-  }
-  return table;
-}
+    // Skip if we've already seen the node
+    if (visited.has(node)) continue;
 
-/**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The string to search inside.
- * @param pattern The substring we want to find.
- * @returns        All zero‑based indices where `pattern` starts in `text`.
- */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [0];              // empty pattern matches at every position
-  if (m > n) return [];                // pattern longer than text – no match
+    visited.add(node);
+    result.push(node);          // we “visit” it, or you can process here
 
-  const shift = buildShiftTable(pattern);
-  const result: number[] = [];
+    // Stop expanding when we hit the depth limit
+    if (depth >= depthLimit) continue;
 
-  let i = 0;   // current alignment: pattern[0] aligned with text[i]
-  while (i <= n - m) {
-    let j = m - 1;   // start comparing from the end of the pattern
-
-    // Compare backwards
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
+    // Push neighbors onto stack.  We push in reverse order if you want to
+    // preserve the same order as a recursive DFS.
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
     }
-
-    if (j < 0) {          // full match
-      result.push(i);
-    }
-
-    // Compute the shift.  We jump over at least one character, but the
-    // shift table may prescribe a longer shift if the mismatching character
-    // exists in the pattern.
-    const mismatchingCharCode = text.charCodeAt(i + m - 1);
-    i += shift[mismatchingCharCode];
   }
 
   return result;
 }
-const haystack = 'ABCDABABCABCDABABD';
-const needle   = 'ABCDABD';
+// A tiny undirected graph:
+const graph = new Map<string, string[]>([
+  ['A', ['B', 'C', 'D']],
+  ['B', ['A', 'E', 'F']],
+  ['C', ['A', 'G']],
+  ['D', ['A', 'H']],
+  ['E', ['B']],
+  ['F', ['B']],
+  ['G', ['C']],
+  ['H', ['D']],
+]);
 
-console.log(bmhSearch(haystack, needle)); // → [11]
+function neighbors(node: string): string[] {
+  return graph.get(node) ?? [];
+}
 
-// Multiple matches
-console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
+// Find all nodes reachable from 'A' within depth 2
+const visited = depthLimitedSearch('A', 2, neighbors);
+console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
+function depthLimitedSearchWithTarget<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  target: T,
+  visitedSet?: Set<T>
+): T | undefined {
+  const visited = visitedSet ?? new Set<T>();
+  const stack = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (node === target) return node;
+
+    if (depth >= depthLimit) continue;
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return undefined; // not found
+}
