@@ -1,40 +1,38 @@
-/**
- * Interpolation search returns the index of `target` in `arr`,
- * or –1 if the target is not present.
- *
- * @param arr   – sorted array of numbers (must be monotonic increasing)
- * @param target – key we’re trying to locate
- * @returns the array index of target or -1
- */
-export function interpolationSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;        // 1 and below are not prime
+  if (n <= 3) return true;         // 2 and 3 are prime
 
-    let low = 0;
-    let high = arr.length - 1;
+  // Even numbers > 2 are composite.
+  if (n % 2 === 0) return false;
 
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Avoid division by zero when the sub‑array contains equal numbers
-        if (arr[high] === arr[low]) {
-            return arr[low] === target ? low : -1;
-        }
-
-        // Estimate the likely position of `target` within [low, high]
-        const pos = low + Math.floor(
-            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
-        );
-
-        const val = arr[pos];
-
-        if (val === target) return pos;
-        if (val < target) low = pos + 1;
-        else high = pos - 1;
-    }
-
-    return -1; // not found
+  // Check odd divisors up to sqrt(n)
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
+  }
+  return true;
 }
-import { interpolationSearch } from "./interpolationSearch";
+function isPrime6(n: number): boolean {
+  if (n <= 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
 
-const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+  }
+  return true;
+}
+function isPrimeBig(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-console.log(interpolationSearch(data, 42));   // → 4
-console.log(interpolationSearch(data, 100));  // → -1
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+  }
+  return true;
+}
+console.log(isPrime(97));   // true
+console.log(isPrime(100));  // false
+console.log(isPrime6(97));  // true
+console.log(isPrime6(100)); // false
+console.log(isPrimeBig(19n)); // true
