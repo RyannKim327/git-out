@@ -1,48 +1,45 @@
 /**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
+ * Returns an object with the maximum sum and the start/end indices
+ * of the sub‑array that produces that sum.
  *
- * @param arr an array of comparable values (number, string, …)
+ * @param nums - array of numbers
+ * @returns { maxSum, start, end }
  */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+export function maxSumSubarray(nums: number[]) {
+  // In case the input is empty we can return 0 / -1/-1
+  if (nums.length === 0) {
+    return { maxSum: 0, start: -1, end: -1 };
+  }
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
+  let bestSum = nums[0];
+  let currentSum = nums[0];
+
+  // These will record the best sub‑array boundaries
+  let bestStart = 0;
+  let bestEnd = 0;
+  // Temporary positions
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at i
+    if (currentSum + nums[i] < nums[i]) {
+      currentSum = nums[i];
+      tempStart = i;
     } else {
-      count--;
+      currentSum += nums[i];
+    }
+
+    // Update best if we have a better sum
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
     }
   }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
-
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
-  }
-  return undefined;
-}
+const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
+const { maxSum, start, end } = maxSumSubarray(arr);
+console.log(maxSum); // 43
+console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
