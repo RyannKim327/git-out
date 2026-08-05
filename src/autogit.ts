@@ -1,31 +1,27 @@
-/**
- * Selection sort – O(n²) time, O(1) additional space.
- *
- * Works on any array of items that can be compared with < and >.
- */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
-
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
-
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
-    }
-    return arr;
+// ---------- types ----------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
+
+// ---------- helper ----------------------------------------------
+async function getJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Network error: ${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<T>;
 }
+
+// ---------- usage ----------------------------------------------
+(async () => {
+  try {
+    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
+    console.log('Fetched post:', post);
+    // do something with post… (e.g., update UI)
+  } catch (err) {
+    console.error('Failed to fetch post:', err);
+  }
+})();
