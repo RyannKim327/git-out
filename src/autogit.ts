@@ -1,37 +1,31 @@
-function secondLargestSort(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
 
-  const sorted = [...arr].sort((a, b) => b - a); // Descending
-  return sorted[1];
-}
-function secondLargestSinglePass(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
+// Numeric ascending sort
+numbers.sort((a, b) => a - b);
+console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
 
-  let max = -Infinity;
-  let second = -Infinity;
+// Numeric descending sort
+numbers.sort((a, b) => b - a);
+console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
+[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
+const sorted = [...numbers].sort((a, b) => a - b);
+numbers.sort((a, b) => {
+  const absDiff = Math.abs(a) - Math.abs(b);
+  return absDiff !== 0 ? absDiff : a - b;
+});
+function quickSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;
+  const pivot = arr[arr.length - 1];
+  const left: number[] = [];
+  const right: number[] = [];
 
-  for (const num of arr) {
-    if (num > max) {
-      second = max;
-      max = num;
-    } else if (num > second && num !== max) {
-      second = num;
-    }
+  for (const x of arr.slice(0, -1)) {
+    (x < pivot ? left : right).push(x);
   }
 
-  return second === -Infinity ? undefined : second;
+  return [...quickSort(left), pivot, ...quickSort(right)];
 }
-function secondLargestSet(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)];
-  if (unique.length < 2) return undefined;
 
-  const sorted = unique.sort((a, b) => b - a);
-  return sorted[1];
-}
-function secondLargestMathMax(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  const max = Math.max(...arr);
-  const maxFiltered = arr.filter(num => num !== max);
-  return Math.max(...maxFiltered);
-}
+const numbers2 = [3, 1, 4, 1, 5, 9, 2];
+const sorted2 = quickSort(numbers2);
+console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
