@@ -1,61 +1,37 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+function secondLargestSort(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
-  }
-  return head
+  const sorted = [...arr].sort((a, b) => b - a); // Descending
+  return sorted[1];
 }
+function secondLargestSinglePass(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
+  let max = -Infinity;
+  let second = -Infinity;
 
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
+  for (const num of arr) {
+    if (num > max) {
+      second = max;
+      max = num;
+    } else if (num > second && num !== max) {
+      second = num;
+    }
   }
 
-  // At the end, prev is the new head
-  return prev
+  return second === -Infinity ? undefined : second;
 }
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
-  }
+function secondLargestSet(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)];
+  if (unique.length < 2) return undefined;
 
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
-
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
-
-  return newHead
+  const sorted = unique.sort((a, b) => b - a);
+  return sorted[1];
 }
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
+function secondLargestMathMax(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+  const max = Math.max(...arr);
+  const maxFiltered = arr.filter(num => num !== max);
+  return Math.max(...maxFiltered);
+}
