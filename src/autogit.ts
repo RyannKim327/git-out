@@ -1,55 +1,33 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
+/**
+ * Returns a random integer between `min` and `max` – both inclusive.
+ * Uses the standard Math.random() (not crypto‑safe).
+ */
+export function randomIntInRange(min: number, max: number): number {
+  // Make sure min ≤ max and that the inputs are integers
+  if (!Number.isInteger(min) || !Number.isInteger(max))
+    throw new Error('min and max must be integers');
+  if (min > max) [min, max] = [max, min];
+
+  const range = max - min + 1;          // how many possible numbers
+  return Math.floor(Math.random() * range) + min;
 }
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
-
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
-
-    if (slow === fast) {        // they met → cycle detected
-      return true;
-    }
-  }
-
-  // fast ran out of nodes → no cycle
-  return false;
+/**
+ * Returns a random floating‑point number in `[min, max)`.
+ * If you want `max` inclusive, add a tiny epsilon before flooring.
+ */
+export function randomFloatInRange(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  return Math.random() * (max - min) + min;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
-
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
-  }
-  return false;
+export function secureRandomInt(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  const range = max - min + 1;
+  // We'll grab 4 random bytes and reduce them into our range
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (buf[0] % range) + min;
 }
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
-
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
-  }
-
-  // No cycle
-  if (!fast || !fast.next) return null;
-
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
-}
+console.log(randomIntInRange(1, 6)); // 1‑6 like a die
+console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
+console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
