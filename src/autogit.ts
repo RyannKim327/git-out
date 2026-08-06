@@ -1,36 +1,50 @@
-// A minimal, generic node type
-export interface ListNode<T> {
-  readonly value: T;
-  next: ListNode<T> | null;
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
+
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
+  }
+
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
+
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
+
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
 }
 
 /**
- * Returns the middle node of a singly‑linked list.
- * If the list has an even number of nodes, it returns
- * the *second* middle node (i.e. the one that a
- * “slow‑pointer” would land on after the last move).
+ * Bottom‑up merge sort (iterative).
  *
- * @param head Head of the list – null if the list is empty.
- * @returns The middle node, or null for an empty list.
+ * @param arr - The array to sort (in‑place)
  */
-export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head;
-  let fast = head;
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
 
-  // advance fast two steps, slow one step
-  while (fast !== null && fast.next !== null) {
-    slow = slow.next;
-    fast = fast.next.next;
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
+    }
   }
-
-  return slow;
 }
-// Build a list: 1 → 2 → 3 → 4 → 5
-const node5: ListNode<number> = { value: 5, next: null };
-const node4: ListNode<number> = { value: 4, next: node5 };
-const node3: ListNode<number> = { value: 3, next: node4 };
-const node2: ListNode<number> = { value: 2, next: node3 };
-const node1: ListNode<number> = { value: 1, next: node2 };
-
-const mid = middleNode(node1);
-console.log(mid?.value); // → 3
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
