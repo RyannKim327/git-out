@@ -1,60 +1,121 @@
-/* 1️⃣  Define the shapes of the data we expect  */
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+/* ───────────────────────────────────────────────────────────────────── */
+/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
+ *  need other key types, but then you have to supply a comparator. -------- */
 
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
+/*  Node ------------------------------------------------------------------- */
+class Node {
+  key: number;
+  height: number;
+  left: Node | null = null;
+  right: Node | null = null;
 
-/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
-async function safeGet<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
-  }
-  return resp.json() as Promise<T>;
-}
-
-/* 3️⃣  Fetch a single post and its comments  */
-async function fetchPostWithComments(postId: number) {
-  const [post, comments] = await Promise.all([
-    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
-    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
-  ]);
-
-  console.log(`\n=== Post #${post.id} ===`);
-  console.log(`Title : ${post.title}`);
-  console.log(`Body  : ${post.body}\n`);
-
-  console.log(`--- ${comments.length} comment(s) ---`);
-  comments.forEach(c => {
-    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
-  });
-}
-
-/* 4️⃣  Run it for a few post IDs  */
-async function main() {
-  try {
-    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
-  } catch (err) {
-    console.error('Something went wrong:', (err as Error).message);
+  constructor(key: number) {           // simple ctor
+    this.key = key;
+    this.height = 1;                    // leaf height = 1
   }
 }
 
-main();
-# compile to JavaScript
-npx tsc api-demo.ts
+/*  Helper utilities -------------------------------------------------------- */
+const height = (node: Node | null): number => (node ? node.height : 0);
 
-# run the output
-node api-demo.js
+const updateHeight = (node: Node) =>
+  node.height = 1 + Math.max(height(node.left), height(node.right));
 
-# or skip the compile step (requires ts-node)
-npx ts-node api-demo.ts
+const balanceFactor = (node: Node): number =>
+  height(node.left) - height(node.right);
+
+/*  Rotations -------------------------------------------------------------- */
+function rotateRight(y: Node): Node {
+  const x = y.left!;
+  const T2 = x.right;
+
+  // rotation
+  x.right = y;
+  y.left = T2;
+
+  // update heights
+  updateHeight(y);
+  updateHeight(x);
+
+  return x;     // new root of this part
+}
+
+function rotateLeft(x: Node): Node {
+  const y = x.right!;
+  const T2 = y.left;
+
+  // rotation
+  y.left = x;
+  x.right = T2;
+
+  // update heights
+  updateHeight(x);
+  updateHeight(y);
+
+  return y;     // new root
+}
+
+/*  Insert ------------------------------------------------------------------ */
+function insert(node: Node | null, key: number): Node {
+  if (!node) return new Node(key);
+
+  if (key < node.key) node.left = insert(node.left, key);
+  else if (key > node.key) node.right = insert(node.right, key);
+  else return node;           // duplicate keys rejected
+
+  /* update our own height after child changed */
+  updateHeight(node);
+
+  /* balance now */
+  const bf = balanceFactor(node);
+
+  // Left heavy
+  if (bf > 1) {
+    if (key < node.left!.key)                   // Left‑Left case
+      return rotateRight(node);
+
+    // Left‑Right case
+    node.left = rotateLeft(node.left!);
+    return rotateRight(node);
+  }
+
+  // Right heavy
+  if (bf < -1) {
+    if (key > node.right!.key)                  // Right‑Right case
+      return rotateLeft(node);
+
+    // Right‑Left case
+    node.right = rotateRight(node.right!);
+    return rotateLeft(node);
+  }
+
+  return node;            // unchanged
+}
+
+/*  Search --------------------------------------------------------------- */
+function contains(node: Node | null, key: number): boolean {
+  while (node) {
+    if (key === node.key) return true;
+    node = key < node.key ? node.left : node.right;
+  }
+  return false;
+}
+
+/*  In‑order traversal for debugging -------------------------------------- */
+function inorder(node: Node | null, res: number[] = []): number[] {
+  if (!node) return res;
+  inorder(node.left, res);
+  res.push(node.key);
+  inorder(node.right, res);
+  return res;
+}
+
+/*  Example usage ---------------------------------------------------------- */
+let root: Node | null = null;
+[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
+
+console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
+console.log('Contains 25?', contains(root, 25));      // true
+console.log('Contains 15?', contains(root, 15));      // false
+class Node<T> { key: T; height: number; ... }
+function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
