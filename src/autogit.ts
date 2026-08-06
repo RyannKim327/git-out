@@ -1,103 +1,139 @@
-// A generic state; `data` can be any shape you need.
-export interface BeamState<T> {
-  readonly data: T;      // the actual thing (token list, node id, etc.)
-  readonly score: number; // higher is better
-}
-
-// A function that, from one state, produces zero or more candidate states.
-export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
-
-// A function that assigns a numeric score to a state.
-export type Scorer<T> = (state: BeamState<T>) => number;
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private readonly key: (x: T) => number) {}
-
-  private swap(i: number, j: number) {
-    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
-  }
-
-  push(item: T) {
-    this.data.push(item);
-    this.siftUp(this.data.length - 1);
-  }
-
-  pop(): T | undefined {
-    const top = this.data[0];
-    const last = this.data.pop();
-    if (!this.data.length || !last) return top;
-    this.data[0] = last;
-    this.siftDown(0);
-    return top;
-  }
-
-  size() { return this.data.length; }
-
-  private siftUp(i: number) {
-    let idx = i;
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
-      this.swap(idx, parent);
-      idx = parent;
-    }
-  }
-  private siftDown(i: number) {
-    let idx = i;
-    const n = this.data.length;
-    while (true) {
-      const l = idx * 2 + 1;
-      const r = l + 1;
-      let smallest = idx;
-      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
-      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // For debugging / inspection
-  toArray() { return [...this.data]; }
-}
-export class BeamSearch<T> {
+// 1️⃣ Node shape ----------------------------------------------------
+class TreeNode<T> {
   constructor(
-    private readonly expander: Expander<T>,
-    private readonly scorer: Scorer<T>,
-    private readonly beamWidth: number
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null,
   ) {}
+}
+type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
 
-  /**
-   * Runs beam search for a fixed number of iterations.
-   * @param startState the initial state (usually empty output)
-   * @param maxDepth how many expansion steps to take
-   * @returns an array containing the best states after the last depth
-   */
-  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
-    let current: BeamState<T>[] = [startState];
+const defaultComparator = <T extends number | string>(a: T, b: T) => {
+  if (a < b) return -1;
+  if (a > b) return +1;
+  return 0;
+};
+// 2️⃣ BST class ----------------------------------------------------
+class BinarySearchTree<T> {
+  private root: TreeNode<T> | null = null;
+  public size = 0;
 
-    for (let depth = 0; depth < maxDepth; depth++) {
-      const candidates: BeamState<T>[] = [];
-      for (const state of current) {
-        const nextStates = this.expander(state);
-        // We expect each expander to already return scored states,
-        // but if they don't we can score them here:
-        for (const ns of nextStates) {
-          const s = this.scorer(ns);
-          candidates.push({ ...ns, score: s });
-        }
-      }
-      if (candidates.length === 0) break; // nothing to expand
-      // Keep top `beamWidth` candidates
-      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
-      for (const cand of candidates) heap.push(cand);
-      current = [];
-      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
-        current.push(heap.pop()!); // `!` is safe because we checked size
-      }
+  constructor(private comp: Comparator<T> = defaultComparator) {}
+
+  // -----------------------------------------------------------------
+  // Insert
+  // -----------------------------------------------------------------
+  insert(value: T): void {
+    this.root = this._insertRec(this.root, value);
+  }
+
+  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
+    if (!node) {
+      this.size++;
+      return new TreeNode(value);
     }
 
-    // Sort by score descending before returning just in case
-    return current.sort((a, b) => b.score - a.score);
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._insertRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._insertRec(node.right, value);
+    } else {
+      // duplicates: decide how to handle. Here we skip insertion.
+      return node;
+    }
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Search
+  // -----------------------------------------------------------------
+  find(value: T): boolean {
+    let node = this.root;
+    while (node) {
+      const cmp = this.comp(value, node.value);
+      if (cmp === 0) return true;
+      node = cmp < 0 ? node.left : node.right;
+    }
+    return false;
+  }
+
+  // -----------------------------------------------------------------
+  // Remove
+  // -----------------------------------------------------------------
+  remove(value: T): void {
+    this.root = this._removeRec(this.root, value);
+  }
+
+  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
+    if (!node) return null;
+
+    const cmp = this.comp(value, node.value);
+    if (cmp < 0) {
+      node.left = this._removeRec(node.left, value);
+    } else if (cmp > 0) {
+      node.right = this._removeRec(node.right, value);
+    } else {
+      // node to delete found
+      this.size--;
+
+      // case 1: no children
+      if (!node.left && !node.right) return null;
+
+      // case 2: one child
+      if (!node.left) return node.right;
+      if (!node.right) return node.left;
+
+      // case 3: two children – replace by inorder predecessor
+      const pred = this._maxNode(node.left)!; // non‑null
+      node.value = pred.value;
+      node.left = this._removeRec(node.left, pred.value);
+    }
+    return node;
+  }
+
+  private _maxNode(node: TreeNode<T>): TreeNode<T> {
+    while (node.right) node = node.right;
+    return node;
+  }
+
+  // -----------------------------------------------------------------
+  // Traversal helpers – in‑order (sorted order)
+  // -----------------------------------------------------------------
+  inorder(cb: (value: T) => void): void {
+    this._inorderRec(this.root, cb);
+  }
+
+  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
+    if (!node) return;
+    this._inorderRec(node.left, cb);
+    cb(node.value);
+    this._inorderRec(node.right, cb);
+  }
+
+  // -----------------------------------------------------------------
+  // Utility: pretty print as nested brackets
+  // -----------------------------------------------------------------
+  toString(): string {
+    const parts: string[] = [];
+    this._toStringRec(this.root, parts);
+    return parts.join(' ');
+  }
+
+  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
+    if (!node) { parts.push('null'); return; }
+    parts.push(String(node.value));
+    this._toStringRec(node.left, parts);
+    this._toStringRec(node.right, parts);
   }
 }
+const bst = new BinarySearchTree<number>();
+
+[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
+console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
+
+console.log('Contains 40? →', bst.find(40));   // true
+console.log('Contains 99? →', bst.find(99));   // false
+
+console.log('In‑order traversal:');
+bst.inorder(v => console.log(v));  
