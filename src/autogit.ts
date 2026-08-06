@@ -1,52 +1,48 @@
-// Basic definition of a binary‑tree node
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-}
-
 /**
- * Returns the diameter (in edges) of a binary tree.
+ * Shell sort – a classic gap‑based insertion sort
+ *
+ * @template T - type held in the array
+ * @param arr   Array to be sorted in place
+ * @param cmp   Optional comparator, defaults to numeric comparison
+ * @returns     The sorted array (same reference as `arr`)
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;          // keeps the best we have seen
+export function shellSort<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
+): T[] {
+  const n = arr.length;
 
-  /** Depth‑first search that returns the height of sub‑tree. */
-  function dfs(node: TreeNode | null): number {
-    if (node === null) return 0;          // leaf contributes 0 height
-
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path that goes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) {
-      maxDiameter = localDiameter;
+  // A common sequence: n/2, n/4, …, 1
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Do a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap-sorted elements until the correct spot for temp is found
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
-
-    // Height to propagate upward
-    return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  dfs(root);
-  return maxDiameter;         // already in edges
+  return arr;
 }
+// 1️⃣ Sort numbers
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-/* ---- example usage ------------------------------------------------------- */
+// 2️⃣ Sort strings alphabetically
+shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
 
-// simple helper to build a tree
-function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
-  return { val, left: l ?? null, right: r ?? null };
-}
-
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5     
-const root = node(1,
-  node(2, node(4), node(5)),
-  node(3)
-);
-
-console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
+// 3️⃣ Sort objects by a property
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: "Zoe", age: 29 },
+  { name: "Alex", age: 22 },
+  { name: "Mia", age: 35 }
+];
+shellSort(people, (a, b) => a.age - b.age);
+console.log(people.map(p => p.age));  // → [22, 29, 35]
