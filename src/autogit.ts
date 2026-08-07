@@ -1,37 +1,45 @@
-const nums = [1, 2, 3, 2, 4, 1, 5];
-
-const uniq = Array.from(new Set(nums));
-// or: const uniq = [...new Set(nums)];
-
-console.log(uniq); // [1, 2, 3, 4, 5]
-const words = ["foo", "bar", "baz", "foo", "bar"];
-
-const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
-
-console.log(unique); // ["foo", "bar", "baz"]
-const objs = [{a: 1}, {a: 1}, {a: 2}];
-console.log([...new Set(objs)]); // keeps both {a:1} objects
-function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
-  const seen = new Set<string>();
-  return arr.filter(item => {
-    const key = keyFn(item);
-    return seen.has(key) ? false : seen.add(key);
-  });
-}
-
-const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
-console.log(uniqueObjs); // [{a:1}, {a:2}]
-const arr = [1, 2, 3, 2, 1];
-const seen = new Set<number>();
-let writeIdx = 0;
-
-for (let readIdx = 0; readIdx < arr.length; readIdx++) {
-  const value = arr[readIdx];
-  if (!seen.has(value)) {
-    seen.add(value);
-    arr[writeIdx++] = value;
+/**
+ * Returns an object with the maximum sum and the start/end indices
+ * of the sub‑array that produces that sum.
+ *
+ * @param nums - array of numbers
+ * @returns { maxSum, start, end }
+ */
+export function maxSumSubarray(nums: number[]) {
+  // In case the input is empty we can return 0 / -1/-1
+  if (nums.length === 0) {
+    return { maxSum: 0, start: -1, end: -1 };
   }
-}
 
-arr.length = writeIdx; // shrink the array
-console.log(arr); // [1, 2, 3]
+  let bestSum = nums[0];
+  let currentSum = nums[0];
+
+  // These will record the best sub‑array boundaries
+  let bestStart = 0;
+  let bestEnd = 0;
+  // Temporary positions
+  let tempStart = 0;
+
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at i
+    if (currentSum + nums[i] < nums[i]) {
+      currentSum = nums[i];
+      tempStart = i;
+    } else {
+      currentSum += nums[i];
+    }
+
+    // Update best if we have a better sum
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+}
+const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
+const { maxSum, start, end } = maxSumSubarray(arr);
+console.log(maxSum); // 43
+console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
