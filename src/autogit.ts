@@ -1,31 +1,43 @@
 /**
- * Selection sort – O(n²) time, O(1) additional space.
+ * Returns true if `text` reads the same forward and backward.
+ * By default it is case‑sensitive and includes every character.
  *
- * Works on any array of items that can be compared with < and >.
+ * @param text The string to check.
+ * @param opts  Optional settings:
+ *   - `ignoreCase`:   true to compare lowercase strings (default: false)
+ *   - `ignoreSpaces`: true to skip whitespace (default: false)
+ *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
  */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+export function isPalindrome(
+  text: string,
+  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
+): boolean {
+  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
+  // Prepare the string based on options
+  let processed = ignoreCase ? text.toLowerCase() : text;
 
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
-    }
-    return arr;
+  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
+  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
+
+  // Compare forward and reversed
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
+console.log(isPalindrome('radar'));          // true
+console.log(isPalindrome('Radar'));          // false
+console.log(isPalindrome('Radar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
+const isPal = (s: string) =>
+  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
+const examples = [
+  'racecar',
+  'RaceCar',
+  'A man, a plan, a canal: Panama',
+  'No lemon, no melon',
+  'Hello, world!',
+];
+
+for (const ex of examples) {
+  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
 }
