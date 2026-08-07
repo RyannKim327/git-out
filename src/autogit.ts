@@ -1,62 +1,41 @@
 /**
- * A generic binary search.
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
  *
- * @param arr      Sorted array to search.
- * @param target   Value to locate.
- * @param compare  Optional comparator: (a, b) → negative, 0, positive.
- *                 If omitted, the default `<`/`>` operators are used.
- * @returns Index of `target` in `arr`, or `-1` if not found.
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  if (!arr.length) return -1;
-  const cmp = compare ?? defaultCompare<T>;
-  let low = 0;
-  let high = arr.length - 1;
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  while (low <= high) {
-    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
-    const comp = cmp(arr[mid], target);
-    if (comp === 0) return mid;
-    if (comp < 0) low = mid + 1;           // target is greater
-    else high = mid - 1;                  // target is smaller
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place the key into its correct spot
+    arr[j + 1] = key;
   }
 
-  return -1;
+  return arr; // handy for chaining, but the original array is already sorted
 }
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
 
-/** Recursive version – identical semantics. */
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (!arr.length || low > high) return -1;
-  const cmp = compare ?? defaultCompare<T>;
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
+];
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], target);
-
-  if (comp === 0) return mid;
-  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
-  return binarySearchRecursive(arr, target, compare, low, mid - 1);
-}
-
-/** Fallback when you didn’t provide a comparator. */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [3, 7, 12, 18, 22, 33, 42];
-console.log(binarySearch(nums, 18));           // 3
-console.log(binarySearch(nums, 5));            // -1
-
-// To search objects, supply a comparator:
-const words = ['apple', 'banana', 'cherry'];
-console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
