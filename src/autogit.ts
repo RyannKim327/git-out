@@ -1,93 +1,51 @@
 /**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
+ * Merge two sorted arrays into one sorted array.
+ * The comparator decides the ordering – by default it uses the `<` operator.
  */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
+function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
+  const result: T[] = [];
+  let i = 0; // index into left
+  let j = 0; // index into right
 
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
+  // Grab the compare function, or fall back to simple < comparison
+  const comp = compare ?? ((a: T, b: T) => a < b);
+
+  while (i < left.length && j < right.length) {
+    // If left[i] comes before right[j] (or equal), push it
+    if (comp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
+    }
+  }
+
+  // One of the halves may still have leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
 /**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
+ * Recursive merge sort.  
+ * @param array The array to sort.
+ * @param compare Optional comparator that returns true if a < b.
  */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
+export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
+  // Stop recursion when array has 0 or 1 item
+  if (array.length <= 1) return array.slice(); // return a shallow copy
 
-  let i = left;
-  let j = right;
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
 
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
-
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
-  }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
+  return merge(left, right, compare);
 }
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
+const numbers = [5, 3, 8, 1, 2, 9];
+const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
 
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
-}
-
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
-    }
-  }
-  return i - 1;
-}
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
+const people = [
+  { name: "Alice", age: 32 },
+  { name: "Bob", age: 25 },
+  { name: "Eve", age: 29 }
 ];
 
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
+// Sort by age
+const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
