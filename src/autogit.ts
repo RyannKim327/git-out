@@ -1,48 +1,147 @@
-/**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
- */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+/* ──────────────────────────────────────────────────────
+ *  SkipListNode<T>
+ * ────────────────────────────────────────────────────── */
+class SkipListNode<T> {
+  /** The stored value (defined only in the “bottom” node) */
+  value?: T;
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
+  /** Links to the node that follows this one at each level */
+  forward: Array<SkipListNode<T> | null> = [];
+
+  constructor(value?: T, level: number = 0) {
+    this.value = value;
+    this.forward = new Array(level + 1).fill(null);
+  }
+}
+
+/* ──────────────────────────────────────────────────────
+ *  SkipList<T>
+ * ────────────────────────────────────────────────────── */
+export class SkipList<T> {
+  /* Adjustable parameters */
+  private readonly MAX_LEVEL: number;      // upper bound for levels
+  private readonly P: number;              // probability of promoting a node
+
+  private level: number = 0;               // current maximum level
+  private header: SkipListNode<T>;         // sentinel start node
+
+  constructor(maxLevel: number = 16, probability: number = 0.5) {
+    this.MAX_LEVEL = maxLevel;
+    this.P        = probability;
+    this.header   = new SkipListNode<T>();
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Random level generator
+   * ────────────────────────────────────────────────────── */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+      lvl++;
+    }
+    return lvl;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Search for a value
+   * ────────────────────────────────────────────────────── */
+  search(value: T): SkipListNode<T> | null {
+    let current = this.header;
+
+    // move down each level, then across level 0
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+    }
+
+    current = current.forward[0]!;
+
+    if (current && current.value === value) return current;
+    return null;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Insert a new value
+   * ────────────────────────────────────────────────────── */
+  insert(value: T): void {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    // find where the new node will be inserted at each level
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
+
+    // pick a random level for the new node
+    const lvl = this.randomLevel();
+
+    // raise the list’s level if necessary
+    if (lvl > this.level) {
+      for (let i = this.level + 1; i <= lvl; i++) {
+        update[i] = this.header;
+      }
+      this.level = lvl;
+    }
+
+    const newNode = new SkipListNode<T>(value, lvl);
+
+    // splice the new node into every level above 0
+    for (let i = 0; i <= lvl; i++) {
+      newNode.forward[i] = update[i].forward[i];
+      update[i].forward[i] = newNode;
     }
   }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
+  /* ──────────────────────────────────────────────────────
+   *  Remove a value
+   * ────────────────────────────────────────────────────── */
+  remove(value: T): boolean {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
 
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
 
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
-}
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
+    current = current.forward[0]!;
 
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
+    if (!current || current.value !== value) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node at every level it appears
+    for (let i = 0; i <= this.level; i++) {
+      if (update[i].forward[i] !== current) break;
+      update[i].forward[i] = current.forward[i];
+    }
+
+    // shrink the list’s level if the top levels became empty
+    while (this.level > 0 && this.header.forward[this.level] == null) {
+      this.level--;
+    }
+
+    return true;
   }
-  return undefined;
+
+  /* ──────────────────────────────────────────────────────
+   *  Helper: convert list into an array (useful for debugging)
+   * ────────────────────────────────────────────────────── */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.header.forward[0];
+
+    while (node) {
+      result.push(node.value!);
+      node = node.forward[0];
+    }
+
+    return result;
+  }
 }
