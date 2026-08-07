@@ -1,43 +1,48 @@
 /**
- * Returns true if `text` reads the same forward and backward.
- * By default it is case‑sensitive and includes every character.
+ * Returns the majority element of the array if one exists,
+ * otherwise returns undefined.
  *
- * @param text The string to check.
- * @param opts  Optional settings:
- *   - `ignoreCase`:   true to compare lowercase strings (default: false)
- *   - `ignoreSpaces`: true to skip whitespace (default: false)
- *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
+ * @param arr an array of comparable values (number, string, …)
  */
-export function isPalindrome(
-  text: string,
-  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
-): boolean {
-  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
+export function findMajority<T extends number | string | boolean>(
+  arr: T[]
+): T | undefined {
+  // 1️⃣ find a candidate
+  let candidate: T | undefined;
+  let count = 0;
 
-  // Prepare the string based on options
-  let processed = ignoreCase ? text.toLowerCase() : text;
+  for (const val of arr) {
+    if (count === 0) {
+      candidate = val;
+      count = 1;
+    } else if (val === candidate) {
+      count++;
+    } else {
+      count--;
+    }
+  }
 
-  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
-  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
+  // 2️⃣ verify that the candidate is actually a majority
+  if (candidate === undefined) return undefined;
 
-  // Compare forward and reversed
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+  let freq = 0;
+  for (const v of arr) if (v === candidate) freq++;
+
+  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
 }
-console.log(isPalindrome('radar'));          // true
-console.log(isPalindrome('Radar'));          // false
-console.log(isPalindrome('Radar', { ignoreCase: true })); // true
-console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
-const isPal = (s: string) =>
-  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
-const examples = [
-  'racecar',
-  'RaceCar',
-  'A man, a plan, a canal: Panama',
-  'No lemon, no melon',
-  'Hello, world!',
-];
+console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
+console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
+console.log(findMajority(['a', 'a', 'b']));       // → 'a'
+export function findMajorityWithMap<T>(
+  arr: T[]
+): T | undefined {
+  const map = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2);
 
-for (const ex of examples) {
-  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
+  for (const v of arr) {
+    const newCount = (map.get(v) ?? 0) + 1;
+    map.set(v, newCount);
+    if (newCount > threshold) return v;
+  }
+  return undefined;
 }
