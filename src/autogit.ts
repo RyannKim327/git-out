@@ -1,46 +1,31 @@
-/**
- * Returns true if the array is sorted in ascending order.
- * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
- * If you need a custom order you can supply a comparator:
- *   (a, b) => a.value - b.value   // numeric
- *   (a, b) => a.name.localeCompare(b.name) // string property
- */
-function isSorted<T>(
-  arr: readonly T[],
-  comparator?: (a: T, b: T) => number
-): boolean {
-  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
 
-  const cmp = comparator ?? ((a: T, b: T) => {
-    // Default comparison: works for numbers, strings, Dates, etc.
-    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
-  });
+// Numeric ascending sort
+numbers.sort((a, b) => a - b);
+console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
 
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // a previous element is larger → not sorted
-    }
+// Numeric descending sort
+numbers.sort((a, b) => b - a);
+console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
+[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
+const sorted = [...numbers].sort((a, b) => a - b);
+numbers.sort((a, b) => {
+  const absDiff = Math.abs(a) - Math.abs(b);
+  return absDiff !== 0 ? absDiff : a - b;
+});
+function quickSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;
+  const pivot = arr[arr.length - 1];
+  const left: number[] = [];
+  const right: number[] = [];
+
+  for (const x of arr.slice(0, -1)) {
+    (x < pivot ? left : right).push(x);
   }
-  return true;
+
+  return [...quickSort(left), pivot, ...quickSort(right)];
 }
-// Numbers
-console.log(isSorted([1, 2, 3, 4]));           // true
-console.log(isSorted([1, 3, 2, 4]));           // false
 
-// Strings
-console.log(isSorted(['a', 'b', 'c']));       // true
-
-// Dates
-console.log(
-  isSorted([
-    new Date('2020-01-01'),
-    new Date('2020-06-01'),
-    new Date('2021-01-01')
-  ])
-); // true
-
-// Objects with a specific key
-const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
-console.log(isSorted(people, (p, q) => p.age - q.age)); // true
-const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
-  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
+const numbers2 = [3, 1, 4, 1, 5, 9, 2];
+const sorted2 = quickSort(numbers2);
+console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
