@@ -1,50 +1,93 @@
-// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
-function merge(
-  arr: number[],
-  tmp: number[],
-  l: number,
-  mid: number,
-  r: number
-): void {
-  let i = l;        // pointer for the left half
-  let j = mid + 1;  // pointer for the right half
-  let k = l;        // pointer for the tmp array
+// A node can carry any payload (`T`) and point to its neighbours.
+export interface GraphNode<T> {
+  value: T;
+  neighbours: GraphNode<T>[];
+}
+/**
+ * Recursively performs depth‑limited search.
+ *
+ * @param node        The node you are currently visiting.
+ * @param goalTest    Returns true if the current node satisfies the goal.
+ * @param limit       Number of edges left before the search terminates.
+ * @param visited     A set of IDs or reference values that keeps track of visited nodes.
+ *                    This protects against cycles that would otherwise cause infinite recursion.
+ * @returns The first node that satisfies `goalTest`, or `null`.
+ */
+export function depthLimitedSearchRec<T>(
+  node: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number,
+  visited: Set<GraphNode<T>> = new Set()
+): GraphNode<T> | null {
+  if (goalTest(node)) return node;
+  if (limit === 0) return null;          // reached the depth boundary
 
-  // Merge until one half runs out
-  while (i <= mid && j <= r) {
-    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
-    else tmp[k++] = arr[j++];
+  visited.add(node);
+
+  for (const neighbour of node.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
+      if (result !== null) return result;
+    }
   }
 
-  // Copy any remaining elements of the left half
-  while (i <= mid) tmp[k++] = arr[i++];
-
-  // Copy any remaining elements of the right half
-  while (j <= r) tmp[k++] = arr[j++];
-
-  // Return merged result back to the original array
-  for (let p = l; p <= r; p++) arr[p] = tmp[p];
+  return null;   // nothing found within this branch
+}
+interface StackItem<T> {
+  node: GraphNode<T>;
+  depthLeft: number;
 }
 
 /**
- * Bottom‑up merge sort (iterative).
- *
- * @param arr - The array to sort (in‑place)
+ * Iterative depth‑limited search.
  */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  const tmp = new Array<number>(n);
+export function depthLimitedSearchIter<T>(
+  start: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number
+): GraphNode<T> | null {
+  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
+  const visited: Set<GraphNode<T>> = new Set();
 
-  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // l = start index of sub‑array pair
-    for (let l = 0; l < n - sz; l += sz << 1) {
-      const mid = l + sz - 1;
-      const r = Math.min(l + (sz << 1) - 1, n - 1);
-      merge(arr, tmp, l, mid, r);
+  while (stack.length) {
+    const { node, depthLeft } = stack.pop()!;
+
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (goalTest(node)) return node;
+    if (depthLeft === 0) continue;           // depth boundary reached
+
+    // push neighbours onto the stack – LIFO order means the first neighbour
+    // will be processed last, mirroring the recursive DFS behaviour.
+    for (const neighbour of node.neighbours) {
+      if (!visited.has(neighbour)) {
+        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
+      }
     }
   }
+
+  return null;  // no goal reached within depth limit
 }
-const data = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(data);
-console.log(data); // [3, 9, 10, 27, 38, 43, 82]
+// --- build a simple graph
+const a: GraphNode<string> = { value: "A", neighbours: [] };
+const b: GraphNode<string> = { value: "B", neighbours: [] };
+const c: GraphNode<string> = { value: "C", neighbours: [] };
+const d: GraphNode<string> = { value: "D", neighbours: [] };
+
+a.neighbours.push(b, c);   // A -> B, C
+b.neighbours.push(d);      // B -> D
+c.neighbours.push(d);      // C -> D
+
+// --- goal: find node with value “D”
+const isGoal = (node: GraphNode<string>) => node.value === "D";
+
+// Recursive
+const resultRec = depthLimitedSearchRec(a, isGoal, 3);
+console.log("Recursive result:", resultRec?.value ?? "none");
+
+// Iterative
+const resultIter = depthLimitedSearchIter(a, isGoal, 3);
+console.log("Iterative result:", resultIter?.value ?? "none");
+Recursive result: D
+Iterative result: D
