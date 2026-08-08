@@ -1,55 +1,70 @@
 /**
- * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
+ * Builds the bad‑character shift table for a given pattern.
+ *
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
  */
-function isAnagram(s1: string, s2: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
-  return normalize(s1) === normalize(s2);
-}
-function isAnagramLetterCount(a: string, b: string): boolean {
-  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
 
-  const freq = (s: string) => {
-    const map = new Map<string, number>();
-    for (const c of s) {
-      map.set(c, (map.get(c) ?? 0) + 1);
-    }
-    return map;
-  };
+  // Default shift: length of the pattern
+  table.fill(m);
 
-  if (clean(a).length !== clean(b).length) return false;
-
-  const m1 = freq(clean(a));
-  const m2 = freq(clean(b));
-
-  for (const [ch, count] of m1) {
-    if (m2.get(ch) !== count) return false;
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
   }
-  return true;
+  return table;
 }
-function isAnagramFlexible(
-  s1: string,
-  s2: string,
-  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
-): boolean {
-  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-  let pattern = '';
-  if (ignoreSpaces) pattern += '\\s';
-  if (ignorePunct) pattern += /[^\w\s]/g.source;
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
 
-  const regex = new RegExp(pattern, 'g');
-  const normalize = (s: string) =>
-    s.replace(regex, '').toLowerCase().split('').sort().join('');
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
 
-  return normalize(s1) === normalize(s2);
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
+
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {          // full match
+      result.push(i);
+    }
+
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
+  }
+
+  return result;
 }
-console.log(isAnagram('listen', 'silent'));          // true
-console.log(isAnagram('A gentleman', 'Elegant man'));// true
-console.log(isAnagram('Hello', 'World'));            // false
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
 
-// Using the frequency‑count version
-console.log(isAnagramLetterCount('abc', 'cab'));     // true
+console.log(bmhSearch(haystack, needle)); // → [11]
 
-// Flexible options
-console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
