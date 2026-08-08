@@ -1,25 +1,31 @@
-/** 
- * Returns true if `text` is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores everything that’s not a letter or digit
+/**
+ * Selection sort – O(n²) time, O(1) additional space.
+ *
+ * Works on any array of items that can be compared with < and >.
  */
-function isPalindrome(text: string): boolean {
-  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
-  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    // Work in place – the original array is mutated
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest is at i
+        let minIdx = i;
 
-  // 2. Compare the string with its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
+        // Search for a smaller element in the rest of the array
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIdx]) {
+                minIdx = j;
+            }
+        }
+
+        // If a smaller element was found, swap it into place
+        if (minIdx !== i) {
+            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+        }
+    }
+    return arr;
 }
-
-// Usage examples
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan...'));  // true
-console.log(isPalindrome('Hello world'));      // false
-function isPalindromeSimple(s: string): boolean {
-  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
-    if (s[i] !== s[j]) return false;
-  }
-  return true;
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
+function selectionSortCopy<T>(arr: T[]): T[] {
+    return selectionSort([...arr]); // spread creates a shallow copy
 }
