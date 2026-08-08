@@ -1,113 +1,41 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+function firstRepeated(s: string): string | null {
+  const seen = new Set<string>();
 
-  constructor(value: T) {
-    this.value = value;
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;          // first repeat!
+    }
+    seen.add(ch);
   }
+
+  return null;   // no repeats
 }
-
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-
-  // ---- basic properties ----
-  get size() { return this._size; }
-
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
+console.log(firstRepeated("abca")); // → "a"
+console.log(firstRepeated("abcdef")); // → null
+console.log(firstRepeated("hello world")); // → "l"
+function firstRepeatedCaseInsensitive(s: string): string | null {
+  const seen = new Set<string>();
+  for (const ch of s.toLowerCase()) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
   }
-
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
-
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
-  }
-
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
-    }
-  }
+  return null;
 }
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
+function firstRepeatIndex(s: string): number {
+  const seen = new Set<string>();
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (seen.has(ch)) return i;   // second appearance
+    seen.add(ch);
   }
-  return false;
+  return -1; // no repeat
+}
+function firstRepeatLater(s: string): string | null {
+  const seen = new Set<string>();
+  for (let i = s.length - 1; i >= 0; i--) {
+    const ch = s[i];
+    if (seen.has(ch)) return ch; // this appears again later
+    seen.add(ch);
+  }
+  return null;
 }
