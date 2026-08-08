@@ -1,173 +1,87 @@
 // -----------------------------------------------------------------------------
-//  Types
+// 1️⃣  Trie node – keeps a map of children and a flag for word ends
 // -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
-
-interface Edge {
-  target: Node;
-  weight: Weight;
-}
-
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
+class TrieNode {
+  /** Map from a character to the child node that starts with that character */
+  children = new Map<string, TrieNode>();
+  /** true if the path to this node corresponds to a complete word */
+  isEnd = false;
 }
 
 // -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
+// 2️⃣  Trie implementation
 // -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
+export class Trie {
+  private root: TrieNode;
 
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
+  constructor() {
+    this.root = new TrieNode();
   }
 
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
-
-  get size() {
-    return this.heap.length;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
-        }
+  /** Add a word to the trie */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      // Get the child for `ch`, or create it if missing
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode());
       }
-
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
+      node = node.children.get(ch)!;
     }
-    this.heap[idx] = element;
+    node.isEnd = true;
   }
-}
 
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
+  /** Check if a word exists in the trie */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return !!node && node.isEnd;
   }
-  distances.set(start, 0);
 
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
+  /** Check if any word in the trie starts with the given prefix */
+  startsWith(prefix: string): boolean {
+    return !!this._findNode(prefix);
+  }
 
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
+  /** Internal helper: walk the trie following `key`.  Returns
+   *  the terminal node if the path exists, otherwise `undefined`. */
+  private _findNode(key: string): TrieNode | undefined {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch);
+      if (!node) return undefined;
     }
+    return node;
   }
 
-  return { distances, prev };
+  /** Optional: collect all words in the trie that share a common prefix.
+   *  Useful for autocomplete. */
+  autocomplete(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
+
+    const results: string[] = [];
+    const dfs = (n: TrieNode, path: string[]) => {
+      if (n.isEnd) results.push(prefix + path.join(''));
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, [...path, ch]);
+      }
+    };
+
+    dfs(node, []);
+    return results;
+  }
 }
 
 // -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
+// 3️⃣  Demo
 // -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
+const trie = new Trie();
+trie.insert('hello');
+trie.insert('helium');
+trie.insert('hero');
+trie.insert('her');
 
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
-  }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
-}
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
+console.log(trie.search('hello'));   // true
+console.log(trie.search('heroic'));  // false
+console.log(trie.startsWith('he'));  // true
+console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
