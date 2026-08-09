@@ -1,38 +1,43 @@
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;        // 1 and below are not prime
-  if (n <= 3) return true;         // 2 and 3 are prime
+/**
+ * Returns true if `text` reads the same forward and backward.
+ * By default it is case‑sensitive and includes every character.
+ *
+ * @param text The string to check.
+ * @param opts  Optional settings:
+ *   - `ignoreCase`:   true to compare lowercase strings (default: false)
+ *   - `ignoreSpaces`: true to skip whitespace (default: false)
+ *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
+ */
+export function isPalindrome(
+  text: string,
+  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
+): boolean {
+  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
 
-  // Even numbers > 2 are composite.
-  if (n % 2 === 0) return false;
+  // Prepare the string based on options
+  let processed = ignoreCase ? text.toLowerCase() : text;
 
-  // Check odd divisors up to sqrt(n)
-  for (let i = 3; i * i <= n; i += 2) {
-    if (n % i === 0) return false;
-  }
-  return true;
+  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
+  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
+
+  // Compare forward and reversed
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
-function isPrime6(n: number): boolean {
-  if (n <= 1) return false;
-  if (n <= 3) return true;
-  if (n % 2 === 0 || n % 3 === 0) return false;
+console.log(isPalindrome('radar'));          // true
+console.log(isPalindrome('Radar'));          // false
+console.log(isPalindrome('Radar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
+const isPal = (s: string) =>
+  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
+const examples = [
+  'racecar',
+  'RaceCar',
+  'A man, a plan, a canal: Panama',
+  'No lemon, no melon',
+  'Hello, world!',
+];
 
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-  return true;
+for (const ex of examples) {
+  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
 }
-function isPrimeBig(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
-
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
-}
-console.log(isPrime(97));   // true
-console.log(isPrime(100));  // false
-console.log(isPrime6(97));  // true
-console.log(isPrime6(100)); // false
-console.log(isPrimeBig(19n)); // true
