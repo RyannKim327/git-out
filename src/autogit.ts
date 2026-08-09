@@ -1,27 +1,41 @@
-// ---------- types ----------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+function firstRepeated(s: string): string | null {
+  const seen = new Set<string>();
 
-// ---------- helper ----------------------------------------------
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Network error: ${response.status} ${response.statusText}`);
+  for (const ch of s) {
+    if (seen.has(ch)) {
+      return ch;          // first repeat!
+    }
+    seen.add(ch);
   }
-  return response.json() as Promise<T>;
-}
 
-// ---------- usage ----------------------------------------------
-(async () => {
-  try {
-    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
-    console.log('Fetched post:', post);
-    // do something with post… (e.g., update UI)
-  } catch (err) {
-    console.error('Failed to fetch post:', err);
+  return null;   // no repeats
+}
+console.log(firstRepeated("abca")); // → "a"
+console.log(firstRepeated("abcdef")); // → null
+console.log(firstRepeated("hello world")); // → "l"
+function firstRepeatedCaseInsensitive(s: string): string | null {
+  const seen = new Set<string>();
+  for (const ch of s.toLowerCase()) {
+    if (seen.has(ch)) return ch;
+    seen.add(ch);
   }
-})();
+  return null;
+}
+function firstRepeatIndex(s: string): number {
+  const seen = new Set<string>();
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (seen.has(ch)) return i;   // second appearance
+    seen.add(ch);
+  }
+  return -1; // no repeat
+}
+function firstRepeatLater(s: string): string | null {
+  const seen = new Set<string>();
+  for (let i = s.length - 1; i >= 0; i--) {
+    const ch = s[i];
+    if (seen.has(ch)) return ch; // this appears again later
+    seen.add(ch);
+  }
+  return null;
+}
