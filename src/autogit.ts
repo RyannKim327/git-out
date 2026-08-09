@@ -1,35 +1,47 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
-}
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
-  let current = head;
+/**
+ * Random API – picks a random fact from https://uselessfacts.jsph.pl
+ * Returns an object: { id, text, source, permalink }
+ */
+async function fetchRandomFact(): Promise<{
+  id: string;
+  text: string;
+  source: string;
+  permalink: string;
+}> {
+  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
 
-  while (current) {
-    count++;
-    current = current.next;
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // If you’re inside an Android NativeScript environment you could
+    // show a Toast or log the result with Android SDK.
+    console.log("Random fact fetched:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch random fact:", err);
+    throw err;
   }
-
-  return count;
 }
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-class LinkedList<T> {
-  private head?: Node<T>;
 
-  // ... push, pop, etc.
-
-  size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
+/**
+ * Example usage – you’d call this from anywhere, e.g. on a button tap.
+ */
+async function runDemo() {
+  try {
+    const fact = await fetchRandomFact();
+    // In Android, for a quick visual you could use:
+    // import { Toast } from "tns-core-modules/ui/toast";
+    // Toast.makeText(fact.text, 2000).show();
+    console.log("Fact text:", fact.text);
+  } catch {
+    // error handling already done in fetchRandomFact
   }
 }
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
 
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+runDemo();
