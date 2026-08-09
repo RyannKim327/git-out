@@ -1,39 +1,27 @@
-function reverseString(s: string): string {
-  return s.split('').reverse().join('');
+// ---------- types ----------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-// Example
-console.log(reverseString('hello')); // 'olleh'
-reverseString('👋🏽'); // '🏽👋'  → wrong
-function reverseStringUnicode(s: string): string {
-  const codePoints: number[] = [];
-  for (const char of s) {
-    codePoints.push(char.codePointAt(0)!);
+// ---------- helper ----------------------------------------------
+async function getJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Network error: ${response.status} ${response.statusText}`);
   }
-  return String.fromCodePoint(...codePoints.reverse());
+  return response.json() as Promise<T>;
 }
 
-// Example
-console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
-const cp = Array.from(s).reverse().join('');
-function reverseRecursively(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseRecursively(s.slice(1)) + s[0];
-}
-function reverseLoop(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+// ---------- usage ----------------------------------------------
+(async () => {
+  try {
+    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
+    console.log('Fetched post:', post);
+    // do something with post… (e.g., update UI)
+  } catch (err) {
+    console.error('Failed to fetch post:', err);
   }
-  return result;
-}
-function reverseBuffer(s: string): string {
-  const buf: string[] = new Array(s.length);
-  for (let i = 0; i < s.length; i++) {
-    buf[i] = s[s.length - 1 - i];
-  }
-  return buf.join('');
-}
-function reverseStringSafe(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+})();
