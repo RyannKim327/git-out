@@ -1,52 +1,30 @@
-// Basic definition of a binary‑tree node
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-}
-
 /**
- * Returns the diameter (in edges) of a binary tree.
+ * Return the factorial of a non‑negative integer.
+ *
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;          // keeps the best we have seen
-
-  /** Depth‑first search that returns the height of sub‑tree. */
-  function dfs(node: TreeNode | null): number {
-    if (node === null) return 0;          // leaf contributes 0 height
-
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
-
-    // Path that goes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) {
-      maxDiameter = localDiameter;
-    }
-
-    // Height to propagate upward
-    return Math.max(leftHeight, rightHeight) + 1;
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
   }
 
-  dfs(root);
-  return maxDiameter;         // already in edges
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
+
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
 
-/* ---- example usage ------------------------------------------------------- */
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
 
-// simple helper to build a tree
-function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
-  return { val, left: l ?? null, right: r ?? null };
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
 }
 
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5     
-const root = node(1,
-  node(2, node(4), node(5)),
-  node(3)
-);
-
-console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
+console.log(factorialBig(20n).toString()); // 2432902008176640000
