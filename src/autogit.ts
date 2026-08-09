@@ -1,37 +1,50 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
-}
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
 
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
-}
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
-
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
   }
 
-  return sum;
-}
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
 
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
+
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
+}
+
+/**
+ * Bottom‑up merge sort (iterative).
+ *
+ * @param arr - The array to sort (in‑place)
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
+
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
+    }
+  }
+}
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
