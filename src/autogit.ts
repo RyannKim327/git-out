@@ -1,38 +1,60 @@
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;        // 1 and below are not prime
-  if (n <= 3) return true;         // 2 and 3 are prime
-
-  // Even numbers > 2 are composite.
-  if (n % 2 === 0) return false;
-
-  // Check odd divisors up to sqrt(n)
-  for (let i = 3; i * i <= n; i += 2) {
-    if (n % i === 0) return false;
-  }
-  return true;
+/* 1️⃣  Define the shapes of the data we expect  */
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
-function isPrime6(n: number): boolean {
-  if (n <= 1) return false;
-  if (n <= 3) return true;
-  if (n % 2 === 0 || n % 3 === 0) return false;
 
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-  return true;
+interface Comment {
+  postId: number;
+  id: number;
+  name: string;
+  email: string;
+  body: string;
 }
-function isPrimeBig(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
+/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
+async function safeGet<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
   }
-  return true;
+  return resp.json() as Promise<T>;
 }
-console.log(isPrime(97));   // true
-console.log(isPrime(100));  // false
-console.log(isPrime6(97));  // true
-console.log(isPrime6(100)); // false
-console.log(isPrimeBig(19n)); // true
+
+/* 3️⃣  Fetch a single post and its comments  */
+async function fetchPostWithComments(postId: number) {
+  const [post, comments] = await Promise.all([
+    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
+    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
+  ]);
+
+  console.log(`\n=== Post #${post.id} ===`);
+  console.log(`Title : ${post.title}`);
+  console.log(`Body  : ${post.body}\n`);
+
+  console.log(`--- ${comments.length} comment(s) ---`);
+  comments.forEach(c => {
+    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
+  });
+}
+
+/* 4️⃣  Run it for a few post IDs  */
+async function main() {
+  try {
+    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
+  } catch (err) {
+    console.error('Something went wrong:', (err as Error).message);
+  }
+}
+
+main();
+# compile to JavaScript
+npx tsc api-demo.ts
+
+# run the output
+node api-demo.js
+
+# or skip the compile step (requires ts-node)
+npx ts-node api-demo.ts
