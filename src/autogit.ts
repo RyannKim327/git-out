@@ -1,38 +1,20 @@
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;        // 1 and below are not prime
-  if (n <= 3) return true;         // 2 and 3 are prime
+// Original array
+const original: number[] = [1, 2, 3, 4, 5];
 
-  // Even numbers > 2 are composite.
-  if (n % 2 === 0) return false;
+// 1️⃣ In‑place reverse (mutates `original`)
+original.reverse();
+console.log(original); // [5, 4, 3, 2, 1]
 
-  // Check odd divisors up to sqrt(n)
-  for (let i = 3; i * i <= n; i += 2) {
-    if (n % i === 0) return false;
-  }
-  return true;
-}
-function isPrime6(n: number): boolean {
-  if (n <= 1) return false;
-  if (n <= 3) return true;
-  if (n % 2 === 0 || n % 3 === 0) return false;
+// 2️⃣ Copy then reverse (keeps `original` intact)
+const reversedCopy = original.slice().reverse();  // or [...original].reverse()
+console.log(reversedCopy);  // [5, 4, 3, 2, 1]
+type Person = { name: string; age: number };
 
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-  return true;
-}
-function isPrimeBig(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
+];
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
-}
-console.log(isPrime(97));   // true
-console.log(isPrime(100));  // false
-console.log(isPrime6(97));  // true
-console.log(isPrime6(100)); // false
-console.log(isPrimeBig(19n)); // true
+const reversedPeople = [...people].reverse(); // still Person[]
+const reduceReversed = <T>(array: T[]): T[] =>
+  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
