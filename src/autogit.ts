@@ -1,147 +1,129 @@
-/* ──────────────────────────────────────────────────────
- *  SkipListNode<T>
- * ────────────────────────────────────────────────────── */
-class SkipListNode<T> {
-  /** The stored value (defined only in the “bottom” node) */
-  value?: T;
+/**
+ * A node in the B‑tree.
+ * Keys are stored in ascending order.
+ */
+class BTreeNode<K, V> {
+  // Keys and values are kept together to simplify return of key/value pairs.
+  keys: K[] = [];
+  values: V[] = [];
 
-  /** Links to the node that follows this one at each level */
-  forward: Array<SkipListNode<T> | null> = [];
+  // Children – null for leaf nodes.
+  children: (BTreeNode<K, V> | null)[] = [];
 
-  constructor(value?: T, level: number = 0) {
-    this.value = value;
-    this.forward = new Array(level + 1).fill(null);
+  // Whether this node is a leaf.
+  leaf: boolean;
+
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
+
+  /* Helper: find first index where key should be inserted */
+  findKey(key: K, cmp: (a: K, b: K) => number): number {
+    let idx = 0;
+    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
+      ++idx;
+    }
+    return idx;
   }
 }
+/**
+ * B‑Tree implementation
+ *
+ * @param t Minimum degree (≥ 2). Every node except the root contains
+ *          at least t‑1 keys and at most 2*t‑1 keys.
+ */
+class BTree<K, V> {
+  private root: BTreeNode<K, V>;
+  private readonly t: number;
+  private readonly cmp: (a: K, b: K) => number;
 
-/* ──────────────────────────────────────────────────────
- *  SkipList<T>
- * ────────────────────────────────────────────────────── */
-export class SkipList<T> {
-  /* Adjustable parameters */
-  private readonly MAX_LEVEL: number;      // upper bound for levels
-  private readonly P: number;              // probability of promoting a node
-
-  private level: number = 0;               // current maximum level
-  private header: SkipListNode<T>;         // sentinel start node
-
-  constructor(maxLevel: number = 16, probability: number = 0.5) {
-    this.MAX_LEVEL = maxLevel;
-    this.P        = probability;
-    this.header   = new SkipListNode<T>();
+  constructor(
+    t: number = 2,
+    cmp?: (a: K, b: K) => number
+  ) {
+    if (t < 2) throw new Error('B‑tree order must be >= 2');
+    this.t = t;
+    this.root = new BTreeNode<K, V>(true);
+    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Random level generator
-   * ────────────────────────────────────────────────────── */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
-      lvl++;
+  /* Public API --------------------------------------------------- */
+  search(key: K): V | undefined {
+    return this._search(this.root, key);
+  }
+
+  insert(key: K, value: V): void {
+    // If root is full, create a new leaf and split
+    if (this.root.keys.length === 2 * this.t - 1) {
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this._splitChild(newRoot, 0);
+      this.root = newRoot;
     }
-    return lvl;
+    this._insertNonFull(this.root, key, value);
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Search for a value
-   * ────────────────────────────────────────────────────── */
-  search(value: T): SkipListNode<T> | null {
-    let current = this.header;
+  /* Delete is optional – implement if you need it. */
+  /* delete(key: K): void { … } */
 
-    // move down each level, then across level 0
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
+  /* Iterator over all key/value pairs in order */
+  *inOrder(): IterableIterator<[K, V]> {
+    yield* this._inOrder(this.root);
+  }
+
+  /* ------------------------------------------------------------------ */
+
+  /* Core recursive operations --------------------------------------- */
+  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
+    const idx = node.findKey(key, this.cmp);
+
+    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
+      return node.values[idx];
+    }
+
+    if (node.leaf) {
+      return undefined;
+    }
+
+    return this._search(node.children[idx]!, key);
+  }
+
+  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
+    let i = node.keys.length - 1;
+
+    if (node.leaf) {
+      // Insert into leaf – shift keys/vals right of insertion point
+      const idx = node.findKey(key, this.cmp);
+      node.keys.splice(idx, 0, key);
+      node.values.splice(idx, 0, value);
+    } else {
+      // Find child to descend into
+      const idx = node.findKey(key, this.cmp);
+      const child = node.children[idx]!;
+
+      if (child.keys.length === 2 * this.t - 1) {
+        // Child is full → split then decide which side to go
+        this._splitChild(node, idx);
+
+        // After split, middle key moves up – need to decide child again
+        if (this.cmp(key, node.keys[idx]) > 0) {
+          i = idx + 1;
+        } else {
+          i = idx;
+        }
       }
-    }
-
-    current = current.forward[0]!;
-
-    if (current && current.value === value) return current;
-    return null;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Insert a new value
-   * ────────────────────────────────────────────────────── */
-  insert(value: T): void {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    // find where the new node will be inserted at each level
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    // pick a random level for the new node
-    const lvl = this.randomLevel();
-
-    // raise the list’s level if necessary
-    if (lvl > this.level) {
-      for (let i = this.level + 1; i <= lvl; i++) {
-        update[i] = this.header;
-      }
-      this.level = lvl;
-    }
-
-    const newNode = new SkipListNode<T>(value, lvl);
-
-    // splice the new node into every level above 0
-    for (let i = 0; i <= lvl; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
+      this._insertNonFull(node.children[i]!, key, value);
     }
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Remove a value
-   * ────────────────────────────────────────────────────── */
-  remove(value: T): boolean {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
+  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
+    const t = this.t;
+    const child = parent.children[idx]!;
+    const newNode = new BTreeNode<K, V>(child.leaf);
 
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
+    // Move the second half of child’s keys/values to newNode
+    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
+    newNode.values = child.values.splice(t);
 
-    current = current.forward[0]!;
-
-    if (!current || current.value !== value) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node at every level it appears
-    for (let i = 0; i <= this.level; i++) {
-      if (update[i].forward[i] !== current) break;
-      update[i].forward[i] = current.forward[i];
-    }
-
-    // shrink the list’s level if the top levels became empty
-    while (this.level > 0 && this.header.forward[this.level] == null) {
-      this.level--;
-    }
-
-    return true;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Helper: convert list into an array (useful for debugging)
-   * ────────────────────────────────────────────────────── */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.header.forward[0];
-
-    while (node) {
-      result.push(node.value!);
-      node = node.forward[0];
-    }
-
-    return result;
-  }
-}
+    if (!child.leaf) {
+      newNode.children = child.children.splice(t
