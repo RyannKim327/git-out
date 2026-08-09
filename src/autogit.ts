@@ -1,55 +1,76 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
+/**
+ * Build the LPS (Longest Prefix Suffix) table for KMP.
+ *
+ * @param pattern - The pattern string for which the table is built.
+ * @returns An array where lps[i] is the length of the longest proper
+ *          prefix of pattern[0..i] that is also a suffix of that substring.
+ */
+function buildLPS(pattern: string): number[] {
+  const m = pattern.length;
+  const lps: number[] = Array(m).fill(0);
+  let length = 0;                 // length of previous longest prefix suffix
+  let i = 1;                      // lps[0] is always 0
+
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length += 1;
+      lps[i] = length;
+      i += 1;
+    } else {
+      if (length !== 0) {
+        // fall back in the pattern (do not increment i here)
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i += 1;
+      }
+    }
+  }
+  return lps;
 }
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
+/**
+ * KMP search – returns all starting indices of `pattern` in `text`.
+ *
+ * @param text    – The string to search within.
+ * @param pattern – The string to find.
+ * @returns Array of start indices where pattern occurs in text.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];          // nothing to find
+  const lps = buildLPS(pattern);
+  const result: number[] = [];
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
+  let i = 0;   // index for text
+  let j = 0;   // index for pattern
 
-    if (slow === fast) {        // they met → cycle detected
-      return true;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i += 1;
+      j += 1;
+    }
+
+    // full match found
+    if (j === pattern.length) {
+      result.push(i - j);   // starting index
+      j = lps[j - 1];       // allow overlapping matches
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i += 1;
+      }
     }
   }
 
-  // fast ran out of nodes → no cycle
-  return false;
+  return result;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
-  }
-  return false;
-}
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
+const matches = kmpSearch(text, pattern);
+console.log(matches);          // [10]
 
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
-  }
-
-  // No cycle
-  if (!fast || !fast.next) return null;
-
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
-}
+const hasMatch = matches.length > 0;
+console.log(hasMatch);         // true
