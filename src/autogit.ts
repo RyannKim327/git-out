@@ -1,31 +1,16 @@
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
+// 1. Using the Number constructor
+const val1 = Number("42");          // 42
 
-// Numeric ascending sort
-numbers.sort((a, b) => a - b);
-console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
+// 2. Using unary plus
+const val2 = +"42";                 // 42
 
-// Numeric descending sort
-numbers.sort((a, b) => b - a);
-console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
-[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
-const sorted = [...numbers].sort((a, b) => a - b);
-numbers.sort((a, b) => {
-  const absDiff = Math.abs(a) - Math.abs(b);
-  return absDiff !== 0 ? absDiff : a - b;
-});
-function quickSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;
-  const pivot = arr[arr.length - 1];
-  const left: number[] = [];
-  const right: number[] = [];
+// 3. Using parseInt (base 10 recommended)
+const val3 = parseInt("42", 10);    // 42
 
-  for (const x of arr.slice(0, -1)) {
-    (x < pivot ? left : right).push(x);
-  }
-
-  return [...quickSort(left), pivot, ...quickSort(right)];
+// 4. Using parseFloat for decimals
+const val4 = parseFloat("3.14");    // 3.14
+function safeParse(str: string): number | null {
+  const n = Number(str);
+  return Number.isNaN(n) ? null : n;
 }
-
-const numbers2 = [3, 1, 4, 1, 5, 9, 2];
-const sorted2 = quickSort(numbers2);
-console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
+const i = Math.floor(parseFloat("3.9")); // 3
