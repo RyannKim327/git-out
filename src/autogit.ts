@@ -1,38 +1,41 @@
-const numbers = [1, 2, 3, 4, 5];
+/**
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
+ *
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
+ */
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place the key into its correct spot
+    arr[j + 1] = key;
+  }
+
+  return arr; // handy for chaining, but the original array is already sorted
+}
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
+
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
 ];
 
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
-
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
-
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
-  }
-}
-console.log(data); // [10, 30, 40]
-/**
- * Removes the first occurrence of `value` from `arr`.
- */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
-}
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
