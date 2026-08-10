@@ -1,173 +1,66 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
-
-interface Edge {
-  target: Node;
-  weight: Weight;
+// A simple singly‑linked‑list node suitable for the intersection test
+export interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
 }
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
-}
-
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
-
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
+/**
+ * Returns the first node at which two singly‑linked lists intersect,
+ * or undefined if they never intersect.
+ */
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | undefined,
+  headB: ListNode<T> | undefined
+): ListNode<T> | undefined {
+  // Helper that walks a list and returns its length
+  const getLength = (node?: ListNode<T>) => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
     }
-    return min;
+    return len;
+  };
+
+  let lenA = getLength(headA);
+  let lenB = getLength(headB);
+
+  // Advance the longer list so both pointers are at the same distance
+  // from the end of the list.
+  let currA = headA;
+  let currB = headB;
+  while (lenA > lenB && currA) {
+    currA = currA.next;
+    lenA--;
+  }
+  while (lenB > lenA && currB) {
+    currB = currB.next;
+    lenB--;
   }
 
-  get size() {
-    return this.heap.length;
+  // Move forward together until either we find the intersection
+  // or both pointers hit the end (undefined).
+  while (currA !== currB) {
+    currA = currA?.next;
+    currB = currB?.next;
   }
 
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
-        }
-      }
-
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
+  return currA; // May be undefined if no intersection
 }
+// Build example lists that intersect:
 
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
+//      A -> B -> C
+//      ^          |
+//      |          v
+//      D <- E
 
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
+const c: ListNode<number> = { val: 3 };
+const b: ListNode<number> = { val: 2, next: c };
+const a: ListNode<number> = { val: 1, next: b };
 
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
+const e: ListNode<number> = { val: 5, next: a };
+const d: ListNode<number> = { val: 4, next: e };
 
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
-    }
-  }
-
-  return { distances, prev };
-}
-
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
-
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
-  }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
-}
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
+console.log(getIntersectionNode(a, d) === a);   // true
+console.log(getIntersectionNode(b, d) === a);   // true
+console.log(getIntersectionNode(c, d) === a);   // true
