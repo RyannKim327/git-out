@@ -1,50 +1,48 @@
-interface TreeNode {
-  val:  number | string   // you can put any type that fits your data
-  left?: TreeNode | null
-  right?: TreeNode | null
-}
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0;                 // empty tree -> depth 0
+/**
+ * Returns the majority element of the array if one exists,
+ * otherwise returns undefined.
+ *
+ * @param arr an array of comparable values (number, string, …)
+ */
+export function findMajority<T extends number | string | boolean>(
+  arr: T[]
+): T | undefined {
+  // 1️⃣ find a candidate
+  let candidate: T | undefined;
+  let count = 0;
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
-
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let depth = 0;
-  const queue: Array<TreeNode> = [root];
-
-  while (queue.length) {
-    const levelSize = queue.length;   // nodes at the current level
-    depth++;                          // we’re about to process a whole new level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;    // safe; queue is non‑empty here
-
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  for (const val of arr) {
+    if (count === 0) {
+      candidate = val;
+      count = 1;
+    } else if (val === candidate) {
+      count++;
+    } else {
+      count--;
     }
   }
 
-  return depth;
-}
-// Build a tiny tree:
-//        1
-//       / \
-//      2   3
-//         /
-//        4
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2 },
-  right: {
-    val: 3,
-    left: { val: 4 }
-  }
-};
+  // 2️⃣ verify that the candidate is actually a majority
+  if (candidate === undefined) return undefined;
 
-console.log('Recursive depth:', maxDepth(tree));          // 3
-console.log('Iterative depth:', maxDepthIterative(tree)); // 3
+  let freq = 0;
+  for (const v of arr) if (v === candidate) freq++;
+
+  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+}
+console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
+console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
+console.log(findMajority(['a', 'a', 'b']));       // → 'a'
+export function findMajorityWithMap<T>(
+  arr: T[]
+): T | undefined {
+  const map = new Map<T, number>();
+  const threshold = Math.floor(arr.length / 2);
+
+  for (const v of arr) {
+    const newCount = (map.get(v) ?? 0) + 1;
+    map.set(v, newCount);
+    if (newCount > threshold) return v;
+  }
+  return undefined;
+}
