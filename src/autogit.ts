@@ -1,77 +1,70 @@
 /**
- * Median of two sorted arrays.
+ * Builds the bad‑character shift table for a given pattern.
  *
- * The algorithm keeps a binary search on the smaller array.  
- * At each step we decide how many elements from `a` belong on the left side of the
- * partition.  The counterpart from `b` is computed so that the left side contains
- * exactly half (or half‑plus‑one for odd total length) of the elements.
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
  *
- * Edge cases:
- *   * one of the arrays may be empty
- *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
  */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Ensure `a` is the shorter array to keep the binary search limits small.
-  let a = nums1;
-  let b = nums2;
-  if (a.length > b.length) [a, b] = [b, a];
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
 
-  const m = a.length;
-  const n = b.length;
-  // `halfLen` is the number of elements that must be on the left side
-  // of the partition (including the middle element when total length is odd).
-  const halfLen = Math.floor((m + n + 1) / 2);
+  // Default shift: length of the pattern
+  table.fill(m);
 
-  let low = 0;
-  let high = m;
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
+  }
+  return table;
+}
 
-  while (low <= high) {
-    // Number of elements from a put on the left side
-    const i = Math.floor((low + high) / 2);
-    // Number of elements from b put on the left side
-    const j = halfLen - i;
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
 
-    const aLeft  = i === 0 ? -Infinity : a[i - 1];
-    const aRight = i === m ?  Infinity : a[i];
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
 
-    const bLeft  = j === 0 ? -Infinity : b[j - 1];
-    const bRight = j === n ?  Infinity : b[j];
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
 
-    // Partition is correct: all left elements ≤ all right elements
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // If total length is odd, the median is the max of the left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      // If even, it’s the mean of the two middle values
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      // Too many elements from a on the left: move left
-      high = i - 1;
-    } else {
-      // Too few elements from a on the left: move right
-      low = i + 1;
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
     }
+
+    if (j < 0) {          // full match
+      result.push(i);
+    }
+
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
   }
 
-  // Should never reach here for valid input
-  throw new Error("Invalid input");
+  return result;
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
-console.log(findMedianSortedArrays(arr1, arr2)); // 8
-export function medianNaive(a: number[], b: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-  while (i < a.length || j < b.length) {
-    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
-  }
-  const mid = Math.floor(merged.length / 2);
-  return merged.length % 2
-    ? merged[mid]
-    : (merged[mid - 1] + merged[mid]) / 2;
-}
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
+
+console.log(bmhSearch(haystack, needle)); // → [11]
+
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
