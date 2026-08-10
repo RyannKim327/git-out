@@ -1,45 +1,48 @@
 /**
- * Returns an object with the maximum sum and the start/end indices
- * of the sub‑array that produces that sum.
+ * Shell sort – a classic gap‑based insertion sort
  *
- * @param nums - array of numbers
- * @returns { maxSum, start, end }
+ * @template T - type held in the array
+ * @param arr   Array to be sorted in place
+ * @param cmp   Optional comparator, defaults to numeric comparison
+ * @returns     The sorted array (same reference as `arr`)
  */
-export function maxSumSubarray(nums: number[]) {
-  // In case the input is empty we can return 0 / -1/-1
-  if (nums.length === 0) {
-    return { maxSum: 0, start: -1, end: -1 };
-  }
+export function shellSort<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
+): T[] {
+  const n = arr.length;
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These will record the best sub‑array boundaries
-  let bestStart = 0;
-  let bestEnd = 0;
-  // Temporary positions
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at i
-    if (currentSum + nums[i] < nums[i]) {
-      currentSum = nums[i];
-      tempStart = i;
-    } else {
-      currentSum += nums[i];
-    }
-
-    // Update best if we have a better sum
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
+  // A common sequence: n/2, n/4, …, 1
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Do a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap-sorted elements until the correct spot for temp is found
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
     }
   }
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  return arr;
 }
-const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
-const { maxSum, start, end } = maxSumSubarray(arr);
-console.log(maxSum); // 43
-console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
+// 1️⃣ Sort numbers
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
+
+// 2️⃣ Sort strings alphabetically
+shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
+
+// 3️⃣ Sort objects by a property
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: "Zoe", age: 29 },
+  { name: "Alex", age: 22 },
+  { name: "Mia", age: 35 }
+];
+shellSort(people, (a, b) => a.age - b.age);
+console.log(people.map(p => p.age));  // → [22, 29, 35]
