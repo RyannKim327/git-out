@@ -1,61 +1,48 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Returns the longest common subsequence of two strings.
+ * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
+ */
+function lcs(s1: string, s2: string): string {
+  const n = s1.length,
+        m = s2.length;
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
-  }
-  return head
-}
+  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
-
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
+  // Build the DP table.
+  for (let i = 1; i <= n; i++) {
+    const a = s1[i - 1];
+    for (let j = 1; j <= m; j++) {
+      if (a === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  // At the end, prev is the new head
-  return prev
-}
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
+  // Reconstruct the subsequence.
+  let i = n,
+      j = m,
+      result: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (s1[i - 1] === s2[j - 1]) {
+      // Character is part of LCS – prepend to answer.
+      result.push(s1[i - 1]);
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;   // move up
+    } else {
+      j--;   // move left
+    }
   }
 
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
-
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
-
-  return newHead
+  return result.reverse().join('');
 }
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
+const a = 'AGGTAB';
+const b = 'GXTXAYB';
 
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+const sub = lcs(a, b);
+console.log(`LCS length: ${sub.length}`); // 4
+console.log(`LCS itself: ${sub}`);       // GTAB
