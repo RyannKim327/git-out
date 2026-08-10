@@ -1,65 +1,87 @@
-/**
- * Computes the LPS array for a given pattern.
- * For each index i, lps[i] is the length of the longest
- * proper prefix that is also a suffix for pattern[0..i].
- */
-function buildLps(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;          // length of previous longest prefix suffix
-    let i = 1;
+// simple node definition – feel free to extend it later (value, etc.)
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // try the previous longest prefix suffix
-                length = lps[length - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-    return lps;
+  constructor(public readonly val?: any) {}
 }
-/**
- * Returns the starting indices of all occurrences of `pattern`
- * inside `text`. If the pattern is empty, an empty array is returned.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
-
-    const lps = buildLps(pattern);
-    const result: number[] = [];
-
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++; j++;
-            if (j === pattern.length) {
-                // match found; record start index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // fall back in pattern
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
-    }
-    return result;
+interface TreeNode {
+  val?: any;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
 }
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;          // empty subtree → no leaf
 
-console.log(kmpSearch(haystack, needle));
-// → [10]
+  // If this node has no children → it's a leaf.
+  if (node.left === null && node.right === null) {
+    return 1;
+  }
+
+  // Otherwise sum the children’s counts
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+function countLeavesIterative(root: TreeNode | null): number {
+  if (root === null) return 0;
+
+  let leafCount = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode; // `as` because array never empty
+
+    // Check for leaf
+    if (node.left === null && node.right === null) {
+      leafCount++;
+    } else {
+      // push children if they exist
+      if (node.right !== null) stack.push(node.right);
+      if (node.left !== null) stack.push(node.left);
+    }
+  }
+
+  return leafCount;
+}
+// ---------------------------------------------------------------------
+// 1. Node definition
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
+
+  constructor(public readonly val: any) {}
+}
+
+// ---------------------------------------------------------------------
+// 2. Recursive counter
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;
+  if (!node.left && !node.right) return 1;
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+
+// 3. Iterative counter
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let leaves = 0;
+  const stack: TreeNode[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) leaves++;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return leaves;
+}
+
+// ---------------------------------------------------------------------
+// 4. Demo
+
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4); // leaf
+root.left.right = new TreeNode(5); // leaf
+root.right.left = new TreeNode(6); // leaf
+
+console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
+console.log('Iterative leaves:', countLeavesIterative(root)); // 3
