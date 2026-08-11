@@ -1,31 +1,25 @@
-const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
+/***** 1️⃣  The classic Math.max with the spread operator *****/
 
-// Numeric ascending sort
-numbers.sort((a, b) => a - b);
-console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
+const numbers = [4, 12, 7, 19, 3];
 
-// Numeric descending sort
-numbers.sort((a, b) => b - a);
-console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
-[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
-const sorted = [...numbers].sort((a, b) => a - b);
-numbers.sort((a, b) => {
-  const absDiff = Math.abs(a) - Math.abs(b);
-  return absDiff !== 0 ? absDiff : a - b;
-});
-function quickSort(arr: number[]): number[] {
-  if (arr.length <= 1) return arr;
-  const pivot = arr[arr.length - 1];
-  const left: number[] = [];
-  const right: number[] = [];
+// Spreads the array into individual arguments for Math.max
+const max1 = Math.max(...numbers); // 19
+/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
 
-  for (const x of arr.slice(0, -1)) {
-    (x < pivot ? left : right).push(x);
-  }
+const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
+// Also 19
+/***** 3️⃣  If you’re dealing with objects and need a property *****/
 
-  return [...quickSort(left), pivot, ...quickSort(right)];
-}
+type Item = { id: number; value: number };
+const items: Item[] = [
+  { id: 1, value: 4 },
+  { id: 2, value: 12 },
+  { id: 3, value: 7 },
+];
 
-const numbers2 = [3, 1, 4, 1, 5, 9, 2];
-const sorted2 = quickSort(numbers2);
-console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
+// Max based on `value`
+const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
+// maxVal is 12
+// If you want the whole object:
+const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
+// maxObj is { id: 2, value: 12 }
