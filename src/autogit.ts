@@ -1,21 +1,29 @@
-function countChar(str: string, target: string): number {
-  // guard against empty target (avoids throwing on .split(''))
-  if (target.length !== 1) throw new Error('target must be a single character');
+// hello.ts
+import * as readline from 'readline'
 
-  return str.split(target).length - 1;
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+
+function ask(question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
 }
-console.log(countChar('hello world', 'l')); // 3
-function countCharRegEx(str: string, target: string): number {
-  const re = new RegExp(target, 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
+
+async function main() {
+  const name = await ask('What’s your name? ')
+  const favNum = await ask('What’s your favorite number? ')
+  
+  const num = parseInt(favNum, 10)
+  const isEven = !isNaN(num) ? num % 2 === 0 : false
+
+  console.log(`\nHello, ${name}!`);
+  console.log(`Your favorite number is ${favNum}`);
+  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
+
+  rl.close()
 }
-console.log(countCharRegEx('banana', 'a')); // 3
-function countCharLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
-  }
-  return count;
-}
-console.log(countCharLoop('Mississippi', 'i')); // 4
+
+main()
+tsc hello.ts   # compile to JavaScript
+node hello.js
