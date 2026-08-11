@@ -1,41 +1,147 @@
-// Simple base & height
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('base and height must be positive numbers');
+/* ──────────────────────────────────────────────────────
+ *  SkipListNode<T>
+ * ────────────────────────────────────────────────────── */
+class SkipListNode<T> {
+  /** The stored value (defined only in the “bottom” node) */
+  value?: T;
+
+  /** Links to the node that follows this one at each level */
+  forward: Array<SkipListNode<T> | null> = [];
+
+  constructor(value?: T, level: number = 0) {
+    this.value = value;
+    this.forward = new Array(level + 1).fill(null);
   }
-  return (base * height) / 2;
 }
 
-// Three side lengths (Heron’s formula)
-function areaFromSides(a: number, b: number, c: number): number {
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The side lengths do not form a triangle');
+/* ──────────────────────────────────────────────────────
+ *  SkipList<T>
+ * ────────────────────────────────────────────────────── */
+export class SkipList<T> {
+  /* Adjustable parameters */
+  private readonly MAX_LEVEL: number;      // upper bound for levels
+  private readonly P: number;              // probability of promoting a node
+
+  private level: number = 0;               // current maximum level
+  private header: SkipListNode<T>;         // sentinel start node
+
+  constructor(maxLevel: number = 16, probability: number = 0.5) {
+    this.MAX_LEVEL = maxLevel;
+    this.P        = probability;
+    this.header   = new SkipListNode<T>();
   }
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
-console.log(areaFromBaseHeight(10, 5)); // 25
-console.log(areaFromSides(3, 4, 5));   // 6
-const area = (b: number, h: number) => (b * h) / 2;
-class Triangle {
-  constructor(private a: number, private b: number, private c: number) {
-    if (a + b <= c || a + c <= b || b + c <= a) {
-      throw new Error('Invalid side lengths');
+
+  /* ──────────────────────────────────────────────────────
+   *  Random level generator
+   * ────────────────────────────────────────────────────── */
+  private randomLevel(): number {
+    let lvl = 0;
+    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
+      lvl++;
+    }
+    return lvl;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Search for a value
+   * ────────────────────────────────────────────────────── */
+  search(value: T): SkipListNode<T> | null {
+    let current = this.header;
+
+    // move down each level, then across level 0
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+    }
+
+    current = current.forward[0]!;
+
+    if (current && current.value === value) return current;
+    return null;
+  }
+
+  /* ──────────────────────────────────────────────────────
+   *  Insert a new value
+   * ────────────────────────────────────────────────────── */
+  insert(value: T): void {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
+
+    // find where the new node will be inserted at each level
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
+
+    // pick a random level for the new node
+    const lvl = this.randomLevel();
+
+    // raise the list’s level if necessary
+    if (lvl > this.level) {
+      for (let i = this.level + 1; i <= lvl; i++) {
+        update[i] = this.header;
+      }
+      this.level = lvl;
+    }
+
+    const newNode = new SkipListNode<T>(value, lvl);
+
+    // splice the new node into every level above 0
+    for (let i = 0; i <= lvl; i++) {
+      newNode.forward[i] = update[i].forward[i];
+      update[i].forward[i] = newNode;
     }
   }
 
-  public area(): number {
-    const s = (this.a + this.b + this.c) / 2;
-    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
-  }
-}
+  /* ──────────────────────────────────────────────────────
+   *  Remove a value
+   * ────────────────────────────────────────────────────── */
+  remove(value: T): boolean {
+    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
+    let current = this.header;
 
-// Usage
-const tri = new Triangle(6, 7, 8);
-console.log(tri.area()); // 20.784609690826528
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new RangeError('Both base and height should be positive numbers');
+    for (let i = this.level; i >= 0; i--) {
+      while (current.forward[i] && current.forward[i]!.value! < value) {
+        current = current.forward[i]!;
+      }
+      update[i] = current;
+    }
+
+    current = current.forward[0]!;
+
+    if (!current || current.value !== value) {
+      return false; // nothing to delete
+    }
+
+    // unlink the node at every level it appears
+    for (let i = 0; i <= this.level; i++) {
+      if (update[i].forward[i] !== current) break;
+      update[i].forward[i] = current.forward[i];
+    }
+
+    // shrink the list’s level if the top levels became empty
+    while (this.level > 0 && this.header.forward[this.level] == null) {
+      this.level--;
+    }
+
+    return true;
   }
-  return base * height / 2;
+
+  /* ──────────────────────────────────────────────────────
+   *  Helper: convert list into an array (useful for debugging)
+   * ────────────────────────────────────────────────────── */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.header.forward[0];
+
+    while (node) {
+      result.push(node.value!);
+      node = node.forward[0];
+    }
+
+    return result;
+  }
 }
