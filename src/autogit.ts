@@ -1,27 +1,60 @@
 /**
- * Bubble‑sort in place.
- * Works on arrays of any type that can be compared with the `<` operator.
+ * Returns true if `s` is a palindrome.
+ *
+ * Works in O(n) time and O(1) additional space.
+ * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
  */
-export function bubbleSort<T>(arr: T[]): void {
-  let swapped: boolean;
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // keep looping until a pass produces no swaps
-  do {
-    swapped = false;
-    for (let i = 0; i < arr.length - 1; i++) {
-      // compare adjacent elements
-      if (arr[i] > arr[i + 1]) {
-        // swap them
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;      // a swap happened, so we might need another pass
-      }
+  while (left < right) {
+    if (s[left] !== s[right]) {
+      return false;
     }
-  } while (swapped);
-}
-const numbers = [5, 3, 8, 4, 1];
-bubbleSort(numbers);
-console.log(numbers); // → [1, 3, 4, 5, 8]
+    left++;
+    right--;
+  }
 
-const strings = ["pear", "apple", "banana"];
-bubbleSort(strings);
-console.log(strings); // → ["apple", "banana", "pear"]
+  return true;
+}
+
+// Demo
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isAlphanumeric(c: string): boolean {
+  const code = c.charCodeAt(0);
+  return (
+    // 0‑9
+    (code >= 48 && code <= 57) ||
+    // A‑Z
+    (code >= 65 && code <= 90) ||
+    // a‑z
+    (code >= 97 && code <= 122)
+  );
+}
+
+function isPalindromeLoose(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    // Skip non‑alphanumerics
+    while (left < right && !isAlphanumeric(s[left])) left++;
+    while (left < right && !isAlphanumeric(s[right])) right--;
+
+    // After skipping, compare lowercase versions
+    if (
+      left < right &&
+      s[left].toLowerCase() !== s[right].toLowerCase()
+    ) {
+      return false;
+    }
+
+    left++;
+    right--;
+  }
+  return true;
+}
+
+console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
