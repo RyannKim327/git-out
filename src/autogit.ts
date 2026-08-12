@@ -1,28 +1,34 @@
-// Simple random user fetcher with axios (TypeScript)
-
-import axios from 'axios';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  username: string;
-  phone: string;
-  website: string;
+function stringLength(s: string): number {
+  let count = 0;
+  for (const _ of s) {   // iterates over Unicode code points
+    ++count;
+  }
+  return count;
+}
+function stringLengthCodeUnits(s: string): number {
+  let count = 0;
+  // `s[i]` returns `undefined` past the end of the string
+  for (let i = 0; s[i] !== undefined; i++) {
+    ++count;
+  }
+  return count;
+}
+function stringLengthCharAt(s: string): number {
+  let count = 0;
+  for (let i = 0; s.charAt(i) !== ''; i++) {
+    ++count;
+  }
+  return count;
+}
+function* chars(s: string): Generator<unknown> {
+  for (const c of s) { yield c; }
 }
 
-async function fetchRandomUser(): Promise<User | undefined> {
-  try {
-    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
-    const randomIndex = Math.floor(Math.random() * data.length);
-    return data[randomIndex];
-  } catch (error) {
-    console.error('Error fetching users:', error);
-  }
+function stringLengthFunctional(s: string): number {
+  let count = 0;
+  for (const _ of chars(s)) { ++count; }
+  return count;
 }
-
-fetchRandomUser().then(user => {
-  if (user) {
-    console.log(`🎲 Random user: ${user.name} (${user.email})`);
-  }
-});
+console.log(stringLength("hello"));       // 5
+console.log(stringLength("👋🌍"));        // 2  (two code points)
+console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
