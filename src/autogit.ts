@@ -1,83 +1,77 @@
-function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;          // out of range
+/**
+ * Median of two sorted arrays.
+ *
+ * The algorithm keeps a binary search on the smaller array.  
+ * At each step we decide how many elements from `a` belong on the left side of the
+ * partition.  The counterpart from `b` is computed so that the left side contains
+ * exactly half (or half‑plus‑one for odd total length) of the elements.
+ *
+ * Edge cases:
+ *   * one of the arrays may be empty
+ *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
+ */
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Ensure `a` is the shorter array to keep the binary search limits small.
+  let a = nums1;
+  let b = nums2;
+  if (a.length > b.length) [a, b] = [b, a];
 
-  // cloning so we don’t mutate the caller’s array
-  const copy = [...arr];
+  const m = a.length;
+  const n = b.length;
+  // `halfLen` is the number of elements that must be on the left side
+  // of the partition (including the middle element when total length is odd).
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  // If you need custom ordering, pass a compare function.
-  // Default: numeric ascending.
-  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
+  let low = 0;
+  let high = m;
 
-  // Arrays are zero‑indexed
-  return copy[k - 1];
-}
+  while (low <= high) {
+    // Number of elements from a put on the left side
+    const i = Math.floor((low + high) / 2);
+    // Number of elements from b put on the left side
+    const j = halfLen - i;
 
-// Example
-const nums = [7, 3, 5, 2, 9];
-console.log(kthSmallestBySort(nums, 2));   // 3
-function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
+    const aLeft  = i === 0 ? -Infinity : a[i - 1];
+    const aRight = i === m ?  Infinity : a[i];
 
-  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const clone = [...arr]; // keep the original untouched
+    const bLeft  = j === 0 ? -Infinity : b[j - 1];
+    const bRight = j === n ?  Infinity : b[j];
 
-  function partition(left: number, right: number, pivotIndex: number): number {
-    const pivotValue = clone[pivotIndex];
-    // move pivot to end
-    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
-
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (comp(clone[i], pivotValue) < 0) {
-        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
-        storeIndex++;
+    // Partition is correct: all left elements ≤ all right elements
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // If total length is odd, the median is the max of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
       }
+      // If even, it’s the mean of the two middle values
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements from a on the left: move left
+      high = i - 1;
+    } else {
+      // Too few elements from a on the left: move right
+      low = i + 1;
     }
-    // move pivot to its final place
-    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
-    return storeIndex;
   }
 
-  let left = 0;
-  let right = clone.length - 1;
-  let pivotIndex;
-
-  while (true) {
-    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
-    if (pivotIndex === k - 1) return clone[pivotIndex];
-    if (pivotIndex > k - 1) right = pivotIndex - 1;
-    else left = pivotIndex + 1;
+  // Should never reach here for valid input
+  throw new Error("Invalid input");
+}
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
+console.log(findMedianSortedArrays(arr1, arr2)); // 8
+export function medianNaive(a: number[], b: number[]): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
   }
+  const mid = Math.floor(merged.length / 2);
+  return merged.length % 2
+    ? merged[mid]
+    : (merged[mid - 1] + merged[mid]) / 2;
 }
-const data = [12, 3, 5, 7, 4, 19, 26];
-console.log(kthSmallestQuickSelect(data, 4)); // 7
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private compare: (a: T, b: T) => number) {}
-  // heap methods omitted for brevity...
-}
-
-function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const heap = new MinHeap<T>(cmp);
-  for (const v of arr) heap.insert(v);
-  let result: T | undefined;
-  for (let i = 0; i < k; i++) result = heap.extractMin();
-  return result;
-}
-const people = [
-  { name: 'Alice', age: 24 },
-  { name: 'Bob', age: 19 },
-  { name: 'Carol', age: 32 },
-  { name: 'Dave', age: 28 }
-];
-
-// 3rd youngest
-const thirdYoungest = kthSmallestQuickSelect(
-  people,
-  3,
-  (a, b) => a.age - b.age
-);
-
-console.log(thirdYoungest); // shows Bob (age 19)
