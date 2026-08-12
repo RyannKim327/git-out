@@ -1,70 +1,145 @@
 /**
- * Builds the bad‑character shift table for a given pattern.
- *
- * The table maps a character code (0–65535 for UTF‑16) to the shift value.
- * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
- * right‑most occurrence of that character inside the pattern.  
- *
- * @param pattern The substring we’re looking for.
- * @returns An array indexed by code unit, containing shift values.
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
  */
-function buildShiftTable(pattern: string): Uint16Array {
-  const m = pattern.length;
-  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
+type Graph = Map<string, string[]>;
 
-  // Default shift: length of the pattern
-  table.fill(m);
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
 
-  // For every character except the last one, compute an optimal shift
-  for (let i = 0; i < m - 1; i++) {
-    const code = pattern.charCodeAt(i);
-    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
+
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
+
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
+
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
+
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
+
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
+
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
+
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
+      }
+    }
+    return null;
   }
-  return table;
+
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
+    }
+
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
+    }
+  }
+
+  // No overlap – disconnected graph
+  return null;
 }
 
 /**
- * Boyer‑Moore‑Horspool search.
- *
- * @param text    The string to search inside.
- * @param pattern The substring we want to find.
- * @returns        All zero‑based indices where `pattern` starts in `text`.
+ * Reconstructs the full path from start → meeting → goal.
  */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [0];              // empty pattern matches at every position
-  if (m > n) return [];                // pattern longer than text – no match
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
 
-  const shift = buildShiftTable(pattern);
-  const result: number[] = [];
-
-  let i = 0;   // current alignment: pattern[0] aligned with text[i]
-  while (i <= n - m) {
-    let j = m - 1;   // start comparing from the end of the pattern
-
-    // Compare backwards
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
-    }
-
-    if (j < 0) {          // full match
-      result.push(i);
-    }
-
-    // Compute the shift.  We jump over at least one character, but the
-    // shift table may prescribe a longer shift if the mismatching character
-    // exists in the pattern.
-    const mismatchingCharCode = text.charCodeAt(i + m - 1);
-    i += shift[mismatchingCharCode];
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
   }
 
-  return result;
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
+  }
+
+  return path;
 }
-const haystack = 'ABCDABABCABCDABABD';
-const needle   = 'ABCDABD';
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
 
-console.log(bmhSearch(haystack, needle)); // → [11]
-
-// Multiple matches
-console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
