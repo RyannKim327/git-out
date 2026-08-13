@@ -1,147 +1,93 @@
-/* ──────────────────────────────────────────────────────
- *  SkipListNode<T>
- * ────────────────────────────────────────────────────── */
-class SkipListNode<T> {
-  /** The stored value (defined only in the “bottom” node) */
-  value?: T;
+// A node can carry any payload (`T`) and point to its neighbours.
+export interface GraphNode<T> {
+  value: T;
+  neighbours: GraphNode<T>[];
+}
+/**
+ * Recursively performs depth‑limited search.
+ *
+ * @param node        The node you are currently visiting.
+ * @param goalTest    Returns true if the current node satisfies the goal.
+ * @param limit       Number of edges left before the search terminates.
+ * @param visited     A set of IDs or reference values that keeps track of visited nodes.
+ *                    This protects against cycles that would otherwise cause infinite recursion.
+ * @returns The first node that satisfies `goalTest`, or `null`.
+ */
+export function depthLimitedSearchRec<T>(
+  node: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number,
+  visited: Set<GraphNode<T>> = new Set()
+): GraphNode<T> | null {
+  if (goalTest(node)) return node;
+  if (limit === 0) return null;          // reached the depth boundary
 
-  /** Links to the node that follows this one at each level */
-  forward: Array<SkipListNode<T> | null> = [];
+  visited.add(node);
 
-  constructor(value?: T, level: number = 0) {
-    this.value = value;
-    this.forward = new Array(level + 1).fill(null);
+  for (const neighbour of node.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
+      if (result !== null) return result;
+    }
   }
+
+  return null;   // nothing found within this branch
+}
+interface StackItem<T> {
+  node: GraphNode<T>;
+  depthLeft: number;
 }
 
-/* ──────────────────────────────────────────────────────
- *  SkipList<T>
- * ────────────────────────────────────────────────────── */
-export class SkipList<T> {
-  /* Adjustable parameters */
-  private readonly MAX_LEVEL: number;      // upper bound for levels
-  private readonly P: number;              // probability of promoting a node
+/**
+ * Iterative depth‑limited search.
+ */
+export function depthLimitedSearchIter<T>(
+  start: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number
+): GraphNode<T> | null {
+  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
+  const visited: Set<GraphNode<T>> = new Set();
 
-  private level: number = 0;               // current maximum level
-  private header: SkipListNode<T>;         // sentinel start node
+  while (stack.length) {
+    const { node, depthLeft } = stack.pop()!;
 
-  constructor(maxLevel: number = 16, probability: number = 0.5) {
-    this.MAX_LEVEL = maxLevel;
-    this.P        = probability;
-    this.header   = new SkipListNode<T>();
-  }
+    if (visited.has(node)) continue;
+    visited.add(node);
 
-  /* ──────────────────────────────────────────────────────
-   *  Random level generator
-   * ────────────────────────────────────────────────────── */
-  private randomLevel(): number {
-    let lvl = 0;
-    while (Math.random() < this.P && lvl < this.MAX_LEVEL) {
-      lvl++;
-    }
-    return lvl;
-  }
+    if (goalTest(node)) return node;
+    if (depthLeft === 0) continue;           // depth boundary reached
 
-  /* ──────────────────────────────────────────────────────
-   *  Search for a value
-   * ────────────────────────────────────────────────────── */
-  search(value: T): SkipListNode<T> | null {
-    let current = this.header;
-
-    // move down each level, then across level 0
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
+    // push neighbours onto the stack – LIFO order means the first neighbour
+    // will be processed last, mirroring the recursive DFS behaviour.
+    for (const neighbour of node.neighbours) {
+      if (!visited.has(neighbour)) {
+        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
       }
     }
-
-    current = current.forward[0]!;
-
-    if (current && current.value === value) return current;
-    return null;
   }
 
-  /* ──────────────────────────────────────────────────────
-   *  Insert a new value
-   * ────────────────────────────────────────────────────── */
-  insert(value: T): void {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    // find where the new node will be inserted at each level
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    // pick a random level for the new node
-    const lvl = this.randomLevel();
-
-    // raise the list’s level if necessary
-    if (lvl > this.level) {
-      for (let i = this.level + 1; i <= lvl; i++) {
-        update[i] = this.header;
-      }
-      this.level = lvl;
-    }
-
-    const newNode = new SkipListNode<T>(value, lvl);
-
-    // splice the new node into every level above 0
-    for (let i = 0; i <= lvl; i++) {
-      newNode.forward[i] = update[i].forward[i];
-      update[i].forward[i] = newNode;
-    }
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Remove a value
-   * ────────────────────────────────────────────────────── */
-  remove(value: T): boolean {
-    const update = new Array<SkipListNode<T>>(this.MAX_LEVEL + 1);
-    let current = this.header;
-
-    for (let i = this.level; i >= 0; i--) {
-      while (current.forward[i] && current.forward[i]!.value! < value) {
-        current = current.forward[i]!;
-      }
-      update[i] = current;
-    }
-
-    current = current.forward[0]!;
-
-    if (!current || current.value !== value) {
-      return false; // nothing to delete
-    }
-
-    // unlink the node at every level it appears
-    for (let i = 0; i <= this.level; i++) {
-      if (update[i].forward[i] !== current) break;
-      update[i].forward[i] = current.forward[i];
-    }
-
-    // shrink the list’s level if the top levels became empty
-    while (this.level > 0 && this.header.forward[this.level] == null) {
-      this.level--;
-    }
-
-    return true;
-  }
-
-  /* ──────────────────────────────────────────────────────
-   *  Helper: convert list into an array (useful for debugging)
-   * ────────────────────────────────────────────────────── */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.header.forward[0];
-
-    while (node) {
-      result.push(node.value!);
-      node = node.forward[0];
-    }
-
-    return result;
-  }
+  return null;  // no goal reached within depth limit
 }
+// --- build a simple graph
+const a: GraphNode<string> = { value: "A", neighbours: [] };
+const b: GraphNode<string> = { value: "B", neighbours: [] };
+const c: GraphNode<string> = { value: "C", neighbours: [] };
+const d: GraphNode<string> = { value: "D", neighbours: [] };
+
+a.neighbours.push(b, c);   // A -> B, C
+b.neighbours.push(d);      // B -> D
+c.neighbours.push(d);      // C -> D
+
+// --- goal: find node with value “D”
+const isGoal = (node: GraphNode<string>) => node.value === "D";
+
+// Recursive
+const resultRec = depthLimitedSearchRec(a, isGoal, 3);
+console.log("Recursive result:", resultRec?.value ?? "none");
+
+// Iterative
+const resultIter = depthLimitedSearchIter(a, isGoal, 3);
+console.log("Iterative result:", resultIter?.value ?? "none");
+Recursive result: D
+Iterative result: D
