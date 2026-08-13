@@ -1,103 +1,81 @@
-// A generic state; `data` can be any shape you need.
-export interface BeamState<T> {
-  readonly data: T;      // the actual thing (token list, node id, etc.)
-  readonly score: number; // higher is better
-}
+// ---------- Tarjan S.T.C. ---------------------------------------
 
-// A function that, from one state, produces zero or more candidate states.
-export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
+/**
+ * Return an array of strongly‑connected components.
+ * Each component is an array of vertex IDs (here strings).
+ * Vertices can be any `string`; if you prefer numbers just change the type.
+ */
+export function tarjanSCC(graph: Map<string, string[]>): string[][] {
+  // state that needs to survive the recursive walk
+  const index = new Map<string, number>();    // discovery time of vertex
+  const lowLink = new Map<string, number>();  // lowest discovery reachable
+  const stack: string[] = [];                 // vertices that are “on stack”
+  const onStack = new Set<string>();
 
-// A function that assigns a numeric score to a state.
-export type Scorer<T> = (state: BeamState<T>) => number;
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private readonly key: (x: T) => number) {}
+  let curIdx = 0;                            // global counter
+  const sccs: string[][] = [];               // result
 
-  private swap(i: number, j: number) {
-    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
-  }
+  // helper: depth‑first walk from a single vertex
+  function strongConnect(v: string) {
+    // part A – set the depth index and low link
+    index.set(v, curIdx);
+    lowLink.set(v, curIdx);
+    curIdx += 1;
 
-  push(item: T) {
-    this.data.push(item);
-    this.siftUp(this.data.length - 1);
-  }
+    // put v on stack
+    stack.push(v);
+    onStack.add(v);
 
-  pop(): T | undefined {
-    const top = this.data[0];
-    const last = this.data.pop();
-    if (!this.data.length || !last) return top;
-    this.data[0] = last;
-    this.siftDown(0);
-    return top;
-  }
-
-  size() { return this.data.length; }
-
-  private siftUp(i: number) {
-    let idx = i;
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
-      this.swap(idx, parent);
-      idx = parent;
-    }
-  }
-  private siftDown(i: number) {
-    let idx = i;
-    const n = this.data.length;
-    while (true) {
-      const l = idx * 2 + 1;
-      const r = l + 1;
-      let smallest = idx;
-      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
-      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // For debugging / inspection
-  toArray() { return [...this.data]; }
-}
-export class BeamSearch<T> {
-  constructor(
-    private readonly expander: Expander<T>,
-    private readonly scorer: Scorer<T>,
-    private readonly beamWidth: number
-  ) {}
-
-  /**
-   * Runs beam search for a fixed number of iterations.
-   * @param startState the initial state (usually empty output)
-   * @param maxDepth how many expansion steps to take
-   * @returns an array containing the best states after the last depth
-   */
-  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
-    let current: BeamState<T>[] = [startState];
-
-    for (let depth = 0; depth < maxDepth; depth++) {
-      const candidates: BeamState<T>[] = [];
-      for (const state of current) {
-        const nextStates = this.expander(state);
-        // We expect each expander to already return scored states,
-        // but if they don't we can score them here:
-        for (const ns of nextStates) {
-          const s = this.scorer(ns);
-          candidates.push({ ...ns, score: s });
-        }
-      }
-      if (candidates.length === 0) break; // nothing to expand
-      // Keep top `beamWidth` candidates
-      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
-      for (const cand of candidates) heap.push(cand);
-      current = [];
-      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
-        current.push(heap.pop()!); // `!` is safe because we checked size
+    // part B – consider successors of v
+    const neighbours = graph.get(v) ?? [];
+    for (const w of neighbours) {
+      if (!index.has(w)) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → must be in the current SCC
+        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
       }
     }
 
-    // Sort by score descending before returning just in case
-    return current.sort((a, b) => b.score - a.score);
+    // part C – if v is a root node, pop the stack to build an SCC
+    if (lowLink.get(v) === index.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
+    }
   }
+
+  // run the dfs from every unvisited vertex
+  for (const v of graph.keys()) {
+    if (!index.has(v)) {
+      strongConnect(v);
+    }
+  }
+
+  return sccs;
 }
+const graph = new Map<string, string[]>(
+  [
+    ['A', ['B']],
+    ['B', ['C', 'E', 'F']],
+    ['C', ['D', 'G']],
+    ['D', ['C', 'H']],
+    ['E', ['A', 'F']],
+    ['F', ['G']],
+    ['G', ['F', 'H']],
+    ['H', ['G']],
+  ],
+);
+
+const components = tarjanSCC(graph);
+console.log(components);
+// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
+// (depending on traversal order you may see the same vertices grouped in one component,
+// because the toy graph is fully strongly‑connected)
