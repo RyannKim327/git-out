@@ -1,14 +1,9 @@
-/**
- * Reverses the order of words in a string.
- *
- * Whitespace punctuation is preserved around the words.
- */
-function reverseWords(text: string): string {
-  // Split on any whitespace – this covers spaces, tabs, new‑lines.
-  const words = text.trim().split(/\s+/); // keeps only real words
-  return words.reverse().join(' ');
-}
+const sentence = "The quick brown fox jumps over the lazy dog";
+const needle = "brown";
 
-// Demo
-console.log(reverseWords("Hello world, how are you?"));
-// → "you? are how world, Hello"
+const hasBrown = sentence.includes(needle); // true
+const hasBrownCaseInsensitive = sentence
+  .toLowerCase()
+  .includes(needle.toLowerCase()); // true
+const hasBrownIdx = sentence.indexOf(needle) !== -1; // true
+const hasVowelPattern = /[aeiou]/.test(sentence); // true
