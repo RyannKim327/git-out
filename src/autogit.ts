@@ -1,27 +1,33 @@
 /**
- * Bubble‑sort in place.
- * Works on arrays of any type that can be compared with the `<` operator.
+ * Returns a random integer between `min` and `max` – both inclusive.
+ * Uses the standard Math.random() (not crypto‑safe).
  */
-export function bubbleSort<T>(arr: T[]): void {
-  let swapped: boolean;
+export function randomIntInRange(min: number, max: number): number {
+  // Make sure min ≤ max and that the inputs are integers
+  if (!Number.isInteger(min) || !Number.isInteger(max))
+    throw new Error('min and max must be integers');
+  if (min > max) [min, max] = [max, min];
 
-  // keep looping until a pass produces no swaps
-  do {
-    swapped = false;
-    for (let i = 0; i < arr.length - 1; i++) {
-      // compare adjacent elements
-      if (arr[i] > arr[i + 1]) {
-        // swap them
-        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-        swapped = true;      // a swap happened, so we might need another pass
-      }
-    }
-  } while (swapped);
+  const range = max - min + 1;          // how many possible numbers
+  return Math.floor(Math.random() * range) + min;
 }
-const numbers = [5, 3, 8, 4, 1];
-bubbleSort(numbers);
-console.log(numbers); // → [1, 3, 4, 5, 8]
 
-const strings = ["pear", "apple", "banana"];
-bubbleSort(strings);
-console.log(strings); // → ["apple", "banana", "pear"]
+/**
+ * Returns a random floating‑point number in `[min, max)`.
+ * If you want `max` inclusive, add a tiny epsilon before flooring.
+ */
+export function randomFloatInRange(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  return Math.random() * (max - min) + min;
+}
+export function secureRandomInt(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  const range = max - min + 1;
+  // We'll grab 4 random bytes and reduce them into our range
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (buf[0] % range) + min;
+}
+console.log(randomIntInRange(1, 6)); // 1‑6 like a die
+console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
+console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
