@@ -1,37 +1,52 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 }
+
 /**
- * Returns the n‑th node from the end of a singly linked list,
- * or null if it doesn't exist.
- * n is 1‑based: n = 1 means the last node.
+ * Returns the diameter (in edges) of a binary tree.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;            // invalid n – feel free to adjust
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
 
-  let fast: ListNode<T> | null = head;
-  // Step 1: move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;           // n is larger than the list length
-    fast = fast.next;
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
+    }
+
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  // Step 2: move both pointers until fast reaches the end
-  let slow: ListNode<T> | null = head;
-  while (fast) {
-    fast = fast.next;
-    slow = slow!.next!;
-  }
-
-  return slow; // could be null if the list was empty
+  dfs(root);
+  return maxDiameter;         // already in edges
 }
-// build a tiny list: 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4: ListNode<number> = { val: 4, next: node5 };
-let node3: ListNode<number> = { val: 3, next: node4 };
-let node2: ListNode<number> = { val: 2, next: node3 };
-let node1: ListNode<number> = { val: 1, next: node2 };
 
-const thirdFromEnd = nthFromEnd(node1, 3);
-console.log(thirdFromEnd?.val); // 3
+/* ---- example usage ------------------------------------------------------- */
+
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
+}
+
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
+
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
