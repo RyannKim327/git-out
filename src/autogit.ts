@@ -1,43 +1,44 @@
-/**
- * Returns the first character that occurs only once in `s`.
- * If every character repeats, returns null.
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣ Count how many times each char appears
-  const freq = new Map<string, number>();
+const arr1 = [1, 2, 3, 4];
+const arr2 = [3, 4, 5, 6];
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+const common = arr1.filter(v => arr2.includes(v));
+console.log(common); // [3, 4]
+function intersection<T>(a: T[], b: T[]): T[] {
+  return a.filter(v => b.includes(v));
+}
+function intersectionSet<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(v => setB.has(v));
+}
+function intersectionMultiset<T>(a: T[], b: T[]): T[] {
+  const freq = new Map<T, number>();
+  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
 
-  // 2️⃣ Scan the string again and pick the first char with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
+  const result: T[] = [];
+  for (const val of a) {
+    const count = freq.get(val);
+    if (count && count > 0) {
+      result.push(val);
+      freq.set(val, count - 1);
     }
   }
-
-  return null; // nothing unique
+  return result;
 }
-console.log(firstNonRepeatingChar("abacbc")); // -> "b"
-console.log(firstNonRepeatingChar("aabbcc")); // -> null
-console.log(firstNonRepeatingChar("abcde"));  // -> "a"
-function firstNonRepeatingCharOptimized(s: string): string | null {
-  const freq = new Map<string, number>();
-  const order: string[] = [];
+interface User { id: number; name: string; }
 
-  for (const ch of s) {
-    const newCount = (freq.get(ch) ?? 0) + 1;
-    freq.set(ch, newCount);
+const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
+const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
 
-    if (newCount === 1) {
-      order.push(ch);          // first appearance
-    } else {
-      // remove all occurrences of `ch` from the queue
-      const idx = order.indexOf(ch);
-      if (idx !== -1) order.splice(idx, 1);
-    }
-  }
-
-  return order.length ? order[0] : null;
-}
+const intersectionById = usersA.filter(uA =>
+  usersB.some(uB => uB.id === uA.id)
+);
+console.log(intersectionById); // [{id:2,name:'Bob'}]
+const intersection = <T>(a: T[], b: T[]): T[] =>
+  a.filter(v => new Set(b).has(v));
+const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  const result = new Set<T>();
+  for (const v of setA) if (setB.has(v)) result.add(v);
+  return result;
+};
