@@ -1,94 +1,41 @@
-if currentDepth > depthLimit → stop exploring that branch
 /**
- * Generic depth‑limited search (iterative DFS).
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
  *
- * @param root        The starting node.
- * @param depthLimit  How far we are allowed to go from the root.
- * @param getNeighbors
- *        A callback that returns the list of adjacent nodes for a given node.
- * @param visitedSet  Optional set used to avoid revisiting nodes.
- *
- * @returns  Array of nodes visited in order (pre‑order DFS order).
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
  */
-export function depthLimitedSearch<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  visitedSet?: Set<T>
-): T[] {
-  const visited: Set<T> = visitedSet ?? new Set<T>();
-  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
-  const result: T[] = [];
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  while (stack.length > 0) {
-    const { node, depth } = stack.pop()!; // non‑empty because of the loop
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-    // Skip if we've already seen the node
-    if (visited.has(node)) continue;
-
-    visited.add(node);
-    result.push(node);          // we “visit” it, or you can process here
-
-    // Stop expanding when we hit the depth limit
-    if (depth >= depthLimit) continue;
-
-    // Push neighbors onto stack.  We push in reverse order if you want to
-    // preserve the same order as a recursive DFS.
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
     }
+
+    // Place the key into its correct spot
+    arr[j + 1] = key;
   }
 
-  return result;
+  return arr; // handy for chaining, but the original array is already sorted
 }
-// A tiny undirected graph:
-const graph = new Map<string, string[]>([
-  ['A', ['B', 'C', 'D']],
-  ['B', ['A', 'E', 'F']],
-  ['C', ['A', 'G']],
-  ['D', ['A', 'H']],
-  ['E', ['B']],
-  ['F', ['B']],
-  ['G', ['C']],
-  ['H', ['D']],
-]);
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
 
-function neighbors(node: string): string[] {
-  return graph.get(node) ?? [];
-}
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
+];
 
-// Find all nodes reachable from 'A' within depth 2
-const visited = depthLimitedSearch('A', 2, neighbors);
-console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
-function depthLimitedSearchWithTarget<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  target: T,
-  visitedSet?: Set<T>
-): T | undefined {
-  const visited = visitedSet ?? new Set<T>();
-  const stack = [{ node: root, depth: 0 }];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (node === target) return node;
-
-    if (depth >= depthLimit) continue;
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
-    }
-  }
-  return undefined; // not found
-}
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
