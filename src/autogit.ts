@@ -1,35 +1,58 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
-}
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
-  let current = head;
+// stack.ts
+export class Stack<T> {
+  /* The array that holds our data. The last item is the top of the stack. */
+  private items: T[] = [];
 
-  while (current) {
-    count++;
-    current = current.next;
+  /** Adds a value to the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  return count;
-}
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-class LinkedList<T> {
-  private head?: Node<T>;
+  /** Removes and returns the top value. Throws if the stack is empty. */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to pop from an empty stack");
+    }
+    return this.items.pop() as T; // safe because we just checked for emptiness
+  }
 
-  // ... push, pop, etc.
+  /** Returns the top value without removing it. Throws if the stack is empty. */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to peek on an empty stack");
+    }
+    // items.length is at least 1, so the index exists
+    return this.items[this.items.length - 1];
+  }
 
+  /** Was the stack empty? */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** How many items are there? */
   size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
+    return this.items.length;
+  }
+
+  /** Clear everything out. */
+  clear(): void {
+    this.items = [];
   }
 }
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
+// demo.ts
+import { Stack } from "./stack";
 
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+const stack = new Stack<number>();
+
+stack.push(1);
+stack.push(2);
+stack.push(3);
+
+console.log(stack.peek());   // 3
+console.log(stack.pop());    // 3
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
