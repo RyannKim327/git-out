@@ -1,53 +1,73 @@
-/**
- * Binary search for a sorted array of numbers.
- *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
- */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
+type Edge = {
+  from: number;   // vertex index
+  to: number;     // vertex index
+  weight: number; // can be negative
+};
 
-  const mid = Math.floor((low + high) / 2);
+type BellmanFordResult = {
+  distances: number[];
+  predecessors: (number | null)[];
+  hasNegativeCycle: boolean;
+};
+function bellmanFord(
+  numVertices: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
 
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
+  // 1. Initialisation
+  const dist = new Array(numVertices).fill(INF);
+  dist[source] = 0;
+
+  const pred = new Array<number | null>(numVertices).fill(null);
+
+  // 2. Relax edges (V‑1) times
+  for (let i = 0; i < numVertices - 1; i++) {
+    let updated = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        updated = true;
+      }
+    }
+    // early exit if no change – optional but nice optimisation
+    if (!updated) break;
   }
+
+  // 3. Check for negative‑weight cycles
+  let hasNegCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+      hasNegCycle = true;
+      break;
+    }
+  }
+
+  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
+// Build a tiny graph with a negative edge that doesn't form a cycle
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 3, weight: -3 },
+  { from: 2, to: 3, weight: 2 },
+];
 
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
+const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
 
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
+console.log('Distances:', distances);          // [0, 4, 5, 1]
+console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
+console.log('Negative cycle?', hasNegativeCycle); // false
 
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
+// If you want to pull out the path 0 -> 1 -> 3:
+function buildPath(pred: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== null; v = pred[v] as number | null) {
+    path.push(v);
+  }
+  return path.reverse();
 }
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
 
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
