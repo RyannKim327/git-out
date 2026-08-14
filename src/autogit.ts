@@ -1,25 +1,73 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+type Edge = {
+  from: number;   // vertex index
+  to: number;     // vertex index
+  weight: number; // can be negative
+};
 
-const numbers = [4, 12, 7, 19, 3];
+type BellmanFordResult = {
+  distances: number[];
+  predecessors: (number | null)[];
+  hasNegativeCycle: boolean;
+};
+function bellmanFord(
+  numVertices: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+  // 1. Initialisation
+  const dist = new Array(numVertices).fill(INF);
+  dist[source] = 0;
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
+  const pred = new Array<number | null>(numVertices).fill(null);
 
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
+  // 2. Relax edges (V‑1) times
+  for (let i = 0; i < numVertices - 1; i++) {
+    let updated = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        updated = true;
+      }
+    }
+    // early exit if no change – optional but nice optimisation
+    if (!updated) break;
+  }
+
+  // 3. Check for negative‑weight cycles
+  let hasNegCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+      hasNegCycle = true;
+      break;
+    }
+  }
+
+  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
+}
+// Build a tiny graph with a negative edge that doesn't form a cycle
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 3, weight: -3 },
+  { from: 2, to: 3, weight: 2 },
 ];
 
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
+
+console.log('Distances:', distances);          // [0, 4, 5, 1]
+console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
+console.log('Negative cycle?', hasNegativeCycle); // false
+
+// If you want to pull out the path 0 -> 1 -> 3:
+function buildPath(pred: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== null; v = pred[v] as number | null) {
+    path.push(v);
+  }
+  return path.reverse();
+}
+
+console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
