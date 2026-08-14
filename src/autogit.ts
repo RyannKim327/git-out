@@ -1,82 +1,73 @@
-function bfsLimited(start, isGoal, neighbors, maxDepth):
-    queue ← [(start, 0)]          // node and its depth
-    visited ← new Set()
+type Edge = {
+  from: number;   // vertex index
+  to: number;     // vertex index
+  weight: number; // can be negative
+};
 
-    while queue not empty:
-        (node, depth) ← queue.dequeue()
+type BellmanFordResult = {
+  distances: number[];
+  predecessors: (number | null)[];
+  hasNegativeCycle: boolean;
+};
+function bellmanFord(
+  numVertices: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
 
-        if isGoal(node): return node
+  // 1. Initialisation
+  const dist = new Array(numVertices).fill(INF);
+  dist[source] = 0;
 
-        if depth == maxDepth:
-            continue   // depth limit reached – skip adding successors
+  const pred = new Array<number | null>(numVertices).fill(null);
 
-        for each n in neighbors(node):
-            if n not in visited:
-                visited.add(n)
-                queue.enqueue((n, depth + 1))
+  // 2. Relax edges (V‑1) times
+  for (let i = 0; i < numVertices - 1; i++) {
+    let updated = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        updated = true;
+      }
+    }
+    // early exit if no change – optional but nice optimisation
+    if (!updated) break;
+  }
 
-    return null   // no goal within depth limit
-type Node<T> = T;
-
-// Parameters:
-//   start: the node to begin from
-//   isGoal: a predicate to determine if a node is the goal
-//   neighbors: a function that returns an array of adjacent nodes
-//   maxDepth: the depth cutoff (inclusive)
-//   allowRevisit: if true, visited set is ignored – useful for pure trees
-export function breadthLimitedSearch<T>(
-  start: Node<T>,
-  isGoal: (node: T) => boolean,
-  neighbors: (node: T) => Iterable<T>,
-  maxDepth: number,
-  allowRevisit: boolean = false
-): T | null {
-  // Queue holds tuples: [node, depth]
-  const queue: Array<[T, number]> = [[start, 0]];
-
-  // Only keep visited set if we care about cycles
-  const visited = new Set<T>();
-  if (!allowRevisit) visited.add(start);
-
-  while (queue.length) {
-    const [node, depth] = queue.shift() as [T, number];
-
-    if (isGoal(node)) return node;
-
-    if (depth === maxDepth) continue; // Depth limit reached – skip children
-
-    for (const child of neighbors(node)) {
-      if (!allowRevisit && visited.has(child)) continue;
-      visited.add(child);
-      queue.push([child, depth + 1]);
+  // 3. Check for negative‑weight cycles
+  let hasNegCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+      hasNegCycle = true;
+      break;
     }
   }
 
-  return null; // No goal found within the depth bound
+  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [5, 6]],
-  [4, [7]],
-  [5, [7]],
-  [6, []],
-  [7, []],
-]);
+// Build a tiny graph with a negative edge that doesn't form a cycle
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 3, weight: -3 },
+  { from: 2, to: 3, weight: 2 },
+];
 
-function neighbors(n: number) {
-  return graph.get(n) ?? [];
+const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
+
+console.log('Distances:', distances);          // [0, 4, 5, 1]
+console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
+console.log('Negative cycle?', hasNegativeCycle); // false
+
+// If you want to pull out the path 0 -> 1 -> 3:
+function buildPath(pred: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== null; v = pred[v] as number | null) {
+    path.push(v);
+  }
+  return path.reverse();
 }
 
-const start = 1;
-const goal = 7;
-const maxDepth = 3; // we only want to explore up to 3 edges away
-
-const result = breadthLimitedSearch(
-  start,
-  (node) => node === goal,
-  neighbors,
-  maxDepth
-);
-
-console.log(result); // => 7 (found within 3 steps)
+console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
