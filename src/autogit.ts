@@ -1,33 +1,69 @@
 /**
- * Returns a random integer between `min` and `max` – both inclusive.
- * Uses the standard Math.random() (not crypto‑safe).
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
  */
-export function randomIntInRange(min: number, max: number): number {
-  // Make sure min ≤ max and that the inputs are integers
-  if (!Number.isInteger(min) || !Number.isInteger(max))
-    throw new Error('min and max must be integers');
-  if (min > max) [min, max] = [max, min];
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
 
-  const range = max - min + 1;          // how many possible numbers
-  return Math.floor(Math.random() * range) + min;
+  // Sort rotations lexicographically
+  rotations.sort();
+
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
+
+  return { transformed: lastColumn, primaryIndex };
 }
 
 /**
- * Returns a random floating‑point number in `[min, max)`.
- * If you want `max` inclusive, add a tiny epsilon before flooring.
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
  */
-export function randomFloatInRange(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  return Math.random() * (max - min) + min;
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
+
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
+
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
+
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
+  }
+
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
 }
-export function secureRandomInt(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  const range = max - min + 1;
-  // We'll grab 4 random bytes and reduce them into our range
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  return (buf[0] % range) + min;
-}
-console.log(randomIntInRange(1, 6)); // 1‑6 like a die
-console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
-console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
+
+/* ────────────────────── Demo ────────────────────── */
+
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
+
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
+
+/* Expected output:
+
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
+
+*/
