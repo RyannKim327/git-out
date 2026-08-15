@@ -1,121 +1,117 @@
-/* ───────────────────────────────────────────────────────────────────── */
-/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
- *  need other key types, but then you have to supply a comparator. -------- */
-
-/*  Node ------------------------------------------------------------------- */
-class Node {
-  key: number;
-  height: number;
-  left: Node | null = null;
-  right: Node | null = null;
-
-  constructor(key: number) {           // simple ctor
-    this.key = key;
-    this.height = 1;                    // leaf height = 1
-  }
+type Key = string | number | object;   // anything you can reasonably stringify
+interface Pair<K, V> {
+  key: K;
+  value: V;
 }
+type Bucket<K, V> = Pair<K, V>[];
+const DEFAULT_BUCKETS = 16;
+const DEFAULT_LOAD_FACTOR = 0.75;
 
-/*  Helper utilities -------------------------------------------------------- */
-const height = (node: Node | null): number => (node ? node.height : 0);
+export class HashTable<K extends Key, V> {
+  private buckets: Bucket<K, V>[];
+  private count = 0;                    // number of key/value pairs
+  private loadFactor: number;
 
-const updateHeight = (node: Node) =>
-  node.height = 1 + Math.max(height(node.left), height(node.right));
-
-const balanceFactor = (node: Node): number =>
-  height(node.left) - height(node.right);
-
-/*  Rotations -------------------------------------------------------------- */
-function rotateRight(y: Node): Node {
-  const x = y.left!;
-  const T2 = x.right;
-
-  // rotation
-  x.right = y;
-  y.left = T2;
-
-  // update heights
-  updateHeight(y);
-  updateHeight(x);
-
-  return x;     // new root of this part
-}
-
-function rotateLeft(x: Node): Node {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // rotation
-  y.left = x;
-  x.right = T2;
-
-  // update heights
-  updateHeight(x);
-  updateHeight(y);
-
-  return y;     // new root
-}
-
-/*  Insert ------------------------------------------------------------------ */
-function insert(node: Node | null, key: number): Node {
-  if (!node) return new Node(key);
-
-  if (key < node.key) node.left = insert(node.left, key);
-  else if (key > node.key) node.right = insert(node.right, key);
-  else return node;           // duplicate keys rejected
-
-  /* update our own height after child changed */
-  updateHeight(node);
-
-  /* balance now */
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (key < node.left!.key)                   // Left‑Left case
-      return rotateRight(node);
-
-    // Left‑Right case
-    node.left = rotateLeft(node.left!);
-    return rotateRight(node);
+  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
+    this.buckets = Array.from({ length: initialBuckets }, () => []);
+    this.loadFactor = loadFactor;
   }
 
-  // Right heavy
-  if (bf < -1) {
-    if (key > node.right!.key)                  // Right‑Right case
-      return rotateLeft(node);
+  /* ---------- public API ---------- */
 
-    // Right‑Left case
-    node.right = rotateRight(node.right!);
-    return rotateLeft(node);
+  set(key: K, value: V): void {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    // Replace if key is already present
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
+        pair.value = value;
+        return;
+      }
+    }
+
+    bucket.push({ key, value });
+    this.count++;
+
+    if (this.count / this.buckets.length > this.loadFactor) {
+      this.resize();
+    }
   }
 
-  return node;            // unchanged
-}
+  get(key: K): V | undefined {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-/*  Search --------------------------------------------------------------- */
-function contains(node: Node | null, key: number): boolean {
-  while (node) {
-    if (key === node.key) return true;
-    node = key < node.key ? node.left : node.right;
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {
+        return pair.value;
+      }
+    }
+    return undefined;
   }
-  return false;
-}
 
-/*  In‑order traversal for debugging -------------------------------------- */
-function inorder(node: Node | null, res: number[] = []): number[] {
-  if (!node) return res;
-  inorder(node.left, res);
-  res.push(node.key);
-  inorder(node.right, res);
-  return res;
-}
+  delete(key: K): boolean {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-/*  Example usage ---------------------------------------------------------- */
-let root: Node | null = null;
-[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
+    for (let i = 0; i < bucket.length; i++) {
+      if (this.equals(bucket[i].key, key)) {
+        bucket.splice(i, 1);
+        this.count--;
+        return true;
+      }
+    }
+    return false;
+  }
 
-console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
-console.log('Contains 25?', contains(root, 25));      // true
-console.log('Contains 15?', contains(root, 15));      // false
-class Node<T> { key: T; height: number; ... }
-function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  clear(): void {
+    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
+    this.count = 0;
+  }
+
+  get size(): number {
+    return this.count;
+  }
+
+  /* ---------- private helpers ---------- */
+
+  private bucketIndex(key: K): number {
+    // Ensure the hash is non‑negative
+    const h = this.hash(key);
+    const idx = h % this.buckets.length;
+    return idx < 0 ? idx + this.buckets.length : idx;
+  }
+
+  /* Simple but stable string hash (djb2 algorithm) */
+  private hash(key: K): number {
+    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
+    }
+    return h >>> 0; // make unsigned
+  }
+
+  private equals(a: K, b: K): boolean {
+    // For primitives, === is fine.
+    // For objects, we compare the stringified form.
+    if (typeof a === 'object' && typeof b === 'object') {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+    return a === b;
+  }
+
+  /* Grow the bucket array and re‑hash all entries */
+  private resize(): void {
+    const oldBuckets = this.buckets;
+    const newSize = oldBuckets.length * 2;
+    this.buckets = Array.from({ length: newSize }, () => []);
+    this.count = 0;
+
+    for (const bucket of oldBuckets) {
+      for (const pair of bucket)
