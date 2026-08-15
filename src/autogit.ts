@@ -1,51 +1,47 @@
 /**
- * Merge two sorted arrays into one sorted array.
- * The comparator decides the ordering – by default it uses the `<` operator.
+ * Random API – picks a random fact from https://uselessfacts.jsph.pl
+ * Returns an object: { id, text, source, permalink }
  */
-function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
-  const result: T[] = [];
-  let i = 0; // index into left
-  let j = 0; // index into right
+async function fetchRandomFact(): Promise<{
+  id: string;
+  text: string;
+  source: string;
+  permalink: string;
+}> {
+  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
 
-  // Grab the compare function, or fall back to simple < comparison
-  const comp = compare ?? ((a: T, b: T) => a < b);
+  try {
+    const response = await fetch(apiUrl);
 
-  while (i < left.length && j < right.length) {
-    // If left[i] comes before right[j] (or equal), push it
-    if (comp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-  }
 
-  // One of the halves may still have leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
+    const data = await response.json();
+
+    // If you’re inside an Android NativeScript environment you could
+    // show a Toast or log the result with Android SDK.
+    console.log("Random fact fetched:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch random fact:", err);
+    throw err;
+  }
 }
 
 /**
- * Recursive merge sort.  
- * @param array The array to sort.
- * @param compare Optional comparator that returns true if a < b.
+ * Example usage – you’d call this from anywhere, e.g. on a button tap.
  */
-export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
-  // Stop recursion when array has 0 or 1 item
-  if (array.length <= 1) return array.slice(); // return a shallow copy
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
+async function runDemo() {
+  try {
+    const fact = await fetchRandomFact();
+    // In Android, for a quick visual you could use:
+    // import { Toast } from "tns-core-modules/ui/toast";
+    // Toast.makeText(fact.text, 2000).show();
+    console.log("Fact text:", fact.text);
+  } catch {
+    // error handling already done in fetchRandomFact
+  }
 }
-const numbers = [5, 3, 8, 1, 2, 9];
-const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
 
-const people = [
-  { name: "Alice", age: 32 },
-  { name: "Bob", age: 25 },
-  { name: "Eve", age: 29 }
-];
-
-// Sort by age
-const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
+runDemo();
