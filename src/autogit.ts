@@ -1,45 +1,60 @@
 /**
- * Returns an object with the maximum sum and the start/end indices
- * of the sub‑array that produces that sum.
+ * Returns true if `s` is a palindrome.
  *
- * @param nums - array of numbers
- * @returns { maxSum, start, end }
+ * Works in O(n) time and O(1) additional space.
+ * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
  */
-export function maxSumSubarray(nums: number[]) {
-  // In case the input is empty we can return 0 / -1/-1
-  if (nums.length === 0) {
-    return { maxSum: 0, start: -1, end: -1 };
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    if (s[left] !== s[right]) {
+      return false;
+    }
+    left++;
+    right--;
   }
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These will record the best sub‑array boundaries
-  let bestStart = 0;
-  let bestEnd = 0;
-  // Temporary positions
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at i
-    if (currentSum + nums[i] < nums[i]) {
-      currentSum = nums[i];
-      tempStart = i;
-    } else {
-      currentSum += nums[i];
-    }
-
-    // Update best if we have a better sum
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+  return true;
 }
-const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
-const { maxSum, start, end } = maxSumSubarray(arr);
-console.log(maxSum); // 43
-console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
+
+// Demo
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isAlphanumeric(c: string): boolean {
+  const code = c.charCodeAt(0);
+  return (
+    // 0‑9
+    (code >= 48 && code <= 57) ||
+    // A‑Z
+    (code >= 65 && code <= 90) ||
+    // a‑z
+    (code >= 97 && code <= 122)
+  );
+}
+
+function isPalindromeLoose(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    // Skip non‑alphanumerics
+    while (left < right && !isAlphanumeric(s[left])) left++;
+    while (left < right && !isAlphanumeric(s[right])) right--;
+
+    // After skipping, compare lowercase versions
+    if (
+      left < right &&
+      s[left].toLowerCase() !== s[right].toLowerCase()
+    ) {
+      return false;
+    }
+
+    left++;
+    right--;
+  }
+  return true;
+}
+
+console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
