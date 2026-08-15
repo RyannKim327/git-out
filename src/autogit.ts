@@ -1,103 +1,113 @@
-// A generic state; `data` can be any shape you need.
-export interface BeamState<T> {
-  readonly data: T;      // the actual thing (token list, node id, etc.)
-  readonly score: number; // higher is better
+// 1️⃣  Node definition – the “building block” of the list
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
 }
 
-// A function that, from one state, produces zero or more candidate states.
-export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
+// 2️⃣  The linked list itself
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-// A function that assigns a numeric score to a state.
-export type Scorer<T> = (state: BeamState<T>) => number;
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private readonly key: (x: T) => number) {}
+  // ---- basic properties ----
+  get size() { return this._size; }
 
-  private swap(i: number, j: number) {
-    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
+  // ---- insertions ----
+  push(value: T): void {                  // add to the end
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._size++;
   }
 
-  push(item: T) {
-    this.data.push(item);
-    this.siftUp(this.data.length - 1);
+  unshift(value: T): void {                // add to the front
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._size++;
   }
 
-  pop(): T | undefined {
-    const top = this.data[0];
-    const last = this.data.pop();
-    if (!this.data.length || !last) return top;
-    this.data[0] = last;
-    this.siftDown(0);
-    return top;
+  // ---- removals ----
+  pop(): T | null {                       // remove from the end
+    if (!this.head) return null;
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
+    }
+
+    if (prev) prev.next = null;           // cut off the tail
+    else this.head = this.tail = null;    // list became empty
+
+    this._size--;
+    return current.value;
   }
 
-  size() { return this.data.length; }
+  shift(): T | null {                     // remove from the front
+    if (!this.head) return null;
+    const removed = this.head;
+    this.head = removed.next;
+    if (!this.head) this.tail = null;     // list became empty
+    this._size--;
+    return removed.value;
+  }
 
-  private siftUp(i: number) {
-    let idx = i;
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
-      this.swap(idx, parent);
-      idx = parent;
+  // ---- traversal helpers ----
+  toArray(): T[] {
+    const arr: T[] = [];
+    let current = this.head;
+    while (current) {
+      arr.push(current.value);
+      current = current.next;
+    }
+    return arr;
+  }
+
+  forEach(fn: (value: T, index: number) => void): void {
+    let current = this.head;
+    let i = 0;
+    while (current) {
+      fn(current.value, i);
+      current = current.next;
+      i++;
     }
   }
-  private siftDown(i: number) {
-    let idx = i;
-    const n = this.data.length;
-    while (true) {
-      const l = idx * 2 + 1;
-      const r = l + 1;
-      let smallest = idx;
-      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
-      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // For debugging / inspection
-  toArray() { return [...this.data]; }
 }
-export class BeamSearch<T> {
-  constructor(
-    private readonly expander: Expander<T>,
-    private readonly scorer: Scorer<T>,
-    private readonly beamWidth: number
-  ) {}
-
-  /**
-   * Runs beam search for a fixed number of iterations.
-   * @param startState the initial state (usually empty output)
-   * @param maxDepth how many expansion steps to take
-   * @returns an array containing the best states after the last depth
-   */
-  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
-    let current: BeamState<T>[] = [startState];
-
-    for (let depth = 0; depth < maxDepth; depth++) {
-      const candidates: BeamState<T>[] = [];
-      for (const state of current) {
-        const nextStates = this.expander(state);
-        // We expect each expander to already return scored states,
-        // but if they don't we can score them here:
-        for (const ns of nextStates) {
-          const s = this.scorer(ns);
-          candidates.push({ ...ns, score: s });
-        }
-      }
-      if (candidates.length === 0) break; // nothing to expand
-      // Keep top `beamWidth` candidates
-      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
-      for (const cand of candidates) heap.push(cand);
-      current = [];
-      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
-        current.push(heap.pop()!); // `!` is safe because we checked size
-      }
+const list = new LinkedList<number>();
+list.push(1);                // [1]
+list.push(2);                // [1, 2]
+list.unshift(0);             // [0, 1, 2]
+console.log(list.toArray()); // [0, 1, 2]
+console.log(list.pop());     // 2
+console.log(list.shift());   // 0
+console.log(list.toArray()); // [1]
+insertAfter(target: T, newVal: T): boolean {
+  let current = this.head;
+  while (current) {
+    if (current.value === target) {
+      const node = new ListNode(newVal);
+      node.next = current.next;
+      current.next = node;
+      if (current === this.tail) this.tail = node;
+      this._size++;
+      return true;
     }
-
-    // Sort by score descending before returning just in case
-    return current.sort((a, b) => b.score - a.score);
+    current = current.next;
   }
+  return false;
 }
