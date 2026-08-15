@@ -1,26 +1,29 @@
-// utils.ts
-/**
- * Randomly reorder the elements of an array in place.
- * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
- *
- * @param arr The array to shuffle (mutated in place)
- * @returns The same array, now shuffled
- */
-export function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a remaining element…
-    const j = Math.floor(Math.random() * (i + 1));
-
-    // …and swap it with the current element.
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+function removeVowels(text: string): string {
+  return text.replace(/[aeiou]/gi, '');
 }
-import { shuffle } from "./utils";
+const raw = "TypeScript is amazing!";
+console.log(removeVowels(raw));
+// ↳ "TypScrpt s mzng!"
+function removeVowelsLoop(text: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u',
+                          'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of text) {
+    if (!vowels.has(ch)) result += ch;
+  }
+  return result;
+}
+const tests = [
+  "Hello, world!",
+  "AEIOUaeiou",
+  "Rhythm",
+  "Café",
+  "",
+];
 
-const numbers = [1, 2, 3, 4, 5];
-shuffle(numbers);          // numbers is now in a random order
-console.log(numbers);
-
-const words = ["a", "b", "c", "d"];
-console.log(shuffle(words));  // prints a shuffled copy
+tests.forEach(t => console.log(`"${t}" → "${removeVowels(t)}"`));
+"Hello, world!" → "Hll, wrld!"
+"AEIOUaeiou" → ""
+"Rhythm" → "Rhythm"
+"Café" → "Cf"
+""
