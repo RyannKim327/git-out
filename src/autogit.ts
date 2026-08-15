@@ -1,113 +1,93 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
+// A node can carry any payload (`T`) and point to its neighbours.
+export interface GraphNode<T> {
   value: T;
-  next: ListNode<T> | null = null;
+  neighbours: GraphNode<T>[];
+}
+/**
+ * Recursively performs depth‑limited search.
+ *
+ * @param node        The node you are currently visiting.
+ * @param goalTest    Returns true if the current node satisfies the goal.
+ * @param limit       Number of edges left before the search terminates.
+ * @param visited     A set of IDs or reference values that keeps track of visited nodes.
+ *                    This protects against cycles that would otherwise cause infinite recursion.
+ * @returns The first node that satisfies `goalTest`, or `null`.
+ */
+export function depthLimitedSearchRec<T>(
+  node: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number,
+  visited: Set<GraphNode<T>> = new Set()
+): GraphNode<T> | null {
+  if (goalTest(node)) return node;
+  if (limit === 0) return null;          // reached the depth boundary
 
-  constructor(value: T) {
-    this.value = value;
+  visited.add(node);
+
+  for (const neighbour of node.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
+      if (result !== null) return result;
+    }
   }
+
+  return null;   // nothing found within this branch
+}
+interface StackItem<T> {
+  node: GraphNode<T>;
+  depthLeft: number;
 }
 
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+/**
+ * Iterative depth‑limited search.
+ */
+export function depthLimitedSearchIter<T>(
+  start: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number
+): GraphNode<T> | null {
+  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
+  const visited: Set<GraphNode<T>> = new Set();
 
-  // ---- basic properties ----
-  get size() { return this._size; }
+  while (stack.length) {
+    const { node, depthLeft } = stack.pop()!;
 
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
+    if (visited.has(node)) continue;
+    visited.add(node);
 
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
+    if (goalTest(node)) return node;
+    if (depthLeft === 0) continue;           // depth boundary reached
 
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
-  }
-
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
+    // push neighbours onto the stack – LIFO order means the first neighbour
+    // will be processed last, mirroring the recursive DFS behaviour.
+    for (const neighbour of node.neighbours) {
+      if (!visited.has(neighbour)) {
+        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
+      }
     }
   }
+
+  return null;  // no goal reached within depth limit
 }
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
-  }
-  return false;
-}
+// --- build a simple graph
+const a: GraphNode<string> = { value: "A", neighbours: [] };
+const b: GraphNode<string> = { value: "B", neighbours: [] };
+const c: GraphNode<string> = { value: "C", neighbours: [] };
+const d: GraphNode<string> = { value: "D", neighbours: [] };
+
+a.neighbours.push(b, c);   // A -> B, C
+b.neighbours.push(d);      // B -> D
+c.neighbours.push(d);      // C -> D
+
+// --- goal: find node with value “D”
+const isGoal = (node: GraphNode<string>) => node.value === "D";
+
+// Recursive
+const resultRec = depthLimitedSearchRec(a, isGoal, 3);
+console.log("Recursive result:", resultRec?.value ?? "none");
+
+// Iterative
+const resultIter = depthLimitedSearchIter(a, isGoal, 3);
+console.log("Iterative result:", resultIter?.value ?? "none");
+Recursive result: D
+Iterative result: D
