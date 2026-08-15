@@ -1,43 +1,33 @@
 /**
- * Returns the first character that occurs only once in `s`.
- * If every character repeats, returns null.
+ * Returns a random integer between `min` and `max` – both inclusive.
+ * Uses the standard Math.random() (not crypto‑safe).
  */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣ Count how many times each char appears
-  const freq = new Map<string, number>();
+export function randomIntInRange(min: number, max: number): number {
+  // Make sure min ≤ max and that the inputs are integers
+  if (!Number.isInteger(min) || !Number.isInteger(max))
+    throw new Error('min and max must be integers');
+  if (min > max) [min, max] = [max, min];
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Scan the string again and pick the first char with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null; // nothing unique
+  const range = max - min + 1;          // how many possible numbers
+  return Math.floor(Math.random() * range) + min;
 }
-console.log(firstNonRepeatingChar("abacbc")); // -> "b"
-console.log(firstNonRepeatingChar("aabbcc")); // -> null
-console.log(firstNonRepeatingChar("abcde"));  // -> "a"
-function firstNonRepeatingCharOptimized(s: string): string | null {
-  const freq = new Map<string, number>();
-  const order: string[] = [];
 
-  for (const ch of s) {
-    const newCount = (freq.get(ch) ?? 0) + 1;
-    freq.set(ch, newCount);
-
-    if (newCount === 1) {
-      order.push(ch);          // first appearance
-    } else {
-      // remove all occurrences of `ch` from the queue
-      const idx = order.indexOf(ch);
-      if (idx !== -1) order.splice(idx, 1);
-    }
-  }
-
-  return order.length ? order[0] : null;
+/**
+ * Returns a random floating‑point number in `[min, max)`.
+ * If you want `max` inclusive, add a tiny epsilon before flooring.
+ */
+export function randomFloatInRange(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  return Math.random() * (max - min) + min;
 }
+export function secureRandomInt(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  const range = max - min + 1;
+  // We'll grab 4 random bytes and reduce them into our range
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (buf[0] % range) + min;
+}
+console.log(randomIntInRange(1, 6)); // 1‑6 like a die
+console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
+console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
