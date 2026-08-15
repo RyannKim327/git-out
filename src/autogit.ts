@@ -1,29 +1,27 @@
-function removeVowels(text: string): string {
-  return text.replace(/[aeiou]/gi, '');
-}
-const raw = "TypeScript is amazing!";
-console.log(removeVowels(raw));
-// ↳ "TypScrpt s mzng!"
-function removeVowelsLoop(text: string): string {
-  const vowels = new Set(['a', 'e', 'i', 'o', 'u',
-                          'A', 'E', 'I', 'O', 'U']);
-  let result = '';
-  for (const ch of text) {
-    if (!vowels.has(ch)) result += ch;
-  }
-  return result;
-}
-const tests = [
-  "Hello, world!",
-  "AEIOUaeiou",
-  "Rhythm",
-  "Café",
-  "",
-];
+/**
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
+ */
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-tests.forEach(t => console.log(`"${t}" → "${removeVowels(t)}"`));
-"Hello, world!" → "Hll, wrld!"
-"AEIOUaeiou" → ""
-"Rhythm" → "Rhythm"
-"Café" → "Cf"
-""
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
+    }
+  } while (swapped);
+}
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
+
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
