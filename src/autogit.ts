@@ -1,27 +1,26 @@
-// ---------- types ----------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
+function countWord(text: string, word: string): number {
+  // Escape word so special regex symbols don’t bite us
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // \b = word boundary, i = ignore case, g = global (all matches)
+  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
 }
-
-// ---------- helper ----------------------------------------------
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Network error: ${response.status} ${response.statusText}`);
-  }
-  return response.json() as Promise<T>;
+const txt = "Boo, boo! Boo-boo? Booing… boo.";
+console.log(countWord(txt, 'boo')); // 3
+function countWordSplit(text: string, word: string) {
+  const words = text.trim().split(/\s+/);
+  const target = word.toLowerCase();
+  return words.filter(w => w.toLowerCase() === target).length;
 }
-
-// ---------- usage ----------------------------------------------
-(async () => {
-  try {
-    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
-    console.log('Fetched post:', post);
-    // do something with post… (e.g., update UI)
-  } catch (err) {
-    console.error('Failed to fetch post:', err);
+function countWordLoop(text: string, word: string) {
+  const target = word.toLowerCase();
+  let count = 0;
+  const regex = /\b\w+\b/g;               // grab words
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match[0].toLowerCase() === target) count++;
   }
-})();
+  return count;
+}
+const count = countWord("Hello because we say hello", "hello"); // 2
