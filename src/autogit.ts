@@ -1,49 +1,65 @@
-/**
- * Stable counting sort for integers.
- *
- * @param  values The array of numbers to sort (integers only).
- * @return        A new sorted array.
- */
-function countingSort(values: number[]): number[] {
-  if (values.length === 0) return [];
+type Node<T> = { val: T; next: Node<T> | null };
 
-  // ---------- 1. find min & max ----------
-  let min = values[0];
-  let max = values[0];
-  for (let i = 1; i < values.length; i++) {
-    const v = values[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  // ---------- 2. count frequencies ----------
-  const range = max - min + 1;          // number of distinct values
-  const counts = new Array<number>(range).fill(0);
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
 
-  for (const v of values) {
-    counts[v - min]++;                  // shift so that the smallest value maps to index 0
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
   }
 
-  // ---------- 3. prefix sums (running totals) ----------
-  const positions = new Array<number>(range).fill(0);
-  let sum = 0;
-  for (let i = 0; i < range; i++) {
-    sum += counts[i];
-    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
-  }
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
 
-  // ---------- 4. build the sorted output ----------
-  const result = new Array<number>(values.length);
-  // Walk the original array **backwards** to keep stability
-  for (let i = values.length - 1; i >= 0; i--) {
-    const v = values[i];
-    const posIndex = v - min;
-    positions[posIndex]--;               // get the correct position for this element
-    result[positions[posIndex]] = v;
-  }
-
-  return result;
+  return true;
 }
-const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
-const sorted = countingSort(unsorted);
-console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
+
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
+  }
+  return prev!;
+}
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
+  }
+  return true;
+}
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
+
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
+  }
+  return true;
+}
