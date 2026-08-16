@@ -1,20 +1,27 @@
-// Original array
-const original: number[] = [1, 2, 3, 4, 5];
+// ---------- types ----------------------------------------------
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
 
-// 1️⃣ In‑place reverse (mutates `original`)
-original.reverse();
-console.log(original); // [5, 4, 3, 2, 1]
+// ---------- helper ----------------------------------------------
+async function getJson<T>(url: string): Promise<T> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Network error: ${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<T>;
+}
 
-// 2️⃣ Copy then reverse (keeps `original` intact)
-const reversedCopy = original.slice().reverse();  // or [...original].reverse()
-console.log(reversedCopy);  // [5, 4, 3, 2, 1]
-type Person = { name: string; age: number };
-
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob',   age: 34 },
-];
-
-const reversedPeople = [...people].reverse(); // still Person[]
-const reduceReversed = <T>(array: T[]): T[] =>
-  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
+// ---------- usage ----------------------------------------------
+(async () => {
+  try {
+    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
+    console.log('Fetched post:', post);
+    // do something with post… (e.g., update UI)
+  } catch (err) {
+    console.error('Failed to fetch post:', err);
+  }
+})();
