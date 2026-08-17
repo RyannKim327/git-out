@@ -1,29 +1,27 @@
-// hello.ts
-import * as readline from 'readline'
+/**
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
+ */
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-})
-
-function ask(question: string): Promise<string> {
-  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
+    }
+  } while (swapped);
 }
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
 
-async function main() {
-  const name = await ask('What’s your name? ')
-  const favNum = await ask('What’s your favorite number? ')
-  
-  const num = parseInt(favNum, 10)
-  const isEven = !isNaN(num) ? num % 2 === 0 : false
-
-  console.log(`\nHello, ${name}!`);
-  console.log(`Your favorite number is ${favNum}`);
-  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
-
-  rl.close()
-}
-
-main()
-tsc hello.ts   # compile to JavaScript
-node hello.js
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
