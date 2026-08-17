@@ -1,48 +1,50 @@
-/**
- * Returns the longest common subsequence of two strings.
- * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
- */
-function lcs(s1: string, s2: string): string {
-  const n = s1.length,
-        m = s2.length;
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
 
-  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
-
-  // Build the DP table.
-  for (let i = 1; i <= n; i++) {
-    const a = s1[i - 1];
-    for (let j = 1; j <= m; j++) {
-      if (a === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
   }
 
-  // Reconstruct the subsequence.
-  let i = n,
-      j = m,
-      result: string[] = [];
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
 
-  while (i > 0 && j > 0) {
-    if (s1[i - 1] === s2[j - 1]) {
-      // Character is part of LCS – prepend to answer.
-      result.push(s1[i - 1]);
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;   // move up
-    } else {
-      j--;   // move left
-    }
-  }
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
 
-  return result.reverse().join('');
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
 }
-const a = 'AGGTAB';
-const b = 'GXTXAYB';
 
-const sub = lcs(a, b);
-console.log(`LCS length: ${sub.length}`); // 4
-console.log(`LCS itself: ${sub}`);       // GTAB
+/**
+ * Bottom‑up merge sort (iterative).
+ *
+ * @param arr - The array to sort (in‑place)
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
+
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
+    }
+  }
+}
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
