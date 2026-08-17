@@ -1,37 +1,29 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+function removeVowels(text: string): string {
+  return text.replace(/[aeiou]/gi, '');
 }
-
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
-}
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
-
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
-
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+const raw = "TypeScript is amazing!";
+console.log(removeVowels(raw));
+// ↳ "TypScrpt s mzng!"
+function removeVowelsLoop(text: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u',
+                          'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of text) {
+    if (!vowels.has(ch)) result += ch;
   }
-
-  return sum;
+  return result;
 }
-const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
-};
+const tests = [
+  "Hello, world!",
+  "AEIOUaeiou",
+  "Rhythm",
+  "Café",
+  "",
+];
 
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+tests.forEach(t => console.log(`"${t}" → "${removeVowels(t)}"`));
+"Hello, world!" → "Hll, wrld!"
+"AEIOUaeiou" → ""
+"Rhythm" → "Rhythm"
+"Café" → "Cf"
+""
