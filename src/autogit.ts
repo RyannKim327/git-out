@@ -1,65 +1,41 @@
-type Node<T> = { val: T; next: Node<T> | null };
-
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
   }
-
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
-
-  return true;
+  return (base * height) / 2;
 }
 
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
   }
-  return prev!;
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
 }
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
+    }
   }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
 
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
   }
-  return true;
+}
+
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
+  }
+  return base * height / 2;
 }
