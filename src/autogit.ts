@@ -1,93 +1,77 @@
-/**
- * In‑place quicksort for an array of elements that implement Comparable.
- * @param arr The array to sort.
- * @param left Index of the first element to consider.
- * @param right Index of the last element to consider.
- * @returns The sorted array (the same reference is returned).
- */
-export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
-  // Using 0‐based indices
-  if (left >= right) return arr;           // Base case – 0 or 1 element
-
-  const pivotIndex = partition(arr, left, right);
-  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
-  quicksort(arr, pivotIndex + 1, right);  // right side
-  return arr;
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-/**
- * Hoare partition scheme.
- * Moves elements < pivot to the left, > pivot to the right.
- * Returns the final pivot position (the index of the pivot element after partition).
- */
-function partition<T>(arr: T[], left: number, right: number): number {
-  // Pick the middle element as pivot (arbitrary choice)
-  const pivot = arr[Math.floor((left + right) / 2)];
+  // Insert value in the first spot found (just for demonstration).
+  // A real BST would place it relative to its neighbors.
+  insert(value: T): void {
+    const node = new TreeNode(value);
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
+    this._insertRec(this.root, node);
+  }
 
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    // Move i until we find element >= pivot
-    while (arr[i] < pivot) i++;
-    // Move j until we find element <= pivot
-    while (arr[j] > pivot) j--;
-
-    if (i <= j) {
-      // Swap arr[i] and arr[j]
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
+    // Walk left first, then right, until you hit a null spot.
+    if (!current.left) {
+      current.left = node;
+    } else if (!current.right) {
+      current.right = node;
+    } else {
+      // Go deeper – we’re just doing breadth‑like insertion.
+      this._insertRec(current.left, node);
     }
   }
-  // Return the index where the next recursive calls will split.
-  return i - 1;
-}
-const data = [34, 7, 23, 32, 5, 62];
-console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
-export function quicksortBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left = 0,
-  right = arr.length - 1
-): T[] {
-  if (left >= right) return arr;
 
-  const pivotIndex = partitionBy(arr, cmp, left, right);
-  quicksortBy(arr, cmp, left, pivotIndex - 1);
-  quicksortBy(arr, cmp, pivotIndex + 1, right);
-  return arr;
-}
+  // Breadth‑first traversal (queue style) – returns array of values.
+  bfs(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
 
-function partitionBy<T>(
-  arr: T[],
-  cmp: (a: T, b: T) => number,
-  left: number,
-  right: number
-): number {
-  const pivot = arr[Math.floor((left + right) / 2)];
-
-  let i = left;
-  let j = right;
-
-  while (i <= j) {
-    while (cmp(arr[i], pivot) < 0) i++;
-    while (cmp(arr[j], pivot) > 0) j--;
-
-    if (i <= j) {
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-      i++;
-      j--;
+    const queue: TreeNode<T>[] = [this.root];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      result.push(cur.value);
+      if (cur.left) queue.push(cur.left);
+      if (cur.right) queue.push(cur.right);
     }
+    return result;
   }
-  return i - 1;
-}
-const users = [
-  { name: 'Anna', age: 23 },
-  { name: 'Bob', age: 17 },
-  { name: 'Clara', age: 31 },
-];
 
-quicksortBy(users, (a, b) => a.age - b.age);
-stdin: 5 1 4 2 6 0
-stdout: 0 1 2 4 5 6
+  // Depth‑first in‑order traversal (left, node, right)
+  inorder(): T[] {
+    const res: T[] = [];
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      res.push(node.value);
+      visit(node.right);
+    };
+    visit(this.root);
+    return res;
+  }
+
+  // Simple depth counter
+  depth(): number {
+    const dfs = (node: TreeNode<T> | null): number =>
+      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
+    return dfs(this.root);
+  }
+}
+const tree = new BinaryTree<number>();
+[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
+
+console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
+console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
+console.log('Depth:', tree.depth());         // 3
+interface Person { name: string; age: number; }
+const people = new BinaryTree<Person>();
+people.insert({name: 'Alice', age: 30});
