@@ -1,44 +1,43 @@
-const arr1 = [1, 2, 3, 4];
-const arr2 = [3, 4, 5, 6];
-
-const common = arr1.filter(v => arr2.includes(v));
-console.log(common); // [3, 4]
-function intersection<T>(a: T[], b: T[]): T[] {
-  return a.filter(v => b.includes(v));
-}
-function intersectionSet<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(v => setB.has(v));
-}
-function intersectionMultiset<T>(a: T[], b: T[]): T[] {
-  const freq = new Map<T, number>();
-  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
-
-  const result: T[] = [];
-  for (const val of a) {
-    const count = freq.get(val);
-    if (count && count > 0) {
-      result.push(val);
-      freq.set(val, count - 1);
-    }
-  }
-  return result;
-}
-interface User { id: number; name: string; }
-
-const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
-const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
-
-const intersectionById = usersA.filter(uA =>
-  usersB.some(uB => uB.id === uA.id)
-);
-console.log(intersectionById); // [{id:2,name:'Bob'}]
-const intersection = <T>(a: T[], b: T[]): T[] =>
-  a.filter(v => new Set(b).has(v));
-const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  const result = new Set<T>();
-  for (const v of setA) if (setB.has(v)) result.add(v);
-  return result;
+// O(n log n) – fine for typical lengths
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false; // quick length check
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+  return sortedA === sortedB;
 };
+// O(n) – best for long strings
+const areAnagrams = (first: string, second: string): boolean => {
+  if (first.length !== second.length) return false;
+
+  const count = new Map<string, number>();
+
+  // Count chars from the first string
+  for (const ch of first) {
+    count.set(ch, (count.get(ch) ?? 0) + 1);
+  }
+
+  // Decrement with the second string
+  for (const ch of second) {
+    const cur = count.get(ch);
+    if (!cur) return false;          // char not in first
+    if (cur === 1) count.delete(ch);
+    else count.set(ch, cur - 1);
+  }
+
+  return count.size === 0;
+};
+// Works only for ISO‑8859‑1 / 8‑bit chars
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
+
+  const freq = new Int16Array(256);
+
+  for (let i = 0; i < a.length; i++) {
+    freq[a.charCodeAt(i)]++;
+    freq[b.charCodeAt(i)]--;
+  }
+
+  return freq.every(v => v === 0);
+};
+console.log(areAnagrams('listen', 'silent')); // true
+console.log(areAnagrams('hello', 'world'));   // false
