@@ -1,69 +1,38 @@
-/**
- * BWT keeps the input string as an array of characters,
- * builds all rotations, sorts them, then extracts the last
- * column (the transformed string) and remembers the index
- * of the original string in the sorted list – that index
- * is needed for the inverse transform.
- */
-export function bwt(str: string): { transformed: string; primaryIndex: number } {
-  const n = str.length;
-  // Produce all rotations: str[i:] + str[:i]
-  const rotations: string[] = Array.from({ length: n }, (_, i) =>
-    str.slice(i) + str.slice(0, i)
-  );
+const numbers = [1, 2, 3, 4, 5];
 
-  // Sort rotations lexicographically
-  rotations.sort();
+// remove the value 3
+const withoutThree = numbers.filter(n => n !== 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+type Person = { id: number; name: string };
+const list: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
+];
 
-  // The transformed string is the concatenation of the last char
-  // of every rotation, appended in sorted order.
-  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+const target = list[1]; // the Bob object reference
+const withoutBob = list.filter(person => person !== target);
+const letters = ['a', 'b', 'c', 'd', 'e'];
+const idx = 2; // we want to drop 'c'
 
-  // Find the row that matches the original string; its index
-  // is what BWT callers need to recover the original.
-  const primaryIndex = rotations.findIndex(rot => rot === str);
+letters.splice(idx, 1); // remove 1 element at position idx
+console.log(letters); // ['a', 'b', 'd', 'e']
+const data = [10, 20, 30, 20, 40];
+const removeVal = 20;
 
-  return { transformed: lastColumn, primaryIndex };
-}
-
-/**
- * Inverse BWT reconstructs the original string from the
- * transformed string and the index found in the forward step.
- */
-export function inverseBwt(
-  transformed: string,
-  primaryIndex: number
-): string {
-  const n = transformed.length;
-
-  // Initialize an array of empty strings: will hold the building rows
-  let table: string[] = Array.from({ length: n }, () => '');
-
-  // Repeatedly prepend the transformed column to each row,
-  // then sort. After n iterations the table is fully sorted.
-  for (let step = 0; step < n; step++) {
-    // Prepend each character of 'transformed' to the corresponding row
-    table = table.map((row, i) => transformed[i] + row);
-
-    // Quick sort (JavaScript's String array sort is fine for our sizes)
-    table.sort();
+for (let i = data.length - 1; i >= 0; i--) {
+  if (data[i] === removeVal) {
+    data.splice(i, 1);
   }
-
-  // The original string is the row at primaryIndex
-  return table[primaryIndex];
 }
-
-/* ────────────────────── Demo ────────────────────── */
-
-const example = 'banana$';    // '$' is a unique EOF marker
-const { transformed, primaryIndex } = bwt(example);
-
-console.log('BWT:', transformed, 'Primary index:', primaryIndex);
-console.log('Inverse:', inverseBwt(transformed, primaryIndex));
-
-/* Expected output:
-
-BWT: annb$aa  Primary index: 3
-Inverse: banana$
-
-*/
+console.log(data); // [10, 30, 40]
+/**
+ * Removes the first occurrence of `value` from `arr`.
+ */
+function removeFirst<T>(arr: T[], value: T): T[] {
+  const idx = arr.indexOf(value);
+  if (idx === -1) return arr;          // nothing found
+  const copy = [...arr];               // keep original intact
+  copy.splice(idx, 1);
+  return copy;
+}
