@@ -1,145 +1,103 @@
-/**
- * Graph type: key → list of neighbour keys.
- * Assumes an undirected or directed graph – just feed it the adjacency list you have.
- */
-type Graph = Map<string, string[]>;
+// A generic state; `data` can be any shape you need.
+export interface BeamState<T> {
+  readonly data: T;      // the actual thing (token list, node id, etc.)
+  readonly score: number; // higher is better
+}
 
-/**
- * Bidirectional BFS to find the shortest path between two nodes.
- *
- * @param graph       The graph adjacency list.
- * @param startKey    Origin node key.
- * @param goalKey     Destination node key.
- * @returns           Array of keys representing the shortest path,
- *                    or `null` if no path exists.
- */
-export function bidirectionalSearch(
-  graph: Graph,
-  startKey: string,
-  goalKey: string
-): string[] | null {
-  if (startKey === goalKey) return [startKey];
+// A function that, from one state, produces zero or more candidate states.
+export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
 
-  // --- Front and back queues
-  const frontQueue: string[] = [startKey];
-  const backQueue: string[] = [goalKey];
+// A function that assigns a numeric score to a state.
+export type Scorer<T> = (state: BeamState<T>) => number;
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private readonly key: (x: T) => number) {}
 
-  // --- Visited maps
-  const frontVisited = new Set<string>([startKey]);
-  const backVisited  = new Set<string>([goalKey]);
+  private swap(i: number, j: number) {
+    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
+  }
 
-  // --- Parent maps to reconstruct path
-  const frontParent = new Map<string, string>([[startKey, null]]);
-  const backParent  = new Map<string, string>([[goalKey, null]]);
+  push(item: T) {
+    this.data.push(item);
+    this.siftUp(this.data.length - 1);
+  }
 
-  // Helper to get neighbours, guard against missing keys
-  const neighbours = (node: string) => graph.get(node) ?? [];
+  pop(): T | undefined {
+    const top = this.data[0];
+    const last = this.data.pop();
+    if (!this.data.length || !last) return top;
+    this.data[0] = last;
+    this.siftDown(0);
+    return top;
+  }
 
-  // Helper to expand one layer from a queue
-  function expand(
-    queue: string[],
-    visited: Set<string>,
-    otherVisited: Set<string>,
-    parentMap: Map<string, string>
-  ): string | null {
-    const size = queue.length;   // classic BFS “level” size
-    for (let i = 0; i < size; i++) {
-      const current = queue.shift() as string; // guaranteed non‑empty
+  size() { return this.data.length; }
 
-      for (const neighbour of neighbours(current)) {
-        if (visited.has(neighbour)) continue; // already expanded from this side
+  private siftUp(i: number) {
+    let idx = i;
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
+      this.swap(idx, parent);
+      idx = parent;
+    }
+  }
+  private siftDown(i: number) {
+    let idx = i;
+    const n = this.data.length;
+    while (true) {
+      const l = idx * 2 + 1;
+      const r = l + 1;
+      let smallest = idx;
+      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
+      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
+    }
+  }
 
-        // New node from this side – record parent & mark visited
-        visited.add(neighbour);
-        parentMap.set(neighbour, current);
-        queue.push(neighbour);
+  // For debugging / inspection
+  toArray() { return [...this.data]; }
+}
+export class BeamSearch<T> {
+  constructor(
+    private readonly expander: Expander<T>,
+    private readonly scorer: Scorer<T>,
+    private readonly beamWidth: number
+  ) {}
 
-        // If the other side has already seen this neighbour,
-        // we’ve met in the middle!
-        if (otherVisited.has(neighbour)) return neighbour;
+  /**
+   * Runs beam search for a fixed number of iterations.
+   * @param startState the initial state (usually empty output)
+   * @param maxDepth how many expansion steps to take
+   * @returns an array containing the best states after the last depth
+   */
+  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
+    let current: BeamState<T>[] = [startState];
+
+    for (let depth = 0; depth < maxDepth; depth++) {
+      const candidates: BeamState<T>[] = [];
+      for (const state of current) {
+        const nextStates = this.expander(state);
+        // We expect each expander to already return scored states,
+        // but if they don't we can score them here:
+        for (const ns of nextStates) {
+          const s = this.scorer(ns);
+          candidates.push({ ...ns, score: s });
+        }
+      }
+      if (candidates.length === 0) break; // nothing to expand
+      // Keep top `beamWidth` candidates
+      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
+      for (const cand of candidates) heap.push(cand);
+      current = [];
+      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
+        current.push(heap.pop()!); // `!` is safe because we checked size
       }
     }
-    return null;
+
+    // Sort by score descending before returning just in case
+    return current.sort((a, b) => b.score - a.score);
   }
-
-  // Main loop
-  while (frontQueue.length && backQueue.length) {
-    // 1. Expand front side
-    const meetingPoint = expand(
-      frontQueue,
-      frontVisited,
-      backVisited,
-      frontParent
-    );
-    if (meetingPoint) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint,
-        startKey,
-        goalKey
-      );
-    }
-
-    // 2. Expand back side
-    const meetingPoint2 = expand(
-      backQueue,
-      backVisited,
-      frontVisited,
-      backParent
-    );
-    if (meetingPoint2) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint2,
-        startKey,
-        goalKey
-      );
-    }
-  }
-
-  // No overlap – disconnected graph
-  return null;
 }
-
-/**
- * Reconstructs the full path from start → meeting → goal.
- */
-function buildPath(
-  frontParents: Map<string, string>,
-  backParents: Map<string, string>,
-  meeting: string,
-  start: string,
-  goal: string
-): string[] {
-  const path: string[] = [meeting];
-
-  // Walk backwards from meeting to start
-  let cur: string | null = frontParents.get(meeting) ?? null;
-  while (cur) {
-    path.unshift(cur);
-    cur = frontParents.get(cur) ?? null;
-  }
-
-  // Walk forwards from meeting to goal
-  cur = backParents.get(meeting) ?? null;
-  while (cur) {
-    path.push(cur);
-    cur = backParents.get(cur) ?? null;
-  }
-
-  return path;
-}
-// Build a tiny sample graph
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E']]
-]);
-
-console.log(bidirectionalSearch(g, 'A', 'F'));
-// → ['A
