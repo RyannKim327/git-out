@@ -1,38 +1,25 @@
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;        // 1 and below are not prime
-  if (n <= 3) return true;         // 2 and 3 are prime
+/** 
+ * Returns true if `text` is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores everything that’s not a letter or digit
+ */
+function isPalindrome(text: string): boolean {
+  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
+  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
 
-  // Even numbers > 2 are composite.
-  if (n % 2 === 0) return false;
+  // 2. Compare the string with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
+}
 
-  // Check odd divisors up to sqrt(n)
-  for (let i = 3; i * i <= n; i += 2) {
-    if (n % i === 0) return false;
+// Usage examples
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan...'));  // true
+console.log(isPalindrome('Hello world'));      // false
+function isPalindromeSimple(s: string): boolean {
+  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
+    if (s[i] !== s[j]) return false;
   }
   return true;
 }
-function isPrime6(n: number): boolean {
-  if (n <= 1) return false;
-  if (n <= 3) return true;
-  if (n % 2 === 0 || n % 3 === 0) return false;
-
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
-  }
-  return true;
-}
-function isPrimeBig(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
-
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
-}
-console.log(isPrime(97));   // true
-console.log(isPrime(100));  // false
-console.log(isPrime6(97));  // true
-console.log(isPrime6(100)); // false
-console.log(isPrimeBig(19n)); // true
