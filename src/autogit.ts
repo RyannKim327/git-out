@@ -1,65 +1,58 @@
-/**
- * Computes the LPS array for a given pattern.
- * For each index i, lps[i] is the length of the longest
- * proper prefix that is also a suffix for pattern[0..i].
- */
-function buildLps(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;          // length of previous longest prefix suffix
-    let i = 1;
+// stack.ts
+export class Stack<T> {
+  /* The array that holds our data. The last item is the top of the stack. */
+  private items: T[] = [];
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // try the previous longest prefix suffix
-                length = lps[length - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
+  /** Adds a value to the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
+  }
+
+  /** Removes and returns the top value. Throws if the stack is empty. */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to pop from an empty stack");
     }
-    return lps;
-}
-/**
- * Returns the starting indices of all occurrences of `pattern`
- * inside `text`. If the pattern is empty, an empty array is returned.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
+    return this.items.pop() as T; // safe because we just checked for emptiness
+  }
 
-    const lps = buildLps(pattern);
-    const result: number[] = [];
-
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++; j++;
-            if (j === pattern.length) {
-                // match found; record start index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // fall back in pattern
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
+  /** Returns the top value without removing it. Throws if the stack is empty. */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to peek on an empty stack");
     }
-    return result;
-}
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
+    // items.length is at least 1, so the index exists
+    return this.items[this.items.length - 1];
+  }
 
-console.log(kmpSearch(haystack, needle));
-// → [10]
+  /** Was the stack empty? */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** How many items are there? */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clear everything out. */
+  clear(): void {
+    this.items = [];
+  }
+}
+// demo.ts
+import { Stack } from "./stack";
+
+const stack = new Stack<number>();
+
+stack.push(1);
+stack.push(2);
+stack.push(3);
+
+console.log(stack.peek());   // 3
+console.log(stack.pop());    // 3
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
