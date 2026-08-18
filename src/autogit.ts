@@ -1,16 +1,25 @@
-// 1. Using the Number constructor
-const val1 = Number("42");          // 42
+/***** 1️⃣  The classic Math.max with the spread operator *****/
 
-// 2. Using unary plus
-const val2 = +"42";                 // 42
+const numbers = [4, 12, 7, 19, 3];
 
-// 3. Using parseInt (base 10 recommended)
-const val3 = parseInt("42", 10);    // 42
+// Spreads the array into individual arguments for Math.max
+const max1 = Math.max(...numbers); // 19
+/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
 
-// 4. Using parseFloat for decimals
-const val4 = parseFloat("3.14");    // 3.14
-function safeParse(str: string): number | null {
-  const n = Number(str);
-  return Number.isNaN(n) ? null : n;
-}
-const i = Math.floor(parseFloat("3.9")); // 3
+const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
+// Also 19
+/***** 3️⃣  If you’re dealing with objects and need a property *****/
+
+type Item = { id: number; value: number };
+const items: Item[] = [
+  { id: 1, value: 4 },
+  { id: 2, value: 12 },
+  { id: 3, value: 7 },
+];
+
+// Max based on `value`
+const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
+// maxVal is 12
+// If you want the whole object:
+const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
+// maxObj is { id: 2, value: 12 }
