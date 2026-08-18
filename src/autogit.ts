@@ -1,25 +1,65 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+/**
+ * Computes the LPS array for a given pattern.
+ * For each index i, lps[i] is the length of the longest
+ * proper prefix that is also a suffix for pattern[0..i].
+ */
+function buildLps(pattern: string): number[] {
+    const lps = new Array(pattern.length).fill(0);
+    let length = 0;          // length of previous longest prefix suffix
+    let i = 1;
 
-const numbers = [4, 12, 7, 19, 3];
+    while (i < pattern.length) {
+        if (pattern[i] === pattern[length]) {
+            length++;
+            lps[i] = length;
+            i++;
+        } else {
+            if (length !== 0) {
+                // try the previous longest prefix suffix
+                length = lps[length - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
+}
+/**
+ * Returns the starting indices of all occurrences of `pattern`
+ * inside `text`. If the pattern is empty, an empty array is returned.
+ */
+export function kmpSearch(text: string, pattern: string): number[] {
+    if (pattern.length === 0) return [];
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+    const lps = buildLps(pattern);
+    const result: number[] = [];
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
+    let i = 0; // index for text
+    let j = 0; // index for pattern
 
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
-];
+    while (i < text.length) {
+        if (text[i] === pattern[j]) {
+            i++; j++;
+            if (j === pattern.length) {
+                // match found; record start index
+                result.push(i - j);
+                // continue searching for next possible match
+                j = lps[j - 1];
+            }
+        } else {
+            if (j !== 0) {
+                // fall back in pattern
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+    }
+    return result;
+}
+const haystack = "ABABDABACDABABCABAB";
+const needle  = "ABABCABAB";
 
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+console.log(kmpSearch(haystack, needle));
+// → [10]
