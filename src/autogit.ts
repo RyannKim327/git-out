@@ -1,93 +1,33 @@
-/**
- * A single node of the linked list.
- * The list is kept in the "next →" direction.
- */
-class ListNode<T> {
-  public value: T;
-  public next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
+}
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
 }
 
-/**
- * A queue backed by a linked list.
- * `front` points to the oldest element,
- * `rear` points to the newest one.
- */
-export class Queue<T> {
-  private front: ListNode<T> | null = null; // head
-  private rear: ListNode<T> | null = null;  // tail
-  private _size = 0;
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
 
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
   }
-
-  /** Check if the queue is empty */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Enqueue: add an element to the tail */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (this.rear) {
-      this.rear.next = node;   // hook it after the current tail
-    }
-    this.rear = node;           // new tail
-
-    if (!this.front) {
-      // Queue was empty before, so front must point to the new node too
-      this.front = node;
-    }
-
-    this._size++;
-  }
-
-  /** Dequeue: remove and return the front element, or null if empty */
-  dequeue(): T | null {
-    if (!this.front) return null;
-
-    const value = this.front.value;
-    this.front = this.front.next;  // move head forward
-
-    if (!this.front) {
-      // Queue just became empty – clear the tail as well
-      this.rear = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | null {
-    return this.front ? this.front.value : null;
-  }
-
-  /** Return an array of all values in order (for debugging / inspection) */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.front;
-    while (node) {
-      result.push(node.value);
-      node = node.next;
-    }
-    return result;
-  }
+  return result;
 }
-const q = new Queue<number>();
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
+}
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
-
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size);      // 1
-console.log(q.toArray()); // [30]
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+}
