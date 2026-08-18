@@ -1,45 +1,44 @@
-/**
- * Returns an object with the maximum sum and the start/end indices
- * of the sub‑array that produces that sum.
- *
- * @param nums - array of numbers
- * @returns { maxSum, start, end }
- */
-export function maxSumSubarray(nums: number[]) {
-  // In case the input is empty we can return 0 / -1/-1
-  if (nums.length === 0) {
-    return { maxSum: 0, start: -1, end: -1 };
-  }
+const arr1 = [1, 2, 3, 4];
+const arr2 = [3, 4, 5, 6];
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These will record the best sub‑array boundaries
-  let bestStart = 0;
-  let bestEnd = 0;
-  // Temporary positions
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at i
-    if (currentSum + nums[i] < nums[i]) {
-      currentSum = nums[i];
-      tempStart = i;
-    } else {
-      currentSum += nums[i];
-    }
-
-    // Update best if we have a better sum
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+const common = arr1.filter(v => arr2.includes(v));
+console.log(common); // [3, 4]
+function intersection<T>(a: T[], b: T[]): T[] {
+  return a.filter(v => b.includes(v));
 }
-const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
-const { maxSum, start, end } = maxSumSubarray(arr);
-console.log(maxSum); // 43
-console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
+function intersectionSet<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(v => setB.has(v));
+}
+function intersectionMultiset<T>(a: T[], b: T[]): T[] {
+  const freq = new Map<T, number>();
+  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
+
+  const result: T[] = [];
+  for (const val of a) {
+    const count = freq.get(val);
+    if (count && count > 0) {
+      result.push(val);
+      freq.set(val, count - 1);
+    }
+  }
+  return result;
+}
+interface User { id: number; name: string; }
+
+const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
+const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
+
+const intersectionById = usersA.filter(uA =>
+  usersB.some(uB => uB.id === uA.id)
+);
+console.log(intersectionById); // [{id:2,name:'Bob'}]
+const intersection = <T>(a: T[], b: T[]): T[] =>
+  a.filter(v => new Set(b).has(v));
+const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  const result = new Set<T>();
+  for (const v of setA) if (setB.has(v)) result.add(v);
+  return result;
+};
