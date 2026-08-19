@@ -1,25 +1,29 @@
-/** 
- * Returns true if `text` is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores everything that’s not a letter or digit
- */
-function isPalindrome(text: string): boolean {
-  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
-  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+// hello.ts
+import * as readline from 'readline'
 
-  // 2. Compare the string with its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+
+function ask(question: string): Promise<string> {
+  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
 }
 
-// Usage examples
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan...'));  // true
-console.log(isPalindrome('Hello world'));      // false
-function isPalindromeSimple(s: string): boolean {
-  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
-    if (s[i] !== s[j]) return false;
-  }
-  return true;
+async function main() {
+  const name = await ask('What’s your name? ')
+  const favNum = await ask('What’s your favorite number? ')
+  
+  const num = parseInt(favNum, 10)
+  const isEven = !isNaN(num) ? num % 2 === 0 : false
+
+  console.log(`\nHello, ${name}!`);
+  console.log(`Your favorite number is ${favNum}`);
+  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
+
+  rl.close()
 }
+
+main()
+tsc hello.ts   # compile to JavaScript
+node hello.js
