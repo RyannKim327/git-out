@@ -1,83 +1,41 @@
-function kthSmallestBySort<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;          // out of range
-
-  // cloning so we don’t mutate the caller’s array
-  const copy = [...arr];
-
-  // If you need custom ordering, pass a compare function.
-  // Default: numeric ascending.
-  copy.sort(compareFn ?? ((a, b) => (a as any) - (b as any)));
-
-  // Arrays are zero‑indexed
-  return copy[k - 1];
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
+  }
+  return (base * height) / 2;
 }
 
-// Example
-const nums = [7, 3, 5, 2, 9];
-console.log(kthSmallestBySort(nums, 2));   // 3
-function kthSmallestQuickSelect<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-
-  const comp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const clone = [...arr]; // keep the original untouched
-
-  function partition(left: number, right: number, pivotIndex: number): number {
-    const pivotValue = clone[pivotIndex];
-    // move pivot to end
-    [clone[pivotIndex], clone[right]] = [clone[right], clone[pivotIndex]];
-
-    let storeIndex = left;
-    for (let i = left; i < right; i++) {
-      if (comp(clone[i], pivotValue) < 0) {
-        [clone[storeIndex], clone[i]] = [clone[i], clone[storeIndex]];
-        storeIndex++;
-      }
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
     }
-    // move pivot to its final place
-    [clone[right], clone[storeIndex]] = [clone[storeIndex], clone[right]];
-    return storeIndex;
   }
 
-  let left = 0;
-  let right = clone.length - 1;
-  let pivotIndex;
-
-  while (true) {
-    pivotIndex = partition(left, right, Math.floor((left + right) / 2));
-    if (pivotIndex === k - 1) return clone[pivotIndex];
-    if (pivotIndex > k - 1) right = pivotIndex - 1;
-    else left = pivotIndex + 1;
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
   }
 }
-const data = [12, 3, 5, 7, 4, 19, 26];
-console.log(kthSmallestQuickSelect(data, 4)); // 7
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private compare: (a: T, b: T) => number) {}
-  // heap methods omitted for brevity...
+
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
+  }
+  return base * height / 2;
 }
-
-function kthSmallestWithHeap<T>(arr: T[], k: number, compareFn?: (a: T, b: T) => number): T | undefined {
-  if (k < 1 || k > arr.length) return undefined;
-  const cmp = compareFn ?? ((a, b) => (a as any) - (b as any));
-  const heap = new MinHeap<T>(cmp);
-  for (const v of arr) heap.insert(v);
-  let result: T | undefined;
-  for (let i = 0; i < k; i++) result = heap.extractMin();
-  return result;
-}
-const people = [
-  { name: 'Alice', age: 24 },
-  { name: 'Bob', age: 19 },
-  { name: 'Carol', age: 32 },
-  { name: 'Dave', age: 28 }
-];
-
-// 3rd youngest
-const thirdYoungest = kthSmallestQuickSelect(
-  people,
-  3,
-  (a, b) => a.age - b.age
-);
-
-console.log(thirdYoungest); // shows Bob (age 19)
