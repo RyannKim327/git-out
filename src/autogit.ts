@@ -1,7 +1,10 @@
-const part1 = "Hello";
-const part2 = "World";
+const original = "Hello, World!";
+const lower = original.toLowerCase();   // "hello, world!"
+// Example: filter an array case‑insensitively
+const fruits = ["Apple", "BANANA", "Cherry"];
+const search = "baNANA";
 
-const plus = part1 + part2;          // "HelloWorld"
-const concat = part1.concat(part2);  // "HelloWorld"
-const template = `${part1}${part2}`; // "HelloWorld"
-const join = [part1, part2].join(''); // "HelloWorld"
+const matched = fruits.filter(f =>
+  f.toLowerCase().includes(search.toLowerCase())
+);
+// matched => ["BANANA"]
