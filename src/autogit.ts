@@ -1,65 +1,21 @@
-type Node<T> = { val: T; next: Node<T> | null };
+function countChar(str: string, target: string): number {
+  // guard against empty target (avoids throwing on .split(''))
+  if (target.length !== 1) throw new Error('target must be a single character');
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
-
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
-  }
-
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
-
-  return true;
+  return str.split(target).length - 1;
 }
-
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
-  }
-  return prev!;
+console.log(countChar('hello world', 'l')); // 3
+function countCharRegEx(str: string, target: string): number {
+  const re = new RegExp(target, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
 }
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
+console.log(countCharRegEx('banana', 'a')); // 3
+function countCharLoop(str: string, target: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
   }
-  return true;
+  return count;
 }
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
-
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
-}
+console.log(countCharLoop('Mississippi', 'i')); // 4
