@@ -1,76 +1,49 @@
 /**
- * Build the LPS (Longest Prefix Suffix) table for KMP.
- *
- * @param pattern - The pattern string for which the table is built.
- * @returns An array where lps[i] is the length of the longest proper
- *          prefix of pattern[0..i] that is also a suffix of that substring.
+ * Returns n! for a non‑negative integer `n`.
+ * Throws an error if `n` is negative.
  */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps: number[] = Array(m).fill(0);
-  let length = 0;                 // length of previous longest prefix suffix
-  let i = 1;                      // lps[0] is always 0
-
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length += 1;
-      lps[i] = length;
-      i += 1;
-    } else {
-      if (length !== 0) {
-        // fall back in the pattern (do not increment i here)
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i += 1;
-      }
-    }
-  }
-  return lps;
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;   // base case
+  return n * factorialRecursive(n - 1);
 }
-
 /**
- * KMP search – returns all starting indices of `pattern` in `text`.
- *
- * @param text    – The string to search within.
- * @param pattern – The string to find.
- * @returns Array of start indices where pattern occurs in text.
+ * Computes factorial using a loop. 
+ * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];          // nothing to find
-  const lps = buildLPS(pattern);
-  const result: number[] = [];
-
-  let i = 0;   // index for text
-  let j = 0;   // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i += 1;
-      j += 1;
-    }
-
-    // full match found
-    if (j === pattern.length) {
-      result.push(i - j);   // starting index
-      j = lps[j - 1];       // allow overlapping matches
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i += 1;
-      }
-    }
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
   return result;
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+/**
+ * Factorial returning a BigInt to avoid precision loss.
+ * Accepts `bigint | number`, but converts to BigInt internally.
+ */
+function factorialBigInt(n: number | bigint): bigint {
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
+  if (bigN <= 1n) return 1n;
+  let result = 1n;
+  for (let i = 2n; i <= bigN; i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(25));          // 15511210043330985984000000n
+console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
+const factorialCache = new Map<number, number>();
 
-const matches = kmpSearch(text, pattern);
-console.log(matches);          // [10]
+function factorialMemoized(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;
+  if (factorialCache.has(n)) return factorialCache.get(n)!;
 
-const hasMatch = matches.length > 0;
-console.log(hasMatch);         // true
+  const value = n * factorialMemoized(n - 1);
+  factorialCache.set(n, value);
+  return value;
+}
+const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
