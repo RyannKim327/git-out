@@ -1,61 +1,79 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
+
+    visited.add(start);
+    queue.push(start);
+
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
+    }
+
+    return result;
 }
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
-  }
-  return head
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
 }
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
-
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
-  }
-
-  // At the end, prev is the new head
-  return prev
-}
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
-  }
-
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
-
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
-
-  return newHead
-}
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
-
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
