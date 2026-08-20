@@ -1,39 +1,37 @@
-function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
+function secondLargestSort(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-// Example
-console.log(reverseString('hello')); // 'olleh'
-reverseString('👋🏽'); // '🏽👋'  → wrong
-function reverseStringUnicode(s: string): string {
-  const codePoints: number[] = [];
-  for (const char of s) {
-    codePoints.push(char.codePointAt(0)!);
-  }
-  return String.fromCodePoint(...codePoints.reverse());
+  const sorted = [...arr].sort((a, b) => b - a); // Descending
+  return sorted[1];
 }
+function secondLargestSinglePass(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-// Example
-console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
-const cp = Array.from(s).reverse().join('');
-function reverseRecursively(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseRecursively(s.slice(1)) + s[0];
-}
-function reverseLoop(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const num of arr) {
+    if (num > max) {
+      second = max;
+      max = num;
+    } else if (num > second && num !== max) {
+      second = num;
+    }
   }
-  return result;
+
+  return second === -Infinity ? undefined : second;
 }
-function reverseBuffer(s: string): string {
-  const buf: string[] = new Array(s.length);
-  for (let i = 0; i < s.length; i++) {
-    buf[i] = s[s.length - 1 - i];
-  }
-  return buf.join('');
+function secondLargestSet(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)];
+  if (unique.length < 2) return undefined;
+
+  const sorted = unique.sort((a, b) => b - a);
+  return sorted[1];
 }
-function reverseStringSafe(s: string): string {
-  return Array.from(s).reverse().join('');
+function secondLargestMathMax(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  const max = Math.max(...arr);
+  const maxFiltered = arr.filter(num => num !== max);
+  return Math.max(...maxFiltered);
 }
