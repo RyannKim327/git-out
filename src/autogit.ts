@@ -1,46 +1,36 @@
-/**
- * Returns true if the array is sorted in ascending order.
- * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
- * If you need a custom order you can supply a comparator:
- *   (a, b) => a.value - b.value   // numeric
- *   (a, b) => a.name.localeCompare(b.name) // string property
- */
-function isSorted<T>(
-  arr: readonly T[],
-  comparator?: (a: T, b: T) => number
-): boolean {
-  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
-
-  const cmp = comparator ?? ((a: T, b: T) => {
-    // Default comparison: works for numbers, strings, Dates, etc.
-    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
-  });
-
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // a previous element is larger → not sorted
-    }
-  }
-  return true;
+// A minimal, generic node type
+export interface ListNode<T> {
+  readonly value: T;
+  next: ListNode<T> | null;
 }
-// Numbers
-console.log(isSorted([1, 2, 3, 4]));           // true
-console.log(isSorted([1, 3, 2, 4]));           // false
 
-// Strings
-console.log(isSorted(['a', 'b', 'c']));       // true
+/**
+ * Returns the middle node of a singly‑linked list.
+ * If the list has an even number of nodes, it returns
+ * the *second* middle node (i.e. the one that a
+ * “slow‑pointer” would land on after the last move).
+ *
+ * @param head Head of the list – null if the list is empty.
+ * @returns The middle node, or null for an empty list.
+ */
+export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head;
+  let fast = head;
 
-// Dates
-console.log(
-  isSorted([
-    new Date('2020-01-01'),
-    new Date('2020-06-01'),
-    new Date('2021-01-01')
-  ])
-); // true
+  // advance fast two steps, slow one step
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next;
+    fast = fast.next.next;
+  }
 
-// Objects with a specific key
-const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
-console.log(isSorted(people, (p, q) => p.age - q.age)); // true
-const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
-  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
+  return slow;
+}
+// Build a list: 1 → 2 → 3 → 4 → 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+const mid = middleNode(node1);
+console.log(mid?.value); // → 3
