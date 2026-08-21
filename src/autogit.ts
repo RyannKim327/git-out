@@ -1,113 +1,51 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+/**
+ * Merge two sorted arrays into one sorted array.
+ * The comparator decides the ordering – by default it uses the `<` operator.
+ */
+function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
+  const result: T[] = [];
+  let i = 0; // index into left
+  let j = 0; // index into right
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
+  // Grab the compare function, or fall back to simple < comparison
+  const comp = compare ?? ((a: T, b: T) => a < b);
 
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
-
-  // ---- basic properties ----
-  get size() { return this._size; }
-
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
+  while (i < left.length && j < right.length) {
+    // If left[i] comes before right[j] (or equal), push it
+    if (comp(left[i], right[j])) {
+      result.push(left[i++]);
     } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
-
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
-
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
-  }
-
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
+      result.push(right[j++]);
     }
   }
+
+  // One of the halves may still have leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
-  }
-  return false;
+
+/**
+ * Recursive merge sort.  
+ * @param array The array to sort.
+ * @param compare Optional comparator that returns true if a < b.
+ */
+export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
+  // Stop recursion when array has 0 or 1 item
+  if (array.length <= 1) return array.slice(); // return a shallow copy
+
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
+
+  return merge(left, right, compare);
 }
+const numbers = [5, 3, 8, 1, 2, 9];
+const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
+
+const people = [
+  { name: "Alice", age: 32 },
+  { name: "Bob", age: 25 },
+  { name: "Eve", age: 29 }
+];
+
+// Sort by age
+const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
