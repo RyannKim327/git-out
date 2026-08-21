@@ -1,45 +1,52 @@
-/**
- * Returns an object with the maximum sum and the start/end indices
- * of the sub‑array that produces that sum.
- *
- * @param nums - array of numbers
- * @returns { maxSum, start, end }
- */
-export function maxSumSubarray(nums: number[]) {
-  // In case the input is empty we can return 0 / -1/-1
-  if (nums.length === 0) {
-    return { maxSum: 0, start: -1, end: -1 };
-  }
-
-  let bestSum = nums[0];
-  let currentSum = nums[0];
-
-  // These will record the best sub‑array boundaries
-  let bestStart = 0;
-  let bestEnd = 0;
-  // Temporary positions
-  let tempStart = 0;
-
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at i
-    if (currentSum + nums[i] < nums[i]) {
-      currentSum = nums[i];
-      tempStart = i;
-    } else {
-      currentSum += nums[i];
-    }
-
-    // Update best if we have a better sum
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
-
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 }
-const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
-const { maxSum, start, end } = maxSumSubarray(arr);
-console.log(maxSum); // 43
-console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
+
+/**
+ * Returns the diameter (in edges) of a binary tree.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
+
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
+    }
+
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;         // already in edges
+}
+
+/* ---- example usage ------------------------------------------------------- */
+
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
+}
+
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
+
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
