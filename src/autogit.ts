@@ -1,7 +1,9 @@
-const part1 = "Hello";
-const part2 = "World";
+const sentence = "The quick brown fox jumps over the lazy dog";
+const needle = "brown";
 
-const plus = part1 + part2;          // "HelloWorld"
-const concat = part1.concat(part2);  // "HelloWorld"
-const template = `${part1}${part2}`; // "HelloWorld"
-const join = [part1, part2].join(''); // "HelloWorld"
+const hasBrown = sentence.includes(needle); // true
+const hasBrownCaseInsensitive = sentence
+  .toLowerCase()
+  .includes(needle.toLowerCase()); // true
+const hasBrownIdx = sentence.indexOf(needle) !== -1; // true
+const hasVowelPattern = /[aeiou]/.test(sentence); // true
