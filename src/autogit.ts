@@ -1,49 +1,34 @@
-/**
- * Returns n! for a non‑negative integer `n`.
- * Throws an error if `n` is negative.
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;   // base case
-  return n * factorialRecursive(n - 1);
-}
-/**
- * Computes factorial using a loop. 
- * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
- */
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+function stringLength(s: string): number {
+  let count = 0;
+  for (const _ of s) {   // iterates over Unicode code points
+    ++count;
   }
-  return result;
+  return count;
 }
-/**
- * Factorial returning a BigInt to avoid precision loss.
- * Accepts `bigint | number`, but converts to BigInt internally.
- */
-function factorialBigInt(n: number | bigint): bigint {
-  const bigN = typeof n === 'bigint' ? n : BigInt(n);
-  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
-  if (bigN <= 1n) return 1n;
-  let result = 1n;
-  for (let i = 2n; i <= bigN; i++) {
-    result *= i;
+function stringLengthCodeUnits(s: string): number {
+  let count = 0;
+  // `s[i]` returns `undefined` past the end of the string
+  for (let i = 0; s[i] !== undefined; i++) {
+    ++count;
   }
-  return result;
+  return count;
 }
-console.log(factorialBigInt(25));          // 15511210043330985984000000n
-console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
-const factorialCache = new Map<number, number>();
-
-function factorialMemoized(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;
-  if (factorialCache.has(n)) return factorialCache.get(n)!;
-
-  const value = n * factorialMemoized(n - 1);
-  factorialCache.set(n, value);
-  return value;
+function stringLengthCharAt(s: string): number {
+  let count = 0;
+  for (let i = 0; s.charAt(i) !== ''; i++) {
+    ++count;
+  }
+  return count;
 }
-const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
+function* chars(s: string): Generator<unknown> {
+  for (const c of s) { yield c; }
+}
+
+function stringLengthFunctional(s: string): number {
+  let count = 0;
+  for (const _ of chars(s)) { ++count; }
+  return count;
+}
+console.log(stringLength("hello"));       // 5
+console.log(stringLength("👋🌍"));        // 2  (two code points)
+console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
