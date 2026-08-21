@@ -1,48 +1,36 @@
 /**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
+ * Returns the longest common prefix of the supplied strings.
+ * If the array is empty, or if no common prefix exists, an empty string is returned.
  */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+export function longestCommonPrefix(arr: readonly string[]): string {
+  if (arr.length === 0) return '';
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
+  // We’ll be comparing the first element with every other one.
+  // Once a mismatch is found we stop expanding the prefix.
+  let prefix = arr[0];
+
+  for (let i = 1; i < arr.length; ++i) {
+    // Shorten the prefix until it matches the start of arr[i]
+    while (arr[i].indexOf(prefix) !== 0) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';
     }
   }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+  return prefix;
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
+const words = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(words)); // prints "fl"
 
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
-  }
-  return undefined;
-}
+const mix = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(mix));   // prints ""
+export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
+  (prev, curr) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
+    }
+    return prev.slice(0, i);
+  },
+  arr[0] ?? ''
+);
