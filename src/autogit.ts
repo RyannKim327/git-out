@@ -1,52 +1,94 @@
-// Basic definition of a binary‑tree node
-interface TreeNode {
-  val: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-}
-
+if currentDepth > depthLimit → stop exploring that branch
 /**
- * Returns the diameter (in edges) of a binary tree.
+ * Generic depth‑limited search (iterative DFS).
+ *
+ * @param root        The starting node.
+ * @param depthLimit  How far we are allowed to go from the root.
+ * @param getNeighbors
+ *        A callback that returns the list of adjacent nodes for a given node.
+ * @param visitedSet  Optional set used to avoid revisiting nodes.
+ *
+ * @returns  Array of nodes visited in order (pre‑order DFS order).
  */
-function diameterOfBinaryTree(root: TreeNode | null): number {
-  let maxDiameter = 0;          // keeps the best we have seen
+export function depthLimitedSearch<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  visitedSet?: Set<T>
+): T[] {
+  const visited: Set<T> = visitedSet ?? new Set<T>();
+  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
+  const result: T[] = [];
 
-  /** Depth‑first search that returns the height of sub‑tree. */
-  function dfs(node: TreeNode | null): number {
-    if (node === null) return 0;          // leaf contributes 0 height
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!; // non‑empty because of the loop
 
-    const leftHeight  = dfs(node.left);
-    const rightHeight = dfs(node.right);
+    // Skip if we've already seen the node
+    if (visited.has(node)) continue;
 
-    // Path that goes through this node
-    const localDiameter = leftHeight + rightHeight;
-    if (localDiameter > maxDiameter) {
-      maxDiameter = localDiameter;
+    visited.add(node);
+    result.push(node);          // we “visit” it, or you can process here
+
+    // Stop expanding when we hit the depth limit
+    if (depth >= depthLimit) continue;
+
+    // Push neighbors onto stack.  We push in reverse order if you want to
+    // preserve the same order as a recursive DFS.
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
     }
-
-    // Height to propagate upward
-    return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  dfs(root);
-  return maxDiameter;         // already in edges
+  return result;
+}
+// A tiny undirected graph:
+const graph = new Map<string, string[]>([
+  ['A', ['B', 'C', 'D']],
+  ['B', ['A', 'E', 'F']],
+  ['C', ['A', 'G']],
+  ['D', ['A', 'H']],
+  ['E', ['B']],
+  ['F', ['B']],
+  ['G', ['C']],
+  ['H', ['D']],
+]);
+
+function neighbors(node: string): string[] {
+  return graph.get(node) ?? [];
 }
 
-/* ---- example usage ------------------------------------------------------- */
+// Find all nodes reachable from 'A' within depth 2
+const visited = depthLimitedSearch('A', 2, neighbors);
+console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
+function depthLimitedSearchWithTarget<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  target: T,
+  visitedSet?: Set<T>
+): T | undefined {
+  const visited = visitedSet ?? new Set<T>();
+  const stack = [{ node: root, depth: 0 }];
 
-// simple helper to build a tree
-function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
-  return { val, left: l ?? null, right: r ?? null };
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (node === target) return node;
+
+    if (depth >= depthLimit) continue;
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return undefined; // not found
 }
-
-//        1
-//       / \
-//      2   3
-//     / \     
-//    4   5     
-const root = node(1,
-  node(2, node(4), node(5)),
-  node(3)
-);
-
-console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
