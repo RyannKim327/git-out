@@ -1,61 +1,36 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
+/**
+ * Returns the longest common prefix of the supplied strings.
+ * If the array is empty, or if no common prefix exists, an empty string is returned.
+ */
+export function longestCommonPrefix(arr: readonly string[]): string {
+  if (arr.length === 0) return '';
 
-  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  // We’ll be comparing the first element with every other one.
+  // Once a mismatch is found we stop expanding the prefix.
+  let prefix = arr[0];
 
-  let maxLen = 0;
-  let endIdx = 0; // end index (exclusive) in s1 of the best substring
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > maxLen) {
-          maxLen = dp[i][j];
-          endIdx = i; // end is exclusive
-        }
-      }
+  for (let i = 1; i < arr.length; ++i) {
+    // Shorten the prefix until it matches the start of arr[i]
+    while (arr[i].indexOf(prefix) !== 0) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';
     }
   }
 
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+  return prefix;
 }
-console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
-function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
-  // Ensure s2 is the shorter string to keep the inner array small
-  if (s1.length < s2.length) {
-    return longestCommonSubstringSpaceOptimized(s2, s1);
-  }
+const words = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(words)); // prints "fl"
 
-  const n = s1.length;
-  const m = s2.length;
-
-  const prev = Array(m + 1).fill(0);
-  const curr = Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let endIdx = 0;
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          endIdx = i;
-        }
-      } else {
-        curr[j] = 0;
-      }
+const mix = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(mix));   // prints ""
+export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
+  (prev, curr) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
     }
-    // swap references for next iteration
-    [prev, curr] = [curr, prev];
-  }
-
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
-}
-console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
-console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
-console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
+    return prev.slice(0, i);
+  },
+  arr[0] ?? ''
+);
