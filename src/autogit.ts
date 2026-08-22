@@ -1,51 +1,60 @@
 /**
- * Merge two sorted arrays into one sorted array.
- * The comparator decides the ordering – by default it uses the `<` operator.
+ * Returns true if `s` is a palindrome.
+ *
+ * Works in O(n) time and O(1) additional space.
+ * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
  */
-function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
-  const result: T[] = [];
-  let i = 0; // index into left
-  let j = 0; // index into right
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-  // Grab the compare function, or fall back to simple < comparison
-  const comp = compare ?? ((a: T, b: T) => a < b);
-
-  while (i < left.length && j < right.length) {
-    // If left[i] comes before right[j] (or equal), push it
-    if (comp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+  while (left < right) {
+    if (s[left] !== s[right]) {
+      return false;
     }
+    left++;
+    right--;
   }
 
-  // One of the halves may still have leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  return true;
 }
 
-/**
- * Recursive merge sort.  
- * @param array The array to sort.
- * @param compare Optional comparator that returns true if a < b.
- */
-export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
-  // Stop recursion when array has 0 or 1 item
-  if (array.length <= 1) return array.slice(); // return a shallow copy
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
+// Demo
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isAlphanumeric(c: string): boolean {
+  const code = c.charCodeAt(0);
+  return (
+    // 0‑9
+    (code >= 48 && code <= 57) ||
+    // A‑Z
+    (code >= 65 && code <= 90) ||
+    // a‑z
+    (code >= 97 && code <= 122)
+  );
 }
-const numbers = [5, 3, 8, 1, 2, 9];
-const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
 
-const people = [
-  { name: "Alice", age: 32 },
-  { name: "Bob", age: 25 },
-  { name: "Eve", age: 29 }
-];
+function isPalindromeLoose(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-// Sort by age
-const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
+  while (left < right) {
+    // Skip non‑alphanumerics
+    while (left < right && !isAlphanumeric(s[left])) left++;
+    while (left < right && !isAlphanumeric(s[right])) right--;
+
+    // After skipping, compare lowercase versions
+    if (
+      left < right &&
+      s[left].toLowerCase() !== s[right].toLowerCase()
+    ) {
+      return false;
+    }
+
+    left++;
+    right--;
+  }
+  return true;
+}
+
+console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
