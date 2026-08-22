@@ -1,50 +1,172 @@
-// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
-function merge(
-  arr: number[],
-  tmp: number[],
-  l: number,
-  mid: number,
-  r: number
-): void {
-  let i = l;        // pointer for the left half
-  let j = mid + 1;  // pointer for the right half
-  let k = l;        // pointer for the tmp array
+/* ---- 1. Necessary types ------------------------------------------------- */
+type Point = { x: number; y: number };   // a grid coordinate
 
-  // Merge until one half runs out
-  while (i <= mid && j <= r) {
-    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
-    else tmp[k++] = arr[j++];
+// A *node* is a point that also carries the data used by A*.
+class Node {
+  public f: number;   // g + h
+  public g: number;   // cost from start
+  public h: number;   // heuristic estimate to goal
+
+  constructor(
+    public point: Point,
+    public parent: Node | null = null,
+    g = 0,
+    h = 0
+  ) {
+    this.g = g;
+    this.h = h;
+    this.f = this.g + this.h;
   }
-
-  // Copy any remaining elements of the left half
-  while (i <= mid) tmp[k++] = arr[i++];
-
-  // Copy any remaining elements of the right half
-  while (j <= r) tmp[k++] = arr[j++];
-
-  // Return merged result back to the original array
-  for (let p = l; p <= r; p++) arr[p] = tmp[p];
 }
 
-/**
- * Bottom‑up merge sort (iterative).
- *
- * @param arr - The array to sort (in‑place)
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  const tmp = new Array<number>(n);
+/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
+class MinHeap<T> {
+  private items: T[] = [];
 
-  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // l = start index of sub‑array pair
-    for (let l = 0; l < n - sz; l += sz << 1) {
-      const mid = l + sz - 1;
-      const r = Math.min(l + (sz << 1) - 1, n - 1);
-      merge(arr, tmp, l, mid, r);
+  constructor(private compare: (a: T, b: T) => number) {}
+
+  get size() { return this.items.length; }
+
+  push(item: T) {
+    this.items.push(item);
+    this.bubbleUp(this.items.length - 1);
+  }
+
+  pop(): T | undefined {
+    if (!this.items.length) return undefined;
+    const top = this.items[0];
+    const end = this.items.pop()!;
+    if (this.items.length) {
+      this.items[0] = end;
+      this.bubbleDown(0);
+    }
+    return top;
+  }
+
+  private bubbleUp(idx: number) {
+    const item = this.items[idx];
+    while (idx > 0) {
+      const parentIdx = ((idx + 1) >> 1) - 1;
+      const parent = this.items[parentIdx];
+      if (this.compare(item, parent) >= 0) break;
+      this.items[idx] = parent;
+      idx = parentIdx;
+    }
+    this.items[idx] = item;
+  }
+
+  private bubbleDown(idx: number) {
+    const length = this.items.length;
+    const item = this.items[idx];
+    while (true) {
+      const leftIdx = (idx << 1) + 1;
+      const rightIdx = leftIdx + 1;
+      let smallest = idx;
+
+      if (
+        leftIdx < length &&
+        this.compare(this.items[leftIdx], this.items[smallest]) < 0
+      )
+        smallest = leftIdx;
+
+      if (
+        rightIdx < length &&
+        this.compare(this.items[rightIdx], this.items[smallest]) < 0
+      )
+        smallest = rightIdx;
+
+      if (smallest === idx) break;
+
+      this.items[idx] = this.items[smallest];
+      idx = smallest;
+    }
+    this.items[idx] = item;
+  }
+}
+
+/* ---- 3. Heuristic -------------------------------------------------------- */
+function manhattan(a: Point, b: Point): number {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+/* ---- 4. Grid utilities --------------------------------------------------- */
+// returns true if the point is inside bounds AND not blocked
+function isWalkable(
+  grid: boolean[][],
+  { x, y }: Point
+): boolean {
+  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
+}
+
+// neighbours (4‑connected, 8‑connected if you add diagonals)
+function getNeighbours(grid: boolean[][], p: Point): Point[] {
+  const { x, y } = p;
+  const candidates: Point[] = [
+    { x: x + 1, y },
+    { x: x - 1, y },
+    { x, y: y + 1 },
+    { x, y: y - 1 },
+  ];
+
+  // Uncomment if you want diagonal moves:
+  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
+
+  return candidates.filter(p => isWalkable(grid, p));
+}
+
+/* ---- 5. The main A* function --------------------------------------------- */
+function aStar(
+  grid: boolean[][],
+  start: Point,
+  goal: Point
+): Point[] | null {
+  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
+
+  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
+  const closed = new Set<string>();          // "x,y" keys
+
+  const nodeForPoint = (p: Point) =>
+    `${p.x},${p.y}`;
+
+  open.push(new Node(start, null, 0, manhattan(start, goal)));
+
+  while (open.size) {
+    const current = open.pop()!;
+    const currentKey = nodeForPoint(current.point);
+
+    if (closed.has(currentKey)) continue;     // skip stale node
+    closed.add(currentKey);
+
+    if (current.point.x === goal.x && current.point.y === goal.y) {
+      // reconstruct path
+      const path: Point[] = [];
+      let cur: Node | null = current;
+      while (cur) {
+        path.push(cur.point);
+        cur = cur.parent;
+      }
+      return path.reverse();
+    }
+
+    for (const neighbour of getNeighbours(grid, current.point)) {
+      const neighbourKey = nodeForPoint(neighbour);
+      if (closed.has(neighbourKey)) continue;
+
+      const tentativeG = current.g + 1; // cost of moving a step
+      const h = manhattan(neighbour, goal);
+      const neighbourNode = new Node(
+        neighbour,
+        current,
+        tentativeG,
+        h
+      );
+
+      open.push(neighbourNode);
     }
   }
+
+  return null; // no path
 }
-const data = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(data);
-console.log(data); // [3, 9, 10, 27, 38, 43, 82]
+
+/* ---- 6. Example usage --------------------------------------------------- */
+const
