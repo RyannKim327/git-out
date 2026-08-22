@@ -1,48 +1,36 @@
-/**
- * Returns the longest common subsequence of two strings.
- * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
- */
-function lcs(s1: string, s2: string): string {
-  const n = s1.length,
-        m = s2.length;
-
-  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
-
-  // Build the DP table.
-  for (let i = 1; i <= n; i++) {
-    const a = s1[i - 1];
-    for (let j = 1; j <= m; j++) {
-      if (a === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Reconstruct the subsequence.
-  let i = n,
-      j = m,
-      result: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (s1[i - 1] === s2[j - 1]) {
-      // Character is part of LCS – prepend to answer.
-      result.push(s1[i - 1]);
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;   // move up
-    } else {
-      j--;   // move left
-    }
-  }
-
-  return result.reverse().join('');
+// A minimal, generic node type
+export interface ListNode<T> {
+  readonly value: T;
+  next: ListNode<T> | null;
 }
-const a = 'AGGTAB';
-const b = 'GXTXAYB';
 
-const sub = lcs(a, b);
-console.log(`LCS length: ${sub.length}`); // 4
-console.log(`LCS itself: ${sub}`);       // GTAB
+/**
+ * Returns the middle node of a singly‑linked list.
+ * If the list has an even number of nodes, it returns
+ * the *second* middle node (i.e. the one that a
+ * “slow‑pointer” would land on after the last move).
+ *
+ * @param head Head of the list – null if the list is empty.
+ * @returns The middle node, or null for an empty list.
+ */
+export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head;
+  let fast = head;
+
+  // advance fast two steps, slow one step
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next;
+    fast = fast.next.next;
+  }
+
+  return slow;
+}
+// Build a list: 1 → 2 → 3 → 4 → 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+const mid = middleNode(node1);
+console.log(mid?.value); // → 3
