@@ -1,41 +1,79 @@
-// Simple base & height
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('base and height must be positive numbers');
-  }
-  return (base * height) / 2;
-}
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-// Three side lengths (Heron’s formula)
-function areaFromSides(a: number, b: number, c: number): number {
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The side lengths do not form a triangle');
-  }
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
-console.log(areaFromBaseHeight(10, 5)); // 25
-console.log(areaFromSides(3, 4, 5));   // 6
-const area = (b: number, h: number) => (b * h) / 2;
-class Triangle {
-  constructor(private a: number, private b: number, private c: number) {
-    if (a + b <= c || a + c <= b || b + c <= a) {
-      throw new Error('Invalid side lengths');
+    visited.add(start);
+    queue.push(start);
+
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
     }
-  }
 
-  public area(): number {
-    const s = (this.a + this.b + this.c) / 2;
-    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
-  }
+    return result;
 }
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-// Usage
-const tri = new Triangle(6, 7, 8);
-console.log(tri.area()); // 20.784609690826528
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new RangeError('Both base and height should be positive numbers');
-  }
-  return base * height / 2;
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
 }
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
