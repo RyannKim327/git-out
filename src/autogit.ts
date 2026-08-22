@@ -1,55 +1,31 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
-}
+/**
+ * Selection sort – O(n²) time, O(1) additional space.
+ *
+ * Works on any array of items that can be compared with < and >.
+ */
+function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    // Work in place – the original array is mutated
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest is at i
+        let minIdx = i;
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
+        // Search for a smaller element in the rest of the array
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIdx]) {
+                minIdx = j;
+            }
+        }
 
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
-
-    if (slow === fast) {        // they met → cycle detected
-      return true;
+        // If a smaller element was found, swap it into place
+        if (minIdx !== i) {
+            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+        }
     }
-  }
-
-  // fast ran out of nodes → no cycle
-  return false;
+    return arr;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
-
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
-  }
-  return false;
-}
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
-
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
-  }
-
-  // No cycle
-  if (!fast || !fast.next) return null;
-
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
+function selectionSortCopy<T>(arr: T[]): T[] {
+    return selectionSort([...arr]); // spread creates a shallow copy
 }
