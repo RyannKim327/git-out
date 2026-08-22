@@ -1,129 +1,77 @@
 /**
- * A node in the B‑tree.
- * Keys are stored in ascending order.
- */
-class BTreeNode<K, V> {
-  // Keys and values are kept together to simplify return of key/value pairs.
-  keys: K[] = [];
-  values: V[] = [];
-
-  // Children – null for leaf nodes.
-  children: (BTreeNode<K, V> | null)[] = [];
-
-  // Whether this node is a leaf.
-  leaf: boolean;
-
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
-
-  /* Helper: find first index where key should be inserted */
-  findKey(key: K, cmp: (a: K, b: K) => number): number {
-    let idx = 0;
-    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
-      ++idx;
-    }
-    return idx;
-  }
-}
-/**
- * B‑Tree implementation
+ * Median of two sorted arrays.
  *
- * @param t Minimum degree (≥ 2). Every node except the root contains
- *          at least t‑1 keys and at most 2*t‑1 keys.
+ * The algorithm keeps a binary search on the smaller array.  
+ * At each step we decide how many elements from `a` belong on the left side of the
+ * partition.  The counterpart from `b` is computed so that the left side contains
+ * exactly half (or half‑plus‑one for odd total length) of the elements.
+ *
+ * Edge cases:
+ *   * one of the arrays may be empty
+ *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
  */
-class BTree<K, V> {
-  private root: BTreeNode<K, V>;
-  private readonly t: number;
-  private readonly cmp: (a: K, b: K) => number;
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Ensure `a` is the shorter array to keep the binary search limits small.
+  let a = nums1;
+  let b = nums2;
+  if (a.length > b.length) [a, b] = [b, a];
 
-  constructor(
-    t: number = 2,
-    cmp?: (a: K, b: K) => number
-  ) {
-    if (t < 2) throw new Error('B‑tree order must be >= 2');
-    this.t = t;
-    this.root = new BTreeNode<K, V>(true);
-    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
+  const m = a.length;
+  const n = b.length;
+  // `halfLen` is the number of elements that must be on the left side
+  // of the partition (including the middle element when total length is odd).
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  /* Public API --------------------------------------------------- */
-  search(key: K): V | undefined {
-    return this._search(this.root, key);
-  }
+  let low = 0;
+  let high = m;
 
-  insert(key: K, value: V): void {
-    // If root is full, create a new leaf and split
-    if (this.root.keys.length === 2 * this.t - 1) {
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this._splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this._insertNonFull(this.root, key, value);
-  }
+  while (low <= high) {
+    // Number of elements from a put on the left side
+    const i = Math.floor((low + high) / 2);
+    // Number of elements from b put on the left side
+    const j = halfLen - i;
 
-  /* Delete is optional – implement if you need it. */
-  /* delete(key: K): void { … } */
+    const aLeft  = i === 0 ? -Infinity : a[i - 1];
+    const aRight = i === m ?  Infinity : a[i];
 
-  /* Iterator over all key/value pairs in order */
-  *inOrder(): IterableIterator<[K, V]> {
-    yield* this._inOrder(this.root);
-  }
+    const bLeft  = j === 0 ? -Infinity : b[j - 1];
+    const bRight = j === n ?  Infinity : b[j];
 
-  /* ------------------------------------------------------------------ */
-
-  /* Core recursive operations --------------------------------------- */
-  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
-    const idx = node.findKey(key, this.cmp);
-
-    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
-      return node.values[idx];
-    }
-
-    if (node.leaf) {
-      return undefined;
-    }
-
-    return this._search(node.children[idx]!, key);
-  }
-
-  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
-    let i = node.keys.length - 1;
-
-    if (node.leaf) {
-      // Insert into leaf – shift keys/vals right of insertion point
-      const idx = node.findKey(key, this.cmp);
-      node.keys.splice(idx, 0, key);
-      node.values.splice(idx, 0, value);
-    } else {
-      // Find child to descend into
-      const idx = node.findKey(key, this.cmp);
-      const child = node.children[idx]!;
-
-      if (child.keys.length === 2 * this.t - 1) {
-        // Child is full → split then decide which side to go
-        this._splitChild(node, idx);
-
-        // After split, middle key moves up – need to decide child again
-        if (this.cmp(key, node.keys[idx]) > 0) {
-          i = idx + 1;
-        } else {
-          i = idx;
-        }
+    // Partition is correct: all left elements ≤ all right elements
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // If total length is odd, the median is the max of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
       }
-      this._insertNonFull(node.children[i]!, key, value);
+      // If even, it’s the mean of the two middle values
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements from a on the left: move left
+      high = i - 1;
+    } else {
+      // Too few elements from a on the left: move right
+      low = i + 1;
     }
   }
 
-  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
-    const t = this.t;
-    const child = parent.children[idx]!;
-    const newNode = new BTreeNode<K, V>(child.leaf);
-
-    // Move the second half of child’s keys/values to newNode
-    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
-    newNode.values = child.values.splice(t);
-
-    if (!child.leaf) {
-      newNode.children = child.children.splice(t
+  // Should never reach here for valid input
+  throw new Error("Invalid input");
+}
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
+console.log(findMedianSortedArrays(arr1, arr2)); // 8
+export function medianNaive(a: number[], b: number[]): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
+  }
+  const mid = Math.floor(merged.length / 2);
+  return merged.length % 2
+    ? merged[mid]
+    : (merged[mid - 1] + merged[mid]) / 2;
+}
