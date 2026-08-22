@@ -1,28 +1,20 @@
-// Simple random user fetcher with axios (TypeScript)
+// Original array
+const original: number[] = [1, 2, 3, 4, 5];
 
-import axios from 'axios';
+// 1️⃣ In‑place reverse (mutates `original`)
+original.reverse();
+console.log(original); // [5, 4, 3, 2, 1]
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  username: string;
-  phone: string;
-  website: string;
-}
+// 2️⃣ Copy then reverse (keeps `original` intact)
+const reversedCopy = original.slice().reverse();  // or [...original].reverse()
+console.log(reversedCopy);  // [5, 4, 3, 2, 1]
+type Person = { name: string; age: number };
 
-async function fetchRandomUser(): Promise<User | undefined> {
-  try {
-    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
-    const randomIndex = Math.floor(Math.random() * data.length);
-    return data[randomIndex];
-  } catch (error) {
-    console.error('Error fetching users:', error);
-  }
-}
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
+];
 
-fetchRandomUser().then(user => {
-  if (user) {
-    console.log(`🎲 Random user: ${user.name} (${user.email})`);
-  }
-});
+const reversedPeople = [...people].reverse(); // still Person[]
+const reduceReversed = <T>(array: T[]): T[] =>
+  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
