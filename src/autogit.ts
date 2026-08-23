@@ -1,10 +1,30 @@
-// A lean, common‑sense pattern that covers most real‑world emails
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * Return the factorial of a non‑negative integer.
+ *
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
+ */
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
+  }
 
-// Test whether a string looks like an e‑mail address
-export function isEmail(str: string): boolean {
-  return EMAIL_RE.test(str);
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
+
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
-console.log(isEmail('foo@bar.com'));   // true
-console.log(isEmail('invalid@'));      // false
-console.log(isEmail('no-at-symbol'));  // false
+
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
+
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
+}
+
+console.log(factorialBig(20n).toString()); // 2432902008176640000
