@@ -1,135 +1,145 @@
 /**
- * A binary‑heap based priority queue.
- *
- * @template T - The type of the heap elements.
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
  */
-export class PriorityQueue<T> {
-  /** Array representation of the heap.  Root is at index 0. */
-  private heap: T[] = [];
+type Graph = Map<string, string[]>;
 
-  /**
-   * Comparator that decides heap order.
-   *
-   *   - If it returns a negative number → a precedes b.
-   *   - If 0 → equal.
-   *   - If positive → a follows b.
-   *
-   * You can pass your own comparator; otherwise a simple
-   * numerical ascending order is used.
-   */
-  constructor(
-    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
-  ) {}
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
 
-  /* ----- Query helpers ----- */
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
 
-  /** Number of elements in the queue. */
-  size(): number {
-    return this.heap.length;
-  }
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
 
-  /** Return the element with highest priority without removing it. */
-  peek(): T | null {
-    return this.heap.length ? this.heap[0] : null;
-  }
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
 
-  /* ----- Manipulation helpers ----- */
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
 
-  /** Insert a new element */
-  push(item: T): void {
-    this.heap.push(item);
-    this.siftUp(this.heap.length - 1);
-  }
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
 
-  /**
-   * Remove and return the element with highest priority.
-   * Returns `null` if the queue is empty.
-   */
-  pop(): T | null {
-    const n = this.heap.length;
-    if (n === 0) return null;
-    if (n === 1) return this.heap.pop() ?? null;
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
 
-    const top = this.heap[0];
-    // Move last element to the root and shrink array.
-    this.heap[0] = this.heap.pop() as T;
-    this.siftDown(0);
-    return top;
-  }
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
 
-  /* ----- Internal re‑heapify ----- */
-
-  /** Push the element at index `i` up until heap property holds. */
-  private siftUp(i: number): void {
-    const { heap, compareFn } = this;
-    let childIndex = i;
-
-    while (childIndex > 0) {
-      const parentIndex = (childIndex - 1) >> 1;
-      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
-
-      // Swap child & parent
-      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
-      childIndex = parentIndex;
-    }
-  }
-
-  /** Move the element at index `i` down until heap property holds. */
-  private siftDown(i: number): void {
-    const { heap, compareFn } = this;
-    const n = heap.length;
-    let parentIndex = i;
-
-    while (true) {
-      const leftIdx = (parentIndex << 1) + 1;
-      const rightIdx = leftIdx + 1;
-
-      let smallest = parentIndex;
-
-      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
-        smallest = leftIdx;
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
       }
-      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
-        smallest = rightIdx;
-      }
+    }
+    return null;
+  }
 
-      if (smallest === parentIndex) break;
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
+    }
 
-      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
-      parentIndex = smallest;
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
     }
   }
 
-  /* ----- Utility ----- */
-
-  /**
-   * Re‑build the heap from the current array contents.  
-   * Useful after bulk insertion or when the comparator changes.
-   */
-  heapify(): void {
-    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
-      this.siftDown(i);
-    }
-  }
+  // No overlap – disconnected graph
+  return null;
 }
-// Simple min‑heap of numbers (default comparator does that)
-const minQ = new PriorityQueue<number>();
 
-minQ.push(5);   // 5
-minQ.push(3);   // 3,5
-minQ.push(8);   // 3,5,8
-minQ.push(1);   // 1,3,8,5
+/**
+ * Reconstructs the full path from start → meeting → goal.
+ */
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
 
-console.log(minQ.pop()); // 1
-console.log(minQ.pop()); // 3
-console.log(minQ.peek()); // 5
-console.log(minQ.size()); // 2
-interface Task { id: string; priority: number; }
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
+  }
 
-const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
+  }
 
-maxQ.push({ id: "A", priority: 10 });
-maxQ.push({ id: "B", priority: 20 });
-maxQ.push({ id: "C", priority: 5 });
+  return path;
+}
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
 
-console.log(maxQ.pop()); // B (20)
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
