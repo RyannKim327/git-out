@@ -1,41 +1,38 @@
-function firstRepeated(s: string): string | null {
-  const seen = new Set<string>();
+function isPrime(n: number): boolean {
+  if (n <= 1) return false;        // 1 and below are not prime
+  if (n <= 3) return true;         // 2 and 3 are prime
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;          // first repeat!
-    }
-    seen.add(ch);
-  }
+  // Even numbers > 2 are composite.
+  if (n % 2 === 0) return false;
 
-  return null;   // no repeats
-}
-console.log(firstRepeated("abca")); // → "a"
-console.log(firstRepeated("abcdef")); // → null
-console.log(firstRepeated("hello world")); // → "l"
-function firstRepeatedCaseInsensitive(s: string): string | null {
-  const seen = new Set<string>();
-  for (const ch of s.toLowerCase()) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
+  // Check odd divisors up to sqrt(n)
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
   }
-  return null;
+  return true;
 }
-function firstRepeatIndex(s: string): number {
-  const seen = new Set<string>();
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (seen.has(ch)) return i;   // second appearance
-    seen.add(ch);
+function isPrime6(n: number): boolean {
+  if (n <= 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
   }
-  return -1; // no repeat
+  return true;
 }
-function firstRepeatLater(s: string): string | null {
-  const seen = new Set<string>();
-  for (let i = s.length - 1; i >= 0; i--) {
-    const ch = s[i];
-    if (seen.has(ch)) return ch; // this appears again later
-    seen.add(ch);
+function isPrimeBig(n: bigint): boolean {
+  if (n <= 1n) return false;
+  if (n <= 3n) return true;
+  if (n % 2n === 0n || n % 3n === 0n) return false;
+
+  for (let i = 5n; i * i <= n; i += 6n) {
+    if (n % i === 0n || n % (i + 2n) === 0n) return false;
   }
-  return null;
+  return true;
 }
+console.log(isPrime(97));   // true
+console.log(isPrime(100));  // false
+console.log(isPrime6(97));  // true
+console.log(isPrime6(100)); // false
+console.log(isPrimeBig(19n)); // true
