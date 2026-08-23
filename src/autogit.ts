@@ -1,93 +1,61 @@
-/**
- * A single node of the linked list.
- * The list is kept in the "next →" direction.
- */
+// A minimal node that can hold any value
 class ListNode<T> {
-  public value: T;
-  public next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
 }
 
-/**
- * A queue backed by a linked list.
- * `front` points to the oldest element,
- * `rear` points to the newest one.
- */
-export class Queue<T> {
-  private front: ListNode<T> | null = null; // head
-  private rear: ListNode<T> | null = null;  // tail
-  private _size = 0;
-
-  /** Number of items in the queue */
-  get size(): number {
-    return this._size;
+// A helper to build a list from an array (great for demos)
+function arrayToList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = new ListNode(arr[i], head)
   }
-
-  /** Check if the queue is empty */
-  get isEmpty(): boolean {
-    return this._size === 0;
-  }
-
-  /** Enqueue: add an element to the tail */
-  enqueue(value: T): void {
-    const node = new ListNode(value);
-
-    if (this.rear) {
-      this.rear.next = node;   // hook it after the current tail
-    }
-    this.rear = node;           // new tail
-
-    if (!this.front) {
-      // Queue was empty before, so front must point to the new node too
-      this.front = node;
-    }
-
-    this._size++;
-  }
-
-  /** Dequeue: remove and return the front element, or null if empty */
-  dequeue(): T | null {
-    if (!this.front) return null;
-
-    const value = this.front.value;
-    this.front = this.front.next;  // move head forward
-
-    if (!this.front) {
-      // Queue just became empty – clear the tail as well
-      this.rear = null;
-    }
-
-    this._size--;
-    return value;
-  }
-
-  /** Peek at the front without removing it */
-  peek(): T | null {
-    return this.front ? this.front.value : null;
-  }
-
-  /** Return an array of all values in order (for debugging / inspection) */
-  toArray(): T[] {
-    const result: T[] = [];
-    let node = this.front;
-    while (node) {
-      result.push(node.value);
-      node = node.next;
-    }
-    return result;
-  }
+  return head
 }
-const q = new Queue<number>();
 
-q.enqueue(10);
-q.enqueue(20);
-q.enqueue(30);
+// A helper to turn a list back into an array (great for quick checks)
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const out: T[] = []
+  let cur = head
+  while (cur) {
+    out.push(cur.val)
+    cur = cur.next
+  }
+  return out
+}
+function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
 
-console.log(q.peek());   // 10
-console.log(q.dequeue()); // 10
-console.log(q.dequeue()); // 20
-console.log(q.size);      // 1
-console.log(q.toArray()); // [30]
+  while (curr) {
+    const next = curr.next   // store the rest of the list
+    curr.next = prev         // reverse the link
+    prev = curr              // move prev forward
+    curr = next              // continue
+  }
+
+  // At the end, prev is the new head
+  return prev
+}
+function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: 0 or 1 node
+  if (!head || !head.next) {
+    return head
+  }
+
+  // Recurse to the end of the list
+  const newHead = reverseListRecursive(head.next)
+
+  // After recursion returns, head is still at the original start
+  // head.next still points forward; we need to put head at the end
+  head.next.next = head   // point the next node back to head
+  head.next = null        // cut off the original link
+
+  return newHead
+}
+const example = arrayToList([1, 2, 3, 4, 5])
+const reversedIterative = reverseList(example)
+console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
+
+const example2 = arrayToList([10, 20, 30])
+const reversedRecursive = reverseListRecursive(example2)
+console.log(listToArray(reversedRecursive)) // [30, 20, 10]
