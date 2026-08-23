@@ -1,38 +1,38 @@
-function isPrime(n: number): boolean {
-  if (n <= 1) return false;        // 1 and below are not prime
-  if (n <= 3) return true;         // 2 and 3 are prime
+/**
+ * Return the largest prime factor of a positive integer.
+ *
+ * @param n – the number you want to factor (must be > 1)
+ * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
+ */
+function largestPrimeFactor(n: number): number | undefined {
+  if (n <= 1) return undefined;
 
-  // Even numbers > 2 are composite.
-  if (n % 2 === 0) return false;
+  let num = n;
+  let largest = -1;
 
-  // Check odd divisors up to sqrt(n)
-  for (let i = 3; i * i <= n; i += 2) {
-    if (n % i === 0) return false;
+  // Remove all factors of 2
+  while (num % 2 === 0) {
+    largest = 2;
+    num /= 2;
   }
-  return true;
-}
-function isPrime6(n: number): boolean {
-  if (n <= 1) return false;
-  if (n <= 3) return true;
-  if (n % 2 === 0 || n % 3 === 0) return false;
 
-  for (let i = 5; i * i <= n; i += 6) {
-    if (n % i === 0 || n % (i + 2) === 0) return false;
+  // Now `num` is odd; try odd divisors only
+  let divisor = 3;
+  const limit = Math.sqrt(num);
+  while (divisor <= limit) {
+    while (num % divisor === 0) {
+      largest = divisor;
+      num /= divisor;
+    }
+    divisor += 2;           // skip the even numbers
   }
-  return true;
-}
-function isPrimeBig(n: bigint): boolean {
-  if (n <= 1n) return false;
-  if (n <= 3n) return true;
-  if (n % 2n === 0n || n % 3n === 0n) return false;
 
-  for (let i = 5n; i * i <= n; i += 6n) {
-    if (n % i === 0n || n % (i + 2n) === 0n) return false;
-  }
-  return true;
+  // If we're left with a prime greater than 2
+  if (num > 2) largest = num;
+
+  return largest;
 }
-console.log(isPrime(97));   // true
-console.log(isPrime(100));  // false
-console.log(isPrime6(97));  // true
-console.log(isPrime6(100)); // false
-console.log(isPrimeBig(19n)); // true
+
+// Quick demo
+console.log(largestPrimeFactor(13195)); // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
