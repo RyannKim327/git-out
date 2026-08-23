@@ -1,45 +1,25 @@
-/**
- * Returns an object with the maximum sum and the start/end indices
- * of the sub‑array that produces that sum.
- *
- * @param nums - array of numbers
- * @returns { maxSum, start, end }
- */
-export function maxSumSubarray(nums: number[]) {
-  // In case the input is empty we can return 0 / -1/-1
-  if (nums.length === 0) {
-    return { maxSum: 0, start: -1, end: -1 };
-  }
+/***** 1️⃣  The classic Math.max with the spread operator *****/
 
-  let bestSum = nums[0];
-  let currentSum = nums[0];
+const numbers = [4, 12, 7, 19, 3];
 
-  // These will record the best sub‑array boundaries
-  let bestStart = 0;
-  let bestEnd = 0;
-  // Temporary positions
-  let tempStart = 0;
+// Spreads the array into individual arguments for Math.max
+const max1 = Math.max(...numbers); // 19
+/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
 
-  for (let i = 1; i < nums.length; i++) {
-    // Either extend the previous sub‑array or start fresh at i
-    if (currentSum + nums[i] < nums[i]) {
-      currentSum = nums[i];
-      tempStart = i;
-    } else {
-      currentSum += nums[i];
-    }
+const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
+// Also 19
+/***** 3️⃣  If you’re dealing with objects and need a property *****/
 
-    // Update best if we have a better sum
-    if (currentSum > bestSum) {
-      bestSum = currentSum;
-      bestStart = tempStart;
-      bestEnd = i;
-    }
-  }
+type Item = { id: number; value: number };
+const items: Item[] = [
+  { id: 1, value: 4 },
+  { id: 2, value: 12 },
+  { id: 3, value: 7 },
+];
 
-  return { maxSum: bestSum, start: bestStart, end: bestEnd };
-}
-const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
-const { maxSum, start, end } = maxSumSubarray(arr);
-console.log(maxSum); // 43
-console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
+// Max based on `value`
+const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
+// maxVal is 12
+// If you want the whole object:
+const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
+// maxObj is { id: 2, value: 12 }
