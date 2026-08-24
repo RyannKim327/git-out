@@ -1,21 +1,27 @@
-function countChar(str: string, target: string): number {
-  // guard against empty target (avoids throwing on .split(''))
-  if (target.length !== 1) throw new Error('target must be a single character');
+/**
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
+ */
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-  return str.split(target).length - 1;
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
+    }
+  } while (swapped);
 }
-console.log(countChar('hello world', 'l')); // 3
-function countCharRegEx(str: string, target: string): number {
-  const re = new RegExp(target, 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-console.log(countCharRegEx('banana', 'a')); // 3
-function countCharLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
-  }
-  return count;
-}
-console.log(countCharLoop('Mississippi', 'i')); // 4
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
+
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
