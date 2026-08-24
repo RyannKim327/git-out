@@ -1,82 +1,63 @@
-function bfsLimited(start, isGoal, neighbors, maxDepth):
-    queue ← [(start, 0)]          // node and its depth
-    visited ← new Set()
+/**
+ * Returns the indices and values of the longest strictly increasing subsequence.
+ *
+ * @param arr - The input numeric array.
+ * @returns An object containing:
+ *   - sequence: the LIS as an array of numbers.
+ *   - indices:  the original indices of those numbers in `arr`.
+ *
+ * Complexity:   Time  O(n log n)
+ *               Space O(n)
+ */
+export function longestIncreasingSubsequence(arr: number[]): {
+    sequence: number[],
+    indices:   number[]
+} {
+    if (arr.length === 0) return { sequence: [], indices: [] };
 
-    while queue not empty:
-        (node, depth) ← queue.dequeue()
+    // tail[i] holds the index in arr of the smallest ending value
+    // of an increasing subsequence of length i+1.
+    const tail: number[] = [];
+    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
+    const prev: (number | null)[] = Array(arr.length).fill(null);
 
-        if isGoal(node): return node
+    for (let i = 0; i < arr.length; i++) {
+        const x = arr[i];
 
-        if depth == maxDepth:
-            continue   // depth limit reached – skip adding successors
+        // Binary search to find the insertion point in tail.
+        let low = 0, high = tail.length;
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (arr[tail[mid]] < x) low = mid + 1;
+            else high = mid;
+        }
 
-        for each n in neighbors(node):
-            if n not in visited:
-                visited.add(n)
-                queue.enqueue((n, depth + 1))
-
-    return null   // no goal within depth limit
-type Node<T> = T;
-
-// Parameters:
-//   start: the node to begin from
-//   isGoal: a predicate to determine if a node is the goal
-//   neighbors: a function that returns an array of adjacent nodes
-//   maxDepth: the depth cutoff (inclusive)
-//   allowRevisit: if true, visited set is ignored – useful for pure trees
-export function breadthLimitedSearch<T>(
-  start: Node<T>,
-  isGoal: (node: T) => boolean,
-  neighbors: (node: T) => Iterable<T>,
-  maxDepth: number,
-  allowRevisit: boolean = false
-): T | null {
-  // Queue holds tuples: [node, depth]
-  const queue: Array<[T, number]> = [[start, 0]];
-
-  // Only keep visited set if we care about cycles
-  const visited = new Set<T>();
-  if (!allowRevisit) visited.add(start);
-
-  while (queue.length) {
-    const [node, depth] = queue.shift() as [T, number];
-
-    if (isGoal(node)) return node;
-
-    if (depth === maxDepth) continue; // Depth limit reached – skip children
-
-    for (const child of neighbors(node)) {
-      if (!allowRevisit && visited.has(child)) continue;
-      visited.add(child);
-      queue.push([child, depth + 1]);
+        // low is the position where x will sit in tail
+        if (low > 0) {
+            prev[i] = tail[low - 1]; // point to predecessor
+        }
+        if (low === tail.length) {
+            tail.push(i);
+        } else {
+            tail[low] = i; // replace a larger tail with a smaller one
+        }
     }
-  }
 
-  return null; // No goal found within the depth bound
+    // Reconstruct the LIS by walking back from the last index
+    const indices: number[] = [];
+    let cur: number | null = tail[tail.length - 1];
+    while (cur !== null) {
+        indices.push(cur);
+        cur = prev[cur];
+    }
+    indices.reverse(); // from start to end
+
+    const sequence = indices.map(i => arr[i]);
+
+    return { sequence, indices };
 }
-const graph = new Map<number, number[]>([
-  [1, [2, 3]],
-  [2, [4, 5]],
-  [3, [5, 6]],
-  [4, [7]],
-  [5, [7]],
-  [6, []],
-  [7, []],
-]);
+const arr = [3, 10, 2, 1, 20, 4, 6, 12];
+const result = longestIncreasingSubsequence(arr);
 
-function neighbors(n: number) {
-  return graph.get(n) ?? [];
-}
-
-const start = 1;
-const goal = 7;
-const maxDepth = 3; // we only want to explore up to 3 edges away
-
-const result = breadthLimitedSearch(
-  start,
-  (node) => node === goal,
-  neighbors,
-  maxDepth
-);
-
-console.log(result); // => 7 (found within 3 steps)
+console.log(result.sequence); // [3, 10, 20]
+console.log(result.indices);  // [0, 1, 4]
