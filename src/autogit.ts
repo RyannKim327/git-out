@@ -1,41 +1,37 @@
-function firstRepeated(s: string): string | null {
-  const seen = new Set<string>();
+// Node definition – adjust `value` type as needed
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
+}
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;          // first repeat!
-    }
-    seen.add(ch);
+// Recursive sum – the classic “do it in one pass”
+export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;                 // base case
+  return (root.value as any) +                      // value of this node
+         sumRecursive(root.left) +                     // left subtree
+         sumRecursive(root.right);                     // right subtree
+}
+export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;
+
+  let sum = 0 as T;
+  const stack: TreeNode<T>[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.value as any;
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
   }
 
-  return null;   // no repeats
+  return sum;
 }
-console.log(firstRepeated("abca")); // → "a"
-console.log(firstRepeated("abcdef")); // → null
-console.log(firstRepeated("hello world")); // → "l"
-function firstRepeatedCaseInsensitive(s: string): string | null {
-  const seen = new Set<string>();
-  for (const ch of s.toLowerCase()) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
-  }
-  return null;
-}
-function firstRepeatIndex(s: string): number {
-  const seen = new Set<string>();
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (seen.has(ch)) return i;   // second appearance
-    seen.add(ch);
-  }
-  return -1; // no repeat
-}
-function firstRepeatLater(s: string): string | null {
-  const seen = new Set<string>();
-  for (let i = s.length - 1; i >= 0; i--) {
-    const ch = s[i];
-    if (seen.has(ch)) return ch; // this appears again later
-    seen.add(ch);
-  }
-  return null;
-}
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
+
+console.log(sumRecursive(tree));   // 15
+console.log(sumIterative(tree));   // 15
