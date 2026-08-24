@@ -1,121 +1,41 @@
-/* ───────────────────────────────────────────────────────────────────── */
-/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
- *  need other key types, but then you have to supply a comparator. -------- */
+// Simple base & height
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new Error('base and height must be positive numbers');
+  }
+  return (base * height) / 2;
+}
 
-/*  Node ------------------------------------------------------------------- */
-class Node {
-  key: number;
-  height: number;
-  left: Node | null = null;
-  right: Node | null = null;
+// Three side lengths (Heron’s formula)
+function areaFromSides(a: number, b: number, c: number): number {
+  if (a + b <= c || a + c <= b || b + c <= a) {
+    throw new Error('The side lengths do not form a triangle');
+  }
+  const s = (a + b + c) / 2;
+  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+}
+console.log(areaFromBaseHeight(10, 5)); // 25
+console.log(areaFromSides(3, 4, 5));   // 6
+const area = (b: number, h: number) => (b * h) / 2;
+class Triangle {
+  constructor(private a: number, private b: number, private c: number) {
+    if (a + b <= c || a + c <= b || b + c <= a) {
+      throw new Error('Invalid side lengths');
+    }
+  }
 
-  constructor(key: number) {           // simple ctor
-    this.key = key;
-    this.height = 1;                    // leaf height = 1
+  public area(): number {
+    const s = (this.a + this.b + this.c) / 2;
+    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
   }
 }
 
-/*  Helper utilities -------------------------------------------------------- */
-const height = (node: Node | null): number => (node ? node.height : 0);
-
-const updateHeight = (node: Node) =>
-  node.height = 1 + Math.max(height(node.left), height(node.right));
-
-const balanceFactor = (node: Node): number =>
-  height(node.left) - height(node.right);
-
-/*  Rotations -------------------------------------------------------------- */
-function rotateRight(y: Node): Node {
-  const x = y.left!;
-  const T2 = x.right;
-
-  // rotation
-  x.right = y;
-  y.left = T2;
-
-  // update heights
-  updateHeight(y);
-  updateHeight(x);
-
-  return x;     // new root of this part
-}
-
-function rotateLeft(x: Node): Node {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // rotation
-  y.left = x;
-  x.right = T2;
-
-  // update heights
-  updateHeight(x);
-  updateHeight(y);
-
-  return y;     // new root
-}
-
-/*  Insert ------------------------------------------------------------------ */
-function insert(node: Node | null, key: number): Node {
-  if (!node) return new Node(key);
-
-  if (key < node.key) node.left = insert(node.left, key);
-  else if (key > node.key) node.right = insert(node.right, key);
-  else return node;           // duplicate keys rejected
-
-  /* update our own height after child changed */
-  updateHeight(node);
-
-  /* balance now */
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (key < node.left!.key)                   // Left‑Left case
-      return rotateRight(node);
-
-    // Left‑Right case
-    node.left = rotateLeft(node.left!);
-    return rotateRight(node);
+// Usage
+const tri = new Triangle(6, 7, 8);
+console.log(tri.area()); // 20.784609690826528
+function areaFromBaseHeight(base: number, height: number): number {
+  if (base <= 0 || height <= 0) {
+    throw new RangeError('Both base and height should be positive numbers');
   }
-
-  // Right heavy
-  if (bf < -1) {
-    if (key > node.right!.key)                  // Right‑Right case
-      return rotateLeft(node);
-
-    // Right‑Left case
-    node.right = rotateRight(node.right!);
-    return rotateLeft(node);
-  }
-
-  return node;            // unchanged
+  return base * height / 2;
 }
-
-/*  Search --------------------------------------------------------------- */
-function contains(node: Node | null, key: number): boolean {
-  while (node) {
-    if (key === node.key) return true;
-    node = key < node.key ? node.left : node.right;
-  }
-  return false;
-}
-
-/*  In‑order traversal for debugging -------------------------------------- */
-function inorder(node: Node | null, res: number[] = []): number[] {
-  if (!node) return res;
-  inorder(node.left, res);
-  res.push(node.key);
-  inorder(node.right, res);
-  return res;
-}
-
-/*  Example usage ---------------------------------------------------------- */
-let root: Node | null = null;
-[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
-
-console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
-console.log('Contains 25?', contains(root, 25));      // true
-console.log('Contains 15?', contains(root, 15));      // false
-class Node<T> { key: T; height: number; ... }
-function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
