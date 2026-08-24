@@ -1,30 +1,48 @@
 /**
- * Return the factorial of a non‑negative integer.
- *
- * @param n - the number to calculate the factorial of.
- * @returns factorial(n) as a number (or BigInt if you want larger values).
- * @throws TypeError if the input is not a non‑negative integer.
+ * Returns the longest common subsequence of two strings.
+ * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
  */
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new TypeError("Factorial is only defined for non‑negative integers");
+function lcs(s1: string, s2: string): string {
+  const n = s1.length,
+        m = s2.length;
+
+  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+
+  // Build the DP table.
+  for (let i = 1; i <= n; i++) {
+    const a = s1[i - 1];
+    for (let j = 1; j <= m; j++) {
+      if (a === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
   }
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n <= 1) return 1;
+  // Reconstruct the subsequence.
+  let i = n,
+      j = m,
+      result: string[] = [];
 
-  // Recursive step: n! = n * (n – 1)!
-  return n * factorial(n - 1);
+  while (i > 0 && j > 0) {
+    if (s1[i - 1] === s2[j - 1]) {
+      // Character is part of LCS – prepend to answer.
+      result.push(s1[i - 1]);
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;   // move up
+    } else {
+      j--;   // move left
+    }
+  }
+
+  return result.reverse().join('');
 }
+const a = 'AGGTAB';
+const b = 'GXTXAYB';
 
-// Example usage
-console.log(factorial(5)); // 120
-function factorialBig(n: BigInt): BigInt {
-  if (n < 0n) throw new TypeError("Must be non‑negative");
-
-  if (n <= 1n) return 1n;
-
-  return n * factorialBig(n - 1n);
-}
-
-console.log(factorialBig(20n).toString()); // 2432902008176640000
+const sub = lcs(a, b);
+console.log(`LCS length: ${sub.length}`); // 4
+console.log(`LCS itself: ${sub}`);       // GTAB
