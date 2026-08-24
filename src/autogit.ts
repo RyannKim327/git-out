@@ -1,41 +1,135 @@
 /**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
+ * A binary‑heap based priority queue.
  *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
+ * @template T - The type of the heap elements.
  */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+export class PriorityQueue<T> {
+  /** Array representation of the heap.  Root is at index 0. */
+  private heap: T[] = [];
 
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  /**
+   * Comparator that decides heap order.
+   *
+   *   - If it returns a negative number → a precedes b.
+   *   - If 0 → equal.
+   *   - If positive → a follows b.
+   *
+   * You can pass your own comparator; otherwise a simple
+   * numerical ascending order is used.
+   */
+  constructor(
+    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+  ) {}
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  /* ----- Query helpers ----- */
 
-    // Place the key into its correct spot
-    arr[j + 1] = key;
+  /** Number of elements in the queue. */
+  size(): number {
+    return this.heap.length;
   }
 
-  return arr; // handy for chaining, but the original array is already sorted
+  /** Return the element with highest priority without removing it. */
+  peek(): T | null {
+    return this.heap.length ? this.heap[0] : null;
+  }
+
+  /* ----- Manipulation helpers ----- */
+
+  /** Insert a new element */
+  push(item: T): void {
+    this.heap.push(item);
+    this.siftUp(this.heap.length - 1);
+  }
+
+  /**
+   * Remove and return the element with highest priority.
+   * Returns `null` if the queue is empty.
+   */
+  pop(): T | null {
+    const n = this.heap.length;
+    if (n === 0) return null;
+    if (n === 1) return this.heap.pop() ?? null;
+
+    const top = this.heap[0];
+    // Move last element to the root and shrink array.
+    this.heap[0] = this.heap.pop() as T;
+    this.siftDown(0);
+    return top;
+  }
+
+  /* ----- Internal re‑heapify ----- */
+
+  /** Push the element at index `i` up until heap property holds. */
+  private siftUp(i: number): void {
+    const { heap, compareFn } = this;
+    let childIndex = i;
+
+    while (childIndex > 0) {
+      const parentIndex = (childIndex - 1) >> 1;
+      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
+
+      // Swap child & parent
+      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
+      childIndex = parentIndex;
+    }
+  }
+
+  /** Move the element at index `i` down until heap property holds. */
+  private siftDown(i: number): void {
+    const { heap, compareFn } = this;
+    const n = heap.length;
+    let parentIndex = i;
+
+    while (true) {
+      const leftIdx = (parentIndex << 1) + 1;
+      const rightIdx = leftIdx + 1;
+
+      let smallest = parentIndex;
+
+      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
+        smallest = leftIdx;
+      }
+      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
+        smallest = rightIdx;
+      }
+
+      if (smallest === parentIndex) break;
+
+      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
+      parentIndex = smallest;
+    }
+  }
+
+  /* ----- Utility ----- */
+
+  /**
+   * Re‑build the heap from the current array contents.  
+   * Useful after bulk insertion or when the comparator changes.
+   */
+  heapify(): void {
+    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
+      this.siftDown(i);
+    }
+  }
 }
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
+// Simple min‑heap of numbers (default comparator does that)
+const minQ = new PriorityQueue<number>();
 
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
+minQ.push(5);   // 5
+minQ.push(3);   // 3,5
+minQ.push(8);   // 3,5,8
+minQ.push(1);   // 1,3,8,5
 
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+console.log(minQ.pop()); // 1
+console.log(minQ.pop()); // 3
+console.log(minQ.peek()); // 5
+console.log(minQ.size()); // 2
+interface Task { id: string; priority: number; }
+
+const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
+
+maxQ.push({ id: "A", priority: 10 });
+maxQ.push({ id: "B", priority: 20 });
+maxQ.push({ id: "C", priority: 5 });
+
+console.log(maxQ.pop()); // B (20)
