@@ -1,20 +1,30 @@
-// Original array
-const original: number[] = [1, 2, 3, 4, 5];
+/**
+ * Return the factorial of a non‑negative integer.
+ *
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
+ */
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
+  }
 
-// 1️⃣ In‑place reverse (mutates `original`)
-original.reverse();
-console.log(original); // [5, 4, 3, 2, 1]
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
 
-// 2️⃣ Copy then reverse (keeps `original` intact)
-const reversedCopy = original.slice().reverse();  // or [...original].reverse()
-console.log(reversedCopy);  // [5, 4, 3, 2, 1]
-type Person = { name: string; age: number };
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
+}
 
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob',   age: 34 },
-];
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
 
-const reversedPeople = [...people].reverse(); // still Person[]
-const reduceReversed = <T>(array: T[]): T[] =>
-  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
+}
+
+console.log(factorialBig(20n).toString()); // 2432902008176640000
