@@ -1,129 +1,103 @@
-/**
- * A node in the B‑tree.
- * Keys are stored in ascending order.
- */
-class BTreeNode<K, V> {
-  // Keys and values are kept together to simplify return of key/value pairs.
-  keys: K[] = [];
-  values: V[] = [];
-
-  // Children – null for leaf nodes.
-  children: (BTreeNode<K, V> | null)[] = [];
-
-  // Whether this node is a leaf.
-  leaf: boolean;
-
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
-
-  /* Helper: find first index where key should be inserted */
-  findKey(key: K, cmp: (a: K, b: K) => number): number {
-    let idx = 0;
-    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
-      ++idx;
-    }
-    return idx;
-  }
+// A generic state; `data` can be any shape you need.
+export interface BeamState<T> {
+  readonly data: T;      // the actual thing (token list, node id, etc.)
+  readonly score: number; // higher is better
 }
-/**
- * B‑Tree implementation
- *
- * @param t Minimum degree (≥ 2). Every node except the root contains
- *          at least t‑1 keys and at most 2*t‑1 keys.
- */
-class BTree<K, V> {
-  private root: BTreeNode<K, V>;
-  private readonly t: number;
-  private readonly cmp: (a: K, b: K) => number;
 
+// A function that, from one state, produces zero or more candidate states.
+export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
+
+// A function that assigns a numeric score to a state.
+export type Scorer<T> = (state: BeamState<T>) => number;
+class MinHeap<T> {
+  private data: T[] = [];
+  constructor(private readonly key: (x: T) => number) {}
+
+  private swap(i: number, j: number) {
+    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
+  }
+
+  push(item: T) {
+    this.data.push(item);
+    this.siftUp(this.data.length - 1);
+  }
+
+  pop(): T | undefined {
+    const top = this.data[0];
+    const last = this.data.pop();
+    if (!this.data.length || !last) return top;
+    this.data[0] = last;
+    this.siftDown(0);
+    return top;
+  }
+
+  size() { return this.data.length; }
+
+  private siftUp(i: number) {
+    let idx = i;
+    while (idx > 0) {
+      const parent = (idx - 1) >> 1;
+      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
+      this.swap(idx, parent);
+      idx = parent;
+    }
+  }
+  private siftDown(i: number) {
+    let idx = i;
+    const n = this.data.length;
+    while (true) {
+      const l = idx * 2 + 1;
+      const r = l + 1;
+      let smallest = idx;
+      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
+      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
+      if (smallest === idx) break;
+      this.swap(idx, smallest);
+      idx = smallest;
+    }
+  }
+
+  // For debugging / inspection
+  toArray() { return [...this.data]; }
+}
+export class BeamSearch<T> {
   constructor(
-    t: number = 2,
-    cmp?: (a: K, b: K) => number
-  ) {
-    if (t < 2) throw new Error('B‑tree order must be >= 2');
-    this.t = t;
-    this.root = new BTreeNode<K, V>(true);
-    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
+    private readonly expander: Expander<T>,
+    private readonly scorer: Scorer<T>,
+    private readonly beamWidth: number
+  ) {}
 
-  /* Public API --------------------------------------------------- */
-  search(key: K): V | undefined {
-    return this._search(this.root, key);
-  }
+  /**
+   * Runs beam search for a fixed number of iterations.
+   * @param startState the initial state (usually empty output)
+   * @param maxDepth how many expansion steps to take
+   * @returns an array containing the best states after the last depth
+   */
+  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
+    let current: BeamState<T>[] = [startState];
 
-  insert(key: K, value: V): void {
-    // If root is full, create a new leaf and split
-    if (this.root.keys.length === 2 * this.t - 1) {
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this._splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this._insertNonFull(this.root, key, value);
-  }
-
-  /* Delete is optional – implement if you need it. */
-  /* delete(key: K): void { … } */
-
-  /* Iterator over all key/value pairs in order */
-  *inOrder(): IterableIterator<[K, V]> {
-    yield* this._inOrder(this.root);
-  }
-
-  /* ------------------------------------------------------------------ */
-
-  /* Core recursive operations --------------------------------------- */
-  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
-    const idx = node.findKey(key, this.cmp);
-
-    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
-      return node.values[idx];
-    }
-
-    if (node.leaf) {
-      return undefined;
-    }
-
-    return this._search(node.children[idx]!, key);
-  }
-
-  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
-    let i = node.keys.length - 1;
-
-    if (node.leaf) {
-      // Insert into leaf – shift keys/vals right of insertion point
-      const idx = node.findKey(key, this.cmp);
-      node.keys.splice(idx, 0, key);
-      node.values.splice(idx, 0, value);
-    } else {
-      // Find child to descend into
-      const idx = node.findKey(key, this.cmp);
-      const child = node.children[idx]!;
-
-      if (child.keys.length === 2 * this.t - 1) {
-        // Child is full → split then decide which side to go
-        this._splitChild(node, idx);
-
-        // After split, middle key moves up – need to decide child again
-        if (this.cmp(key, node.keys[idx]) > 0) {
-          i = idx + 1;
-        } else {
-          i = idx;
+    for (let depth = 0; depth < maxDepth; depth++) {
+      const candidates: BeamState<T>[] = [];
+      for (const state of current) {
+        const nextStates = this.expander(state);
+        // We expect each expander to already return scored states,
+        // but if they don't we can score them here:
+        for (const ns of nextStates) {
+          const s = this.scorer(ns);
+          candidates.push({ ...ns, score: s });
         }
       }
-      this._insertNonFull(node.children[i]!, key, value);
+      if (candidates.length === 0) break; // nothing to expand
+      // Keep top `beamWidth` candidates
+      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
+      for (const cand of candidates) heap.push(cand);
+      current = [];
+      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
+        current.push(heap.pop()!); // `!` is safe because we checked size
+      }
     }
+
+    // Sort by score descending before returning just in case
+    return current.sort((a, b) => b.score - a.score);
   }
-
-  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
-    const t = this.t;
-    const child = parent.children[idx]!;
-    const newNode = new BTreeNode<K, V>(child.leaf);
-
-    // Move the second half of child’s keys/values to newNode
-    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
-    newNode.values = child.values.splice(t);
-
-    if (!child.leaf) {
-      newNode.children = child.children.splice(t
+}
