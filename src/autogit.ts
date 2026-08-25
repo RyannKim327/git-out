@@ -1,38 +1,70 @@
 /**
- * Return the largest prime factor of a positive integer.
+ * Builds the bad‑character shift table for a given pattern.
  *
- * @param n – the number you want to factor (must be > 1)
- * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n <= 1) return undefined;
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
 
-  let num = n;
-  let largest = -1;
+  // Default shift: length of the pattern
+  table.fill(m);
 
-  // Remove all factors of 2
-  while (num % 2 === 0) {
-    largest = 2;
-    num /= 2;
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
   }
-
-  // Now `num` is odd; try odd divisors only
-  let divisor = 3;
-  const limit = Math.sqrt(num);
-  while (divisor <= limit) {
-    while (num % divisor === 0) {
-      largest = divisor;
-      num /= divisor;
-    }
-    divisor += 2;           // skip the even numbers
-  }
-
-  // If we're left with a prime greater than 2
-  if (num > 2) largest = num;
-
-  return largest;
+  return table;
 }
 
-// Quick demo
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
+
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
+
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {          // full match
+      result.push(i);
+    }
+
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
+  }
+
+  return result;
+}
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
+
+console.log(bmhSearch(haystack, needle)); // → [11]
+
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
