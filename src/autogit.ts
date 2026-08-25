@@ -1,86 +1,66 @@
-// -------------------------------------------
-//  heapSort.ts
-// -------------------------------------------
-
 /**
- * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
  *
- * @param   array      The array to sort, mutated in‑place.
- * @param   cmp?       Optional comparator: (a, b) => number
- *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
  *
- * @example
- * const nums = [3, 1, 4, 1, 5, 9, 2];
- * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
- * heapSort(nums, (a, b) => b - a);  // descending order
+ * The function returns everything that looks like the pattern.
  */
-export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
-  const compare = cmp ?? defaultCompare;
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
 
-  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
-  const heapSize = array.length;
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
 
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    siftDown(i, heapSize);
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
   }
 
-  /* ---------- 2. Repeatedly extract max (or min) ---------- */
-  for (let i = heapSize - 1; i > 0; i--) {
-    // Grab the root (largest element) and put it at the end
-    swap(array, 0, i);
-    // Restore heap property on the reduced heap
-    siftDown(0, i);
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
   }
 
-  /* ---------- Helper scopes ---------- */
-  function siftDown(start: number, end: number): void {
-    let root = start;
-
-    while (true) {
-      const left = 2 * root + 1;
-      if (left >= end) break; // no children
-
-      const right = left + 1;
-      let candidate = left;
-
-      // Select the bigger child (or smaller if comparator flipped)
-      if (right < end && compare(array[right], array[left]) > 0) {
-        candidate = right;
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
       }
+      if (match) result.push(i);
+    }
 
-      // If root already holds the biggest, we're done
-      if (compare(array[root], array[candidate]) >= 0) break;
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
 
-      // Swap root with the chosen child and continue
-      swap(array, root, candidate);
-      root = candidate;
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
     }
   }
 
-  function swap(arr: T[], i: number, j: number): void {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
+  return result;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-/* ------------------------------------------- */
-/* Default comparator for `number`/`string` (ascending) */
-function defaultCompare<T>(a: T, b: T): number {
-  // If it's a number or behaves like a number
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-  // Fallback to lexical comparison for strings and others that stringify nicely
-  const sa = String(a);
-  const sb = String(b);
-  return sa < sb ? -1 : sa > sb ? 1 : 0;
-}
-import { heapSort } from "./heapSort";
-
-const data = [8, 3, 5, 4, 7, 1, 2, 6];
-heapSort(data);                // ascending
-console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
-
-heapSort(data, (a, b) => b - a); // descending
-console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
