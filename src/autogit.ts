@@ -1,134 +1,55 @@
-enum Color { RED, BLACK }
-
-class Node<T> {
-  constructor(
-    public value: T,
-    public color: Color = Color.RED,
-    public left: Node<T> | null = null,
-    public right: Node<T> | null = null,
-    public parent: Node<T> | null = null
-  ) {}
+/**
+ * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
+ */
+function isAnagram(s1: string, s2: string): boolean {
+  const normalize = (s: string) =>
+    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
+  return normalize(s1) === normalize(s2);
 }
-export class RedBlackTree<T> {
-  private root: Node<T> | null = null;
+function isAnagramLetterCount(a: string, b: string): boolean {
+  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
 
-  /* Public API */
-  public insert(value: T): void { /* ... */ }
-  public delete(value: T): void { /* ... */ }
-  public find(value: T): Node<T> | null { /* ... */ }
-
-  /* private helpers… */
-  private rotateLeft(x: Node<T>): void { /* ... */ }
-  private rotateRight(x: Node<T>): void { /* ... */ }
-  private fixAfterInsertion(z: Node<T>): void { /* ... */ }
-  private fixAfterDeletion(x: Node<T>): void { /* ... */ }
-  private transplant(u: Node<T>, v: Node<T> | null): void { /* ... */ }
-  private minimum(n: Node<T> | null): Node<T> | null { /* ... */ }
-}
-public find(value: T): Node<T> | null {
-  let node = this.root;
-  while (node && node.value !== value) {
-    node = value < node.value ? node.left : node.right;
-  }
-  return node;
-}
-private rotateLeft(x: Node<T>): void {
-  const y = x.right!;
-  x.right = y.left;
-  if (y.left) y.left.parent = x;
-
-  y.parent = x.parent;
-  if (!x.parent) this.root = y;
-  else if (x === x.parent.left) x.parent.left = y;
-  else x.parent.right = y;
-
-  y.left = x;
-  x.parent = y;
-}
-
-private rotateRight(x: Node<T>): void {
-  const y = x.left!;
-  x.left = y.right;
-  if (y.right) y.right.parent = x;
-
-  y.parent = x.parent;
-  if (!x.parent) this.root = y;
-  else if (x === x.parent.right) x.parent.right = y;
-  else x.parent.left = y;
-
-  y.right = x;
-  x.parent = y;
-}
-public insert(value: T): void {
-  const z = new Node(value);
-  let y: Node<T> | null = null;
-  let x = this.root;
-
-  // Binary‑search‑tree insert
-  while (x) {
-    y = x;
-    x = value < x.value ? x.left : x.right;
-  }
-  z.parent = y;
-
-  if (!y) this.root = z;
-  else if (value < y.value) y.left = z;
-  else y.right = z;
-
-  // Re‑balance
-  this.fixAfterInsertion(z);
-}
-private fixAfterInsertion(z: Node<T>): void {
-  z.color = Color.RED;
-
-  while (z.parent && z.parent.color === Color.RED) {
-    if (z.parent === z.parent.parent!.left) { // z.parent is left child
-      const y = z.parent.parent.right; // uncle
-
-      if (y && y.color === Color.RED) {
-        // Case 1: Uncle red
-        z.parent.color = Color.BLACK;
-        y.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        z = z.parent.parent!;
-      } else {
-        // Case 2 or 3: Uncle black
-        if (z === z.parent.right) {
-          // Case 2: triangle
-          z = z.parent;
-          this.rotateLeft(z);
-        }
-        // Case 3: line
-        z.parent.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        this.rotateRight(z.parent.parent!);
-      }
-    } else {               // Symmetric case (z.parent is right child)
-      const y = z.parent.parent!.left; // uncle
-
-      if (y && y.color === Color.RED) {
-        z.parent.color = Color.BLACK;
-        y.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        z = z.parent.parent!;
-      } else {
-        if (z === z.parent.left) {
-          z = z.parent;
-          this.rotateRight(z);
-        }
-        z.parent.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        this.rotateLeft(z.parent.parent!);
-      }
+  const freq = (s: string) => {
+    const map = new Map<string, number>();
+    for (const c of s) {
+      map.set(c, (map.get(c) ?? 0) + 1);
     }
+    return map;
+  };
+
+  if (clean(a).length !== clean(b).length) return false;
+
+  const m1 = freq(clean(a));
+  const m2 = freq(clean(b));
+
+  for (const [ch, count] of m1) {
+    if (m2.get(ch) !== count) return false;
   }
-
-  this.root!.color = Color.BLACK; // Root is always black
+  return true;
 }
-public delete(value: T): void {
-  let z = this.find(value);
-  if (!z) return; // Not found, nothing to delete
+function isAnagramFlexible(
+  s1: string,
+  s2: string,
+  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
+): boolean {
+  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-  let y = z;
-  let yOriginalColor = y.color;
-  let x: Node<T> | null
+  let pattern = '';
+  if (ignoreSpaces) pattern += '\\s';
+  if (ignorePunct) pattern += /[^\w\s]/g.source;
+
+  const regex = new RegExp(pattern, 'g');
+  const normalize = (s: string) =>
+    s.replace(regex, '').toLowerCase().split('').sort().join('');
+
+  return normalize(s1) === normalize(s2);
+}
+console.log(isAnagram('listen', 'silent'));          // true
+console.log(isAnagram('A gentleman', 'Elegant man'));// true
+console.log(isAnagram('Hello', 'World'));            // false
+
+// Using the frequency‑count version
+console.log(isAnagramLetterCount('abc', 'cab'));     // true
+
+// Flexible options
+console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
