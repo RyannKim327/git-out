@@ -1,49 +1,70 @@
 /**
- * Stable counting sort for integers.
+ * Builds the bad‑character shift table for a given pattern.
  *
- * @param  values The array of numbers to sort (integers only).
- * @return        A new sorted array.
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
  */
-function countingSort(values: number[]): number[] {
-  if (values.length === 0) return [];
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
 
-  // ---------- 1. find min & max ----------
-  let min = values[0];
-  let max = values[0];
-  for (let i = 1; i < values.length; i++) {
-    const v = values[i];
-    if (v < min) min = v;
-    if (v > max) max = v;
+  // Default shift: length of the pattern
+  table.fill(m);
+
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
   }
+  return table;
+}
 
-  // ---------- 2. count frequencies ----------
-  const range = max - min + 1;          // number of distinct values
-  const counts = new Array<number>(range).fill(0);
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
 
-  for (const v of values) {
-    counts[v - min]++;                  // shift so that the smallest value maps to index 0
-  }
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
 
-  // ---------- 3. prefix sums (running totals) ----------
-  const positions = new Array<number>(range).fill(0);
-  let sum = 0;
-  for (let i = 0; i < range; i++) {
-    sum += counts[i];
-    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
-  }
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
 
-  // ---------- 4. build the sorted output ----------
-  const result = new Array<number>(values.length);
-  // Walk the original array **backwards** to keep stability
-  for (let i = values.length - 1; i >= 0; i--) {
-    const v = values[i];
-    const posIndex = v - min;
-    positions[posIndex]--;               // get the correct position for this element
-    result[positions[posIndex]] = v;
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {          // full match
+      result.push(i);
+    }
+
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
   }
 
   return result;
 }
-const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
-const sorted = countingSort(unsorted);
-console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
+
+console.log(bmhSearch(haystack, needle)); // → [11]
+
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
