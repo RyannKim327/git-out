@@ -1,77 +1,61 @@
-/**
- * Median of two sorted arrays.
- *
- * The algorithm keeps a binary search on the smaller array.  
- * At each step we decide how many elements from `a` belong on the left side of the
- * partition.  The counterpart from `b` is computed so that the left side contains
- * exactly half (or half‑plus‑one for odd total length) of the elements.
- *
- * Edge cases:
- *   * one of the arrays may be empty
- *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
- */
-export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
-  // Ensure `a` is the shorter array to keep the binary search limits small.
-  let a = nums1;
-  let b = nums2;
-  if (a.length > b.length) [a, b] = [b, a];
+// A minimal node that can hold any value
+class ListNode<T> {
+  constructor(public val: T, public next: ListNode<T> | null = null) {}
+}
 
-  const m = a.length;
-  const n = b.length;
-  // `halfLen` is the number of elements that must be on the left side
-  // of the partition (including the middle element when total length is odd).
-  const halfLen = Math.floor((m + n + 1) / 2);
+// A helper to build a list from an array (great for demos)
+function arrayToList<T>(arr: T[]): ListNode<T> | null {
+  let head: ListNode<T> | null = null
+  for (let i = arr.length - 1; i >= 0; i--) {
+    head = new ListNode(arr[i], head)
+  }
+  return head
+}
 
-  let low = 0;
-  let high = m;
+// A helper to turn a list back into an array (great for quick checks)
+function listToArray<T>(head: ListNode<T> | null): T[] {
+  const out: T[] = []
+  let cur = head
+  while (cur) {
+    out.push(cur.val)
+    cur = cur.next
+  }
+  return out
+}
+function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let prev: ListNode<T> | null = null
+  let curr = head
 
-  while (low <= high) {
-    // Number of elements from a put on the left side
-    const i = Math.floor((low + high) / 2);
-    // Number of elements from b put on the left side
-    const j = halfLen - i;
-
-    const aLeft  = i === 0 ? -Infinity : a[i - 1];
-    const aRight = i === m ?  Infinity : a[i];
-
-    const bLeft  = j === 0 ? -Infinity : b[j - 1];
-    const bRight = j === n ?  Infinity : b[j];
-
-    // Partition is correct: all left elements ≤ all right elements
-    if (aLeft <= bRight && bLeft <= aRight) {
-      // If total length is odd, the median is the max of the left side
-      if ((m + n) % 2 === 1) {
-        return Math.max(aLeft, bLeft);
-      }
-      // If even, it’s the mean of the two middle values
-      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
-    } else if (aLeft > bRight) {
-      // Too many elements from a on the left: move left
-      high = i - 1;
-    } else {
-      // Too few elements from a on the left: move right
-      low = i + 1;
-    }
+  while (curr) {
+    const next = curr.next   // store the rest of the list
+    curr.next = prev         // reverse the link
+    prev = curr              // move prev forward
+    curr = next              // continue
   }
 
-  // Should never reach here for valid input
-  throw new Error("Invalid input");
+  // At the end, prev is the new head
+  return prev
 }
-const arr1 = [1, 3, 8];
-const arr2 = [7, 9, 10, 11];
-console.log(findMedianSortedArrays(arr1, arr2)); // 8
-export function medianNaive(a: number[], b: number[]): number {
-  const merged: number[] = [];
-  let i = 0, j = 0;
-  while (i < a.length || j < b.length) {
-    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
-      merged.push(a[i++]);
-    } else {
-      merged.push(b[j++]);
-    }
+function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
+  // Base case: 0 or 1 node
+  if (!head || !head.next) {
+    return head
   }
-  const mid = Math.floor(merged.length / 2);
-  return merged.length % 2
-    ? merged[mid]
-    : (merged[mid - 1] + merged[mid]) / 2;
+
+  // Recurse to the end of the list
+  const newHead = reverseListRecursive(head.next)
+
+  // After recursion returns, head is still at the original start
+  // head.next still points forward; we need to put head at the end
+  head.next.next = head   // point the next node back to head
+  head.next = null        // cut off the original link
+
+  return newHead
 }
+const example = arrayToList([1, 2, 3, 4, 5])
+const reversedIterative = reverseList(example)
+console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
+
+const example2 = arrayToList([10, 20, 30])
+const reversedRecursive = reverseListRecursive(example2)
+console.log(listToArray(reversedRecursive)) // [30, 20, 10]
