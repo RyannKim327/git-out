@@ -1,26 +1,61 @@
-function countWord(text: string, word: string): number {
-  // Escape word so special regex symbols don’t bite us
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // \b = word boundary, i = ignore case, g = global (all matches)
-  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
-}
-const txt = "Boo, boo! Boo-boo? Booing… boo.";
-console.log(countWord(txt, 'boo')); // 3
-function countWordSplit(text: string, word: string) {
-  const words = text.trim().split(/\s+/);
-  const target = word.toLowerCase();
-  return words.filter(w => w.toLowerCase() === target).length;
-}
-function countWordLoop(text: string, word: string) {
-  const target = word.toLowerCase();
-  let count = 0;
-  const regex = /\b\w+\b/g;               // grab words
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    if (match[0].toLowerCase() === target) count++;
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
+
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
+        }
+      }
+    }
   }
-  return count;
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-const count = countWord("Hello because we say hello", "hello"); // 2
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
+  }
+
+  const n = s1.length;
+  const m = s2.length;
+
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
+
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
+    }
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
+  }
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+}
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
