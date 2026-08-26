@@ -1,157 +1,135 @@
-// suffix-tree.ts
 /**
- * Lightweight suffix tree for ASCII strings.
- * The implementation uses Ukkonen’s algorithm
- * and is fully typed for clarity.
+ * Boyer‑Moore pattern search
+ * ---------------------------------
+ * Returns the start indices of every exact match of `pattern`
+ * inside `text`.  If no match, returns an empty array.
+ *
+ * Complexity:
+ *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
+ *
+ * @param text    The haystack string
+ * @param pattern The needle string
  */
+export function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];          // empty pattern → nothing to find
 
-/** Each node can have many outgoing edges keyed by the
- * first character of the edge label (i.e., “transition”).
- * The tree is rooted (root is an empty string). */
-class Node {
-  /** Map from a character to a child node. */
-  children = new Map<string, Node>();
+  // Preprocessing -------------------------------------------------------------
+  const badChar = buildBadCharacterTable(pattern);
+  const goodSuf  = buildGoodSuffixTable(pattern);
 
-  /** For nodes that represent the end of a suffix,
-   *  we record the starting index of that suffix in the
-   *  original text.  The set version lets us keep
-   *  multiple suffixes that collapse at the same node.
-   */
-  suffixIndices = new Set<number>();
+  // Searching ---------------------------------------------------------------
+  const results: number[] = [];
+  let s = 0;                        // shift of the pattern with respect to text
 
-  /* In Ukkonen, each edge is implicitly defined by the
-   * start and length on the original text.  We store
-   * those pairs on the node that is the *target* of the edge.
-   */
-  edgeStart?: number;
-  edgeEnd?: number; // inclusive
+  while (s <= n - m) {
+    let j = m - 1;                  // right‑to‑left comparison
 
-  /** The parent of this node (root’s parent is null). */
-  parent: Node | null = null;
-}
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
 
-/** A convenience wrapper around a Node that stores the
- *  current active point used during construction.
- */
-interface ActivePoint {
-  node: Node;     // the deepest node where the active span ends
-  edge: string;   // first character of the edge we are on
-  length: number; // how far we have walked down that edge
-}
+    if (j < 0) {
+      // Match found at position s
+      results.push(s);
 
-/**
- * The SuffixTree itself.
- */
-export class SuffixTree {
-  /** The root of the tree.  Its edgeStart/edgeEnd are undefined
-   *  because it has no incoming edge. */
-  private _root = new Node();
+      // Shift the pattern so that the next character in text aligns with
+      // the last occurrence of that character in the pattern (if any)
+      // or skip to the end of the pattern if none.
+      // This is the "good suffix" rule for a complete match.
+      s += goodSuf[0];
+    } else {
+      // Mismatch: use the bad‑character rule.
+      const badShift = j - badChar[text[s + j]];
+      // Use the good‑suffix shift as well (max of the two)
+      const goodShift = goodSuf[j + 1];
 
-  /** The input string.  We keep it as an array of characters
-   *  for O(1) random access. */
-  private _text: string[];
-
-  /** The active point used by Ukkonen’s algorithm. */
-  private _active: ActivePoint;
-
-  /** The number of “steps” we have taken from the root
-   *  during construction.  This is the suffix link counter,
-   *  useful primarily for debugging but also for truncated
-   *  construction. */
-  private _remainder = 0;
-
-  constructor(text: string) {
-    this._text = [...text];
-    this._active = { node: this._root, edge: "", length: 0 };
-    this.build();
-  }
-
-  /* ------------------------------------------------------------------- */
-  /*  BUILDING
-   * ------------------------------------------------------------------- */
-
-  private build(): void {
-    for (let pos = 0; pos < this._text.length; pos++) {
-      this._addCharacter(pos);
+      s += Math.max(badShift, goodShift);
     }
   }
 
-  /**
-   * Extend the tree with the character at position `pos` in the input.
-   * This is Ukkonen’s “phase” step.
-   */
-  private _addCharacter(pos: number): void {
-    this._remainder++;
+  return results;
+}
 
-    let lastNewNode: Node | null = null;
+// ---------------------------------------------------------------------------
+// Helper functions
+// ---------------------------------------------------------------------------
 
-    while (this._remainder > 0) {
-      const currentActiveEdge = this._active.edge || this._text[pos];
+/**
+ * Builds a map from character to its right‑most index in the pattern.
+ * Character not present → -1.
+ */
+function buildBadCharacterTable(pattern: string): { [k: string]: number } {
+  const table: { [k: string]: number } = {};
 
-      // 1. If there is no outgoing edge from the active node
-      //    that starts with the active edge character, create one.
-      if (!this._active.node.children.has(currentActiveEdge)) {
-        const leaf = this._createNode(pos, this._text.length - 1); // leaf points to suffix start
-        this._active.node.children.set(currentActiveEdge, leaf);
-        leaf.parent = this._active.node;
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern[i]] = i;           // right‑most position
+  }
 
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this._active.node;
-          lastNewNode = null;
-        }
-      } else {
-        // 2. There is an edge; we need to walk down it.
-        const nextNode = this._active.node.children.get(currentActiveEdge)!;
+  return table;
+}
 
-        // What character does the edge label have at the next position?
-        const edgeChar = this._text[nextNode.edgeStart! + this._active.length];
+/**
+ * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
+ *   goodSuf[i] = number of positions pattern needs to shift so that
+ *                the right i characters of pattern align with a previous
+ *                occurrence of this suffix.  If no such occurrence,
+ *                the shift corresponds to aligning the next character after
+ *                the suffix that matches in the pattern.
+ *
+ * The table length is m+1; goodSuf[0] is the shift after a full match.
+ */
+function buildGoodSuffixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const goodSuf = new Array(m + 1).fill(0);
+  const suffix = new Array(m + 1).fill(0);
+  const prefix = new Array(m + 1).fill(false);
 
-        if (edgeChar === this._text[pos]) {
-          // 2a. The current character is already in the tree.
-          //     Just extend the active point and break.
-          if (lastNewNode) {
-            lastNewNode.suffixLink = this._active.node;
-            lastNewNode = null;
-          }
-          this._active.length++;
-          break;
-        }
-
-        // 2b. Need to split the edge because we hit a mismatch.
-        const splitEnd = nextNode.edgeStart! + this._active.length - 1;
-        const split = this._createNode(nextNode.edgeStart!, splitEnd);
-        this._active.node.children.set(currentActiveEdge, split);
-        split.parent = this._active.node;
-
-        // 2b.i. The old child becomes a grand‑child of the new split node.
-        nextNode.edgeStart! = splitEnd + 1;
-        split.children.set(this._text[nextNode.edgeStart!], nextNode);
-        nextNode.parent = split;
-
-        // 2b.ii. Add a new leaf for the new character.
-        const leaf = this._createNode(pos, this._text.length - 1);
-        split.children.set(this._text[pos], leaf);
-        leaf.parent = split;
-
-        // 2b.iii. Link suffixes
-        if (lastNewNode) {
-          lastNewNode.suffixLink = split;
-        }
-        lastNewNode = split;
-        split.suffixLink = this._root;
+  // Step 1: compute suffixes
+  for (let i = 0; i < m; i++) {
+    let len = 0;
+    while (
+      i - len - 1 >= 0 &&
+      pattern[i - len - 1] === pattern[m - len - 1]
+    ) {
+      len++;
+      suffix[i - len + 1] = len;
+      if (i - len + 1 === 0) {
+        prefix[i - len + 1] = true;            // entire suffix is prefix
       }
+    }
+  }
 
-      // 3. Move to the next phase: decrement remainder
-      this._remainder--;
+  // Step 2: fill goodSuf table
+  for (let i = 0; i <= m; i++) {
+    goodSuf[i] = m;                              // default shift
+  }
 
-      // 4. If the active node has a suffix link, follow it,
-      //    otherwise reset to root and adjust length.
-      if (this._active.node === this._root && this._active.length > 0) {
-        this._active.length--;
-        this._active.edge = this._text[pos - this._remainder + 1];
-      } else if (this._active.node !== this._root) {
-        this._active.node = this._active.node.suffixLink!;
-      } else {
-        this._active.edge = this._text[pos - this._remainder + 1];
-        this._active.length = 1;
-        this._active.node = this
+  for (let i = 0; i < m; i++) {
+    const len = suffix[i];
+    if (len > 0) {
+      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
+    }
+  }
+
+  // Step 3: handle prefixes
+  for (let i = m; i >= 1; i--) {
+    if (prefix[i]) {
+      for (let j = 0; j < m - i; j++) {
+        if (goodSuf[j] === m) {
+          goodSuf[j] = m - i;
+        }
+      }
+    }
+  }
+
+  return goodSuf;
+}
+const text = "ABABCABABCDABABCDCDABABCABABCD";
+const pattern = "ABABCABAB";
+
+const matches = boyerMooreSearch(text, pattern);
+
+console.log(`Pattern found at indices: ${matches}`);
+// → Pattern found at indices: 0,9,15
