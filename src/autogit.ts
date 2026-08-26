@@ -1,93 +1,46 @@
-// A node can carry any payload (`T`) and point to its neighbours.
-export interface GraphNode<T> {
-  value: T;
-  neighbours: GraphNode<T>[];
-}
 /**
- * Recursively performs depth‑limited search.
- *
- * @param node        The node you are currently visiting.
- * @param goalTest    Returns true if the current node satisfies the goal.
- * @param limit       Number of edges left before the search terminates.
- * @param visited     A set of IDs or reference values that keeps track of visited nodes.
- *                    This protects against cycles that would otherwise cause infinite recursion.
- * @returns The first node that satisfies `goalTest`, or `null`.
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
  */
-export function depthLimitedSearchRec<T>(
-  node: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number,
-  visited: Set<GraphNode<T>> = new Set()
-): GraphNode<T> | null {
-  if (goalTest(node)) return node;
-  if (limit === 0) return null;          // reached the depth boundary
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-  visited.add(node);
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+  });
 
-  for (const neighbour of node.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
     }
   }
-
-  return null;   // nothing found within this branch
+  return true;
 }
-interface StackItem<T> {
-  node: GraphNode<T>;
-  depthLeft: number;
-}
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-/**
- * Iterative depth‑limited search.
- */
-export function depthLimitedSearchIter<T>(
-  start: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number
-): GraphNode<T> | null {
-  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
-  const visited: Set<GraphNode<T>> = new Set();
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
 
-  while (stack.length) {
-    const { node, depthLeft } = stack.pop()!;
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
 
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (goalTest(node)) return node;
-    if (depthLeft === 0) continue;           // depth boundary reached
-
-    // push neighbours onto the stack – LIFO order means the first neighbour
-    // will be processed last, mirroring the recursive DFS behaviour.
-    for (const neighbour of node.neighbours) {
-      if (!visited.has(neighbour)) {
-        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
-      }
-    }
-  }
-
-  return null;  // no goal reached within depth limit
-}
-// --- build a simple graph
-const a: GraphNode<string> = { value: "A", neighbours: [] };
-const b: GraphNode<string> = { value: "B", neighbours: [] };
-const c: GraphNode<string> = { value: "C", neighbours: [] };
-const d: GraphNode<string> = { value: "D", neighbours: [] };
-
-a.neighbours.push(b, c);   // A -> B, C
-b.neighbours.push(d);      // B -> D
-c.neighbours.push(d);      // C -> D
-
-// --- goal: find node with value “D”
-const isGoal = (node: GraphNode<string>) => node.value === "D";
-
-// Recursive
-const resultRec = depthLimitedSearchRec(a, isGoal, 3);
-console.log("Recursive result:", resultRec?.value ?? "none");
-
-// Iterative
-const resultIter = depthLimitedSearchIter(a, isGoal, 3);
-console.log("Iterative result:", resultIter?.value ?? "none");
-Recursive result: D
-Iterative result: D
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
