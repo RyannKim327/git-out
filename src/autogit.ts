@@ -1,38 +1,52 @@
-/**
- * Return the largest prime factor of a positive integer.
- *
- * @param n – the number you want to factor (must be > 1)
- * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
- */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n <= 1) return undefined;
-
-  let num = n;
-  let largest = -1;
-
-  // Remove all factors of 2
-  while (num % 2 === 0) {
-    largest = 2;
-    num /= 2;
-  }
-
-  // Now `num` is odd; try odd divisors only
-  let divisor = 3;
-  const limit = Math.sqrt(num);
-  while (divisor <= limit) {
-    while (num % divisor === 0) {
-      largest = divisor;
-      num /= divisor;
-    }
-    divisor += 2;           // skip the even numbers
-  }
-
-  // If we're left with a prime greater than 2
-  if (num > 2) largest = num;
-
-  return largest;
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 }
 
-// Quick demo
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+/**
+ * Returns the diameter (in edges) of a binary tree.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
+
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
+    }
+
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
+  }
+
+  dfs(root);
+  return maxDiameter;         // already in edges
+}
+
+/* ---- example usage ------------------------------------------------------- */
+
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
+}
+
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
+
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
