@@ -1,58 +1,94 @@
+if currentDepth > depthLimit → stop exploring that branch
 /**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
+ * Generic depth‑limited search (iterative DFS).
+ *
+ * @param root        The starting node.
+ * @param depthLimit  How far we are allowed to go from the root.
+ * @param getNeighbors
+ *        A callback that returns the list of adjacent nodes for a given node.
+ * @param visitedSet  Optional set used to avoid revisiting nodes.
+ *
+ * @returns  Array of nodes visited in order (pre‑order DFS order).
  */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+export function depthLimitedSearch<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  visitedSet?: Set<T>
+): T[] {
+  const visited: Set<T> = visitedSet ?? new Set<T>();
+  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
+  const result: T[] = [];
 
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!; // non‑empty because of the loop
 
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
-  }
+    // Skip if we've already seen the node
+    if (visited.has(node)) continue;
 
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
+    visited.add(node);
+    result.push(node);          // we “visit” it, or you can process here
 
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
-}
+    // Stop expanding when we hit the depth limit
+    if (depth >= depthLimit) continue;
 
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
-
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
-
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
-
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
+    // Push neighbors onto stack.  We push in reverse order if you want to
+    // preserve the same order as a recursive DFS.
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
     }
-
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
-
-    pow10 *= 10;           // move to next digit
   }
 
-  return output;
+  return result;
 }
-import { radixSort } from "./radixSort";
+// A tiny undirected graph:
+const graph = new Map<string, string[]>([
+  ['A', ['B', 'C', 'D']],
+  ['B', ['A', 'E', 'F']],
+  ['C', ['A', 'G']],
+  ['D', ['A', 'H']],
+  ['E', ['B']],
+  ['F', ['B']],
+  ['G', ['C']],
+  ['H', ['D']],
+]);
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+function neighbors(node: string): string[] {
+  return graph.get(node) ?? [];
+}
+
+// Find all nodes reachable from 'A' within depth 2
+const visited = depthLimitedSearch('A', 2, neighbors);
+console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
+function depthLimitedSearchWithTarget<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  target: T,
+  visitedSet?: Set<T>
+): T | undefined {
+  const visited = visitedSet ?? new Set<T>();
+  const stack = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (node === target) return node;
+
+    if (depth >= depthLimit) continue;
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return undefined; // not found
+}
