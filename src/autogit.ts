@@ -1,37 +1,49 @@
-interface ListNode<T> {
-  val: T;
-  next: ListNode<T> | null;
+/**
+ * Returns n! for a non‑negative integer `n`.
+ * Throws an error if `n` is negative.
+ */
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;   // base case
+  return n * factorialRecursive(n - 1);
 }
 /**
- * Returns the n‑th node from the end of a singly linked list,
- * or null if it doesn't exist.
- * n is 1‑based: n = 1 means the last node.
+ * Computes factorial using a loop. 
+ * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
  */
-function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
-  if (n <= 0) return null;            // invalid n – feel free to adjust
-
-  let fast: ListNode<T> | null = head;
-  // Step 1: move fast n steps ahead
-  for (let i = 0; i < n; i++) {
-    if (!fast) return null;           // n is larger than the list length
-    fast = fast.next;
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  // Step 2: move both pointers until fast reaches the end
-  let slow: ListNode<T> | null = head;
-  while (fast) {
-    fast = fast.next;
-    slow = slow!.next!;
-  }
-
-  return slow; // could be null if the list was empty
+  return result;
 }
-// build a tiny list: 1 → 2 → 3 → 4 → 5
-let node5: ListNode<number> = { val: 5, next: null };
-let node4: ListNode<number> = { val: 4, next: node5 };
-let node3: ListNode<number> = { val: 3, next: node4 };
-let node2: ListNode<number> = { val: 2, next: node3 };
-let node1: ListNode<number> = { val: 1, next: node2 };
+/**
+ * Factorial returning a BigInt to avoid precision loss.
+ * Accepts `bigint | number`, but converts to BigInt internally.
+ */
+function factorialBigInt(n: number | bigint): bigint {
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
+  if (bigN <= 1n) return 1n;
+  let result = 1n;
+  for (let i = 2n; i <= bigN; i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(25));          // 15511210043330985984000000n
+console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
+const factorialCache = new Map<number, number>();
 
-const thirdFromEnd = nthFromEnd(node1, 3);
-console.log(thirdFromEnd?.val); // 3
+function factorialMemoized(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;
+  if (factorialCache.has(n)) return factorialCache.get(n)!;
+
+  const value = n * factorialMemoized(n - 1);
+  factorialCache.set(n, value);
+  return value;
+}
+const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
