@@ -1,157 +1,37 @@
-// suffix-tree.ts
-/**
- * Lightweight suffix tree for ASCII strings.
- * The implementation uses Ukkonen’s algorithm
- * and is fully typed for clarity.
- */
-
-/** Each node can have many outgoing edges keyed by the
- * first character of the edge label (i.e., “transition”).
- * The tree is rooted (root is an empty string). */
-class Node {
-  /** Map from a character to a child node. */
-  children = new Map<string, Node>();
-
-  /** For nodes that represent the end of a suffix,
-   *  we record the starting index of that suffix in the
-   *  original text.  The set version lets us keep
-   *  multiple suffixes that collapse at the same node.
-   */
-  suffixIndices = new Set<number>();
-
-  /* In Ukkonen, each edge is implicitly defined by the
-   * start and length on the original text.  We store
-   * those pairs on the node that is the *target* of the edge.
-   */
-  edgeStart?: number;
-  edgeEnd?: number; // inclusive
-
-  /** The parent of this node (root’s parent is null). */
-  parent: Node | null = null;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-
-/** A convenience wrapper around a Node that stores the
- *  current active point used during construction.
- */
-interface ActivePoint {
-  node: Node;     // the deepest node where the active span ends
-  edge: string;   // first character of the edge we are on
-  length: number; // how far we have walked down that edge
-}
-
 /**
- * The SuffixTree itself.
+ * Returns the n‑th node from the end of a singly linked list,
+ * or null if it doesn't exist.
+ * n is 1‑based: n = 1 means the last node.
  */
-export class SuffixTree {
-  /** The root of the tree.  Its edgeStart/edgeEnd are undefined
-   *  because it has no incoming edge. */
-  private _root = new Node();
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-  /** The input string.  We keep it as an array of characters
-   *  for O(1) random access. */
-  private _text: string[];
-
-  /** The active point used by Ukkonen’s algorithm. */
-  private _active: ActivePoint;
-
-  /** The number of “steps” we have taken from the root
-   *  during construction.  This is the suffix link counter,
-   *  useful primarily for debugging but also for truncated
-   *  construction. */
-  private _remainder = 0;
-
-  constructor(text: string) {
-    this._text = [...text];
-    this._active = { node: this._root, edge: "", length: 0 };
-    this.build();
+  let fast: ListNode<T> | null = head;
+  // Step 1: move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;           // n is larger than the list length
+    fast = fast.next;
   }
 
-  /* ------------------------------------------------------------------- */
-  /*  BUILDING
-   * ------------------------------------------------------------------- */
-
-  private build(): void {
-    for (let pos = 0; pos < this._text.length; pos++) {
-      this._addCharacter(pos);
-    }
+  // Step 2: move both pointers until fast reaches the end
+  let slow: ListNode<T> | null = head;
+  while (fast) {
+    fast = fast.next;
+    slow = slow!.next!;
   }
 
-  /**
-   * Extend the tree with the character at position `pos` in the input.
-   * This is Ukkonen’s “phase” step.
-   */
-  private _addCharacter(pos: number): void {
-    this._remainder++;
+  return slow; // could be null if the list was empty
+}
+// build a tiny list: 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4: ListNode<number> = { val: 4, next: node5 };
+let node3: ListNode<number> = { val: 3, next: node4 };
+let node2: ListNode<number> = { val: 2, next: node3 };
+let node1: ListNode<number> = { val: 1, next: node2 };
 
-    let lastNewNode: Node | null = null;
-
-    while (this._remainder > 0) {
-      const currentActiveEdge = this._active.edge || this._text[pos];
-
-      // 1. If there is no outgoing edge from the active node
-      //    that starts with the active edge character, create one.
-      if (!this._active.node.children.has(currentActiveEdge)) {
-        const leaf = this._createNode(pos, this._text.length - 1); // leaf points to suffix start
-        this._active.node.children.set(currentActiveEdge, leaf);
-        leaf.parent = this._active.node;
-
-        if (lastNewNode) {
-          lastNewNode.suffixLink = this._active.node;
-          lastNewNode = null;
-        }
-      } else {
-        // 2. There is an edge; we need to walk down it.
-        const nextNode = this._active.node.children.get(currentActiveEdge)!;
-
-        // What character does the edge label have at the next position?
-        const edgeChar = this._text[nextNode.edgeStart! + this._active.length];
-
-        if (edgeChar === this._text[pos]) {
-          // 2a. The current character is already in the tree.
-          //     Just extend the active point and break.
-          if (lastNewNode) {
-            lastNewNode.suffixLink = this._active.node;
-            lastNewNode = null;
-          }
-          this._active.length++;
-          break;
-        }
-
-        // 2b. Need to split the edge because we hit a mismatch.
-        const splitEnd = nextNode.edgeStart! + this._active.length - 1;
-        const split = this._createNode(nextNode.edgeStart!, splitEnd);
-        this._active.node.children.set(currentActiveEdge, split);
-        split.parent = this._active.node;
-
-        // 2b.i. The old child becomes a grand‑child of the new split node.
-        nextNode.edgeStart! = splitEnd + 1;
-        split.children.set(this._text[nextNode.edgeStart!], nextNode);
-        nextNode.parent = split;
-
-        // 2b.ii. Add a new leaf for the new character.
-        const leaf = this._createNode(pos, this._text.length - 1);
-        split.children.set(this._text[pos], leaf);
-        leaf.parent = split;
-
-        // 2b.iii. Link suffixes
-        if (lastNewNode) {
-          lastNewNode.suffixLink = split;
-        }
-        lastNewNode = split;
-        split.suffixLink = this._root;
-      }
-
-      // 3. Move to the next phase: decrement remainder
-      this._remainder--;
-
-      // 4. If the active node has a suffix link, follow it,
-      //    otherwise reset to root and adjust length.
-      if (this._active.node === this._root && this._active.length > 0) {
-        this._active.length--;
-        this._active.edge = this._text[pos - this._remainder + 1];
-      } else if (this._active.node !== this._root) {
-        this._active.node = this._active.node.suffixLink!;
-      } else {
-        this._active.edge = this._text[pos - this._remainder + 1];
-        this._active.length = 1;
-        this._active.node = this
+const thirdFromEnd = nthFromEnd(node1, 3);
+console.log(thirdFromEnd?.val); // 3
