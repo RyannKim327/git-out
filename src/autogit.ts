@@ -1,65 +1,26 @@
-/**
- * Computes the LPS array for a given pattern.
- * For each index i, lps[i] is the length of the longest
- * proper prefix that is also a suffix for pattern[0..i].
- */
-function buildLps(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;          // length of previous longest prefix suffix
-    let i = 1;
-
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // try the previous longest prefix suffix
-                length = lps[length - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-    return lps;
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
+  const total = nums.reduce((sum, n) => sum + n, 0);
+  return total / nums.length;
 }
-/**
- * Returns the starting indices of all occurrences of `pattern`
- * inside `text`. If the pattern is empty, an empty array is returned.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
-
-    const lps = buildLps(pattern);
-    const result: number[] = [];
-
-    let i = 0; // index for text
-    let j = 0; // index for pattern
-
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++; j++;
-            if (j === pattern.length) {
-                // match found; record start index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // fall back in pattern
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
-    }
-    return result;
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;
+  let sum = 0;
+  for (const n of nums) {
+    sum += n;
+  }
+  return sum / nums.length;
 }
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
-
-console.log(kmpSearch(haystack, needle));
-// → [10]
+function mean<T extends number>(nums: T[]): number {
+  if (nums.length === 0) return NaN;
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+}
+function meanSafe(nums: Array<number | null | undefined>): number {
+  const cleaned = nums.filter((n): n is number => typeof n === "number");
+  if (cleaned.length === 0) return NaN;
+  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
+}
+const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
+console.log(mean([2, 4, 6]));   // 4
+console.log(mean([]));          // NaN
+console.log(meanSafe([1, 2, null, 4])); // 2.333...
