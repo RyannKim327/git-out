@@ -1,93 +1,135 @@
-// A node can carry any payload (`T`) and point to its neighbours.
-export interface GraphNode<T> {
-  value: T;
-  neighbours: GraphNode<T>[];
-}
 /**
- * Recursively performs depth‑limited search.
+ * A binary‑heap based priority queue.
  *
- * @param node        The node you are currently visiting.
- * @param goalTest    Returns true if the current node satisfies the goal.
- * @param limit       Number of edges left before the search terminates.
- * @param visited     A set of IDs or reference values that keeps track of visited nodes.
- *                    This protects against cycles that would otherwise cause infinite recursion.
- * @returns The first node that satisfies `goalTest`, or `null`.
+ * @template T - The type of the heap elements.
  */
-export function depthLimitedSearchRec<T>(
-  node: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number,
-  visited: Set<GraphNode<T>> = new Set()
-): GraphNode<T> | null {
-  if (goalTest(node)) return node;
-  if (limit === 0) return null;          // reached the depth boundary
+export class PriorityQueue<T> {
+  /** Array representation of the heap.  Root is at index 0. */
+  private heap: T[] = [];
 
-  visited.add(node);
+  /**
+   * Comparator that decides heap order.
+   *
+   *   - If it returns a negative number → a precedes b.
+   *   - If 0 → equal.
+   *   - If positive → a follows b.
+   *
+   * You can pass your own comparator; otherwise a simple
+   * numerical ascending order is used.
+   */
+  constructor(
+    private compareFn: (a: T, b: T) => number = (a, b) => (a as any) - (b as any)
+  ) {}
 
-  for (const neighbour of node.neighbours) {
-    if (!visited.has(neighbour)) {
-      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
-      if (result !== null) return result;
+  /* ----- Query helpers ----- */
+
+  /** Number of elements in the queue. */
+  size(): number {
+    return this.heap.length;
+  }
+
+  /** Return the element with highest priority without removing it. */
+  peek(): T | null {
+    return this.heap.length ? this.heap[0] : null;
+  }
+
+  /* ----- Manipulation helpers ----- */
+
+  /** Insert a new element */
+  push(item: T): void {
+    this.heap.push(item);
+    this.siftUp(this.heap.length - 1);
+  }
+
+  /**
+   * Remove and return the element with highest priority.
+   * Returns `null` if the queue is empty.
+   */
+  pop(): T | null {
+    const n = this.heap.length;
+    if (n === 0) return null;
+    if (n === 1) return this.heap.pop() ?? null;
+
+    const top = this.heap[0];
+    // Move last element to the root and shrink array.
+    this.heap[0] = this.heap.pop() as T;
+    this.siftDown(0);
+    return top;
+  }
+
+  /* ----- Internal re‑heapify ----- */
+
+  /** Push the element at index `i` up until heap property holds. */
+  private siftUp(i: number): void {
+    const { heap, compareFn } = this;
+    let childIndex = i;
+
+    while (childIndex > 0) {
+      const parentIndex = (childIndex - 1) >> 1;
+      if (compareFn(heap[childIndex], heap[parentIndex]) >= 0) break;
+
+      // Swap child & parent
+      [heap[childIndex], heap[parentIndex]] = [heap[parentIndex], heap[childIndex]];
+      childIndex = parentIndex;
     }
   }
 
-  return null;   // nothing found within this branch
-}
-interface StackItem<T> {
-  node: GraphNode<T>;
-  depthLeft: number;
-}
+  /** Move the element at index `i` down until heap property holds. */
+  private siftDown(i: number): void {
+    const { heap, compareFn } = this;
+    const n = heap.length;
+    let parentIndex = i;
 
-/**
- * Iterative depth‑limited search.
- */
-export function depthLimitedSearchIter<T>(
-  start: GraphNode<T>,
-  goalTest: (node: GraphNode<T>) => boolean,
-  limit: number
-): GraphNode<T> | null {
-  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
-  const visited: Set<GraphNode<T>> = new Set();
+    while (true) {
+      const leftIdx = (parentIndex << 1) + 1;
+      const rightIdx = leftIdx + 1;
 
-  while (stack.length) {
-    const { node, depthLeft } = stack.pop()!;
+      let smallest = parentIndex;
 
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (goalTest(node)) return node;
-    if (depthLeft === 0) continue;           // depth boundary reached
-
-    // push neighbours onto the stack – LIFO order means the first neighbour
-    // will be processed last, mirroring the recursive DFS behaviour.
-    for (const neighbour of node.neighbours) {
-      if (!visited.has(neighbour)) {
-        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
+      if (leftIdx < n && compareFn(heap[leftIdx], heap[smallest]) < 0) {
+        smallest = leftIdx;
       }
+      if (rightIdx < n && compareFn(heap[rightIdx], heap[smallest]) < 0) {
+        smallest = rightIdx;
+      }
+
+      if (smallest === parentIndex) break;
+
+      [heap[parentIndex], heap[smallest]] = [heap[smallest], heap[parentIndex]];
+      parentIndex = smallest;
     }
   }
 
-  return null;  // no goal reached within depth limit
+  /* ----- Utility ----- */
+
+  /**
+   * Re‑build the heap from the current array contents.  
+   * Useful after bulk insertion or when the comparator changes.
+   */
+  heapify(): void {
+    for (let i = (this.heap.length >> 1) - 1; i >= 0; i--) {
+      this.siftDown(i);
+    }
+  }
 }
-// --- build a simple graph
-const a: GraphNode<string> = { value: "A", neighbours: [] };
-const b: GraphNode<string> = { value: "B", neighbours: [] };
-const c: GraphNode<string> = { value: "C", neighbours: [] };
-const d: GraphNode<string> = { value: "D", neighbours: [] };
+// Simple min‑heap of numbers (default comparator does that)
+const minQ = new PriorityQueue<number>();
 
-a.neighbours.push(b, c);   // A -> B, C
-b.neighbours.push(d);      // B -> D
-c.neighbours.push(d);      // C -> D
+minQ.push(5);   // 5
+minQ.push(3);   // 3,5
+minQ.push(8);   // 3,5,8
+minQ.push(1);   // 1,3,8,5
 
-// --- goal: find node with value “D”
-const isGoal = (node: GraphNode<string>) => node.value === "D";
+console.log(minQ.pop()); // 1
+console.log(minQ.pop()); // 3
+console.log(minQ.peek()); // 5
+console.log(minQ.size()); // 2
+interface Task { id: string; priority: number; }
 
-// Recursive
-const resultRec = depthLimitedSearchRec(a, isGoal, 3);
-console.log("Recursive result:", resultRec?.value ?? "none");
+const maxQ = new PriorityQueue<Task>((a, b) => b.priority - a.priority);
 
-// Iterative
-const resultIter = depthLimitedSearchIter(a, isGoal, 3);
-console.log("Iterative result:", resultIter?.value ?? "none");
-Recursive result: D
-Iterative result: D
+maxQ.push({ id: "A", priority: 10 });
+maxQ.push({ id: "B", priority: 20 });
+maxQ.push({ id: "C", priority: 5 });
+
+console.log(maxQ.pop()); // B (20)
