@@ -1,139 +1,93 @@
-// 1️⃣ Node shape ----------------------------------------------------
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+// A node can carry any payload (`T`) and point to its neighbours.
+export interface GraphNode<T> {
+  value: T;
+  neighbours: GraphNode<T>[];
 }
-type Comparator<T> = (a: T, b: T) => number; // negative ⇧ positive ⇩
+/**
+ * Recursively performs depth‑limited search.
+ *
+ * @param node        The node you are currently visiting.
+ * @param goalTest    Returns true if the current node satisfies the goal.
+ * @param limit       Number of edges left before the search terminates.
+ * @param visited     A set of IDs or reference values that keeps track of visited nodes.
+ *                    This protects against cycles that would otherwise cause infinite recursion.
+ * @returns The first node that satisfies `goalTest`, or `null`.
+ */
+export function depthLimitedSearchRec<T>(
+  node: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number,
+  visited: Set<GraphNode<T>> = new Set()
+): GraphNode<T> | null {
+  if (goalTest(node)) return node;
+  if (limit === 0) return null;          // reached the depth boundary
 
-const defaultComparator = <T extends number | string>(a: T, b: T) => {
-  if (a < b) return -1;
-  if (a > b) return +1;
-  return 0;
-};
-// 2️⃣ BST class ----------------------------------------------------
-class BinarySearchTree<T> {
-  private root: TreeNode<T> | null = null;
-  public size = 0;
+  visited.add(node);
 
-  constructor(private comp: Comparator<T> = defaultComparator) {}
-
-  // -----------------------------------------------------------------
-  // Insert
-  // -----------------------------------------------------------------
-  insert(value: T): void {
-    this.root = this._insertRec(this.root, value);
-  }
-
-  private _insertRec(node: TreeNode<T> | null, value: T): TreeNode<T> {
-    if (!node) {
-      this.size++;
-      return new TreeNode(value);
+  for (const neighbour of node.neighbours) {
+    if (!visited.has(neighbour)) {
+      const result = depthLimitedSearchRec(neighbour, goalTest, limit - 1, visited);
+      if (result !== null) return result;
     }
-
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._insertRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._insertRec(node.right, value);
-    } else {
-      // duplicates: decide how to handle. Here we skip insertion.
-      return node;
-    }
-    return node;
   }
 
-  // -----------------------------------------------------------------
-  // Search
-  // -----------------------------------------------------------------
-  find(value: T): boolean {
-    let node = this.root;
-    while (node) {
-      const cmp = this.comp(value, node.value);
-      if (cmp === 0) return true;
-      node = cmp < 0 ? node.left : node.right;
-    }
-    return false;
-  }
-
-  // -----------------------------------------------------------------
-  // Remove
-  // -----------------------------------------------------------------
-  remove(value: T): void {
-    this.root = this._removeRec(this.root, value);
-  }
-
-  private _removeRec(node: TreeNode<T> | null, value: T): TreeNode<T> | null {
-    if (!node) return null;
-
-    const cmp = this.comp(value, node.value);
-    if (cmp < 0) {
-      node.left = this._removeRec(node.left, value);
-    } else if (cmp > 0) {
-      node.right = this._removeRec(node.right, value);
-    } else {
-      // node to delete found
-      this.size--;
-
-      // case 1: no children
-      if (!node.left && !node.right) return null;
-
-      // case 2: one child
-      if (!node.left) return node.right;
-      if (!node.right) return node.left;
-
-      // case 3: two children – replace by inorder predecessor
-      const pred = this._maxNode(node.left)!; // non‑null
-      node.value = pred.value;
-      node.left = this._removeRec(node.left, pred.value);
-    }
-    return node;
-  }
-
-  private _maxNode(node: TreeNode<T>): TreeNode<T> {
-    while (node.right) node = node.right;
-    return node;
-  }
-
-  // -----------------------------------------------------------------
-  // Traversal helpers – in‑order (sorted order)
-  // -----------------------------------------------------------------
-  inorder(cb: (value: T) => void): void {
-    this._inorderRec(this.root, cb);
-  }
-
-  private _inorderRec(node: TreeNode<T> | null, cb: (value: T) => void): void {
-    if (!node) return;
-    this._inorderRec(node.left, cb);
-    cb(node.value);
-    this._inorderRec(node.right, cb);
-  }
-
-  // -----------------------------------------------------------------
-  // Utility: pretty print as nested brackets
-  // -----------------------------------------------------------------
-  toString(): string {
-    const parts: string[] = [];
-    this._toStringRec(this.root, parts);
-    return parts.join(' ');
-  }
-
-  private _toStringRec(node: TreeNode<T> | null, parts: string[]) {
-    if (!node) { parts.push('null'); return; }
-    parts.push(String(node.value));
-    this._toStringRec(node.left, parts);
-    this._toStringRec(node.right, parts);
-  }
+  return null;   // nothing found within this branch
 }
-const bst = new BinarySearchTree<number>();
+interface StackItem<T> {
+  node: GraphNode<T>;
+  depthLeft: number;
+}
 
-[50, 30, 70, 20, 40, 60, 80].forEach(n => bst.insert(n));
-console.log('Initial tree:', bst.toString());   // 50 30 20 null null 40 null null 70 60 null null 80 null null
+/**
+ * Iterative depth‑limited search.
+ */
+export function depthLimitedSearchIter<T>(
+  start: GraphNode<T>,
+  goalTest: (node: GraphNode<T>) => boolean,
+  limit: number
+): GraphNode<T> | null {
+  const stack: StackItem<T>[] = [{ node: start, depthLeft: limit }];
+  const visited: Set<GraphNode<T>> = new Set();
 
-console.log('Contains 40? →', bst.find(40));   // true
-console.log('Contains 99? →', bst.find(99));   // false
+  while (stack.length) {
+    const { node, depthLeft } = stack.pop()!;
 
-console.log('In‑order traversal:');
-bst.inorder(v => console.log(v));  
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (goalTest(node)) return node;
+    if (depthLeft === 0) continue;           // depth boundary reached
+
+    // push neighbours onto the stack – LIFO order means the first neighbour
+    // will be processed last, mirroring the recursive DFS behaviour.
+    for (const neighbour of node.neighbours) {
+      if (!visited.has(neighbour)) {
+        stack.push({ node: neighbour, depthLeft: depthLeft - 1 });
+      }
+    }
+  }
+
+  return null;  // no goal reached within depth limit
+}
+// --- build a simple graph
+const a: GraphNode<string> = { value: "A", neighbours: [] };
+const b: GraphNode<string> = { value: "B", neighbours: [] };
+const c: GraphNode<string> = { value: "C", neighbours: [] };
+const d: GraphNode<string> = { value: "D", neighbours: [] };
+
+a.neighbours.push(b, c);   // A -> B, C
+b.neighbours.push(d);      // B -> D
+c.neighbours.push(d);      // C -> D
+
+// --- goal: find node with value “D”
+const isGoal = (node: GraphNode<string>) => node.value === "D";
+
+// Recursive
+const resultRec = depthLimitedSearchRec(a, isGoal, 3);
+console.log("Recursive result:", resultRec?.value ?? "none");
+
+// Iterative
+const resultIter = depthLimitedSearchIter(a, isGoal, 3);
+console.log("Iterative result:", resultIter?.value ?? "none");
+Recursive result: D
+Iterative result: D
