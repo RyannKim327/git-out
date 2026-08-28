@@ -1,113 +1,134 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+enum Color { RED, BLACK }
 
-  constructor(value: T) {
-    this.value = value;
+class Node<T> {
+  constructor(
+    public value: T,
+    public color: Color = Color.RED,
+    public left: Node<T> | null = null,
+    public right: Node<T> | null = null,
+    public parent: Node<T> | null = null
+  ) {}
+}
+export class RedBlackTree<T> {
+  private root: Node<T> | null = null;
+
+  /* Public API */
+  public insert(value: T): void { /* ... */ }
+  public delete(value: T): void { /* ... */ }
+  public find(value: T): Node<T> | null { /* ... */ }
+
+  /* private helpers… */
+  private rotateLeft(x: Node<T>): void { /* ... */ }
+  private rotateRight(x: Node<T>): void { /* ... */ }
+  private fixAfterInsertion(z: Node<T>): void { /* ... */ }
+  private fixAfterDeletion(x: Node<T>): void { /* ... */ }
+  private transplant(u: Node<T>, v: Node<T> | null): void { /* ... */ }
+  private minimum(n: Node<T> | null): Node<T> | null { /* ... */ }
+}
+public find(value: T): Node<T> | null {
+  let node = this.root;
+  while (node && node.value !== value) {
+    node = value < node.value ? node.left : node.right;
   }
+  return node;
+}
+private rotateLeft(x: Node<T>): void {
+  const y = x.right!;
+  x.right = y.left;
+  if (y.left) y.left.parent = x;
+
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.left) x.parent.left = y;
+  else x.parent.right = y;
+
+  y.left = x;
+  x.parent = y;
 }
 
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+private rotateRight(x: Node<T>): void {
+  const y = x.left!;
+  x.left = y.right;
+  if (y.right) y.right.parent = x;
 
-  // ---- basic properties ----
-  get size() { return this._size; }
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.right) x.parent.right = y;
+  else x.parent.left = y;
 
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
-
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
-
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
-  }
-
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
-    }
-  }
+  y.right = x;
+  x.parent = y;
 }
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
+public insert(value: T): void {
+  const z = new Node(value);
+  let y: Node<T> | null = null;
+  let x = this.root;
+
+  // Binary‑search‑tree insert
+  while (x) {
+    y = x;
+    x = value < x.value ? x.left : x.right;
   }
-  return false;
+  z.parent = y;
+
+  if (!y) this.root = z;
+  else if (value < y.value) y.left = z;
+  else y.right = z;
+
+  // Re‑balance
+  this.fixAfterInsertion(z);
 }
+private fixAfterInsertion(z: Node<T>): void {
+  z.color = Color.RED;
+
+  while (z.parent && z.parent.color === Color.RED) {
+    if (z.parent === z.parent.parent!.left) { // z.parent is left child
+      const y = z.parent.parent.right; // uncle
+
+      if (y && y.color === Color.RED) {
+        // Case 1: Uncle red
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        // Case 2 or 3: Uncle black
+        if (z === z.parent.right) {
+          // Case 2: triangle
+          z = z.parent;
+          this.rotateLeft(z);
+        }
+        // Case 3: line
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateRight(z.parent.parent!);
+      }
+    } else {               // Symmetric case (z.parent is right child)
+      const y = z.parent.parent!.left; // uncle
+
+      if (y && y.color === Color.RED) {
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        if (z === z.parent.left) {
+          z = z.parent;
+          this.rotateRight(z);
+        }
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateLeft(z.parent.parent!);
+      }
+    }
+  }
+
+  this.root!.color = Color.BLACK; // Root is always black
+}
+public delete(value: T): void {
+  let z = this.find(value);
+  if (!z) return; // Not found, nothing to delete
+
+  let y = z;
+  let yOriginalColor = y.color;
+  let x: Node<T> | null
