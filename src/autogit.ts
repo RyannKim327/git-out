@@ -1,37 +1,36 @@
-const nums = [1, 2, 3, 2, 4, 1, 5];
-
-const uniq = Array.from(new Set(nums));
-// or: const uniq = [...new Set(nums)];
-
-console.log(uniq); // [1, 2, 3, 4, 5]
-const words = ["foo", "bar", "baz", "foo", "bar"];
-
-const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
-
-console.log(unique); // ["foo", "bar", "baz"]
-const objs = [{a: 1}, {a: 1}, {a: 2}];
-console.log([...new Set(objs)]); // keeps both {a:1} objects
-function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
-  const seen = new Set<string>();
-  return arr.filter(item => {
-    const key = keyFn(item);
-    return seen.has(key) ? false : seen.add(key);
-  });
+// A minimal, generic node type
+export interface ListNode<T> {
+  readonly value: T;
+  next: ListNode<T> | null;
 }
 
-const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
-console.log(uniqueObjs); // [{a:1}, {a:2}]
-const arr = [1, 2, 3, 2, 1];
-const seen = new Set<number>();
-let writeIdx = 0;
+/**
+ * Returns the middle node of a singly‑linked list.
+ * If the list has an even number of nodes, it returns
+ * the *second* middle node (i.e. the one that a
+ * “slow‑pointer” would land on after the last move).
+ *
+ * @param head Head of the list – null if the list is empty.
+ * @returns The middle node, or null for an empty list.
+ */
+export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head;
+  let fast = head;
 
-for (let readIdx = 0; readIdx < arr.length; readIdx++) {
-  const value = arr[readIdx];
-  if (!seen.has(value)) {
-    seen.add(value);
-    arr[writeIdx++] = value;
+  // advance fast two steps, slow one step
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next;
+    fast = fast.next.next;
   }
-}
 
-arr.length = writeIdx; // shrink the array
-console.log(arr); // [1, 2, 3]
+  return slow;
+}
+// Build a list: 1 → 2 → 3 → 4 → 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+const mid = middleNode(node1);
+console.log(mid?.value); // → 3
