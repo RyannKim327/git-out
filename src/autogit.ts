@@ -1,35 +1,55 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
+// Node definition – feel free to replace this with your own class/struct
+interface ListNode<T = unknown> {
+  val: T;
+  next: ListNode<T> | null;
 }
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
+
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  // Two pointers that start at the head
+  let slow: ListNode<T> | null = head;   // moves 1 step
+  let fast: ListNode<T> | null = head;   // moves 2 steps
+
+  while (fast && fast.next) {
+    slow = slow!.next;          // advance one step
+    fast = fast.next.next;      // advance two steps
+
+    if (slow === fast) {        // they met → cycle detected
+      return true;
+    }
+  }
+
+  // fast ran out of nodes → no cycle
+  return false;
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const seen = new Set<ListNode<T>>();
   let current = head;
 
   while (current) {
-    count++;
+    if (seen.has(current)) return true; // loop!
+    seen.add(current);
     current = current.next;
   }
-
-  return count;
+  return false;
 }
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-class LinkedList<T> {
-  private head?: Node<T>;
+function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head, fast = head;
 
-  // ... push, pop, etc.
-
-  size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
+  // First, detect a cycle
+  while (fast && fast.next) {
+    slow = slow!.next;
+    fast = fast.next.next;
+    if (slow === fast) break;
   }
-}
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
 
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+  // No cycle
+  if (!fast || !fast.next) return null;
+
+  // Move one pointer to the head; keep other where they met
+  slow = head;
+  while (slow !== fast) {
+    slow = slow!.next;
+    fast = fast!.next;
+  }
+  return slow; // the entry point of the cycle
+}
