@@ -1,62 +1,49 @@
 /**
- * A generic binary search.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to locate.
- * @param compare  Optional comparator: (a, b) → negative, 0, positive.
- *                 If omitted, the default `<`/`>` operators are used.
- * @returns Index of `target` in `arr`, or `-1` if not found.
+ * Returns n! for a non‑negative integer `n`.
+ * Throws an error if `n` is negative.
  */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  if (!arr.length) return -1;
-  const cmp = compare ?? defaultCompare<T>;
-  let low = 0;
-  let high = arr.length - 1;
-
-  while (low <= high) {
-    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
-    const comp = cmp(arr[mid], target);
-    if (comp === 0) return mid;
-    if (comp < 0) low = mid + 1;           // target is greater
-    else high = mid - 1;                  // target is smaller
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;   // base case
+  return n * factorialRecursive(n - 1);
+}
+/**
+ * Computes factorial using a loop. 
+ * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
+ */
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
   }
-
-  return -1;
+  return result;
 }
-
-/** Recursive version – identical semantics. */
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (!arr.length || low > high) return -1;
-  const cmp = compare ?? defaultCompare<T>;
-
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], target);
-
-  if (comp === 0) return mid;
-  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
-  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+/**
+ * Factorial returning a BigInt to avoid precision loss.
+ * Accepts `bigint | number`, but converts to BigInt internally.
+ */
+function factorialBigInt(n: number | bigint): bigint {
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
+  if (bigN <= 1n) return 1n;
+  let result = 1n;
+  for (let i = 2n; i <= bigN; i++) {
+    result *= i;
+  }
+  return result;
 }
+console.log(factorialBigInt(25));          // 15511210043330985984000000n
+console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
+const factorialCache = new Map<number, number>();
 
-/** Fallback when you didn’t provide a comparator. */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
+function factorialMemoized(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;
+  if (factorialCache.has(n)) return factorialCache.get(n)!;
+
+  const value = n * factorialMemoized(n - 1);
+  factorialCache.set(n, value);
+  return value;
 }
-const nums = [3, 7, 12, 18, 22, 33, 42];
-console.log(binarySearch(nums, 18));           // 3
-console.log(binarySearch(nums, 5));            // -1
-
-// To search objects, supply a comparator:
-const words = ['apple', 'banana', 'cherry'];
-console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
+const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
