@@ -1,50 +1,60 @@
-// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
-function merge(
-  arr: number[],
-  tmp: number[],
-  l: number,
-  mid: number,
-  r: number
-): void {
-  let i = l;        // pointer for the left half
-  let j = mid + 1;  // pointer for the right half
-  let k = l;        // pointer for the tmp array
-
-  // Merge until one half runs out
-  while (i <= mid && j <= r) {
-    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
-    else tmp[k++] = arr[j++];
-  }
-
-  // Copy any remaining elements of the left half
-  while (i <= mid) tmp[k++] = arr[i++];
-
-  // Copy any remaining elements of the right half
-  while (j <= r) tmp[k++] = arr[j++];
-
-  // Return merged result back to the original array
-  for (let p = l; p <= r; p++) arr[p] = tmp[p];
+/* 1️⃣  Define the shapes of the data we expect  */
+interface Post {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
 }
 
-/**
- * Bottom‑up merge sort (iterative).
- *
- * @param arr - The array to sort (in‑place)
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  const tmp = new Array<number>(n);
+interface Comment {
+  postId: number;
+  id: number;
+  name: string;
+  email: string;
+  body: string;
+}
 
-  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // l = start index of sub‑array pair
-    for (let l = 0; l < n - sz; l += sz << 1) {
-      const mid = l + sz - 1;
-      const r = Math.min(l + (sz << 1) - 1, n - 1);
-      merge(arr, tmp, l, mid, r);
-    }
+/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
+async function safeGet<T>(url: string): Promise<T> {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
+  }
+  return resp.json() as Promise<T>;
+}
+
+/* 3️⃣  Fetch a single post and its comments  */
+async function fetchPostWithComments(postId: number) {
+  const [post, comments] = await Promise.all([
+    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
+    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
+  ]);
+
+  console.log(`\n=== Post #${post.id} ===`);
+  console.log(`Title : ${post.title}`);
+  console.log(`Body  : ${post.body}\n`);
+
+  console.log(`--- ${comments.length} comment(s) ---`);
+  comments.forEach(c => {
+    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
+  });
+}
+
+/* 4️⃣  Run it for a few post IDs  */
+async function main() {
+  try {
+    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
+  } catch (err) {
+    console.error('Something went wrong:', (err as Error).message);
   }
 }
-const data = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(data);
-console.log(data); // [3, 9, 10, 27, 38, 43, 82]
+
+main();
+# compile to JavaScript
+npx tsc api-demo.ts
+
+# run the output
+node api-demo.js
+
+# or skip the compile step (requires ts-node)
+npx ts-node api-demo.ts
