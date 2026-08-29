@@ -1,30 +1,79 @@
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
 /**
- * Return the factorial of a non‑negative integer.
+ * Breadth‑first traversal of a graph.
  *
- * @param n - the number to calculate the factorial of.
- * @returns factorial(n) as a number (or BigInt if you want larger values).
- * @throws TypeError if the input is not a non‑negative integer.
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
  */
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new TypeError("Factorial is only defined for non‑negative integers");
-  }
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n <= 1) return 1;
+    visited.add(start);
+    queue.push(start);
 
-  // Recursive step: n! = n * (n – 1)!
-  return n * factorial(n - 1);
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
+    }
+
+    return result;
 }
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-// Example usage
-console.log(factorial(5)); // 120
-function factorialBig(n: BigInt): BigInt {
-  if (n < 0n) throw new TypeError("Must be non‑negative");
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
 
-  if (n <= 1n) return 1n;
+    while (queue.length) {
+        const current = queue.shift()!;
 
-  return n * factorialBig(n - 1n);
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
 }
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
 
-console.log(factorialBig(20n).toString()); // 2432902008176640000
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
