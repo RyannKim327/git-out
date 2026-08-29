@@ -1,37 +1,60 @@
-const nums = [1, 2, 3, 2, 4, 1, 5];
+/**
+ * Returns true if `s` is a palindrome.
+ *
+ * Works in O(n) time and O(1) additional space.
+ * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
+ */
+function isPalindrome(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
 
-const uniq = Array.from(new Set(nums));
-// or: const uniq = [...new Set(nums)];
-
-console.log(uniq); // [1, 2, 3, 4, 5]
-const words = ["foo", "bar", "baz", "foo", "bar"];
-
-const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
-
-console.log(unique); // ["foo", "bar", "baz"]
-const objs = [{a: 1}, {a: 1}, {a: 2}];
-console.log([...new Set(objs)]); // keeps both {a:1} objects
-function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
-  const seen = new Set<string>();
-  return arr.filter(item => {
-    const key = keyFn(item);
-    return seen.has(key) ? false : seen.add(key);
-  });
-}
-
-const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
-console.log(uniqueObjs); // [{a:1}, {a:2}]
-const arr = [1, 2, 3, 2, 1];
-const seen = new Set<number>();
-let writeIdx = 0;
-
-for (let readIdx = 0; readIdx < arr.length; readIdx++) {
-  const value = arr[readIdx];
-  if (!seen.has(value)) {
-    seen.add(value);
-    arr[writeIdx++] = value;
+  while (left < right) {
+    if (s[left] !== s[right]) {
+      return false;
+    }
+    left++;
+    right--;
   }
+
+  return true;
 }
 
-arr.length = writeIdx; // shrink the array
-console.log(arr); // [1, 2, 3]
+// Demo
+console.log(isPalindrome("racecar")); // true
+console.log(isPalindrome("hello"));   // false
+function isAlphanumeric(c: string): boolean {
+  const code = c.charCodeAt(0);
+  return (
+    // 0‑9
+    (code >= 48 && code <= 57) ||
+    // A‑Z
+    (code >= 65 && code <= 90) ||
+    // a‑z
+    (code >= 97 && code <= 122)
+  );
+}
+
+function isPalindromeLoose(s: string): boolean {
+  let left = 0;
+  let right = s.length - 1;
+
+  while (left < right) {
+    // Skip non‑alphanumerics
+    while (left < right && !isAlphanumeric(s[left])) left++;
+    while (left < right && !isAlphanumeric(s[right])) right--;
+
+    // After skipping, compare lowercase versions
+    if (
+      left < right &&
+      s[left].toLowerCase() !== s[right].toLowerCase()
+    ) {
+      return false;
+    }
+
+    left++;
+    right--;
+  }
+  return true;
+}
+
+console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
