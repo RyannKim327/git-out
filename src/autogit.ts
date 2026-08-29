@@ -1,55 +1,62 @@
-// Graph type: map from vertex id → array of neighbouring vertex ids
-type Graph = Record<string | number, Array<string | number>>;
-function dfsRecursive(
-  graph: Graph,
-  start: string | number,
-  visited = new Set<string | number>()
-): string[] {
-  // If the node has already been visited, stop here.
-  if (visited.has(start)) return [];
+/**
+ * A generic binary search.
+ *
+ * @param arr      Sorted array to search.
+ * @param target   Value to locate.
+ * @param compare  Optional comparator: (a, b) → negative, 0, positive.
+ *                 If omitted, the default `<`/`>` operators are used.
+ * @returns Index of `target` in `arr`, or `-1` if not found.
+ */
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  if (!arr.length) return -1;
+  const cmp = compare ?? defaultCompare<T>;
+  let low = 0;
+  let high = arr.length - 1;
 
-  visited.add(start);           // Mark the node
-  const result = [start];        // The order in which we visit
-
-  // Recurse on all neighbours that haven't been visited yet
-  for (const neighbour of graph[start] || []) {
-    if (!visited.has(neighbour)) {
-      result.push(...dfsRecursive(graph, neighbour, visited));
-    }
+  while (low <= high) {
+    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
+    const comp = cmp(arr[mid], target);
+    if (comp === 0) return mid;
+    if (comp < 0) low = mid + 1;           // target is greater
+    else high = mid - 1;                  // target is smaller
   }
 
-  return result;
+  return -1;
 }
-function dfsIterative(graph: Graph, start: string | number): string[] {
-  const visited = new Set<string | number>();
-  const stack: (string | number)[] = [start];
-  const order: string[] = [];
 
-  while (stack.length) {
-    const v = stack.pop()!;           // Grab the vertex on top of the stack
-    if (visited.has(v)) continue;     // Skip if we already processed it
-    visited.add(v);                    // Mark as visited
-    order.push(v);                     // Record visitation order
+/** Recursive version – identical semantics. */
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (!arr.length || low > high) return -1;
+  const cmp = compare ?? defaultCompare<T>;
 
-    // Push neighbours onto the stack (in reverse order if you want a specific order)
-    const neighbours = graph[v] || [];
-    for (let i = neighbours.length - 1; i >= 0; i--) {
-      if (!visited.has(neighbours[i])) {
-        stack.push(neighbours[i]);
-      }
-    }
-  }
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], target);
 
-  return order;
+  if (comp === 0) return mid;
+  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
+  return binarySearchRecursive(arr, target, compare, low, mid - 1);
 }
-const graph: Graph = {
-  a: ['b', 'c'],
-  b: ['d', 'e'],
-  c: ['f'],
-  d: [],
-  e: [],
-  f: []
-};
 
-console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
-console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
+/** Fallback when you didn’t provide a comparator. */
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+const nums = [3, 7, 12, 18, 22, 33, 42];
+console.log(binarySearch(nums, 18));           // 3
+console.log(binarySearch(nums, 5));            // -1
+
+// To search objects, supply a comparator:
+const words = ['apple', 'banana', 'cherry'];
+console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
