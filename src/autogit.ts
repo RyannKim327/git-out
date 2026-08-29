@@ -1,81 +1,117 @@
-// ---------- Tarjan S.T.C. ---------------------------------------
+type Key = string | number | object;   // anything you can reasonably stringify
+interface Pair<K, V> {
+  key: K;
+  value: V;
+}
+type Bucket<K, V> = Pair<K, V>[];
+const DEFAULT_BUCKETS = 16;
+const DEFAULT_LOAD_FACTOR = 0.75;
 
-/**
- * Return an array of strongly‑connected components.
- * Each component is an array of vertex IDs (here strings).
- * Vertices can be any `string`; if you prefer numbers just change the type.
- */
-export function tarjanSCC(graph: Map<string, string[]>): string[][] {
-  // state that needs to survive the recursive walk
-  const index = new Map<string, number>();    // discovery time of vertex
-  const lowLink = new Map<string, number>();  // lowest discovery reachable
-  const stack: string[] = [];                 // vertices that are “on stack”
-  const onStack = new Set<string>();
+export class HashTable<K extends Key, V> {
+  private buckets: Bucket<K, V>[];
+  private count = 0;                    // number of key/value pairs
+  private loadFactor: number;
 
-  let curIdx = 0;                            // global counter
-  const sccs: string[][] = [];               // result
+  constructor(initialBuckets = DEFAULT_BUCKETS, loadFactor = DEFAULT_LOAD_FACTOR) {
+    this.buckets = Array.from({ length: initialBuckets }, () => []);
+    this.loadFactor = loadFactor;
+  }
 
-  // helper: depth‑first walk from a single vertex
-  function strongConnect(v: string) {
-    // part A – set the depth index and low link
-    index.set(v, curIdx);
-    lowLink.set(v, curIdx);
-    curIdx += 1;
+  /* ---------- public API ---------- */
 
-    // put v on stack
-    stack.push(v);
-    onStack.add(v);
+  set(key: K, value: V): void {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-    // part B – consider successors of v
-    const neighbours = graph.get(v) ?? [];
-    for (const w of neighbours) {
-      if (!index.has(w)) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → must be in the current SCC
-        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
+    // Replace if key is already present
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {           // we’ll use a simple === check
+        pair.value = value;
+        return;
       }
     }
 
-    // part C – if v is a root node, pop the stack to build an SCC
-    if (lowLink.get(v) === index.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
+    bucket.push({ key, value });
+    this.count++;
+
+    if (this.count / this.buckets.length > this.loadFactor) {
+      this.resize();
     }
   }
 
-  // run the dfs from every unvisited vertex
-  for (const v of graph.keys()) {
-    if (!index.has(v)) {
-      strongConnect(v);
+  get(key: K): V | undefined {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
+
+    for (const pair of bucket) {
+      if (this.equals(pair.key, key)) {
+        return pair.value;
+      }
     }
+    return undefined;
   }
 
-  return sccs;
-}
-const graph = new Map<string, string[]>(
-  [
-    ['A', ['B']],
-    ['B', ['C', 'E', 'F']],
-    ['C', ['D', 'G']],
-    ['D', ['C', 'H']],
-    ['E', ['A', 'F']],
-    ['F', ['G']],
-    ['G', ['F', 'H']],
-    ['H', ['G']],
-  ],
-);
+  delete(key: K): boolean {
+    const idx = this.bucketIndex(key);
+    const bucket = this.buckets[idx];
 
-const components = tarjanSCC(graph);
-console.log(components);
-// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
-// (depending on traversal order you may see the same vertices grouped in one component,
-// because the toy graph is fully strongly‑connected)
+    for (let i = 0; i < bucket.length; i++) {
+      if (this.equals(bucket[i].key, key)) {
+        bucket.splice(i, 1);
+        this.count--;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  has(key: K): boolean {
+    return this.get(key) !== undefined;
+  }
+
+  clear(): void {
+    this.buckets = Array.from({ length: DEFAULT_BUCKETS }, () => []);
+    this.count = 0;
+  }
+
+  get size(): number {
+    return this.count;
+  }
+
+  /* ---------- private helpers ---------- */
+
+  private bucketIndex(key: K): number {
+    // Ensure the hash is non‑negative
+    const h = this.hash(key);
+    const idx = h % this.buckets.length;
+    return idx < 0 ? idx + this.buckets.length : idx;
+  }
+
+  /* Simple but stable string hash (djb2 algorithm) */
+  private hash(key: K): number {
+    const str = typeof key === 'object' ? JSON.stringify(key) : String(key);
+    let h = 5381;
+    for (let i = 0; i < str.length; i++) {
+      h = (h + (h << 5)) ^ str.charCodeAt(i);  // h * 33 XOR
+    }
+    return h >>> 0; // make unsigned
+  }
+
+  private equals(a: K, b: K): boolean {
+    // For primitives, === is fine.
+    // For objects, we compare the stringified form.
+    if (typeof a === 'object' && typeof b === 'object') {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+    return a === b;
+  }
+
+  /* Grow the bucket array and re‑hash all entries */
+  private resize(): void {
+    const oldBuckets = this.buckets;
+    const newSize = oldBuckets.length * 2;
+    this.buckets = Array.from({ length: newSize }, () => []);
+    this.count = 0;
+
+    for (const bucket of oldBuckets) {
+      for (const pair of bucket)
