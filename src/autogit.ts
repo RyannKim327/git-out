@@ -1,48 +1,44 @@
-/**
- * Returns the longest common subsequence of two strings.
- * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
- */
-function lcs(s1: string, s2: string): string {
-  const n = s1.length,
-        m = s2.length;
+const arr1 = [1, 2, 3, 4];
+const arr2 = [3, 4, 5, 6];
 
-  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
-
-  // Build the DP table.
-  for (let i = 1; i <= n; i++) {
-    const a = s1[i - 1];
-    for (let j = 1; j <= m; j++) {
-      if (a === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
-  }
-
-  // Reconstruct the subsequence.
-  let i = n,
-      j = m,
-      result: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (s1[i - 1] === s2[j - 1]) {
-      // Character is part of LCS – prepend to answer.
-      result.push(s1[i - 1]);
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;   // move up
-    } else {
-      j--;   // move left
-    }
-  }
-
-  return result.reverse().join('');
+const common = arr1.filter(v => arr2.includes(v));
+console.log(common); // [3, 4]
+function intersection<T>(a: T[], b: T[]): T[] {
+  return a.filter(v => b.includes(v));
 }
-const a = 'AGGTAB';
-const b = 'GXTXAYB';
+function intersectionSet<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(v => setB.has(v));
+}
+function intersectionMultiset<T>(a: T[], b: T[]): T[] {
+  const freq = new Map<T, number>();
+  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
 
-const sub = lcs(a, b);
-console.log(`LCS length: ${sub.length}`); // 4
-console.log(`LCS itself: ${sub}`);       // GTAB
+  const result: T[] = [];
+  for (const val of a) {
+    const count = freq.get(val);
+    if (count && count > 0) {
+      result.push(val);
+      freq.set(val, count - 1);
+    }
+  }
+  return result;
+}
+interface User { id: number; name: string; }
+
+const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
+const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
+
+const intersectionById = usersA.filter(uA =>
+  usersB.some(uB => uB.id === uA.id)
+);
+console.log(intersectionById); // [{id:2,name:'Bob'}]
+const intersection = <T>(a: T[], b: T[]): T[] =>
+  a.filter(v => new Set(b).has(v));
+const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  const result = new Set<T>();
+  for (const v of setA) if (setB.has(v)) result.add(v);
+  return result;
+};
