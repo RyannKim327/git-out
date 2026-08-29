@@ -1,34 +1,38 @@
-function stringLength(s: string): number {
-  let count = 0;
-  for (const _ of s) {   // iterates over Unicode code points
-    ++count;
+/**
+ * Return the largest prime factor of a positive integer.
+ *
+ * @param n – the number you want to factor (must be > 1)
+ * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
+ */
+function largestPrimeFactor(n: number): number | undefined {
+  if (n <= 1) return undefined;
+
+  let num = n;
+  let largest = -1;
+
+  // Remove all factors of 2
+  while (num % 2 === 0) {
+    largest = 2;
+    num /= 2;
   }
-  return count;
-}
-function stringLengthCodeUnits(s: string): number {
-  let count = 0;
-  // `s[i]` returns `undefined` past the end of the string
-  for (let i = 0; s[i] !== undefined; i++) {
-    ++count;
+
+  // Now `num` is odd; try odd divisors only
+  let divisor = 3;
+  const limit = Math.sqrt(num);
+  while (divisor <= limit) {
+    while (num % divisor === 0) {
+      largest = divisor;
+      num /= divisor;
+    }
+    divisor += 2;           // skip the even numbers
   }
-  return count;
-}
-function stringLengthCharAt(s: string): number {
-  let count = 0;
-  for (let i = 0; s.charAt(i) !== ''; i++) {
-    ++count;
-  }
-  return count;
-}
-function* chars(s: string): Generator<unknown> {
-  for (const c of s) { yield c; }
+
+  // If we're left with a prime greater than 2
+  if (num > 2) largest = num;
+
+  return largest;
 }
 
-function stringLengthFunctional(s: string): number {
-  let count = 0;
-  for (const _ of chars(s)) { ++count; }
-  return count;
-}
-console.log(stringLength("hello"));       // 5
-console.log(stringLength("👋🌍"));        // 2  (two code points)
-console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
+// Quick demo
+console.log(largestPrimeFactor(13195)); // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
