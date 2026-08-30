@@ -1,50 +1,173 @@
-// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
-function merge(
-  arr: number[],
-  tmp: number[],
-  l: number,
-  mid: number,
-  r: number
-): void {
-  let i = l;        // pointer for the left half
-  let j = mid + 1;  // pointer for the right half
-  let k = l;        // pointer for the tmp array
+// -----------------------------------------------------------------------------
+//  Types
+// -----------------------------------------------------------------------------
+type Node = string | number;          // any hashable key – string or number
+type Weight = number;
 
-  // Merge until one half runs out
-  while (i <= mid && j <= r) {
-    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
-    else tmp[k++] = arr[j++];
-  }
-
-  // Copy any remaining elements of the left half
-  while (i <= mid) tmp[k++] = arr[i++];
-
-  // Copy any remaining elements of the right half
-  while (j <= r) tmp[k++] = arr[j++];
-
-  // Return merged result back to the original array
-  for (let p = l; p <= r; p++) arr[p] = tmp[p];
+interface Edge {
+  target: Node;
+  weight: Weight;
 }
 
-/**
- * Bottom‑up merge sort (iterative).
- *
- * @param arr - The array to sort (in‑place)
- */
-function mergeSortIterative(arr: number[]): void {
-  const n = arr.length;
-  const tmp = new Array<number>(n);
+interface Graph {
+  // adjacency list: nodeId -> array of outgoing edges
+  [node: string]: Edge[];
+}
 
-  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
-  for (let sz = 1; sz < n; sz <<= 1) {
-    // l = start index of sub‑array pair
-    for (let l = 0; l < n - sz; l += sz << 1) {
-      const mid = l + sz - 1;
-      const r = Math.min(l + (sz << 1) - 1, n - 1);
-      merge(arr, tmp, l, mid, r);
+// -----------------------------------------------------------------------------
+//  Priority Queue (min‑heap)
+// -----------------------------------------------------------------------------
+class MinHeap<T> {
+  private heap: Array<{ key: number; value: T }> = [];
+
+  // Insert a new element with its priority key
+  push(key: number, value: T) {
+    this.heap.push({ key, value });
+    this.bubbleUp(this.heap.length - 1);
+  }
+
+  // Extract element with smallest key
+  pop(): T | undefined {
+    if (!this.heap.length) return undefined;
+    const min = this.heap[0].value;
+    const end = this.heap.pop()!;
+    if (this.heap.length) {
+      this.heap[0] = end;
+      this.sinkDown(0);
+    }
+    return min;
+  }
+
+  get size() {
+    return this.heap.length;
+  }
+
+  private bubbleUp(idx: number) {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      const parent = this.heap[parentIdx];
+      if (element.key >= parent.key) break;
+      this.heap[idx] = parent;
+      idx = parentIdx;
+    }
+    this.heap[idx] = element;
+  }
+
+  private sinkDown(idx: number) {
+    const length = this.heap.length;
+    const element = this.heap[idx];
+
+    while (true) {
+      const leftIdx = 2 * idx + 1;
+      const rightIdx = 2 * idx + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        if (this.heap[leftIdx].key < element.key) {
+          swapIdx = leftIdx;
+        }
+      }
+
+      if (rightIdx < length) {
+        const rightKey = this.heap[rightIdx].key;
+        if (
+          (swapIdx === null && rightKey < element.key) ||
+          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === null) break;
+
+      this.heap[idx] = this.heap[swapIdx];
+      idx = swapIdx;
+    }
+    this.heap[idx] = element;
+  }
+}
+
+// -----------------------------------------------------------------------------
+//  Dijkstra
+// -----------------------------------------------------------------------------
+function dijkstra(
+  graph: Graph,
+  start: Node,
+  target?: Node
+): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
+  const distances = new Map<Node, number>();
+  const prev = new Map<Node, Node | null>();
+
+  // init
+  for (const node in graph) {
+    distances.set(node, Number.MAX_SAFE_INTEGER);
+    prev.set(node, null);
+  }
+  distances.set(start, 0);
+
+  const heap = new MinHeap<Node>();
+  heap.push(0, start);
+
+  while (heap.size) {
+    const u = heap.pop()!;
+    const distU = distances.get(u)!;
+
+    // If a target was supplied and we reached it, we can stop early
+    if (target !== undefined && u === target) break;
+
+    const edges = graph[u as string] ?? [];
+    for (const edge of edges) {
+      const alt = distU + edge.weight;
+      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
+        distances.set(edge.target, alt);
+        prev.set(edge.target, u);
+        heap.push(alt, edge.target);
+      }
     }
   }
+
+  return { distances, prev };
 }
-const data = [38, 27, 43, 3, 9, 82, 10];
-mergeSortIterative(data);
-console.log(data); // [3, 9, 10, 27, 38, 43, 82]
+
+// -----------------------------------------------------------------------------
+//  Helper: recover path from prev map
+// -----------------------------------------------------------------------------
+function recoverPath(
+  prev: Map<Node, Node | null>,
+  start: Node,
+  end: Node
+): Node[] {
+  const path: Node[] = [];
+  let cur: Node | undefined = end;
+
+  while (cur !== undefined && cur !== null) {
+    path.unshift(cur);
+    cur = prev.get(cur) ?? null;
+  }
+
+  if (path[0] !== start) return []; // no path found
+  return path;
+}
+
+// -----------------------------------------------------------------------------
+//  Example
+// -----------------------------------------------------------------------------
+const graph: Graph = {
+  A: [
+    { target: "B", weight: 2 },
+    { target: "C", weight: 5 },
+  ],
+  B: [
+    { target: "C", weight: 1 },
+    { target: "D", weight: 4 },
+  ],
+  C: [
+    { target: "D", weight: 1 },
+  ],
+  D: [],
+};
+
+const { distances, prev } = dijkstra(graph, "A");
+console.log(distances);               // Map(…)
+console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
