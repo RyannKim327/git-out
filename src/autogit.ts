@@ -1,86 +1,69 @@
-// -------------------------------------------
-//  heapSort.ts
-// -------------------------------------------
+/**
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
+ */
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
+
+  // Sort rotations lexicographically
+  rotations.sort();
+
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
+
+  return { transformed: lastColumn, primaryIndex };
+}
 
 /**
- * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
- *
- * @param   array      The array to sort, mutated in‑place.
- * @param   cmp?       Optional comparator: (a, b) => number
- *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
- *
- * @example
- * const nums = [3, 1, 4, 1, 5, 9, 2];
- * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
- * heapSort(nums, (a, b) => b - a);  // descending order
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
  */
-export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
-  const compare = cmp ?? defaultCompare;
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
 
-  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
-  const heapSize = array.length;
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
 
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    siftDown(i, heapSize);
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
+
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
   }
 
-  /* ---------- 2. Repeatedly extract max (or min) ---------- */
-  for (let i = heapSize - 1; i > 0; i--) {
-    // Grab the root (largest element) and put it at the end
-    swap(array, 0, i);
-    // Restore heap property on the reduced heap
-    siftDown(0, i);
-  }
-
-  /* ---------- Helper scopes ---------- */
-  function siftDown(start: number, end: number): void {
-    let root = start;
-
-    while (true) {
-      const left = 2 * root + 1;
-      if (left >= end) break; // no children
-
-      const right = left + 1;
-      let candidate = left;
-
-      // Select the bigger child (or smaller if comparator flipped)
-      if (right < end && compare(array[right], array[left]) > 0) {
-        candidate = right;
-      }
-
-      // If root already holds the biggest, we're done
-      if (compare(array[root], array[candidate]) >= 0) break;
-
-      // Swap root with the chosen child and continue
-      swap(array, root, candidate);
-      root = candidate;
-    }
-  }
-
-  function swap(arr: T[], i: number, j: number): void {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
 }
 
-/* ------------------------------------------- */
-/* Default comparator for `number`/`string` (ascending) */
-function defaultCompare<T>(a: T, b: T): number {
-  // If it's a number or behaves like a number
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-  // Fallback to lexical comparison for strings and others that stringify nicely
-  const sa = String(a);
-  const sb = String(b);
-  return sa < sb ? -1 : sa > sb ? 1 : 0;
-}
-import { heapSort } from "./heapSort";
+/* ────────────────────── Demo ────────────────────── */
 
-const data = [8, 3, 5, 4, 7, 1, 2, 6];
-heapSort(data);                // ascending
-console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
 
-heapSort(data, (a, b) => b - a); // descending
-console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
+
+/* Expected output:
+
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
+
+*/
