@@ -1,87 +1,46 @@
-// simple node definition – feel free to extend it later (value, etc.)
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+/**
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
+ */
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-  constructor(public readonly val?: any) {}
-}
-interface TreeNode {
-  val?: any;
-  left?: TreeNode | null;
-  right?: TreeNode | null;
-}
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;          // empty subtree → no leaf
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+  });
 
-  // If this node has no children → it's a leaf.
-  if (node.left === null && node.right === null) {
-    return 1;
-  }
-
-  // Otherwise sum the children’s counts
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
-function countLeavesIterative(root: TreeNode | null): number {
-  if (root === null) return 0;
-
-  let leafCount = 0;
-  const stack: Array<TreeNode> = [root];
-
-  while (stack.length) {
-    const node = stack.pop() as TreeNode; // `as` because array never empty
-
-    // Check for leaf
-    if (node.left === null && node.right === null) {
-      leafCount++;
-    } else {
-      // push children if they exist
-      if (node.right !== null) stack.push(node.right);
-      if (node.left !== null) stack.push(node.left);
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
     }
   }
-
-  return leafCount;
+  return true;
 }
-// ---------------------------------------------------------------------
-// 1. Node definition
-class TreeNode {
-  public left: TreeNode | null = null;
-  public right: TreeNode | null = null;
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-  constructor(public readonly val: any) {}
-}
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
 
-// ---------------------------------------------------------------------
-// 2. Recursive counter
-function countLeavesRecursive(node: TreeNode | null): number {
-  if (node === null) return 0;
-  if (!node.left && !node.right) return 1;
-  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
-}
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
 
-// 3. Iterative counter
-function countLeavesIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-  let leaves = 0;
-  const stack: TreeNode[] = [root];
-  while (stack.length) {
-    const node = stack.pop()!;
-    if (!node.left && !node.right) leaves++;
-    if (node.right) stack.push(node.right);
-    if (node.left) stack.push(node.left);
-  }
-  return leaves;
-}
-
-// ---------------------------------------------------------------------
-// 4. Demo
-
-const root = new TreeNode(1);
-root.left = new TreeNode(2);
-root.right = new TreeNode(3);
-root.left.left = new TreeNode(4); // leaf
-root.left.right = new TreeNode(5); // leaf
-root.right.left = new TreeNode(6); // leaf
-
-console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
-console.log('Iterative leaves:', countLeavesIterative(root)); // 3
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
