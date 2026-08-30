@@ -1,62 +1,52 @@
-/**
- * A generic binary search.
- *
- * @param arr      Sorted array to search.
- * @param target   Value to locate.
- * @param compare  Optional comparator: (a, b) → negative, 0, positive.
- *                 If omitted, the default `<`/`>` operators are used.
- * @returns Index of `target` in `arr`, or `-1` if not found.
- */
-export function binarySearch<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number
-): number {
-  if (!arr.length) return -1;
-  const cmp = compare ?? defaultCompare<T>;
-  let low = 0;
-  let high = arr.length - 1;
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+}
 
-  while (low <= high) {
-    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
-    const comp = cmp(arr[mid], target);
-    if (comp === 0) return mid;
-    if (comp < 0) low = mid + 1;           // target is greater
-    else high = mid - 1;                  // target is smaller
+/**
+ * Returns the diameter (in edges) of a binary tree.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
+
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
+    }
+
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  return -1;
+  dfs(root);
+  return maxDiameter;         // already in edges
 }
 
-/** Recursive version – identical semantics. */
-export function binarySearchRecursive<T>(
-  arr: readonly T[],
-  target: T,
-  compare?: (a: T, b: T) => number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (!arr.length || low > high) return -1;
-  const cmp = compare ?? defaultCompare<T>;
+/* ---- example usage ------------------------------------------------------- */
 
-  const mid = (low + high) >>> 1;
-  const comp = cmp(arr[mid], target);
-
-  if (comp === 0) return mid;
-  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
-  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
 }
 
-/** Fallback when you didn’t provide a comparator. */
-function defaultCompare<T>(a: T, b: T): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
-const nums = [3, 7, 12, 18, 22, 33, 42];
-console.log(binarySearch(nums, 18));           // 3
-console.log(binarySearch(nums, 5));            // -1
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
 
-// To search objects, supply a comparator:
-const words = ['apple', 'banana', 'cherry'];
-console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
