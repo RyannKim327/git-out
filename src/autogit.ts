@@ -1,55 +1,50 @@
-/**
- * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
- */
-function isAnagram(s1: string, s2: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
-  return normalize(s1) === normalize(s2);
-}
-function isAnagramLetterCount(a: string, b: string): boolean {
-  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
+// Merge two sorted sub‑ranges [l .. mid] and [mid+1 .. r] into tmp
+function merge(
+  arr: number[],
+  tmp: number[],
+  l: number,
+  mid: number,
+  r: number
+): void {
+  let i = l;        // pointer for the left half
+  let j = mid + 1;  // pointer for the right half
+  let k = l;        // pointer for the tmp array
 
-  const freq = (s: string) => {
-    const map = new Map<string, number>();
-    for (const c of s) {
-      map.set(c, (map.get(c) ?? 0) + 1);
-    }
-    return map;
-  };
-
-  if (clean(a).length !== clean(b).length) return false;
-
-  const m1 = freq(clean(a));
-  const m2 = freq(clean(b));
-
-  for (const [ch, count] of m1) {
-    if (m2.get(ch) !== count) return false;
+  // Merge until one half runs out
+  while (i <= mid && j <= r) {
+    if (arr[i] <= arr[j]) tmp[k++] = arr[i++];
+    else tmp[k++] = arr[j++];
   }
-  return true;
+
+  // Copy any remaining elements of the left half
+  while (i <= mid) tmp[k++] = arr[i++];
+
+  // Copy any remaining elements of the right half
+  while (j <= r) tmp[k++] = arr[j++];
+
+  // Return merged result back to the original array
+  for (let p = l; p <= r; p++) arr[p] = tmp[p];
 }
-function isAnagramFlexible(
-  s1: string,
-  s2: string,
-  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
-): boolean {
-  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-  let pattern = '';
-  if (ignoreSpaces) pattern += '\\s';
-  if (ignorePunct) pattern += /[^\w\s]/g.source;
+/**
+ * Bottom‑up merge sort (iterative).
+ *
+ * @param arr - The array to sort (in‑place)
+ */
+function mergeSortIterative(arr: number[]): void {
+  const n = arr.length;
+  const tmp = new Array<number>(n);
 
-  const regex = new RegExp(pattern, 'g');
-  const normalize = (s: string) =>
-    s.replace(regex, '').toLowerCase().split('').sort().join('');
-
-  return normalize(s1) === normalize(s2);
+  // sz = 1, 2, 4, 8, ...  (size of sub‑arrays to merge)
+  for (let sz = 1; sz < n; sz <<= 1) {
+    // l = start index of sub‑array pair
+    for (let l = 0; l < n - sz; l += sz << 1) {
+      const mid = l + sz - 1;
+      const r = Math.min(l + (sz << 1) - 1, n - 1);
+      merge(arr, tmp, l, mid, r);
+    }
+  }
 }
-console.log(isAnagram('listen', 'silent'));          // true
-console.log(isAnagram('A gentleman', 'Elegant man'));// true
-console.log(isAnagram('Hello', 'World'));            // false
-
-// Using the frequency‑count version
-console.log(isAnagramLetterCount('abc', 'cab'));     // true
-
-// Flexible options
-console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
+const data = [38, 27, 43, 3, 9, 82, 10];
+mergeSortIterative(data);
+console.log(data); // [3, 9, 10, 27, 38, 43, 82]
