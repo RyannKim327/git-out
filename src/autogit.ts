@@ -1,33 +1,94 @@
-function decimalToBinary(n: number): string {
-  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
-  // It automatically floors the number (works for ints, truncates decimals).
-  return Math.floor(n).toString(2);
-}
-console.log(decimalToBinary(10));   // → '1010'
-console.log(decimalToBinary(255));  // → '11111111'
-function binaryPadded(n: number, bits = 8): string {
-  return decimalToBinary(n).padStart(bits, '0');
-}
+if currentDepth > depthLimit → stop exploring that branch
+/**
+ * Generic depth‑limited search (iterative DFS).
+ *
+ * @param root        The starting node.
+ * @param depthLimit  How far we are allowed to go from the root.
+ * @param getNeighbors
+ *        A callback that returns the list of adjacent nodes for a given node.
+ * @param visitedSet  Optional set used to avoid revisiting nodes.
+ *
+ * @returns  Array of nodes visited in order (pre‑order DFS order).
+ */
+export function depthLimitedSearch<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  visitedSet?: Set<T>
+): T[] {
+  const visited: Set<T> = visitedSet ?? new Set<T>();
+  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
+  const result: T[] = [];
 
-console.log(binaryPadded(10, 8));   // → '00001010'
-function decimalToBinaryManual(n: number): string {
-  if (n === 0) return '0';
-  let result = '';
-  let value = Math.floor(n);
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!; // non‑empty because of the loop
 
-  while (value > 0) {
-    result = (value % 2) + result; // prepend remainder
-    value = Math.floor(value / 2);
+    // Skip if we've already seen the node
+    if (visited.has(node)) continue;
+
+    visited.add(node);
+    result.push(node);          // we “visit” it, or you can process here
+
+    // Stop expanding when we hit the depth limit
+    if (depth >= depthLimit) continue;
+
+    // Push neighbors onto stack.  We push in reverse order if you want to
+    // preserve the same order as a recursive DFS.
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
   }
+
   return result;
 }
-function bigIntToBinary(n: bigint): string {
-  return n.toString(2);
+// A tiny undirected graph:
+const graph = new Map<string, string[]>([
+  ['A', ['B', 'C', 'D']],
+  ['B', ['A', 'E', 'F']],
+  ['C', ['A', 'G']],
+  ['D', ['A', 'H']],
+  ['E', ['B']],
+  ['F', ['B']],
+  ['G', ['C']],
+  ['H', ['D']],
+]);
+
+function neighbors(node: string): string[] {
+  return graph.get(node) ?? [];
 }
 
-console.log(bigIntToBinary(123456789012345678901234567890n));
-// → '1110001101100110100100001100100000111010011010110111111001101'
-function decimalToBitsArray(n: number): number[] {
-  const binary = decimalToBinary(n);
-  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+// Find all nodes reachable from 'A' within depth 2
+const visited = depthLimitedSearch('A', 2, neighbors);
+console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
+function depthLimitedSearchWithTarget<T>(
+  root: T,
+  depthLimit: number,
+  getNeighbors: (node: T) => T[],
+  target: T,
+  visitedSet?: Set<T>
+): T | undefined {
+  const visited = visitedSet ?? new Set<T>();
+  const stack = [{ node: root, depth: 0 }];
+
+  while (stack.length) {
+    const { node, depth } = stack.pop()!;
+    if (visited.has(node)) continue;
+    visited.add(node);
+
+    if (node === target) return node;
+
+    if (depth >= depthLimit) continue;
+    const neighbors = getNeighbors(node);
+    for (let i = neighbors.length - 1; i >= 0; --i) {
+      const child = neighbors[i];
+      if (!visited.has(child)) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+  return undefined; // not found
 }
