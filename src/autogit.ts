@@ -1,81 +1,93 @@
-// ---------- Tarjan S.T.C. ---------------------------------------
+/**
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
+ */
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
+
+  constructor(value: T) {
+    this.value = value;
+  }
+}
 
 /**
- * Return an array of strongly‑connected components.
- * Each component is an array of vertex IDs (here strings).
- * Vertices can be any `string`; if you prefer numbers just change the type.
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
  */
-export function tarjanSCC(graph: Map<string, string[]>): string[][] {
-  // state that needs to survive the recursive walk
-  const index = new Map<string, number>();    // discovery time of vertex
-  const lowLink = new Map<string, number>();  // lowest discovery reachable
-  const stack: string[] = [];                 // vertices that are “on stack”
-  const onStack = new Set<string>();
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-  let curIdx = 0;                            // global counter
-  const sccs: string[][] = [];               // result
-
-  // helper: depth‑first walk from a single vertex
-  function strongConnect(v: string) {
-    // part A – set the depth index and low link
-    index.set(v, curIdx);
-    lowLink.set(v, curIdx);
-    curIdx += 1;
-
-    // put v on stack
-    stack.push(v);
-    onStack.add(v);
-
-    // part B – consider successors of v
-    const neighbours = graph.get(v) ?? [];
-    for (const w of neighbours) {
-      if (!index.has(w)) {
-        // Successor w has not yet been visited; recurse on it
-        strongConnect(w);
-        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
-      } else if (onStack.has(w)) {
-        // Successor w is in stack → must be in the current SCC
-        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
-      }
-    }
-
-    // part C – if v is a root node, pop the stack to build an SCC
-    if (lowLink.get(v) === index.get(v)) {
-      const component: string[] = [];
-      let w: string;
-      do {
-        w = stack.pop()!;
-        onStack.delete(w);
-        component.push(w);
-      } while (w !== v);
-      sccs.push(component);
-    }
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
   }
 
-  // run the dfs from every unvisited vertex
-  for (const v of graph.keys()) {
-    if (!index.has(v)) {
-      strongConnect(v);
-    }
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
   }
 
-  return sccs;
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
+    }
+    this.rear = node;           // new tail
+
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
+    }
+
+    this._size++;
+  }
+
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
+
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
+
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
+    }
+    return result;
+  }
 }
-const graph = new Map<string, string[]>(
-  [
-    ['A', ['B']],
-    ['B', ['C', 'E', 'F']],
-    ['C', ['D', 'G']],
-    ['D', ['C', 'H']],
-    ['E', ['A', 'F']],
-    ['F', ['G']],
-    ['G', ['F', 'H']],
-    ['H', ['G']],
-  ],
-);
+const q = new Queue<number>();
 
-const components = tarjanSCC(graph);
-console.log(components);
-// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
-// (depending on traversal order you may see the same vertices grouped in one component,
-// because the toy graph is fully strongly‑connected)
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
