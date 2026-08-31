@@ -1,12 +1,10 @@
-const original = "  Hello,  world!\nThis is\ta test.   ";
+// A lean, common‑sense pattern that covers most real‑world emails
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const noWhitespace = original.replace(/\s+/g, "");
-
-console.log(noWhitespace);
-// → "Hello,world!Thisisatest."
-const noWhitespace = original.replaceAll(/\s/g, "");
-const trimmed = original.trim();
-console.log(trimmed);
-// → "Hello,  world!\nThis is\ta test."
-const removedSpaces = original.replace(/ /g, "");
-// or using a character class if you want tabs too: /[ \t]/g
+// Test whether a string looks like an e‑mail address
+export function isEmail(str: string): boolean {
+  return EMAIL_RE.test(str);
+}
+console.log(isEmail('foo@bar.com'));   // true
+console.log(isEmail('invalid@'));      // false
+console.log(isEmail('no-at-symbol'));  // false
