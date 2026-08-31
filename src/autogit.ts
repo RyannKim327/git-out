@@ -1,51 +1,66 @@
 /**
- * Merge two sorted arrays into one sorted array.
- * The comparator decides the ordering – by default it uses the `<` operator.
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
+ *
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
+ *
+ * The function returns everything that looks like the pattern.
  */
-function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
-  const result: T[] = [];
-  let i = 0; // index into left
-  let j = 0; // index into right
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
 
-  // Grab the compare function, or fall back to simple < comparison
-  const comp = compare ?? ((a: T, b: T) => a < b);
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
 
-  while (i < left.length && j < right.length) {
-    // If left[i] comes before right[j] (or equal), push it
-    if (comp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
+  }
+
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
+  }
+
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
+      }
+      if (match) result.push(i);
+    }
+
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
     }
   }
 
-  // One of the halves may still have leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
+  return result;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-/**
- * Recursive merge sort.  
- * @param array The array to sort.
- * @param compare Optional comparator that returns true if a < b.
- */
-export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
-  // Stop recursion when array has 0 or 1 item
-  if (array.length <= 1) return array.slice(); // return a shallow copy
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
-}
-const numbers = [5, 3, 8, 1, 2, 9];
-const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
-
-const people = [
-  { name: "Alice", age: 32 },
-  { name: "Bob", age: 25 },
-  { name: "Eve", age: 29 }
-];
-
-// Sort by age
-const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
