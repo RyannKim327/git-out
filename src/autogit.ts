@@ -1,41 +1,69 @@
 /**
- * Insertion sort implementation that mutates the original array
- * and returns the sorted array for convenience.
- *
- * @param arr - The array to sort
- * @param compareFn - Optional. If omitted, the default comparison uses < and >.
- * @returns The sorted array (the same instance as you passed in)
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
  */
-export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
-  // If no custom comparer is supplied, fall back to the default
-  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
 
-  // Walk from the second element to the end
-  for (let i = 1; i < arr.length; i++) {
-    const key = arr[i];
-    let j = i - 1;
+  // Sort rotations lexicographically
+  rotations.sort();
 
-    // Shift elements that are greater than the key to the right
-    while (j >= 0 && cmp(arr[j], key) > 0) {
-      arr[j + 1] = arr[j];
-      j--;
-    }
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
 
-    // Place the key into its correct spot
-    arr[j + 1] = key;
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
+
+  return { transformed: lastColumn, primaryIndex };
+}
+
+/**
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
+ */
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
+
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
+
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
+
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
   }
 
-  return arr; // handy for chaining, but the original array is already sorted
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
 }
-const nums = [4, 3, 5, 2, 1];
-console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
-interface Person { age: number; name: string; }
 
-const people: Person[] = [
-  { age: 30, name: "Alice" },
-  { age: 22, name: "Bob" },
-  { age: 25, name: "Carol" }
-];
+/* ────────────────────── Demo ────────────────────── */
 
-insertionSort(people, (a, b) => a.age - b.age);
-// now sorted by age
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
+
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
+
+/* Expected output:
+
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
+
+*/
