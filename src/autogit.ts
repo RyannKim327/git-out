@@ -1,70 +1,76 @@
 /**
- * Builds the bad‑character shift table for a given pattern.
+ * Build the LPS (Longest Prefix Suffix) table for KMP.
  *
- * The table maps a character code (0–65535 for UTF‑16) to the shift value.
- * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
- * right‑most occurrence of that character inside the pattern.  
- *
- * @param pattern The substring we’re looking for.
- * @returns An array indexed by code unit, containing shift values.
+ * @param pattern - The pattern string for which the table is built.
+ * @returns An array where lps[i] is the length of the longest proper
+ *          prefix of pattern[0..i] that is also a suffix of that substring.
  */
-function buildShiftTable(pattern: string): Uint16Array {
+function buildLPS(pattern: string): number[] {
   const m = pattern.length;
-  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
+  const lps: number[] = Array(m).fill(0);
+  let length = 0;                 // length of previous longest prefix suffix
+  let i = 1;                      // lps[0] is always 0
 
-  // Default shift: length of the pattern
-  table.fill(m);
-
-  // For every character except the last one, compute an optimal shift
-  for (let i = 0; i < m - 1; i++) {
-    const code = pattern.charCodeAt(i);
-    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
+  while (i < m) {
+    if (pattern[i] === pattern[length]) {
+      length += 1;
+      lps[i] = length;
+      i += 1;
+    } else {
+      if (length !== 0) {
+        // fall back in the pattern (do not increment i here)
+        length = lps[length - 1];
+      } else {
+        lps[i] = 0;
+        i += 1;
+      }
+    }
   }
-  return table;
+  return lps;
 }
 
 /**
- * Boyer‑Moore‑Horspool search.
+ * KMP search – returns all starting indices of `pattern` in `text`.
  *
- * @param text    The string to search inside.
- * @param pattern The substring we want to find.
- * @returns        All zero‑based indices where `pattern` starts in `text`.
+ * @param text    – The string to search within.
+ * @param pattern – The string to find.
+ * @returns Array of start indices where pattern occurs in text.
  */
-export function bmhSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [0];              // empty pattern matches at every position
-  if (m > n) return [];                // pattern longer than text – no match
-
-  const shift = buildShiftTable(pattern);
+export function kmpSearch(text: string, pattern: string): number[] {
+  if (pattern.length === 0) return [];          // nothing to find
+  const lps = buildLPS(pattern);
   const result: number[] = [];
 
-  let i = 0;   // current alignment: pattern[0] aligned with text[i]
-  while (i <= n - m) {
-    let j = m - 1;   // start comparing from the end of the pattern
+  let i = 0;   // index for text
+  let j = 0;   // index for pattern
 
-    // Compare backwards
-    while (j >= 0 && pattern[j] === text[i + j]) {
-      j--;
+  while (i < text.length) {
+    if (text[i] === pattern[j]) {
+      i += 1;
+      j += 1;
     }
 
-    if (j < 0) {          // full match
-      result.push(i);
+    // full match found
+    if (j === pattern.length) {
+      result.push(i - j);   // starting index
+      j = lps[j - 1];       // allow overlapping matches
+    } else if (i < text.length && text[i] !== pattern[j]) {
+      // mismatch after j matches
+      if (j !== 0) {
+        j = lps[j - 1];
+      } else {
+        i += 1;
+      }
     }
-
-    // Compute the shift.  We jump over at least one character, but the
-    // shift table may prescribe a longer shift if the mismatching character
-    // exists in the pattern.
-    const mismatchingCharCode = text.charCodeAt(i + m - 1);
-    i += shift[mismatchingCharCode];
   }
 
   return result;
 }
-const haystack = 'ABCDABABCABCDABABD';
-const needle   = 'ABCDABD';
+const text = "ABABDABACDABABCABAB";
+const pattern = "ABABCABAB";
 
-console.log(bmhSearch(haystack, needle)); // → [11]
+const matches = kmpSearch(text, pattern);
+console.log(matches);          // [10]
 
-// Multiple matches
-console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
+const hasMatch = matches.length > 0;
+console.log(hasMatch);         // true
