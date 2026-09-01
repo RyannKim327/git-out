@@ -1,25 +1,33 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
+}
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
+}
 
-const numbers = [4, 12, 7, 19, 3];
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
+  }
+  return result;
+}
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
+}
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
-
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
-];
-
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+}
