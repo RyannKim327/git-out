@@ -1,29 +1,26 @@
-// hello.ts
-import * as readline from 'readline'
+// utils.ts
+/**
+ * Randomly reorder the elements of an array in place.
+ * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
+ *
+ * @param arr The array to shuffle (mutated in place)
+ * @returns The same array, now shuffled
+ */
+export function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a remaining element…
+    const j = Math.floor(Math.random() * (i + 1));
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-})
-
-function ask(question: string): Promise<string> {
-  return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())))
+    // …and swap it with the current element.
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
+import { shuffle } from "./utils";
 
-async function main() {
-  const name = await ask('What’s your name? ')
-  const favNum = await ask('What’s your favorite number? ')
-  
-  const num = parseInt(favNum, 10)
-  const isEven = !isNaN(num) ? num % 2 === 0 : false
+const numbers = [1, 2, 3, 4, 5];
+shuffle(numbers);          // numbers is now in a random order
+console.log(numbers);
 
-  console.log(`\nHello, ${name}!`);
-  console.log(`Your favorite number is ${favNum}`);
-  console.log(`It’s ${isEven ? 'even' : 'odd'}!`);
-
-  rl.close()
-}
-
-main()
-tsc hello.ts   # compile to JavaScript
-node hello.js
+const words = ["a", "b", "c", "d"];
+console.log(shuffle(words));  // prints a shuffled copy
