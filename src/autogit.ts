@@ -1,38 +1,80 @@
-const numbers = [1, 2, 3, 4, 5];
-
-// remove the value 3
-const withoutThree = numbers.filter(n => n !== 3);
-console.log(withoutThree); // [1, 2, 4, 5]
-type Person = { id: number; name: string };
-const list: Person[] = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' }
-];
-
-const target = list[1]; // the Bob object reference
-const withoutBob = list.filter(person => person !== target);
-const letters = ['a', 'b', 'c', 'd', 'e'];
-const idx = 2; // we want to drop 'c'
-
-letters.splice(idx, 1); // remove 1 element at position idx
-console.log(letters); // ['a', 'b', 'd', 'e']
-const data = [10, 20, 30, 20, 40];
-const removeVal = 20;
-
-for (let i = data.length - 1; i >= 0; i--) {
-  if (data[i] === removeVal) {
-    data.splice(i, 1);
-  }
-}
-console.log(data); // [10, 30, 40]
 /**
- * Removes the first occurrence of `value` from `arr`.
+ * The graph is represented as an adjacency list:
+ *   key     → array of neighbors that the key points to
  */
-function removeFirst<T>(arr: T[], value: T): T[] {
-  const idx = arr.indexOf(value);
-  if (idx === -1) return arr;          // nothing found
-  const copy = [...arr];               // keep original intact
-  copy.splice(idx, 1);
-  return copy;
+export type Graph<T = string> = Record<T, T[]>;
+
+/**
+ * Helper types for the two algorithms
+ */
+type Queue<T> = T[];
+export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
+  const result: T[] = [];
+
+  // Compute in‑degree for each node
+  const indegree = new Map<T, number>();
+  for (const node in graph) {
+    indegree.set(node, 0);               // ensure all nodes appear
+    for (const nb of graph[node]) {
+      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
+    }
+  }
+
+  // Queue all nodes that have no incoming edges
+  const queue: Queue<T> = [];
+  for (const [node, deg] of indegree.entries()) {
+    if (deg === 0) queue.push(node);
+  }
+
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    // Reduce indegree for all neighbors, pushing any that reach 0
+    for (const nb of graph[node] ?? []) {
+      const deg = (indegree.get(nb) ?? 0) - 1;
+      indegree.set(nb, deg);
+      if (deg === 0) queue.push(nb);
+    }
+  }
+
+  // If we processed fewer nodes than exist, a cycle exists
+  if (result.length !== Object.keys(graph).length) {
+    throw new Error('Graph contains a cycle; topological sort impossible');
+  }
+  return result;
 }
+export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
+  const visited = new Set<T>();
+  const temp = new Set<T>();   // nodes on the recursion stack
+  const result: T[] = [];
+
+  const visit = (node: T) => {
+    if (temp.has(node)) {
+      throw new Error('Graph contains a cycle; topological sort impossible');
+    }
+    if (!visited.has(node)) {
+      temp.add(node);
+      for (const nb of graph[node] ?? []) visit(nb);
+      temp.delete(node);
+      visited.add(node);
+      result.push(node);     // post‑order push gives topological order
+    }
+  };
+
+  for (const node in graph) visit(node as T);
+  // reverse because we push after exploring children
+  return result.reverse();
+}
+const myGraph: Graph<string> = {
+  A: ['B', 'C'],
+  B: ['D'],
+  C: ['D'],
+  D: [],
+};
+
+console.log(topologicalSortKahn(myGraph));
+// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+
+console.log(topologicalSortDFS(myGraph));
+// → same order (or any other valid one)
