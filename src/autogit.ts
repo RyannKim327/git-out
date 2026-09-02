@@ -1,43 +1,87 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+// -----------------------------------------------------------------------------
+// 1️⃣  Trie node – keeps a map of children and a flag for word ends
+// -----------------------------------------------------------------------------
+class TrieNode {
+  /** Map from a character to the child node that starts with that character */
+  children = new Map<string, TrieNode>();
+  /** true if the path to this node corresponds to a complete word */
+  isEnd = false;
+}
 
-  const count = new Map<string, number>();
+// -----------------------------------------------------------------------------
+// 2️⃣  Trie implementation
+// -----------------------------------------------------------------------------
+export class Trie {
+  private root: TrieNode;
 
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
+  constructor() {
+    this.root = new TrieNode();
   }
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
+  /** Add a word to the trie */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      // Get the child for `ch`, or create it if missing
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode());
+      }
+      node = node.children.get(ch)!;
+    }
+    node.isEnd = true;
   }
 
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
-
-  const freq = new Int16Array(256);
-
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
+  /** Check if a word exists in the trie */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return !!node && node.isEnd;
   }
 
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+  /** Check if any word in the trie starts with the given prefix */
+  startsWith(prefix: string): boolean {
+    return !!this._findNode(prefix);
+  }
+
+  /** Internal helper: walk the trie following `key`.  Returns
+   *  the terminal node if the path exists, otherwise `undefined`. */
+  private _findNode(key: string): TrieNode | undefined {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch);
+      if (!node) return undefined;
+    }
+    return node;
+  }
+
+  /** Optional: collect all words in the trie that share a common prefix.
+   *  Useful for autocomplete. */
+  autocomplete(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
+
+    const results: string[] = [];
+    const dfs = (n: TrieNode, path: string[]) => {
+      if (n.isEnd) results.push(prefix + path.join(''));
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, [...path, ch]);
+      }
+    };
+
+    dfs(node, []);
+    return results;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 3️⃣  Demo
+// -----------------------------------------------------------------------------
+const trie = new Trie();
+trie.insert('hello');
+trie.insert('helium');
+trie.insert('hero');
+trie.insert('her');
+
+console.log(trie.search('hello'));   // true
+console.log(trie.search('heroic'));  // false
+console.log(trie.startsWith('he'));  // true
+console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
