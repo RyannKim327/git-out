@@ -1,25 +1,44 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+const arr1 = [1, 2, 3, 4];
+const arr2 = [3, 4, 5, 6];
 
-const numbers = [4, 12, 7, 19, 3];
+const common = arr1.filter(v => arr2.includes(v));
+console.log(common); // [3, 4]
+function intersection<T>(a: T[], b: T[]): T[] {
+  return a.filter(v => b.includes(v));
+}
+function intersectionSet<T>(a: T[], b: T[]): T[] {
+  const setB = new Set(b);
+  return a.filter(v => setB.has(v));
+}
+function intersectionMultiset<T>(a: T[], b: T[]): T[] {
+  const freq = new Map<T, number>();
+  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+  const result: T[] = [];
+  for (const val of a) {
+    const count = freq.get(val);
+    if (count && count > 0) {
+      result.push(val);
+      freq.set(val, count - 1);
+    }
+  }
+  return result;
+}
+interface User { id: number; name: string; }
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
+const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
+const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
 
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
-];
-
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+const intersectionById = usersA.filter(uA =>
+  usersB.some(uB => uB.id === uA.id)
+);
+console.log(intersectionById); // [{id:2,name:'Bob'}]
+const intersection = <T>(a: T[], b: T[]): T[] =>
+  a.filter(v => new Set(b).has(v));
+const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
+  const setA = new Set(a);
+  const setB = new Set(b);
+  const result = new Set<T>();
+  for (const v of setA) if (setB.has(v)) result.add(v);
+  return result;
+};
