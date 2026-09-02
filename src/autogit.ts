@@ -1,31 +1,53 @@
 /**
- * Selection sort – O(n²) time, O(1) additional space.
+ * Binary search for a sorted array of numbers.
  *
- * Works on any array of items that can be compared with < and >.
+ * @param arr  The fully sorted array to search.
+ * @param target  The value you’re looking for.
+ * @param low  Index of the current lower bound (initially 0).
+ * @param high Index of the current upper bound (initially arr.length – 1).
+ * @returns The index of `target` if it exists; otherwise –1.
  */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+function binarySearchRecursive(
+  arr: number[],
+  target: number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  // Base condition – no more elements to inspect
+  if (low > high) return -1;
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
+  const mid = Math.floor((low + high) / 2);
 
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
-    }
-    return arr;
+  if (arr[mid] === target) {
+    return mid;
+  } else if (arr[mid] > target) {
+    // Search left half
+    return binarySearchRecursive(arr, target, low, mid - 1);
+  } else {
+    // Search right half
+    return binarySearchRecursive(arr, target, mid + 1, high);
+  }
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
+const sorted = [1, 3, 5, 7, 9, 11, 13];
+
+const idx = binarySearchRecursive(sorted, 7); // 3
+const notFound = binarySearchRecursive(sorted, 2); // -1
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
+
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
+
+  if (cmp === 0) return mid;
+  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
+  return binarySearch(arr, target, compare, mid + 1, high);
 }
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+
+const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
