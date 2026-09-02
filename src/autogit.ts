@@ -1,113 +1,61 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
 
-  constructor(value: T) {
-    this.value = value;
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
+        }
+      }
+    }
   }
+
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
+  }
 
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+  const n = s1.length;
+  const m = s2.length;
 
-  // ---- basic properties ----
-  get size() { return this._size; }
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
 
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
+        }
+      } else {
+        curr[j] = 0;
+      }
     }
-    this._size++;
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
   }
 
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
-
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
-    }
-
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
-  }
-
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
-    }
-  }
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
-  }
-  return false;
-}
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
