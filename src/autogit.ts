@@ -1,55 +1,34 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
+function stringLength(s: string): number {
+  let count = 0;
+  for (const _ of s) {   // iterates over Unicode code points
+    ++count;
+  }
+  return count;
+}
+function stringLengthCodeUnits(s: string): number {
+  let count = 0;
+  // `s[i]` returns `undefined` past the end of the string
+  for (let i = 0; s[i] !== undefined; i++) {
+    ++count;
+  }
+  return count;
+}
+function stringLengthCharAt(s: string): number {
+  let count = 0;
+  for (let i = 0; s.charAt(i) !== ''; i++) {
+    ++count;
+  }
+  return count;
+}
+function* chars(s: string): Generator<unknown> {
+  for (const c of s) { yield c; }
 }
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
-
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
-
-    if (slow === fast) {        // they met → cycle detected
-      return true;
-    }
-  }
-
-  // fast ran out of nodes → no cycle
-  return false;
+function stringLengthFunctional(s: string): number {
+  let count = 0;
+  for (const _ of chars(s)) { ++count; }
+  return count;
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
-
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
-  }
-  return false;
-}
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
-
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
-  }
-
-  // No cycle
-  if (!fast || !fast.next) return null;
-
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
-}
+console.log(stringLength("hello"));       // 5
+console.log(stringLength("👋🌍"));        // 2  (two code points)
+console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
