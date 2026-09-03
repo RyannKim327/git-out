@@ -1,36 +1,43 @@
 /**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
+ * Returns true if `text` reads the same forward and backward.
+ * By default it is case‑sensitive and includes every character.
+ *
+ * @param text The string to check.
+ * @param opts  Optional settings:
+ *   - `ignoreCase`:   true to compare lowercase strings (default: false)
+ *   - `ignoreSpaces`: true to skip whitespace (default: false)
+ *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
  */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
+export function isPalindrome(
+  text: string,
+  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
+): boolean {
+  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
 
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
+  // Prepare the string based on options
+  let processed = ignoreCase ? text.toLowerCase() : text;
 
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
-    }
-  }
+  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
+  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
 
-  return prefix;
+  // Compare forward and reversed
+  const reversed = processed.split('').reverse().join('');
+  return processed === reversed;
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
+console.log(isPalindrome('radar'));          // true
+console.log(isPalindrome('Radar'));          // false
+console.log(isPalindrome('Radar', { ignoreCase: true })); // true
+console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
+const isPal = (s: string) =>
+  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
+const examples = [
+  'racecar',
+  'RaceCar',
+  'A man, a plan, a canal: Panama',
+  'No lemon, no melon',
+  'Hello, world!',
+];
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+for (const ex of examples) {
+  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
+}
