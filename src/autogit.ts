@@ -1,43 +1,27 @@
 /**
- * Returns the first character that occurs only once in `s`.
- * If every character repeats, returns null.
+ * Bubble‑sort in place.
+ * Works on arrays of any type that can be compared with the `<` operator.
  */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣ Count how many times each char appears
-  const freq = new Map<string, number>();
+export function bubbleSort<T>(arr: T[]): void {
+  let swapped: boolean;
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Scan the string again and pick the first char with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
+  // keep looping until a pass produces no swaps
+  do {
+    swapped = false;
+    for (let i = 0; i < arr.length - 1; i++) {
+      // compare adjacent elements
+      if (arr[i] > arr[i + 1]) {
+        // swap them
+        [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+        swapped = true;      // a swap happened, so we might need another pass
+      }
     }
-  }
-
-  return null; // nothing unique
+  } while (swapped);
 }
-console.log(firstNonRepeatingChar("abacbc")); // -> "b"
-console.log(firstNonRepeatingChar("aabbcc")); // -> null
-console.log(firstNonRepeatingChar("abcde"));  // -> "a"
-function firstNonRepeatingCharOptimized(s: string): string | null {
-  const freq = new Map<string, number>();
-  const order: string[] = [];
+const numbers = [5, 3, 8, 4, 1];
+bubbleSort(numbers);
+console.log(numbers); // → [1, 3, 4, 5, 8]
 
-  for (const ch of s) {
-    const newCount = (freq.get(ch) ?? 0) + 1;
-    freq.set(ch, newCount);
-
-    if (newCount === 1) {
-      order.push(ch);          // first appearance
-    } else {
-      // remove all occurrences of `ch` from the queue
-      const idx = order.indexOf(ch);
-      if (idx !== -1) order.splice(idx, 1);
-    }
-  }
-
-  return order.length ? order[0] : null;
-}
+const strings = ["pear", "apple", "banana"];
+bubbleSort(strings);
+console.log(strings); // → ["apple", "banana", "pear"]
