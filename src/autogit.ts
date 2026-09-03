@@ -1,34 +1,25 @@
-function stringLength(s: string): number {
-  let count = 0;
-  for (const _ of s) {   // iterates over Unicode code points
-    ++count;
-  }
-  return count;
-}
-function stringLengthCodeUnits(s: string): number {
-  let count = 0;
-  // `s[i]` returns `undefined` past the end of the string
-  for (let i = 0; s[i] !== undefined; i++) {
-    ++count;
-  }
-  return count;
-}
-function stringLengthCharAt(s: string): number {
-  let count = 0;
-  for (let i = 0; s.charAt(i) !== ''; i++) {
-    ++count;
-  }
-  return count;
-}
-function* chars(s: string): Generator<unknown> {
-  for (const c of s) { yield c; }
+/** 
+ * Returns true if `text` is a palindrome.
+ * The check is:
+ *   • case‑insensitive
+ *   • ignores everything that’s not a letter or digit
+ */
+function isPalindrome(text: string): boolean {
+  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
+  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+
+  // 2. Compare the string with its reverse
+  const reversed = cleaned.split('').reverse().join('');
+  return cleaned === reversed;
 }
 
-function stringLengthFunctional(s: string): number {
-  let count = 0;
-  for (const _ of chars(s)) { ++count; }
-  return count;
+// Usage examples
+console.log(isPalindrome('Racecar'));          // true
+console.log(isPalindrome('A man, a plan...'));  // true
+console.log(isPalindrome('Hello world'));      // false
+function isPalindromeSimple(s: string): boolean {
+  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
+    if (s[i] !== s[j]) return false;
+  }
+  return true;
 }
-console.log(stringLength("hello"));       // 5
-console.log(stringLength("👋🌍"));        // 2  (two code points)
-console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
