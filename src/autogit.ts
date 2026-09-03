@@ -1,30 +1,48 @@
 /**
- * Return the factorial of a non‑negative integer.
+ * Shell sort – a classic gap‑based insertion sort
  *
- * @param n - the number to calculate the factorial of.
- * @returns factorial(n) as a number (or BigInt if you want larger values).
- * @throws TypeError if the input is not a non‑negative integer.
+ * @template T - type held in the array
+ * @param arr   Array to be sorted in place
+ * @param cmp   Optional comparator, defaults to numeric comparison
+ * @returns     The sorted array (same reference as `arr`)
  */
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new TypeError("Factorial is only defined for non‑negative integers");
+export function shellSort<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
+): T[] {
+  const n = arr.length;
+
+  // A common sequence: n/2, n/4, …, 1
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Do a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap-sorted elements until the correct spot for temp is found
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
   }
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n <= 1) return 1;
-
-  // Recursive step: n! = n * (n – 1)!
-  return n * factorial(n - 1);
+  return arr;
 }
+// 1️⃣ Sort numbers
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-// Example usage
-console.log(factorial(5)); // 120
-function factorialBig(n: BigInt): BigInt {
-  if (n < 0n) throw new TypeError("Must be non‑negative");
+// 2️⃣ Sort strings alphabetically
+shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
 
-  if (n <= 1n) return 1n;
-
-  return n * factorialBig(n - 1n);
-}
-
-console.log(factorialBig(20n).toString()); // 2432902008176640000
+// 3️⃣ Sort objects by a property
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: "Zoe", age: 29 },
+  { name: "Alex", age: 22 },
+  { name: "Mia", age: 35 }
+];
+shellSort(people, (a, b) => a.age - b.age);
+console.log(people.map(p => p.age));  // → [22, 29, 35]
