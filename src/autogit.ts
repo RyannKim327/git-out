@@ -1,63 +1,48 @@
 /**
- * Returns the indices and values of the longest strictly increasing subsequence.
- *
- * @param arr - The input numeric array.
- * @returns An object containing:
- *   - sequence: the LIS as an array of numbers.
- *   - indices:  the original indices of those numbers in `arr`.
- *
- * Complexity:   Time  O(n log n)
- *               Space O(n)
+ * Returns the longest common subsequence of two strings.
+ * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
  */
-export function longestIncreasingSubsequence(arr: number[]): {
-    sequence: number[],
-    indices:   number[]
-} {
-    if (arr.length === 0) return { sequence: [], indices: [] };
+function lcs(s1: string, s2: string): string {
+  const n = s1.length,
+        m = s2.length;
 
-    // tail[i] holds the index in arr of the smallest ending value
-    // of an increasing subsequence of length i+1.
-    const tail: number[] = [];
-    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
-    const prev: (number | null)[] = Array(arr.length).fill(null);
+  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
 
-    for (let i = 0; i < arr.length; i++) {
-        const x = arr[i];
-
-        // Binary search to find the insertion point in tail.
-        let low = 0, high = tail.length;
-        while (low < high) {
-            const mid = Math.floor((low + high) / 2);
-            if (arr[tail[mid]] < x) low = mid + 1;
-            else high = mid;
-        }
-
-        // low is the position where x will sit in tail
-        if (low > 0) {
-            prev[i] = tail[low - 1]; // point to predecessor
-        }
-        if (low === tail.length) {
-            tail.push(i);
-        } else {
-            tail[low] = i; // replace a larger tail with a smaller one
-        }
+  // Build the DP table.
+  for (let i = 1; i <= n; i++) {
+    const a = s1[i - 1];
+    for (let j = 1; j <= m; j++) {
+      if (a === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
     }
+  }
 
-    // Reconstruct the LIS by walking back from the last index
-    const indices: number[] = [];
-    let cur: number | null = tail[tail.length - 1];
-    while (cur !== null) {
-        indices.push(cur);
-        cur = prev[cur];
+  // Reconstruct the subsequence.
+  let i = n,
+      j = m,
+      result: string[] = [];
+
+  while (i > 0 && j > 0) {
+    if (s1[i - 1] === s2[j - 1]) {
+      // Character is part of LCS – prepend to answer.
+      result.push(s1[i - 1]);
+      i--; j--;
+    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      i--;   // move up
+    } else {
+      j--;   // move left
     }
-    indices.reverse(); // from start to end
+  }
 
-    const sequence = indices.map(i => arr[i]);
-
-    return { sequence, indices };
+  return result.reverse().join('');
 }
-const arr = [3, 10, 2, 1, 20, 4, 6, 12];
-const result = longestIncreasingSubsequence(arr);
+const a = 'AGGTAB';
+const b = 'GXTXAYB';
 
-console.log(result.sequence); // [3, 10, 20]
-console.log(result.indices);  // [0, 1, 4]
+const sub = lcs(a, b);
+console.log(`LCS length: ${sub.length}`); // 4
+console.log(`LCS itself: ${sub}`);       // GTAB
