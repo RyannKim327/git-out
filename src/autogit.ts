@@ -1,43 +1,31 @@
-/**
- * Returns true if `text` reads the same forward and backward.
- * By default it is case‑sensitive and includes every character.
- *
- * @param text The string to check.
- * @param opts  Optional settings:
- *   - `ignoreCase`:   true to compare lowercase strings (default: false)
- *   - `ignoreSpaces`: true to skip whitespace (default: false)
- *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
- */
-export function isPalindrome(
-  text: string,
-  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
-): boolean {
-  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
 
-  // Prepare the string based on options
-  let processed = ignoreCase ? text.toLowerCase() : text;
+// Numeric ascending sort
+numbers.sort((a, b) => a - b);
+console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
 
-  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
-  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
+// Numeric descending sort
+numbers.sort((a, b) => b - a);
+console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
+[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
+const sorted = [...numbers].sort((a, b) => a - b);
+numbers.sort((a, b) => {
+  const absDiff = Math.abs(a) - Math.abs(b);
+  return absDiff !== 0 ? absDiff : a - b;
+});
+function quickSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;
+  const pivot = arr[arr.length - 1];
+  const left: number[] = [];
+  const right: number[] = [];
 
-  // Compare forward and reversed
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+  for (const x of arr.slice(0, -1)) {
+    (x < pivot ? left : right).push(x);
+  }
+
+  return [...quickSort(left), pivot, ...quickSort(right)];
 }
-console.log(isPalindrome('radar'));          // true
-console.log(isPalindrome('Radar'));          // false
-console.log(isPalindrome('Radar', { ignoreCase: true })); // true
-console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
-const isPal = (s: string) =>
-  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
-const examples = [
-  'racecar',
-  'RaceCar',
-  'A man, a plan, a canal: Panama',
-  'No lemon, no melon',
-  'Hello, world!',
-];
 
-for (const ex of examples) {
-  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
-}
+const numbers2 = [3, 1, 4, 1, 5, 9, 2];
+const sorted2 = quickSort(numbers2);
+console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
