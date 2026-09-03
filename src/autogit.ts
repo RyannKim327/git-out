@@ -1,69 +1,129 @@
 /**
- * BWT keeps the input string as an array of characters,
- * builds all rotations, sorts them, then extracts the last
- * column (the transformed string) and remembers the index
- * of the original string in the sorted list – that index
- * is needed for the inverse transform.
+ * A node in the B‑tree.
+ * Keys are stored in ascending order.
  */
-export function bwt(str: string): { transformed: string; primaryIndex: number } {
-  const n = str.length;
-  // Produce all rotations: str[i:] + str[:i]
-  const rotations: string[] = Array.from({ length: n }, (_, i) =>
-    str.slice(i) + str.slice(0, i)
-  );
+class BTreeNode<K, V> {
+  // Keys and values are kept together to simplify return of key/value pairs.
+  keys: K[] = [];
+  values: V[] = [];
 
-  // Sort rotations lexicographically
-  rotations.sort();
+  // Children – null for leaf nodes.
+  children: (BTreeNode<K, V> | null)[] = [];
 
-  // The transformed string is the concatenation of the last char
-  // of every rotation, appended in sorted order.
-  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+  // Whether this node is a leaf.
+  leaf: boolean;
 
-  // Find the row that matches the original string; its index
-  // is what BWT callers need to recover the original.
-  const primaryIndex = rotations.findIndex(rot => rot === str);
-
-  return { transformed: lastColumn, primaryIndex };
-}
-
-/**
- * Inverse BWT reconstructs the original string from the
- * transformed string and the index found in the forward step.
- */
-export function inverseBwt(
-  transformed: string,
-  primaryIndex: number
-): string {
-  const n = transformed.length;
-
-  // Initialize an array of empty strings: will hold the building rows
-  let table: string[] = Array.from({ length: n }, () => '');
-
-  // Repeatedly prepend the transformed column to each row,
-  // then sort. After n iterations the table is fully sorted.
-  for (let step = 0; step < n; step++) {
-    // Prepend each character of 'transformed' to the corresponding row
-    table = table.map((row, i) => transformed[i] + row);
-
-    // Quick sort (JavaScript's String array sort is fine for our sizes)
-    table.sort();
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
   }
 
-  // The original string is the row at primaryIndex
-  return table[primaryIndex];
+  /* Helper: find first index where key should be inserted */
+  findKey(key: K, cmp: (a: K, b: K) => number): number {
+    let idx = 0;
+    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
+      ++idx;
+    }
+    return idx;
+  }
 }
+/**
+ * B‑Tree implementation
+ *
+ * @param t Minimum degree (≥ 2). Every node except the root contains
+ *          at least t‑1 keys and at most 2*t‑1 keys.
+ */
+class BTree<K, V> {
+  private root: BTreeNode<K, V>;
+  private readonly t: number;
+  private readonly cmp: (a: K, b: K) => number;
 
-/* ────────────────────── Demo ────────────────────── */
+  constructor(
+    t: number = 2,
+    cmp?: (a: K, b: K) => number
+  ) {
+    if (t < 2) throw new Error('B‑tree order must be >= 2');
+    this.t = t;
+    this.root = new BTreeNode<K, V>(true);
+    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
 
-const example = 'banana$';    // '$' is a unique EOF marker
-const { transformed, primaryIndex } = bwt(example);
+  /* Public API --------------------------------------------------- */
+  search(key: K): V | undefined {
+    return this._search(this.root, key);
+  }
 
-console.log('BWT:', transformed, 'Primary index:', primaryIndex);
-console.log('Inverse:', inverseBwt(transformed, primaryIndex));
+  insert(key: K, value: V): void {
+    // If root is full, create a new leaf and split
+    if (this.root.keys.length === 2 * this.t - 1) {
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this._splitChild(newRoot, 0);
+      this.root = newRoot;
+    }
+    this._insertNonFull(this.root, key, value);
+  }
 
-/* Expected output:
+  /* Delete is optional – implement if you need it. */
+  /* delete(key: K): void { … } */
 
-BWT: annb$aa  Primary index: 3
-Inverse: banana$
+  /* Iterator over all key/value pairs in order */
+  *inOrder(): IterableIterator<[K, V]> {
+    yield* this._inOrder(this.root);
+  }
 
-*/
+  /* ------------------------------------------------------------------ */
+
+  /* Core recursive operations --------------------------------------- */
+  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
+    const idx = node.findKey(key, this.cmp);
+
+    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
+      return node.values[idx];
+    }
+
+    if (node.leaf) {
+      return undefined;
+    }
+
+    return this._search(node.children[idx]!, key);
+  }
+
+  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
+    let i = node.keys.length - 1;
+
+    if (node.leaf) {
+      // Insert into leaf – shift keys/vals right of insertion point
+      const idx = node.findKey(key, this.cmp);
+      node.keys.splice(idx, 0, key);
+      node.values.splice(idx, 0, value);
+    } else {
+      // Find child to descend into
+      const idx = node.findKey(key, this.cmp);
+      const child = node.children[idx]!;
+
+      if (child.keys.length === 2 * this.t - 1) {
+        // Child is full → split then decide which side to go
+        this._splitChild(node, idx);
+
+        // After split, middle key moves up – need to decide child again
+        if (this.cmp(key, node.keys[idx]) > 0) {
+          i = idx + 1;
+        } else {
+          i = idx;
+        }
+      }
+      this._insertNonFull(node.children[i]!, key, value);
+    }
+  }
+
+  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
+    const t = this.t;
+    const child = parent.children[idx]!;
+    const newNode = new BTreeNode<K, V>(child.leaf);
+
+    // Move the second half of child’s keys/values to newNode
+    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
+    newNode.values = child.values.splice(t);
+
+    if (!child.leaf) {
+      newNode.children = child.children.splice(t
