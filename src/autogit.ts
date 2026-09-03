@@ -1,173 +1,58 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
+/**
+ * Radix sort for 32‑bit signed integers (Int32Array safety).
+ * Works for positives, negatives and zero.
+ */
+export function radixSort(nums: number[]): number[] {
+  if (nums.length <= 1) return nums.slice();
 
-interface Edge {
-  target: Node;
-  weight: Weight;
-}
+  // Separate positives and negatives.
+  const positives: number[] = [];
+  const negatives: number[] = []; // store as positive magnitudes
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
-}
-
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
-
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
+  for (const n of nums) {
+    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
+    else positives.push(n);
   }
 
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
+  // Sort each side independently.
+  const sortedPos = radixSortNonNegative(positives);
+  const sortedNeg = radixSortNonNegative(negatives).reverse();
+
+  // Concatenate negatives (reversed) + positives
+  return [...sortedNeg.map(n => -n), ...sortedPos];
+}
+
+/**
+ * Helper that assumes every element is a non‑negative integer.
+ */
+function radixSortNonNegative(arr: number[]): number[] {
+  if (arr.length <= 1) return arr.slice();
+
+  const maxVal = Math.max(...arr);
+  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
+
+  let output = arr.slice(); // working copy
+  let pow10 = 1;            // 10^digitIndex
+
+  for (let d = 0; d < lenDigits; d++) {
+    // 10 buckets for the decimal digits 0‑9
+    const buckets: number[][] = Array.from({ length: 10 }, () => []);
+
+    for (const val of output) {
+      const digit = Math.floor((val / pow10) % 10);
+      buckets[digit].push(val);
     }
-    return min;
+
+    // Rebuild output from buckets
+    output = [].concat(...buckets);
+
+    pow10 *= 10;           // move to next digit
   }
 
-  get size() {
-    return this.heap.length;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
-        }
-      }
-
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
+  return output;
 }
+import { radixSort } from "./radixSort";
 
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
-    }
-  }
-
-  return { distances, prev };
-}
-
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
-
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
-  }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
-}
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
+const data = [170, -45, 75, 90, -802, 24, 2, 66];
+console.log(radixSort(data)); 
+// → [-802, -45, 2, 24, 66, 75, 90, 170]
