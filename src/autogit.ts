@@ -1,26 +1,37 @@
-function countWord(text: string, word: string): number {
-  // Escape word so special regex symbols don’t bite us
-  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // \b = word boundary, i = ignore case, g = global (all matches)
-  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
-  const matches = text.match(re);
-  return matches ? matches.length : 0;
+function secondLargestSort(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  const sorted = [...arr].sort((a, b) => b - a); // Descending
+  return sorted[1];
 }
-const txt = "Boo, boo! Boo-boo? Booing… boo.";
-console.log(countWord(txt, 'boo')); // 3
-function countWordSplit(text: string, word: string) {
-  const words = text.trim().split(/\s+/);
-  const target = word.toLowerCase();
-  return words.filter(w => w.toLowerCase() === target).length;
-}
-function countWordLoop(text: string, word: string) {
-  const target = word.toLowerCase();
-  let count = 0;
-  const regex = /\b\w+\b/g;               // grab words
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    if (match[0].toLowerCase() === target) count++;
+function secondLargestSinglePass(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const num of arr) {
+    if (num > max) {
+      second = max;
+      max = num;
+    } else if (num > second && num !== max) {
+      second = num;
+    }
   }
-  return count;
+
+  return second === -Infinity ? undefined : second;
 }
-const count = countWord("Hello because we say hello", "hello"); // 2
+function secondLargestSet(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)];
+  if (unique.length < 2) return undefined;
+
+  const sorted = unique.sort((a, b) => b - a);
+  return sorted[1];
+}
+function secondLargestMathMax(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  const max = Math.max(...arr);
+  const maxFiltered = arr.filter(num => num !== max);
+  return Math.max(...maxFiltered);
+}
