@@ -1,65 +1,93 @@
 /**
- * Computes the LPS array for a given pattern.
- * For each index i, lps[i] is the length of the longest
- * proper prefix that is also a suffix for pattern[0..i].
+ * A single node of the linked list.
+ * The list is kept in the "next →" direction.
  */
-function buildLps(pattern: string): number[] {
-    const lps = new Array(pattern.length).fill(0);
-    let length = 0;          // length of previous longest prefix suffix
-    let i = 1;
+class ListNode<T> {
+  public value: T;
+  public next: ListNode<T> | null = null;
 
-    while (i < pattern.length) {
-        if (pattern[i] === pattern[length]) {
-            length++;
-            lps[i] = length;
-            i++;
-        } else {
-            if (length !== 0) {
-                // try the previous longest prefix suffix
-                length = lps[length - 1];
-            } else {
-                lps[i] = 0;
-                i++;
-            }
-        }
-    }
-    return lps;
+  constructor(value: T) {
+    this.value = value;
+  }
 }
+
 /**
- * Returns the starting indices of all occurrences of `pattern`
- * inside `text`. If the pattern is empty, an empty array is returned.
+ * A queue backed by a linked list.
+ * `front` points to the oldest element,
+ * `rear` points to the newest one.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-    if (pattern.length === 0) return [];
+export class Queue<T> {
+  private front: ListNode<T> | null = null; // head
+  private rear: ListNode<T> | null = null;  // tail
+  private _size = 0;
 
-    const lps = buildLps(pattern);
-    const result: number[] = [];
+  /** Number of items in the queue */
+  get size(): number {
+    return this._size;
+  }
 
-    let i = 0; // index for text
-    let j = 0; // index for pattern
+  /** Check if the queue is empty */
+  get isEmpty(): boolean {
+    return this._size === 0;
+  }
 
-    while (i < text.length) {
-        if (text[i] === pattern[j]) {
-            i++; j++;
-            if (j === pattern.length) {
-                // match found; record start index
-                result.push(i - j);
-                // continue searching for next possible match
-                j = lps[j - 1];
-            }
-        } else {
-            if (j !== 0) {
-                // fall back in pattern
-                j = lps[j - 1];
-            } else {
-                i++;
-            }
-        }
+  /** Enqueue: add an element to the tail */
+  enqueue(value: T): void {
+    const node = new ListNode(value);
+
+    if (this.rear) {
+      this.rear.next = node;   // hook it after the current tail
+    }
+    this.rear = node;           // new tail
+
+    if (!this.front) {
+      // Queue was empty before, so front must point to the new node too
+      this.front = node;
+    }
+
+    this._size++;
+  }
+
+  /** Dequeue: remove and return the front element, or null if empty */
+  dequeue(): T | null {
+    if (!this.front) return null;
+
+    const value = this.front.value;
+    this.front = this.front.next;  // move head forward
+
+    if (!this.front) {
+      // Queue just became empty – clear the tail as well
+      this.rear = null;
+    }
+
+    this._size--;
+    return value;
+  }
+
+  /** Peek at the front without removing it */
+  peek(): T | null {
+    return this.front ? this.front.value : null;
+  }
+
+  /** Return an array of all values in order (for debugging / inspection) */
+  toArray(): T[] {
+    const result: T[] = [];
+    let node = this.front;
+    while (node) {
+      result.push(node.value);
+      node = node.next;
     }
     return result;
+  }
 }
-const haystack = "ABABDABACDABABCABAB";
-const needle  = "ABABCABAB";
+const q = new Queue<number>();
 
-console.log(kmpSearch(haystack, needle));
-// → [10]
+q.enqueue(10);
+q.enqueue(20);
+q.enqueue(30);
+
+console.log(q.peek());   // 10
+console.log(q.dequeue()); // 10
+console.log(q.dequeue()); // 20
+console.log(q.size);      // 1
+console.log(q.toArray()); // [30]
