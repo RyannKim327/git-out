@@ -1,25 +1,55 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+// Graph type: map from vertex id → array of neighbouring vertex ids
+type Graph = Record<string | number, Array<string | number>>;
+function dfsRecursive(
+  graph: Graph,
+  start: string | number,
+  visited = new Set<string | number>()
+): string[] {
+  // If the node has already been visited, stop here.
+  if (visited.has(start)) return [];
 
-const numbers = [4, 12, 7, 19, 3];
+  visited.add(start);           // Mark the node
+  const result = [start];        // The order in which we visit
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+  // Recurse on all neighbours that haven't been visited yet
+  for (const neighbour of graph[start] || []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
+    }
+  }
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
+  return result;
+}
+function dfsIterative(graph: Graph, start: string | number): string[] {
+  const visited = new Set<string | number>();
+  const stack: (string | number)[] = [start];
+  const order: string[] = [];
 
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
-];
+  while (stack.length) {
+    const v = stack.pop()!;           // Grab the vertex on top of the stack
+    if (visited.has(v)) continue;     // Skip if we already processed it
+    visited.add(v);                    // Mark as visited
+    order.push(v);                     // Record visitation order
 
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+    // Push neighbours onto the stack (in reverse order if you want a specific order)
+    const neighbours = graph[v] || [];
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      if (!visited.has(neighbours[i])) {
+        stack.push(neighbours[i]);
+      }
+    }
+  }
+
+  return order;
+}
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: [],
+  f: []
+};
+
+console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
+console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
