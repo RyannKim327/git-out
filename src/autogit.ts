@@ -1,43 +1,55 @@
-/**
- * Returns the first character that occurs only once in `s`.
- * If every character repeats, returns null.
- */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣ Count how many times each char appears
-  const freq = new Map<string, number>();
-
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
-
-  // 2️⃣ Scan the string again and pick the first char with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
-
-  return null; // nothing unique
+// Node definition – feel free to replace this with your own class/struct
+interface ListNode<T = unknown> {
+  val: T;
+  next: ListNode<T> | null;
 }
-console.log(firstNonRepeatingChar("abacbc")); // -> "b"
-console.log(firstNonRepeatingChar("aabbcc")); // -> null
-console.log(firstNonRepeatingChar("abcde"));  // -> "a"
-function firstNonRepeatingCharOptimized(s: string): string | null {
-  const freq = new Map<string, number>();
-  const order: string[] = [];
 
-  for (const ch of s) {
-    const newCount = (freq.get(ch) ?? 0) + 1;
-    freq.set(ch, newCount);
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  // Two pointers that start at the head
+  let slow: ListNode<T> | null = head;   // moves 1 step
+  let fast: ListNode<T> | null = head;   // moves 2 steps
 
-    if (newCount === 1) {
-      order.push(ch);          // first appearance
-    } else {
-      // remove all occurrences of `ch` from the queue
-      const idx = order.indexOf(ch);
-      if (idx !== -1) order.splice(idx, 1);
+  while (fast && fast.next) {
+    slow = slow!.next;          // advance one step
+    fast = fast.next.next;      // advance two steps
+
+    if (slow === fast) {        // they met → cycle detected
+      return true;
     }
   }
 
-  return order.length ? order[0] : null;
+  // fast ran out of nodes → no cycle
+  return false;
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const seen = new Set<ListNode<T>>();
+  let current = head;
+
+  while (current) {
+    if (seen.has(current)) return true; // loop!
+    seen.add(current);
+    current = current.next;
+  }
+  return false;
+}
+function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head, fast = head;
+
+  // First, detect a cycle
+  while (fast && fast.next) {
+    slow = slow!.next;
+    fast = fast.next.next;
+    if (slow === fast) break;
+  }
+
+  // No cycle
+  if (!fast || !fast.next) return null;
+
+  // Move one pointer to the head; keep other where they met
+  slow = head;
+  while (slow !== fast) {
+    slow = slow!.next;
+    fast = fast!.next;
+  }
+  return slow; // the entry point of the cycle
 }
