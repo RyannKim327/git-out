@@ -1,87 +1,73 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
+type Edge = {
+  from: number;   // vertex index
+  to: number;     // vertex index
+  weight: number; // can be negative
+};
+
+type BellmanFordResult = {
+  distances: number[];
+  predecessors: (number | null)[];
+  hasNegativeCycle: boolean;
+};
+function bellmanFord(
+  numVertices: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
+
+  // 1. Initialisation
+  const dist = new Array(numVertices).fill(INF);
+  dist[source] = 0;
+
+  const pred = new Array<number | null>(numVertices).fill(null);
+
+  // 2. Relax edges (V‑1) times
+  for (let i = 0; i < numVertices - 1; i++) {
+    let updated = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        updated = true;
+      }
+    }
+    // early exit if no change – optional but nice optimisation
+    if (!updated) break;
+  }
+
+  // 3. Check for negative‑weight cycles
+  let hasNegCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+      hasNegCycle = true;
+      break;
+    }
+  }
+
+  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
+}
+// Build a tiny graph with a negative edge that doesn't form a cycle
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 3, weight: -3 },
+  { from: 2, to: 3, weight: 2 },
+];
+
+const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
+
+console.log('Distances:', distances);          // [0, 4, 5, 1]
+console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
+console.log('Negative cycle?', hasNegativeCycle); // false
+
+// If you want to pull out the path 0 -> 1 -> 3:
+function buildPath(pred: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== null; v = pred[v] as number | null) {
+    path.push(v);
+  }
+  return path.reverse();
 }
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
-
-  constructor() {
-    this.root = new TrieNode();
-  }
-
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
-  }
-
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
-
-    dfs(node, []);
-    return results;
-  }
-}
-
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
-
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
