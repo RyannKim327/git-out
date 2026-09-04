@@ -1,79 +1,61 @@
-type Vertex = string | number | symbol;
-type Graph = Map<Vertex, Vertex[]>;
-/**
- * Breadth‑first traversal of a graph.
- *
- * @param graph      adjacency list
- * @param start      vertex to start from
- * @returns Array of vertices in the order they were visited
- */
-function bfs(graph: Graph, start: Vertex): Vertex[] {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const result: Vertex[] = [];
+function longestCommonSubstring(s1: string, s2: string): string {
+  const n = s1.length;
+  const m = s2.length;
 
-    visited.add(start);
-    queue.push(start);
+  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
 
-    while (queue.length) {
-        const current = queue.shift()!;   // safe, queue is non‑empty
-        result.push(current);
+  let maxLen = 0;
+  let endIdx = 0; // end index (exclusive) in s1 of the best substring
 
-        const neighbours = graph.get(current) ?? [];
-        for (const next of neighbours) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-            }
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+        if (dp[i][j] > maxLen) {
+          maxLen = dp[i][j];
+          endIdx = i; // end is exclusive
         }
+      }
     }
+  }
 
-    return result;
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const parent = new Map<Vertex, Vertex | null>();
+console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
+function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
+  // Ensure s2 is the shorter string to keep the inner array small
+  if (s1.length < s2.length) {
+    return longestCommonSubstringSpaceOptimized(s2, s1);
+  }
 
-    visited.add(start);
-    queue.push(start);
-    parent.set(start, null);
+  const n = s1.length;
+  const m = s2.length;
 
-    while (queue.length) {
-        const current = queue.shift()!;
+  const prev = Array(m + 1).fill(0);
+  const curr = Array(m + 1).fill(0);
 
-        if (current === target) {
-            // reconstruct path
-            const path: Vertex[] = [];
-            let v: Vertex | null | undefined = target;
-            while (v !== null) {
-                path.unshift(v);
-                v = parent.get(v) ?? null;
-            }
-            return path;
+  let maxLen = 0;
+  let endIdx = 0;
+
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (s1[i - 1] === s2[j - 1]) {
+        curr[j] = prev[j - 1] + 1;
+        if (curr[j] > maxLen) {
+          maxLen = curr[j];
+          endIdx = i;
         }
-
-        for (const next of graph.get(current) ?? []) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-                parent.set(next, current);
-            }
-        }
+      } else {
+        curr[j] = 0;
+      }
     }
+    // swap references for next iteration
+    [prev, curr] = [curr, prev];
+  }
 
-    // target unreachable
-    return null;
+  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
 }
-const g: Graph = new Map([
-    ['A', ['B', 'C']],
-    ['B', ['A', 'D', 'E']],
-    ['C', ['A', 'F']],
-    ['D', ['B']],
-    ['E', ['B', 'F']],
-    ['F', ['C', 'E']]
-]);
-
-console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
-console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
-console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
+console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
+console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
+console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
