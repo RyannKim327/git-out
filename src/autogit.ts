@@ -1,48 +1,121 @@
-/**
- * Returns the longest common subsequence of two strings.
- * Example: lcs('AGGTAB', 'GXTXAYB') → 'GTAB'
- */
-function lcs(s1: string, s2: string): string {
-  const n = s1.length,
-        m = s2.length;
+/* ───────────────────────────────────────────────────────────────────── */
+/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
+ *  need other key types, but then you have to supply a comparator. -------- */
 
-  // dp[i][j] = LCS length for s1[0..i-1] and s2[0..j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+/*  Node ------------------------------------------------------------------- */
+class Node {
+  key: number;
+  height: number;
+  left: Node | null = null;
+  right: Node | null = null;
 
-  // Build the DP table.
-  for (let i = 1; i <= n; i++) {
-    const a = s1[i - 1];
-    for (let j = 1; j <= m; j++) {
-      if (a === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-      } else {
-        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-      }
-    }
+  constructor(key: number) {           // simple ctor
+    this.key = key;
+    this.height = 1;                    // leaf height = 1
   }
-
-  // Reconstruct the subsequence.
-  let i = n,
-      j = m,
-      result: string[] = [];
-
-  while (i > 0 && j > 0) {
-    if (s1[i - 1] === s2[j - 1]) {
-      // Character is part of LCS – prepend to answer.
-      result.push(s1[i - 1]);
-      i--; j--;
-    } else if (dp[i - 1][j] >= dp[i][j - 1]) {
-      i--;   // move up
-    } else {
-      j--;   // move left
-    }
-  }
-
-  return result.reverse().join('');
 }
-const a = 'AGGTAB';
-const b = 'GXTXAYB';
 
-const sub = lcs(a, b);
-console.log(`LCS length: ${sub.length}`); // 4
-console.log(`LCS itself: ${sub}`);       // GTAB
+/*  Helper utilities -------------------------------------------------------- */
+const height = (node: Node | null): number => (node ? node.height : 0);
+
+const updateHeight = (node: Node) =>
+  node.height = 1 + Math.max(height(node.left), height(node.right));
+
+const balanceFactor = (node: Node): number =>
+  height(node.left) - height(node.right);
+
+/*  Rotations -------------------------------------------------------------- */
+function rotateRight(y: Node): Node {
+  const x = y.left!;
+  const T2 = x.right;
+
+  // rotation
+  x.right = y;
+  y.left = T2;
+
+  // update heights
+  updateHeight(y);
+  updateHeight(x);
+
+  return x;     // new root of this part
+}
+
+function rotateLeft(x: Node): Node {
+  const y = x.right!;
+  const T2 = y.left;
+
+  // rotation
+  y.left = x;
+  x.right = T2;
+
+  // update heights
+  updateHeight(x);
+  updateHeight(y);
+
+  return y;     // new root
+}
+
+/*  Insert ------------------------------------------------------------------ */
+function insert(node: Node | null, key: number): Node {
+  if (!node) return new Node(key);
+
+  if (key < node.key) node.left = insert(node.left, key);
+  else if (key > node.key) node.right = insert(node.right, key);
+  else return node;           // duplicate keys rejected
+
+  /* update our own height after child changed */
+  updateHeight(node);
+
+  /* balance now */
+  const bf = balanceFactor(node);
+
+  // Left heavy
+  if (bf > 1) {
+    if (key < node.left!.key)                   // Left‑Left case
+      return rotateRight(node);
+
+    // Left‑Right case
+    node.left = rotateLeft(node.left!);
+    return rotateRight(node);
+  }
+
+  // Right heavy
+  if (bf < -1) {
+    if (key > node.right!.key)                  // Right‑Right case
+      return rotateLeft(node);
+
+    // Right‑Left case
+    node.right = rotateRight(node.right!);
+    return rotateLeft(node);
+  }
+
+  return node;            // unchanged
+}
+
+/*  Search --------------------------------------------------------------- */
+function contains(node: Node | null, key: number): boolean {
+  while (node) {
+    if (key === node.key) return true;
+    node = key < node.key ? node.left : node.right;
+  }
+  return false;
+}
+
+/*  In‑order traversal for debugging -------------------------------------- */
+function inorder(node: Node | null, res: number[] = []): number[] {
+  if (!node) return res;
+  inorder(node.left, res);
+  res.push(node.key);
+  inorder(node.right, res);
+  return res;
+}
+
+/*  Example usage ---------------------------------------------------------- */
+let root: Node | null = null;
+[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
+
+console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
+console.log('Contains 25?', contains(root, 25));      // true
+console.log('Contains 15?', contains(root, 15));      // false
+class Node<T> { key: T; height: number; ... }
+function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
