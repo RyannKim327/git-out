@@ -1,41 +1,73 @@
-// Simple base & height
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('base and height must be positive numbers');
-  }
-  return (base * height) / 2;
-}
+type Edge = {
+  from: number;   // vertex index
+  to: number;     // vertex index
+  weight: number; // can be negative
+};
 
-// Three side lengths (Heron’s formula)
-function areaFromSides(a: number, b: number, c: number): number {
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The side lengths do not form a triangle');
+type BellmanFordResult = {
+  distances: number[];
+  predecessors: (number | null)[];
+  hasNegativeCycle: boolean;
+};
+function bellmanFord(
+  numVertices: number,
+  edges: Edge[],
+  source: number
+): BellmanFordResult {
+  const INF = Number.POSITIVE_INFINITY;
+
+  // 1. Initialisation
+  const dist = new Array(numVertices).fill(INF);
+  dist[source] = 0;
+
+  const pred = new Array<number | null>(numVertices).fill(null);
+
+  // 2. Relax edges (V‑1) times
+  for (let i = 0; i < numVertices - 1; i++) {
+    let updated = false;
+    for (const { from, to, weight } of edges) {
+      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+        dist[to] = dist[from] + weight;
+        pred[to] = from;
+        updated = true;
+      }
+    }
+    // early exit if no change – optional but nice optimisation
+    if (!updated) break;
   }
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
-console.log(areaFromBaseHeight(10, 5)); // 25
-console.log(areaFromSides(3, 4, 5));   // 6
-const area = (b: number, h: number) => (b * h) / 2;
-class Triangle {
-  constructor(private a: number, private b: number, private c: number) {
-    if (a + b <= c || a + c <= b || b + c <= a) {
-      throw new Error('Invalid side lengths');
+
+  // 3. Check for negative‑weight cycles
+  let hasNegCycle = false;
+  for (const { from, to, weight } of edges) {
+    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
+      hasNegCycle = true;
+      break;
     }
   }
 
-  public area(): number {
-    const s = (this.a + this.b + this.c) / 2;
-    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
+  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
+}
+// Build a tiny graph with a negative edge that doesn't form a cycle
+const edges: Edge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 5 },
+  { from: 1, to: 3, weight: -3 },
+  { from: 2, to: 3, weight: 2 },
+];
+
+const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
+
+console.log('Distances:', distances);          // [0, 4, 5, 1]
+console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
+console.log('Negative cycle?', hasNegativeCycle); // false
+
+// If you want to pull out the path 0 -> 1 -> 3:
+function buildPath(pred: (number | null)[], target: number): number[] {
+  const path: number[] = [];
+  for (let v = target; v !== null; v = pred[v] as number | null) {
+    path.push(v);
   }
+  return path.reverse();
 }
 
-// Usage
-const tri = new Triangle(6, 7, 8);
-console.log(tri.area()); // 20.784609690826528
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new RangeError('Both base and height should be positive numbers');
-  }
-  return base * height / 2;
-}
+console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
