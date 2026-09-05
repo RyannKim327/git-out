@@ -1,113 +1,52 @@
-// 1️⃣  Node definition – the “building block” of the list
-class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
 }
 
-// 2️⃣  The linked list itself
-class LinkedList<T> {
-  private head: ListNode<T> | null = null;
-  private tail: ListNode<T> | null = null;
-  private _size = 0;
+/**
+ * Returns the diameter (in edges) of a binary tree.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
 
-  // ---- basic properties ----
-  get size() { return this._size; }
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
 
-  // ---- insertions ----
-  push(value: T): void {                  // add to the end
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      this.tail!.next = node;
-      this.tail = node;
-    }
-    this._size++;
-  }
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
 
-  unshift(value: T): void {                // add to the front
-    const node = new ListNode(value);
-    if (!this.head) {
-      this.head = this.tail = node;
-    } else {
-      node.next = this.head;
-      this.head = node;
-    }
-    this._size++;
-  }
-
-  // ---- removals ----
-  pop(): T | null {                       // remove from the end
-    if (!this.head) return null;
-    let current = this.head;
-    let prev: ListNode<T> | null = null;
-
-    while (current.next) {
-      prev = current;
-      current = current.next;
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
     }
 
-    if (prev) prev.next = null;           // cut off the tail
-    else this.head = this.tail = null;    // list became empty
-
-    this._size--;
-    return current.value;
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
   }
 
-  shift(): T | null {                     // remove from the front
-    if (!this.head) return null;
-    const removed = this.head;
-    this.head = removed.next;
-    if (!this.head) this.tail = null;     // list became empty
-    this._size--;
-    return removed.value;
-  }
-
-  // ---- traversal helpers ----
-  toArray(): T[] {
-    const arr: T[] = [];
-    let current = this.head;
-    while (current) {
-      arr.push(current.value);
-      current = current.next;
-    }
-    return arr;
-  }
-
-  forEach(fn: (value: T, index: number) => void): void {
-    let current = this.head;
-    let i = 0;
-    while (current) {
-      fn(current.value, i);
-      current = current.next;
-      i++;
-    }
-  }
+  dfs(root);
+  return maxDiameter;         // already in edges
 }
-const list = new LinkedList<number>();
-list.push(1);                // [1]
-list.push(2);                // [1, 2]
-list.unshift(0);             // [0, 1, 2]
-console.log(list.toArray()); // [0, 1, 2]
-console.log(list.pop());     // 2
-console.log(list.shift());   // 0
-console.log(list.toArray()); // [1]
-insertAfter(target: T, newVal: T): boolean {
-  let current = this.head;
-  while (current) {
-    if (current.value === target) {
-      const node = new ListNode(newVal);
-      node.next = current.next;
-      current.next = node;
-      if (current === this.tail) this.tail = node;
-      this._size++;
-      return true;
-    }
-    current = current.next;
-  }
-  return false;
+
+/* ---- example usage ------------------------------------------------------- */
+
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
 }
+
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
+
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
