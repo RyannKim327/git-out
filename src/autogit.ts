@@ -1,37 +1,50 @@
-// Node definition – adjust `value` type as needed
-export interface TreeNode<T = number> {
-  value: T;
-  left?: TreeNode<T>;
-  right?: TreeNode<T>;
+interface TreeNode {
+  val:  number | string   // you can put any type that fits your data
+  left?: TreeNode | null
+  right?: TreeNode | null
 }
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0;                 // empty tree -> depth 0
 
-// Recursive sum – the classic “do it in one pass”
-export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;                 // base case
-  return (root.value as any) +                      // value of this node
-         sumRecursive(root.left) +                     // left subtree
-         sumRecursive(root.right);                     // right subtree
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
+
+  return Math.max(leftDepth, rightDepth) + 1;
 }
-export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
-  if (!root) return 0 as T;
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-  let sum = 0 as T;
-  const stack: TreeNode<T>[] = [root];
+  let depth = 0;
+  const queue: Array<TreeNode> = [root];
 
-  while (stack.length) {
-    const node = stack.pop()!;
-    sum += node.value as any;
-    if (node.right) stack.push(node.right);
-    if (node.left)  stack.push(node.left);
+  while (queue.length) {
+    const levelSize = queue.length;   // nodes at the current level
+    depth++;                          // we’re about to process a whole new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;    // safe; queue is non‑empty here
+
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
   }
 
-  return sum;
+  return depth;
 }
+// Build a tiny tree:
+//        1
+//       / \
+//      2   3
+//         /
+//        4
 const tree: TreeNode = {
-  value: 1,
-  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
-  right: { value: 3 }
+  val: 1,
+  left: { val: 2 },
+  right: {
+    val: 3,
+    left: { val: 4 }
+  }
 };
 
-console.log(sumRecursive(tree));   // 15
-console.log(sumIterative(tree));   // 15
+console.log('Recursive depth:', maxDepth(tree));          // 3
+console.log('Iterative depth:', maxDepthIterative(tree)); // 3
