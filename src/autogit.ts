@@ -1,33 +1,37 @@
-/**
- * Returns a random integer between `min` and `max` – both inclusive.
- * Uses the standard Math.random() (not crypto‑safe).
- */
-export function randomIntInRange(min: number, max: number): number {
-  // Make sure min ≤ max and that the inputs are integers
-  if (!Number.isInteger(min) || !Number.isInteger(max))
-    throw new Error('min and max must be integers');
-  if (min > max) [min, max] = [max, min];
+function secondLargestSort(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-  const range = max - min + 1;          // how many possible numbers
-  return Math.floor(Math.random() * range) + min;
+  const sorted = [...arr].sort((a, b) => b - a); // Descending
+  return sorted[1];
 }
+function secondLargestSinglePass(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-/**
- * Returns a random floating‑point number in `[min, max)`.
- * If you want `max` inclusive, add a tiny epsilon before flooring.
- */
-export function randomFloatInRange(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  return Math.random() * (max - min) + min;
+  let max = -Infinity;
+  let second = -Infinity;
+
+  for (const num of arr) {
+    if (num > max) {
+      second = max;
+      max = num;
+    } else if (num > second && num !== max) {
+      second = num;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
 }
-export function secureRandomInt(min: number, max: number): number {
-  if (min > max) [min, max] = [max, min];
-  const range = max - min + 1;
-  // We'll grab 4 random bytes and reduce them into our range
-  const buf = new Uint32Array(1);
-  crypto.getRandomValues(buf);
-  return (buf[0] % range) + min;
+function secondLargestSet(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)];
+  if (unique.length < 2) return undefined;
+
+  const sorted = unique.sort((a, b) => b - a);
+  return sorted[1];
 }
-console.log(randomIntInRange(1, 6)); // 1‑6 like a die
-console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
-console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
+function secondLargestMathMax(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  const max = Math.max(...arr);
+  const maxFiltered = arr.filter(num => num !== max);
+  return Math.max(...maxFiltered);
+}
