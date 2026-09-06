@@ -1,47 +1,82 @@
-/**
- * Random API – picks a random fact from https://uselessfacts.jsph.pl
- * Returns an object: { id, text, source, permalink }
- */
-async function fetchRandomFact(): Promise<{
-  id: string;
-  text: string;
-  source: string;
-  permalink: string;
-}> {
-  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
+function bfsLimited(start, isGoal, neighbors, maxDepth):
+    queue ← [(start, 0)]          // node and its depth
+    visited ← new Set()
 
-  try {
-    const response = await fetch(apiUrl);
+    while queue not empty:
+        (node, depth) ← queue.dequeue()
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+        if isGoal(node): return node
+
+        if depth == maxDepth:
+            continue   // depth limit reached – skip adding successors
+
+        for each n in neighbors(node):
+            if n not in visited:
+                visited.add(n)
+                queue.enqueue((n, depth + 1))
+
+    return null   // no goal within depth limit
+type Node<T> = T;
+
+// Parameters:
+//   start: the node to begin from
+//   isGoal: a predicate to determine if a node is the goal
+//   neighbors: a function that returns an array of adjacent nodes
+//   maxDepth: the depth cutoff (inclusive)
+//   allowRevisit: if true, visited set is ignored – useful for pure trees
+export function breadthLimitedSearch<T>(
+  start: Node<T>,
+  isGoal: (node: T) => boolean,
+  neighbors: (node: T) => Iterable<T>,
+  maxDepth: number,
+  allowRevisit: boolean = false
+): T | null {
+  // Queue holds tuples: [node, depth]
+  const queue: Array<[T, number]> = [[start, 0]];
+
+  // Only keep visited set if we care about cycles
+  const visited = new Set<T>();
+  if (!allowRevisit) visited.add(start);
+
+  while (queue.length) {
+    const [node, depth] = queue.shift() as [T, number];
+
+    if (isGoal(node)) return node;
+
+    if (depth === maxDepth) continue; // Depth limit reached – skip children
+
+    for (const child of neighbors(node)) {
+      if (!allowRevisit && visited.has(child)) continue;
+      visited.add(child);
+      queue.push([child, depth + 1]);
     }
-
-    const data = await response.json();
-
-    // If you’re inside an Android NativeScript environment you could
-    // show a Toast or log the result with Android SDK.
-    console.log("Random fact fetched:", data);
-    return data;
-  } catch (err) {
-    console.error("Failed to fetch random fact:", err);
-    throw err;
   }
+
+  return null; // No goal found within the depth bound
+}
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [5, 6]],
+  [4, [7]],
+  [5, [7]],
+  [6, []],
+  [7, []],
+]);
+
+function neighbors(n: number) {
+  return graph.get(n) ?? [];
 }
 
-/**
- * Example usage – you’d call this from anywhere, e.g. on a button tap.
- */
-async function runDemo() {
-  try {
-    const fact = await fetchRandomFact();
-    // In Android, for a quick visual you could use:
-    // import { Toast } from "tns-core-modules/ui/toast";
-    // Toast.makeText(fact.text, 2000).show();
-    console.log("Fact text:", fact.text);
-  } catch {
-    // error handling already done in fetchRandomFact
-  }
-}
+const start = 1;
+const goal = 7;
+const maxDepth = 3; // we only want to explore up to 3 edges away
 
-runDemo();
+const result = breadthLimitedSearch(
+  start,
+  (node) => node === goal,
+  neighbors,
+  maxDepth
+);
+
+console.log(result); // => 7 (found within 3 steps)
