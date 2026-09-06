@@ -1,43 +1,55 @@
-/**
- * Returns true if `text` reads the same forward and backward.
- * By default it is case‑sensitive and includes every character.
- *
- * @param text The string to check.
- * @param opts  Optional settings:
- *   - `ignoreCase`:   true to compare lowercase strings (default: false)
- *   - `ignoreSpaces`: true to skip whitespace (default: false)
- *   - `ignoreNonAlnum`: true to skip anything that is not a letter or digit (default: false)
- */
-export function isPalindrome(
-  text: string,
-  opts?: { ignoreCase?: boolean; ignoreSpaces?: boolean; ignoreNonAlnum?: boolean }
-): boolean {
-  const { ignoreCase = false, ignoreSpaces = false, ignoreNonAlnum = false } = opts || {};
-
-  // Prepare the string based on options
-  let processed = ignoreCase ? text.toLowerCase() : text;
-
-  if (ignoreSpaces) processed = processed.replace(/\s+/g, '');
-  if (ignoreNonAlnum) processed = processed.replace(/[^a-z0-9]/gi, '');
-
-  // Compare forward and reversed
-  const reversed = processed.split('').reverse().join('');
-  return processed === reversed;
+// Node definition – feel free to replace this with your own class/struct
+interface ListNode<T = unknown> {
+  val: T;
+  next: ListNode<T> | null;
 }
-console.log(isPalindrome('radar'));          // true
-console.log(isPalindrome('Radar'));          // false
-console.log(isPalindrome('Radar', { ignoreCase: true })); // true
-console.log(isPalindrome('A man, a plan, a canal: Panama', { ignoreCase: true, ignoreNonAlnum: true })); // true
-const isPal = (s: string) =>
-  (s = s.replace(/[^a-z0-9]/gi, '').toLowerCase()).split('').reverse().join('') === s;
-const examples = [
-  'racecar',
-  'RaceCar',
-  'A man, a plan, a canal: Panama',
-  'No lemon, no melon',
-  'Hello, world!',
-];
 
-for (const ex of examples) {
-  console.log(`${ex.padEnd(30)} → ${isPalindrome(ex, { ignoreCase: true, ignoreNonAlnum: true })}`);
+function hasCycle<T>(head: ListNode<T> | null): boolean {
+  // Two pointers that start at the head
+  let slow: ListNode<T> | null = head;   // moves 1 step
+  let fast: ListNode<T> | null = head;   // moves 2 steps
+
+  while (fast && fast.next) {
+    slow = slow!.next;          // advance one step
+    fast = fast.next.next;      // advance two steps
+
+    if (slow === fast) {        // they met → cycle detected
+      return true;
+    }
+  }
+
+  // fast ran out of nodes → no cycle
+  return false;
+}
+function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
+  const seen = new Set<ListNode<T>>();
+  let current = head;
+
+  while (current) {
+    if (seen.has(current)) return true; // loop!
+    seen.add(current);
+    current = current.next;
+  }
+  return false;
+}
+function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head, fast = head;
+
+  // First, detect a cycle
+  while (fast && fast.next) {
+    slow = slow!.next;
+    fast = fast.next.next;
+    if (slow === fast) break;
+  }
+
+  // No cycle
+  if (!fast || !fast.next) return null;
+
+  // Move one pointer to the head; keep other where they met
+  slow = head;
+  while (slow !== fast) {
+    slow = slow!.next;
+    fast = fast!.next;
+  }
+  return slow; // the entry point of the cycle
 }
