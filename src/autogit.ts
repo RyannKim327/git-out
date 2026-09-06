@@ -1,30 +1,44 @@
+// cronDemo.ts
+// ──────────────────────────────────────────────
+// Simple TS + node‑cron demo.  Every minute,
+// the job prints a timestamp and a random number.
+//
+// Requirements:
+//   npm i node-cron @types/node-cron
+//
+// Run with:
+//   npx ts-node cronDemo.ts
+// ‒ or compile (npx tsc) and exec (node cronDemo.js)
+// ──────────────────────────────────────────────
+
+import cron from 'node-cron';
+
 /**
- * Return the factorial of a non‑negative integer.
- *
- * @param n - the number to calculate the factorial of.
- * @returns factorial(n) as a number (or BigInt if you want larger values).
- * @throws TypeError if the input is not a non‑negative integer.
+ * Helper that gives us a nicely formatted timestamp.
  */
-function factorial(n: number): number {
-  if (!Number.isInteger(n) || n < 0) {
-    throw new TypeError("Factorial is only defined for non‑negative integers");
-  }
+const now = () => new Date().toLocaleString();
 
-  // Base case: 0! = 1 and 1! = 1
-  if (n <= 1) return 1;
+/**
+ * The task that will run according to the cron schedule.
+ * We generate a random integer between 1 and 1000.
+ */
+const task = () => {
+  const rand = Math.floor(Math.random() * 1000) + 1;
+  console.log(`[${now()}] Random number: ${rand}`);
+};
 
-  // Recursive step: n! = n * (n – 1)!
-  return n * factorial(n - 1);
-}
+/**
+ * Schedule the job.
+ * Cron expression: '* * * * *'
+ * └─ minute (0‑59)
+ *
+ * The job triggers at the start of every minute.
+ */
+cron.schedule('* * * * *', task, {
+  scheduled: true,
+  timezone: 'UTC',     // change to your local timezone if needed
+});
 
-// Example usage
-console.log(factorial(5)); // 120
-function factorialBig(n: BigInt): BigInt {
-  if (n < 0n) throw new TypeError("Must be non‑negative");
-
-  if (n <= 1n) return 1n;
-
-  return n * factorialBig(n - 1n);
-}
-
-console.log(factorialBig(20n).toString()); // 2432902008176640000
+console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
+[2026-06-17 12:34:00] Random number: 827
+[2026-06-17 12:35:00] Random number: 314
