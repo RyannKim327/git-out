@@ -1,39 +1,28 @@
-function reverseString(s: string): string {
-  return s.split('').reverse().join('');
+// Simple random user fetcher with axios (TypeScript)
+
+import axios from 'axios';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  phone: string;
+  website: string;
 }
 
-// Example
-console.log(reverseString('hello')); // 'olleh'
-reverseString('👋🏽'); // '🏽👋'  → wrong
-function reverseStringUnicode(s: string): string {
-  const codePoints: number[] = [];
-  for (const char of s) {
-    codePoints.push(char.codePointAt(0)!);
+async function fetchRandomUser(): Promise<User | undefined> {
+  try {
+    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
+  } catch (error) {
+    console.error('Error fetching users:', error);
   }
-  return String.fromCodePoint(...codePoints.reverse());
 }
 
-// Example
-console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
-const cp = Array.from(s).reverse().join('');
-function reverseRecursively(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseRecursively(s.slice(1)) + s[0];
-}
-function reverseLoop(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
+fetchRandomUser().then(user => {
+  if (user) {
+    console.log(`🎲 Random user: ${user.name} (${user.email})`);
   }
-  return result;
-}
-function reverseBuffer(s: string): string {
-  const buf: string[] = new Array(s.length);
-  for (let i = 0; i < s.length; i++) {
-    buf[i] = s[s.length - 1 - i];
-  }
-  return buf.join('');
-}
-function reverseStringSafe(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+});
