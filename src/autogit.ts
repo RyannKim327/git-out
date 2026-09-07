@@ -1,35 +1,43 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
-}
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
-  let current = head;
+/**
+ * Returns the first character that occurs only once in `s`.
+ * If every character repeats, returns null.
+ */
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣ Count how many times each char appears
+  const freq = new Map<string, number>();
 
-  while (current) {
-    count++;
-    current = current.next;
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  return count;
-}
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-class LinkedList<T> {
-  private head?: Node<T>;
-
-  // ... push, pop, etc.
-
-  size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
+  // 2️⃣ Scan the string again and pick the first char with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
+    }
   }
-}
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
 
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+  return null; // nothing unique
+}
+console.log(firstNonRepeatingChar("abacbc")); // -> "b"
+console.log(firstNonRepeatingChar("aabbcc")); // -> null
+console.log(firstNonRepeatingChar("abcde"));  // -> "a"
+function firstNonRepeatingCharOptimized(s: string): string | null {
+  const freq = new Map<string, number>();
+  const order: string[] = [];
+
+  for (const ch of s) {
+    const newCount = (freq.get(ch) ?? 0) + 1;
+    freq.set(ch, newCount);
+
+    if (newCount === 1) {
+      order.push(ch);          // first appearance
+    } else {
+      // remove all occurrences of `ch` from the queue
+      const idx = order.indexOf(ch);
+      if (idx !== -1) order.splice(idx, 1);
+    }
+  }
+
+  return order.length ? order[0] : null;
+}
