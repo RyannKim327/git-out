@@ -1,25 +1,36 @@
-/** 
- * Returns true if `text` is a palindrome.
- * The check is:
- *   • case‑insensitive
- *   • ignores everything that’s not a letter or digit
+// A minimal, generic node type
+export interface ListNode<T> {
+  readonly value: T;
+  next: ListNode<T> | null;
+}
+
+/**
+ * Returns the middle node of a singly‑linked list.
+ * If the list has an even number of nodes, it returns
+ * the *second* middle node (i.e. the one that a
+ * “slow‑pointer” would land on after the last move).
+ *
+ * @param head Head of the list – null if the list is empty.
+ * @returns The middle node, or null for an empty list.
  */
-function isPalindrome(text: string): boolean {
-  // 1. Normalise: remove non‑alphanumerics and lower‑case everything
-  const cleaned = text.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+export function middleNode<T>(head: ListNode<T> | null): ListNode<T> | null {
+  let slow = head;
+  let fast = head;
 
-  // 2. Compare the string with its reverse
-  const reversed = cleaned.split('').reverse().join('');
-  return cleaned === reversed;
-}
-
-// Usage examples
-console.log(isPalindrome('Racecar'));          // true
-console.log(isPalindrome('A man, a plan...'));  // true
-console.log(isPalindrome('Hello world'));      // false
-function isPalindromeSimple(s: string): boolean {
-  for (let i = 0, j = s.length - 1; i < j; i++, j--) {
-    if (s[i] !== s[j]) return false;
+  // advance fast two steps, slow one step
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next;
+    fast = fast.next.next;
   }
-  return true;
+
+  return slow;
 }
+// Build a list: 1 → 2 → 3 → 4 → 5
+const node5: ListNode<number> = { value: 5, next: null };
+const node4: ListNode<number> = { value: 4, next: node5 };
+const node3: ListNode<number> = { value: 3, next: node4 };
+const node2: ListNode<number> = { value: 2, next: node3 };
+const node1: ListNode<number> = { value: 1, next: node2 };
+
+const mid = middleNode(node1);
+console.log(mid?.value); // → 3
