@@ -1,43 +1,40 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+/**
+ * Interpolation search returns the index of `target` in `arr`,
+ * or –1 if the target is not present.
+ *
+ * @param arr   – sorted array of numbers (must be monotonic increasing)
+ * @param target – key we’re trying to locate
+ * @returns the array index of target or -1
+ */
+export function interpolationSearch(arr: number[], target: number): number {
+    if (arr.length === 0) return -1;
 
-  const count = new Map<string, number>();
+    let low = 0;
+    let high = arr.length - 1;
 
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
-  }
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // Avoid division by zero when the sub‑array contains equal numbers
+        if (arr[high] === arr[low]) {
+            return arr[low] === target ? low : -1;
+        }
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
-  }
+        // Estimate the likely position of `target` within [low, high]
+        const pos = low + Math.floor(
+            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
+        );
 
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
+        const val = arr[pos];
 
-  const freq = new Int16Array(256);
+        if (val === target) return pos;
+        if (val < target) low = pos + 1;
+        else high = pos - 1;
+    }
 
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
-  }
+    return -1; // not found
+}
+import { interpolationSearch } from "./interpolationSearch";
 
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+
+console.log(interpolationSearch(data, 42));   // → 4
+console.log(interpolationSearch(data, 100));  // → -1
