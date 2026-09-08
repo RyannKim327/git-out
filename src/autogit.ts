@@ -1,16 +1,28 @@
-// 1. Using the Number constructor
-const val1 = Number("42");          // 42
+// Simple random user fetcher with axios (TypeScript)
 
-// 2. Using unary plus
-const val2 = +"42";                 // 42
+import axios from 'axios';
 
-// 3. Using parseInt (base 10 recommended)
-const val3 = parseInt("42", 10);    // 42
-
-// 4. Using parseFloat for decimals
-const val4 = parseFloat("3.14");    // 3.14
-function safeParse(str: string): number | null {
-  const n = Number(str);
-  return Number.isNaN(n) ? null : n;
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  phone: string;
+  website: string;
 }
-const i = Math.floor(parseFloat("3.9")); // 3
+
+async function fetchRandomUser(): Promise<User | undefined> {
+  try {
+    const { data } = await axios.get<User[]>('https://jsonplaceholder.typicode.com/users');
+    const randomIndex = Math.floor(Math.random() * data.length);
+    return data[randomIndex];
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+}
+
+fetchRandomUser().then(user => {
+  if (user) {
+    console.log(`🎲 Random user: ${user.name} (${user.email})`);
+  }
+});
