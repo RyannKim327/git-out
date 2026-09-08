@@ -1,61 +1,173 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
+// -----------------------------------------------------------------------------
+//  Types
+// -----------------------------------------------------------------------------
+type Node = string | number;          // any hashable key – string or number
+type Weight = number;
+
+interface Edge {
+  target: Node;
+  weight: Weight;
 }
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
-  }
-  return head
+interface Graph {
+  // adjacency list: nodeId -> array of outgoing edges
+  [node: string]: Edge[];
 }
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
+// -----------------------------------------------------------------------------
+//  Priority Queue (min‑heap)
+// -----------------------------------------------------------------------------
+class MinHeap<T> {
+  private heap: Array<{ key: number; value: T }> = [];
 
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
+  // Insert a new element with its priority key
+  push(key: number, value: T) {
+    this.heap.push({ key, value });
+    this.bubbleUp(this.heap.length - 1);
   }
 
-  // At the end, prev is the new head
-  return prev
-}
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
+  // Extract element with smallest key
+  pop(): T | undefined {
+    if (!this.heap.length) return undefined;
+    const min = this.heap[0].value;
+    const end = this.heap.pop()!;
+    if (this.heap.length) {
+      this.heap[0] = end;
+      this.sinkDown(0);
+    }
+    return min;
   }
 
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
+  get size() {
+    return this.heap.length;
+  }
 
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
+  private bubbleUp(idx: number) {
+    const element = this.heap[idx];
+    while (idx > 0) {
+      const parentIdx = Math.floor((idx - 1) / 2);
+      const parent = this.heap[parentIdx];
+      if (element.key >= parent.key) break;
+      this.heap[idx] = parent;
+      idx = parentIdx;
+    }
+    this.heap[idx] = element;
+  }
 
-  return newHead
+  private sinkDown(idx: number) {
+    const length = this.heap.length;
+    const element = this.heap[idx];
+
+    while (true) {
+      const leftIdx = 2 * idx + 1;
+      const rightIdx = 2 * idx + 2;
+      let swapIdx: number | null = null;
+
+      if (leftIdx < length) {
+        if (this.heap[leftIdx].key < element.key) {
+          swapIdx = leftIdx;
+        }
+      }
+
+      if (rightIdx < length) {
+        const rightKey = this.heap[rightIdx].key;
+        if (
+          (swapIdx === null && rightKey < element.key) ||
+          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
+        ) {
+          swapIdx = rightIdx;
+        }
+      }
+
+      if (swapIdx === null) break;
+
+      this.heap[idx] = this.heap[swapIdx];
+      idx = swapIdx;
+    }
+    this.heap[idx] = element;
+  }
 }
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
 
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+// -----------------------------------------------------------------------------
+//  Dijkstra
+// -----------------------------------------------------------------------------
+function dijkstra(
+  graph: Graph,
+  start: Node,
+  target?: Node
+): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
+  const distances = new Map<Node, number>();
+  const prev = new Map<Node, Node | null>();
+
+  // init
+  for (const node in graph) {
+    distances.set(node, Number.MAX_SAFE_INTEGER);
+    prev.set(node, null);
+  }
+  distances.set(start, 0);
+
+  const heap = new MinHeap<Node>();
+  heap.push(0, start);
+
+  while (heap.size) {
+    const u = heap.pop()!;
+    const distU = distances.get(u)!;
+
+    // If a target was supplied and we reached it, we can stop early
+    if (target !== undefined && u === target) break;
+
+    const edges = graph[u as string] ?? [];
+    for (const edge of edges) {
+      const alt = distU + edge.weight;
+      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
+        distances.set(edge.target, alt);
+        prev.set(edge.target, u);
+        heap.push(alt, edge.target);
+      }
+    }
+  }
+
+  return { distances, prev };
+}
+
+// -----------------------------------------------------------------------------
+//  Helper: recover path from prev map
+// -----------------------------------------------------------------------------
+function recoverPath(
+  prev: Map<Node, Node | null>,
+  start: Node,
+  end: Node
+): Node[] {
+  const path: Node[] = [];
+  let cur: Node | undefined = end;
+
+  while (cur !== undefined && cur !== null) {
+    path.unshift(cur);
+    cur = prev.get(cur) ?? null;
+  }
+
+  if (path[0] !== start) return []; // no path found
+  return path;
+}
+
+// -----------------------------------------------------------------------------
+//  Example
+// -----------------------------------------------------------------------------
+const graph: Graph = {
+  A: [
+    { target: "B", weight: 2 },
+    { target: "C", weight: 5 },
+  ],
+  B: [
+    { target: "C", weight: 1 },
+    { target: "D", weight: 4 },
+  ],
+  C: [
+    { target: "D", weight: 1 },
+  ],
+  D: [],
+};
+
+const { distances, prev } = dijkstra(graph, "A");
+console.log(distances);               // Map(…)
+console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
