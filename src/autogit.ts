@@ -1,51 +1,37 @@
-/**
- * Merge two sorted arrays into one sorted array.
- * The comparator decides the ordering – by default it uses the `<` operator.
- */
-function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
-  const result: T[] = [];
-  let i = 0; // index into left
-  let j = 0; // index into right
+const nums = [1, 2, 3, 2, 4, 1, 5];
 
-  // Grab the compare function, or fall back to simple < comparison
-  const comp = compare ?? ((a: T, b: T) => a < b);
+const uniq = Array.from(new Set(nums));
+// or: const uniq = [...new Set(nums)];
 
-  while (i < left.length && j < right.length) {
-    // If left[i] comes before right[j] (or equal), push it
-    if (comp(left[i], right[j])) {
-      result.push(left[i++]);
-    } else {
-      result.push(right[j++]);
-    }
+console.log(uniq); // [1, 2, 3, 4, 5]
+const words = ["foo", "bar", "baz", "foo", "bar"];
+
+const unique = words.filter((w, i, arr) => arr.indexOf(w) === i);
+
+console.log(unique); // ["foo", "bar", "baz"]
+const objs = [{a: 1}, {a: 1}, {a: 2}];
+console.log([...new Set(objs)]); // keeps both {a:1} objects
+function uniqByKey<T>(arr: T[], keyFn: (item: T) => string) {
+  const seen = new Set<string>();
+  return arr.filter(item => {
+    const key = keyFn(item);
+    return seen.has(key) ? false : seen.add(key);
+  });
+}
+
+const uniqueObjs = uniqByKey(objs, obj => JSON.stringify(obj));
+console.log(uniqueObjs); // [{a:1}, {a:2}]
+const arr = [1, 2, 3, 2, 1];
+const seen = new Set<number>();
+let writeIdx = 0;
+
+for (let readIdx = 0; readIdx < arr.length; readIdx++) {
+  const value = arr[readIdx];
+  if (!seen.has(value)) {
+    seen.add(value);
+    arr[writeIdx++] = value;
   }
-
-  // One of the halves may still have leftovers
-  return result.concat(left.slice(i)).concat(right.slice(j));
 }
 
-/**
- * Recursive merge sort.  
- * @param array The array to sort.
- * @param compare Optional comparator that returns true if a < b.
- */
-export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
-  // Stop recursion when array has 0 or 1 item
-  if (array.length <= 1) return array.slice(); // return a shallow copy
-
-  const mid = Math.floor(array.length / 2);
-  const left = mergeSort(array.slice(0, mid), compare);
-  const right = mergeSort(array.slice(mid), compare);
-
-  return merge(left, right, compare);
-}
-const numbers = [5, 3, 8, 1, 2, 9];
-const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
-
-const people = [
-  { name: "Alice", age: 32 },
-  { name: "Bob", age: 25 },
-  { name: "Eve", age: 29 }
-];
-
-// Sort by age
-const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
+arr.length = writeIdx; // shrink the array
+console.log(arr); // [1, 2, 3]
