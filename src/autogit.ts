@@ -1,27 +1,9 @@
-// ---------- types ----------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+const sentence = "The quick brown fox jumps over the lazy dog";
+const needle = "brown";
 
-// ---------- helper ----------------------------------------------
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Network error: ${response.status} ${response.statusText}`);
-  }
-  return response.json() as Promise<T>;
-}
-
-// ---------- usage ----------------------------------------------
-(async () => {
-  try {
-    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
-    console.log('Fetched post:', post);
-    // do something with post… (e.g., update UI)
-  } catch (err) {
-    console.error('Failed to fetch post:', err);
-  }
-})();
+const hasBrown = sentence.includes(needle); // true
+const hasBrownCaseInsensitive = sentence
+  .toLowerCase()
+  .includes(needle.toLowerCase()); // true
+const hasBrownIdx = sentence.indexOf(needle) !== -1; // true
+const hasVowelPattern = /[aeiou]/.test(sentence); // true
