@@ -1,86 +1,157 @@
-// -------------------------------------------
-//  heapSort.ts
-// -------------------------------------------
+// suffix-tree.ts
+/**
+ * Lightweight suffix tree for ASCII strings.
+ * The implementation uses Ukkonen’s algorithm
+ * and is fully typed for clarity.
+ */
+
+/** Each node can have many outgoing edges keyed by the
+ * first character of the edge label (i.e., “transition”).
+ * The tree is rooted (root is an empty string). */
+class Node {
+  /** Map from a character to a child node. */
+  children = new Map<string, Node>();
+
+  /** For nodes that represent the end of a suffix,
+   *  we record the starting index of that suffix in the
+   *  original text.  The set version lets us keep
+   *  multiple suffixes that collapse at the same node.
+   */
+  suffixIndices = new Set<number>();
+
+  /* In Ukkonen, each edge is implicitly defined by the
+   * start and length on the original text.  We store
+   * those pairs on the node that is the *target* of the edge.
+   */
+  edgeStart?: number;
+  edgeEnd?: number; // inclusive
+
+  /** The parent of this node (root’s parent is null). */
+  parent: Node | null = null;
+}
+
+/** A convenience wrapper around a Node that stores the
+ *  current active point used during construction.
+ */
+interface ActivePoint {
+  node: Node;     // the deepest node where the active span ends
+  edge: string;   // first character of the edge we are on
+  length: number; // how far we have walked down that edge
+}
 
 /**
- * Heap sort – O(n log n) worst‑case, in‑place, stable‑not‑guaranteed.
- *
- * @param   array      The array to sort, mutated in‑place.
- * @param   cmp?       Optional comparator: (a, b) => number
- *                     should return <0 if a < b, 0 if a === b, >0 if a > b.
- *
- * @example
- * const nums = [3, 1, 4, 1, 5, 9, 2];
- * heapSort(nums);               // nums => [1,1,2,3,4,5,9]
- * heapSort(nums, (a, b) => b - a);  // descending order
+ * The SuffixTree itself.
  */
-export function heapSort<T>(array: T[], cmp?: (a: T, b: T) => number): void {
-  const compare = cmp ?? defaultCompare;
+export class SuffixTree {
+  /** The root of the tree.  Its edgeStart/edgeEnd are undefined
+   *  because it has no incoming edge. */
+  private _root = new Node();
 
-  /* ---------- 1. Build a max‑heap (or custom heap) ---------- */
-  const heapSize = array.length;
+  /** The input string.  We keep it as an array of characters
+   *  for O(1) random access. */
+  private _text: string[];
 
-  for (let i = Math.floor(heapSize / 2) - 1; i >= 0; i--) {
-    siftDown(i, heapSize);
+  /** The active point used by Ukkonen’s algorithm. */
+  private _active: ActivePoint;
+
+  /** The number of “steps” we have taken from the root
+   *  during construction.  This is the suffix link counter,
+   *  useful primarily for debugging but also for truncated
+   *  construction. */
+  private _remainder = 0;
+
+  constructor(text: string) {
+    this._text = [...text];
+    this._active = { node: this._root, edge: "", length: 0 };
+    this.build();
   }
 
-  /* ---------- 2. Repeatedly extract max (or min) ---------- */
-  for (let i = heapSize - 1; i > 0; i--) {
-    // Grab the root (largest element) and put it at the end
-    swap(array, 0, i);
-    // Restore heap property on the reduced heap
-    siftDown(0, i);
-  }
+  /* ------------------------------------------------------------------- */
+  /*  BUILDING
+   * ------------------------------------------------------------------- */
 
-  /* ---------- Helper scopes ---------- */
-  function siftDown(start: number, end: number): void {
-    let root = start;
-
-    while (true) {
-      const left = 2 * root + 1;
-      if (left >= end) break; // no children
-
-      const right = left + 1;
-      let candidate = left;
-
-      // Select the bigger child (or smaller if comparator flipped)
-      if (right < end && compare(array[right], array[left]) > 0) {
-        candidate = right;
-      }
-
-      // If root already holds the biggest, we're done
-      if (compare(array[root], array[candidate]) >= 0) break;
-
-      // Swap root with the chosen child and continue
-      swap(array, root, candidate);
-      root = candidate;
+  private build(): void {
+    for (let pos = 0; pos < this._text.length; pos++) {
+      this._addCharacter(pos);
     }
   }
 
-  function swap(arr: T[], i: number, j: number): void {
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
-}
+  /**
+   * Extend the tree with the character at position `pos` in the input.
+   * This is Ukkonen’s “phase” step.
+   */
+  private _addCharacter(pos: number): void {
+    this._remainder++;
 
-/* ------------------------------------------- */
-/* Default comparator for `number`/`string` (ascending) */
-function defaultCompare<T>(a: T, b: T): number {
-  // If it's a number or behaves like a number
-  if (typeof a === 'number' && typeof b === 'number') {
-    return a - b;
-  }
-  // Fallback to lexical comparison for strings and others that stringify nicely
-  const sa = String(a);
-  const sb = String(b);
-  return sa < sb ? -1 : sa > sb ? 1 : 0;
-}
-import { heapSort } from "./heapSort";
+    let lastNewNode: Node | null = null;
 
-const data = [8, 3, 5, 4, 7, 1, 2, 6];
-heapSort(data);                // ascending
-console.log(data);             // [1, 2, 3, 4, 5, 6, 7, 8]
+    while (this._remainder > 0) {
+      const currentActiveEdge = this._active.edge || this._text[pos];
 
-heapSort(data, (a, b) => b - a); // descending
-console.log(data);                    // [8, 7, 6, 5, 4, 3, 2, 1]
+      // 1. If there is no outgoing edge from the active node
+      //    that starts with the active edge character, create one.
+      if (!this._active.node.children.has(currentActiveEdge)) {
+        const leaf = this._createNode(pos, this._text.length - 1); // leaf points to suffix start
+        this._active.node.children.set(currentActiveEdge, leaf);
+        leaf.parent = this._active.node;
+
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this._active.node;
+          lastNewNode = null;
+        }
+      } else {
+        // 2. There is an edge; we need to walk down it.
+        const nextNode = this._active.node.children.get(currentActiveEdge)!;
+
+        // What character does the edge label have at the next position?
+        const edgeChar = this._text[nextNode.edgeStart! + this._active.length];
+
+        if (edgeChar === this._text[pos]) {
+          // 2a. The current character is already in the tree.
+          //     Just extend the active point and break.
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this._active.node;
+            lastNewNode = null;
+          }
+          this._active.length++;
+          break;
+        }
+
+        // 2b. Need to split the edge because we hit a mismatch.
+        const splitEnd = nextNode.edgeStart! + this._active.length - 1;
+        const split = this._createNode(nextNode.edgeStart!, splitEnd);
+        this._active.node.children.set(currentActiveEdge, split);
+        split.parent = this._active.node;
+
+        // 2b.i. The old child becomes a grand‑child of the new split node.
+        nextNode.edgeStart! = splitEnd + 1;
+        split.children.set(this._text[nextNode.edgeStart!], nextNode);
+        nextNode.parent = split;
+
+        // 2b.ii. Add a new leaf for the new character.
+        const leaf = this._createNode(pos, this._text.length - 1);
+        split.children.set(this._text[pos], leaf);
+        leaf.parent = split;
+
+        // 2b.iii. Link suffixes
+        if (lastNewNode) {
+          lastNewNode.suffixLink = split;
+        }
+        lastNewNode = split;
+        split.suffixLink = this._root;
+      }
+
+      // 3. Move to the next phase: decrement remainder
+      this._remainder--;
+
+      // 4. If the active node has a suffix link, follow it,
+      //    otherwise reset to root and adjust length.
+      if (this._active.node === this._root && this._active.length > 0) {
+        this._active.length--;
+        this._active.edge = this._text[pos - this._remainder + 1];
+      } else if (this._active.node !== this._root) {
+        this._active.node = this._active.node.suffixLink!;
+      } else {
+        this._active.edge = this._text[pos - this._remainder + 1];
+        this._active.length = 1;
+        this._active.node = this
