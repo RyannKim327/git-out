@@ -1,9 +1,20 @@
-const sentence = "The quick brown fox jumps over the lazy dog";
-const needle = "brown";
+// Original array
+const original: number[] = [1, 2, 3, 4, 5];
 
-const hasBrown = sentence.includes(needle); // true
-const hasBrownCaseInsensitive = sentence
-  .toLowerCase()
-  .includes(needle.toLowerCase()); // true
-const hasBrownIdx = sentence.indexOf(needle) !== -1; // true
-const hasVowelPattern = /[aeiou]/.test(sentence); // true
+// 1️⃣ In‑place reverse (mutates `original`)
+original.reverse();
+console.log(original); // [5, 4, 3, 2, 1]
+
+// 2️⃣ Copy then reverse (keeps `original` intact)
+const reversedCopy = original.slice().reverse();  // or [...original].reverse()
+console.log(reversedCopy);  // [5, 4, 3, 2, 1]
+type Person = { name: string; age: number };
+
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
+];
+
+const reversedPeople = [...people].reverse(); // still Person[]
+const reduceReversed = <T>(array: T[]): T[] =>
+  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
