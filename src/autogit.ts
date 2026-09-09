@@ -1,41 +1,65 @@
-function firstRepeated(s: string): string | null {
-  const seen = new Set<string>();
+type Node<T> = { val: T; next: Node<T> | null };
 
-  for (const ch of s) {
-    if (seen.has(ch)) {
-      return ch;          // first repeat!
-    }
-    seen.add(ch);
+function isPalindrome<T>(head: Node<T> | null): boolean {
+  if (!head || !head.next) return true;
+
+  // 1) Find middle (slow‑fast)
+  let slow = head;
+  let fast = head;
+  while (fast.next && fast.next.next) {
+    slow = slow.next!;
+    fast = fast.next.next;
   }
 
-  return null;   // no repeats
-}
-console.log(firstRepeated("abca")); // → "a"
-console.log(firstRepeated("abcdef")); // → null
-console.log(firstRepeated("hello world")); // → "l"
-function firstRepeatedCaseInsensitive(s: string): string | null {
-  const seen = new Set<string>();
-  for (const ch of s.toLowerCase()) {
-    if (seen.has(ch)) return ch;
-    seen.add(ch);
+  // 2) Reverse the second half
+  let second = reverse(slow.next!);
+  slow.next = null;           // detach first half
+
+  // 3) Compare halves
+  let p1 = head;
+  let p2 = second;
+  while (p2) {
+    if (p1!.val !== p2.val) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
   }
-  return null;
+
+  // 4) (optional) restore the list
+  slow.next = reverse(second); // put it back
+
+  return true;
 }
-function firstRepeatIndex(s: string): number {
-  const seen = new Set<string>();
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (seen.has(ch)) return i;   // second appearance
-    seen.add(ch);
+
+function reverse<T>(head: Node<T>): Node<T> {
+  let prev: Node<T> | null = null;
+  let cur = head;
+  while (cur) {
+    const next = cur.next;
+    cur.next = prev;
+    prev = cur;
+    cur = next;
   }
-  return -1; // no repeat
+  return prev!;
 }
-function firstRepeatLater(s: string): string | null {
-  const seen = new Set<string>();
-  for (let i = s.length - 1; i >= 0; i--) {
-    const ch = s[i];
-    if (seen.has(ch)) return ch; // this appears again later
-    seen.add(ch);
+function isPalindromeWith<T>(
+  head: Node<T> | null,
+  equal: (a: T, b: T) => boolean
+): boolean {
+  if (!head || !head.next) return true;
+  // … same first steps as before …
+  while (p2) {
+    if (!equal(p1!.val, p2.val)) return false;
+    p1 = p1!.next;
+    p2 = p2.next;
   }
-  return null;
+  return true;
+}
+function isPalindromeStack<T>(head: Node<T> | null): boolean {
+  const stack: T[] = [];
+  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
+
+  for (let cur = head; cur; cur = cur.next) {
+    if (cur.val !== stack.pop()) return false;
+  }
+  return true;
 }
