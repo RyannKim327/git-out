@@ -1,60 +1,113 @@
-/* 1️⃣  Define the shapes of the data we expect  */
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+// 1️⃣  Node definition – the “building block” of the list
+class ListNode<T> {
+  value: T;
+  next: ListNode<T> | null = null;
 
-interface Comment {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
-
-/* 2️⃣  Helper that turns a StatusCode non‑OK into an error  */
-async function safeGet<T>(url: string): Promise<T> {
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    throw new Error(`GET ${url} failed: ${resp.status} ${resp.statusText}`);
-  }
-  return resp.json() as Promise<T>;
-}
-
-/* 3️⃣  Fetch a single post and its comments  */
-async function fetchPostWithComments(postId: number) {
-  const [post, comments] = await Promise.all([
-    safeGet<Post>(`https://jsonplaceholder.typicode.com/posts/${postId}`),
-    safeGet<Comment[]>(`https://jsonplaceholder.typicode.com/posts/${postId}/comments`),
-  ]);
-
-  console.log(`\n=== Post #${post.id} ===`);
-  console.log(`Title : ${post.title}`);
-  console.log(`Body  : ${post.body}\n`);
-
-  console.log(`--- ${comments.length} comment(s) ---`);
-  comments.forEach(c => {
-    console.log(`- ${c.name} (${c.email}): ${c.body.substring(0, 40)}…`);
-  });
-}
-
-/* 4️⃣  Run it for a few post IDs  */
-async function main() {
-  try {
-    await Promise.all([1, 2, 3].map(id => fetchPostWithComments(id)));
-  } catch (err) {
-    console.error('Something went wrong:', (err as Error).message);
+  constructor(value: T) {
+    this.value = value;
   }
 }
 
-main();
-# compile to JavaScript
-npx tsc api-demo.ts
+// 2️⃣  The linked list itself
+class LinkedList<T> {
+  private head: ListNode<T> | null = null;
+  private tail: ListNode<T> | null = null;
+  private _size = 0;
 
-# run the output
-node api-demo.js
+  // ---- basic properties ----
+  get size() { return this._size; }
 
-# or skip the compile step (requires ts-node)
-npx ts-node api-demo.ts
+  // ---- insertions ----
+  push(value: T): void {                  // add to the end
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      this.tail!.next = node;
+      this.tail = node;
+    }
+    this._size++;
+  }
+
+  unshift(value: T): void {                // add to the front
+    const node = new ListNode(value);
+    if (!this.head) {
+      this.head = this.tail = node;
+    } else {
+      node.next = this.head;
+      this.head = node;
+    }
+    this._size++;
+  }
+
+  // ---- removals ----
+  pop(): T | null {                       // remove from the end
+    if (!this.head) return null;
+    let current = this.head;
+    let prev: ListNode<T> | null = null;
+
+    while (current.next) {
+      prev = current;
+      current = current.next;
+    }
+
+    if (prev) prev.next = null;           // cut off the tail
+    else this.head = this.tail = null;    // list became empty
+
+    this._size--;
+    return current.value;
+  }
+
+  shift(): T | null {                     // remove from the front
+    if (!this.head) return null;
+    const removed = this.head;
+    this.head = removed.next;
+    if (!this.head) this.tail = null;     // list became empty
+    this._size--;
+    return removed.value;
+  }
+
+  // ---- traversal helpers ----
+  toArray(): T[] {
+    const arr: T[] = [];
+    let current = this.head;
+    while (current) {
+      arr.push(current.value);
+      current = current.next;
+    }
+    return arr;
+  }
+
+  forEach(fn: (value: T, index: number) => void): void {
+    let current = this.head;
+    let i = 0;
+    while (current) {
+      fn(current.value, i);
+      current = current.next;
+      i++;
+    }
+  }
+}
+const list = new LinkedList<number>();
+list.push(1);                // [1]
+list.push(2);                // [1, 2]
+list.unshift(0);             // [0, 1, 2]
+console.log(list.toArray()); // [0, 1, 2]
+console.log(list.pop());     // 2
+console.log(list.shift());   // 0
+console.log(list.toArray()); // [1]
+insertAfter(target: T, newVal: T): boolean {
+  let current = this.head;
+  while (current) {
+    if (current.value === target) {
+      const node = new ListNode(newVal);
+      node.next = current.next;
+      current.next = node;
+      if (current === this.tail) this.tail = node;
+      this._size++;
+      return true;
+    }
+    current = current.next;
+  }
+  return false;
+}
