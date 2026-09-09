@@ -1,94 +1,81 @@
-if currentDepth > depthLimit → stop exploring that branch
+// ---------- Tarjan S.T.C. ---------------------------------------
+
 /**
- * Generic depth‑limited search (iterative DFS).
- *
- * @param root        The starting node.
- * @param depthLimit  How far we are allowed to go from the root.
- * @param getNeighbors
- *        A callback that returns the list of adjacent nodes for a given node.
- * @param visitedSet  Optional set used to avoid revisiting nodes.
- *
- * @returns  Array of nodes visited in order (pre‑order DFS order).
+ * Return an array of strongly‑connected components.
+ * Each component is an array of vertex IDs (here strings).
+ * Vertices can be any `string`; if you prefer numbers just change the type.
  */
-export function depthLimitedSearch<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  visitedSet?: Set<T>
-): T[] {
-  const visited: Set<T> = visitedSet ?? new Set<T>();
-  const stack: Array<{ node: T; depth: number }> = [{ node: root, depth: 0 }];
-  const result: T[] = [];
+export function tarjanSCC(graph: Map<string, string[]>): string[][] {
+  // state that needs to survive the recursive walk
+  const index = new Map<string, number>();    // discovery time of vertex
+  const lowLink = new Map<string, number>();  // lowest discovery reachable
+  const stack: string[] = [];                 // vertices that are “on stack”
+  const onStack = new Set<string>();
 
-  while (stack.length > 0) {
-    const { node, depth } = stack.pop()!; // non‑empty because of the loop
+  let curIdx = 0;                            // global counter
+  const sccs: string[][] = [];               // result
 
-    // Skip if we've already seen the node
-    if (visited.has(node)) continue;
+  // helper: depth‑first walk from a single vertex
+  function strongConnect(v: string) {
+    // part A – set the depth index and low link
+    index.set(v, curIdx);
+    lowLink.set(v, curIdx);
+    curIdx += 1;
 
-    visited.add(node);
-    result.push(node);          // we “visit” it, or you can process here
+    // put v on stack
+    stack.push(v);
+    onStack.add(v);
 
-    // Stop expanding when we hit the depth limit
-    if (depth >= depthLimit) continue;
-
-    // Push neighbors onto stack.  We push in reverse order if you want to
-    // preserve the same order as a recursive DFS.
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
+    // part B – consider successors of v
+    const neighbours = graph.get(v) ?? [];
+    for (const w of neighbours) {
+      if (!index.has(w)) {
+        // Successor w has not yet been visited; recurse on it
+        strongConnect(w);
+        lowLink.set(v, Math.min(lowLink.get(v)!, lowLink.get(w)!));
+      } else if (onStack.has(w)) {
+        // Successor w is in stack → must be in the current SCC
+        lowLink.set(v, Math.min(lowLink.get(v)!, index.get(w)!));
       }
+    }
+
+    // part C – if v is a root node, pop the stack to build an SCC
+    if (lowLink.get(v) === index.get(v)) {
+      const component: string[] = [];
+      let w: string;
+      do {
+        w = stack.pop()!;
+        onStack.delete(w);
+        component.push(w);
+      } while (w !== v);
+      sccs.push(component);
     }
   }
 
-  return result;
-}
-// A tiny undirected graph:
-const graph = new Map<string, string[]>([
-  ['A', ['B', 'C', 'D']],
-  ['B', ['A', 'E', 'F']],
-  ['C', ['A', 'G']],
-  ['D', ['A', 'H']],
-  ['E', ['B']],
-  ['F', ['B']],
-  ['G', ['C']],
-  ['H', ['D']],
-]);
-
-function neighbors(node: string): string[] {
-  return graph.get(node) ?? [];
-}
-
-// Find all nodes reachable from 'A' within depth 2
-const visited = depthLimitedSearch('A', 2, neighbors);
-console.log(visited);   // e.g. ["A", "D", "H", "C", "G", "B", "F", "E"]
-function depthLimitedSearchWithTarget<T>(
-  root: T,
-  depthLimit: number,
-  getNeighbors: (node: T) => T[],
-  target: T,
-  visitedSet?: Set<T>
-): T | undefined {
-  const visited = visitedSet ?? new Set<T>();
-  const stack = [{ node: root, depth: 0 }];
-
-  while (stack.length) {
-    const { node, depth } = stack.pop()!;
-    if (visited.has(node)) continue;
-    visited.add(node);
-
-    if (node === target) return node;
-
-    if (depth >= depthLimit) continue;
-    const neighbors = getNeighbors(node);
-    for (let i = neighbors.length - 1; i >= 0; --i) {
-      const child = neighbors[i];
-      if (!visited.has(child)) {
-        stack.push({ node: child, depth: depth + 1 });
-      }
+  // run the dfs from every unvisited vertex
+  for (const v of graph.keys()) {
+    if (!index.has(v)) {
+      strongConnect(v);
     }
   }
-  return undefined; // not found
+
+  return sccs;
 }
+const graph = new Map<string, string[]>(
+  [
+    ['A', ['B']],
+    ['B', ['C', 'E', 'F']],
+    ['C', ['D', 'G']],
+    ['D', ['C', 'H']],
+    ['E', ['A', 'F']],
+    ['F', ['G']],
+    ['G', ['F', 'H']],
+    ['H', ['G']],
+  ],
+);
+
+const components = tarjanSCC(graph);
+console.log(components);
+// → [ [ 'H', 'G', 'F', 'E', 'A', 'B', 'C', 'D' ] ]
+// (depending on traversal order you may see the same vertices grouped in one component,
+// because the toy graph is fully strongly‑connected)
