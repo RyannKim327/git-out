@@ -1,33 +1,39 @@
-function decimalToBinary(n: number): string {
-  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
-  // It automatically floors the number (works for ints, truncates decimals).
-  return Math.floor(n).toString(2);
-}
-console.log(decimalToBinary(10));   // → '1010'
-console.log(decimalToBinary(255));  // → '11111111'
-function binaryPadded(n: number, bits = 8): string {
-  return decimalToBinary(n).padStart(bits, '0');
+function reverseString(s: string): string {
+  return s.split('').reverse().join('');
 }
 
-console.log(binaryPadded(10, 8));   // → '00001010'
-function decimalToBinaryManual(n: number): string {
-  if (n === 0) return '0';
+// Example
+console.log(reverseString('hello')); // 'olleh'
+reverseString('👋🏽'); // '🏽👋'  → wrong
+function reverseStringUnicode(s: string): string {
+  const codePoints: number[] = [];
+  for (const char of s) {
+    codePoints.push(char.codePointAt(0)!);
+  }
+  return String.fromCodePoint(...codePoints.reverse());
+}
+
+// Example
+console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
+const cp = Array.from(s).reverse().join('');
+function reverseRecursively(s: string): string {
+  if (s.length <= 1) return s;
+  return reverseRecursively(s.slice(1)) + s[0];
+}
+function reverseLoop(s: string): string {
   let result = '';
-  let value = Math.floor(n);
-
-  while (value > 0) {
-    result = (value % 2) + result; // prepend remainder
-    value = Math.floor(value / 2);
+  for (let i = s.length - 1; i >= 0; i--) {
+    result += s[i];
   }
   return result;
 }
-function bigIntToBinary(n: bigint): string {
-  return n.toString(2);
+function reverseBuffer(s: string): string {
+  const buf: string[] = new Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    buf[i] = s[s.length - 1 - i];
+  }
+  return buf.join('');
 }
-
-console.log(bigIntToBinary(123456789012345678901234567890n));
-// → '1110001101100110100100001100100000111010011010110111111001101'
-function decimalToBitsArray(n: number): number[] {
-  const binary = decimalToBinary(n);
-  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+function reverseStringSafe(s: string): string {
+  return Array.from(s).reverse().join('');
 }
