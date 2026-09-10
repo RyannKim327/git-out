@@ -1,172 +1,69 @@
-/* ---- 1. Necessary types ------------------------------------------------- */
-type Point = { x: number; y: number };   // a grid coordinate
+/**
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
+ */
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
 
-// A *node* is a point that also carries the data used by A*.
-class Node {
-  public f: number;   // g + h
-  public g: number;   // cost from start
-  public h: number;   // heuristic estimate to goal
+  // Sort rotations lexicographically
+  rotations.sort();
 
-  constructor(
-    public point: Point,
-    public parent: Node | null = null,
-    g = 0,
-    h = 0
-  ) {
-    this.g = g;
-    this.h = h;
-    this.f = this.g + this.h;
-  }
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
+
+  return { transformed: lastColumn, primaryIndex };
 }
 
-/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
-class MinHeap<T> {
-  private items: T[] = [];
+/**
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
+ */
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
 
-  constructor(private compare: (a: T, b: T) => number) {}
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
 
-  get size() { return this.items.length; }
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
 
-  push(item: T) {
-    this.items.push(item);
-    this.bubbleUp(this.items.length - 1);
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
   }
 
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const top = this.items[0];
-    const end = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = end;
-      this.bubbleDown(0);
-    }
-    return top;
-  }
-
-  private bubbleUp(idx: number) {
-    const item = this.items[idx];
-    while (idx > 0) {
-      const parentIdx = ((idx + 1) >> 1) - 1;
-      const parent = this.items[parentIdx];
-      if (this.compare(item, parent) >= 0) break;
-      this.items[idx] = parent;
-      idx = parentIdx;
-    }
-    this.items[idx] = item;
-  }
-
-  private bubbleDown(idx: number) {
-    const length = this.items.length;
-    const item = this.items[idx];
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallest = idx;
-
-      if (
-        leftIdx < length &&
-        this.compare(this.items[leftIdx], this.items[smallest]) < 0
-      )
-        smallest = leftIdx;
-
-      if (
-        rightIdx < length &&
-        this.compare(this.items[rightIdx], this.items[smallest]) < 0
-      )
-        smallest = rightIdx;
-
-      if (smallest === idx) break;
-
-      this.items[idx] = this.items[smallest];
-      idx = smallest;
-    }
-    this.items[idx] = item;
-  }
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
 }
 
-/* ---- 3. Heuristic -------------------------------------------------------- */
-function manhattan(a: Point, b: Point): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
+/* ────────────────────── Demo ────────────────────── */
 
-/* ---- 4. Grid utilities --------------------------------------------------- */
-// returns true if the point is inside bounds AND not blocked
-function isWalkable(
-  grid: boolean[][],
-  { x, y }: Point
-): boolean {
-  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
-}
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
 
-// neighbours (4‑connected, 8‑connected if you add diagonals)
-function getNeighbours(grid: boolean[][], p: Point): Point[] {
-  const { x, y } = p;
-  const candidates: Point[] = [
-    { x: x + 1, y },
-    { x: x - 1, y },
-    { x, y: y + 1 },
-    { x, y: y - 1 },
-  ];
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
 
-  // Uncomment if you want diagonal moves:
-  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
+/* Expected output:
 
-  return candidates.filter(p => isWalkable(grid, p));
-}
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
 
-/* ---- 5. The main A* function --------------------------------------------- */
-function aStar(
-  grid: boolean[][],
-  start: Point,
-  goal: Point
-): Point[] | null {
-  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
-
-  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
-  const closed = new Set<string>();          // "x,y" keys
-
-  const nodeForPoint = (p: Point) =>
-    `${p.x},${p.y}`;
-
-  open.push(new Node(start, null, 0, manhattan(start, goal)));
-
-  while (open.size) {
-    const current = open.pop()!;
-    const currentKey = nodeForPoint(current.point);
-
-    if (closed.has(currentKey)) continue;     // skip stale node
-    closed.add(currentKey);
-
-    if (current.point.x === goal.x && current.point.y === goal.y) {
-      // reconstruct path
-      const path: Point[] = [];
-      let cur: Node | null = current;
-      while (cur) {
-        path.push(cur.point);
-        cur = cur.parent;
-      }
-      return path.reverse();
-    }
-
-    for (const neighbour of getNeighbours(grid, current.point)) {
-      const neighbourKey = nodeForPoint(neighbour);
-      if (closed.has(neighbourKey)) continue;
-
-      const tentativeG = current.g + 1; // cost of moving a step
-      const h = manhattan(neighbour, goal);
-      const neighbourNode = new Node(
-        neighbour,
-        current,
-        tentativeG,
-        h
-      );
-
-      open.push(neighbourNode);
-    }
-  }
-
-  return null; // no path
-}
-
-/* ---- 6. Example usage --------------------------------------------------- */
-const
+*/
