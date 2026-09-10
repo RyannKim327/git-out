@@ -1,40 +1,37 @@
-/**
- * Interpolation search returns the index of `target` in `arr`,
- * or –1 if the target is not present.
- *
- * @param arr   – sorted array of numbers (must be monotonic increasing)
- * @param target – key we’re trying to locate
- * @returns the array index of target or -1
- */
-export function interpolationSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
+function secondLargestSort(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-    let low = 0;
-    let high = arr.length - 1;
-
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Avoid division by zero when the sub‑array contains equal numbers
-        if (arr[high] === arr[low]) {
-            return arr[low] === target ? low : -1;
-        }
-
-        // Estimate the likely position of `target` within [low, high]
-        const pos = low + Math.floor(
-            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
-        );
-
-        const val = arr[pos];
-
-        if (val === target) return pos;
-        if (val < target) low = pos + 1;
-        else high = pos - 1;
-    }
-
-    return -1; // not found
+  const sorted = [...arr].sort((a, b) => b - a); // Descending
+  return sorted[1];
 }
-import { interpolationSearch } from "./interpolationSearch";
+function secondLargestSinglePass(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
 
-const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+  let max = -Infinity;
+  let second = -Infinity;
 
-console.log(interpolationSearch(data, 42));   // → 4
-console.log(interpolationSearch(data, 100));  // → -1
+  for (const num of arr) {
+    if (num > max) {
+      second = max;
+      max = num;
+    } else if (num > second && num !== max) {
+      second = num;
+    }
+  }
+
+  return second === -Infinity ? undefined : second;
+}
+function secondLargestSet(arr: number[]): number | undefined {
+  const unique = [...new Set(arr)];
+  if (unique.length < 2) return undefined;
+
+  const sorted = unique.sort((a, b) => b - a);
+  return sorted[1];
+}
+function secondLargestMathMax(arr: number[]): number | undefined {
+  if (arr.length < 2) return undefined;
+
+  const max = Math.max(...arr);
+  const maxFiltered = arr.filter(num => num !== max);
+  return Math.max(...maxFiltered);
+}
