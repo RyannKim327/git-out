@@ -1,172 +1,77 @@
-/* ---- 1. Necessary types ------------------------------------------------- */
-type Point = { x: number; y: number };   // a grid coordinate
+/**
+ * Median of two sorted arrays.
+ *
+ * The algorithm keeps a binary search on the smaller array.  
+ * At each step we decide how many elements from `a` belong on the left side of the
+ * partition.  The counterpart from `b` is computed so that the left side contains
+ * exactly half (or half‑plus‑one for odd total length) of the elements.
+ *
+ * Edge cases:
+ *   * one of the arrays may be empty
+ *   * indices can go out of bounds – use `-Infinity` / `Infinity` to simplify comparisons
+ */
+export function findMedianSortedArrays(nums1: number[], nums2: number[]): number {
+  // Ensure `a` is the shorter array to keep the binary search limits small.
+  let a = nums1;
+  let b = nums2;
+  if (a.length > b.length) [a, b] = [b, a];
 
-// A *node* is a point that also carries the data used by A*.
-class Node {
-  public f: number;   // g + h
-  public g: number;   // cost from start
-  public h: number;   // heuristic estimate to goal
+  const m = a.length;
+  const n = b.length;
+  // `halfLen` is the number of elements that must be on the left side
+  // of the partition (including the middle element when total length is odd).
+  const halfLen = Math.floor((m + n + 1) / 2);
 
-  constructor(
-    public point: Point,
-    public parent: Node | null = null,
-    g = 0,
-    h = 0
-  ) {
-    this.g = g;
-    this.h = h;
-    this.f = this.g + this.h;
-  }
-}
+  let low = 0;
+  let high = m;
 
-/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
-class MinHeap<T> {
-  private items: T[] = [];
+  while (low <= high) {
+    // Number of elements from a put on the left side
+    const i = Math.floor((low + high) / 2);
+    // Number of elements from b put on the left side
+    const j = halfLen - i;
 
-  constructor(private compare: (a: T, b: T) => number) {}
+    const aLeft  = i === 0 ? -Infinity : a[i - 1];
+    const aRight = i === m ?  Infinity : a[i];
 
-  get size() { return this.items.length; }
+    const bLeft  = j === 0 ? -Infinity : b[j - 1];
+    const bRight = j === n ?  Infinity : b[j];
 
-  push(item: T) {
-    this.items.push(item);
-    this.bubbleUp(this.items.length - 1);
-  }
-
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const top = this.items[0];
-    const end = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = end;
-      this.bubbleDown(0);
-    }
-    return top;
-  }
-
-  private bubbleUp(idx: number) {
-    const item = this.items[idx];
-    while (idx > 0) {
-      const parentIdx = ((idx + 1) >> 1) - 1;
-      const parent = this.items[parentIdx];
-      if (this.compare(item, parent) >= 0) break;
-      this.items[idx] = parent;
-      idx = parentIdx;
-    }
-    this.items[idx] = item;
-  }
-
-  private bubbleDown(idx: number) {
-    const length = this.items.length;
-    const item = this.items[idx];
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallest = idx;
-
-      if (
-        leftIdx < length &&
-        this.compare(this.items[leftIdx], this.items[smallest]) < 0
-      )
-        smallest = leftIdx;
-
-      if (
-        rightIdx < length &&
-        this.compare(this.items[rightIdx], this.items[smallest]) < 0
-      )
-        smallest = rightIdx;
-
-      if (smallest === idx) break;
-
-      this.items[idx] = this.items[smallest];
-      idx = smallest;
-    }
-    this.items[idx] = item;
-  }
-}
-
-/* ---- 3. Heuristic -------------------------------------------------------- */
-function manhattan(a: Point, b: Point): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
-
-/* ---- 4. Grid utilities --------------------------------------------------- */
-// returns true if the point is inside bounds AND not blocked
-function isWalkable(
-  grid: boolean[][],
-  { x, y }: Point
-): boolean {
-  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
-}
-
-// neighbours (4‑connected, 8‑connected if you add diagonals)
-function getNeighbours(grid: boolean[][], p: Point): Point[] {
-  const { x, y } = p;
-  const candidates: Point[] = [
-    { x: x + 1, y },
-    { x: x - 1, y },
-    { x, y: y + 1 },
-    { x, y: y - 1 },
-  ];
-
-  // Uncomment if you want diagonal moves:
-  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
-
-  return candidates.filter(p => isWalkable(grid, p));
-}
-
-/* ---- 5. The main A* function --------------------------------------------- */
-function aStar(
-  grid: boolean[][],
-  start: Point,
-  goal: Point
-): Point[] | null {
-  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
-
-  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
-  const closed = new Set<string>();          // "x,y" keys
-
-  const nodeForPoint = (p: Point) =>
-    `${p.x},${p.y}`;
-
-  open.push(new Node(start, null, 0, manhattan(start, goal)));
-
-  while (open.size) {
-    const current = open.pop()!;
-    const currentKey = nodeForPoint(current.point);
-
-    if (closed.has(currentKey)) continue;     // skip stale node
-    closed.add(currentKey);
-
-    if (current.point.x === goal.x && current.point.y === goal.y) {
-      // reconstruct path
-      const path: Point[] = [];
-      let cur: Node | null = current;
-      while (cur) {
-        path.push(cur.point);
-        cur = cur.parent;
+    // Partition is correct: all left elements ≤ all right elements
+    if (aLeft <= bRight && bLeft <= aRight) {
+      // If total length is odd, the median is the max of the left side
+      if ((m + n) % 2 === 1) {
+        return Math.max(aLeft, bLeft);
       }
-      return path.reverse();
-    }
-
-    for (const neighbour of getNeighbours(grid, current.point)) {
-      const neighbourKey = nodeForPoint(neighbour);
-      if (closed.has(neighbourKey)) continue;
-
-      const tentativeG = current.g + 1; // cost of moving a step
-      const h = manhattan(neighbour, goal);
-      const neighbourNode = new Node(
-        neighbour,
-        current,
-        tentativeG,
-        h
-      );
-
-      open.push(neighbourNode);
+      // If even, it’s the mean of the two middle values
+      return (Math.max(aLeft, bLeft) + Math.min(aRight, bRight)) / 2;
+    } else if (aLeft > bRight) {
+      // Too many elements from a on the left: move left
+      high = i - 1;
+    } else {
+      // Too few elements from a on the left: move right
+      low = i + 1;
     }
   }
 
-  return null; // no path
+  // Should never reach here for valid input
+  throw new Error("Invalid input");
 }
-
-/* ---- 6. Example usage --------------------------------------------------- */
-const
+const arr1 = [1, 3, 8];
+const arr2 = [7, 9, 10, 11];
+console.log(findMedianSortedArrays(arr1, arr2)); // 8
+export function medianNaive(a: number[], b: number[]): number {
+  const merged: number[] = [];
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (j >= b.length || (i < a.length && a[i] <= b[j])) {
+      merged.push(a[i++]);
+    } else {
+      merged.push(b[j++]);
+    }
+  }
+  const mid = Math.floor(merged.length / 2);
+  return merged.length % 2
+    ? merged[mid]
+    : (merged[mid - 1] + merged[mid]) / 2;
+}
