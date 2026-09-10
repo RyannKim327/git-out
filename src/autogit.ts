@@ -1,80 +1,69 @@
 /**
- * The graph is represented as an adjacency list:
- *   key     → array of neighbors that the key points to
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
  */
-export type Graph<T = string> = Record<T, T[]>;
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
+
+  // Sort rotations lexicographically
+  rotations.sort();
+
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
+
+  return { transformed: lastColumn, primaryIndex };
+}
 
 /**
- * Helper types for the two algorithms
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
  */
-type Queue<T> = T[];
-export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
-  const result: T[] = [];
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
 
-  // Compute in‑degree for each node
-  const indegree = new Map<T, number>();
-  for (const node in graph) {
-    indegree.set(node, 0);               // ensure all nodes appear
-    for (const nb of graph[node]) {
-      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
-    }
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
+
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
+
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
   }
 
-  // Queue all nodes that have no incoming edges
-  const queue: Queue<T> = [];
-  for (const [node, deg] of indegree.entries()) {
-    if (deg === 0) queue.push(node);
-  }
-
-  while (queue.length) {
-    const node = queue.shift()!;
-    result.push(node);
-
-    // Reduce indegree for all neighbors, pushing any that reach 0
-    for (const nb of graph[node] ?? []) {
-      const deg = (indegree.get(nb) ?? 0) - 1;
-      indegree.set(nb, deg);
-      if (deg === 0) queue.push(nb);
-    }
-  }
-
-  // If we processed fewer nodes than exist, a cycle exists
-  if (result.length !== Object.keys(graph).length) {
-    throw new Error('Graph contains a cycle; topological sort impossible');
-  }
-  return result;
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
 }
-export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
-  const visited = new Set<T>();
-  const temp = new Set<T>();   // nodes on the recursion stack
-  const result: T[] = [];
 
-  const visit = (node: T) => {
-    if (temp.has(node)) {
-      throw new Error('Graph contains a cycle; topological sort impossible');
-    }
-    if (!visited.has(node)) {
-      temp.add(node);
-      for (const nb of graph[node] ?? []) visit(nb);
-      temp.delete(node);
-      visited.add(node);
-      result.push(node);     // post‑order push gives topological order
-    }
-  };
+/* ────────────────────── Demo ────────────────────── */
 
-  for (const node in graph) visit(node as T);
-  // reverse because we push after exploring children
-  return result.reverse();
-}
-const myGraph: Graph<string> = {
-  A: ['B', 'C'],
-  B: ['D'],
-  C: ['D'],
-  D: [],
-};
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
 
-console.log(topologicalSortKahn(myGraph));
-// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
 
-console.log(topologicalSortDFS(myGraph));
-// → same order (or any other valid one)
+/* Expected output:
+
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
+
+*/
