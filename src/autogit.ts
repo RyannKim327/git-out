@@ -1,77 +1,43 @@
-class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null
-  ) {}
-}
-class BinaryTree<T> {
-  root: TreeNode<T> | null = null;
+// O(n log n) – fine for typical lengths
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false; // quick length check
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+  return sortedA === sortedB;
+};
+// O(n) – best for long strings
+const areAnagrams = (first: string, second: string): boolean => {
+  if (first.length !== second.length) return false;
 
-  // Insert value in the first spot found (just for demonstration).
-  // A real BST would place it relative to its neighbors.
-  insert(value: T): void {
-    const node = new TreeNode(value);
-    if (!this.root) {
-      this.root = node;
-      return;
-    }
-    this._insertRec(this.root, node);
+  const count = new Map<string, number>();
+
+  // Count chars from the first string
+  for (const ch of first) {
+    count.set(ch, (count.get(ch) ?? 0) + 1);
   }
 
-  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
-    // Walk left first, then right, until you hit a null spot.
-    if (!current.left) {
-      current.left = node;
-    } else if (!current.right) {
-      current.right = node;
-    } else {
-      // Go deeper – we’re just doing breadth‑like insertion.
-      this._insertRec(current.left, node);
-    }
+  // Decrement with the second string
+  for (const ch of second) {
+    const cur = count.get(ch);
+    if (!cur) return false;          // char not in first
+    if (cur === 1) count.delete(ch);
+    else count.set(ch, cur - 1);
   }
 
-  // Breadth‑first traversal (queue style) – returns array of values.
-  bfs(): T[] {
-    const result: T[] = [];
-    if (!this.root) return result;
+  return count.size === 0;
+};
+// Works only for ISO‑8859‑1 / 8‑bit chars
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
 
-    const queue: TreeNode<T>[] = [this.root];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      result.push(cur.value);
-      if (cur.left) queue.push(cur.left);
-      if (cur.right) queue.push(cur.right);
-    }
-    return result;
+  const freq = new Int16Array(256);
+
+  for (let i = 0; i < a.length; i++) {
+    freq[a.charCodeAt(i)]++;
+    freq[b.charCodeAt(i)]--;
   }
 
-  // Depth‑first in‑order traversal (left, node, right)
-  inorder(): T[] {
-    const res: T[] = [];
-    const visit = (node: TreeNode<T> | null) => {
-      if (!node) return;
-      visit(node.left);
-      res.push(node.value);
-      visit(node.right);
-    };
-    visit(this.root);
-    return res;
-  }
-
-  // Simple depth counter
-  depth(): number {
-    const dfs = (node: TreeNode<T> | null): number =>
-      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
-    return dfs(this.root);
-  }
-}
-const tree = new BinaryTree<number>();
-[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
-
-console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
-console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
-console.log('Depth:', tree.depth());         // 3
-interface Person { name: string; age: number; }
-const people = new BinaryTree<Person>();
-people.insert({name: 'Alice', age: 30});
+  return freq.every(v => v === 0);
+};
+console.log(areAnagrams('listen', 'silent')); // true
+console.log(areAnagrams('hello', 'world'));   // false
