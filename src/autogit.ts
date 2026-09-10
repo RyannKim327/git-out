@@ -1,20 +1,45 @@
-// Original array
-const original: number[] = [1, 2, 3, 4, 5];
+/**
+ * Returns an object with the maximum sum and the start/end indices
+ * of the sub‑array that produces that sum.
+ *
+ * @param nums - array of numbers
+ * @returns { maxSum, start, end }
+ */
+export function maxSumSubarray(nums: number[]) {
+  // In case the input is empty we can return 0 / -1/-1
+  if (nums.length === 0) {
+    return { maxSum: 0, start: -1, end: -1 };
+  }
 
-// 1️⃣ In‑place reverse (mutates `original`)
-original.reverse();
-console.log(original); // [5, 4, 3, 2, 1]
+  let bestSum = nums[0];
+  let currentSum = nums[0];
 
-// 2️⃣ Copy then reverse (keeps `original` intact)
-const reversedCopy = original.slice().reverse();  // or [...original].reverse()
-console.log(reversedCopy);  // [5, 4, 3, 2, 1]
-type Person = { name: string; age: number };
+  // These will record the best sub‑array boundaries
+  let bestStart = 0;
+  let bestEnd = 0;
+  // Temporary positions
+  let tempStart = 0;
 
-const people: Person[] = [
-  { name: 'Alice', age: 28 },
-  { name: 'Bob',   age: 34 },
-];
+  for (let i = 1; i < nums.length; i++) {
+    // Either extend the previous sub‑array or start fresh at i
+    if (currentSum + nums[i] < nums[i]) {
+      currentSum = nums[i];
+      tempStart = i;
+    } else {
+      currentSum += nums[i];
+    }
 
-const reversedPeople = [...people].reverse(); // still Person[]
-const reduceReversed = <T>(array: T[]): T[] =>
-  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
+    // Update best if we have a better sum
+    if (currentSum > bestSum) {
+      bestSum = currentSum;
+      bestStart = tempStart;
+      bestEnd = i;
+    }
+  }
+
+  return { maxSum: bestSum, start: bestStart, end: bestEnd };
+}
+const arr = [13, -3, -25, 20, -3, -16, -23, 18, 20, -7, 12];
+const { maxSum, start, end } = maxSumSubarray(arr);
+console.log(maxSum); // 43
+console.log(start, end); // 7 10 (sub‑array: [18, 20, -7, 12])
