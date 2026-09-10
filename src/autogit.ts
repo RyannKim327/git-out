@@ -1,53 +1,33 @@
 /**
- * Binary search for a sorted array of numbers.
- *
- * @param arr  The fully sorted array to search.
- * @param target  The value you’re looking for.
- * @param low  Index of the current lower bound (initially 0).
- * @param high Index of the current upper bound (initially arr.length – 1).
- * @returns The index of `target` if it exists; otherwise –1.
+ * Returns a random integer between `min` and `max` – both inclusive.
+ * Uses the standard Math.random() (not crypto‑safe).
  */
-function binarySearchRecursive(
-  arr: number[],
-  target: number,
-  low = 0,
-  high = arr.length - 1
-): number {
-  // Base condition – no more elements to inspect
-  if (low > high) return -1;
+export function randomIntInRange(min: number, max: number): number {
+  // Make sure min ≤ max and that the inputs are integers
+  if (!Number.isInteger(min) || !Number.isInteger(max))
+    throw new Error('min and max must be integers');
+  if (min > max) [min, max] = [max, min];
 
-  const mid = Math.floor((low + high) / 2);
-
-  if (arr[mid] === target) {
-    return mid;
-  } else if (arr[mid] > target) {
-    // Search left half
-    return binarySearchRecursive(arr, target, low, mid - 1);
-  } else {
-    // Search right half
-    return binarySearchRecursive(arr, target, mid + 1, high);
-  }
+  const range = max - min + 1;          // how many possible numbers
+  return Math.floor(Math.random() * range) + min;
 }
-const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-const idx = binarySearchRecursive(sorted, 7); // 3
-const notFound = binarySearchRecursive(sorted, 2); // -1
-function binarySearch<T>(
-  arr: T[],
-  target: T,
-  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
-  low = 0,
-  high = arr.length - 1
-): number {
-  if (low > high) return -1;
-
-  const mid = Math.floor((low + high) / 2);
-  const cmp = compare(arr[mid], target);
-
-  if (cmp === 0) return mid;
-  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
-  return binarySearch(arr, target, compare, mid + 1, high);
+/**
+ * Returns a random floating‑point number in `[min, max)`.
+ * If you want `max` inclusive, add a tiny epsilon before flooring.
+ */
+export function randomFloatInRange(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  return Math.random() * (max - min) + min;
 }
-const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
-
-const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
+export function secureRandomInt(min: number, max: number): number {
+  if (min > max) [min, max] = [max, min];
+  const range = max - min + 1;
+  // We'll grab 4 random bytes and reduce them into our range
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return (buf[0] % range) + min;
+}
+console.log(randomIntInRange(1, 6)); // 1‑6 like a die
+console.log(randomFloatInRange(0, 1)); // 0 ≤ x < 1
+console.log(secureRandomInt(1000, 9999)); // 4‑digit number, cryptographically random
