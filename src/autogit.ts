@@ -1,48 +1,46 @@
 /**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
  */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
-  let count = 0;
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+  });
+
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
     }
   }
-
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+  return true;
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
-  }
-  return undefined;
-}
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
+
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
+
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
