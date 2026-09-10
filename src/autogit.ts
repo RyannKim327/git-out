@@ -1,49 +1,79 @@
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
 /**
- * Returns n! for a non‑negative integer `n`.
- * Throws an error if `n` is negative.
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
  */
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;   // base case
-  return n * factorialRecursive(n - 1);
-}
-/**
- * Computes factorial using a loop. 
- * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
- */
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-/**
- * Factorial returning a BigInt to avoid precision loss.
- * Accepts `bigint | number`, but converts to BigInt internally.
- */
-function factorialBigInt(n: number | bigint): bigint {
-  const bigN = typeof n === 'bigint' ? n : BigInt(n);
-  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
-  if (bigN <= 1n) return 1n;
-  let result = 1n;
-  for (let i = 2n; i <= bigN; i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(25));          // 15511210043330985984000000n
-console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
-const factorialCache = new Map<number, number>();
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-function factorialMemoized(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;
-  if (factorialCache.has(n)) return factorialCache.get(n)!;
+    visited.add(start);
+    queue.push(start);
 
-  const value = n * factorialMemoized(n - 1);
-  factorialCache.set(n, value);
-  return value;
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
+    }
+
+    return result;
 }
-const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
+
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
