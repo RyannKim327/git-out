@@ -1,60 +1,80 @@
 /**
- * Returns true if `s` is a palindrome.
- *
- * Works in O(n) time and O(1) additional space.
- * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
+ * The graph is represented as an adjacency list:
+ *   key     → array of neighbors that the key points to
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+export type Graph<T = string> = Record<T, T[]>;
 
-  while (left < right) {
-    if (s[left] !== s[right]) {
-      return false;
+/**
+ * Helper types for the two algorithms
+ */
+type Queue<T> = T[];
+export function topologicalSortKahn<T>(graph: Graph<T>): T[] {
+  const result: T[] = [];
+
+  // Compute in‑degree for each node
+  const indegree = new Map<T, number>();
+  for (const node in graph) {
+    indegree.set(node, 0);               // ensure all nodes appear
+    for (const nb of graph[node]) {
+      indegree.set(nb, (indegree.get(nb) ?? 0) + 1);
     }
-    left++;
-    right--;
   }
 
-  return true;
-}
-
-// Demo
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isAlphanumeric(c: string): boolean {
-  const code = c.charCodeAt(0);
-  return (
-    // 0‑9
-    (code >= 48 && code <= 57) ||
-    // A‑Z
-    (code >= 65 && code <= 90) ||
-    // a‑z
-    (code >= 97 && code <= 122)
-  );
-}
-
-function isPalindromeLoose(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip non‑alphanumerics
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
-
-    // After skipping, compare lowercase versions
-    if (
-      left < right &&
-      s[left].toLowerCase() !== s[right].toLowerCase()
-    ) {
-      return false;
-    }
-
-    left++;
-    right--;
+  // Queue all nodes that have no incoming edges
+  const queue: Queue<T> = [];
+  for (const [node, deg] of indegree.entries()) {
+    if (deg === 0) queue.push(node);
   }
-  return true;
-}
 
-console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
+  while (queue.length) {
+    const node = queue.shift()!;
+    result.push(node);
+
+    // Reduce indegree for all neighbors, pushing any that reach 0
+    for (const nb of graph[node] ?? []) {
+      const deg = (indegree.get(nb) ?? 0) - 1;
+      indegree.set(nb, deg);
+      if (deg === 0) queue.push(nb);
+    }
+  }
+
+  // If we processed fewer nodes than exist, a cycle exists
+  if (result.length !== Object.keys(graph).length) {
+    throw new Error('Graph contains a cycle; topological sort impossible');
+  }
+  return result;
+}
+export function topologicalSortDFS<T>(graph: Graph<T>): T[] {
+  const visited = new Set<T>();
+  const temp = new Set<T>();   // nodes on the recursion stack
+  const result: T[] = [];
+
+  const visit = (node: T) => {
+    if (temp.has(node)) {
+      throw new Error('Graph contains a cycle; topological sort impossible');
+    }
+    if (!visited.has(node)) {
+      temp.add(node);
+      for (const nb of graph[node] ?? []) visit(nb);
+      temp.delete(node);
+      visited.add(node);
+      result.push(node);     // post‑order push gives topological order
+    }
+  };
+
+  for (const node in graph) visit(node as T);
+  // reverse because we push after exploring children
+  return result.reverse();
+}
+const myGraph: Graph<string> = {
+  A: ['B', 'C'],
+  B: ['D'],
+  C: ['D'],
+  D: [],
+};
+
+console.log(topologicalSortKahn(myGraph));
+// → [ 'A', 'B', 'C', 'D' ] (or any valid topological order)
+
+console.log(topologicalSortDFS(myGraph));
+// → same order (or any other valid one)
