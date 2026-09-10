@@ -1,10 +1,29 @@
-// A lean, common‑sense pattern that covers most real‑world emails
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// Test whether a string looks like an e‑mail address
-export function isEmail(str: string): boolean {
-  return EMAIL_RE.test(str);
+function removeVowels(text: string): string {
+  return text.replace(/[aeiou]/gi, '');
 }
-console.log(isEmail('foo@bar.com'));   // true
-console.log(isEmail('invalid@'));      // false
-console.log(isEmail('no-at-symbol'));  // false
+const raw = "TypeScript is amazing!";
+console.log(removeVowels(raw));
+// ↳ "TypScrpt s mzng!"
+function removeVowelsLoop(text: string): string {
+  const vowels = new Set(['a', 'e', 'i', 'o', 'u',
+                          'A', 'E', 'I', 'O', 'U']);
+  let result = '';
+  for (const ch of text) {
+    if (!vowels.has(ch)) result += ch;
+  }
+  return result;
+}
+const tests = [
+  "Hello, world!",
+  "AEIOUaeiou",
+  "Rhythm",
+  "Café",
+  "",
+];
+
+tests.forEach(t => console.log(`"${t}" → "${removeVowels(t)}"`));
+"Hello, world!" → "Hll, wrld!"
+"AEIOUaeiou" → ""
+"Rhythm" → "Rhythm"
+"Café" → "Cf"
+""
