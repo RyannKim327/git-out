@@ -1,61 +1,41 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
+ *
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
+ */
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
-  }
-  return head
-}
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
 
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
+    // Place the key into its correct spot
+    arr[j + 1] = key;
   }
 
-  // At the end, prev is the new head
-  return prev
+  return arr; // handy for chaining, but the original array is already sorted
 }
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
-  }
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
 
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
+];
 
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
-
-  return newHead
-}
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
-
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
