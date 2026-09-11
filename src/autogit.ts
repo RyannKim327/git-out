@@ -1,61 +1,46 @@
-// A minimal node that can hold any value
-class ListNode<T> {
-  constructor(public val: T, public next: ListNode<T> | null = null) {}
-}
+/**
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
+ */
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-// A helper to build a list from an array (great for demos)
-function arrayToList<T>(arr: T[]): ListNode<T> | null {
-  let head: ListNode<T> | null = null
-  for (let i = arr.length - 1; i >= 0; i--) {
-    head = new ListNode(arr[i], head)
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+  });
+
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
+    }
   }
-  return head
+  return true;
 }
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-// A helper to turn a list back into an array (great for quick checks)
-function listToArray<T>(head: ListNode<T> | null): T[] {
-  const out: T[] = []
-  let cur = head
-  while (cur) {
-    out.push(cur.val)
-    cur = cur.next
-  }
-  return out
-}
-function reverseList<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let prev: ListNode<T> | null = null
-  let curr = head
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
 
-  while (curr) {
-    const next = curr.next   // store the rest of the list
-    curr.next = prev         // reverse the link
-    prev = curr              // move prev forward
-    curr = next              // continue
-  }
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
 
-  // At the end, prev is the new head
-  return prev
-}
-function reverseListRecursive<T>(head: ListNode<T> | null): ListNode<T> | null {
-  // Base case: 0 or 1 node
-  if (!head || !head.next) {
-    return head
-  }
-
-  // Recurse to the end of the list
-  const newHead = reverseListRecursive(head.next)
-
-  // After recursion returns, head is still at the original start
-  // head.next still points forward; we need to put head at the end
-  head.next.next = head   // point the next node back to head
-  head.next = null        // cut off the original link
-
-  return newHead
-}
-const example = arrayToList([1, 2, 3, 4, 5])
-const reversedIterative = reverseList(example)
-console.log(listToArray(reversedIterative)) // [5, 4, 3, 2, 1]
-
-const example2 = arrayToList([10, 20, 30])
-const reversedRecursive = reverseListRecursive(example2)
-console.log(listToArray(reversedRecursive)) // [30, 20, 10]
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
