@@ -1,58 +1,49 @@
 /**
- * Radix sort for 32‑bit signed integers (Int32Array safety).
- * Works for positives, negatives and zero.
+ * Stable counting sort for integers.
+ *
+ * @param  values The array of numbers to sort (integers only).
+ * @return        A new sorted array.
  */
-export function radixSort(nums: number[]): number[] {
-  if (nums.length <= 1) return nums.slice();
+function countingSort(values: number[]): number[] {
+  if (values.length === 0) return [];
 
-  // Separate positives and negatives.
-  const positives: number[] = [];
-  const negatives: number[] = []; // store as positive magnitudes
-
-  for (const n of nums) {
-    if (n < 0) negatives.push(-n);  // keep magnitude, will reverse later
-    else positives.push(n);
+  // ---------- 1. find min & max ----------
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
   }
 
-  // Sort each side independently.
-  const sortedPos = radixSortNonNegative(positives);
-  const sortedNeg = radixSortNonNegative(negatives).reverse();
+  // ---------- 2. count frequencies ----------
+  const range = max - min + 1;          // number of distinct values
+  const counts = new Array<number>(range).fill(0);
 
-  // Concatenate negatives (reversed) + positives
-  return [...sortedNeg.map(n => -n), ...sortedPos];
-}
-
-/**
- * Helper that assumes every element is a non‑negative integer.
- */
-function radixSortNonNegative(arr: number[]): number[] {
-  if (arr.length <= 1) return arr.slice();
-
-  const maxVal = Math.max(...arr);
-  const lenDigits = Math.floor(Math.log10(maxVal)) + 1; // digits in decimal
-
-  let output = arr.slice(); // working copy
-  let pow10 = 1;            // 10^digitIndex
-
-  for (let d = 0; d < lenDigits; d++) {
-    // 10 buckets for the decimal digits 0‑9
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-
-    for (const val of output) {
-      const digit = Math.floor((val / pow10) % 10);
-      buckets[digit].push(val);
-    }
-
-    // Rebuild output from buckets
-    output = [].concat(...buckets);
-
-    pow10 *= 10;           // move to next digit
+  for (const v of values) {
+    counts[v - min]++;                  // shift so that the smallest value maps to index 0
   }
 
-  return output;
-}
-import { radixSort } from "./radixSort";
+  // ---------- 3. prefix sums (running totals) ----------
+  const positions = new Array<number>(range).fill(0);
+  let sum = 0;
+  for (let i = 0; i < range; i++) {
+    sum += counts[i];
+    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
+  }
 
-const data = [170, -45, 75, 90, -802, 24, 2, 66];
-console.log(radixSort(data)); 
-// → [-802, -45, 2, 24, 66, 75, 90, 170]
+  // ---------- 4. build the sorted output ----------
+  const result = new Array<number>(values.length);
+  // Walk the original array **backwards** to keep stability
+  for (let i = values.length - 1; i >= 0; i--) {
+    const v = values[i];
+    const posIndex = v - min;
+    positions[posIndex]--;               // get the correct position for this element
+    result[positions[posIndex]] = v;
+  }
+
+  return result;
+}
+const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
+const sorted = countingSort(unsorted);
+console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
