@@ -1,134 +1,121 @@
-enum Color { RED, BLACK }
+/* ───────────────────────────────────────────────────────────────────── */
+/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
+ *  need other key types, but then you have to supply a comparator. -------- */
 
-class Node<T> {
-  constructor(
-    public value: T,
-    public color: Color = Color.RED,
-    public left: Node<T> | null = null,
-    public right: Node<T> | null = null,
-    public parent: Node<T> | null = null
-  ) {}
-}
-export class RedBlackTree<T> {
-  private root: Node<T> | null = null;
+/*  Node ------------------------------------------------------------------- */
+class Node {
+  key: number;
+  height: number;
+  left: Node | null = null;
+  right: Node | null = null;
 
-  /* Public API */
-  public insert(value: T): void { /* ... */ }
-  public delete(value: T): void { /* ... */ }
-  public find(value: T): Node<T> | null { /* ... */ }
-
-  /* private helpers… */
-  private rotateLeft(x: Node<T>): void { /* ... */ }
-  private rotateRight(x: Node<T>): void { /* ... */ }
-  private fixAfterInsertion(z: Node<T>): void { /* ... */ }
-  private fixAfterDeletion(x: Node<T>): void { /* ... */ }
-  private transplant(u: Node<T>, v: Node<T> | null): void { /* ... */ }
-  private minimum(n: Node<T> | null): Node<T> | null { /* ... */ }
-}
-public find(value: T): Node<T> | null {
-  let node = this.root;
-  while (node && node.value !== value) {
-    node = value < node.value ? node.left : node.right;
+  constructor(key: number) {           // simple ctor
+    this.key = key;
+    this.height = 1;                    // leaf height = 1
   }
-  return node;
 }
-private rotateLeft(x: Node<T>): void {
+
+/*  Helper utilities -------------------------------------------------------- */
+const height = (node: Node | null): number => (node ? node.height : 0);
+
+const updateHeight = (node: Node) =>
+  node.height = 1 + Math.max(height(node.left), height(node.right));
+
+const balanceFactor = (node: Node): number =>
+  height(node.left) - height(node.right);
+
+/*  Rotations -------------------------------------------------------------- */
+function rotateRight(y: Node): Node {
+  const x = y.left!;
+  const T2 = x.right;
+
+  // rotation
+  x.right = y;
+  y.left = T2;
+
+  // update heights
+  updateHeight(y);
+  updateHeight(x);
+
+  return x;     // new root of this part
+}
+
+function rotateLeft(x: Node): Node {
   const y = x.right!;
-  x.right = y.left;
-  if (y.left) y.left.parent = x;
+  const T2 = y.left;
 
-  y.parent = x.parent;
-  if (!x.parent) this.root = y;
-  else if (x === x.parent.left) x.parent.left = y;
-  else x.parent.right = y;
-
+  // rotation
   y.left = x;
-  x.parent = y;
+  x.right = T2;
+
+  // update heights
+  updateHeight(x);
+  updateHeight(y);
+
+  return y;     // new root
 }
 
-private rotateRight(x: Node<T>): void {
-  const y = x.left!;
-  x.left = y.right;
-  if (y.right) y.right.parent = x;
+/*  Insert ------------------------------------------------------------------ */
+function insert(node: Node | null, key: number): Node {
+  if (!node) return new Node(key);
 
-  y.parent = x.parent;
-  if (!x.parent) this.root = y;
-  else if (x === x.parent.right) x.parent.right = y;
-  else x.parent.left = y;
+  if (key < node.key) node.left = insert(node.left, key);
+  else if (key > node.key) node.right = insert(node.right, key);
+  else return node;           // duplicate keys rejected
 
-  y.right = x;
-  x.parent = y;
-}
-public insert(value: T): void {
-  const z = new Node(value);
-  let y: Node<T> | null = null;
-  let x = this.root;
+  /* update our own height after child changed */
+  updateHeight(node);
 
-  // Binary‑search‑tree insert
-  while (x) {
-    y = x;
-    x = value < x.value ? x.left : x.right;
-  }
-  z.parent = y;
+  /* balance now */
+  const bf = balanceFactor(node);
 
-  if (!y) this.root = z;
-  else if (value < y.value) y.left = z;
-  else y.right = z;
+  // Left heavy
+  if (bf > 1) {
+    if (key < node.left!.key)                   // Left‑Left case
+      return rotateRight(node);
 
-  // Re‑balance
-  this.fixAfterInsertion(z);
-}
-private fixAfterInsertion(z: Node<T>): void {
-  z.color = Color.RED;
-
-  while (z.parent && z.parent.color === Color.RED) {
-    if (z.parent === z.parent.parent!.left) { // z.parent is left child
-      const y = z.parent.parent.right; // uncle
-
-      if (y && y.color === Color.RED) {
-        // Case 1: Uncle red
-        z.parent.color = Color.BLACK;
-        y.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        z = z.parent.parent!;
-      } else {
-        // Case 2 or 3: Uncle black
-        if (z === z.parent.right) {
-          // Case 2: triangle
-          z = z.parent;
-          this.rotateLeft(z);
-        }
-        // Case 3: line
-        z.parent.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        this.rotateRight(z.parent.parent!);
-      }
-    } else {               // Symmetric case (z.parent is right child)
-      const y = z.parent.parent!.left; // uncle
-
-      if (y && y.color === Color.RED) {
-        z.parent.color = Color.BLACK;
-        y.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        z = z.parent.parent!;
-      } else {
-        if (z === z.parent.left) {
-          z = z.parent;
-          this.rotateRight(z);
-        }
-        z.parent.color = Color.BLACK;
-        z.parent.parent!.color = Color.RED;
-        this.rotateLeft(z.parent.parent!);
-      }
-    }
+    // Left‑Right case
+    node.left = rotateLeft(node.left!);
+    return rotateRight(node);
   }
 
-  this.root!.color = Color.BLACK; // Root is always black
-}
-public delete(value: T): void {
-  let z = this.find(value);
-  if (!z) return; // Not found, nothing to delete
+  // Right heavy
+  if (bf < -1) {
+    if (key > node.right!.key)                  // Right‑Right case
+      return rotateLeft(node);
 
-  let y = z;
-  let yOriginalColor = y.color;
-  let x: Node<T> | null
+    // Right‑Left case
+    node.right = rotateRight(node.right!);
+    return rotateLeft(node);
+  }
+
+  return node;            // unchanged
+}
+
+/*  Search --------------------------------------------------------------- */
+function contains(node: Node | null, key: number): boolean {
+  while (node) {
+    if (key === node.key) return true;
+    node = key < node.key ? node.left : node.right;
+  }
+  return false;
+}
+
+/*  In‑order traversal for debugging -------------------------------------- */
+function inorder(node: Node | null, res: number[] = []): number[] {
+  if (!node) return res;
+  inorder(node.left, res);
+  res.push(node.key);
+  inorder(node.right, res);
+  return res;
+}
+
+/*  Example usage ---------------------------------------------------------- */
+let root: Node | null = null;
+[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
+
+console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
+console.log('Contains 25?', contains(root, 25));      // true
+console.log('Contains 15?', contains(root, 15));      // false
+class Node<T> { key: T; height: number; ... }
+function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
