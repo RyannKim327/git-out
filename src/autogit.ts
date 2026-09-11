@@ -1,21 +1,52 @@
-function countChar(str: string, target: string): number {
-  // guard against empty target (avoids throwing on .split(''))
-  if (target.length !== 1) throw new Error('target must be a single character');
+// Basic definition of a binary‑tree node
+interface TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+}
 
-  return str.split(target).length - 1;
-}
-console.log(countChar('hello world', 'l')); // 3
-function countCharRegEx(str: string, target: string): number {
-  const re = new RegExp(target, 'g');
-  const matches = str.match(re);
-  return matches ? matches.length : 0;
-}
-console.log(countCharRegEx('banana', 'a')); // 3
-function countCharLoop(str: string, target: string): number {
-  let count = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === target) count++;
+/**
+ * Returns the diameter (in edges) of a binary tree.
+ */
+function diameterOfBinaryTree(root: TreeNode | null): number {
+  let maxDiameter = 0;          // keeps the best we have seen
+
+  /** Depth‑first search that returns the height of sub‑tree. */
+  function dfs(node: TreeNode | null): number {
+    if (node === null) return 0;          // leaf contributes 0 height
+
+    const leftHeight  = dfs(node.left);
+    const rightHeight = dfs(node.right);
+
+    // Path that goes through this node
+    const localDiameter = leftHeight + rightHeight;
+    if (localDiameter > maxDiameter) {
+      maxDiameter = localDiameter;
+    }
+
+    // Height to propagate upward
+    return Math.max(leftHeight, rightHeight) + 1;
   }
-  return count;
+
+  dfs(root);
+  return maxDiameter;         // already in edges
 }
-console.log(countCharLoop('Mississippi', 'i')); // 4
+
+/* ---- example usage ------------------------------------------------------- */
+
+// simple helper to build a tree
+function node(val: number, l?: TreeNode, r?: TreeNode): TreeNode {
+  return { val, left: l ?? null, right: r ?? null };
+}
+
+//        1
+//       / \
+//      2   3
+//     / \     
+//    4   5     
+const root = node(1,
+  node(2, node(4), node(5)),
+  node(3)
+);
+
+console.log(diameterOfBinaryTree(root));   // → 3  (4–2–1–3 or 5–2–1–3)
