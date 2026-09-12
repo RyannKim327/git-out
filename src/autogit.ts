@@ -1,55 +1,37 @@
-// Node definition – feel free to replace this with your own class/struct
-interface ListNode<T = unknown> {
-  val: T;
-  next: ListNode<T> | null;
+// Node definition – adjust `value` type as needed
+export interface TreeNode<T = number> {
+  value: T;
+  left?: TreeNode<T>;
+  right?: TreeNode<T>;
 }
 
-function hasCycle<T>(head: ListNode<T> | null): boolean {
-  // Two pointers that start at the head
-  let slow: ListNode<T> | null = head;   // moves 1 step
-  let fast: ListNode<T> | null = head;   // moves 2 steps
-
-  while (fast && fast.next) {
-    slow = slow!.next;          // advance one step
-    fast = fast.next.next;      // advance two steps
-
-    if (slow === fast) {        // they met → cycle detected
-      return true;
-    }
-  }
-
-  // fast ran out of nodes → no cycle
-  return false;
+// Recursive sum – the classic “do it in one pass”
+export function sumRecursive<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;                 // base case
+  return (root.value as any) +                      // value of this node
+         sumRecursive(root.left) +                     // left subtree
+         sumRecursive(root.right);                     // right subtree
 }
-function hasCycleWithSet<T>(head: ListNode<T> | null): boolean {
-  const seen = new Set<ListNode<T>>();
-  let current = head;
+export function sumIterative<T extends number>(root: TreeNode<T> | undefined): T {
+  if (!root) return 0 as T;
 
-  while (current) {
-    if (seen.has(current)) return true; // loop!
-    seen.add(current);
-    current = current.next;
+  let sum = 0 as T;
+  const stack: TreeNode<T>[] = [root];
+
+  while (stack.length) {
+    const node = stack.pop()!;
+    sum += node.value as any;
+    if (node.right) stack.push(node.right);
+    if (node.left)  stack.push(node.left);
   }
-  return false;
+
+  return sum;
 }
-function findCycleStart<T>(head: ListNode<T> | null): ListNode<T> | null {
-  let slow = head, fast = head;
+const tree: TreeNode = {
+  value: 1,
+  left: { value: 2, left: { value: 4 }, right: { value: 5 } },
+  right: { value: 3 }
+};
 
-  // First, detect a cycle
-  while (fast && fast.next) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) break;
-  }
-
-  // No cycle
-  if (!fast || !fast.next) return null;
-
-  // Move one pointer to the head; keep other where they met
-  slow = head;
-  while (slow !== fast) {
-    slow = slow!.next;
-    fast = fast!.next;
-  }
-  return slow; // the entry point of the cycle
-}
+console.log(sumRecursive(tree));   // 15
+console.log(sumIterative(tree));   // 15
