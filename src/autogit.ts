@@ -1,73 +1,26 @@
-type Edge = {
-  from: number;   // vertex index
-  to: number;     // vertex index
-  weight: number; // can be negative
-};
-
-type BellmanFordResult = {
-  distances: number[];
-  predecessors: (number | null)[];
-  hasNegativeCycle: boolean;
-};
-function bellmanFord(
-  numVertices: number,
-  edges: Edge[],
-  source: number
-): BellmanFordResult {
-  const INF = Number.POSITIVE_INFINITY;
-
-  // 1. Initialisation
-  const dist = new Array(numVertices).fill(INF);
-  dist[source] = 0;
-
-  const pred = new Array<number | null>(numVertices).fill(null);
-
-  // 2. Relax edges (V‑1) times
-  for (let i = 0; i < numVertices - 1; i++) {
-    let updated = false;
-    for (const { from, to, weight } of edges) {
-      if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-        dist[to] = dist[from] + weight;
-        pred[to] = from;
-        updated = true;
-      }
-    }
-    // early exit if no change – optional but nice optimisation
-    if (!updated) break;
-  }
-
-  // 3. Check for negative‑weight cycles
-  let hasNegCycle = false;
-  for (const { from, to, weight } of edges) {
-    if (dist[from] !== INF && dist[from] + weight < dist[to]) {
-      hasNegCycle = true;
-      break;
-    }
-  }
-
-  return { distances: dist, predecessors: pred, hasNegativeCycle: hasNegCycle };
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
+  const total = nums.reduce((sum, n) => sum + n, 0);
+  return total / nums.length;
 }
-// Build a tiny graph with a negative edge that doesn't form a cycle
-const edges: Edge[] = [
-  { from: 0, to: 1, weight: 4 },
-  { from: 0, to: 2, weight: 5 },
-  { from: 1, to: 3, weight: -3 },
-  { from: 2, to: 3, weight: 2 },
-];
-
-const { distances, predecessors, hasNegativeCycle } = bellmanFord(4, edges, 0);
-
-console.log('Distances:', distances);          // [0, 4, 5, 1]
-console.log('Predecessors:', predecessors);    // [null, 0, 0, 1]
-console.log('Negative cycle?', hasNegativeCycle); // false
-
-// If you want to pull out the path 0 -> 1 -> 3:
-function buildPath(pred: (number | null)[], target: number): number[] {
-  const path: number[] = [];
-  for (let v = target; v !== null; v = pred[v] as number | null) {
-    path.push(v);
+function mean(nums: number[]): number {
+  if (nums.length === 0) return NaN;
+  let sum = 0;
+  for (const n of nums) {
+    sum += n;
   }
-  return path.reverse();
+  return sum / nums.length;
 }
-
-console.log('Path to node 3:', buildPath(predecessors, 3)); // [0, 1, 3]
+function mean<T extends number>(nums: T[]): number {
+  if (nums.length === 0) return NaN;
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+}
+function meanSafe(nums: Array<number | null | undefined>): number {
+  const cleaned = nums.filter((n): n is number => typeof n === "number");
+  if (cleaned.length === 0) return NaN;
+  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
+}
+const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
+console.log(mean([2, 4, 6]));   // 4
+console.log(mean([]));          // NaN
+console.log(meanSafe([1, 2, null, 4])); // 2.333...
