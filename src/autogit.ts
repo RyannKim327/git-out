@@ -1,76 +1,37 @@
-/**
- * Build the LPS (Longest Prefix Suffix) table for KMP.
- *
- * @param pattern - The pattern string for which the table is built.
- * @returns An array where lps[i] is the length of the longest proper
- *          prefix of pattern[0..i] that is also a suffix of that substring.
- */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps: number[] = Array(m).fill(0);
-  let length = 0;                 // length of previous longest prefix suffix
-  let i = 1;                      // lps[0] is always 0
-
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length += 1;
-      lps[i] = length;
-      i += 1;
-    } else {
-      if (length !== 0) {
-        // fall back in the pattern (do not increment i here)
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i += 1;
-      }
-    }
-  }
-  return lps;
+interface ListNode<T> {
+  val: T;
+  next: ListNode<T> | null;
 }
-
 /**
- * KMP search – returns all starting indices of `pattern` in `text`.
- *
- * @param text    – The string to search within.
- * @param pattern – The string to find.
- * @returns Array of start indices where pattern occurs in text.
+ * Returns the n‑th node from the end of a singly linked list,
+ * or null if it doesn't exist.
+ * n is 1‑based: n = 1 means the last node.
  */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];          // nothing to find
-  const lps = buildLPS(pattern);
-  const result: number[] = [];
+function nthFromEnd<T>(head: ListNode<T> | null, n: number): ListNode<T> | null {
+  if (n <= 0) return null;            // invalid n – feel free to adjust
 
-  let i = 0;   // index for text
-  let j = 0;   // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i += 1;
-      j += 1;
-    }
-
-    // full match found
-    if (j === pattern.length) {
-      result.push(i - j);   // starting index
-      j = lps[j - 1];       // allow overlapping matches
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i += 1;
-      }
-    }
+  let fast: ListNode<T> | null = head;
+  // Step 1: move fast n steps ahead
+  for (let i = 0; i < n; i++) {
+    if (!fast) return null;           // n is larger than the list length
+    fast = fast.next;
   }
 
-  return result;
+  // Step 2: move both pointers until fast reaches the end
+  let slow: ListNode<T> | null = head;
+  while (fast) {
+    fast = fast.next;
+    slow = slow!.next!;
+  }
+
+  return slow; // could be null if the list was empty
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
+// build a tiny list: 1 → 2 → 3 → 4 → 5
+let node5: ListNode<number> = { val: 5, next: null };
+let node4: ListNode<number> = { val: 4, next: node5 };
+let node3: ListNode<number> = { val: 3, next: node4 };
+let node2: ListNode<number> = { val: 2, next: node3 };
+let node1: ListNode<number> = { val: 1, next: node2 };
 
-const matches = kmpSearch(text, pattern);
-console.log(matches);          // [10]
-
-const hasMatch = matches.length > 0;
-console.log(hasMatch);         // true
+const thirdFromEnd = nthFromEnd(node1, 3);
+console.log(thirdFromEnd?.val); // 3
