@@ -1,87 +1,50 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
+interface TreeNode {
+  val:  number | string   // you can put any type that fits your data
+  left?: TreeNode | null
+  right?: TreeNode | null
 }
+function maxDepth(root: TreeNode | null): number {
+  if (!root) return 0;                 // empty tree -> depth 0
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
+  const leftDepth  = maxDepth(root.left);
+  const rightDepth = maxDepth(root.right);
 
-  constructor() {
-    this.root = new TrieNode();
-  }
-
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
-    }
-    node.isEnd = true;
-  }
-
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
-    }
-    return node;
-  }
-
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
-
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
-
-    dfs(node, []);
-    return results;
-  }
+  return Math.max(leftDepth, rightDepth) + 1;
 }
+function maxDepthIterative(root: TreeNode | null): number {
+  if (!root) return 0;
 
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
+  let depth = 0;
+  const queue: Array<TreeNode> = [root];
 
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+  while (queue.length) {
+    const levelSize = queue.length;   // nodes at the current level
+    depth++;                          // we’re about to process a whole new level
+
+    for (let i = 0; i < levelSize; i++) {
+      const node = queue.shift()!;    // safe; queue is non‑empty here
+
+      if (node.left)  queue.push(node.left);
+      if (node.right) queue.push(node.right);
+    }
+  }
+
+  return depth;
+}
+// Build a tiny tree:
+//        1
+//       / \
+//      2   3
+//         /
+//        4
+const tree: TreeNode = {
+  val: 1,
+  left: { val: 2 },
+  right: {
+    val: 3,
+    left: { val: 4 }
+  }
+};
+
+console.log('Recursive depth:', maxDepth(tree));          // 3
+console.log('Iterative depth:', maxDepthIterative(tree)); // 3
