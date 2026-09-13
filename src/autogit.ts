@@ -1,76 +1,31 @@
 /**
- * Build the LPS (Longest Prefix Suffix) table for KMP.
+ * Selection sort – O(n²) time, O(1) additional space.
  *
- * @param pattern - The pattern string for which the table is built.
- * @returns An array where lps[i] is the length of the longest proper
- *          prefix of pattern[0..i] that is also a suffix of that substring.
+ * Works on any array of items that can be compared with < and >.
  */
-function buildLPS(pattern: string): number[] {
-  const m = pattern.length;
-  const lps: number[] = Array(m).fill(0);
-  let length = 0;                 // length of previous longest prefix suffix
-  let i = 1;                      // lps[0] is always 0
+function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    // Work in place – the original array is mutated
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest is at i
+        let minIdx = i;
 
-  while (i < m) {
-    if (pattern[i] === pattern[length]) {
-      length += 1;
-      lps[i] = length;
-      i += 1;
-    } else {
-      if (length !== 0) {
-        // fall back in the pattern (do not increment i here)
-        length = lps[length - 1];
-      } else {
-        lps[i] = 0;
-        i += 1;
-      }
+        // Search for a smaller element in the rest of the array
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIdx]) {
+                minIdx = j;
+            }
+        }
+
+        // If a smaller element was found, swap it into place
+        if (minIdx !== i) {
+            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+        }
     }
-  }
-  return lps;
+    return arr;
 }
-
-/**
- * KMP search – returns all starting indices of `pattern` in `text`.
- *
- * @param text    – The string to search within.
- * @param pattern – The string to find.
- * @returns Array of start indices where pattern occurs in text.
- */
-export function kmpSearch(text: string, pattern: string): number[] {
-  if (pattern.length === 0) return [];          // nothing to find
-  const lps = buildLPS(pattern);
-  const result: number[] = [];
-
-  let i = 0;   // index for text
-  let j = 0;   // index for pattern
-
-  while (i < text.length) {
-    if (text[i] === pattern[j]) {
-      i += 1;
-      j += 1;
-    }
-
-    // full match found
-    if (j === pattern.length) {
-      result.push(i - j);   // starting index
-      j = lps[j - 1];       // allow overlapping matches
-    } else if (i < text.length && text[i] !== pattern[j]) {
-      // mismatch after j matches
-      if (j !== 0) {
-        j = lps[j - 1];
-      } else {
-        i += 1;
-      }
-    }
-  }
-
-  return result;
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
+function selectionSortCopy<T>(arr: T[]): T[] {
+    return selectionSort([...arr]); // spread creates a shallow copy
 }
-const text = "ABABDABACDABABCABAB";
-const pattern = "ABABCABAB";
-
-const matches = kmpSearch(text, pattern);
-console.log(matches);          // [10]
-
-const hasMatch = matches.length > 0;
-console.log(hasMatch);         // true
