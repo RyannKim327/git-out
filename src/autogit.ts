@@ -1,44 +1,36 @@
-// cronDemo.ts
-// ──────────────────────────────────────────────
-// Simple TS + node‑cron demo.  Every minute,
-// the job prints a timestamp and a random number.
-//
-// Requirements:
-//   npm i node-cron @types/node-cron
-//
-// Run with:
-//   npx ts-node cronDemo.ts
-// ‒ or compile (npx tsc) and exec (node cronDemo.js)
-// ──────────────────────────────────────────────
-
-import cron from 'node-cron';
-
 /**
- * Helper that gives us a nicely formatted timestamp.
+ * Returns the longest common prefix of the supplied strings.
+ * If the array is empty, or if no common prefix exists, an empty string is returned.
  */
-const now = () => new Date().toLocaleString();
+export function longestCommonPrefix(arr: readonly string[]): string {
+  if (arr.length === 0) return '';
 
-/**
- * The task that will run according to the cron schedule.
- * We generate a random integer between 1 and 1000.
- */
-const task = () => {
-  const rand = Math.floor(Math.random() * 1000) + 1;
-  console.log(`[${now()}] Random number: ${rand}`);
-};
+  // We’ll be comparing the first element with every other one.
+  // Once a mismatch is found we stop expanding the prefix.
+  let prefix = arr[0];
 
-/**
- * Schedule the job.
- * Cron expression: '* * * * *'
- * └─ minute (0‑59)
- *
- * The job triggers at the start of every minute.
- */
-cron.schedule('* * * * *', task, {
-  scheduled: true,
-  timezone: 'UTC',     // change to your local timezone if needed
-});
+  for (let i = 1; i < arr.length; ++i) {
+    // Shorten the prefix until it matches the start of arr[i]
+    while (arr[i].indexOf(prefix) !== 0) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';
+    }
+  }
 
-console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
-[2026-06-17 12:34:00] Random number: 827
-[2026-06-17 12:35:00] Random number: 314
+  return prefix;
+}
+const words = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(words)); // prints "fl"
+
+const mix = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(mix));   // prints ""
+export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
+  (prev, curr) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
+    }
+    return prev.slice(0, i);
+  },
+  arr[0] ?? ''
+);
