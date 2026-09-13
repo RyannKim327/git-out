@@ -1,16 +1,34 @@
-// 1. Using the Number constructor
-const val1 = Number("42");          // 42
-
-// 2. Using unary plus
-const val2 = +"42";                 // 42
-
-// 3. Using parseInt (base 10 recommended)
-const val3 = parseInt("42", 10);    // 42
-
-// 4. Using parseFloat for decimals
-const val4 = parseFloat("3.14");    // 3.14
-function safeParse(str: string): number | null {
-  const n = Number(str);
-  return Number.isNaN(n) ? null : n;
+function stringLength(s: string): number {
+  let count = 0;
+  for (const _ of s) {   // iterates over Unicode code points
+    ++count;
+  }
+  return count;
 }
-const i = Math.floor(parseFloat("3.9")); // 3
+function stringLengthCodeUnits(s: string): number {
+  let count = 0;
+  // `s[i]` returns `undefined` past the end of the string
+  for (let i = 0; s[i] !== undefined; i++) {
+    ++count;
+  }
+  return count;
+}
+function stringLengthCharAt(s: string): number {
+  let count = 0;
+  for (let i = 0; s.charAt(i) !== ''; i++) {
+    ++count;
+  }
+  return count;
+}
+function* chars(s: string): Generator<unknown> {
+  for (const c of s) { yield c; }
+}
+
+function stringLengthFunctional(s: string): number {
+  let count = 0;
+  for (const _ of chars(s)) { ++count; }
+  return count;
+}
+console.log(stringLength("hello"));       // 5
+console.log(stringLength("👋🌍"));        // 2  (two code points)
+console.log(stringLengthCodeUnits("👋🌍")); // 4  (four UTF‑16 code units)
