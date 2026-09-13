@@ -1,36 +1,33 @@
-/**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
- */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
-
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
-
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
-    }
-  }
-
-  return prefix;
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
+}
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
+
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
+  }
+  return result;
+}
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
+}
+
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
+}
