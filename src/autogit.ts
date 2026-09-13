@@ -1,26 +1,70 @@
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
-  const total = nums.reduce((sum, n) => sum + n, 0);
-  return total / nums.length;
-}
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;
-  let sum = 0;
-  for (const n of nums) {
-    sum += n;
+/**
+ * Builds the bad‑character shift table for a given pattern.
+ *
+ * The table maps a character code (0–65535 for UTF‑16) to the shift value.
+ * The shift is `pattern.length - 1 - lastIndex` where `lastIndex` is the
+ * right‑most occurrence of that character inside the pattern.  
+ *
+ * @param pattern The substring we’re looking for.
+ * @returns An array indexed by code unit, containing shift values.
+ */
+function buildShiftTable(pattern: string): Uint16Array {
+  const m = pattern.length;
+  const table = new Uint16Array(65536);   // 16‑bit UTF‑16 code units
+
+  // Default shift: length of the pattern
+  table.fill(m);
+
+  // For every character except the last one, compute an optimal shift
+  for (let i = 0; i < m - 1; i++) {
+    const code = pattern.charCodeAt(i);
+    table[code] = m - 1 - i;   // shift so the pattern’s character aligns again
   }
-  return sum / nums.length;
+  return table;
 }
-function mean<T extends number>(nums: T[]): number {
-  if (nums.length === 0) return NaN;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
+
+/**
+ * Boyer‑Moore‑Horspool search.
+ *
+ * @param text    The string to search inside.
+ * @param pattern The substring we want to find.
+ * @returns        All zero‑based indices where `pattern` starts in `text`.
+ */
+export function bmhSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [0];              // empty pattern matches at every position
+  if (m > n) return [];                // pattern longer than text – no match
+
+  const shift = buildShiftTable(pattern);
+  const result: number[] = [];
+
+  let i = 0;   // current alignment: pattern[0] aligned with text[i]
+  while (i <= n - m) {
+    let j = m - 1;   // start comparing from the end of the pattern
+
+    // Compare backwards
+    while (j >= 0 && pattern[j] === text[i + j]) {
+      j--;
+    }
+
+    if (j < 0) {          // full match
+      result.push(i);
+    }
+
+    // Compute the shift.  We jump over at least one character, but the
+    // shift table may prescribe a longer shift if the mismatching character
+    // exists in the pattern.
+    const mismatchingCharCode = text.charCodeAt(i + m - 1);
+    i += shift[mismatchingCharCode];
+  }
+
+  return result;
 }
-function meanSafe(nums: Array<number | null | undefined>): number {
-  const cleaned = nums.filter((n): n is number => typeof n === "number");
-  if (cleaned.length === 0) return NaN;
-  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
-}
-const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
-console.log(mean([2, 4, 6]));   // 4
-console.log(mean([]));          // NaN
-console.log(meanSafe([1, 2, null, 4])); // 2.333...
+const haystack = 'ABCDABABCABCDABABD';
+const needle   = 'ABCDABD';
+
+console.log(bmhSearch(haystack, needle)); // → [11]
+
+// Multiple matches
+console.log(bmhSearch('abababa', 'aba')); // → [0, 2, 4]
