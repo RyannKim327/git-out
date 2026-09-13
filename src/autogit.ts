@@ -1,26 +1,36 @@
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
-  const total = nums.reduce((sum, n) => sum + n, 0);
-  return total / nums.length;
-}
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;
-  let sum = 0;
-  for (const n of nums) {
-    sum += n;
+/**
+ * Returns the longest common prefix of the supplied strings.
+ * If the array is empty, or if no common prefix exists, an empty string is returned.
+ */
+export function longestCommonPrefix(arr: readonly string[]): string {
+  if (arr.length === 0) return '';
+
+  // We’ll be comparing the first element with every other one.
+  // Once a mismatch is found we stop expanding the prefix.
+  let prefix = arr[0];
+
+  for (let i = 1; i < arr.length; ++i) {
+    // Shorten the prefix until it matches the start of arr[i]
+    while (arr[i].indexOf(prefix) !== 0) {
+      prefix = prefix.slice(0, -1);
+      if (prefix === '') return '';
+    }
   }
-  return sum / nums.length;
+
+  return prefix;
 }
-function mean<T extends number>(nums: T[]): number {
-  if (nums.length === 0) return NaN;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-function meanSafe(nums: Array<number | null | undefined>): number {
-  const cleaned = nums.filter((n): n is number => typeof n === "number");
-  if (cleaned.length === 0) return NaN;
-  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
-}
-const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
-console.log(mean([2, 4, 6]));   // 4
-console.log(mean([]));          // NaN
-console.log(meanSafe([1, 2, null, 4])); // 2.333...
+const words = ['flower', 'flow', 'flight'];
+console.log(longestCommonPrefix(words)); // prints "fl"
+
+const mix = ['dog', 'racecar', 'car'];
+console.log(longestCommonPrefix(mix));   // prints ""
+export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
+  (prev, curr) => {
+    let i = 0;
+    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
+      i++;
+    }
+    return prev.slice(0, i);
+  },
+  arr[0] ?? ''
+);
