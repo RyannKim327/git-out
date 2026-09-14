@@ -1,36 +1,31 @@
-/**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
- */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
 
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
+// Numeric ascending sort
+numbers.sort((a, b) => a - b);
+console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
 
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
-    }
+// Numeric descending sort
+numbers.sort((a, b) => b - a);
+console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
+[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
+const sorted = [...numbers].sort((a, b) => a - b);
+numbers.sort((a, b) => {
+  const absDiff = Math.abs(a) - Math.abs(b);
+  return absDiff !== 0 ? absDiff : a - b;
+});
+function quickSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;
+  const pivot = arr[arr.length - 1];
+  const left: number[] = [];
+  const right: number[] = [];
+
+  for (const x of arr.slice(0, -1)) {
+    (x < pivot ? left : right).push(x);
   }
 
-  return prefix;
+  return [...quickSort(left), pivot, ...quickSort(right)];
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+const numbers2 = [3, 1, 4, 1, 5, 9, 2];
+const sorted2 = quickSort(numbers2);
+console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
