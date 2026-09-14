@@ -1,79 +1,49 @@
-type Vertex = string | number | symbol;
-type Graph = Map<Vertex, Vertex[]>;
 /**
- * Breadth‑first traversal of a graph.
+ * Stable counting sort for integers.
  *
- * @param graph      adjacency list
- * @param start      vertex to start from
- * @returns Array of vertices in the order they were visited
+ * @param  values The array of numbers to sort (integers only).
+ * @return        A new sorted array.
  */
-function bfs(graph: Graph, start: Vertex): Vertex[] {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const result: Vertex[] = [];
+function countingSort(values: number[]): number[] {
+  if (values.length === 0) return [];
 
-    visited.add(start);
-    queue.push(start);
+  // ---------- 1. find min & max ----------
+  let min = values[0];
+  let max = values[0];
+  for (let i = 1; i < values.length; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
 
-    while (queue.length) {
-        const current = queue.shift()!;   // safe, queue is non‑empty
-        result.push(current);
+  // ---------- 2. count frequencies ----------
+  const range = max - min + 1;          // number of distinct values
+  const counts = new Array<number>(range).fill(0);
 
-        const neighbours = graph.get(current) ?? [];
-        for (const next of neighbours) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-            }
-        }
-    }
+  for (const v of values) {
+    counts[v - min]++;                  // shift so that the smallest value maps to index 0
+  }
 
-    return result;
+  // ---------- 3. prefix sums (running totals) ----------
+  const positions = new Array<number>(range).fill(0);
+  let sum = 0;
+  for (let i = 0; i < range; i++) {
+    sum += counts[i];
+    positions[i] = sum;                 // positions[i] holds the index after the last element for value (min + i)
+  }
+
+  // ---------- 4. build the sorted output ----------
+  const result = new Array<number>(values.length);
+  // Walk the original array **backwards** to keep stability
+  for (let i = values.length - 1; i >= 0; i--) {
+    const v = values[i];
+    const posIndex = v - min;
+    positions[posIndex]--;               // get the correct position for this element
+    result[positions[posIndex]] = v;
+  }
+
+  return result;
 }
-function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
-    const visited = new Set<Vertex>();
-    const queue: Vertex[] = [];
-    const parent = new Map<Vertex, Vertex | null>();
-
-    visited.add(start);
-    queue.push(start);
-    parent.set(start, null);
-
-    while (queue.length) {
-        const current = queue.shift()!;
-
-        if (current === target) {
-            // reconstruct path
-            const path: Vertex[] = [];
-            let v: Vertex | null | undefined = target;
-            while (v !== null) {
-                path.unshift(v);
-                v = parent.get(v) ?? null;
-            }
-            return path;
-        }
-
-        for (const next of graph.get(current) ?? []) {
-            if (!visited.has(next)) {
-                visited.add(next);
-                queue.push(next);
-                parent.set(next, current);
-            }
-        }
-    }
-
-    // target unreachable
-    return null;
-}
-const g: Graph = new Map([
-    ['A', ['B', 'C']],
-    ['B', ['A', 'D', 'E']],
-    ['C', ['A', 'F']],
-    ['D', ['B']],
-    ['E', ['B', 'F']],
-    ['F', ['C', 'E']]
-]);
-
-console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
-console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
-console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
+const unsorted = [5, -1, 7, 5, 3, -1, 2, 8];
+const sorted = countingSort(unsorted);
+console.log(sorted); // [-1, -1, 2, 3, 5, 5, 7, 8]
