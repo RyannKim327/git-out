@@ -1,63 +1,51 @@
 /**
- * Returns the indices and values of the longest strictly increasing subsequence.
- *
- * @param arr - The input numeric array.
- * @returns An object containing:
- *   - sequence: the LIS as an array of numbers.
- *   - indices:  the original indices of those numbers in `arr`.
- *
- * Complexity:   Time  O(n log n)
- *               Space O(n)
+ * Merge two sorted arrays into one sorted array.
+ * The comparator decides the ordering – by default it uses the `<` operator.
  */
-export function longestIncreasingSubsequence(arr: number[]): {
-    sequence: number[],
-    indices:   number[]
-} {
-    if (arr.length === 0) return { sequence: [], indices: [] };
+function merge<T>(left: T[], right: T[], compare?: (a: T, b: T) => boolean): T[] {
+  const result: T[] = [];
+  let i = 0; // index into left
+  let j = 0; // index into right
 
-    // tail[i] holds the index in arr of the smallest ending value
-    // of an increasing subsequence of length i+1.
-    const tail: number[] = [];
-    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
-    const prev: (number | null)[] = Array(arr.length).fill(null);
+  // Grab the compare function, or fall back to simple < comparison
+  const comp = compare ?? ((a: T, b: T) => a < b);
 
-    for (let i = 0; i < arr.length; i++) {
-        const x = arr[i];
-
-        // Binary search to find the insertion point in tail.
-        let low = 0, high = tail.length;
-        while (low < high) {
-            const mid = Math.floor((low + high) / 2);
-            if (arr[tail[mid]] < x) low = mid + 1;
-            else high = mid;
-        }
-
-        // low is the position where x will sit in tail
-        if (low > 0) {
-            prev[i] = tail[low - 1]; // point to predecessor
-        }
-        if (low === tail.length) {
-            tail.push(i);
-        } else {
-            tail[low] = i; // replace a larger tail with a smaller one
-        }
+  while (i < left.length && j < right.length) {
+    // If left[i] comes before right[j] (or equal), push it
+    if (comp(left[i], right[j])) {
+      result.push(left[i++]);
+    } else {
+      result.push(right[j++]);
     }
+  }
 
-    // Reconstruct the LIS by walking back from the last index
-    const indices: number[] = [];
-    let cur: number | null = tail[tail.length - 1];
-    while (cur !== null) {
-        indices.push(cur);
-        cur = prev[cur];
-    }
-    indices.reverse(); // from start to end
-
-    const sequence = indices.map(i => arr[i]);
-
-    return { sequence, indices };
+  // One of the halves may still have leftovers
+  return result.concat(left.slice(i)).concat(right.slice(j));
 }
-const arr = [3, 10, 2, 1, 20, 4, 6, 12];
-const result = longestIncreasingSubsequence(arr);
 
-console.log(result.sequence); // [3, 10, 20]
-console.log(result.indices);  // [0, 1, 4]
+/**
+ * Recursive merge sort.  
+ * @param array The array to sort.
+ * @param compare Optional comparator that returns true if a < b.
+ */
+export function mergeSort<T>(array: T[], compare?: (a: T, b: T) => boolean): T[] {
+  // Stop recursion when array has 0 or 1 item
+  if (array.length <= 1) return array.slice(); // return a shallow copy
+
+  const mid = Math.floor(array.length / 2);
+  const left = mergeSort(array.slice(0, mid), compare);
+  const right = mergeSort(array.slice(mid), compare);
+
+  return merge(left, right, compare);
+}
+const numbers = [5, 3, 8, 1, 2, 9];
+const sorted = mergeSort(numbers); // => [1, 2, 3, 5, 8, 9]
+
+const people = [
+  { name: "Alice", age: 32 },
+  { name: "Bob", age: 25 },
+  { name: "Eve", age: 29 }
+];
+
+// Sort by age
+const sortedByAge = mergeSort(people, (a, b) => a.age < b.age);
