@@ -1,129 +1,79 @@
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
 /**
- * A node in the B‑tree.
- * Keys are stored in ascending order.
- */
-class BTreeNode<K, V> {
-  // Keys and values are kept together to simplify return of key/value pairs.
-  keys: K[] = [];
-  values: V[] = [];
-
-  // Children – null for leaf nodes.
-  children: (BTreeNode<K, V> | null)[] = [];
-
-  // Whether this node is a leaf.
-  leaf: boolean;
-
-  constructor(leaf: boolean) {
-    this.leaf = leaf;
-  }
-
-  /* Helper: find first index where key should be inserted */
-  findKey(key: K, cmp: (a: K, b: K) => number): number {
-    let idx = 0;
-    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
-      ++idx;
-    }
-    return idx;
-  }
-}
-/**
- * B‑Tree implementation
+ * Breadth‑first traversal of a graph.
  *
- * @param t Minimum degree (≥ 2). Every node except the root contains
- *          at least t‑1 keys and at most 2*t‑1 keys.
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
  */
-class BTree<K, V> {
-  private root: BTreeNode<K, V>;
-  private readonly t: number;
-  private readonly cmp: (a: K, b: K) => number;
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-  constructor(
-    t: number = 2,
-    cmp?: (a: K, b: K) => number
-  ) {
-    if (t < 2) throw new Error('B‑tree order must be >= 2');
-    this.t = t;
-    this.root = new BTreeNode<K, V>(true);
-    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  }
+    visited.add(start);
+    queue.push(start);
 
-  /* Public API --------------------------------------------------- */
-  search(key: K): V | undefined {
-    return this._search(this.root, key);
-  }
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
 
-  insert(key: K, value: V): void {
-    // If root is full, create a new leaf and split
-    if (this.root.keys.length === 2 * this.t - 1) {
-      const newRoot = new BTreeNode<K, V>(false);
-      newRoot.children[0] = this.root;
-      this._splitChild(newRoot, 0);
-      this.root = newRoot;
-    }
-    this._insertNonFull(this.root, key, value);
-  }
-
-  /* Delete is optional – implement if you need it. */
-  /* delete(key: K): void { … } */
-
-  /* Iterator over all key/value pairs in order */
-  *inOrder(): IterableIterator<[K, V]> {
-    yield* this._inOrder(this.root);
-  }
-
-  /* ------------------------------------------------------------------ */
-
-  /* Core recursive operations --------------------------------------- */
-  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
-    const idx = node.findKey(key, this.cmp);
-
-    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
-      return node.values[idx];
-    }
-
-    if (node.leaf) {
-      return undefined;
-    }
-
-    return this._search(node.children[idx]!, key);
-  }
-
-  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
-    let i = node.keys.length - 1;
-
-    if (node.leaf) {
-      // Insert into leaf – shift keys/vals right of insertion point
-      const idx = node.findKey(key, this.cmp);
-      node.keys.splice(idx, 0, key);
-      node.values.splice(idx, 0, value);
-    } else {
-      // Find child to descend into
-      const idx = node.findKey(key, this.cmp);
-      const child = node.children[idx]!;
-
-      if (child.keys.length === 2 * this.t - 1) {
-        // Child is full → split then decide which side to go
-        this._splitChild(node, idx);
-
-        // After split, middle key moves up – need to decide child again
-        if (this.cmp(key, node.keys[idx]) > 0) {
-          i = idx + 1;
-        } else {
-          i = idx;
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
         }
-      }
-      this._insertNonFull(node.children[i]!, key, value);
     }
-  }
 
-  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
-    const t = this.t;
-    const child = parent.children[idx]!;
-    const newNode = new BTreeNode<K, V>(child.leaf);
+    return result;
+}
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-    // Move the second half of child’s keys/values to newNode
-    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
-    newNode.values = child.values.splice(t);
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
 
-    if (!child.leaf) {
-      newNode.children = child.children.splice(t
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
