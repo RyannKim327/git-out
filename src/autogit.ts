@@ -1,65 +1,43 @@
-type Node<T> = { val: T; next: Node<T> | null };
+// O(n log n) – fine for typical lengths
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false; // quick length check
+  const sortedA = a.split('').sort().join('');
+  const sortedB = b.split('').sort().join('');
+  return sortedA === sortedB;
+};
+// O(n) – best for long strings
+const areAnagrams = (first: string, second: string): boolean => {
+  if (first.length !== second.length) return false;
 
-function isPalindrome<T>(head: Node<T> | null): boolean {
-  if (!head || !head.next) return true;
+  const count = new Map<string, number>();
 
-  // 1) Find middle (slow‑fast)
-  let slow = head;
-  let fast = head;
-  while (fast.next && fast.next.next) {
-    slow = slow.next!;
-    fast = fast.next.next;
+  // Count chars from the first string
+  for (const ch of first) {
+    count.set(ch, (count.get(ch) ?? 0) + 1);
   }
 
-  // 2) Reverse the second half
-  let second = reverse(slow.next!);
-  slow.next = null;           // detach first half
-
-  // 3) Compare halves
-  let p1 = head;
-  let p2 = second;
-  while (p2) {
-    if (p1!.val !== p2.val) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
+  // Decrement with the second string
+  for (const ch of second) {
+    const cur = count.get(ch);
+    if (!cur) return false;          // char not in first
+    if (cur === 1) count.delete(ch);
+    else count.set(ch, cur - 1);
   }
 
-  // 4) (optional) restore the list
-  slow.next = reverse(second); // put it back
+  return count.size === 0;
+};
+// Works only for ISO‑8859‑1 / 8‑bit chars
+const areAnagrams = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
 
-  return true;
-}
+  const freq = new Int16Array(256);
 
-function reverse<T>(head: Node<T>): Node<T> {
-  let prev: Node<T> | null = null;
-  let cur = head;
-  while (cur) {
-    const next = cur.next;
-    cur.next = prev;
-    prev = cur;
-    cur = next;
+  for (let i = 0; i < a.length; i++) {
+    freq[a.charCodeAt(i)]++;
+    freq[b.charCodeAt(i)]--;
   }
-  return prev!;
-}
-function isPalindromeWith<T>(
-  head: Node<T> | null,
-  equal: (a: T, b: T) => boolean
-): boolean {
-  if (!head || !head.next) return true;
-  // … same first steps as before …
-  while (p2) {
-    if (!equal(p1!.val, p2.val)) return false;
-    p1 = p1!.next;
-    p2 = p2.next;
-  }
-  return true;
-}
-function isPalindromeStack<T>(head: Node<T> | null): boolean {
-  const stack: T[] = [];
-  for (let cur = head; cur; cur = cur.next) stack.push(cur.val);
 
-  for (let cur = head; cur; cur = cur.next) {
-    if (cur.val !== stack.pop()) return false;
-  }
-  return true;
-}
+  return freq.every(v => v === 0);
+};
+console.log(areAnagrams('listen', 'silent')); // true
+console.log(areAnagrams('hello', 'world'));   // false
