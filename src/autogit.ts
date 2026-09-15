@@ -1,145 +1,66 @@
 /**
- * Graph type: key → list of neighbour keys.
- * Assumes an undirected or directed graph – just feed it the adjacency list you have.
- */
-type Graph = Map<string, string[]>;
-
-/**
- * Bidirectional BFS to find the shortest path between two nodes.
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
  *
- * @param graph       The graph adjacency list.
- * @param startKey    Origin node key.
- * @param goalKey     Destination node key.
- * @returns           Array of keys representing the shortest path,
- *                    or `null` if no path exists.
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
+ *
+ * The function returns everything that looks like the pattern.
  */
-export function bidirectionalSearch(
-  graph: Graph,
-  startKey: string,
-  goalKey: string
-): string[] | null {
-  if (startKey === goalKey) return [startKey];
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
 
-  // --- Front and back queues
-  const frontQueue: string[] = [startKey];
-  const backQueue: string[] = [goalKey];
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
 
-  // --- Visited maps
-  const frontVisited = new Set<string>([startKey]);
-  const backVisited  = new Set<string>([goalKey]);
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
+  }
 
-  // --- Parent maps to reconstruct path
-  const frontParent = new Map<string, string>([[startKey, null]]);
-  const backParent  = new Map<string, string>([[goalKey, null]]);
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
+  }
 
-  // Helper to get neighbours, guard against missing keys
-  const neighbours = (node: string) => graph.get(node) ?? [];
-
-  // Helper to expand one layer from a queue
-  function expand(
-    queue: string[],
-    visited: Set<string>,
-    otherVisited: Set<string>,
-    parentMap: Map<string, string>
-  ): string | null {
-    const size = queue.length;   // classic BFS “level” size
-    for (let i = 0; i < size; i++) {
-      const current = queue.shift() as string; // guaranteed non‑empty
-
-      for (const neighbour of neighbours(current)) {
-        if (visited.has(neighbour)) continue; // already expanded from this side
-
-        // New node from this side – record parent & mark visited
-        visited.add(neighbour);
-        parentMap.set(neighbour, current);
-        queue.push(neighbour);
-
-        // If the other side has already seen this neighbour,
-        // we’ve met in the middle!
-        if (otherVisited.has(neighbour)) return neighbour;
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
+        }
       }
-    }
-    return null;
-  }
-
-  // Main loop
-  while (frontQueue.length && backQueue.length) {
-    // 1. Expand front side
-    const meetingPoint = expand(
-      frontQueue,
-      frontVisited,
-      backVisited,
-      frontParent
-    );
-    if (meetingPoint) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint,
-        startKey,
-        goalKey
-      );
+      if (match) result.push(i);
     }
 
-    // 2. Expand back side
-    const meetingPoint2 = expand(
-      backQueue,
-      backVisited,
-      frontVisited,
-      backParent
-    );
-    if (meetingPoint2) {
-      return buildPath(
-        frontParent,
-        backParent,
-        meetingPoint2,
-        startKey,
-        goalKey
-      );
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
     }
   }
 
-  // No overlap – disconnected graph
-  return null;
+  return result;
 }
+const text = "abracadabra";
+const pattern = "abra";
 
-/**
- * Reconstructs the full path from start → meeting → goal.
- */
-function buildPath(
-  frontParents: Map<string, string>,
-  backParents: Map<string, string>,
-  meeting: string,
-  start: string,
-  goal: string
-): string[] {
-  const path: string[] = [meeting];
-
-  // Walk backwards from meeting to start
-  let cur: string | null = frontParents.get(meeting) ?? null;
-  while (cur) {
-    path.unshift(cur);
-    cur = frontParents.get(cur) ?? null;
-  }
-
-  // Walk forwards from meeting to goal
-  cur = backParents.get(meeting) ?? null;
-  while (cur) {
-    path.push(cur);
-    cur = backParents.get(cur) ?? null;
-  }
-
-  return path;
-}
-// Build a tiny sample graph
-const g = new Map<string, string[]>([
-  ['A', ['B', 'C']],
-  ['B', ['A', 'D', 'E']],
-  ['C', ['A', 'F']],
-  ['D', ['B']],
-  ['E', ['B', 'F']],
-  ['F', ['C', 'E']]
-]);
-
-console.log(bidirectionalSearch(g, 'A', 'F'));
-// → ['A
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
