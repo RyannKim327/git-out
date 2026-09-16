@@ -1,49 +1,66 @@
-/**
- * Returns n! for a non‑negative integer `n`.
- * Throws an error if `n` is negative.
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;   // base case
-  return n * factorialRecursive(n - 1);
+// A simple singly‑linked‑list node suitable for the intersection test
+export interface ListNode<T> {
+  val: T;
+  next?: ListNode<T>;
 }
-/**
- * Computes factorial using a loop. 
- * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
- */
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
-  }
-  return result;
-}
-/**
- * Factorial returning a BigInt to avoid precision loss.
- * Accepts `bigint | number`, but converts to BigInt internally.
- */
-function factorialBigInt(n: number | bigint): bigint {
-  const bigN = typeof n === 'bigint' ? n : BigInt(n);
-  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
-  if (bigN <= 1n) return 1n;
-  let result = 1n;
-  for (let i = 2n; i <= bigN; i++) {
-    result *= i;
-  }
-  return result;
-}
-console.log(factorialBigInt(25));          // 15511210043330985984000000n
-console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
-const factorialCache = new Map<number, number>();
 
-function factorialMemoized(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;
-  if (factorialCache.has(n)) return factorialCache.get(n)!;
+/**
+ * Returns the first node at which two singly‑linked lists intersect,
+ * or undefined if they never intersect.
+ */
+export function getIntersectionNode<T>(
+  headA: ListNode<T> | undefined,
+  headB: ListNode<T> | undefined
+): ListNode<T> | undefined {
+  // Helper that walks a list and returns its length
+  const getLength = (node?: ListNode<T>) => {
+    let len = 0;
+    while (node) {
+      len++;
+      node = node.next;
+    }
+    return len;
+  };
 
-  const value = n * factorialMemoized(n - 1);
-  factorialCache.set(n, value);
-  return value;
+  let lenA = getLength(headA);
+  let lenB = getLength(headB);
+
+  // Advance the longer list so both pointers are at the same distance
+  // from the end of the list.
+  let currA = headA;
+  let currB = headB;
+  while (lenA > lenB && currA) {
+    currA = currA.next;
+    lenA--;
+  }
+  while (lenB > lenA && currB) {
+    currB = currB.next;
+    lenB--;
+  }
+
+  // Move forward together until either we find the intersection
+  // or both pointers hit the end (undefined).
+  while (currA !== currB) {
+    currA = currA?.next;
+    currB = currB?.next;
+  }
+
+  return currA; // May be undefined if no intersection
 }
-const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
+// Build example lists that intersect:
+
+//      A -> B -> C
+//      ^          |
+//      |          v
+//      D <- E
+
+const c: ListNode<number> = { val: 3 };
+const b: ListNode<number> = { val: 2, next: c };
+const a: ListNode<number> = { val: 1, next: b };
+
+const e: ListNode<number> = { val: 5, next: a };
+const d: ListNode<number> = { val: 4, next: e };
+
+console.log(getIntersectionNode(a, d) === a);   // true
+console.log(getIntersectionNode(b, d) === a);   // true
+console.log(getIntersectionNode(c, d) === a);   // true
