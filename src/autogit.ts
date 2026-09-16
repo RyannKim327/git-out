@@ -1,63 +1,62 @@
 /**
- * Returns the indices and values of the longest strictly increasing subsequence.
+ * A generic binary search.
  *
- * @param arr - The input numeric array.
- * @returns An object containing:
- *   - sequence: the LIS as an array of numbers.
- *   - indices:  the original indices of those numbers in `arr`.
- *
- * Complexity:   Time  O(n log n)
- *               Space O(n)
+ * @param arr      Sorted array to search.
+ * @param target   Value to locate.
+ * @param compare  Optional comparator: (a, b) → negative, 0, positive.
+ *                 If omitted, the default `<`/`>` operators are used.
+ * @returns Index of `target` in `arr`, or `-1` if not found.
  */
-export function longestIncreasingSubsequence(arr: number[]): {
-    sequence: number[],
-    indices:   number[]
-} {
-    if (arr.length === 0) return { sequence: [], indices: [] };
+export function binarySearch<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number
+): number {
+  if (!arr.length) return -1;
+  const cmp = compare ?? defaultCompare<T>;
+  let low = 0;
+  let high = arr.length - 1;
 
-    // tail[i] holds the index in arr of the smallest ending value
-    // of an increasing subsequence of length i+1.
-    const tail: number[] = [];
-    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
-    const prev: (number | null)[] = Array(arr.length).fill(null);
+  while (low <= high) {
+    const mid = (low + high) >>> 1;        // Integer mid – no float gymnastics
+    const comp = cmp(arr[mid], target);
+    if (comp === 0) return mid;
+    if (comp < 0) low = mid + 1;           // target is greater
+    else high = mid - 1;                  // target is smaller
+  }
 
-    for (let i = 0; i < arr.length; i++) {
-        const x = arr[i];
-
-        // Binary search to find the insertion point in tail.
-        let low = 0, high = tail.length;
-        while (low < high) {
-            const mid = Math.floor((low + high) / 2);
-            if (arr[tail[mid]] < x) low = mid + 1;
-            else high = mid;
-        }
-
-        // low is the position where x will sit in tail
-        if (low > 0) {
-            prev[i] = tail[low - 1]; // point to predecessor
-        }
-        if (low === tail.length) {
-            tail.push(i);
-        } else {
-            tail[low] = i; // replace a larger tail with a smaller one
-        }
-    }
-
-    // Reconstruct the LIS by walking back from the last index
-    const indices: number[] = [];
-    let cur: number | null = tail[tail.length - 1];
-    while (cur !== null) {
-        indices.push(cur);
-        cur = prev[cur];
-    }
-    indices.reverse(); // from start to end
-
-    const sequence = indices.map(i => arr[i]);
-
-    return { sequence, indices };
+  return -1;
 }
-const arr = [3, 10, 2, 1, 20, 4, 6, 12];
-const result = longestIncreasingSubsequence(arr);
 
-console.log(result.sequence); // [3, 10, 20]
-console.log(result.indices);  // [0, 1, 4]
+/** Recursive version – identical semantics. */
+export function binarySearchRecursive<T>(
+  arr: readonly T[],
+  target: T,
+  compare?: (a: T, b: T) => number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (!arr.length || low > high) return -1;
+  const cmp = compare ?? defaultCompare<T>;
+
+  const mid = (low + high) >>> 1;
+  const comp = cmp(arr[mid], target);
+
+  if (comp === 0) return mid;
+  if (comp < 0) return binarySearchRecursive(arr, target, compare, mid + 1, high);
+  return binarySearchRecursive(arr, target, compare, low, mid - 1);
+}
+
+/** Fallback when you didn’t provide a comparator. */
+function defaultCompare<T>(a: T, b: T): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+const nums = [3, 7, 12, 18, 22, 33, 42];
+console.log(binarySearch(nums, 18));           // 3
+console.log(binarySearch(nums, 5));            // -1
+
+// To search objects, supply a comparator:
+const words = ['apple', 'banana', 'cherry'];
+console.log(binarySearch(words, 'banana', (a, b) => a.localeCompare(b)));
