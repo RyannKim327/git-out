@@ -1,48 +1,35 @@
-/**
- * Returns the majority element of the array if one exists,
- * otherwise returns undefined.
- *
- * @param arr an array of comparable values (number, string, …)
- */
-export function findMajority<T extends number | string | boolean>(
-  arr: T[]
-): T | undefined {
-  // 1️⃣ find a candidate
-  let candidate: T | undefined;
+// A node that holds a value and a reference to the next node.
+// Feel free to add more fields (e.g., prev, data…) as needed.
+export interface Node<T> {
+  value: T;
+  next?: Node<T>;
+}
+export function length<T>(head: Node<T> | undefined): number {
   let count = 0;
+  let current = head;
 
-  for (const val of arr) {
-    if (count === 0) {
-      candidate = val;
-      count = 1;
-    } else if (val === candidate) {
-      count++;
-    } else {
-      count--;
-    }
+  while (current) {
+    count++;
+    current = current.next;
   }
 
-  // 2️⃣ verify that the candidate is actually a majority
-  if (candidate === undefined) return undefined;
-
-  let freq = 0;
-  for (const v of arr) if (v === candidate) freq++;
-
-  return freq > Math.floor(arr.length / 2) ? candidate : undefined;
+  return count;
 }
-console.log(findMajority([3, 3, 4, 2, 3]));      // → 3
-console.log(findMajority([1, 2, 3, 4]));          // → undefined (no majority)
-console.log(findMajority(['a', 'a', 'b']));       // → 'a'
-export function findMajorityWithMap<T>(
-  arr: T[]
-): T | undefined {
-  const map = new Map<T, number>();
-  const threshold = Math.floor(arr.length / 2);
+export function lengthRecursive<T>(node: Node<T> | undefined): number {
+  return node ? 1 + lengthRecursive(node.next) : 0;
+}
+class LinkedList<T> {
+  private head?: Node<T>;
 
-  for (const v of arr) {
-    const newCount = (map.get(v) ?? 0) + 1;
-    map.set(v, newCount);
-    if (newCount > threshold) return v;
+  // ... push, pop, etc.
+
+  size(): number {
+    return length(this.head);   // or lengthRecursive(this.head)
   }
-  return undefined;
 }
+const node3: Node<string> = { value: "c" };
+const node2: Node<string> = { value: "b", next: node3 };
+const node1: Node<string> = { value: "a", next: node2 };
+
+console.log(length(node1));          // → 3
+console.log(lengthRecursive(node1)); // → 3
