@@ -1,43 +1,44 @@
+// cronDemo.ts
+// ──────────────────────────────────────────────
+// Simple TS + node‑cron demo.  Every minute,
+// the job prints a timestamp and a random number.
+//
+// Requirements:
+//   npm i node-cron @types/node-cron
+//
+// Run with:
+//   npx ts-node cronDemo.ts
+// ‒ or compile (npx tsc) and exec (node cronDemo.js)
+// ──────────────────────────────────────────────
+
+import cron from 'node-cron';
+
 /**
- * Returns the first character that occurs only once in `s`.
- * If every character repeats, returns null.
+ * Helper that gives us a nicely formatted timestamp.
  */
-function firstNonRepeatingChar(s: string): string | null {
-  // 1️⃣ Count how many times each char appears
-  const freq = new Map<string, number>();
+const now = () => new Date().toLocaleString();
 
-  for (const ch of s) {
-    freq.set(ch, (freq.get(ch) ?? 0) + 1);
-  }
+/**
+ * The task that will run according to the cron schedule.
+ * We generate a random integer between 1 and 1000.
+ */
+const task = () => {
+  const rand = Math.floor(Math.random() * 1000) + 1;
+  console.log(`[${now()}] Random number: ${rand}`);
+};
 
-  // 2️⃣ Scan the string again and pick the first char with count 1
-  for (const ch of s) {
-    if (freq.get(ch) === 1) {
-      return ch;
-    }
-  }
+/**
+ * Schedule the job.
+ * Cron expression: '* * * * *'
+ * └─ minute (0‑59)
+ *
+ * The job triggers at the start of every minute.
+ */
+cron.schedule('* * * * *', task, {
+  scheduled: true,
+  timezone: 'UTC',     // change to your local timezone if needed
+});
 
-  return null; // nothing unique
-}
-console.log(firstNonRepeatingChar("abacbc")); // -> "b"
-console.log(firstNonRepeatingChar("aabbcc")); // -> null
-console.log(firstNonRepeatingChar("abcde"));  // -> "a"
-function firstNonRepeatingCharOptimized(s: string): string | null {
-  const freq = new Map<string, number>();
-  const order: string[] = [];
-
-  for (const ch of s) {
-    const newCount = (freq.get(ch) ?? 0) + 1;
-    freq.set(ch, newCount);
-
-    if (newCount === 1) {
-      order.push(ch);          // first appearance
-    } else {
-      // remove all occurrences of `ch` from the queue
-      const idx = order.indexOf(ch);
-      if (idx !== -1) order.splice(idx, 1);
-    }
-  }
-
-  return order.length ? order[0] : null;
-}
+console.log('Cron job scheduled: every minute at UTC. Press ^C to exit.');
+[2026-06-17 12:34:00] Random number: 827
+[2026-06-17 12:35:00] Random number: 314
