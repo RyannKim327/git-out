@@ -1,135 +1,129 @@
 /**
- * Boyer‑Moore pattern search
- * ---------------------------------
- * Returns the start indices of every exact match of `pattern`
- * inside `text`.  If no match, returns an empty array.
- *
- * Complexity:
- *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
- *
- * @param text    The haystack string
- * @param pattern The needle string
+ * A node in the B‑tree.
+ * Keys are stored in ascending order.
  */
-export function boyerMooreSearch(text: string, pattern: string): number[] {
-  const n = text.length;
-  const m = pattern.length;
-  if (m === 0) return [];          // empty pattern → nothing to find
+class BTreeNode<K, V> {
+  // Keys and values are kept together to simplify return of key/value pairs.
+  keys: K[] = [];
+  values: V[] = [];
 
-  // Preprocessing -------------------------------------------------------------
-  const badChar = buildBadCharacterTable(pattern);
-  const goodSuf  = buildGoodSuffixTable(pattern);
+  // Children – null for leaf nodes.
+  children: (BTreeNode<K, V> | null)[] = [];
 
-  // Searching ---------------------------------------------------------------
-  const results: number[] = [];
-  let s = 0;                        // shift of the pattern with respect to text
+  // Whether this node is a leaf.
+  leaf: boolean;
 
-  while (s <= n - m) {
-    let j = m - 1;                  // right‑to‑left comparison
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
 
-    while (j >= 0 && pattern[j] === text[s + j]) {
-      j--;
+  /* Helper: find first index where key should be inserted */
+  findKey(key: K, cmp: (a: K, b: K) => number): number {
+    let idx = 0;
+    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
+      ++idx;
+    }
+    return idx;
+  }
+}
+/**
+ * B‑Tree implementation
+ *
+ * @param t Minimum degree (≥ 2). Every node except the root contains
+ *          at least t‑1 keys and at most 2*t‑1 keys.
+ */
+class BTree<K, V> {
+  private root: BTreeNode<K, V>;
+  private readonly t: number;
+  private readonly cmp: (a: K, b: K) => number;
+
+  constructor(
+    t: number = 2,
+    cmp?: (a: K, b: K) => number
+  ) {
+    if (t < 2) throw new Error('B‑tree order must be >= 2');
+    this.t = t;
+    this.root = new BTreeNode<K, V>(true);
+    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+
+  /* Public API --------------------------------------------------- */
+  search(key: K): V | undefined {
+    return this._search(this.root, key);
+  }
+
+  insert(key: K, value: V): void {
+    // If root is full, create a new leaf and split
+    if (this.root.keys.length === 2 * this.t - 1) {
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this._splitChild(newRoot, 0);
+      this.root = newRoot;
+    }
+    this._insertNonFull(this.root, key, value);
+  }
+
+  /* Delete is optional – implement if you need it. */
+  /* delete(key: K): void { … } */
+
+  /* Iterator over all key/value pairs in order */
+  *inOrder(): IterableIterator<[K, V]> {
+    yield* this._inOrder(this.root);
+  }
+
+  /* ------------------------------------------------------------------ */
+
+  /* Core recursive operations --------------------------------------- */
+  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
+    const idx = node.findKey(key, this.cmp);
+
+    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
+      return node.values[idx];
     }
 
-    if (j < 0) {
-      // Match found at position s
-      results.push(s);
+    if (node.leaf) {
+      return undefined;
+    }
 
-      // Shift the pattern so that the next character in text aligns with
-      // the last occurrence of that character in the pattern (if any)
-      // or skip to the end of the pattern if none.
-      // This is the "good suffix" rule for a complete match.
-      s += goodSuf[0];
+    return this._search(node.children[idx]!, key);
+  }
+
+  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
+    let i = node.keys.length - 1;
+
+    if (node.leaf) {
+      // Insert into leaf – shift keys/vals right of insertion point
+      const idx = node.findKey(key, this.cmp);
+      node.keys.splice(idx, 0, key);
+      node.values.splice(idx, 0, value);
     } else {
-      // Mismatch: use the bad‑character rule.
-      const badShift = j - badChar[text[s + j]];
-      // Use the good‑suffix shift as well (max of the two)
-      const goodShift = goodSuf[j + 1];
+      // Find child to descend into
+      const idx = node.findKey(key, this.cmp);
+      const child = node.children[idx]!;
 
-      s += Math.max(badShift, goodShift);
-    }
-  }
+      if (child.keys.length === 2 * this.t - 1) {
+        // Child is full → split then decide which side to go
+        this._splitChild(node, idx);
 
-  return results;
-}
-
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
-
-/**
- * Builds a map from character to its right‑most index in the pattern.
- * Character not present → -1.
- */
-function buildBadCharacterTable(pattern: string): { [k: string]: number } {
-  const table: { [k: string]: number } = {};
-
-  for (let i = 0; i < pattern.length; i++) {
-    table[pattern[i]] = i;           // right‑most position
-  }
-
-  return table;
-}
-
-/**
- * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
- *   goodSuf[i] = number of positions pattern needs to shift so that
- *                the right i characters of pattern align with a previous
- *                occurrence of this suffix.  If no such occurrence,
- *                the shift corresponds to aligning the next character after
- *                the suffix that matches in the pattern.
- *
- * The table length is m+1; goodSuf[0] is the shift after a full match.
- */
-function buildGoodSuffixTable(pattern: string): number[] {
-  const m = pattern.length;
-  const goodSuf = new Array(m + 1).fill(0);
-  const suffix = new Array(m + 1).fill(0);
-  const prefix = new Array(m + 1).fill(false);
-
-  // Step 1: compute suffixes
-  for (let i = 0; i < m; i++) {
-    let len = 0;
-    while (
-      i - len - 1 >= 0 &&
-      pattern[i - len - 1] === pattern[m - len - 1]
-    ) {
-      len++;
-      suffix[i - len + 1] = len;
-      if (i - len + 1 === 0) {
-        prefix[i - len + 1] = true;            // entire suffix is prefix
-      }
-    }
-  }
-
-  // Step 2: fill goodSuf table
-  for (let i = 0; i <= m; i++) {
-    goodSuf[i] = m;                              // default shift
-  }
-
-  for (let i = 0; i < m; i++) {
-    const len = suffix[i];
-    if (len > 0) {
-      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
-    }
-  }
-
-  // Step 3: handle prefixes
-  for (let i = m; i >= 1; i--) {
-    if (prefix[i]) {
-      for (let j = 0; j < m - i; j++) {
-        if (goodSuf[j] === m) {
-          goodSuf[j] = m - i;
+        // After split, middle key moves up – need to decide child again
+        if (this.cmp(key, node.keys[idx]) > 0) {
+          i = idx + 1;
+        } else {
+          i = idx;
         }
       }
+      this._insertNonFull(node.children[i]!, key, value);
     }
   }
 
-  return goodSuf;
-}
-const text = "ABABCABABCDABABCDCDABABCABABCD";
-const pattern = "ABABCABAB";
+  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
+    const t = this.t;
+    const child = parent.children[idx]!;
+    const newNode = new BTreeNode<K, V>(child.leaf);
 
-const matches = boyerMooreSearch(text, pattern);
+    // Move the second half of child’s keys/values to newNode
+    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
+    newNode.values = child.values.splice(t);
 
-console.log(`Pattern found at indices: ${matches}`);
-// → Pattern found at indices: 0,9,15
+    if (!child.leaf) {
+      newNode.children = child.children.splice(t
