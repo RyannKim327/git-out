@@ -1,36 +1,53 @@
 /**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
+ * Binary search for a sorted array of numbers.
+ *
+ * @param arr  The fully sorted array to search.
+ * @param target  The value you’re looking for.
+ * @param low  Index of the current lower bound (initially 0).
+ * @param high Index of the current upper bound (initially arr.length – 1).
+ * @returns The index of `target` if it exists; otherwise –1.
  */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
+function binarySearchRecursive(
+  arr: number[],
+  target: number,
+  low = 0,
+  high = arr.length - 1
+): number {
+  // Base condition – no more elements to inspect
+  if (low > high) return -1;
 
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
+  const mid = Math.floor((low + high) / 2);
 
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
-    }
+  if (arr[mid] === target) {
+    return mid;
+  } else if (arr[mid] > target) {
+    // Search left half
+    return binarySearchRecursive(arr, target, low, mid - 1);
+  } else {
+    // Search right half
+    return binarySearchRecursive(arr, target, mid + 1, high);
   }
-
-  return prefix;
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
+const sorted = [1, 3, 5, 7, 9, 11, 13];
 
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+const idx = binarySearchRecursive(sorted, 7); // 3
+const notFound = binarySearchRecursive(sorted, 2); // -1
+function binarySearch<T>(
+  arr: T[],
+  target: T,
+  compare: (a: T, b: T) => number, // negative if a < b, 0 if equal, positive if a > b
+  low = 0,
+  high = arr.length - 1
+): number {
+  if (low > high) return -1;
+
+  const mid = Math.floor((low + high) / 2);
+  const cmp = compare(arr[mid], target);
+
+  if (cmp === 0) return mid;
+  if (cmp > 0) return binarySearch(arr, target, compare, low, mid - 1);
+  return binarySearch(arr, target, compare, mid + 1, high);
+}
+const words = ['apple', 'banana', 'cherry', 'date', 'fig'];
+
+const idx = binarySearch(words, 'date', (a, b) => a.localeCompare(b)); // 3
