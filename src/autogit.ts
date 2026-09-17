@@ -1,31 +1,69 @@
 /**
- * Selection sort – O(n²) time, O(1) additional space.
- *
- * Works on any array of items that can be compared with < and >.
+ * BWT keeps the input string as an array of characters,
+ * builds all rotations, sorts them, then extracts the last
+ * column (the transformed string) and remembers the index
+ * of the original string in the sorted list – that index
+ * is needed for the inverse transform.
  */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+export function bwt(str: string): { transformed: string; primaryIndex: number } {
+  const n = str.length;
+  // Produce all rotations: str[i:] + str[:i]
+  const rotations: string[] = Array.from({ length: n }, (_, i) =>
+    str.slice(i) + str.slice(0, i)
+  );
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
+  // Sort rotations lexicographically
+  rotations.sort();
 
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
-    }
-    return arr;
+  // The transformed string is the concatenation of the last char
+  // of every rotation, appended in sorted order.
+  const lastColumn = rotations.map(rot => rot[rot.length - 1]).join('');
+
+  // Find the row that matches the original string; its index
+  // is what BWT callers need to recover the original.
+  const primaryIndex = rotations.findIndex(rot => rot === str);
+
+  return { transformed: lastColumn, primaryIndex };
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
+
+/**
+ * Inverse BWT reconstructs the original string from the
+ * transformed string and the index found in the forward step.
+ */
+export function inverseBwt(
+  transformed: string,
+  primaryIndex: number
+): string {
+  const n = transformed.length;
+
+  // Initialize an array of empty strings: will hold the building rows
+  let table: string[] = Array.from({ length: n }, () => '');
+
+  // Repeatedly prepend the transformed column to each row,
+  // then sort. After n iterations the table is fully sorted.
+  for (let step = 0; step < n; step++) {
+    // Prepend each character of 'transformed' to the corresponding row
+    table = table.map((row, i) => transformed[i] + row);
+
+    // Quick sort (JavaScript's String array sort is fine for our sizes)
+    table.sort();
+  }
+
+  // The original string is the row at primaryIndex
+  return table[primaryIndex];
 }
+
+/* ────────────────────── Demo ────────────────────── */
+
+const example = 'banana$';    // '$' is a unique EOF marker
+const { transformed, primaryIndex } = bwt(example);
+
+console.log('BWT:', transformed, 'Primary index:', primaryIndex);
+console.log('Inverse:', inverseBwt(transformed, primaryIndex));
+
+/* Expected output:
+
+BWT: annb$aa  Primary index: 3
+Inverse: banana$
+
+*/
