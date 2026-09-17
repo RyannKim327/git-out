@@ -1,60 +1,55 @@
-/**
- * Returns true if `s` is a palindrome.
- *
- * Works in O(n) time and O(1) additional space.
- * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
- */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+// Graph type: map from vertex id → array of neighbouring vertex ids
+type Graph = Record<string | number, Array<string | number>>;
+function dfsRecursive(
+  graph: Graph,
+  start: string | number,
+  visited = new Set<string | number>()
+): string[] {
+  // If the node has already been visited, stop here.
+  if (visited.has(start)) return [];
 
-  while (left < right) {
-    if (s[left] !== s[right]) {
-      return false;
+  visited.add(start);           // Mark the node
+  const result = [start];        // The order in which we visit
+
+  // Recurse on all neighbours that haven't been visited yet
+  for (const neighbour of graph[start] || []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
-    left++;
-    right--;
   }
 
-  return true;
+  return result;
 }
+function dfsIterative(graph: Graph, start: string | number): string[] {
+  const visited = new Set<string | number>();
+  const stack: (string | number)[] = [start];
+  const order: string[] = [];
 
-// Demo
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isAlphanumeric(c: string): boolean {
-  const code = c.charCodeAt(0);
-  return (
-    // 0‑9
-    (code >= 48 && code <= 57) ||
-    // A‑Z
-    (code >= 65 && code <= 90) ||
-    // a‑z
-    (code >= 97 && code <= 122)
-  );
-}
+  while (stack.length) {
+    const v = stack.pop()!;           // Grab the vertex on top of the stack
+    if (visited.has(v)) continue;     // Skip if we already processed it
+    visited.add(v);                    // Mark as visited
+    order.push(v);                     // Record visitation order
 
-function isPalindromeLoose(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip non‑alphanumerics
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
-
-    // After skipping, compare lowercase versions
-    if (
-      left < right &&
-      s[left].toLowerCase() !== s[right].toLowerCase()
-    ) {
-      return false;
+    // Push neighbours onto the stack (in reverse order if you want a specific order)
+    const neighbours = graph[v] || [];
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      if (!visited.has(neighbours[i])) {
+        stack.push(neighbours[i]);
+      }
     }
-
-    left++;
-    right--;
   }
-  return true;
-}
 
-console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
+  return order;
+}
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: [],
+  f: []
+};
+
+console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
+console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
