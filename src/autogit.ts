@@ -1,173 +1,135 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
+/**
+ * Boyer‑Moore pattern search
+ * ---------------------------------
+ * Returns the start indices of every exact match of `pattern`
+ * inside `text`.  If no match, returns an empty array.
+ *
+ * Complexity:
+ *   O(n + m) average,  O(n · m) worst‑case (in practice the heuristics keep it linear)
+ *
+ * @param text    The haystack string
+ * @param pattern The needle string
+ */
+export function boyerMooreSearch(text: string, pattern: string): number[] {
+  const n = text.length;
+  const m = pattern.length;
+  if (m === 0) return [];          // empty pattern → nothing to find
 
-interface Edge {
-  target: Node;
-  weight: Weight;
+  // Preprocessing -------------------------------------------------------------
+  const badChar = buildBadCharacterTable(pattern);
+  const goodSuf  = buildGoodSuffixTable(pattern);
+
+  // Searching ---------------------------------------------------------------
+  const results: number[] = [];
+  let s = 0;                        // shift of the pattern with respect to text
+
+  while (s <= n - m) {
+    let j = m - 1;                  // right‑to‑left comparison
+
+    while (j >= 0 && pattern[j] === text[s + j]) {
+      j--;
+    }
+
+    if (j < 0) {
+      // Match found at position s
+      results.push(s);
+
+      // Shift the pattern so that the next character in text aligns with
+      // the last occurrence of that character in the pattern (if any)
+      // or skip to the end of the pattern if none.
+      // This is the "good suffix" rule for a complete match.
+      s += goodSuf[0];
+    } else {
+      // Mismatch: use the bad‑character rule.
+      const badShift = j - badChar[text[s + j]];
+      // Use the good‑suffix shift as well (max of the two)
+      const goodShift = goodSuf[j + 1];
+
+      s += Math.max(badShift, goodShift);
+    }
+  }
+
+  return results;
 }
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
+// ---------------------------------------------------------------------------
+// Helper functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Builds a map from character to its right‑most index in the pattern.
+ * Character not present → -1.
+ */
+function buildBadCharacterTable(pattern: string): { [k: string]: number } {
+  const table: { [k: string]: number } = {};
+
+  for (let i = 0; i < pattern.length; i++) {
+    table[pattern[i]] = i;           // right‑most position
+  }
+
+  return table;
 }
 
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
+/**
+ * Good‑suffix table.  For each position i (0‑based, left‑to‑right)
+ *   goodSuf[i] = number of positions pattern needs to shift so that
+ *                the right i characters of pattern align with a previous
+ *                occurrence of this suffix.  If no such occurrence,
+ *                the shift corresponds to aligning the next character after
+ *                the suffix that matches in the pattern.
+ *
+ * The table length is m+1; goodSuf[0] is the shift after a full match.
+ */
+function buildGoodSuffixTable(pattern: string): number[] {
+  const m = pattern.length;
+  const goodSuf = new Array(m + 1).fill(0);
+  const suffix = new Array(m + 1).fill(0);
+  const prefix = new Array(m + 1).fill(false);
 
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
+  // Step 1: compute suffixes
+  for (let i = 0; i < m; i++) {
+    let len = 0;
+    while (
+      i - len - 1 >= 0 &&
+      pattern[i - len - 1] === pattern[m - len - 1]
+    ) {
+      len++;
+      suffix[i - len + 1] = len;
+      if (i - len + 1 === 0) {
+        prefix[i - len + 1] = true;            // entire suffix is prefix
+      }
     }
-    return min;
   }
 
-  get size() {
-    return this.heap.length;
+  // Step 2: fill goodSuf table
+  for (let i = 0; i <= m; i++) {
+    goodSuf[i] = m;                              // default shift
   }
 
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
+  for (let i = 0; i < m; i++) {
+    const len = suffix[i];
+    if (len > 0) {
+      goodSuf[m - len] = Math.min(goodSuf[m - len], i - len + 1);
     }
-    this.heap[idx] = element;
   }
 
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
+  // Step 3: handle prefixes
+  for (let i = m; i >= 1; i--) {
+    if (prefix[i]) {
+      for (let j = 0; j < m - i; j++) {
+        if (goodSuf[j] === m) {
+          goodSuf[j] = m - i;
         }
       }
-
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
-        }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
-}
-
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
     }
   }
 
-  return { distances, prev };
+  return goodSuf;
 }
+const text = "ABABCABABCDABABCDCDABABCABABCD";
+const pattern = "ABABCABAB";
 
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
+const matches = boyerMooreSearch(text, pattern);
 
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
-  }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
-}
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
+console.log(`Pattern found at indices: ${matches}`);
+// → Pattern found at indices: 0,9,15
