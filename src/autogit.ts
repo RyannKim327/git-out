@@ -1,121 +1,145 @@
-/* ───────────────────────────────────────────────────────────────────── */
-/*  AVL tree – 32‑bit integers for brevity.  Replace T with generic if you
- *  need other key types, but then you have to supply a comparator. -------- */
+/**
+ * Graph type: key → list of neighbour keys.
+ * Assumes an undirected or directed graph – just feed it the adjacency list you have.
+ */
+type Graph = Map<string, string[]>;
 
-/*  Node ------------------------------------------------------------------- */
-class Node {
-  key: number;
-  height: number;
-  left: Node | null = null;
-  right: Node | null = null;
+/**
+ * Bidirectional BFS to find the shortest path between two nodes.
+ *
+ * @param graph       The graph adjacency list.
+ * @param startKey    Origin node key.
+ * @param goalKey     Destination node key.
+ * @returns           Array of keys representing the shortest path,
+ *                    or `null` if no path exists.
+ */
+export function bidirectionalSearch(
+  graph: Graph,
+  startKey: string,
+  goalKey: string
+): string[] | null {
+  if (startKey === goalKey) return [startKey];
 
-  constructor(key: number) {           // simple ctor
-    this.key = key;
-    this.height = 1;                    // leaf height = 1
-  }
-}
+  // --- Front and back queues
+  const frontQueue: string[] = [startKey];
+  const backQueue: string[] = [goalKey];
 
-/*  Helper utilities -------------------------------------------------------- */
-const height = (node: Node | null): number => (node ? node.height : 0);
+  // --- Visited maps
+  const frontVisited = new Set<string>([startKey]);
+  const backVisited  = new Set<string>([goalKey]);
 
-const updateHeight = (node: Node) =>
-  node.height = 1 + Math.max(height(node.left), height(node.right));
+  // --- Parent maps to reconstruct path
+  const frontParent = new Map<string, string>([[startKey, null]]);
+  const backParent  = new Map<string, string>([[goalKey, null]]);
 
-const balanceFactor = (node: Node): number =>
-  height(node.left) - height(node.right);
+  // Helper to get neighbours, guard against missing keys
+  const neighbours = (node: string) => graph.get(node) ?? [];
 
-/*  Rotations -------------------------------------------------------------- */
-function rotateRight(y: Node): Node {
-  const x = y.left!;
-  const T2 = x.right;
+  // Helper to expand one layer from a queue
+  function expand(
+    queue: string[],
+    visited: Set<string>,
+    otherVisited: Set<string>,
+    parentMap: Map<string, string>
+  ): string | null {
+    const size = queue.length;   // classic BFS “level” size
+    for (let i = 0; i < size; i++) {
+      const current = queue.shift() as string; // guaranteed non‑empty
 
-  // rotation
-  x.right = y;
-  y.left = T2;
+      for (const neighbour of neighbours(current)) {
+        if (visited.has(neighbour)) continue; // already expanded from this side
 
-  // update heights
-  updateHeight(y);
-  updateHeight(x);
+        // New node from this side – record parent & mark visited
+        visited.add(neighbour);
+        parentMap.set(neighbour, current);
+        queue.push(neighbour);
 
-  return x;     // new root of this part
-}
-
-function rotateLeft(x: Node): Node {
-  const y = x.right!;
-  const T2 = y.left;
-
-  // rotation
-  y.left = x;
-  x.right = T2;
-
-  // update heights
-  updateHeight(x);
-  updateHeight(y);
-
-  return y;     // new root
-}
-
-/*  Insert ------------------------------------------------------------------ */
-function insert(node: Node | null, key: number): Node {
-  if (!node) return new Node(key);
-
-  if (key < node.key) node.left = insert(node.left, key);
-  else if (key > node.key) node.right = insert(node.right, key);
-  else return node;           // duplicate keys rejected
-
-  /* update our own height after child changed */
-  updateHeight(node);
-
-  /* balance now */
-  const bf = balanceFactor(node);
-
-  // Left heavy
-  if (bf > 1) {
-    if (key < node.left!.key)                   // Left‑Left case
-      return rotateRight(node);
-
-    // Left‑Right case
-    node.left = rotateLeft(node.left!);
-    return rotateRight(node);
+        // If the other side has already seen this neighbour,
+        // we’ve met in the middle!
+        if (otherVisited.has(neighbour)) return neighbour;
+      }
+    }
+    return null;
   }
 
-  // Right heavy
-  if (bf < -1) {
-    if (key > node.right!.key)                  // Right‑Right case
-      return rotateLeft(node);
+  // Main loop
+  while (frontQueue.length && backQueue.length) {
+    // 1. Expand front side
+    const meetingPoint = expand(
+      frontQueue,
+      frontVisited,
+      backVisited,
+      frontParent
+    );
+    if (meetingPoint) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint,
+        startKey,
+        goalKey
+      );
+    }
 
-    // Right‑Left case
-    node.right = rotateRight(node.right!);
-    return rotateLeft(node);
+    // 2. Expand back side
+    const meetingPoint2 = expand(
+      backQueue,
+      backVisited,
+      frontVisited,
+      backParent
+    );
+    if (meetingPoint2) {
+      return buildPath(
+        frontParent,
+        backParent,
+        meetingPoint2,
+        startKey,
+        goalKey
+      );
+    }
   }
 
-  return node;            // unchanged
+  // No overlap – disconnected graph
+  return null;
 }
 
-/*  Search --------------------------------------------------------------- */
-function contains(node: Node | null, key: number): boolean {
-  while (node) {
-    if (key === node.key) return true;
-    node = key < node.key ? node.left : node.right;
+/**
+ * Reconstructs the full path from start → meeting → goal.
+ */
+function buildPath(
+  frontParents: Map<string, string>,
+  backParents: Map<string, string>,
+  meeting: string,
+  start: string,
+  goal: string
+): string[] {
+  const path: string[] = [meeting];
+
+  // Walk backwards from meeting to start
+  let cur: string | null = frontParents.get(meeting) ?? null;
+  while (cur) {
+    path.unshift(cur);
+    cur = frontParents.get(cur) ?? null;
   }
-  return false;
+
+  // Walk forwards from meeting to goal
+  cur = backParents.get(meeting) ?? null;
+  while (cur) {
+    path.push(cur);
+    cur = backParents.get(cur) ?? null;
+  }
+
+  return path;
 }
+// Build a tiny sample graph
+const g = new Map<string, string[]>([
+  ['A', ['B', 'C']],
+  ['B', ['A', 'D', 'E']],
+  ['C', ['A', 'F']],
+  ['D', ['B']],
+  ['E', ['B', 'F']],
+  ['F', ['C', 'E']]
+]);
 
-/*  In‑order traversal for debugging -------------------------------------- */
-function inorder(node: Node | null, res: number[] = []): number[] {
-  if (!node) return res;
-  inorder(node.left, res);
-  res.push(node.key);
-  inorder(node.right, res);
-  return res;
-}
-
-/*  Example usage ---------------------------------------------------------- */
-let root: Node | null = null;
-[10, 20, 30, 40, 50, 25].forEach(k => root = insert(root, k));
-
-console.log('In‑order:', inorder(root));              // 10 20 25 30 40 50
-console.log('Contains 25?', contains(root, 25));      // true
-console.log('Contains 15?', contains(root, 15));      // false
-class Node<T> { key: T; height: number; ... }
-function insert<T>(node: Node<T> | null, key: T, cmp: (a: T, b: T) => number): Node<T> { ... }
+console.log(bidirectionalSearch(g, 'A', 'F'));
+// → ['A
