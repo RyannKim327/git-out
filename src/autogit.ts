@@ -1,27 +1,38 @@
-// ---------- types ----------------------------------------------
-interface Post {
-  userId: number;
-  id: number;
-  title: string;
-  body: string;
-}
+const numbers = [1, 2, 3, 4, 5];
 
-// ---------- helper ----------------------------------------------
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Network error: ${response.status} ${response.statusText}`);
-  }
-  return response.json() as Promise<T>;
-}
+// remove the value 3
+const withoutThree = numbers.filter(n => n !== 3);
+console.log(withoutThree); // [1, 2, 4, 5]
+type Person = { id: number; name: string };
+const list: Person[] = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
+];
 
-// ---------- usage ----------------------------------------------
-(async () => {
-  try {
-    const post = await getJson<Post>('https://jsonplaceholder.typicode.com/posts/1');
-    console.log('Fetched post:', post);
-    // do something with post… (e.g., update UI)
-  } catch (err) {
-    console.error('Failed to fetch post:', err);
+const target = list[1]; // the Bob object reference
+const withoutBob = list.filter(person => person !== target);
+const letters = ['a', 'b', 'c', 'd', 'e'];
+const idx = 2; // we want to drop 'c'
+
+letters.splice(idx, 1); // remove 1 element at position idx
+console.log(letters); // ['a', 'b', 'd', 'e']
+const data = [10, 20, 30, 20, 40];
+const removeVal = 20;
+
+for (let i = data.length - 1; i >= 0; i--) {
+  if (data[i] === removeVal) {
+    data.splice(i, 1);
   }
-})();
+}
+console.log(data); // [10, 30, 40]
+/**
+ * Removes the first occurrence of `value` from `arr`.
+ */
+function removeFirst<T>(arr: T[], value: T): T[] {
+  const idx = arr.indexOf(value);
+  if (idx === -1) return arr;          // nothing found
+  const copy = [...arr];               // keep original intact
+  copy.splice(idx, 1);
+  return copy;
+}
