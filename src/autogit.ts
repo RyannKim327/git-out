@@ -1,60 +1,43 @@
 /**
- * Returns true if `s` is a palindrome.
- *
- * Works in O(n) time and O(1) additional space.
- * Handles the string exactly as it is provided (case‑sensitive, all characters counted).
+ * Returns the first character that occurs only once in `s`.
+ * If every character repeats, returns null.
  */
-function isPalindrome(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
+function firstNonRepeatingChar(s: string): string | null {
+  // 1️⃣ Count how many times each char appears
+  const freq = new Map<string, number>();
 
-  while (left < right) {
-    if (s[left] !== s[right]) {
-      return false;
-    }
-    left++;
-    right--;
+  for (const ch of s) {
+    freq.set(ch, (freq.get(ch) ?? 0) + 1);
   }
 
-  return true;
-}
-
-// Demo
-console.log(isPalindrome("racecar")); // true
-console.log(isPalindrome("hello"));   // false
-function isAlphanumeric(c: string): boolean {
-  const code = c.charCodeAt(0);
-  return (
-    // 0‑9
-    (code >= 48 && code <= 57) ||
-    // A‑Z
-    (code >= 65 && code <= 90) ||
-    // a‑z
-    (code >= 97 && code <= 122)
-  );
-}
-
-function isPalindromeLoose(s: string): boolean {
-  let left = 0;
-  let right = s.length - 1;
-
-  while (left < right) {
-    // Skip non‑alphanumerics
-    while (left < right && !isAlphanumeric(s[left])) left++;
-    while (left < right && !isAlphanumeric(s[right])) right--;
-
-    // After skipping, compare lowercase versions
-    if (
-      left < right &&
-      s[left].toLowerCase() !== s[right].toLowerCase()
-    ) {
-      return false;
+  // 2️⃣ Scan the string again and pick the first char with count 1
+  for (const ch of s) {
+    if (freq.get(ch) === 1) {
+      return ch;
     }
-
-    left++;
-    right--;
   }
-  return true;
-}
 
-console.log(isPalindromeLoose("A man, a plan, a canal: Panama")); // true
+  return null; // nothing unique
+}
+console.log(firstNonRepeatingChar("abacbc")); // -> "b"
+console.log(firstNonRepeatingChar("aabbcc")); // -> null
+console.log(firstNonRepeatingChar("abcde"));  // -> "a"
+function firstNonRepeatingCharOptimized(s: string): string | null {
+  const freq = new Map<string, number>();
+  const order: string[] = [];
+
+  for (const ch of s) {
+    const newCount = (freq.get(ch) ?? 0) + 1;
+    freq.set(ch, newCount);
+
+    if (newCount === 1) {
+      order.push(ch);          // first appearance
+    } else {
+      // remove all occurrences of `ch` from the queue
+      const idx = order.indexOf(ch);
+      if (idx !== -1) order.splice(idx, 1);
+    }
+  }
+
+  return order.length ? order[0] : null;
+}
