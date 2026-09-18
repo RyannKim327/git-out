@@ -1,55 +1,38 @@
 /**
- * Returns `true` if `s1` and `s2` are anagrams (ignoring case, spaces and punctuation).
+ * Return the largest prime factor of a positive integer.
+ *
+ * @param n – the number you want to factor (must be > 1)
+ * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
  */
-function isAnagram(s1: string, s2: string): boolean {
-  const normalize = (s: string) =>
-    s.replace(/[^a-zA-Z]/g, '').toLowerCase().split('').sort().join('');
-  return normalize(s1) === normalize(s2);
-}
-function isAnagramLetterCount(a: string, b: string): boolean {
-  const clean = (s: string) => s.replace(/[^a-zA-Z]/g, '').toLowerCase();
+function largestPrimeFactor(n: number): number | undefined {
+  if (n <= 1) return undefined;
 
-  const freq = (s: string) => {
-    const map = new Map<string, number>();
-    for (const c of s) {
-      map.set(c, (map.get(c) ?? 0) + 1);
-    }
-    return map;
-  };
+  let num = n;
+  let largest = -1;
 
-  if (clean(a).length !== clean(b).length) return false;
-
-  const m1 = freq(clean(a));
-  const m2 = freq(clean(b));
-
-  for (const [ch, count] of m1) {
-    if (m2.get(ch) !== count) return false;
+  // Remove all factors of 2
+  while (num % 2 === 0) {
+    largest = 2;
+    num /= 2;
   }
-  return true;
+
+  // Now `num` is odd; try odd divisors only
+  let divisor = 3;
+  const limit = Math.sqrt(num);
+  while (divisor <= limit) {
+    while (num % divisor === 0) {
+      largest = divisor;
+      num /= divisor;
+    }
+    divisor += 2;           // skip the even numbers
+  }
+
+  // If we're left with a prime greater than 2
+  if (num > 2) largest = num;
+
+  return largest;
 }
-function isAnagramFlexible(
-  s1: string,
-  s2: string,
-  options?: { ignoreSpaces?: boolean; ignoreCase?: boolean; ignorePunct?: boolean }
-): boolean {
-  const { ignoreSpaces = true, ignoreCase = true, ignorePunct = true } = options || {};
 
-  let pattern = '';
-  if (ignoreSpaces) pattern += '\\s';
-  if (ignorePunct) pattern += /[^\w\s]/g.source;
-
-  const regex = new RegExp(pattern, 'g');
-  const normalize = (s: string) =>
-    s.replace(regex, '').toLowerCase().split('').sort().join('');
-
-  return normalize(s1) === normalize(s2);
-}
-console.log(isAnagram('listen', 'silent'));          // true
-console.log(isAnagram('A gentleman', 'Elegant man'));// true
-console.log(isAnagram('Hello', 'World'));            // false
-
-// Using the frequency‑count version
-console.log(isAnagramLetterCount('abc', 'cab'));     // true
-
-// Flexible options
-console.log(isAnagramFlexible('hello world', 'dlrow olleh', { ignoreSpaces: false })); // false
+// Quick demo
+console.log(largestPrimeFactor(13195)); // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
