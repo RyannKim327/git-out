@@ -1,63 +1,26 @@
+// utils.ts
 /**
- * Returns the indices and values of the longest strictly increasing subsequence.
+ * Randomly reorder the elements of an array in place.
+ * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
  *
- * @param arr - The input numeric array.
- * @returns An object containing:
- *   - sequence: the LIS as an array of numbers.
- *   - indices:  the original indices of those numbers in `arr`.
- *
- * Complexity:   Time  O(n log n)
- *               Space O(n)
+ * @param arr The array to shuffle (mutated in place)
+ * @returns The same array, now shuffled
  */
-export function longestIncreasingSubsequence(arr: number[]): {
-    sequence: number[],
-    indices:   number[]
-} {
-    if (arr.length === 0) return { sequence: [], indices: [] };
+export function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    // Pick a remaining element…
+    const j = Math.floor(Math.random() * (i + 1));
 
-    // tail[i] holds the index in arr of the smallest ending value
-    // of an increasing subsequence of length i+1.
-    const tail: number[] = [];
-    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
-    const prev: (number | null)[] = Array(arr.length).fill(null);
-
-    for (let i = 0; i < arr.length; i++) {
-        const x = arr[i];
-
-        // Binary search to find the insertion point in tail.
-        let low = 0, high = tail.length;
-        while (low < high) {
-            const mid = Math.floor((low + high) / 2);
-            if (arr[tail[mid]] < x) low = mid + 1;
-            else high = mid;
-        }
-
-        // low is the position where x will sit in tail
-        if (low > 0) {
-            prev[i] = tail[low - 1]; // point to predecessor
-        }
-        if (low === tail.length) {
-            tail.push(i);
-        } else {
-            tail[low] = i; // replace a larger tail with a smaller one
-        }
-    }
-
-    // Reconstruct the LIS by walking back from the last index
-    const indices: number[] = [];
-    let cur: number | null = tail[tail.length - 1];
-    while (cur !== null) {
-        indices.push(cur);
-        cur = prev[cur];
-    }
-    indices.reverse(); // from start to end
-
-    const sequence = indices.map(i => arr[i]);
-
-    return { sequence, indices };
+    // …and swap it with the current element.
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
-const arr = [3, 10, 2, 1, 20, 4, 6, 12];
-const result = longestIncreasingSubsequence(arr);
+import { shuffle } from "./utils";
 
-console.log(result.sequence); // [3, 10, 20]
-console.log(result.indices);  // [0, 1, 4]
+const numbers = [1, 2, 3, 4, 5];
+shuffle(numbers);          // numbers is now in a random order
+console.log(numbers);
+
+const words = ["a", "b", "c", "d"];
+console.log(shuffle(words));  // prints a shuffled copy
