@@ -1,87 +1,58 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
-}
+// stack.ts
+export class Stack<T> {
+  /* The array that holds our data. The last item is the top of the stack. */
+  private items: T[] = [];
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
-
-  constructor() {
-    this.root = new TrieNode();
+  /** Adds a value to the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
   }
 
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
+  /** Removes and returns the top value. Throws if the stack is empty. */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to pop from an empty stack");
     }
-    node.isEnd = true;
+    return this.items.pop() as T; // safe because we just checked for emptiness
   }
 
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
+  /** Returns the top value without removing it. Throws if the stack is empty. */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to peek on an empty stack");
     }
-    return node;
+    // items.length is at least 1, so the index exists
+    return this.items[this.items.length - 1];
   }
 
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
+  /** Was the stack empty? */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
 
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
+  /** How many items are there? */
+  size(): number {
+    return this.items.length;
+  }
 
-    dfs(node, []);
-    return results;
+  /** Clear everything out. */
+  clear(): void {
+    this.items = [];
   }
 }
+// demo.ts
+import { Stack } from "./stack";
 
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
+const stack = new Stack<number>();
 
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+stack.push(1);
+stack.push(2);
+stack.push(3);
+
+console.log(stack.peek());   // 3
+console.log(stack.pop());    // 3
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
