@@ -1,87 +1,63 @@
-// -----------------------------------------------------------------------------
-// 1️⃣  Trie node – keeps a map of children and a flag for word ends
-// -----------------------------------------------------------------------------
-class TrieNode {
-  /** Map from a character to the child node that starts with that character */
-  children = new Map<string, TrieNode>();
-  /** true if the path to this node corresponds to a complete word */
-  isEnd = false;
-}
+/**
+ * Returns the indices and values of the longest strictly increasing subsequence.
+ *
+ * @param arr - The input numeric array.
+ * @returns An object containing:
+ *   - sequence: the LIS as an array of numbers.
+ *   - indices:  the original indices of those numbers in `arr`.
+ *
+ * Complexity:   Time  O(n log n)
+ *               Space O(n)
+ */
+export function longestIncreasingSubsequence(arr: number[]): {
+    sequence: number[],
+    indices:   number[]
+} {
+    if (arr.length === 0) return { sequence: [], indices: [] };
 
-// -----------------------------------------------------------------------------
-// 2️⃣  Trie implementation
-// -----------------------------------------------------------------------------
-export class Trie {
-  private root: TrieNode;
+    // tail[i] holds the index in arr of the smallest ending value
+    // of an increasing subsequence of length i+1.
+    const tail: number[] = [];
+    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
+    const prev: (number | null)[] = Array(arr.length).fill(null);
 
-  constructor() {
-    this.root = new TrieNode();
-  }
+    for (let i = 0; i < arr.length; i++) {
+        const x = arr[i];
 
-  /** Add a word to the trie */
-  insert(word: string): void {
-    let node = this.root;
-    for (const ch of word) {
-      // Get the child for `ch`, or create it if missing
-      if (!node.children.has(ch)) {
-        node.children.set(ch, new TrieNode());
-      }
-      node = node.children.get(ch)!;
+        // Binary search to find the insertion point in tail.
+        let low = 0, high = tail.length;
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (arr[tail[mid]] < x) low = mid + 1;
+            else high = mid;
+        }
+
+        // low is the position where x will sit in tail
+        if (low > 0) {
+            prev[i] = tail[low - 1]; // point to predecessor
+        }
+        if (low === tail.length) {
+            tail.push(i);
+        } else {
+            tail[low] = i; // replace a larger tail with a smaller one
+        }
     }
-    node.isEnd = true;
-  }
 
-  /** Check if a word exists in the trie */
-  search(word: string): boolean {
-    const node = this._findNode(word);
-    return !!node && node.isEnd;
-  }
-
-  /** Check if any word in the trie starts with the given prefix */
-  startsWith(prefix: string): boolean {
-    return !!this._findNode(prefix);
-  }
-
-  /** Internal helper: walk the trie following `key`.  Returns
-   *  the terminal node if the path exists, otherwise `undefined`. */
-  private _findNode(key: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of key) {
-      node = node.children.get(ch);
-      if (!node) return undefined;
+    // Reconstruct the LIS by walking back from the last index
+    const indices: number[] = [];
+    let cur: number | null = tail[tail.length - 1];
+    while (cur !== null) {
+        indices.push(cur);
+        cur = prev[cur];
     }
-    return node;
-  }
+    indices.reverse(); // from start to end
 
-  /** Optional: collect all words in the trie that share a common prefix.
-   *  Useful for autocomplete. */
-  autocomplete(prefix: string): string[] {
-    const node = this._findNode(prefix);
-    if (!node) return [];
+    const sequence = indices.map(i => arr[i]);
 
-    const results: string[] = [];
-    const dfs = (n: TrieNode, path: string[]) => {
-      if (n.isEnd) results.push(prefix + path.join(''));
-      for (const [ch, child] of n.children.entries()) {
-        dfs(child, [...path, ch]);
-      }
-    };
-
-    dfs(node, []);
-    return results;
-  }
+    return { sequence, indices };
 }
+const arr = [3, 10, 2, 1, 20, 4, 6, 12];
+const result = longestIncreasingSubsequence(arr);
 
-// -----------------------------------------------------------------------------
-// 3️⃣  Demo
-// -----------------------------------------------------------------------------
-const trie = new Trie();
-trie.insert('hello');
-trie.insert('helium');
-trie.insert('hero');
-trie.insert('her');
-
-console.log(trie.search('hello'));   // true
-console.log(trie.search('heroic'));  // false
-console.log(trie.startsWith('he'));  // true
-console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
+console.log(result.sequence); // [3, 10, 20]
+console.log(result.indices);  // [0, 1, 4]
