@@ -1,63 +1,79 @@
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
 /**
- * Returns the indices and values of the longest strictly increasing subsequence.
+ * Breadth‑first traversal of a graph.
  *
- * @param arr - The input numeric array.
- * @returns An object containing:
- *   - sequence: the LIS as an array of numbers.
- *   - indices:  the original indices of those numbers in `arr`.
- *
- * Complexity:   Time  O(n log n)
- *               Space O(n)
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
  */
-export function longestIncreasingSubsequence(arr: number[]): {
-    sequence: number[],
-    indices:   number[]
-} {
-    if (arr.length === 0) return { sequence: [], indices: [] };
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-    // tail[i] holds the index in arr of the smallest ending value
-    // of an increasing subsequence of length i+1.
-    const tail: number[] = [];
-    // prev[i] tracks the index of the predecessor of arr[i] in the LIS ending at i.
-    const prev: (number | null)[] = Array(arr.length).fill(null);
+    visited.add(start);
+    queue.push(start);
 
-    for (let i = 0; i < arr.length; i++) {
-        const x = arr[i];
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
 
-        // Binary search to find the insertion point in tail.
-        let low = 0, high = tail.length;
-        while (low < high) {
-            const mid = Math.floor((low + high) / 2);
-            if (arr[tail[mid]] < x) low = mid + 1;
-            else high = mid;
-        }
-
-        // low is the position where x will sit in tail
-        if (low > 0) {
-            prev[i] = tail[low - 1]; // point to predecessor
-        }
-        if (low === tail.length) {
-            tail.push(i);
-        } else {
-            tail[low] = i; // replace a larger tail with a smaller one
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
         }
     }
 
-    // Reconstruct the LIS by walking back from the last index
-    const indices: number[] = [];
-    let cur: number | null = tail[tail.length - 1];
-    while (cur !== null) {
-        indices.push(cur);
-        cur = prev[cur];
-    }
-    indices.reverse(); // from start to end
-
-    const sequence = indices.map(i => arr[i]);
-
-    return { sequence, indices };
+    return result;
 }
-const arr = [3, 10, 2, 1, 20, 4, 6, 12];
-const result = longestIncreasingSubsequence(arr);
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-console.log(result.sequence); // [3, 10, 20]
-console.log(result.indices);  // [0, 1, 4]
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
+
+    while (queue.length) {
+        const current = queue.shift()!;
+
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
+
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
