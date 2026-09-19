@@ -1,38 +1,30 @@
 /**
- * Return the largest prime factor of a positive integer.
+ * Return the factorial of a non‑negative integer.
  *
- * @param n – the number you want to factor (must be > 1)
- * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
  */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n <= 1) return undefined;
-
-  let num = n;
-  let largest = -1;
-
-  // Remove all factors of 2
-  while (num % 2 === 0) {
-    largest = 2;
-    num /= 2;
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
   }
 
-  // Now `num` is odd; try odd divisors only
-  let divisor = 3;
-  const limit = Math.sqrt(num);
-  while (divisor <= limit) {
-    while (num % divisor === 0) {
-      largest = divisor;
-      num /= divisor;
-    }
-    divisor += 2;           // skip the even numbers
-  }
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
 
-  // If we're left with a prime greater than 2
-  if (num > 2) largest = num;
-
-  return largest;
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
 
-// Quick demo
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
+
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
+}
+
+console.log(factorialBig(20n).toString()); // 2432902008176640000
