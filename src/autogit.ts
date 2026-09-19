@@ -1,26 +1,40 @@
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
-  const total = nums.reduce((sum, n) => sum + n, 0);
-  return total / nums.length;
+/**
+ * Interpolation search returns the index of `target` in `arr`,
+ * or –1 if the target is not present.
+ *
+ * @param arr   – sorted array of numbers (must be monotonic increasing)
+ * @param target – key we’re trying to locate
+ * @returns the array index of target or -1
+ */
+export function interpolationSearch(arr: number[], target: number): number {
+    if (arr.length === 0) return -1;
+
+    let low = 0;
+    let high = arr.length - 1;
+
+    while (low <= high && target >= arr[low] && target <= arr[high]) {
+        // Avoid division by zero when the sub‑array contains equal numbers
+        if (arr[high] === arr[low]) {
+            return arr[low] === target ? low : -1;
+        }
+
+        // Estimate the likely position of `target` within [low, high]
+        const pos = low + Math.floor(
+            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
+        );
+
+        const val = arr[pos];
+
+        if (val === target) return pos;
+        if (val < target) low = pos + 1;
+        else high = pos - 1;
+    }
+
+    return -1; // not found
 }
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;
-  let sum = 0;
-  for (const n of nums) {
-    sum += n;
-  }
-  return sum / nums.length;
-}
-function mean<T extends number>(nums: T[]): number {
-  if (nums.length === 0) return NaN;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-function meanSafe(nums: Array<number | null | undefined>): number {
-  const cleaned = nums.filter((n): n is number => typeof n === "number");
-  if (cleaned.length === 0) return NaN;
-  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
-}
-const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
-console.log(mean([2, 4, 6]));   // 4
-console.log(mean([]));          // NaN
-console.log(meanSafe([1, 2, null, 4])); // 2.333...
+import { interpolationSearch } from "./interpolationSearch";
+
+const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+
+console.log(interpolationSearch(data, 42));   // → 4
+console.log(interpolationSearch(data, 100));  // → -1
