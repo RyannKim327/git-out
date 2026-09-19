@@ -1,40 +1,58 @@
-/**
- * Interpolation search returns the index of `target` in `arr`,
- * or –1 if the target is not present.
- *
- * @param arr   – sorted array of numbers (must be monotonic increasing)
- * @param target – key we’re trying to locate
- * @returns the array index of target or -1
- */
-export function interpolationSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
+// stack.ts
+export class Stack<T> {
+  /* The array that holds our data. The last item is the top of the stack. */
+  private items: T[] = [];
 
-    let low = 0;
-    let high = arr.length - 1;
+  /** Adds a value to the top of the stack. */
+  push(item: T): void {
+    this.items.push(item);
+  }
 
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Avoid division by zero when the sub‑array contains equal numbers
-        if (arr[high] === arr[low]) {
-            return arr[low] === target ? low : -1;
-        }
-
-        // Estimate the likely position of `target` within [low, high]
-        const pos = low + Math.floor(
-            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
-        );
-
-        const val = arr[pos];
-
-        if (val === target) return pos;
-        if (val < target) low = pos + 1;
-        else high = pos - 1;
+  /** Removes and returns the top value. Throws if the stack is empty. */
+  pop(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to pop from an empty stack");
     }
+    return this.items.pop() as T; // safe because we just checked for emptiness
+  }
 
-    return -1; // not found
+  /** Returns the top value without removing it. Throws if the stack is empty. */
+  peek(): T {
+    if (this.isEmpty()) {
+      throw new Error("Stack underflow – tried to peek on an empty stack");
+    }
+    // items.length is at least 1, so the index exists
+    return this.items[this.items.length - 1];
+  }
+
+  /** Was the stack empty? */
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  /** How many items are there? */
+  size(): number {
+    return this.items.length;
+  }
+
+  /** Clear everything out. */
+  clear(): void {
+    this.items = [];
+  }
 }
-import { interpolationSearch } from "./interpolationSearch";
+// demo.ts
+import { Stack } from "./stack";
 
-const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+const stack = new Stack<number>();
 
-console.log(interpolationSearch(data, 42));   // → 4
-console.log(interpolationSearch(data, 100));  // → -1
+stack.push(1);
+stack.push(2);
+stack.push(3);
+
+console.log(stack.peek());   // 3
+console.log(stack.pop());    // 3
+console.log(stack.size());   // 2
+console.log(stack.isEmpty()); // false
+
+stack.clear();
+console.log(stack.isEmpty()); // true
