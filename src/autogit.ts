@@ -1,172 +1,157 @@
-/* ---- 1. Necessary types ------------------------------------------------- */
-type Point = { x: number; y: number };   // a grid coordinate
+// suffix-tree.ts
+/**
+ * Lightweight suffix tree for ASCII strings.
+ * The implementation uses Ukkonen’s algorithm
+ * and is fully typed for clarity.
+ */
 
-// A *node* is a point that also carries the data used by A*.
+/** Each node can have many outgoing edges keyed by the
+ * first character of the edge label (i.e., “transition”).
+ * The tree is rooted (root is an empty string). */
 class Node {
-  public f: number;   // g + h
-  public g: number;   // cost from start
-  public h: number;   // heuristic estimate to goal
+  /** Map from a character to a child node. */
+  children = new Map<string, Node>();
 
-  constructor(
-    public point: Point,
-    public parent: Node | null = null,
-    g = 0,
-    h = 0
-  ) {
-    this.g = g;
-    this.h = h;
-    this.f = this.g + this.h;
-  }
+  /** For nodes that represent the end of a suffix,
+   *  we record the starting index of that suffix in the
+   *  original text.  The set version lets us keep
+   *  multiple suffixes that collapse at the same node.
+   */
+  suffixIndices = new Set<number>();
+
+  /* In Ukkonen, each edge is implicitly defined by the
+   * start and length on the original text.  We store
+   * those pairs on the node that is the *target* of the edge.
+   */
+  edgeStart?: number;
+  edgeEnd?: number; // inclusive
+
+  /** The parent of this node (root’s parent is null). */
+  parent: Node | null = null;
 }
 
-/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
-class MinHeap<T> {
-  private items: T[] = [];
+/** A convenience wrapper around a Node that stores the
+ *  current active point used during construction.
+ */
+interface ActivePoint {
+  node: Node;     // the deepest node where the active span ends
+  edge: string;   // first character of the edge we are on
+  length: number; // how far we have walked down that edge
+}
 
-  constructor(private compare: (a: T, b: T) => number) {}
+/**
+ * The SuffixTree itself.
+ */
+export class SuffixTree {
+  /** The root of the tree.  Its edgeStart/edgeEnd are undefined
+   *  because it has no incoming edge. */
+  private _root = new Node();
 
-  get size() { return this.items.length; }
+  /** The input string.  We keep it as an array of characters
+   *  for O(1) random access. */
+  private _text: string[];
 
-  push(item: T) {
-    this.items.push(item);
-    this.bubbleUp(this.items.length - 1);
+  /** The active point used by Ukkonen’s algorithm. */
+  private _active: ActivePoint;
+
+  /** The number of “steps” we have taken from the root
+   *  during construction.  This is the suffix link counter,
+   *  useful primarily for debugging but also for truncated
+   *  construction. */
+  private _remainder = 0;
+
+  constructor(text: string) {
+    this._text = [...text];
+    this._active = { node: this._root, edge: "", length: 0 };
+    this.build();
   }
 
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const top = this.items[0];
-    const end = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = end;
-      this.bubbleDown(0);
+  /* ------------------------------------------------------------------- */
+  /*  BUILDING
+   * ------------------------------------------------------------------- */
+
+  private build(): void {
+    for (let pos = 0; pos < this._text.length; pos++) {
+      this._addCharacter(pos);
     }
-    return top;
   }
 
-  private bubbleUp(idx: number) {
-    const item = this.items[idx];
-    while (idx > 0) {
-      const parentIdx = ((idx + 1) >> 1) - 1;
-      const parent = this.items[parentIdx];
-      if (this.compare(item, parent) >= 0) break;
-      this.items[idx] = parent;
-      idx = parentIdx;
-    }
-    this.items[idx] = item;
-  }
+  /**
+   * Extend the tree with the character at position `pos` in the input.
+   * This is Ukkonen’s “phase” step.
+   */
+  private _addCharacter(pos: number): void {
+    this._remainder++;
 
-  private bubbleDown(idx: number) {
-    const length = this.items.length;
-    const item = this.items[idx];
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallest = idx;
+    let lastNewNode: Node | null = null;
 
-      if (
-        leftIdx < length &&
-        this.compare(this.items[leftIdx], this.items[smallest]) < 0
-      )
-        smallest = leftIdx;
+    while (this._remainder > 0) {
+      const currentActiveEdge = this._active.edge || this._text[pos];
 
-      if (
-        rightIdx < length &&
-        this.compare(this.items[rightIdx], this.items[smallest]) < 0
-      )
-        smallest = rightIdx;
+      // 1. If there is no outgoing edge from the active node
+      //    that starts with the active edge character, create one.
+      if (!this._active.node.children.has(currentActiveEdge)) {
+        const leaf = this._createNode(pos, this._text.length - 1); // leaf points to suffix start
+        this._active.node.children.set(currentActiveEdge, leaf);
+        leaf.parent = this._active.node;
 
-      if (smallest === idx) break;
+        if (lastNewNode) {
+          lastNewNode.suffixLink = this._active.node;
+          lastNewNode = null;
+        }
+      } else {
+        // 2. There is an edge; we need to walk down it.
+        const nextNode = this._active.node.children.get(currentActiveEdge)!;
 
-      this.items[idx] = this.items[smallest];
-      idx = smallest;
-    }
-    this.items[idx] = item;
-  }
-}
+        // What character does the edge label have at the next position?
+        const edgeChar = this._text[nextNode.edgeStart! + this._active.length];
 
-/* ---- 3. Heuristic -------------------------------------------------------- */
-function manhattan(a: Point, b: Point): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
+        if (edgeChar === this._text[pos]) {
+          // 2a. The current character is already in the tree.
+          //     Just extend the active point and break.
+          if (lastNewNode) {
+            lastNewNode.suffixLink = this._active.node;
+            lastNewNode = null;
+          }
+          this._active.length++;
+          break;
+        }
 
-/* ---- 4. Grid utilities --------------------------------------------------- */
-// returns true if the point is inside bounds AND not blocked
-function isWalkable(
-  grid: boolean[][],
-  { x, y }: Point
-): boolean {
-  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
-}
+        // 2b. Need to split the edge because we hit a mismatch.
+        const splitEnd = nextNode.edgeStart! + this._active.length - 1;
+        const split = this._createNode(nextNode.edgeStart!, splitEnd);
+        this._active.node.children.set(currentActiveEdge, split);
+        split.parent = this._active.node;
 
-// neighbours (4‑connected, 8‑connected if you add diagonals)
-function getNeighbours(grid: boolean[][], p: Point): Point[] {
-  const { x, y } = p;
-  const candidates: Point[] = [
-    { x: x + 1, y },
-    { x: x - 1, y },
-    { x, y: y + 1 },
-    { x, y: y - 1 },
-  ];
+        // 2b.i. The old child becomes a grand‑child of the new split node.
+        nextNode.edgeStart! = splitEnd + 1;
+        split.children.set(this._text[nextNode.edgeStart!], nextNode);
+        nextNode.parent = split;
 
-  // Uncomment if you want diagonal moves:
-  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
+        // 2b.ii. Add a new leaf for the new character.
+        const leaf = this._createNode(pos, this._text.length - 1);
+        split.children.set(this._text[pos], leaf);
+        leaf.parent = split;
 
-  return candidates.filter(p => isWalkable(grid, p));
-}
-
-/* ---- 5. The main A* function --------------------------------------------- */
-function aStar(
-  grid: boolean[][],
-  start: Point,
-  goal: Point
-): Point[] | null {
-  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
-
-  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
-  const closed = new Set<string>();          // "x,y" keys
-
-  const nodeForPoint = (p: Point) =>
-    `${p.x},${p.y}`;
-
-  open.push(new Node(start, null, 0, manhattan(start, goal)));
-
-  while (open.size) {
-    const current = open.pop()!;
-    const currentKey = nodeForPoint(current.point);
-
-    if (closed.has(currentKey)) continue;     // skip stale node
-    closed.add(currentKey);
-
-    if (current.point.x === goal.x && current.point.y === goal.y) {
-      // reconstruct path
-      const path: Point[] = [];
-      let cur: Node | null = current;
-      while (cur) {
-        path.push(cur.point);
-        cur = cur.parent;
+        // 2b.iii. Link suffixes
+        if (lastNewNode) {
+          lastNewNode.suffixLink = split;
+        }
+        lastNewNode = split;
+        split.suffixLink = this._root;
       }
-      return path.reverse();
-    }
 
-    for (const neighbour of getNeighbours(grid, current.point)) {
-      const neighbourKey = nodeForPoint(neighbour);
-      if (closed.has(neighbourKey)) continue;
+      // 3. Move to the next phase: decrement remainder
+      this._remainder--;
 
-      const tentativeG = current.g + 1; // cost of moving a step
-      const h = manhattan(neighbour, goal);
-      const neighbourNode = new Node(
-        neighbour,
-        current,
-        tentativeG,
-        h
-      );
-
-      open.push(neighbourNode);
-    }
-  }
-
-  return null; // no path
-}
-
-/* ---- 6. Example usage --------------------------------------------------- */
-const
+      // 4. If the active node has a suffix link, follow it,
+      //    otherwise reset to root and adjust length.
+      if (this._active.node === this._root && this._active.length > 0) {
+        this._active.length--;
+        this._active.edge = this._text[pos - this._remainder + 1];
+      } else if (this._active.node !== this._root) {
+        this._active.node = this._active.node.suffixLink!;
+      } else {
+        this._active.edge = this._text[pos - this._remainder + 1];
+        this._active.length = 1;
+        this._active.node = this
