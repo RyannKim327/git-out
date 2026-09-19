@@ -1,25 +1,87 @@
-/***** 1️⃣  The classic Math.max with the spread operator *****/
+// -----------------------------------------------------------------------------
+// 1️⃣  Trie node – keeps a map of children and a flag for word ends
+// -----------------------------------------------------------------------------
+class TrieNode {
+  /** Map from a character to the child node that starts with that character */
+  children = new Map<string, TrieNode>();
+  /** true if the path to this node corresponds to a complete word */
+  isEnd = false;
+}
 
-const numbers = [4, 12, 7, 19, 3];
+// -----------------------------------------------------------------------------
+// 2️⃣  Trie implementation
+// -----------------------------------------------------------------------------
+export class Trie {
+  private root: TrieNode;
 
-// Spreads the array into individual arguments for Math.max
-const max1 = Math.max(...numbers); // 19
-/***** 2️⃣  Using reduce (great if you want a custom comparison *****/
+  constructor() {
+    this.root = new TrieNode();
+  }
 
-const max2 = numbers.reduce((currentMax, val) => (val > currentMax ? val : currentMax), Number.NEGATIVE_INFINITY);
-// Also 19
-/***** 3️⃣  If you’re dealing with objects and need a property *****/
+  /** Add a word to the trie */
+  insert(word: string): void {
+    let node = this.root;
+    for (const ch of word) {
+      // Get the child for `ch`, or create it if missing
+      if (!node.children.has(ch)) {
+        node.children.set(ch, new TrieNode());
+      }
+      node = node.children.get(ch)!;
+    }
+    node.isEnd = true;
+  }
 
-type Item = { id: number; value: number };
-const items: Item[] = [
-  { id: 1, value: 4 },
-  { id: 2, value: 12 },
-  { id: 3, value: 7 },
-];
+  /** Check if a word exists in the trie */
+  search(word: string): boolean {
+    const node = this._findNode(word);
+    return !!node && node.isEnd;
+  }
 
-// Max based on `value`
-const maxVal = items.reduce((max, item) => (item.value > max ? item.value : max), Number.NEGATIVE_INFINITY);
-// maxVal is 12
-// If you want the whole object:
-const maxObj = items.reduce((max, item) => (item.value > max.value ? item : max), items[0]);
-// maxObj is { id: 2, value: 12 }
+  /** Check if any word in the trie starts with the given prefix */
+  startsWith(prefix: string): boolean {
+    return !!this._findNode(prefix);
+  }
+
+  /** Internal helper: walk the trie following `key`.  Returns
+   *  the terminal node if the path exists, otherwise `undefined`. */
+  private _findNode(key: string): TrieNode | undefined {
+    let node = this.root;
+    for (const ch of key) {
+      node = node.children.get(ch);
+      if (!node) return undefined;
+    }
+    return node;
+  }
+
+  /** Optional: collect all words in the trie that share a common prefix.
+   *  Useful for autocomplete. */
+  autocomplete(prefix: string): string[] {
+    const node = this._findNode(prefix);
+    if (!node) return [];
+
+    const results: string[] = [];
+    const dfs = (n: TrieNode, path: string[]) => {
+      if (n.isEnd) results.push(prefix + path.join(''));
+      for (const [ch, child] of n.children.entries()) {
+        dfs(child, [...path, ch]);
+      }
+    };
+
+    dfs(node, []);
+    return results;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// 3️⃣  Demo
+// -----------------------------------------------------------------------------
+const trie = new Trie();
+trie.insert('hello');
+trie.insert('helium');
+trie.insert('hero');
+trie.insert('her');
+
+console.log(trie.search('hello'));   // true
+console.log(trie.search('heroic'));  // false
+console.log(trie.startsWith('he'));  // true
+console.log(trie.autocomplete('he')); // ['llo', 'lium', 'ro', 'r']
