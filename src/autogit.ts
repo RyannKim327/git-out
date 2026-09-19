@@ -1,66 +1,77 @@
-/**
- * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
- *
- * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
- * The base is usually the alphabet size (e.g. 256 for extended ASCII).
- * The modulus is a large prime to keep the hash values bounded and to reduce
- * collisions.  Even if a hash match occurs, we still check the actual string
- * slice to guarantee correctness.
- *
- * The function returns everything that looks like the pattern.
- */
-export function rabinKarp(pattern: string, text: string): number[] {
-  const result: number[] = [];
-  const M = pattern.length;          // pattern length
-  const N = text.length;             // text length
-  if (M === 0 || N < M) return result;   // nothing to find
-
-  const base = 256;                  // number of possible characters
-  const prime = 101;                  // a small prime as mod
-
-  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
-  let highOrder = 1;                  // base^(M-1) % prime
-  for (let i = 1; i <= M - 1; i++) {
-    highOrder = (highOrder * base) % prime;
-  }
-
-  /* ---------- Initial hash for pattern and first window ---------- */
-  let patternHash = 0;
-  let windowHash = 0;
-  for (let i = 0; i < M; i++) {
-    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
-    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
-  }
-
-  /* ---------- Slide the window over the text ---------- */
-  for (let i = 0; i <= N - M; i++) {
-    // If hash values are equal, do a character‑by‑character check
-    if (patternHash === windowHash) {
-      let match = true;
-      for (let j = 0; j < M; j++) {
-        if (text.charAt(i + j) !== pattern.charAt(j)) {
-          match = false;
-          break;
-        }
-      }
-      if (match) result.push(i);
-    }
-
-    // Compute hash for the next window
-    if (i < N - M) {
-      // Remove leading character
-      const leading = (text.charCodeAt(i) * highOrder) % prime;
-      windowHash = (windowHash + prime - leading) % prime; // avoid negative
-
-      // Shift left and add the trailing character
-      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
-    }
-  }
-
-  return result;
+class TreeNode<T> {
+  constructor(
+    public value: T,
+    public left: TreeNode<T> | null = null,
+    public right: TreeNode<T> | null = null
+  ) {}
 }
-const text = "abracadabra";
-const pattern = "abra";
+class BinaryTree<T> {
+  root: TreeNode<T> | null = null;
 
-const indices = rabinKarp(pattern, text);
-console.log(indices); // → [0, 7]
+  // Insert value in the first spot found (just for demonstration).
+  // A real BST would place it relative to its neighbors.
+  insert(value: T): void {
+    const node = new TreeNode(value);
+    if (!this.root) {
+      this.root = node;
+      return;
+    }
+    this._insertRec(this.root, node);
+  }
+
+  private _insertRec(current: TreeNode<T>, node: TreeNode<T>): void {
+    // Walk left first, then right, until you hit a null spot.
+    if (!current.left) {
+      current.left = node;
+    } else if (!current.right) {
+      current.right = node;
+    } else {
+      // Go deeper – we’re just doing breadth‑like insertion.
+      this._insertRec(current.left, node);
+    }
+  }
+
+  // Breadth‑first traversal (queue style) – returns array of values.
+  bfs(): T[] {
+    const result: T[] = [];
+    if (!this.root) return result;
+
+    const queue: TreeNode<T>[] = [this.root];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      result.push(cur.value);
+      if (cur.left) queue.push(cur.left);
+      if (cur.right) queue.push(cur.right);
+    }
+    return result;
+  }
+
+  // Depth‑first in‑order traversal (left, node, right)
+  inorder(): T[] {
+    const res: T[] = [];
+    const visit = (node: TreeNode<T> | null) => {
+      if (!node) return;
+      visit(node.left);
+      res.push(node.value);
+      visit(node.right);
+    };
+    visit(this.root);
+    return res;
+  }
+
+  // Simple depth counter
+  depth(): number {
+    const dfs = (node: TreeNode<T> | null): number =>
+      !node ? 0 : 1 + Math.max(dfs(node.left), dfs(node.right));
+    return dfs(this.root);
+  }
+}
+const tree = new BinaryTree<number>();
+[10, 5, 15, 3, 7, 12, 18].forEach(v => tree.insert(v));
+
+console.log('BFS order:', tree.bfs());      // [10, 5, 15, 3, 7, 12, 18]
+console.log('In‑order:', tree.inorder());    // [3, 5, 7, 10, 12, 15, 18]
+console.log('Depth:', tree.depth());         // 3
+interface Person { name: string; age: number; }
+const people = new BinaryTree<Person>();
+people.insert({name: 'Alice', age: 30});
