@@ -1,44 +1,82 @@
-const arr1 = [1, 2, 3, 4];
-const arr2 = [3, 4, 5, 6];
+function bfsLimited(start, isGoal, neighbors, maxDepth):
+    queue ← [(start, 0)]          // node and its depth
+    visited ← new Set()
 
-const common = arr1.filter(v => arr2.includes(v));
-console.log(common); // [3, 4]
-function intersection<T>(a: T[], b: T[]): T[] {
-  return a.filter(v => b.includes(v));
-}
-function intersectionSet<T>(a: T[], b: T[]): T[] {
-  const setB = new Set(b);
-  return a.filter(v => setB.has(v));
-}
-function intersectionMultiset<T>(a: T[], b: T[]): T[] {
-  const freq = new Map<T, number>();
-  for (const val of b) freq.set(val, (freq.get(val) ?? 0) + 1);
+    while queue not empty:
+        (node, depth) ← queue.dequeue()
 
-  const result: T[] = [];
-  for (const val of a) {
-    const count = freq.get(val);
-    if (count && count > 0) {
-      result.push(val);
-      freq.set(val, count - 1);
+        if isGoal(node): return node
+
+        if depth == maxDepth:
+            continue   // depth limit reached – skip adding successors
+
+        for each n in neighbors(node):
+            if n not in visited:
+                visited.add(n)
+                queue.enqueue((n, depth + 1))
+
+    return null   // no goal within depth limit
+type Node<T> = T;
+
+// Parameters:
+//   start: the node to begin from
+//   isGoal: a predicate to determine if a node is the goal
+//   neighbors: a function that returns an array of adjacent nodes
+//   maxDepth: the depth cutoff (inclusive)
+//   allowRevisit: if true, visited set is ignored – useful for pure trees
+export function breadthLimitedSearch<T>(
+  start: Node<T>,
+  isGoal: (node: T) => boolean,
+  neighbors: (node: T) => Iterable<T>,
+  maxDepth: number,
+  allowRevisit: boolean = false
+): T | null {
+  // Queue holds tuples: [node, depth]
+  const queue: Array<[T, number]> = [[start, 0]];
+
+  // Only keep visited set if we care about cycles
+  const visited = new Set<T>();
+  if (!allowRevisit) visited.add(start);
+
+  while (queue.length) {
+    const [node, depth] = queue.shift() as [T, number];
+
+    if (isGoal(node)) return node;
+
+    if (depth === maxDepth) continue; // Depth limit reached – skip children
+
+    for (const child of neighbors(node)) {
+      if (!allowRevisit && visited.has(child)) continue;
+      visited.add(child);
+      queue.push([child, depth + 1]);
     }
   }
-  return result;
+
+  return null; // No goal found within the depth bound
 }
-interface User { id: number; name: string; }
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [5, 6]],
+  [4, [7]],
+  [5, [7]],
+  [6, []],
+  [7, []],
+]);
 
-const usersA: User[] = [ {id:1, name:'Alice'}, {id:2, name:'Bob'} ];
-const usersB: User[] = [ {id:2, name:'Bobby'}, {id:3, name:'Charlie'} ];
+function neighbors(n: number) {
+  return graph.get(n) ?? [];
+}
 
-const intersectionById = usersA.filter(uA =>
-  usersB.some(uB => uB.id === uA.id)
+const start = 1;
+const goal = 7;
+const maxDepth = 3; // we only want to explore up to 3 edges away
+
+const result = breadthLimitedSearch(
+  start,
+  (node) => node === goal,
+  neighbors,
+  maxDepth
 );
-console.log(intersectionById); // [{id:2,name:'Bob'}]
-const intersection = <T>(a: T[], b: T[]): T[] =>
-  a.filter(v => new Set(b).has(v));
-const setIntersection = <T>(a: T[], b: T[]): Set<T> => {
-  const setA = new Set(a);
-  const setB = new Set(b);
-  const result = new Set<T>();
-  for (const v of setA) if (setB.has(v)) result.add(v);
-  return result;
-};
+
+console.log(result); // => 7 (found within 3 steps)
