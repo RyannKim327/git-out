@@ -1,39 +1,20 @@
-function reverseString(s: string): string {
-  return s.split('').reverse().join('');
-}
+// Original array
+const original: number[] = [1, 2, 3, 4, 5];
 
-// Example
-console.log(reverseString('hello')); // 'olleh'
-reverseString('👋🏽'); // '🏽👋'  → wrong
-function reverseStringUnicode(s: string): string {
-  const codePoints: number[] = [];
-  for (const char of s) {
-    codePoints.push(char.codePointAt(0)!);
-  }
-  return String.fromCodePoint(...codePoints.reverse());
-}
+// 1️⃣ In‑place reverse (mutates `original`)
+original.reverse();
+console.log(original); // [5, 4, 3, 2, 1]
 
-// Example
-console.log(reverseStringUnicode('👋🏽')); // '🏽👋'
-const cp = Array.from(s).reverse().join('');
-function reverseRecursively(s: string): string {
-  if (s.length <= 1) return s;
-  return reverseRecursively(s.slice(1)) + s[0];
-}
-function reverseLoop(s: string): string {
-  let result = '';
-  for (let i = s.length - 1; i >= 0; i--) {
-    result += s[i];
-  }
-  return result;
-}
-function reverseBuffer(s: string): string {
-  const buf: string[] = new Array(s.length);
-  for (let i = 0; i < s.length; i++) {
-    buf[i] = s[s.length - 1 - i];
-  }
-  return buf.join('');
-}
-function reverseStringSafe(s: string): string {
-  return Array.from(s).reverse().join('');
-}
+// 2️⃣ Copy then reverse (keeps `original` intact)
+const reversedCopy = original.slice().reverse();  // or [...original].reverse()
+console.log(reversedCopy);  // [5, 4, 3, 2, 1]
+type Person = { name: string; age: number };
+
+const people: Person[] = [
+  { name: 'Alice', age: 28 },
+  { name: 'Bob',   age: 34 },
+];
+
+const reversedPeople = [...people].reverse(); // still Person[]
+const reduceReversed = <T>(array: T[]): T[] =>
+  array.reduce((acc, cur) => [cur, ...acc], [] as T[]);
