@@ -1,31 +1,21 @@
-/**
- * Selection sort – O(n²) time, O(1) additional space.
- *
- * Works on any array of items that can be compared with < and >.
- */
-function selectionSort<T>(arr: T[]): T[] {
-    const n = arr.length;
-    // Work in place – the original array is mutated
-    for (let i = 0; i < n - 1; i++) {
-        // Assume the smallest is at i
-        let minIdx = i;
+function countChar(str: string, target: string): number {
+  // guard against empty target (avoids throwing on .split(''))
+  if (target.length !== 1) throw new Error('target must be a single character');
 
-        // Search for a smaller element in the rest of the array
-        for (let j = i + 1; j < n; j++) {
-            if (arr[j] < arr[minIdx]) {
-                minIdx = j;
-            }
-        }
-
-        // If a smaller element was found, swap it into place
-        if (minIdx !== i) {
-            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
-        }
-    }
-    return arr;
+  return str.split(target).length - 1;
 }
-const nums = [64, 25, 12, 22, 11];
-console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
-function selectionSortCopy<T>(arr: T[]): T[] {
-    return selectionSort([...arr]); // spread creates a shallow copy
+console.log(countChar('hello world', 'l')); // 3
+function countCharRegEx(str: string, target: string): number {
+  const re = new RegExp(target, 'g');
+  const matches = str.match(re);
+  return matches ? matches.length : 0;
 }
+console.log(countCharRegEx('banana', 'a')); // 3
+function countCharLoop(str: string, target: string): number {
+  let count = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === target) count++;
+  }
+  return count;
+}
+console.log(countCharLoop('Mississippi', 'i')); // 4
