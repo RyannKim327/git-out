@@ -1,41 +1,47 @@
-// Simple base & height
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new Error('base and height must be positive numbers');
-  }
-  return (base * height) / 2;
-}
+/**
+ * Random API – picks a random fact from https://uselessfacts.jsph.pl
+ * Returns an object: { id, text, source, permalink }
+ */
+async function fetchRandomFact(): Promise<{
+  id: string;
+  text: string;
+  source: string;
+  permalink: string;
+}> {
+  const apiUrl = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
 
-// Three side lengths (Heron’s formula)
-function areaFromSides(a: number, b: number, c: number): number {
-  if (a + b <= c || a + c <= b || b + c <= a) {
-    throw new Error('The side lengths do not form a triangle');
-  }
-  const s = (a + b + c) / 2;
-  return Math.sqrt(s * (s - a) * (s - b) * (s - c));
-}
-console.log(areaFromBaseHeight(10, 5)); // 25
-console.log(areaFromSides(3, 4, 5));   // 6
-const area = (b: number, h: number) => (b * h) / 2;
-class Triangle {
-  constructor(private a: number, private b: number, private c: number) {
-    if (a + b <= c || a + c <= b || b + c <= a) {
-      throw new Error('Invalid side lengths');
+  try {
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-  }
 
-  public area(): number {
-    const s = (this.a + this.b + this.c) / 2;
-    return Math.sqrt(s * (s - this.a) * (s - this.b) * (s - this.c));
+    const data = await response.json();
+
+    // If you’re inside an Android NativeScript environment you could
+    // show a Toast or log the result with Android SDK.
+    console.log("Random fact fetched:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to fetch random fact:", err);
+    throw err;
   }
 }
 
-// Usage
-const tri = new Triangle(6, 7, 8);
-console.log(tri.area()); // 20.784609690826528
-function areaFromBaseHeight(base: number, height: number): number {
-  if (base <= 0 || height <= 0) {
-    throw new RangeError('Both base and height should be positive numbers');
+/**
+ * Example usage – you’d call this from anywhere, e.g. on a button tap.
+ */
+async function runDemo() {
+  try {
+    const fact = await fetchRandomFact();
+    // In Android, for a quick visual you could use:
+    // import { Toast } from "tns-core-modules/ui/toast";
+    // Toast.makeText(fact.text, 2000).show();
+    console.log("Fact text:", fact.text);
+  } catch {
+    // error handling already done in fetchRandomFact
   }
-  return base * height / 2;
 }
+
+runDemo();
