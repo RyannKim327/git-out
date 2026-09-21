@@ -1,40 +1,49 @@
 /**
- * Interpolation search returns the index of `target` in `arr`,
- * or –1 if the target is not present.
- *
- * @param arr   – sorted array of numbers (must be monotonic increasing)
- * @param target – key we’re trying to locate
- * @returns the array index of target or -1
+ * Returns n! for a non‑negative integer `n`.
+ * Throws an error if `n` is negative.
  */
-export function interpolationSearch(arr: number[], target: number): number {
-    if (arr.length === 0) return -1;
-
-    let low = 0;
-    let high = arr.length - 1;
-
-    while (low <= high && target >= arr[low] && target <= arr[high]) {
-        // Avoid division by zero when the sub‑array contains equal numbers
-        if (arr[high] === arr[low]) {
-            return arr[low] === target ? low : -1;
-        }
-
-        // Estimate the likely position of `target` within [low, high]
-        const pos = low + Math.floor(
-            ((high - low) * (target - arr[low])) / (arr[high] - arr[low])
-        );
-
-        const val = arr[pos];
-
-        if (val === target) return pos;
-        if (val < target) low = pos + 1;
-        else high = pos - 1;
-    }
-
-    return -1; // not found
+function factorialRecursive(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;   // base case
+  return n * factorialRecursive(n - 1);
 }
-import { interpolationSearch } from "./interpolationSearch";
+/**
+ * Computes factorial using a loop. 
+ * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
+ */
+function factorialIterative(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+/**
+ * Factorial returning a BigInt to avoid precision loss.
+ * Accepts `bigint | number`, but converts to BigInt internally.
+ */
+function factorialBigInt(n: number | bigint): bigint {
+  const bigN = typeof n === 'bigint' ? n : BigInt(n);
+  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
+  if (bigN <= 1n) return 1n;
+  let result = 1n;
+  for (let i = 2n; i <= bigN; i++) {
+    result *= i;
+  }
+  return result;
+}
+console.log(factorialBigInt(25));          // 15511210043330985984000000n
+console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
+const factorialCache = new Map<number, number>();
 
-const data = [3, 7, 15, 23, 42, 57, 88, 99, 123, 158];
+function factorialMemoized(n: number): number {
+  if (n < 0) throw new Error('factorial is undefined for negative numbers');
+  if (n === 0 || n === 1) return 1;
+  if (factorialCache.has(n)) return factorialCache.get(n)!;
 
-console.log(interpolationSearch(data, 42));   // → 4
-console.log(interpolationSearch(data, 100));  // → -1
+  const value = n * factorialMemoized(n - 1);
+  factorialCache.set(n, value);
+  return value;
+}
+const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
