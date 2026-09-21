@@ -1,173 +1,134 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
+enum Color { RED, BLACK }
 
-interface Edge {
-  target: Node;
-  weight: Weight;
+class Node<T> {
+  constructor(
+    public value: T,
+    public color: Color = Color.RED,
+    public left: Node<T> | null = null,
+    public right: Node<T> | null = null,
+    public parent: Node<T> | null = null
+  ) {}
+}
+export class RedBlackTree<T> {
+  private root: Node<T> | null = null;
+
+  /* Public API */
+  public insert(value: T): void { /* ... */ }
+  public delete(value: T): void { /* ... */ }
+  public find(value: T): Node<T> | null { /* ... */ }
+
+  /* private helpers… */
+  private rotateLeft(x: Node<T>): void { /* ... */ }
+  private rotateRight(x: Node<T>): void { /* ... */ }
+  private fixAfterInsertion(z: Node<T>): void { /* ... */ }
+  private fixAfterDeletion(x: Node<T>): void { /* ... */ }
+  private transplant(u: Node<T>, v: Node<T> | null): void { /* ... */ }
+  private minimum(n: Node<T> | null): Node<T> | null { /* ... */ }
+}
+public find(value: T): Node<T> | null {
+  let node = this.root;
+  while (node && node.value !== value) {
+    node = value < node.value ? node.left : node.right;
+  }
+  return node;
+}
+private rotateLeft(x: Node<T>): void {
+  const y = x.right!;
+  x.right = y.left;
+  if (y.left) y.left.parent = x;
+
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.left) x.parent.left = y;
+  else x.parent.right = y;
+
+  y.left = x;
+  x.parent = y;
 }
 
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
+private rotateRight(x: Node<T>): void {
+  const y = x.left!;
+  x.left = y.right;
+  if (y.right) y.right.parent = x;
+
+  y.parent = x.parent;
+  if (!x.parent) this.root = y;
+  else if (x === x.parent.right) x.parent.right = y;
+  else x.parent.left = y;
+
+  y.right = x;
+  x.parent = y;
 }
+public insert(value: T): void {
+  const z = new Node(value);
+  let y: Node<T> | null = null;
+  let x = this.root;
 
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
-
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
+  // Binary‑search‑tree insert
+  while (x) {
+    y = x;
+    x = value < x.value ? x.left : x.right;
   }
+  z.parent = y;
 
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
+  if (!y) this.root = z;
+  else if (value < y.value) y.left = z;
+  else y.right = z;
 
-  get size() {
-    return this.heap.length;
-  }
+  // Re‑balance
+  this.fixAfterInsertion(z);
+}
+private fixAfterInsertion(z: Node<T>): void {
+  z.color = Color.RED;
 
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
+  while (z.parent && z.parent.color === Color.RED) {
+    if (z.parent === z.parent.parent!.left) { // z.parent is left child
+      const y = z.parent.parent.right; // uncle
 
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
+      if (y && y.color === Color.RED) {
+        // Case 1: Uncle red
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        // Case 2 or 3: Uncle black
+        if (z === z.parent.right) {
+          // Case 2: triangle
+          z = z.parent;
+          this.rotateLeft(z);
         }
+        // Case 3: line
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateRight(z.parent.parent!);
       }
+    } else {               // Symmetric case (z.parent is right child)
+      const y = z.parent.parent!.left; // uncle
 
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
+      if (y && y.color === Color.RED) {
+        z.parent.color = Color.BLACK;
+        y.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        z = z.parent.parent!;
+      } else {
+        if (z === z.parent.left) {
+          z = z.parent;
+          this.rotateRight(z);
         }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
-    }
-    this.heap[idx] = element;
-  }
-}
-
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
+        z.parent.color = Color.BLACK;
+        z.parent.parent!.color = Color.RED;
+        this.rotateLeft(z.parent.parent!);
       }
     }
   }
 
-  return { distances, prev };
+  this.root!.color = Color.BLACK; // Root is always black
 }
+public delete(value: T): void {
+  let z = this.find(value);
+  if (!z) return; // Not found, nothing to delete
 
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
-
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
-  }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
-}
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
+  let y = z;
+  let yOriginalColor = y.color;
+  let x: Node<T> | null
