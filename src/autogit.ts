@@ -1,66 +1,38 @@
-// A simple singly‑linked‑list node suitable for the intersection test
-export interface ListNode<T> {
-  val: T;
-  next?: ListNode<T>;
-}
-
 /**
- * Returns the first node at which two singly‑linked lists intersect,
- * or undefined if they never intersect.
+ * Return the largest prime factor of a positive integer.
+ *
+ * @param n – the number you want to factor (must be > 1)
+ * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
  */
-export function getIntersectionNode<T>(
-  headA: ListNode<T> | undefined,
-  headB: ListNode<T> | undefined
-): ListNode<T> | undefined {
-  // Helper that walks a list and returns its length
-  const getLength = (node?: ListNode<T>) => {
-    let len = 0;
-    while (node) {
-      len++;
-      node = node.next;
+function largestPrimeFactor(n: number): number | undefined {
+  if (n <= 1) return undefined;
+
+  let num = n;
+  let largest = -1;
+
+  // Remove all factors of 2
+  while (num % 2 === 0) {
+    largest = 2;
+    num /= 2;
+  }
+
+  // Now `num` is odd; try odd divisors only
+  let divisor = 3;
+  const limit = Math.sqrt(num);
+  while (divisor <= limit) {
+    while (num % divisor === 0) {
+      largest = divisor;
+      num /= divisor;
     }
-    return len;
-  };
-
-  let lenA = getLength(headA);
-  let lenB = getLength(headB);
-
-  // Advance the longer list so both pointers are at the same distance
-  // from the end of the list.
-  let currA = headA;
-  let currB = headB;
-  while (lenA > lenB && currA) {
-    currA = currA.next;
-    lenA--;
-  }
-  while (lenB > lenA && currB) {
-    currB = currB.next;
-    lenB--;
+    divisor += 2;           // skip the even numbers
   }
 
-  // Move forward together until either we find the intersection
-  // or both pointers hit the end (undefined).
-  while (currA !== currB) {
-    currA = currA?.next;
-    currB = currB?.next;
-  }
+  // If we're left with a prime greater than 2
+  if (num > 2) largest = num;
 
-  return currA; // May be undefined if no intersection
+  return largest;
 }
-// Build example lists that intersect:
 
-//      A -> B -> C
-//      ^          |
-//      |          v
-//      D <- E
-
-const c: ListNode<number> = { val: 3 };
-const b: ListNode<number> = { val: 2, next: c };
-const a: ListNode<number> = { val: 1, next: b };
-
-const e: ListNode<number> = { val: 5, next: a };
-const d: ListNode<number> = { val: 4, next: e };
-
-console.log(getIntersectionNode(a, d) === a);   // true
-console.log(getIntersectionNode(b, d) === a);   // true
-console.log(getIntersectionNode(c, d) === a);   // true
+// Quick demo
+console.log(largestPrimeFactor(13195)); // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
