@@ -1,14 +1,12 @@
-/**
- * Reverses the order of words in a string.
- *
- * Whitespace punctuation is preserved around the words.
- */
-function reverseWords(text: string): string {
-  // Split on any whitespace – this covers spaces, tabs, new‑lines.
-  const words = text.trim().split(/\s+/); // keeps only real words
-  return words.reverse().join(' ');
-}
+const original = "  Hello,  world!\nThis is\ta test.   ";
 
-// Demo
-console.log(reverseWords("Hello world, how are you?"));
-// → "you? are how world, Hello"
+const noWhitespace = original.replace(/\s+/g, "");
+
+console.log(noWhitespace);
+// → "Hello,world!Thisisatest."
+const noWhitespace = original.replaceAll(/\s/g, "");
+const trimmed = original.trim();
+console.log(trimmed);
+// → "Hello,  world!\nThis is\ta test."
+const removedSpaces = original.replace(/ /g, "");
+// or using a character class if you want tabs too: /[ \t]/g
