@@ -1,43 +1,46 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+/**
+ * Returns true if the array is sorted in ascending order.
+ * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
+ * If you need a custom order you can supply a comparator:
+ *   (a, b) => a.value - b.value   // numeric
+ *   (a, b) => a.name.localeCompare(b.name) // string property
+ */
+function isSorted<T>(
+  arr: readonly T[],
+  comparator?: (a: T, b: T) => number
+): boolean {
+  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
 
-  const count = new Map<string, number>();
+  const cmp = comparator ?? ((a: T, b: T) => {
+    // Default comparison: works for numbers, strings, Dates, etc.
+    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+  });
 
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
+  for (let i = 1; i < arr.length; i++) {
+    if (cmp(arr[i - 1], arr[i]) > 0) {
+      return false; // a previous element is larger → not sorted
+    }
   }
+  return true;
+}
+// Numbers
+console.log(isSorted([1, 2, 3, 4]));           // true
+console.log(isSorted([1, 3, 2, 4]));           // false
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
-  }
+// Strings
+console.log(isSorted(['a', 'b', 'c']));       // true
 
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
+// Dates
+console.log(
+  isSorted([
+    new Date('2020-01-01'),
+    new Date('2020-06-01'),
+    new Date('2021-01-01')
+  ])
+); // true
 
-  const freq = new Int16Array(256);
-
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
-  }
-
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+// Objects with a specific key
+const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
+console.log(isSorted(people, (p, q) => p.age - q.age)); // true
+const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
+  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
