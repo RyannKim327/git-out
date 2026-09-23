@@ -1,37 +1,30 @@
-function secondLargestSort(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  const sorted = [...arr].sort((a, b) => b - a); // Descending
-  return sorted[1];
-}
-function secondLargestSinglePass(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
-
-  let max = -Infinity;
-  let second = -Infinity;
-
-  for (const num of arr) {
-    if (num > max) {
-      second = max;
-      max = num;
-    } else if (num > second && num !== max) {
-      second = num;
-    }
+/**
+ * Return the factorial of a non‑negative integer.
+ *
+ * @param n - the number to calculate the factorial of.
+ * @returns factorial(n) as a number (or BigInt if you want larger values).
+ * @throws TypeError if the input is not a non‑negative integer.
+ */
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new TypeError("Factorial is only defined for non‑negative integers");
   }
 
-  return second === -Infinity ? undefined : second;
-}
-function secondLargestSet(arr: number[]): number | undefined {
-  const unique = [...new Set(arr)];
-  if (unique.length < 2) return undefined;
+  // Base case: 0! = 1 and 1! = 1
+  if (n <= 1) return 1;
 
-  const sorted = unique.sort((a, b) => b - a);
-  return sorted[1];
+  // Recursive step: n! = n * (n – 1)!
+  return n * factorial(n - 1);
 }
-function secondLargestMathMax(arr: number[]): number | undefined {
-  if (arr.length < 2) return undefined;
 
-  const max = Math.max(...arr);
-  const maxFiltered = arr.filter(num => num !== max);
-  return Math.max(...maxFiltered);
+// Example usage
+console.log(factorial(5)); // 120
+function factorialBig(n: BigInt): BigInt {
+  if (n < 0n) throw new TypeError("Must be non‑negative");
+
+  if (n <= 1n) return 1n;
+
+  return n * factorialBig(n - 1n);
 }
+
+console.log(factorialBig(20n).toString()); // 2432902008176640000
