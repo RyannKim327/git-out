@@ -1,61 +1,87 @@
-function longestCommonSubstring(s1: string, s2: string): string {
-  const n = s1.length;
-  const m = s2.length;
+// simple node definition – feel free to extend it later (value, etc.)
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
 
-  // dp[i][j] => longest suffix length ending at s1[i-1], s2[j-1]
-  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  constructor(public readonly val?: any) {}
+}
+interface TreeNode {
+  val?: any;
+  left?: TreeNode | null;
+  right?: TreeNode | null;
+}
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;          // empty subtree → no leaf
 
-  let maxLen = 0;
-  let endIdx = 0; // end index (exclusive) in s1 of the best substring
+  // If this node has no children → it's a leaf.
+  if (node.left === null && node.right === null) {
+    return 1;
+  }
 
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1] + 1;
-        if (dp[i][j] > maxLen) {
-          maxLen = dp[i][j];
-          endIdx = i; // end is exclusive
-        }
-      }
+  // Otherwise sum the children’s counts
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+function countLeavesIterative(root: TreeNode | null): number {
+  if (root === null) return 0;
+
+  let leafCount = 0;
+  const stack: Array<TreeNode> = [root];
+
+  while (stack.length) {
+    const node = stack.pop() as TreeNode; // `as` because array never empty
+
+    // Check for leaf
+    if (node.left === null && node.right === null) {
+      leafCount++;
+    } else {
+      // push children if they exist
+      if (node.right !== null) stack.push(node.right);
+      if (node.left !== null) stack.push(node.left);
     }
   }
 
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+  return leafCount;
 }
-console.log(longestCommonSubstring("ABABC", "BABCA")); // “ABC”
-function longestCommonSubstringSpaceOptimized(s1: string, s2: string): string {
-  // Ensure s2 is the shorter string to keep the inner array small
-  if (s1.length < s2.length) {
-    return longestCommonSubstringSpaceOptimized(s2, s1);
-  }
+// ---------------------------------------------------------------------
+// 1. Node definition
+class TreeNode {
+  public left: TreeNode | null = null;
+  public right: TreeNode | null = null;
 
-  const n = s1.length;
-  const m = s2.length;
-
-  const prev = Array(m + 1).fill(0);
-  const curr = Array(m + 1).fill(0);
-
-  let maxLen = 0;
-  let endIdx = 0;
-
-  for (let i = 1; i <= n; i++) {
-    for (let j = 1; j <= m; j++) {
-      if (s1[i - 1] === s2[j - 1]) {
-        curr[j] = prev[j - 1] + 1;
-        if (curr[j] > maxLen) {
-          maxLen = curr[j];
-          endIdx = i;
-        }
-      } else {
-        curr[j] = 0;
-      }
-    }
-    // swap references for next iteration
-    [prev, curr] = [curr, prev];
-  }
-
-  return maxLen === 0 ? "" : s1.slice(endIdx - maxLen, endIdx);
+  constructor(public readonly val: any) {}
 }
-console.log(longestCommonSubstringSpaceOptimized("abcdxyz", "xyzabcd")); // "abcd"
-console.log(longestCommonSubstringSpaceOptimized("abc", "def"));         // ""
-console.log(longestCommonSubstringSpaceOptimized("a", "a"));             // "a"
+
+// ---------------------------------------------------------------------
+// 2. Recursive counter
+function countLeavesRecursive(node: TreeNode | null): number {
+  if (node === null) return 0;
+  if (!node.left && !node.right) return 1;
+  return countLeavesRecursive(node.left) + countLeavesRecursive(node.right);
+}
+
+// 3. Iterative counter
+function countLeavesIterative(root: TreeNode | null): number {
+  if (!root) return 0;
+  let leaves = 0;
+  const stack: TreeNode[] = [root];
+  while (stack.length) {
+    const node = stack.pop()!;
+    if (!node.left && !node.right) leaves++;
+    if (node.right) stack.push(node.right);
+    if (node.left) stack.push(node.left);
+  }
+  return leaves;
+}
+
+// ---------------------------------------------------------------------
+// 4. Demo
+
+const root = new TreeNode(1);
+root.left = new TreeNode(2);
+root.right = new TreeNode(3);
+root.left.left = new TreeNode(4); // leaf
+root.left.right = new TreeNode(5); // leaf
+root.right.left = new TreeNode(6); // leaf
+
+console.log('Recursive leaves:', countLeavesRecursive(root)); // 3
+console.log('Iterative leaves:', countLeavesIterative(root)); // 3
