@@ -1,50 +1,38 @@
-interface TreeNode {
-  val:  number | string   // you can put any type that fits your data
-  left?: TreeNode | null
-  right?: TreeNode | null
-}
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0;                 // empty tree -> depth 0
+/**
+ * Return the largest prime factor of a positive integer.
+ *
+ * @param n – the number you want to factor (must be > 1)
+ * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
+ */
+function largestPrimeFactor(n: number): number | undefined {
+  if (n <= 1) return undefined;
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+  let num = n;
+  let largest = -1;
 
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
+  // Remove all factors of 2
+  while (num % 2 === 0) {
+    largest = 2;
+    num /= 2;
+  }
 
-  let depth = 0;
-  const queue: Array<TreeNode> = [root];
-
-  while (queue.length) {
-    const levelSize = queue.length;   // nodes at the current level
-    depth++;                          // we’re about to process a whole new level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;    // safe; queue is non‑empty here
-
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  // Now `num` is odd; try odd divisors only
+  let divisor = 3;
+  const limit = Math.sqrt(num);
+  while (divisor <= limit) {
+    while (num % divisor === 0) {
+      largest = divisor;
+      num /= divisor;
     }
+    divisor += 2;           // skip the even numbers
   }
 
-  return depth;
+  // If we're left with a prime greater than 2
+  if (num > 2) largest = num;
+
+  return largest;
 }
-// Build a tiny tree:
-//        1
-//       / \
-//      2   3
-//         /
-//        4
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2 },
-  right: {
-    val: 3,
-    left: { val: 4 }
-  }
-};
 
-console.log('Recursive depth:', maxDepth(tree));          // 3
-console.log('Iterative depth:', maxDepthIterative(tree)); // 3
+// Quick demo
+console.log(largestPrimeFactor(13195)); // 29
+console.log(largestPrimeFactor(600851475143)); // 6857
