@@ -1,103 +1,66 @@
-// A generic state; `data` can be any shape you need.
-export interface BeamState<T> {
-  readonly data: T;      // the actual thing (token list, node id, etc.)
-  readonly score: number; // higher is better
-}
+/**
+ * Implements Rabin‑Karp – a sub‑linear string search for a single pattern.
+ *
+ * It uses a simple rolling hash: (previousHash * base + newChar) % modulus.
+ * The base is usually the alphabet size (e.g. 256 for extended ASCII).
+ * The modulus is a large prime to keep the hash values bounded and to reduce
+ * collisions.  Even if a hash match occurs, we still check the actual string
+ * slice to guarantee correctness.
+ *
+ * The function returns everything that looks like the pattern.
+ */
+export function rabinKarp(pattern: string, text: string): number[] {
+  const result: number[] = [];
+  const M = pattern.length;          // pattern length
+  const N = text.length;             // text length
+  if (M === 0 || N < M) return result;   // nothing to find
 
-// A function that, from one state, produces zero or more candidate states.
-export type Expander<T> = (state: BeamState<T>) => BeamState<T>[];
+  const base = 256;                  // number of possible characters
+  const prime = 101;                  // a small prime as mod
 
-// A function that assigns a numeric score to a state.
-export type Scorer<T> = (state: BeamState<T>) => number;
-class MinHeap<T> {
-  private data: T[] = [];
-  constructor(private readonly key: (x: T) => number) {}
-
-  private swap(i: number, j: number) {
-    [this.data[i], this.data[j]] = [this.data[j], this.data[i]];
+  /* ---------- Pre‑compute base^(M-1) % prime ---------- */
+  let highOrder = 1;                  // base^(M-1) % prime
+  for (let i = 1; i <= M - 1; i++) {
+    highOrder = (highOrder * base) % prime;
   }
 
-  push(item: T) {
-    this.data.push(item);
-    this.siftUp(this.data.length - 1);
+  /* ---------- Initial hash for pattern and first window ---------- */
+  let patternHash = 0;
+  let windowHash = 0;
+  for (let i = 0; i < M; i++) {
+    patternHash = (base * patternHash + pattern.charCodeAt(i)) % prime;
+    windowHash = (base * windowHash + text.charCodeAt(i)) % prime;
   }
 
-  pop(): T | undefined {
-    const top = this.data[0];
-    const last = this.data.pop();
-    if (!this.data.length || !last) return top;
-    this.data[0] = last;
-    this.siftDown(0);
-    return top;
-  }
-
-  size() { return this.data.length; }
-
-  private siftUp(i: number) {
-    let idx = i;
-    while (idx > 0) {
-      const parent = (idx - 1) >> 1;
-      if (this.key(this.data[idx]) >= this.key(this.data[parent])) break;
-      this.swap(idx, parent);
-      idx = parent;
-    }
-  }
-  private siftDown(i: number) {
-    let idx = i;
-    const n = this.data.length;
-    while (true) {
-      const l = idx * 2 + 1;
-      const r = l + 1;
-      let smallest = idx;
-      if (l < n && this.key(this.data[l]) < this.key(this.data[smallest])) smallest = l;
-      if (r < n && this.key(this.data[r]) < this.key(this.data[smallest])) smallest = r;
-      if (smallest === idx) break;
-      this.swap(idx, smallest);
-      idx = smallest;
-    }
-  }
-
-  // For debugging / inspection
-  toArray() { return [...this.data]; }
-}
-export class BeamSearch<T> {
-  constructor(
-    private readonly expander: Expander<T>,
-    private readonly scorer: Scorer<T>,
-    private readonly beamWidth: number
-  ) {}
-
-  /**
-   * Runs beam search for a fixed number of iterations.
-   * @param startState the initial state (usually empty output)
-   * @param maxDepth how many expansion steps to take
-   * @returns an array containing the best states after the last depth
-   */
-  search(startState: BeamState<T>, maxDepth: number): BeamState<T>[] {
-    let current: BeamState<T>[] = [startState];
-
-    for (let depth = 0; depth < maxDepth; depth++) {
-      const candidates: BeamState<T>[] = [];
-      for (const state of current) {
-        const nextStates = this.expander(state);
-        // We expect each expander to already return scored states,
-        // but if they don't we can score them here:
-        for (const ns of nextStates) {
-          const s = this.scorer(ns);
-          candidates.push({ ...ns, score: s });
+  /* ---------- Slide the window over the text ---------- */
+  for (let i = 0; i <= N - M; i++) {
+    // If hash values are equal, do a character‑by‑character check
+    if (patternHash === windowHash) {
+      let match = true;
+      for (let j = 0; j < M; j++) {
+        if (text.charAt(i + j) !== pattern.charAt(j)) {
+          match = false;
+          break;
         }
       }
-      if (candidates.length === 0) break; // nothing to expand
-      // Keep top `beamWidth` candidates
-      const heap = new MinHeap<BeamState<T>>((s) => -s.score); // max‑heap by negative key
-      for (const cand of candidates) heap.push(cand);
-      current = [];
-      for (let i = 0; i < this.beamWidth && heap.size() > 0; i++) {
-        current.push(heap.pop()!); // `!` is safe because we checked size
-      }
+      if (match) result.push(i);
     }
 
-    // Sort by score descending before returning just in case
-    return current.sort((a, b) => b.score - a.score);
+    // Compute hash for the next window
+    if (i < N - M) {
+      // Remove leading character
+      const leading = (text.charCodeAt(i) * highOrder) % prime;
+      windowHash = (windowHash + prime - leading) % prime; // avoid negative
+
+      // Shift left and add the trailing character
+      windowHash = (windowHash * base + text.charCodeAt(i + M)) % prime;
+    }
   }
+
+  return result;
 }
+const text = "abracadabra";
+const pattern = "abra";
+
+const indices = rabinKarp(pattern, text);
+console.log(indices); // → [0, 7]
