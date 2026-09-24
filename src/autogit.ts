@@ -1,35 +1,82 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
-}
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
-  let current = head;
+function bfsLimited(start, isGoal, neighbors, maxDepth):
+    queue ← [(start, 0)]          // node and its depth
+    visited ← new Set()
 
-  while (current) {
-    count++;
-    current = current.next;
+    while queue not empty:
+        (node, depth) ← queue.dequeue()
+
+        if isGoal(node): return node
+
+        if depth == maxDepth:
+            continue   // depth limit reached – skip adding successors
+
+        for each n in neighbors(node):
+            if n not in visited:
+                visited.add(n)
+                queue.enqueue((n, depth + 1))
+
+    return null   // no goal within depth limit
+type Node<T> = T;
+
+// Parameters:
+//   start: the node to begin from
+//   isGoal: a predicate to determine if a node is the goal
+//   neighbors: a function that returns an array of adjacent nodes
+//   maxDepth: the depth cutoff (inclusive)
+//   allowRevisit: if true, visited set is ignored – useful for pure trees
+export function breadthLimitedSearch<T>(
+  start: Node<T>,
+  isGoal: (node: T) => boolean,
+  neighbors: (node: T) => Iterable<T>,
+  maxDepth: number,
+  allowRevisit: boolean = false
+): T | null {
+  // Queue holds tuples: [node, depth]
+  const queue: Array<[T, number]> = [[start, 0]];
+
+  // Only keep visited set if we care about cycles
+  const visited = new Set<T>();
+  if (!allowRevisit) visited.add(start);
+
+  while (queue.length) {
+    const [node, depth] = queue.shift() as [T, number];
+
+    if (isGoal(node)) return node;
+
+    if (depth === maxDepth) continue; // Depth limit reached – skip children
+
+    for (const child of neighbors(node)) {
+      if (!allowRevisit && visited.has(child)) continue;
+      visited.add(child);
+      queue.push([child, depth + 1]);
+    }
   }
 
-  return count;
+  return null; // No goal found within the depth bound
 }
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
+const graph = new Map<number, number[]>([
+  [1, [2, 3]],
+  [2, [4, 5]],
+  [3, [5, 6]],
+  [4, [7]],
+  [5, [7]],
+  [6, []],
+  [7, []],
+]);
+
+function neighbors(n: number) {
+  return graph.get(n) ?? [];
 }
-class LinkedList<T> {
-  private head?: Node<T>;
 
-  // ... push, pop, etc.
+const start = 1;
+const goal = 7;
+const maxDepth = 3; // we only want to explore up to 3 edges away
 
-  size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
-  }
-}
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
+const result = breadthLimitedSearch(
+  start,
+  (node) => node === goal,
+  neighbors,
+  maxDepth
+);
 
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+console.log(result); // => 7 (found within 3 steps)
