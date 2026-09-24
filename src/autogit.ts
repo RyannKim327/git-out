@@ -1,50 +1,55 @@
-interface TreeNode {
-  val:  number | string   // you can put any type that fits your data
-  left?: TreeNode | null
-  right?: TreeNode | null
-}
-function maxDepth(root: TreeNode | null): number {
-  if (!root) return 0;                 // empty tree -> depth 0
+// Graph type: map from vertex id → array of neighbouring vertex ids
+type Graph = Record<string | number, Array<string | number>>;
+function dfsRecursive(
+  graph: Graph,
+  start: string | number,
+  visited = new Set<string | number>()
+): string[] {
+  // If the node has already been visited, stop here.
+  if (visited.has(start)) return [];
 
-  const leftDepth  = maxDepth(root.left);
-  const rightDepth = maxDepth(root.right);
+  visited.add(start);           // Mark the node
+  const result = [start];        // The order in which we visit
 
-  return Math.max(leftDepth, rightDepth) + 1;
-}
-function maxDepthIterative(root: TreeNode | null): number {
-  if (!root) return 0;
-
-  let depth = 0;
-  const queue: Array<TreeNode> = [root];
-
-  while (queue.length) {
-    const levelSize = queue.length;   // nodes at the current level
-    depth++;                          // we’re about to process a whole new level
-
-    for (let i = 0; i < levelSize; i++) {
-      const node = queue.shift()!;    // safe; queue is non‑empty here
-
-      if (node.left)  queue.push(node.left);
-      if (node.right) queue.push(node.right);
+  // Recurse on all neighbours that haven't been visited yet
+  for (const neighbour of graph[start] || []) {
+    if (!visited.has(neighbour)) {
+      result.push(...dfsRecursive(graph, neighbour, visited));
     }
   }
 
-  return depth;
+  return result;
 }
-// Build a tiny tree:
-//        1
-//       / \
-//      2   3
-//         /
-//        4
-const tree: TreeNode = {
-  val: 1,
-  left: { val: 2 },
-  right: {
-    val: 3,
-    left: { val: 4 }
+function dfsIterative(graph: Graph, start: string | number): string[] {
+  const visited = new Set<string | number>();
+  const stack: (string | number)[] = [start];
+  const order: string[] = [];
+
+  while (stack.length) {
+    const v = stack.pop()!;           // Grab the vertex on top of the stack
+    if (visited.has(v)) continue;     // Skip if we already processed it
+    visited.add(v);                    // Mark as visited
+    order.push(v);                     // Record visitation order
+
+    // Push neighbours onto the stack (in reverse order if you want a specific order)
+    const neighbours = graph[v] || [];
+    for (let i = neighbours.length - 1; i >= 0; i--) {
+      if (!visited.has(neighbours[i])) {
+        stack.push(neighbours[i]);
+      }
+    }
   }
+
+  return order;
+}
+const graph: Graph = {
+  a: ['b', 'c'],
+  b: ['d', 'e'],
+  c: ['f'],
+  d: [],
+  e: [],
+  f: []
 };
 
-console.log('Recursive depth:', maxDepth(tree));          // 3
-console.log('Iterative depth:', maxDepthIterative(tree)); // 3
+console.log('Recursive:', dfsRecursive(graph, 'a'));   // e.g.: [ 'a', 'b', 'd', 'e', 'c', 'f' ]
+console.log('Iterative:', dfsIterative(graph, 'a'));   // e.g.: [ 'a', 'c', 'f', 'b', 'e', 'd' ]
