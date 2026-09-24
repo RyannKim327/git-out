@@ -1,26 +1,10 @@
-// utils.ts
-/**
- * Randomly reorder the elements of an array in place.
- * Uses the Fisher‑Yates algorithm for an unbiased shuffle.
- *
- * @param arr The array to shuffle (mutated in place)
- * @returns The same array, now shuffled
- */
-export function shuffle<T>(arr: T[]): T[] {
-  for (let i = arr.length - 1; i > 0; i--) {
-    // Pick a remaining element…
-    const j = Math.floor(Math.random() * (i + 1));
+// A lean, common‑sense pattern that covers most real‑world emails
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // …and swap it with the current element.
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+// Test whether a string looks like an e‑mail address
+export function isEmail(str: string): boolean {
+  return EMAIL_RE.test(str);
 }
-import { shuffle } from "./utils";
-
-const numbers = [1, 2, 3, 4, 5];
-shuffle(numbers);          // numbers is now in a random order
-console.log(numbers);
-
-const words = ["a", "b", "c", "d"];
-console.log(shuffle(words));  // prints a shuffled copy
+console.log(isEmail('foo@bar.com'));   // true
+console.log(isEmail('invalid@'));      // false
+console.log(isEmail('no-at-symbol'));  // false
