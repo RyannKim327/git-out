@@ -1,43 +1,48 @@
-// O(n log n) – fine for typical lengths
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false; // quick length check
-  const sortedA = a.split('').sort().join('');
-  const sortedB = b.split('').sort().join('');
-  return sortedA === sortedB;
-};
-// O(n) – best for long strings
-const areAnagrams = (first: string, second: string): boolean => {
-  if (first.length !== second.length) return false;
+/**
+ * Shell sort – a classic gap‑based insertion sort
+ *
+ * @template T - type held in the array
+ * @param arr   Array to be sorted in place
+ * @param cmp   Optional comparator, defaults to numeric comparison
+ * @returns     The sorted array (same reference as `arr`)
+ */
+export function shellSort<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number = (a: any, b: any) => a - b
+): T[] {
+  const n = arr.length;
 
-  const count = new Map<string, number>();
-
-  // Count chars from the first string
-  for (const ch of first) {
-    count.set(ch, (count.get(ch) ?? 0) + 1);
+  // A common sequence: n/2, n/4, …, 1
+  for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    // Do a gapped insertion sort for this gap size
+    for (let i = gap; i < n; i++) {
+      const temp = arr[i];
+      let j = i;
+      // shift earlier gap-sorted elements until the correct spot for temp is found
+      while (j >= gap && cmp(arr[j - gap], temp) > 0) {
+        arr[j] = arr[j - gap];
+        j -= gap;
+      }
+      arr[j] = temp;
+    }
   }
 
-  // Decrement with the second string
-  for (const ch of second) {
-    const cur = count.get(ch);
-    if (!cur) return false;          // char not in first
-    if (cur === 1) count.delete(ch);
-    else count.set(ch, cur - 1);
-  }
+  return arr;
+}
+// 1️⃣ Sort numbers
+const numbers = [23, 12, 1, 8, 34, 54, 2, 3];
+shellSort(numbers);
+console.log(numbers); // → [1, 2, 3, 8, 12, 23, 34, 54]
 
-  return count.size === 0;
-};
-// Works only for ISO‑8859‑1 / 8‑bit chars
-const areAnagrams = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
+// 2️⃣ Sort strings alphabetically
+shellSort(["banana", "apple", "cherry", "date"], (a, b) => a.localeCompare(b));
 
-  const freq = new Int16Array(256);
-
-  for (let i = 0; i < a.length; i++) {
-    freq[a.charCodeAt(i)]++;
-    freq[b.charCodeAt(i)]--;
-  }
-
-  return freq.every(v => v === 0);
-};
-console.log(areAnagrams('listen', 'silent')); // true
-console.log(areAnagrams('hello', 'world'));   // false
+// 3️⃣ Sort objects by a property
+interface Person { name: string; age: number }
+const people: Person[] = [
+  { name: "Zoe", age: 29 },
+  { name: "Alex", age: 22 },
+  { name: "Mia", age: 35 }
+];
+shellSort(people, (a, b) => a.age - b.age);
+console.log(people.map(p => p.age));  // → [22, 29, 35]
