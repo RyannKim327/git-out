@@ -1,35 +1,41 @@
-// A node that holds a value and a reference to the next node.
-// Feel free to add more fields (e.g., prev, data…) as needed.
-export interface Node<T> {
-  value: T;
-  next?: Node<T>;
-}
-export function length<T>(head: Node<T> | undefined): number {
-  let count = 0;
-  let current = head;
+/**
+ * Insertion sort implementation that mutates the original array
+ * and returns the sorted array for convenience.
+ *
+ * @param arr - The array to sort
+ * @param compareFn - Optional. If omitted, the default comparison uses < and >.
+ * @returns The sorted array (the same instance as you passed in)
+ */
+export function insertionSort<T>(arr: T[], compareFn?: (a: T, b: T) => number): T[] {
+  // If no custom comparer is supplied, fall back to the default
+  const cmp = compareFn ?? ((a: T, b: T) => (a < b ? -1 : a > b ? 1 : 0));
 
-  while (current) {
-    count++;
-    current = current.next;
+  // Walk from the second element to the end
+  for (let i = 1; i < arr.length; i++) {
+    const key = arr[i];
+    let j = i - 1;
+
+    // Shift elements that are greater than the key to the right
+    while (j >= 0 && cmp(arr[j], key) > 0) {
+      arr[j + 1] = arr[j];
+      j--;
+    }
+
+    // Place the key into its correct spot
+    arr[j + 1] = key;
   }
 
-  return count;
+  return arr; // handy for chaining, but the original array is already sorted
 }
-export function lengthRecursive<T>(node: Node<T> | undefined): number {
-  return node ? 1 + lengthRecursive(node.next) : 0;
-}
-class LinkedList<T> {
-  private head?: Node<T>;
+const nums = [4, 3, 5, 2, 1];
+console.log(insertionSort(nums)); // [1, 2, 3, 4, 5]
+interface Person { age: number; name: string; }
 
-  // ... push, pop, etc.
+const people: Person[] = [
+  { age: 30, name: "Alice" },
+  { age: 22, name: "Bob" },
+  { age: 25, name: "Carol" }
+];
 
-  size(): number {
-    return length(this.head);   // or lengthRecursive(this.head)
-  }
-}
-const node3: Node<string> = { value: "c" };
-const node2: Node<string> = { value: "b", next: node3 };
-const node1: Node<string> = { value: "a", next: node2 };
-
-console.log(length(node1));          // → 3
-console.log(lengthRecursive(node1)); // → 3
+insertionSort(people, (a, b) => a.age - b.age);
+// now sorted by age
