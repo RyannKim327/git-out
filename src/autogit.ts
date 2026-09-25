@@ -1,49 +1,33 @@
-/**
- * Returns n! for a non‑negative integer `n`.
- * Throws an error if `n` is negative.
- */
-function factorialRecursive(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;   // base case
-  return n * factorialRecursive(n - 1);
+function decimalToBinary(n: number): string {
+  // Number.prototype.toString accepts a radix (2 = binary, 10 = decimal, etc.)
+  // It automatically floors the number (works for ints, truncates decimals).
+  return Math.floor(n).toString(2);
 }
-/**
- * Computes factorial using a loop. 
- * Safe up to n ~ 1e6 in V8 before CPU time becomes noticeable.
- */
-function factorialIterative(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  let result = 1;
-  for (let i = 2; i <= n; i++) {
-    result *= i;
+console.log(decimalToBinary(10));   // → '1010'
+console.log(decimalToBinary(255));  // → '11111111'
+function binaryPadded(n: number, bits = 8): string {
+  return decimalToBinary(n).padStart(bits, '0');
+}
+
+console.log(binaryPadded(10, 8));   // → '00001010'
+function decimalToBinaryManual(n: number): string {
+  if (n === 0) return '0';
+  let result = '';
+  let value = Math.floor(n);
+
+  while (value > 0) {
+    result = (value % 2) + result; // prepend remainder
+    value = Math.floor(value / 2);
   }
   return result;
 }
-/**
- * Factorial returning a BigInt to avoid precision loss.
- * Accepts `bigint | number`, but converts to BigInt internally.
- */
-function factorialBigInt(n: number | bigint): bigint {
-  const bigN = typeof n === 'bigint' ? n : BigInt(n);
-  if (bigN < 0n) throw new Error('factorial is undefined for negative numbers');
-  if (bigN <= 1n) return 1n;
-  let result = 1n;
-  for (let i = 2n; i <= bigN; i++) {
-    result *= i;
-  }
-  return result;
+function bigIntToBinary(n: bigint): string {
+  return n.toString(2);
 }
-console.log(factorialBigInt(25));          // 15511210043330985984000000n
-console.log(factorialBigInt(100n));        // (the 100‑factorial as a BigInt)
-const factorialCache = new Map<number, number>();
 
-function factorialMemoized(n: number): number {
-  if (n < 0) throw new Error('factorial is undefined for negative numbers');
-  if (n === 0 || n === 1) return 1;
-  if (factorialCache.has(n)) return factorialCache.get(n)!;
-
-  const value = n * factorialMemoized(n - 1);
-  factorialCache.set(n, value);
-  return value;
+console.log(bigIntToBinary(123456789012345678901234567890n));
+// → '1110001101100110100100001100100000111010011010110111111001101'
+function decimalToBitsArray(n: number): number[] {
+  const binary = decimalToBinary(n);
+  return Array.from(binary, Number); // ['1', '0', ...] → [1, 0, ...]
 }
-const fact = (n: number) => (n > 1 ? n * fact(n - 1) : 1);
