@@ -1,172 +1,129 @@
-/* ---- 1. Necessary types ------------------------------------------------- */
-type Point = { x: number; y: number };   // a grid coordinate
+/**
+ * A node in the B‑tree.
+ * Keys are stored in ascending order.
+ */
+class BTreeNode<K, V> {
+  // Keys and values are kept together to simplify return of key/value pairs.
+  keys: K[] = [];
+  values: V[] = [];
 
-// A *node* is a point that also carries the data used by A*.
-class Node {
-  public f: number;   // g + h
-  public g: number;   // cost from start
-  public h: number;   // heuristic estimate to goal
+  // Children – null for leaf nodes.
+  children: (BTreeNode<K, V> | null)[] = [];
+
+  // Whether this node is a leaf.
+  leaf: boolean;
+
+  constructor(leaf: boolean) {
+    this.leaf = leaf;
+  }
+
+  /* Helper: find first index where key should be inserted */
+  findKey(key: K, cmp: (a: K, b: K) => number): number {
+    let idx = 0;
+    while (idx < this.keys.length && cmp(this.keys[idx], key) < 0) {
+      ++idx;
+    }
+    return idx;
+  }
+}
+/**
+ * B‑Tree implementation
+ *
+ * @param t Minimum degree (≥ 2). Every node except the root contains
+ *          at least t‑1 keys and at most 2*t‑1 keys.
+ */
+class BTree<K, V> {
+  private root: BTreeNode<K, V>;
+  private readonly t: number;
+  private readonly cmp: (a: K, b: K) => number;
 
   constructor(
-    public point: Point,
-    public parent: Node | null = null,
-    g = 0,
-    h = 0
+    t: number = 2,
+    cmp?: (a: K, b: K) => number
   ) {
-    this.g = g;
-    this.h = h;
-    this.f = this.g + this.h;
-  }
-}
-
-/* ---- 2. Min‑heap helper (priority queue) --------------------------------- */
-class MinHeap<T> {
-  private items: T[] = [];
-
-  constructor(private compare: (a: T, b: T) => number) {}
-
-  get size() { return this.items.length; }
-
-  push(item: T) {
-    this.items.push(item);
-    this.bubbleUp(this.items.length - 1);
+    if (t < 2) throw new Error('B‑tree order must be >= 2');
+    this.t = t;
+    this.root = new BTreeNode<K, V>(true);
+    this.cmp = cmp ?? ((a, b) => (a < b ? -1 : a > b ? 1 : 0));
   }
 
-  pop(): T | undefined {
-    if (!this.items.length) return undefined;
-    const top = this.items[0];
-    const end = this.items.pop()!;
-    if (this.items.length) {
-      this.items[0] = end;
-      this.bubbleDown(0);
+  /* Public API --------------------------------------------------- */
+  search(key: K): V | undefined {
+    return this._search(this.root, key);
+  }
+
+  insert(key: K, value: V): void {
+    // If root is full, create a new leaf and split
+    if (this.root.keys.length === 2 * this.t - 1) {
+      const newRoot = new BTreeNode<K, V>(false);
+      newRoot.children[0] = this.root;
+      this._splitChild(newRoot, 0);
+      this.root = newRoot;
     }
-    return top;
+    this._insertNonFull(this.root, key, value);
   }
 
-  private bubbleUp(idx: number) {
-    const item = this.items[idx];
-    while (idx > 0) {
-      const parentIdx = ((idx + 1) >> 1) - 1;
-      const parent = this.items[parentIdx];
-      if (this.compare(item, parent) >= 0) break;
-      this.items[idx] = parent;
-      idx = parentIdx;
+  /* Delete is optional – implement if you need it. */
+  /* delete(key: K): void { … } */
+
+  /* Iterator over all key/value pairs in order */
+  *inOrder(): IterableIterator<[K, V]> {
+    yield* this._inOrder(this.root);
+  }
+
+  /* ------------------------------------------------------------------ */
+
+  /* Core recursive operations --------------------------------------- */
+  private _search(node: BTreeNode<K, V>, key: K): V | undefined {
+    const idx = node.findKey(key, this.cmp);
+
+    if (idx < node.keys.length && this.cmp(node.keys[idx], key) === 0) {
+      return node.values[idx];
     }
-    this.items[idx] = item;
-  }
 
-  private bubbleDown(idx: number) {
-    const length = this.items.length;
-    const item = this.items[idx];
-    while (true) {
-      const leftIdx = (idx << 1) + 1;
-      const rightIdx = leftIdx + 1;
-      let smallest = idx;
-
-      if (
-        leftIdx < length &&
-        this.compare(this.items[leftIdx], this.items[smallest]) < 0
-      )
-        smallest = leftIdx;
-
-      if (
-        rightIdx < length &&
-        this.compare(this.items[rightIdx], this.items[smallest]) < 0
-      )
-        smallest = rightIdx;
-
-      if (smallest === idx) break;
-
-      this.items[idx] = this.items[smallest];
-      idx = smallest;
+    if (node.leaf) {
+      return undefined;
     }
-    this.items[idx] = item;
+
+    return this._search(node.children[idx]!, key);
   }
-}
 
-/* ---- 3. Heuristic -------------------------------------------------------- */
-function manhattan(a: Point, b: Point): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
+  private _insertNonFull(node: BTreeNode<K, V>, key: K, value: V): void {
+    let i = node.keys.length - 1;
 
-/* ---- 4. Grid utilities --------------------------------------------------- */
-// returns true if the point is inside bounds AND not blocked
-function isWalkable(
-  grid: boolean[][],
-  { x, y }: Point
-): boolean {
-  return y >= 0 && y < grid.length && x >= 0 && x < grid[0].length && grid[y][x];
-}
+    if (node.leaf) {
+      // Insert into leaf – shift keys/vals right of insertion point
+      const idx = node.findKey(key, this.cmp);
+      node.keys.splice(idx, 0, key);
+      node.values.splice(idx, 0, value);
+    } else {
+      // Find child to descend into
+      const idx = node.findKey(key, this.cmp);
+      const child = node.children[idx]!;
 
-// neighbours (4‑connected, 8‑connected if you add diagonals)
-function getNeighbours(grid: boolean[][], p: Point): Point[] {
-  const { x, y } = p;
-  const candidates: Point[] = [
-    { x: x + 1, y },
-    { x: x - 1, y },
-    { x, y: y + 1 },
-    { x, y: y - 1 },
-  ];
+      if (child.keys.length === 2 * this.t - 1) {
+        // Child is full → split then decide which side to go
+        this._splitChild(node, idx);
 
-  // Uncomment if you want diagonal moves:
-  // candidates.push({x: x+1, y: y+1}, {x: x-1, y: y+1}, {x: x+1, y: y-1}, {x: x-1, y: y-1});
-
-  return candidates.filter(p => isWalkable(grid, p));
-}
-
-/* ---- 5. The main A* function --------------------------------------------- */
-function aStar(
-  grid: boolean[][],
-  start: Point,
-  goal: Point
-): Point[] | null {
-  if (!isWalkable(grid, start) || !isWalkable(grid, goal)) return null;
-
-  const open = new MinHeap<Node>( (a, b) => a.f - b.f );
-  const closed = new Set<string>();          // "x,y" keys
-
-  const nodeForPoint = (p: Point) =>
-    `${p.x},${p.y}`;
-
-  open.push(new Node(start, null, 0, manhattan(start, goal)));
-
-  while (open.size) {
-    const current = open.pop()!;
-    const currentKey = nodeForPoint(current.point);
-
-    if (closed.has(currentKey)) continue;     // skip stale node
-    closed.add(currentKey);
-
-    if (current.point.x === goal.x && current.point.y === goal.y) {
-      // reconstruct path
-      const path: Point[] = [];
-      let cur: Node | null = current;
-      while (cur) {
-        path.push(cur.point);
-        cur = cur.parent;
+        // After split, middle key moves up – need to decide child again
+        if (this.cmp(key, node.keys[idx]) > 0) {
+          i = idx + 1;
+        } else {
+          i = idx;
+        }
       }
-      return path.reverse();
-    }
-
-    for (const neighbour of getNeighbours(grid, current.point)) {
-      const neighbourKey = nodeForPoint(neighbour);
-      if (closed.has(neighbourKey)) continue;
-
-      const tentativeG = current.g + 1; // cost of moving a step
-      const h = manhattan(neighbour, goal);
-      const neighbourNode = new Node(
-        neighbour,
-        current,
-        tentativeG,
-        h
-      );
-
-      open.push(neighbourNode);
+      this._insertNonFull(node.children[i]!, key, value);
     }
   }
 
-  return null; // no path
-}
+  private _splitChild(parent: BTreeNode<K, V>, idx: number): void {
+    const t = this.t;
+    const child = parent.children[idx]!;
+    const newNode = new BTreeNode<K, V>(child.leaf);
 
-/* ---- 6. Example usage --------------------------------------------------- */
-const
+    // Move the second half of child’s keys/values to newNode
+    newNode.keys = child.keys.splice(t);   // removes elements [t, end]
+    newNode.values = child.values.splice(t);
+
+    if (!child.leaf) {
+      newNode.children = child.children.splice(t
