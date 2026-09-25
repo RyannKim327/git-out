@@ -1,36 +1,26 @@
-/**
- * Returns the longest common prefix of the supplied strings.
- * If the array is empty, or if no common prefix exists, an empty string is returned.
- */
-export function longestCommonPrefix(arr: readonly string[]): string {
-  if (arr.length === 0) return '';
-
-  // We’ll be comparing the first element with every other one.
-  // Once a mismatch is found we stop expanding the prefix.
-  let prefix = arr[0];
-
-  for (let i = 1; i < arr.length; ++i) {
-    // Shorten the prefix until it matches the start of arr[i]
-    while (arr[i].indexOf(prefix) !== 0) {
-      prefix = prefix.slice(0, -1);
-      if (prefix === '') return '';
-    }
-  }
-
-  return prefix;
+function countWord(text: string, word: string): number {
+  // Escape word so special regex symbols don’t bite us
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // \b = word boundary, i = ignore case, g = global (all matches)
+  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
 }
-const words = ['flower', 'flow', 'flight'];
-console.log(longestCommonPrefix(words)); // prints "fl"
-
-const mix = ['dog', 'racecar', 'car'];
-console.log(longestCommonPrefix(mix));   // prints ""
-export const longestCommonPrefix = (arr: readonly string[]) => arr.reduce(
-  (prev, curr) => {
-    let i = 0;
-    while (i < prev.length && i < curr.length && prev[i] === curr[i]) {
-      i++;
-    }
-    return prev.slice(0, i);
-  },
-  arr[0] ?? ''
-);
+const txt = "Boo, boo! Boo-boo? Booing… boo.";
+console.log(countWord(txt, 'boo')); // 3
+function countWordSplit(text: string, word: string) {
+  const words = text.trim().split(/\s+/);
+  const target = word.toLowerCase();
+  return words.filter(w => w.toLowerCase() === target).length;
+}
+function countWordLoop(text: string, word: string) {
+  const target = word.toLowerCase();
+  let count = 0;
+  const regex = /\b\w+\b/g;               // grab words
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match[0].toLowerCase() === target) count++;
+  }
+  return count;
+}
+const count = countWord("Hello because we say hello", "hello"); // 2
