@@ -1,46 +1,93 @@
 /**
- * Returns true if the array is sorted in ascending order.
- * By default it uses the usual `<`/`>` comparison (works for numbers, strings, Dates, etc.).
- * If you need a custom order you can supply a comparator:
- *   (a, b) => a.value - b.value   // numeric
- *   (a, b) => a.name.localeCompare(b.name) // string property
+ * In‑place quicksort for an array of elements that implement Comparable.
+ * @param arr The array to sort.
+ * @param left Index of the first element to consider.
+ * @param right Index of the last element to consider.
+ * @returns The sorted array (the same reference is returned).
  */
-function isSorted<T>(
-  arr: readonly T[],
-  comparator?: (a: T, b: T) => number
-): boolean {
-  if (arr.length < 2) return true;          // 0 or 1 element → already sorted
+export function quicksort<T>(arr: T[], left = 0, right = arr.length - 1): T[] {
+  // Using 0‐based indices
+  if (left >= right) return arr;           // Base case – 0 or 1 element
 
-  const cmp = comparator ?? ((a: T, b: T) => {
-    // Default comparison: works for numbers, strings, Dates, etc.
-    return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
-  });
+  const pivotIndex = partition(arr, left, right);
+  quicksort(arr, left, pivotIndex - 1);   // left side (0‑based)
+  quicksort(arr, pivotIndex + 1, right);  // right side
+  return arr;
+}
 
-  for (let i = 1; i < arr.length; i++) {
-    if (cmp(arr[i - 1], arr[i]) > 0) {
-      return false; // a previous element is larger → not sorted
+/**
+ * Hoare partition scheme.
+ * Moves elements < pivot to the left, > pivot to the right.
+ * Returns the final pivot position (the index of the pivot element after partition).
+ */
+function partition<T>(arr: T[], left: number, right: number): number {
+  // Pick the middle element as pivot (arbitrary choice)
+  const pivot = arr[Math.floor((left + right) / 2)];
+
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    // Move i until we find element >= pivot
+    while (arr[i] < pivot) i++;
+    // Move j until we find element <= pivot
+    while (arr[j] > pivot) j--;
+
+    if (i <= j) {
+      // Swap arr[i] and arr[j]
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
     }
   }
-  return true;
+  // Return the index where the next recursive calls will split.
+  return i - 1;
 }
-// Numbers
-console.log(isSorted([1, 2, 3, 4]));           // true
-console.log(isSorted([1, 3, 2, 4]));           // false
+const data = [34, 7, 23, 32, 5, 62];
+console.log(quicksort(data)); // [5, 7, 23, 32, 34, 62]
+export function quicksortBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left = 0,
+  right = arr.length - 1
+): T[] {
+  if (left >= right) return arr;
 
-// Strings
-console.log(isSorted(['a', 'b', 'c']));       // true
+  const pivotIndex = partitionBy(arr, cmp, left, right);
+  quicksortBy(arr, cmp, left, pivotIndex - 1);
+  quicksortBy(arr, cmp, pivotIndex + 1, right);
+  return arr;
+}
 
-// Dates
-console.log(
-  isSorted([
-    new Date('2020-01-01'),
-    new Date('2020-06-01'),
-    new Date('2021-01-01')
-  ])
-); // true
+function partitionBy<T>(
+  arr: T[],
+  cmp: (a: T, b: T) => number,
+  left: number,
+  right: number
+): number {
+  const pivot = arr[Math.floor((left + right) / 2)];
 
-// Objects with a specific key
-const people = [{ age: 25 }, { age: 32 }, { age: 40 }];
-console.log(isSorted(people, (p, q) => p.age - q.age)); // true
-const isSortedFunctional = <T>(arr: readonly T[], cmp = (a: T, b: T) => (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0) =>
-  arr.every((v, i, a) => i === 0 || cmp(a[i - 1], v) <= 0);
+  let i = left;
+  let j = right;
+
+  while (i <= j) {
+    while (cmp(arr[i], pivot) < 0) i++;
+    while (cmp(arr[j], pivot) > 0) j--;
+
+    if (i <= j) {
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      i++;
+      j--;
+    }
+  }
+  return i - 1;
+}
+const users = [
+  { name: 'Anna', age: 23 },
+  { name: 'Bob', age: 17 },
+  { name: 'Clara', age: 31 },
+];
+
+quicksortBy(users, (a, b) => a.age - b.age);
+stdin: 5 1 4 2 6 0
+stdout: 0 1 2 4 5 6
