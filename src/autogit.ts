@@ -1,58 +1,79 @@
-// stack.ts
-export class Stack<T> {
-  /* The array that holds our data. The last item is the top of the stack. */
-  private items: T[] = [];
+type Vertex = string | number | symbol;
+type Graph = Map<Vertex, Vertex[]>;
+/**
+ * Breadth‑first traversal of a graph.
+ *
+ * @param graph      adjacency list
+ * @param start      vertex to start from
+ * @returns Array of vertices in the order they were visited
+ */
+function bfs(graph: Graph, start: Vertex): Vertex[] {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const result: Vertex[] = [];
 
-  /** Adds a value to the top of the stack. */
-  push(item: T): void {
-    this.items.push(item);
-  }
+    visited.add(start);
+    queue.push(start);
 
-  /** Removes and returns the top value. Throws if the stack is empty. */
-  pop(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to pop from an empty stack");
+    while (queue.length) {
+        const current = queue.shift()!;   // safe, queue is non‑empty
+        result.push(current);
+
+        const neighbours = graph.get(current) ?? [];
+        for (const next of neighbours) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+            }
+        }
     }
-    return this.items.pop() as T; // safe because we just checked for emptiness
-  }
 
-  /** Returns the top value without removing it. Throws if the stack is empty. */
-  peek(): T {
-    if (this.isEmpty()) {
-      throw new Error("Stack underflow – tried to peek on an empty stack");
-    }
-    // items.length is at least 1, so the index exists
-    return this.items[this.items.length - 1];
-  }
-
-  /** Was the stack empty? */
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  /** How many items are there? */
-  size(): number {
-    return this.items.length;
-  }
-
-  /** Clear everything out. */
-  clear(): void {
-    this.items = [];
-  }
+    return result;
 }
-// demo.ts
-import { Stack } from "./stack";
+function bfsPath(graph: Graph, start: Vertex, target: Vertex): Vertex[] | null {
+    const visited = new Set<Vertex>();
+    const queue: Vertex[] = [];
+    const parent = new Map<Vertex, Vertex | null>();
 
-const stack = new Stack<number>();
+    visited.add(start);
+    queue.push(start);
+    parent.set(start, null);
 
-stack.push(1);
-stack.push(2);
-stack.push(3);
+    while (queue.length) {
+        const current = queue.shift()!;
 
-console.log(stack.peek());   // 3
-console.log(stack.pop());    // 3
-console.log(stack.size());   // 2
-console.log(stack.isEmpty()); // false
+        if (current === target) {
+            // reconstruct path
+            const path: Vertex[] = [];
+            let v: Vertex | null | undefined = target;
+            while (v !== null) {
+                path.unshift(v);
+                v = parent.get(v) ?? null;
+            }
+            return path;
+        }
 
-stack.clear();
-console.log(stack.isEmpty()); // true
+        for (const next of graph.get(current) ?? []) {
+            if (!visited.has(next)) {
+                visited.add(next);
+                queue.push(next);
+                parent.set(next, current);
+            }
+        }
+    }
+
+    // target unreachable
+    return null;
+}
+const g: Graph = new Map([
+    ['A', ['B', 'C']],
+    ['B', ['A', 'D', 'E']],
+    ['C', ['A', 'F']],
+    ['D', ['B']],
+    ['E', ['B', 'F']],
+    ['F', ['C', 'E']]
+]);
+
+console.log(bfs(g, 'A'));                      // ['A', 'B', 'C', 'D', 'E', 'F']
+console.log(bfsPath(g, 'A', 'F'));              // ['A', 'C', 'F']
+console.log(bfsPath(g, 'A', 'G'));              // null  (unreachable)
