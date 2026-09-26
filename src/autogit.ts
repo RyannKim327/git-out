@@ -1,173 +1,31 @@
-// -----------------------------------------------------------------------------
-//  Types
-// -----------------------------------------------------------------------------
-type Node = string | number;          // any hashable key – string or number
-type Weight = number;
+/**
+ * Selection sort – O(n²) time, O(1) additional space.
+ *
+ * Works on any array of items that can be compared with < and >.
+ */
+function selectionSort<T>(arr: T[]): T[] {
+    const n = arr.length;
+    // Work in place – the original array is mutated
+    for (let i = 0; i < n - 1; i++) {
+        // Assume the smallest is at i
+        let minIdx = i;
 
-interface Edge {
-  target: Node;
-  weight: Weight;
-}
-
-interface Graph {
-  // adjacency list: nodeId -> array of outgoing edges
-  [node: string]: Edge[];
-}
-
-// -----------------------------------------------------------------------------
-//  Priority Queue (min‑heap)
-// -----------------------------------------------------------------------------
-class MinHeap<T> {
-  private heap: Array<{ key: number; value: T }> = [];
-
-  // Insert a new element with its priority key
-  push(key: number, value: T) {
-    this.heap.push({ key, value });
-    this.bubbleUp(this.heap.length - 1);
-  }
-
-  // Extract element with smallest key
-  pop(): T | undefined {
-    if (!this.heap.length) return undefined;
-    const min = this.heap[0].value;
-    const end = this.heap.pop()!;
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown(0);
-    }
-    return min;
-  }
-
-  get size() {
-    return this.heap.length;
-  }
-
-  private bubbleUp(idx: number) {
-    const element = this.heap[idx];
-    while (idx > 0) {
-      const parentIdx = Math.floor((idx - 1) / 2);
-      const parent = this.heap[parentIdx];
-      if (element.key >= parent.key) break;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-    this.heap[idx] = element;
-  }
-
-  private sinkDown(idx: number) {
-    const length = this.heap.length;
-    const element = this.heap[idx];
-
-    while (true) {
-      const leftIdx = 2 * idx + 1;
-      const rightIdx = 2 * idx + 2;
-      let swapIdx: number | null = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].key < element.key) {
-          swapIdx = leftIdx;
+        // Search for a smaller element in the rest of the array
+        for (let j = i + 1; j < n; j++) {
+            if (arr[j] < arr[minIdx]) {
+                minIdx = j;
+            }
         }
-      }
 
-      if (rightIdx < length) {
-        const rightKey = this.heap[rightIdx].key;
-        if (
-          (swapIdx === null && rightKey < element.key) ||
-          (swapIdx !== null && rightKey < this.heap[leftIdx].key)
-        ) {
-          swapIdx = rightIdx;
+        // If a smaller element was found, swap it into place
+        if (minIdx !== i) {
+            [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
         }
-      }
-
-      if (swapIdx === null) break;
-
-      this.heap[idx] = this.heap[swapIdx];
-      idx = swapIdx;
     }
-    this.heap[idx] = element;
-  }
+    return arr;
 }
-
-// -----------------------------------------------------------------------------
-//  Dijkstra
-// -----------------------------------------------------------------------------
-function dijkstra(
-  graph: Graph,
-  start: Node,
-  target?: Node
-): { distances: Map<Node, number>; prev: Map<Node, Node | null> } {
-  const distances = new Map<Node, number>();
-  const prev = new Map<Node, Node | null>();
-
-  // init
-  for (const node in graph) {
-    distances.set(node, Number.MAX_SAFE_INTEGER);
-    prev.set(node, null);
-  }
-  distances.set(start, 0);
-
-  const heap = new MinHeap<Node>();
-  heap.push(0, start);
-
-  while (heap.size) {
-    const u = heap.pop()!;
-    const distU = distances.get(u)!;
-
-    // If a target was supplied and we reached it, we can stop early
-    if (target !== undefined && u === target) break;
-
-    const edges = graph[u as string] ?? [];
-    for (const edge of edges) {
-      const alt = distU + edge.weight;
-      if (alt < (distances.get(edge.target) ?? Number.MAX_SAFE_INTEGER)) {
-        distances.set(edge.target, alt);
-        prev.set(edge.target, u);
-        heap.push(alt, edge.target);
-      }
-    }
-  }
-
-  return { distances, prev };
+const nums = [64, 25, 12, 22, 11];
+console.log(selectionSort(nums));   // [11, 12, 22, 25, 64]
+function selectionSortCopy<T>(arr: T[]): T[] {
+    return selectionSort([...arr]); // spread creates a shallow copy
 }
-
-// -----------------------------------------------------------------------------
-//  Helper: recover path from prev map
-// -----------------------------------------------------------------------------
-function recoverPath(
-  prev: Map<Node, Node | null>,
-  start: Node,
-  end: Node
-): Node[] {
-  const path: Node[] = [];
-  let cur: Node | undefined = end;
-
-  while (cur !== undefined && cur !== null) {
-    path.unshift(cur);
-    cur = prev.get(cur) ?? null;
-  }
-
-  if (path[0] !== start) return []; // no path found
-  return path;
-}
-
-// -----------------------------------------------------------------------------
-//  Example
-// -----------------------------------------------------------------------------
-const graph: Graph = {
-  A: [
-    { target: "B", weight: 2 },
-    { target: "C", weight: 5 },
-  ],
-  B: [
-    { target: "C", weight: 1 },
-    { target: "D", weight: 4 },
-  ],
-  C: [
-    { target: "D", weight: 1 },
-  ],
-  D: [],
-};
-
-const { distances, prev } = dijkstra(graph, "A");
-console.log(distances);               // Map(…)
-console.log(recoverPath(prev, "A", "D"));  // [ 'A', 'B', 'C', 'D' ]
