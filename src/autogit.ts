@@ -1,26 +1,26 @@
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;          // or maybe 0, depending on your preference
-  const total = nums.reduce((sum, n) => sum + n, 0);
-  return total / nums.length;
+function countWord(text: string, word: string): number {
+  // Escape word so special regex symbols don’t bite us
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // \b = word boundary, i = ignore case, g = global (all matches)
+  const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const matches = text.match(re);
+  return matches ? matches.length : 0;
 }
-function mean(nums: number[]): number {
-  if (nums.length === 0) return NaN;
-  let sum = 0;
-  for (const n of nums) {
-    sum += n;
+const txt = "Boo, boo! Boo-boo? Booing… boo.";
+console.log(countWord(txt, 'boo')); // 3
+function countWordSplit(text: string, word: string) {
+  const words = text.trim().split(/\s+/);
+  const target = word.toLowerCase();
+  return words.filter(w => w.toLowerCase() === target).length;
+}
+function countWordLoop(text: string, word: string) {
+  const target = word.toLowerCase();
+  let count = 0;
+  const regex = /\b\w+\b/g;               // grab words
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match[0].toLowerCase() === target) count++;
   }
-  return sum / nums.length;
+  return count;
 }
-function mean<T extends number>(nums: T[]): number {
-  if (nums.length === 0) return NaN;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-function meanSafe(nums: Array<number | null | undefined>): number {
-  const cleaned = nums.filter((n): n is number => typeof n === "number");
-  if (cleaned.length === 0) return NaN;
-  return cleaned.reduce((s, n) => s + n, 0) / cleaned.length;
-}
-const mean = (nums: number[]) => nums.length ? nums.reduce((s, n) => s + n, 0) / nums.length : NaN;
-console.log(mean([2, 4, 6]));   // 4
-console.log(mean([]));          // NaN
-console.log(meanSafe([1, 2, null, 4])); // 2.333...
+const count = countWord("Hello because we say hello", "hello"); // 2
