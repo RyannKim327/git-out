@@ -1,38 +1,31 @@
-/**
- * Return the largest prime factor of a positive integer.
- *
- * @param n – the number you want to factor (must be > 1)
- * @returns the largest prime factor, or `undefined` if `n` is ≤ 1
- */
-function largestPrimeFactor(n: number): number | undefined {
-  if (n <= 1) return undefined;
+const numbers: number[] = [3, 1, 4, 1, 5, 9, 2];
 
-  let num = n;
-  let largest = -1;
+// Numeric ascending sort
+numbers.sort((a, b) => a - b);
+console.log(numbers);   // [1, 1, 2, 3, 4, 5, 9]
 
-  // Remove all factors of 2
-  while (num % 2 === 0) {
-    largest = 2;
-    num /= 2;
+// Numeric descending sort
+numbers.sort((a, b) => b - a);
+console.log(numbers);   // [9, 5, 4, 3, 2, 1, 1]
+[10, 2, 33].sort();   // ["10", "2", "33"]  → [10, 2, 33] displayed as String array
+const sorted = [...numbers].sort((a, b) => a - b);
+numbers.sort((a, b) => {
+  const absDiff = Math.abs(a) - Math.abs(b);
+  return absDiff !== 0 ? absDiff : a - b;
+});
+function quickSort(arr: number[]): number[] {
+  if (arr.length <= 1) return arr;
+  const pivot = arr[arr.length - 1];
+  const left: number[] = [];
+  const right: number[] = [];
+
+  for (const x of arr.slice(0, -1)) {
+    (x < pivot ? left : right).push(x);
   }
 
-  // Now `num` is odd; try odd divisors only
-  let divisor = 3;
-  const limit = Math.sqrt(num);
-  while (divisor <= limit) {
-    while (num % divisor === 0) {
-      largest = divisor;
-      num /= divisor;
-    }
-    divisor += 2;           // skip the even numbers
-  }
-
-  // If we're left with a prime greater than 2
-  if (num > 2) largest = num;
-
-  return largest;
+  return [...quickSort(left), pivot, ...quickSort(right)];
 }
 
-// Quick demo
-console.log(largestPrimeFactor(13195)); // 29
-console.log(largestPrimeFactor(600851475143)); // 6857
+const numbers2 = [3, 1, 4, 1, 5, 9, 2];
+const sorted2 = quickSort(numbers2);
+console.log(sorted2);   // [1, 1, 2, 3, 4, 5, 9]
